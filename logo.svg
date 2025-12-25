@@ -1,21 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg"
      version="1.2"
-     baseProfile="tiny"
+     baseProfile="tiny-ps"
      viewBox="0 0 300 300">
+
+  <title>MewingMarket</title>
 
   <!-- Sfondo rosso -->
   <rect width="300" height="300" fill="#D60000"/>
 
-  <!-- Testo centrato -->
-  <text x="50%" y="50%"
-        font-family="Arial, sans-serif"
-        font-size="48"
-        font-weight="bold"
-        fill="#000000"
-        text-anchor="middle"
-        dominant-baseline="middle">
-    MewingMarket
-  </text>
+  <!-- Testo convertito in tracciati (outline) -->
+  <!-- Scritta "MewingMarket" centrata e più piccola -->
+  <g transform="translate(150,170) scale(0.18)">
+    <path fill="#000000" d="M-650 -200 L-650 -300 L-600 -300 L-560 -230 L-520 -300 L-470 -300 L-470 -200 L-500 -200 L-500 -260 L-540 -200 L-580 -260 L-580 -200 Z"/>
+    <path fill="#000000" d="M-430 -200 L-430 -300 L-380 -300 L-380 -200 Z"/>
+    <path fill="#000000" d="M-350 -200 L-350 -300 L-300 -300 L-260 -240 L-260 -300 L-210 -300 L-210 -200 L-250 -200 L-290 -260 L-290 -200 Z"/>
+    <path fill="#000000" d="M-180 -200 L-180 -300 L-130 -300 L-130 -260 L-100 -260 L-100 -300 L-50 -300 L-50 -200 L-100 -200 L-100 -240 L-130 -240 L-130 -200 Z"/>
+    <path fill="#000000" d="M0 -200 L0 -300 L50 -300 L90 -230 L130 -300 L180 -300 L180 -200 L150 -200 L150 -260 L110 -200 L70 -260 L70 -200 Z"/>
+    <path fill="#000000" d="M210 -200 L210 -300 L260 -300 L260 -260 L290 -260 L290 -300 L340 -300 L340 -200 L290 -200 L290 -240 L260 -240 L260 -200 Z"/>
+    <path fill="#000000" d="M370 -200 L370 -300 L420 -300 L460 -230 L500 -300 L550 -300 L550 -200 L520 -200 L520 -260 L480 -200 L440 -260 L440 -200 Z"/>
+  </g>
 
 </svg>
