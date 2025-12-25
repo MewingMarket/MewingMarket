@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     version="1.2"
+     baseProfile="tiny"
+     viewBox="0 0 300 300">
+
+  <!-- Sfondo rosso -->
+  <rect width="300" height="300" fill="#D60000"/>
+
+  <!-- Testo centrato -->
+  <text x="50%" y="50%"
+        font-family="Arial, sans-serif"
+        font-size="48"
+        font-weight="bold"
+        fill="#000000"
+        text-anchor="middle"
+        dominant-baseline="middle">
+    MewingMarket
+  </text>
+
+</svg>
