@@ -3,15 +3,15 @@
 
 /* Impostazioni Generali */
 body {
-    margin: 0;
-    padding: 0;
-    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    color: #ffffff;
-    background-image: url('sfondo.jpg');
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
-    line-height: 1.6;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: #ffffff;
+  background-image: url('sfondo.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  line-height: 1.6;
 }
 
 /* Header e Logo in tutte le pagine */
