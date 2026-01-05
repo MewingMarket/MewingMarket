@@ -1,59 +1,61 @@
   <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FAQ – Domande Frequenti | MewingMarket</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <title>FAQ | MewingMarket</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css?v=1.4">
 </head>
+
 <body>
 
-<header><img src="logo.png" alt="Logo" class="logo"></header>
+<header>
+  <img src="logo.png" class="logo" alt="MewingMarket">
+</header>
 
 <nav>
-<ul>
-<li><a href="index.html">Home</a></li>
-<li><a href="chisiamo.html">Chi Siamo</a></li>
-<li><a href="Contatti.html">Contatti</a></li>
-<li><a href="dovesiamo.html">Dove Siamo</a></li>
-<li><a href="FAQ.html" class="active">FAQ</a></li>
-</ul>
+  <ul>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="FAQ.html" class="active">FAQ</a></li>
+    <li><a href="contatti.html">Contatti</a></li>
+    <li><a href="dovesiamo.html">Dove Siamo</a></li>
+  </ul>
 </nav>
 
 <main>
-<h1>Domande Frequenti</h1>
-<div class="faq-item"><h3>Come ricevo i prodotti dopo l'acquisto?</h3><p>Riceverai un'email automatica con il link per il download immediato subito dopo la conferma del pagamento sul nostro store Payhip.</p></div>
-<div class="faq-item"><h3>Quali metodi di pagamento accettate?</h3><p>Accettiamo PayPal e le principali carte di credito.</p></div>
-<div class="faq-item"><h3>Posso richiedere un rimborso?</h3><p>I rimborsi vengono valutati caso per caso solo se il file non è stato scaricato o presenta difetti tecnici.</p></div>
-<div class="faq-item"><h3>Non ho ricevuto l'email, cosa faccio?</h3><p>Controlla Spam o Promozioni. Se non trovi nulla, scrivi a <strong>supporto@mewingmarket.it</strong>.</p></div>
-<div class="faq-item"><h3>I prodotti hanno una scadenza?</h3><p>No, rimangono tuoi per sempre.</p></div>
-<div class="faq-item"><h3>Posso condividere i file acquistati?</h3><p>No, l'acquisto garantisce licenza d'uso personale.</p></div>
-<div class="faq-item"><h3>Offrite assistenza post-vendita?</h3><p>Sì, puoi contattarci tramite WhatsApp o email.</p></div>
+  <h1>Domande Frequenti</h1>
+
+  <div class="faq-item">
+    <h3>Come ricevo HERO dopo l’acquisto?</h3>
+    <p>Riceverai un’email automatica da Payhip con il link di download immediato.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>Il download non funziona</h3>
+    <p>Controlla la cartella Spam o Promozioni. Se il problema continua, scrivici a <strong>supporto@mewingmarket.it</strong>.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>Posso chiedere un rimborso?</h3>
+    <p>I prodotti digitali non prevedono rimborso dopo il download, salvo problemi tecnici.</p>
+  </div>
 </main>
 
-<!-- CHATBOX -->
-<div id="mm-chat-btn">💬</div>
-<div id="mm-chatbox">
-<div id="mm-chat-header">MewingMarket</div>
-<div id="mm-chat-messages"></div>
-<div id="mm-chat-input">
-<input type="text" id="mm-text" placeholder="Scrivi un messaggio…">
-<button id="mm-send">➤</button>
-</div>
+<!-- CHAT LAUNCHER -->
+<div id="chat-launcher">
+  <img src="chat-icon.png" alt="Apri chat MewingMarket">
 </div>
 
-<footer>
-<ul class="footer-social">
-<li><a href="https://www.facebook.com/profile.php?id=61584779793628"><i class="fab fa-facebook"></i></a></li>
-<li><a href="https://www.instagram.com/mewingmarket"><i class="fab fa-instagram"></i></a></li>
-<li><a href="https://tiktok.com/@mewingmarket"><i class="fab fa-tiktok"></i></a></li>
-<li><a href="https://x.com/mewingm8"><i class="fab fa-x-twitter"></i></a></li>
-<li><a href="https://www.youtube.com/@mewingmarket2"><i class="fab fa-youtube"></i></a></li>
-<li><a href="https://www.linkedin.com/in/simone-griseri-5368a7394"><i class="fab fa-linkedin"></i></a></li>
-<li><a href="https://www.threads.com/@mewingmarket"><i class="fa-solid fa-at"></i></a></li>
-</ul>
-</footer>
+<!-- CHAT BOX -->
+<div id="chatbox">
+  <div id="chat-header">MewingMarket AI</div>
+  <div id="chat-messages"></div>
+  <div id="chat-input">
+    <input type="text" id="user-input" placeholder="Scrivi qui…">
+    <button id="send-btn" aria-label="Invia messaggio">➤</button>
+  </div>
+</div>
 
-<script src="mm-chat.js"></script>
+<script src="chat.js"></script>
 </body>
 </html>
