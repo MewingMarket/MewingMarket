@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     version="1.2"
+     baseProfile="tiny-ps"
+     viewBox="0 0 300 300">
+
+  <title>MM</title>
+
+  <!-- Sfondo rosso -->
+  <rect width="300" height="300" fill="#D60000"/>
+
+  <!-- MM convertita in tracciati, centrata -->
+  <g transform="translate(150,165) scale(0.22)">
+    <!-- M -->
+    <path fill="#000000" d="M-260 100 L-260 -100 L-210 -100 L-170 -20 L-130 -100 L-80 -100 L-80 100 L-110 100 L-110 -40 L-150 40 L-190 -40 L-190 100 Z"/>
+    <!-- M -->
+    <path fill="#000000" d="M20 100 L20 -100 L70 -100 L110 -20 L150 -100 L200 -100 L200 100 L170 100 L170 -40 L130 40 L90 -40 L90 100 Z"/>
+  </g>
+
+</svg>
