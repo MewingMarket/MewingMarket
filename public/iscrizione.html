@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Iscrizione Newsletter | MewingMarket</title>
     <meta name="description" content="Iscriviti alla newsletter di MewingMarket per ricevere strumenti digitali, template e risorse esclusive.">
+
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="manifest" href="/site.webmanifest">
     <style>
         body { font-family: Arial; background:#f7f7f7; padding:40px; text-align:center; color:#333; }
         .box { background:#fff; padding:30px; max-width:600px; margin:auto; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.08); }
@@ -19,6 +23,33 @@
 
         <!-- IFRAME BREVO ISCRIZIONE -->
         <iframe width="540" height="305" src="https://c605f83e.sibforms.com/serve/MUIFAJOWHg_Ef-ZEflBs2VMkNUHuALq9paArtpbp6RkNO6p-qOCgFNkWXqlyAbDSE5dMKQKULR1Yrj5kB_Rzed-QYBv1mj0wAJ_P0mASzgssOAbpqwEB9UtslRBx9tUv9b0brOQYIYo_oQ1TjT7MEYpylWav0TInZE9SfLkgXEtImPf2cag0_w6ErTpWW8fcbugB2mnlao_cq_co-w==" frameborder="0" scrolling="auto" allowfullscreen style="display:block;margin-left:auto;margin-right:auto;max-width:100%;"></iframe>
+    </div>
+
+    <!-- CONSENT BANNER -->
+    <div id="consent-banner" style="
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background: #fff;
+        padding: 15px;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        text-align: center;
+        font-family: Arial;
+        z-index: 9999;
+    ">
+        <p style="margin: 0; font-size: 14px;">
+            Vuoi gestire le tue preferenze?
+            <a href="/iscrizione.html">Iscrizione</a> |
+            <a href="/disiscriviti.html">Disiscrizione</a> |
+            <a href="/privacy.html">Privacy</a> |
+            <a href="/cookie.html">Cookie</a> |
+            <a href="/terms.html">Termini</a>
+        </p>
+        <button onclick="document.getElementById('consent-banner').style.display='none'"
+            style="margin-top:10px; padding:8px 20px; background:#000; color:#fff; border:none; border-radius:5px;">
+            OK
+        </button>
     </div>
 </body>
 </html>
