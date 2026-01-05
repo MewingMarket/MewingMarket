@@ -14,171 +14,159 @@ body {
   line-height: 1.6;
 }
 
-/* Header e Logo in tutte le pagine */
+/* Header e Logo */
 header {
-    padding: 30px 20px;
-    text-align: center;
+  padding: 30px 20px;
+  text-align: center;
 }
 
 .logo {
-    max-width: 220px;
-    height: auto;
-    display: block;
-    margin: 0 auto;
-    filter: drop-shadow(0px 4px 8px rgba(0,0,0,0.5));
+  max-width: 220px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  filter: drop-shadow(0px 4px 8px rgba(0,0,0,0.5));
 }
 
 /* Navigazione (Menu) */
 nav {
-    background: rgba(0, 0, 0, 0.9);
-    padding: 15px 0;
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    border-bottom: 2px solid #ff8c00; /* Linea arancione sotto il menu */
+  background: rgba(0, 0, 0, 0.9);
+  padding: 15px 0;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  border-bottom: 2px solid #ff8c00;
 }
 
 nav ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    justify-content: center;
-    gap: 25px;
-    flex-wrap: wrap;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  gap: 25px;
+  flex-wrap: wrap;
 }
 
 nav ul li a {
-    color: #ffffff;
-    text-decoration: none;
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.85rem;
-    letter-spacing: 1px;
-    transition: 0.3s;
+  color: #ffffff;
+  text-decoration: none;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  transition: 0.3s;
 }
 
-nav ul li a:hover {
-    color: #ff8c00;
+nav ul li a:hover,
+nav ul li a.active {
+  color: #ff8c00;
 }
 
 /* Contenitore Principale */
 main {
-    max-width: 850px;
-    margin: 40px auto;
-    padding: 40px;
-    background: rgba(0, 0, 0, 0.82);
-    border-radius: 15px;
-    text-align: center;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  max-width: 850px;
+  margin: 40px auto;
+  padding: 40px;
+  background: rgba(0, 0, 0, 0.82);
+  border-radius: 15px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
 }
 
 h1 {
-    color: #ff8c00; /* Titoli in arancione */
-    font-size: 2.2rem;
-    margin-bottom: 25px;
-    text-transform: uppercase;
+  color: #ff8c00;
+  font-size: 2.2rem;
+  margin-bottom: 25px;
+  text-transform: uppercase;
 }
 
-/* Link Arancioni (Email e Store) */
+/* Link Arancioni */
 .contact-link {
-    color: #ff8c00;
-    text-decoration: none;
-    font-weight: bold;
-    font-size: 1.1rem;
-    transition: 0.2s;
+  color: #ff8c00;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 1.1rem;
+  transition: 0.2s;
 }
 
 .contact-link:hover {
-    color: #ffa500;
-    text-decoration: underline;
+  color: #ffa500;
+  text-decoration: underline;
 }
 
-/* Griglia Social con Icone */
+/* Griglia Social */
 .social-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 25px;
-    margin-top: 40px;
-    list-style: none;
-    padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 25px;
+  margin-top: 40px;
+  list-style: none;
+  padding: 0;
 }
 
 .social-grid li a {
-    color: #ffffff;
-    text-decoration: none;
-    font-size: 1.8rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    transition: 0.3s transform ease;
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 1.8rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  transition: 0.3s transform ease;
 }
 
 .social-grid li a:hover {
-    transform: translateY(-5px);
-    color: #ff8c00;
+  transform: translateY(-5px);
+  color: #ff8c00;
 }
+
 /* Footer Social Icons in orizzontale */
 .footer-social {
-    display: flex;
-    justify-content: center;
-    gap: 25px;
-    padding: 20px 0;
-    list-style: none;
+  display: flex;
+  justify-content: center;
+  gap: 25px;
+  padding: 20px 0;
+  list-style: none;
 }
 
 .footer-social li a {
-    color: #ffffff;
-    font-size: 1.8rem;
-    transition: 0.3s;
+  color: #ffffff;
+  font-size: 1.8rem;
+  transition: 0.3s;
 }
 
 .footer-social li a:hover {
-    color: #ff8c00;
-}
-.social-grid span {
-    font-size: 0.85rem;
-    font-weight: 500;
-    color: #efefef;
+  color: #ff8c00;
 }
 
 /* Colore specifico WhatsApp */
 .fa-whatsapp {
-    color: #25d366;
+  color: #25d366;
 }
 
-/* Stile FAQ interattivo */
+/* Stile FAQ */
 .faq-item {
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-    padding: 20px 0;
-    text-align: left;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding: 20px 0;
+  text-align: left;
 }
 
 .faq-item h3 {
-    margin: 0;
-    font-size: 1.15rem;
-    color: #ff8c00;
-    cursor: pointer;
+  margin: 0;
+  font-size: 1.15rem;
+  color: #ff8c00;
+  cursor: pointer;
 }
 
 .faq-item p {
-    display: none; /* Gestito da FAQ.js */
-    margin-top: 15px;
-    color: #dddddd;
-    font-size: 0.95rem;
+  display: none;
+  margin-top: 15px;
+  color: #dddddd;
+  font-size: 0.95rem;
 }
-  hover { background:#006fdd; }
-button.menu-btn {
-  padding: 6px 8px;
-  margin: 3px 0;
-  width: 100%;
-  border: none;
-  border-radius: 6px;
-  background:#eee;
-  cursor:pointer;
-}
-/* CHATBOX STILE MESSENGER */
+
+/* Chatbox Messenger */
 #mm-chat-btn {
   position: fixed;
   bottom: 20px;
@@ -264,28 +252,12 @@ button.menu-btn {
 }
 
 button.menu-btn:hover { background:#ddd; }
-  function bot(text) {
-    messages.innerHTML += `<div class="mm-msg mm-bot">${text}</div>`;
-    messages.scrollTop = messages.scrollHeight;
-  }
 
-  function user(text) {
-    messages.innerHTML += `<div class="mm-msg mm-user">${text}</div>`;
-    messages.scrollTop = messages.scrollHeight;
-  }
-
-  func@media (max-width: 600px) {
-    nav ul {
-        gap: 10px;
-    }
-    nav ul li a {
-        font-size: 0.75rem;
-    }
-    main {
-        margin: 20px;
-        padding: 25px;
-    }
-    h1 {
-        font-size: 1.7rem;
-    }
+/* Responsive */
+@media (max-width: 600px) {
+  nav ul { gap: 10px; }
+  nav ul li a { font-size: 0.75rem; }
+  main { margin: 20px; padding: 25px; }
+  h1 { font-size: 1.7rem; }
 }
+
