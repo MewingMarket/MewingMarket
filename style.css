@@ -167,7 +167,172 @@ h1 {
     margin-top: 15px;
     color: #dddddd;
     font-size: 0.95rem;
+}<!-- CHATBOX STATICO SERIO -->
+<style>
+/* Stile chatbox Messenger */
+#mm-chat-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #0084ff;
+  color: #fff;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  cursor: pointer;
+  z-index: 9999;
 }
+
+#mm-chatbox {
+  position: fixed;
+  bottom: 90px;
+  right: 20px;
+  width: 340px;
+  height: 460px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.25);
+  display: none;
+  flex-direction: column;
+  z-index: 9999;
+  font-family: system-ui, sans-serif;
+}
+
+#mm-chat-header {
+  background: #0084ff;
+  color: #fff;
+  padding: 12px;
+  font-weight: 600;
+  border-radius: 14px 14px 0 0;
+}
+
+#mm-chat-messages {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+  font-size: 14px;
+}
+
+.mm-msg { margin-bottom: 8px; }
+.mm-bot { color: #333; }
+.mm-user { text-align: right; color: #0084ff; }
+
+#mm-chat-input {
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+  border-top: 1px solid #ddd;
+}
+
+#mm-chat-input input[type="text"] {
+  flex: 1;
+  padding: 6px;
+}
+#mm-chat-input button {
+  padding: 6px 10px;
+  background: #0084ff;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+#mm-chat-input button:hover { background:#006fdd; }
+button.menu-btn {
+  padding: 6px 8px;
+  margin: 3px 0;
+  width: 100%;
+  border: none;
+  border-radius: 6px;
+  background:#eee;
+  cursor:pointer;
+}
+button.menu-btn:hover { background:#ddd; }
+</style>
+
+<div id="mm-chat-btn">💬</div>
+<div id="mm-chatbox">
+  <div id="mm-chat-header">MewingMarket</div>
+  <div id="mm-chat-messages"></div>
+  <div id="mm-chat-input">
+    <input type="text" id="mm-text" placeholder="Scrivi un messaggio…">
+    <button id="mm-send">➤</button>
+  </div>
+</div>
+
+<script>
+(function() {
+  const btn = document.getElementById("mm-chat-btn");
+  const box = document.getElementById("mm-chatbox");
+  const messages = document.getElementById("mm-chat-messages");
+  const input = document.getElementById("mm-text");
+  const sendBtn = document.getElementById("mm-send");
+
+  const replies = {
+    "prodotti": "🛒 Ecco il nostro store: https://payhip.com/MewingMarket",
+    "supporto": "🛠 Email supporto: supporto@mewingmarket.it",
+    "newsletter": "📩 Iscriviti qui: https://mewingmarket.it/iscrizione.html",
+    "link": "🌐 Link principali:\nSito: https://www.mewingmarket.it\nFacebook: https://www.facebook.com/profile.php?id=61584779793628\nInstagram: https://www.instagram.com/mewingmarket\nYouTube: https://www.youtube.com/@mewingmarket2\nLinkedIn: https://www.linkedin.com/in/simone-griseri-5368a7394"
+  };
+
+  function bot(text) {
+    messages.innerHTML += `<div class="mm-msg mm-bot">${text}</div>`;
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function user(text) {
+    messages.innerHTML += `<div class="mm-msg mm-user">${text}</div>`;
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function menu() {
+    bot("💬 Scegli un'opzione:");
+    messages.innerHTML += `
+      <button class="menu-btn" onclick="quick('prodotti')">🛒 Prodotti</button>
+      <button class="menu-btn" onclick="quick('supporto')">🛠 Supporto</button>
+      <button class="menu-btn" onclick="quick('newsletter')">📩 Newsletter</button>
+      <button class="menu-btn" onclick="quick('link')">🌐 Link & Social</button>
+    `;
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  window.quick = function(key) {
+    if(replies[key]) {
+      user(key);
+      bot(replies[key]);
+      menu(); // torna al menu
+    }
+  }
+
+  btn.onclick = () => {
+    box.style.display = box.style.display === "flex" ? "none" : "flex";
+    if(!messages.innerHTML) {
+      bot("👋 Ciao! Posso aiutarti con prodotti, supporto e newsletter.");
+      menu();
+    }
+  }
+
+  sendBtn.onclick = () => {
+    const msg = input.value.trim();
+    if(!msg) return;
+
+    user(msg);
+    const msgLower = msg.toLowerCase();
+
+    if(msgLower.includes("prodotto")) quick("prodotti");
+    else if(msgLower.includes("support")) quick("supporto");
+    else if(msgLower.includes("newsletter")) quick("newsletter");
+    else if(msgLower.includes("link")) quick("link");
+    else bot("🤔 Non ho capito bene. Scegli dal menu.");
+    
+    input.value = "";
+  }
+
+})();
+</script>
 
 /* Responsive per Cellulari */
 @media (max-width: 600px) {
