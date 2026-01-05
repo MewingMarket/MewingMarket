@@ -1,12 +1,16 @@
-/* Importazione Icone Social Font Awesome */
+    /* ==========================
+   STILE COMPLETO SITO + CHAT
+   ========================== */
+
+/* Font Awesome */
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css');
 
-/* Impostazioni Generali */
+/* Generale */
 body {
   margin: 0;
   padding: 0;
   font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  color: #ffffff;
+  color: #fff;
   background-image: url('sfondo.jpg');
   background-size: cover;
   background-position: center;
@@ -14,250 +18,77 @@ body {
   line-height: 1.6;
 }
 
-/* Header e Logo */
+/* Header */
 header {
   padding: 30px 20px;
   text-align: center;
 }
+.logo { max-width: 220px; height:auto; display:block; margin:0 auto; filter: drop-shadow(0px 4px 8px rgba(0,0,0,0.5)); }
 
-.logo {
-  max-width: 220px;
-  height: auto;
-  display: block;
-  margin: 0 auto;
-  filter: drop-shadow(0px 4px 8px rgba(0,0,0,0.5));
-}
-
-/* Navigazione (Menu) */
+/* Nav */
 nav {
-  background: rgba(0, 0, 0, 0.9);
+  background: rgba(0,0,0,0.9);
   padding: 15px 0;
   position: sticky;
   top: 0;
   z-index: 1000;
   border-bottom: 2px solid #ff8c00;
 }
+nav ul { list-style:none; padding:0; margin:0; display:flex; justify-content:center; gap:25px; flex-wrap:wrap; }
+nav ul li a { color:#fff; text-decoration:none; font-weight:600; text-transform:uppercase; font-size:0.85rem; letter-spacing:1px; transition:0.3s; }
+nav ul li a:hover, nav ul li a.active { color:#ff8c00; }
 
-nav ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  justify-content: center;
-  gap: 25px;
-  flex-wrap: wrap;
-}
-
-nav ul li a {
-  color: #ffffff;
-  text-decoration: none;
-  font-weight: 600;
-  text-transform: uppercase;
-  font-size: 0.85rem;
-  letter-spacing: 1px;
-  transition: 0.3s;
-}
-
-nav ul li a:hover,
-nav ul li a.active {
-  color: #ff8c00;
-}
-
-/* Contenitore Principale */
+/* Main */
 main {
-  max-width: 850px;
-  margin: 40px auto;
-  padding: 40px;
-  background: rgba(0, 0, 0, 0.82);
-  border-radius: 15px;
-  text-align: center;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  max-width:850px;
+  margin:40px auto;
+  padding:40px;
+  background: rgba(0,0,0,0.82);
+  border-radius:15px;
+  text-align:center;
+  box-shadow:0 10px 30px rgba(0,0,0,0.6);
 }
+h1 { color:#ff8c00; font-size:2.2rem; margin-bottom:25px; text-transform:uppercase; }
 
-h1 {
-  color: #ff8c00;
-  font-size: 2.2rem;
-  margin-bottom: 25px;
-  text-transform: uppercase;
-}
+/* FAQ */
+.faq-item { border-bottom:1px solid rgba(255,255,255,0.1); padding:20px 0; text-align:left; }
+.faq-item h3 { margin:0; font-size:1.15rem; color:#ff8c00; cursor:pointer; }
+.faq-item p { display:none; margin-top:15px; color:#ddd; font-size:0.95rem; }
 
-/* Link Arancioni */
-.contact-link {
-  color: #ff8c00;
-  text-decoration: none;
-  font-weight: bold;
-  font-size: 1.1rem;
-  transition: 0.2s;
-}
+/* Footer Social */
+.footer-social { display:flex; justify-content:center; gap:25px; padding:20px 0; list-style:none; }
+.footer-social li a { color:#fff; font-size:1.8rem; transition:0.3s; }
+.footer-social li a:hover { color:#ff8c00; }
+.fa-whatsapp { color:#25d366; }
 
-.contact-link:hover {
-  color: #ffa500;
-  text-decoration: underline;
-}
-
-/* Griglia Social */
-.social-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 25px;
-  margin-top: 40px;
-  list-style: none;
-  padding: 0;
-}
-
-.social-grid li a {
-  color: #ffffff;
-  text-decoration: none;
-  font-size: 1.8rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  transition: 0.3s transform ease;
-}
-
-.social-grid li a:hover {
-  transform: translateY(-5px);
-  color: #ff8c00;
-}
-
-/* Footer Social Icons in orizzontale */
-.footer-social {
-  display: flex;
-  justify-content: center;
-  gap: 25px;
-  padding: 20px 0;
-  list-style: none;
-}
-
-.footer-social li a {
-  color: #ffffff;
-  font-size: 1.8rem;
-  transition: 0.3s;
-}
-
-.footer-social li a:hover {
-  color: #ff8c00;
-}
-
-/* Colore specifico WhatsApp */
-.fa-whatsapp {
-  color: #25d366;
-}
-
-/* Stile FAQ */
-.faq-item {
-  border-bottom: 1px solid rgba(255,255,255,0.1);
-  padding: 20px 0;
-  text-align: left;
-}
-
-.faq-item h3 {
-  margin: 0;
-  font-size: 1.15rem;
-  color: #ff8c00;
-  cursor: pointer;
-}
-
-.faq-item p {
-  display: none;
-  margin-top: 15px;
-  color: #dddddd;
-  font-size: 0.95rem;
-}
-
-/* Chatbox Messenger */
+/* Chatbox stile Messenger */
 #mm-chat-btn {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background: #0084ff;
-  color: #fff;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  cursor: pointer;
-  z-index: 9999;
+  position: fixed; bottom: 20px; right: 20px;
+  background:#0084ff; color:#fff; width:56px; height:56px;
+  border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-size:24px; cursor:pointer; z-index:9999;
 }
-
 #mm-chatbox {
-  position: fixed;
-  bottom: 90px;
-  right: 20px;
-  width: 340px;
-  height: 460px;
-  background: #fff;
-  border-radius: 14px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.25);
-  display: none;
-  flex-direction: column;
-  z-index: 9999;
-  font-family: system-ui, sans-serif;
+  position: fixed; bottom:90px; right:20px; width:360px; max-width:90%;
+  height:500px; background:#fff; border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,.25);
+  display:none; flex-direction:column; z-index:9999; font-family:system-ui, sans-serif;
 }
-
-#mm-chat-header {
-  background: #0084ff;
-  color: #fff;
-  padding: 12px;
-  font-weight: 600;
-  border-radius: 14px 14px 0 0;
-}
-
-#mm-chat-messages {
-  flex: 1;
-  padding: 10px;
-  overflow-y: auto;
-  font-size: 14px;
-}
-
-.mm-msg { margin-bottom: 8px; }
-.mm-bot { color: #333; }
-.mm-user { text-align: right; color: #0084ff; }
-
-#mm-chat-input {
-  display: flex;
-  gap: 6px;
-  padding: 8px;
-  border-top: 1px solid #ddd;
-}
-
-#mm-chat-input input[type="text"] {
-  flex: 1;
-  padding: 6px;
-}
-
-#mm-chat-input button {
-  padding: 6px 10px;
-  background: #0084ff;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
+#mm-chat-header { background:#0084ff; color:#fff; padding:12px; font-weight:600; border-radius:14px 14px 0 0; text-align:center; }
+#mm-chat-messages { flex:1; padding:10px; overflow-y:auto; font-size:14px; }
+.mm-msg { margin-bottom:8px; }
+.mm-bot { color:#333; }
+.mm-user { text-align:right; color:#0084ff; }
+#mm-chat-input { display:flex; gap:6px; padding:8px; border-top:1px solid #ddd; }
+#mm-chat-input input[type="text"] { flex:1; padding:6px; border:1px solid #ccc; border-radius:6px; }
+#mm-chat-input button { padding:6px 10px; background:#0084ff; color:#fff; border:none; border-radius:6px; cursor:pointer; }
 #mm-chat-input button:hover { background:#006fdd; }
-
-button.menu-btn {
-  padding: 6px 8px;
-  margin: 3px 0;
-  width: 100%;
-  border: none;
-  border-radius: 6px;
-  background:#eee;
-  cursor:pointer;
-}
-
+button.menu-btn { padding:6px 8px; margin:3px 0; width:100%; border:none; border-radius:6px; background:#eee; cursor:pointer; }
 button.menu-btn:hover { background:#ddd; }
 
 /* Responsive */
-@media (max-width: 600px) {
-  nav ul { gap: 10px; }
-  nav ul li a { font-size: 0.75rem; }
-  main { margin: 20px; padding: 25px; }
-  h1 { font-size: 1.7rem; }
+@media (max-width:600px){
+  nav ul { gap:10px; }
+  nav ul li a { font-size:0.75rem; }
+  main { margin:20px; padding:25px; }
+  h1 { font-size:1.7rem; }
 }
-
