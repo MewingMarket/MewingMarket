@@ -1,4 +1,6 @@
 (function() {
+  const btn = document.getElementById("mm-chat-btn");
+  const box = document.getElementById("mm-chatbox");
   const messages = document.getElementById("mm-chat-messages");
   const input = document.getElementById("mm-text");
   const sendBtn = document.getElementById("mm-send");
@@ -35,7 +37,15 @@
     if(replies[key]) {
       user(key);
       bot(replies[key]);
-      menu(); // torna al menu
+      menu();
+    }
+  }
+
+  btn.onclick = () => {
+    box.style.display = box.style.display === "flex" ? "none" : "flex";
+    if(!messages.innerHTML) {
+      bot("👋 Ciao! Posso aiutarti con prodotti, supporto e newsletter.");
+      menu();
     }
   }
 
