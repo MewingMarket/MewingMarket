@@ -1,9 +1,11 @@
 /* =====================
-   SITO + CHATBOX STYLE
+   SITO + FAQ + CHATBOX + FOOTER
    ===================== */
 
-@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css');
+/* FONT AWESOME */
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css');
 
+/* ===================== BASE ===================== */
 body {
   margin:0; padding:0;
   font-family:'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -15,27 +17,105 @@ body {
   line-height:1.6;
 }
 
-header { padding:30px 20px; text-align:center; }
-.logo { max-width:220px; height:auto; display:block; margin:0 auto; filter: drop-shadow(0px 4px 8px rgba(0,0,0,0.5)); }
+a { text-decoration:none; transition:0.3s; }
+a:hover { opacity:0.8; }
 
-nav { background: rgba(0,0,0,0.9); padding: 15px 0; position: sticky; top: 0; z-index: 1000; border-bottom: 2px solid #ff8c00; }
-nav ul { list-style:none; padding:0; margin:0; display:flex; justify-content:center; gap:25px; flex-wrap:wrap; }
-nav ul li a { color:#fff; text-decoration:none; font-weight:600; text-transform:uppercase; font-size:0.85rem; letter-spacing:1px; transition:0.3s; }
-nav ul li a:hover, nav ul li a.active { color:#ff8c00; }
+/* ===================== HEADER ===================== */
+header {
+  padding:30px 20px;
+  text-align:center;
+}
+.logo {
+  max-width:220px;
+  height:auto;
+  display:block;
+  margin:0 auto;
+  filter: drop-shadow(0px 4px 8px rgba(0,0,0,0.5));
+}
 
-main { max-width:850px; margin:40px auto; padding:40px; background: rgba(0,0,0,0.82); border-radius:15px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.6); }
+/* ===================== NAV ===================== */
+nav {
+  background: rgba(0,0,0,0.9);
+  padding: 15px 0;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  border-bottom: 2px solid #ff8c00;
+}
+nav ul {
+  list-style:none;
+  padding:0;
+  margin:0;
+  display:flex;
+  justify-content:center;
+  gap:25px;
+  flex-wrap:wrap;
+}
+nav ul li a {
+  color:#fff;
+  font-weight:600;
+  text-transform:uppercase;
+  font-size:0.85rem;
+  letter-spacing:1px;
+}
+nav ul li a:hover,
+nav ul li a.active { color:#ff8c00; }
+
+/* ===================== MAIN CONTENT ===================== */
+main {
+  max-width:850px;
+  margin:40px auto;
+  padding:40px;
+  background: rgba(0,0,0,0.82);
+  border-radius:15px;
+  text-align:center;
+  box-shadow:0 10px 30px rgba(0,0,0,0.6);
+}
 h1 { color:#ff8c00; font-size:2.2rem; margin-bottom:25px; text-transform:uppercase; }
+h2 { color:#ff8c00; margin-top:30px; }
+p, ul { color:#ddd; font-size:1rem; line-height:1.6; }
+ul { padding-left:20px; text-align:left; }
 
-.faq-item { border-bottom:1px solid rgba(255,255,255,0.1); padding:20px 0; text-align:left; }
-.faq-item h3 { margin:0; font-size:1.15rem; color:#ff8c00; cursor:pointer; }
-.faq-item p { display:none; margin-top:15px; color:#ddd; font-size:0.95rem; }
+/* ===================== FAQ ===================== */
+.faq-item {
+  border-bottom:1px solid rgba(255,255,255,0.1);
+  padding:20px 0;
+  text-align:left;
+}
+.faq-item h3 {
+  margin:0;
+  font-size:1.15rem;
+  color:#ff8c00;
+  cursor:pointer;
+}
+.faq-item p {
+  display:none;
+  margin-top:15px;
+  color:#ddd;
+  font-size:0.95rem;
+}
 
-.footer-social { display:flex; justify-content:center; gap:25px; padding:20px 0; list-style:none; }
-.footer-social li a { color:#fff; font-size:1.8rem; transition:0.3s; }
+/* ===================== FOOTER ===================== */
+footer {
+  background: rgba(0,0,0,0.9);
+  padding:30px 0 20px 0;
+  text-align:center;
+}
+.footer-social {
+  display:flex;
+  justify-content:center;
+  gap:25px;
+  padding:20px 0 10px 0;
+  list-style:none;
+}
+.footer-social li a {
+  color:#fff;
+  font-size:1.8rem;
+  transition:0.3s;
+}
 .footer-social li a:hover { color:#ff8c00; }
-.fa-whatsapp { color:#25d366; }
 
-/* CHATBOX MESSENGER STYLE */
+/* ===================== CHATBOX ===================== */
 #mm-chat-btn {
   position: fixed; bottom: 20px; right: 20px;
   background:#0084ff; color:#fff; width:56px; height:56px;
@@ -47,21 +127,61 @@ h1 { color:#ff8c00; font-size:2.2rem; margin-bottom:25px; text-transform:upperca
   height:500px; background:#fff; border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,.25);
   display:none; flex-direction:column; z-index:9999; font-family:system-ui, sans-serif;
 }
-#mm-chat-header { background:#0084ff; color:#fff; padding:12px; font-weight:600; border-radius:14px 14px 0 0; text-align:center; }
-#mm-chat-messages { flex:1; padding:10px; overflow-y:auto; font-size:14px; }
+#mm-chat-header {
+  background:#0084ff; color:#fff;
+  padding:12px; font-weight:600;
+  border-radius:14px 14px 0 0;
+  text-align:center;
+}
+#mm-chat-messages {
+  flex:1;
+  padding:10px;
+  overflow-y:auto;
+  font-size:14px;
+}
 .mm-msg { margin-bottom:8px; }
 .mm-bot { color:#333; }
 .mm-user { text-align:right; color:#0084ff; }
-#mm-chat-input { display:flex; gap:6px; padding:8px; border-top:1px solid #ddd; }
-#mm-chat-input input[type="text"] { flex:1; padding:6px; border:1px solid #ccc; border-radius:6px; }
-#mm-chat-input button { padding:6px 10px; background:#0084ff; color:#fff; border:none; border-radius:6px; cursor:pointer; }
+#mm-chat-input {
+  display:flex; gap:6px; padding:8px; border-top:1px solid #ddd;
+}
+#mm-chat-input input[type="text"] {
+  flex:1; padding:6px; border:1px solid #ccc; border-radius:6px;
+}
+#mm-chat-input button {
+  padding:6px 10px; background:#0084ff; color:#fff;
+  border:none; border-radius:6px; cursor:pointer;
+}
 #mm-chat-input button:hover { background:#006fdd; }
-button.menu-btn { padding:6px 8px; margin:3px 0; width:100%; border:none; border-radius:6px; background:#eee; cursor:pointer; }
+button.menu-btn {
+  padding:6px 8px; margin:3px 0; width:100%;
+  border:none; border-radius:6px; background:#eee; cursor:pointer;
+}
 button.menu-btn:hover { background:#ddd; }
 
+/* ===================== COOKIE / CONSENT BANNER ===================== */
+#consent-banner {
+  position: fixed; bottom: 0; left: 0; width: 100%;
+  background: #fff; padding: 15px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+  text-align: center; font-family: Arial; z-index: 9999;
+}
+#consent-banner p {
+  margin: 0; font-size: 14px; color:#333;
+}
+#consent-banner a { color:#0084ff; margin:0 5px; }
+#consent-banner button {
+  margin-top:10px; padding:8px 20px;
+  background:#000; color:#fff; border:none; border-radius:5px;
+  cursor:pointer;
+}
+#consent-banner button:hover { background:#222; }
+
+/* ===================== RESPONSIVE ===================== */
 @media (max-width:600px){
   nav ul { gap:10px; }
   nav ul li a { font-size:0.75rem; }
   main { margin:20px; padding:25px; }
   h1 { font-size:1.7rem; }
+  #mm-chatbox { width:90%; height:400px; bottom:80px; }
+  #mm-chat-btn { width:50px; height:50px; font-size:22px; }
 }
