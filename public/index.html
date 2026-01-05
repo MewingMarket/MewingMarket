@@ -27,19 +27,19 @@
     <meta name="msvalidate.01" content="606E4707D816AA968F864C83BADEF71C">
 
     <link rel="stylesheet" href="style.css?v=1.3">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 
 <body>
     <header>
-        <img src="logo.png" alt="Logo" class="logo">
+        <img src="logo.png" alt="MewingMarket Logo" class="logo">
     </header>
 
     <nav>
         <ul>
             <li><a href="index.html" class="active">Home</a></li>
             <li><a href="chisiamo.html">Chi Siamo</a></li>
-            <li><a href="Contatti.html">Contatti</a></li>
+            <li><a href="contatti.html">Contatti</a></li>
             <li><a href="dovesiamo.html">Dove Siamo</a></li>
             <li><a href="FAQ.html">FAQ</a></li>
         </ul>
@@ -72,9 +72,9 @@
 
         <div style="text-align:center; margin-top:30px;">
             <a href="https://payhip.com/MewingMarket"
-                style="background:#cc0000; color:#fff; padding:14px 28px; border-radius:8px;
-                font-weight:bold; text-decoration:none; font-size:1.1rem; display:inline-block;">
-                Accedi allo Store Ufficiale e scopri tutte le nostre risorse.
+               style="background:#cc0000; color:#fff; padding:14px 28px; border-radius:8px;
+               font-weight:bold; text-decoration:none; font-size:1.1rem; display:inline-block;">
+                Accedi allo Store Ufficiale
             </a>
         </div>
     </main>
@@ -86,10 +86,8 @@
       "@type": "Organization",
       "name": "MewingMarket",
       "url": "https://www.mewingmarket.it",
-      "image": "https://www.mewingmarket.it/favicon.ico",
       "logo": "https://www.mewingmarket.it/logo.png",
       "sameAs": [
-        "https://wa.me/393520266660",
         "https://www.facebook.com/profile.php?id=61584779793628",
         "https://www.instagram.com/mewingmarket",
         "https://tiktok.com/@mewingmarket",
@@ -100,7 +98,7 @@
     }
     </script>
 
-        <footer>
+    <footer>
         <ul class="footer-social">
             <li><a href="https://www.facebook.com/profile.php?id=61584779793628"><i class="fab fa-facebook"></i></a></li>
             <li><a href="https://www.instagram.com/mewingmarket?igsh=eGZ2MHE0bTFtbmJt"><i class="fab fa-instagram"></i></a></li>
@@ -117,30 +115,33 @@
             Tutti i diritti riservati.
         </p>
     </footer>
-<div id="consent-banner" style="
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    background: #fff;
-    padding: 15px;
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-    text-align: center;
-    font-family: Arial;
-    z-index: 9999;
-">
-    <p style="margin: 0; font-size: 14px;">
-        Vuoi gestire le tue preferenze?
-        <a href="/iscrizione.html" style="margin-left:10px;">Iscrizione</a> |
-        <a href="/disiscriviti.html" style="margin-left:10px;">Disiscrizione</a> |
-        <a href="/privacy.html" style="margin-left:10px;">Privacy</a> |
-        <a href="/cookie.html" style="margin-left:10px;">Cookie</a> |
-        <a href="/terms.html" style="margin-left:10px;">Termini</a>
-    </p>
-    <button onclick="document.getElementById('consent-banner').style.display='none'"
-        style="margin-top:10px; padding:8px 20px; background:#000; color:#fff; border:none; border-radius:5px;">
-        OK
-    </button>
-</div>
+
+    <!-- CONSENT BANNER -->
+    <div id="consent-banner" style="
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background: #fff;
+        padding: 15px;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        text-align: center;
+        font-family: Arial;
+        z-index: 9999;
+    ">
+        <p style="margin: 0; font-size: 14px;">
+            Vuoi gestire le tue preferenze?
+            <a href="/iscrizione.html">Iscrizione</a> |
+            <a href="/disiscriviti.html">Disiscrizione</a> |
+            <a href="/privacy.html">Privacy</a> |
+            <a href="/cookie.html">Cookie</a> |
+            <a href="/terms.html">Termini</a>
+        </p>
+        <button onclick="document.getElementById('consent-banner').style.display='none'"
+            style="margin-top:10px; padding:8px 20px; background:#000; color:#fff; border:none; border-radius:5px;">
+            OK
+        </button>
+    </div>
+
 </body>
 </html>
