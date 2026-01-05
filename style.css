@@ -1,67 +1,41 @@
-    /* ==========================
-   STILE COMPLETO SITO + CHAT
-   ========================== */
+/* =====================
+   SITO + CHATBOX STYLE
+   ===================== */
 
-/* Font Awesome */
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css');
 
-/* Generale */
 body {
-  margin: 0;
-  padding: 0;
-  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  color: #fff;
-  background-image: url('sfondo.jpg');
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-  line-height: 1.6;
+  margin:0; padding:0;
+  font-family:'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color:#fff;
+  background-image:url('sfondo.jpg');
+  background-size:cover;
+  background-position:center;
+  background-attachment:fixed;
+  line-height:1.6;
 }
 
-/* Header */
-header {
-  padding: 30px 20px;
-  text-align: center;
-}
-.logo { max-width: 220px; height:auto; display:block; margin:0 auto; filter: drop-shadow(0px 4px 8px rgba(0,0,0,0.5)); }
+header { padding:30px 20px; text-align:center; }
+.logo { max-width:220px; height:auto; display:block; margin:0 auto; filter: drop-shadow(0px 4px 8px rgba(0,0,0,0.5)); }
 
-/* Nav */
-nav {
-  background: rgba(0,0,0,0.9);
-  padding: 15px 0;
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  border-bottom: 2px solid #ff8c00;
-}
+nav { background: rgba(0,0,0,0.9); padding: 15px 0; position: sticky; top: 0; z-index: 1000; border-bottom: 2px solid #ff8c00; }
 nav ul { list-style:none; padding:0; margin:0; display:flex; justify-content:center; gap:25px; flex-wrap:wrap; }
 nav ul li a { color:#fff; text-decoration:none; font-weight:600; text-transform:uppercase; font-size:0.85rem; letter-spacing:1px; transition:0.3s; }
 nav ul li a:hover, nav ul li a.active { color:#ff8c00; }
 
-/* Main */
-main {
-  max-width:850px;
-  margin:40px auto;
-  padding:40px;
-  background: rgba(0,0,0,0.82);
-  border-radius:15px;
-  text-align:center;
-  box-shadow:0 10px 30px rgba(0,0,0,0.6);
-}
+main { max-width:850px; margin:40px auto; padding:40px; background: rgba(0,0,0,0.82); border-radius:15px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.6); }
 h1 { color:#ff8c00; font-size:2.2rem; margin-bottom:25px; text-transform:uppercase; }
 
-/* FAQ */
 .faq-item { border-bottom:1px solid rgba(255,255,255,0.1); padding:20px 0; text-align:left; }
 .faq-item h3 { margin:0; font-size:1.15rem; color:#ff8c00; cursor:pointer; }
 .faq-item p { display:none; margin-top:15px; color:#ddd; font-size:0.95rem; }
 
-/* Footer Social */
 .footer-social { display:flex; justify-content:center; gap:25px; padding:20px 0; list-style:none; }
 .footer-social li a { color:#fff; font-size:1.8rem; transition:0.3s; }
 .footer-social li a:hover { color:#ff8c00; }
 .fa-whatsapp { color:#25d366; }
 
-/* Chatbox stile Messenger */
+/* CHATBOX MESSENGER STYLE */
 #mm-chat-btn {
   position: fixed; bottom: 20px; right: 20px;
   background:#0084ff; color:#fff; width:56px; height:56px;
@@ -85,7 +59,6 @@ h1 { color:#ff8c00; font-size:2.2rem; margin-bottom:25px; text-transform:upperca
 button.menu-btn { padding:6px 8px; margin:3px 0; width:100%; border:none; border-radius:6px; background:#eee; cursor:pointer; }
 button.menu-btn:hover { background:#ddd; }
 
-/* Responsive */
 @media (max-width:600px){
   nav ul { gap:10px; }
   nav ul li a { font-size:0.75rem; }
