@@ -1,7 +1,6 @@
 const express = require("express");
 const cors = require("cors");
 const { Configuration, OpenAIApi } = require("openai");
-require("dotenv").config(); // carica variabili .env
 
 const app = express();
 
@@ -12,7 +11,7 @@ app.use(express.static("public")); // serve sito statico dalla cartella "public"
 
 // Configurazione OpenAI
 const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY, // Render legge la variabile dall'ambiente
 });
 const openai = new OpenAIApi(configuration);
 
