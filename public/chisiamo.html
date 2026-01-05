@@ -1,5 +1,4 @@
-
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
@@ -8,63 +7,80 @@
 
     <link rel="manifest" href="/site.webmanifest">
     <link rel="icon" href="/favicon.ico" type="image/x-icon">
-    <link rel="stylesheet" href="style.css?v=1.3">
+    <link rel="stylesheet" href="style.css?v=1.4">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 
 <body>
-    <header>
-        <img src="logo.png" alt="Logo" class="logo">
-    </header>
 
-    <nav>
-        <ul>
-            <li><a href="index.html">Home</a></li>
-            <li><a href="chisiamo.html" class="active">Chi Siamo</a></li>
-            <li><a href="Contatti.html">Contatti</a></li>
-            <li><a href="dovesiamo.html">Dove Siamo</a></li>
-            <li><a href="FAQ.html">FAQ</a></li>
-        </ul>
-    </nav>
+<header>
+    <img src="logo.png" alt="Logo" class="logo">
+</header>
 
-    <main>
-        <h1>Chi Siamo</h1>
+<nav>
+    <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="chisiamo.html" class="active">Chi Siamo</a></li>
+        <li><a href="Contatti.html">Contatti</a></li>
+        <li><a href="dovesiamo.html">Dove Siamo</a></li>
+        <li><a href="FAQ.html">FAQ</a></li>
+    </ul>
+</nav>
 
-        <p><strong>MewingMarket</strong> è un progetto dedicato alla creazione di prodotti digitali, guide e risorse sviluppate con l’Intelligenza Artificiale. La nostra missione è trasformare idee semplici in strumenti utili, veloci e accessibili a tutti.</p>
+<main>
+    <h1>Chi Siamo</h1>
 
-        <h2>Cosa facciamo</h2>
-        <p>Realizziamo prodotti digitali di alta qualità progettati per aiutarti a crescere, migliorare e semplificare il tuo percorso personale o professionale. Ogni contenuto è creato con cura, sfruttando le potenzialità dell’AI per offrire soluzioni moderne, chiare e immediate.</p>
+    <p><strong>MewingMarket</strong> è un progetto dedicato alla creazione di prodotti digitali, guide e risorse sviluppate con l’Intelligenza Artificiale. La nostra missione è trasformare idee semplici in strumenti utili, veloci e accessibili a tutti.</p>
 
-        <h2>La nostra visione</h2>
-        <p>Crediamo che l’Intelligenza Artificiale sia un’opportunità concreta per migliorare la vita quotidiana. Per questo sviluppiamo risorse digitali che uniscono creatività, tecnologia e semplicità, mantenendo sempre un approccio pratico e orientato ai risultati.</p>
+    <h2>Cosa facciamo</h2>
+    <p>Realizziamo prodotti digitali di alta qualità progettati per aiutarti a crescere, migliorare e semplificare il tuo percorso personale o professionale. Ogni contenuto è creato con cura, sfruttando le potenzialità dell’AI per offrire soluzioni moderne, chiare e immediate.</p>
 
-        <h2>Perché scegliere MewingMarket</h2>
-        <ul style="text-align:left; max-width:600px; margin:20px auto;">
-            <li>Prodotti digitali creati con AI</li>
-            <li>Aggiornamenti costanti</li>
-            <li>Qualità, chiarezza e immediatezza</li>
-            <li>Esperienza d’uso semplice e intuitiva</li>
-            <li>Brand affidabile e in continua crescita</li>
-        </ul>
-    </main>
+    <h2>La nostra visione</h2>
+    <p>Crediamo che l’Intelligenza Artificiale sia un’opportunità concreta per migliorare la vita quotidiana. Per questo sviluppiamo risorse digitali che uniscono creatività, tecnologia e semplicità, mantenendo sempre un approccio pratico e orientato ai risultati.</p>
 
-    <footer>
-        <ul class="footer-social">
-            <li><a href="https://www.facebook.com/profile.php?id=61584779793628"><i class="fab fa-facebook"></i></a></li>
-            <li><a href="https://www.instagram.com/mewingmarket?igsh=eGZ2MHE0bTFtbmJt"><i class="fab fa-instagram"></i></a></li>
-            <li><a href="https://tiktok.com/@mewingmarket"><i class="fab fa-tiktok"></i></a></li>
-            <li><a href="https://x.com/mewingm8"><i class="fab fa-x-twitter"></i></a></li>
-            <li><a href="https://www.youtube.com/@mewingmarket2"><i class="fab fa-youtube"></i></a></li>
-            <li><a href="https://www.linkedin.com/in/simone-griseri-5368a7394"><i class="fab fa-linkedin"></i></a></li>
-            <li><a href="https://www.threads.com/@mewingmarket"><i class="fa-solid fa-at"></i></a></li>
-        </ul>
+    <h2>Perché scegliere MewingMarket</h2>
+    <ul style="text-align:left; max-width:600px; margin:20px auto;">
+        <li>Prodotti digitali creati con AI</li>
+        <li>Aggiornamenti costanti</li>
+        <li>Qualità, chiarezza e immediatezza</li>
+        <li>Esperienza d’uso semplice e intuitiva</li>
+        <li>Brand affidabile e in continua crescita</li>
+    </ul>
+</main>
 
-        <p style="font-size:14px; color:#cc0000; margin:0; padding:12px 0; text-align:center; line-height:1.5;">
-            <strong>© 2025 MewingMarket</strong><br>
-            Prodotti digitali creati con Intelligenza Artificiale.<br>
-            Tutti i diritti riservati.
-        </p>
-    </footer>
+<!-- CHAT LAUNCHER -->
+<div id="chat-launcher">
+    <img src="chat-icon.png" alt="Apri chat MewingMarket">
+</div>
 
+<!-- CHAT BOX -->
+<div id="chatbox">
+    <div id="chat-header">MewingMarket AI</div>
+    <div id="chat-messages"></div>
+    <div id="chat-input">
+        <input type="text" id="user-input" placeholder="Scrivi qui…">
+        <button id="send-btn" aria-label="Invia messaggio">➤</button>
+    </div>
+</div>
+
+<footer>
+    <ul class="footer-social">
+        <li><a href="https://www.facebook.com/profile.php?id=61584779793628"><i class="fab fa-facebook"></i></a></li>
+        <li><a href="https://www.instagram.com/mewingmarket?igsh=eGZ2MHE0bTFtbmJt"><i class="fab fa-instagram"></i></a></li>
+        <li><a href="https://tiktok.com/@mewingmarket"><i class="fab fa-tiktok"></i></a></li>
+        <li><a href="https://x.com/mewingm8"><i class="fab fa-x-twitter"></i></a></li>
+        <li><a href="https://www.youtube.com/@mewingmarket2"><i class="fab fa-youtube"></i></a></li>
+        <li><a href="https://www.linkedin.com/in/simone-griseri-5368a7394"><i class="fab fa-linkedin"></i></a></li>
+        <li><a href="https://www.threads.com/@mewingmarket"><i class="fa-solid fa-at"></i></a></li>
+    </ul>
+
+    <p style="font-size:14px; color:#cc0000; margin:0; padding:12px 0; text-align:center; line-height:1.5;">
+        <strong>© 2025 MewingMarket</strong><br>
+        Prodotti digitali creati con Intelligenza Artificiale.<br>
+        Tutti i diritti riservati.
+    </p>
+</footer>
+
+<script src="chat.js"></script>
 </body>
 </html>
