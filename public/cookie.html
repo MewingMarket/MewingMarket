@@ -5,69 +5,82 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cookie Policy | MewingMarket</title>
     <meta name="description" content="Cookie Policy di MewingMarket. Scopri come utilizziamo cookie tecnici e strumenti di terze parti.">
-    <style>
-        body { font-family: Arial; background:#f7f7f7; padding:40px; color:#333; }
-        .box { background:#fff; padding:30px; max-width:900px; margin:auto; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.08); }
-        h1, h2 { text-align:center; }
-        p { font-size:16px; line-height:1.6; }
-    </style>
+
+    <link rel="stylesheet" href="style.css?v=1.4">
 </head>
+
 <body>
 
-<!-- BANNER -->
+<!-- COOKIE BANNER -->
 <div id="consent-banner" style="
-    position: fixed; bottom: 0; left: 0; width: 100%;
-    background: #fff; padding: 15px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-    text-align: center; font-family: Arial; z-index: 9999;">
-    <p style="margin: 0; font-size: 14px;">
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: #fff;
+    padding: 15px;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    text-align: center;
+    z-index: 9999;
+    font-size: 14px;">
+    
+    <p style="margin: 0;">
         Gestisci le tue preferenze:
-        <a href="/iscrizione" style="margin-left:10px;">Iscrizione</a> |
-        <a href="/disiscriviti" style="margin-left:10px;">Disiscrizione</a> |
-        <a href="/privacy" style="margin-left:10px;">Privacy</a> |
-        <a href="/cookie" style="margin-left:10px;">Cookie</a> |
-        <a href="/terms" style="margin-left:10px;">Termini</a>
+        <a href="iscrizione.html">Iscrizione</a> |
+        <a href="disiscriviti.html">Disiscrizione</a> |
+        <a href="privacy.html">Privacy</a> |
+        <a href="cookie.html">Cookie</a> |
+        <a href="terms.html">Termini</a>
     </p>
+
     <button onclick="document.getElementById('consent-banner').style.display='none'"
         style="margin-top:10px; padding:8px 20px; background:#000; color:#fff; border:none; border-radius:5px;">
         OK
     </button>
 </div>
 
-<div class="box">
+<main style="max-width:900px; margin:60px auto; background:#fff; padding:30px; border-radius:10px;">
+
     <h1>Cookie Policy</h1>
 
     <p>Questo sito utilizza cookie tecnici e strumenti di terze parti per migliorare l’esperienza utente.</p>
 
     <h2>Tipologie di cookie</h2>
-    <p>- Cookie tecnici essenziali<br>
-       - Cookie di analisi anonima<br>
-       - Cookie di terze parti (Payhip, Crisp, Brevo)</p>
+    <p>
+        • Cookie tecnici essenziali<br>
+        • Cookie di analisi anonima<br>
+        • Cookie di terze parti (Payhip, strumenti email)
+    </p>
 
     <h2>Gestione dei cookie</h2>
-    <p>Puoi disattivare o gestire i cookie tramite le impostazioni del tuo browser.</p>
+    <p>Puoi gestire o disattivare i cookie tramite le impostazioni del tuo browser.</p>
 
     <h2>Contatti</h2>
-    <p>Per informazioni puoi contattarci tramite la chat del sito.</p>
+    <p>Per informazioni puoi contattarci tramite la chat del sito o via email.</p>
+
+</main>
+
+<!-- CHAT -->
+<div id="chat-launcher">
+    <img src="chat-icon.png" alt="Apri chat MewingMarket">
 </div>
 
-<!-- FOOTER -->
-<footer>
-    <ul class="social-grid" style="list-style:none; padding:0; display:flex; justify-content:center; gap:15px; margin-top:40px;">
-      <li><a href="https://www.facebook.com/profile.php?id=61584779793628">Facebook</a></li>
-      <li><a href="https://www.instagram.com/mewingmarket?igsh=eGZ2MHE0bTFtbmJt">Instagram</a></li>
-      <li><a href="https://tiktok.com/@mewingmarket">TikTok</a></li>
-      <li><a href="https://x.com/mewingm8">X</a></li>
-      <li><a href="https://www.youtube.com/@mewingmarket2">YouTube</a></li>
-      <li><a href="https://www.linkedin.com/in/simone-griseri-5368a7394">LinkedIn</a></li>
-      <li><a href="https://www.threads.com/@mewingmarket">Threads</a></li>
-    </ul>
+<div id="chatbox">
+    <div id="chat-header">MewingMarket AI</div>
+    <div id="chat-messages"></div>
+    <div id="chat-input">
+        <input type="text" id="user-input" placeholder="Scrivi qui…">
+        <button id="send-btn">➤</button>
+    </div>
+</div>
 
-    <p style="font-size:14px; color:#cc0000; margin:0; padding:12px 0; text-align:center; line-height:1.5;">
-      <strong>© 2025 MewingMarket</strong><br>
-      Prodotti digitali creati con Intelligenza Artificiale.<br>
-      Tutti i diritti riservati.
+<footer>
+    <p style="font-size:14px; color:#cc0000; text-align:center; padding:20px 0;">
+        <strong>© 2025 MewingMarket</strong><br>
+        Prodotti digitali creati con Intelligenza Artificiale.
     </p>
 </footer>
 
+<script src="chat.js"></script>
 </body>
 </html>
