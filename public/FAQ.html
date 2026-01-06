@@ -1,103 +1,100 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FAQ | MewingMarket</title>
-<meta name="description" content="Domande frequenti su MewingMarket. Trova risposte rapide e supporto immediato.">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAQ | MewingMarket</title>
+    <meta name="description" content="Domande frequenti su MewingMarket. Trova risposte rapide e supporto immediato.">
 
-<link rel="icon" href="/favicon.ico" type="image/x-icon">
-<link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
-<link rel="manifest" href="/site.webmanifest">
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="manifest" href="/site.webmanifest">
 
-<link rel="stylesheet" href="style.css?v=1.4">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="style.css?v=1.3">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
+    <header>
+        <img src="logo.png" alt="MewingMarket Logo" class="logo">
+    </header>
 
-<header>
-    <img src="logo.png" alt="MewingMarket Logo" class="logo">
-</header>
+    <!-- NAV -->
+    <nav>
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="chisiamo.html">Chi Siamo</a></li>
+            <li><a href="contatti.html">Contatti</a></li>
+            <li><a href="dovesiamo.html">Dove Siamo</a></li>
+            <li><a href="FAQ.html" class="active">FAQ</a></li>
+        </ul>
+    </nav>
 
-<!-- NAV -->
-<nav>
-    <ul>
-        <li><a href="index.html">Home</a></li>
-        <li><a href="chisiamo.html">Chi Siamo</a></li>
-        <li><a href="contatti.html">Contatti</a></li>
-        <li><a href="dovesiamo.html">Dove Siamo</a></li>
-        <li><a href="FAQ.html" class="active">FAQ</a></li>
-    </ul>
-</nav>
+    <main>
+        <h1>FAQ</h1>
+        <p>Qui trovi le domande frequenti e le risposte sui nostri prodotti digitali.</p>
 
-<main>
-    <h1>FAQ</h1>
-    <p>Qui trovi le domande frequenti e le risposte sui nostri prodotti digitali.</p>
+        <h2>Domande comuni</h2>
+        <div class="faq-item">
+            <h3>Come acquistare i prodotti digitali?</h3>
+            <p>Tutti i prodotti sono disponibili nel nostro store digitale. Dopo l'acquisto riceverai subito il link per il download via email.</p>
+        </div>
+        <div class="faq-item">
+            <h3>Come ricevo il download?</h3>
+            <p>Dopo l’acquisto, il link per scaricare il prodotto arriva subito via email, pronto per l’uso immediato.</p>
+        </div>
+        <div class="faq-item">
+            <h3>Posso ricevere supporto?</h3>
+            <p>Sì, tramite la chat in basso a destra o via email. Siamo qui per aiutarti!</p>
+        </div>
+    </main>
 
-    <div class="faq-item">
-        <h3>Come acquistare i prodotti digitali?</h3>
-        <p>Tutti i prodotti sono disponibili nel nostro store digitale.</p>
+    <!-- CHATBOX -->
+    <div id="mm-chat-btn">
+        <img src="chat-icon.png" alt="Chat Support">
     </div>
-    <div class="faq-item">
-        <h3>Come ricevo il download?</h3>
-        <p>Dopo l’acquisto, il link per scaricare il prodotto arriva subito via email.</p>
+    <div id="mm-chatbox">
+        <div id="mm-chat-header">Chat di supporto</div>
+        <div id="mm-chat-messages"></div>
+        <div id="mm-chat-input">
+            <input type="text" placeholder="Scrivi qui...">
+            <button>Invia</button>
+        </div>
     </div>
-    <div class="faq-item">
-        <h3>Posso ricevere supporto?</h3>
-        <p>Sì, tramite la chat in basso a destra o via email.</p>
+
+    <!-- FOOTER -->
+    <footer>
+        <ul class="footer-social">
+            <li><a href="https://www.facebook.com/profile.php?id=61584779793628"><i class="fab fa-facebook"></i></a></li>
+            <li><a href="https://www.instagram.com/mewingmarket?igsh=eGZ2MHE0bTFtbmJt"><i class="fab fa-instagram"></i></a></li>
+            <li><a href="https://tiktok.com/@mewingmarket"><i class="fab fa-tiktok"></i></a></li>
+            <li><a href="https://x.com/mewingm8"><i class="fab fa-x-twitter"></i></a></li>
+            <li><a href="https://www.youtube.com/@mewingmarket2"><i class="fab fa-youtube"></i></a></li>
+            <li><a href="https://www.linkedin.com/in/simone-griseri-5368a7394"><i class="fab fa-linkedin"></i></a></li>
+            <li><a href="https://www.threads.com/@mewingmarket"><i class="fa-solid fa-at"></i></a></li>
+        </ul>
+
+        <p>
+            <strong>© 2025 MewingMarket</strong><br>
+            Prodotti digitali creati con Intelligenza Artificiale.<br>
+            Tutti i diritti riservati.
+        </p>
+    </footer>
+
+    <!-- CONSENT BANNER -->
+    <div id="consent-banner">
+        <p>
+            Vuoi gestire le tue preferenze?
+            <a href="/iscrizione.html">Iscrizione</a> |
+            <a href="/disiscriviti.html">Disiscrizione</a> |
+            <a href="/privacy.html">Privacy</a> |
+            <a href="/cookie.html">Cookie</a> |
+            <a href="/terms.html">Termini</a>
+        </p>
+        <button onclick="document.getElementById('consent-banner').style.display='none'">OK</button>
     </div>
-</main>
 
-<!-- CHATBOX -->
-<div id="mm-chat-btn">
-    <img src="chat-icon.svg" alt="Chat Support">
-</div>
-<div id="mm-chatbox">
-    <div id="mm-chat-header">Chat di supporto</div>
-    <div id="mm-chat-messages"></div>
-    <div id="mm-chat-input">
-        <input type="text" placeholder="Scrivi qui...">
-        <button>Invia</button>
-    </div>
-</div>
-
-<!-- FOOTER -->
-<footer>
-    <ul class="footer-social" style="list-style:none; padding:0; display:flex; justify-content:center; gap:15px; margin-top:40px;">
-        <li><a href="https://www.facebook.com/profile.php?id=61584779793628"><i class="fab fa-facebook"></i></a></li>
-        <li><a href="https://www.instagram.com/mewingmarket"><i class="fab fa-instagram"></i></a></li>
-        <li><a href="https://tiktok.com/@mewingmarket"><i class="fab fa-tiktok"></i></a></li>
-        <li><a href="https://x.com/mewingm8"><i class="fab fa-x-twitter"></i></a></li>
-        <li><a href="https://www.youtube.com/@mewingmarket2"><i class="fab fa-youtube"></i></a></li>
-        <li><a href="https://www.linkedin.com/in/simone-griseri-5368a7394"><i class="fab fa-linkedin"></i></a></li>
-        <li><a href="https://www.threads.com/@mewingmarket"><i class="fa-solid fa-at"></i></a></li>
-    </ul>
-
-    <p style="font-size:14px; color:#cc0000; margin:0; padding:12px 0; text-align:center; line-height:1.5;">
-        <strong>© 2025 MewingMarket</strong><br>
-        Prodotti digitali creati con Intelligenza Artificiale.<br>
-        Tutti i diritti riservati.
-    </p>
-</footer>
-
-<!-- CONSENT BANNER -->
-<div id="consent-banner">
-    <p>
-        Vuoi gestire le tue preferenze?
-        <a href="/iscrizione.html">Iscrizione</a> |
-        <a href="/disiscriviti.html">Disiscrizione</a> |
-        <a href="/privacy.html">Privacy</a> |
-        <a href="/cookie.html">Cookie</a> |
-        <a href="/terms.html">Termini</a>
-    </p>
-    <button onclick="document.getElementById('consent-banner').style.display='none'">OK</button>
-</div>
-
-<!-- FAQ JS -->
-<script src="FAQ.js"></script>
-
-<!-- CHAT JS -->
-<script src="chat.js"></script>
-
+    <!-- JS -->
+    <script src="FAQ.js"></script>
+    <script src="chat.js"></script>
 </body>
 </html>
