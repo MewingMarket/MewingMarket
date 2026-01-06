@@ -4,11 +4,13 @@ const messages = document.getElementById("mm-chat-messages");
 const input = chatbox.querySelector("input[type='text']");
 const sendBtn = chatbox.querySelector("button");
 
+// Toggle chatbox
 launcher.addEventListener("click", () => {
     chatbox.style.display = chatbox.style.display === "flex" ? "none" : "flex";
     if (messages.innerHTML.trim() === "") showWelcome();
 });
 
+// Mostra messaggio bot
 function bot(msg) {
     const div = document.createElement("div");
     div.className = "mm-msg mm-bot";
@@ -17,6 +19,7 @@ function bot(msg) {
     messages.scrollTop = messages.scrollHeight;
 }
 
+// Mostra messaggio utente
 function user(msg) {
     const div = document.createElement("div");
     div.className = "mm-msg mm-user";
@@ -25,10 +28,12 @@ function user(msg) {
     messages.scrollTop = messages.scrollHeight;
 }
 
+// Messaggio di benvenuto
 function showWelcome() {
     bot("👋 Ciao! Scrivi la tua domanda, un operatore virtuale ti risponderà.");
 }
 
+// Invia messaggio
 async function sendMessage() {
     const text = input.value.trim();
     if (!text) return;
@@ -51,6 +56,7 @@ async function sendMessage() {
         if (lastBot) lastBot.remove();
 
         bot(data.reply ?? "🤖 Nessuna risposta disponibile al momento.");
+
     } catch (err) {
         console.error("CHAT ERROR:", err);
         const lastBot = messages.querySelector(".mm-msg.mm-bot:last-child");
@@ -59,5 +65,6 @@ async function sendMessage() {
     }
 }
 
+// Eventi click e invio
 sendBtn.addEventListener("click", sendMessage);
-input.addEventListener("keydown", e => { if(e.key === "Enter") sendMessage(); });
+input.addEventListener("keydown", e => { if (e.key === "Enter") sendMessage(); });
