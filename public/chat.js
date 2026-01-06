@@ -28,7 +28,7 @@ const chatBtn = document.getElementById("mm-chat-btn");
 const chatBox = document.getElementById("mm-chatbox");
 
 chatBtn.addEventListener("click", () => {
-  chatBox.classList.toggle("open");
+  chatBox.style.display = chatBox.style.display === "flex" ? "none" : "flex";
 
   // Mostra messaggio di benvenuto solo la prima volta
   if (!chatBox.dataset.welcomeShown) {
