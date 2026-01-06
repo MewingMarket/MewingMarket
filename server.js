@@ -1,40 +1,25 @@
-const express = require("express");
-const cors = require("cors");
-const OpenAI = require("openai");
+import express from "express";
+import cors from "cors";
 
 const app = express();
-
-// Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static("public"));
 
-// Config OpenAI
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+// TEST ROUTE
+app.post("/chat", (req, res) => {
+  const { message } = req.body;
+
+  res.json({
+    reply: "Risposta di test ricevuta: " + message
+  });
 });
 
-// Endpoint chat
-app.post("/chat", async (req, res) => {
-  try {
-    const { message } = req.body;
-    if (!message) return res.status(400).json({ reply: "Messaggio vuoto" });
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [{ role: "user", content: message }],
-      temperature: 0.7,
-      max_tokens: 300
-    });
-
-    const reply = completion.choices[0]?.message?.content || "Ops, non ho capito 😅";
-    res.json({ reply });
-
-  } catch (err) {
-    console.error("Errore AI:", err);
-    res.status(500).json({ reply: "Ops, qualcosa è andato storto 😅" });
-  }
+// opzionale ma utile
+app.get("/chat", (req, res) => {
+  res.send("Chat endpoint attivo. Usa POST.");
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server AI in ascolto su ${PORT}`));
+app.listen(PORT, () => {
+  console.log("Server attivo su porta", PORT);
+});
