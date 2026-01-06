@@ -2,23 +2,34 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>FAQ | MewingMarket</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="style.css?v=1.4">
+  <title>FAQ – MewingMarket</title>
+  <link rel="stylesheet" href="style.css?v=1.3">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    main { max-width:850px; margin:40px auto; padding:40px; background: rgba(0,0,0,0.82); border-radius:15px; box-shadow:0 10px 30px rgba(0,0,0,0.6); color:#fff; }
+    h1 { color:#ff8c00; text-align:center; margin-bottom:25px; }
+    .faq-item { border-bottom:1px solid rgba(255,255,255,0.2); padding:15px 0; cursor:pointer; }
+    .faq-item h3 { margin:0; font-size:1.15rem; color:#ff8c00; display:flex; justify-content:space-between; align-items:center; }
+    .faq-item p { display:none; margin-top:10px; color:#ddd; font-size:0.95rem; line-height:1.5; }
+    .faq-item.active p { display:block; }
+    .faq-item i { transition:0.3s; }
+    .faq-item.active i { transform:rotate(180deg); }
+  </style>
 </head>
-
 <body>
 
 <header>
-  <img src="logo.png" class="logo" alt="MewingMarket">
+  <img src="logo.png" alt="Logo" class="logo">
 </header>
 
 <nav>
   <ul>
     <li><a href="index.html">Home</a></li>
-    <li><a href="FAQ.html" class="active">FAQ</a></li>
-    <li><a href="contatti.html">Contatti</a></li>
+    <li><a href="chisiamo.html">Chi Siamo</a></li>
+    <li><a href="Contatti.html">Contatti</a></li>
     <li><a href="dovesiamo.html">Dove Siamo</a></li>
+    <li><a href="FAQ.html" class="active">FAQ</a></li>
   </ul>
 </nav>
 
@@ -26,36 +37,67 @@
   <h1>Domande Frequenti</h1>
 
   <div class="faq-item">
-    <h3>Come ricevo HERO dopo l’acquisto?</h3>
-    <p>Riceverai un’email automatica da Payhip con il link di download immediato.</p>
+    <h3>Come ricevo i prodotti dopo l'acquisto? <i class="fa fa-chevron-down"></i></h3>
+    <p>Riceverai un'email automatica con il link per il download immediato subito dopo la conferma del pagamento sul nostro store Payhip.</p>
   </div>
 
   <div class="faq-item">
-    <h3>Il download non funziona</h3>
-    <p>Controlla la cartella Spam o Promozioni. Se il problema continua, scrivici a <strong>supporto@mewingmarket.it</strong>.</p>
+    <h3>Quali metodi di pagamento accettate? <i class="fa fa-chevron-down"></i></h3>
+    <p>Accettiamo PayPal e le principali carte di credito.</p>
   </div>
 
   <div class="faq-item">
-    <h3>Posso chiedere un rimborso?</h3>
-    <p>I prodotti digitali non prevedono rimborso dopo il download, salvo problemi tecnici.</p>
+    <h3>Posso richiedere un rimborso? <i class="fa fa-chevron-down"></i></h3>
+    <p>I rimborsi vengono valutati caso per caso solo se il file non è stato scaricato o presenta difetti tecnici.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>Non ho ricevuto l'email, cosa faccio? <i class="fa fa-chevron-down"></i></h3>
+    <p>Controlla Spam o Promozioni. Se non trovi nulla, scrivi a <strong>supporto@mewingmarket.it</strong>.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>I prodotti hanno una scadenza? <i class="fa fa-chevron-down"></i></h3>
+    <p>No, rimangono tuoi per sempre.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>Posso condividere i file acquistati? <i class="fa fa-chevron-down"></i></h3>
+    <p>No, l'acquisto garantisce licenza d'uso personale.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>Offrite assistenza post-vendita? <i class="fa fa-chevron-down"></i></h3>
+    <p>Sì, puoi contattarci tramite WhatsApp o email.</p>
   </div>
 </main>
 
-<!-- CHAT LAUNCHER -->
-<div id="chat-launcher">
-  <img src="chat-icon.png" alt="Apri chat MewingMarket">
-</div>
+<footer>
+  <ul class="footer-social">
+    <li><a href="https://www.facebook.com/profile.php?id=61584779793628"><i class="fab fa-facebook"></i></a></li>
+    <li><a href="https://www.instagram.com/mewingmarket?igsh=eGZ2MHE0bTFtbmJt"><i class="fab fa-instagram"></i></a></li>
+    <li><a href="https://tiktok.com/@mewingmarket"><i class="fab fa-tiktok"></i></a></li>
+    <li><a href="https://x.com/mewingm8"><i class="fab fa-x-twitter"></i></a></li>
+    <li><a href="https://www.youtube.com/@mewingmarket2"><i class="fab fa-youtube"></i></a></li>
+    <li><a href="https://www.linkedin.com/in/simone-griseri-5368a7394"><i class="fab fa-linkedin"></i></a></li>
+    <li><a href="https://www.threads.com/@mewingmarket"><i class="fa-solid fa-at"></i></a></li>
+  </ul>
+  <p style="font-size:14px; color:#cc0000; margin:0; padding:12px 0; text-align:center; line-height:1.5;">
+    <strong>© 2025 MewingMarket</strong><br>
+    Prodotti digitali creati con Intelligenza Artificiale.<br>
+    Tutti i diritti riservati.
+  </p>
+</footer>
 
-<!-- CHAT BOX -->
-<div id="chatbox">
-  <div id="chat-header">MewingMarket AI</div>
-  <div id="chat-messages"></div>
-  <div id="chat-input">
-    <input type="text" id="user-input" placeholder="Scrivi qui…">
-    <button id="send-btn" aria-label="Invia messaggio">➤</button>
-  </div>
-</div>
+<script>
+  // Fisarmonica FAQ
+  const items = document.querySelectorAll(".faq-item");
+  items.forEach(item => {
+    item.addEventListener("click", () => {
+      item.classList.toggle("active");
+    });
+  });
+</script>
 
-<script src="chat.js"></script>
 </body>
 </html>
