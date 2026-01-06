@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import path from "path";
-
+app.disable("x-powered-by");
 const app = express();
 
 // =========================
