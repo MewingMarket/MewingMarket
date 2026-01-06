@@ -6,24 +6,32 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Serve tutti i file statici nella cartella public
+// Serve tutti i file statici dalla cartella public
 app.use(express.static(path.join(process.cwd(), "public")));
 
-// Endpoint POST /chat per la chat AI
+// Endpoint POST /chat
 app.post("/chat", (req, res) => {
   const { message } = req.body;
-
   if (!message || message.trim() === "") {
     return res.status(400).json({ reply: "❌ Messaggio vuoto, scrivi qualcosa." });
   }
 
-  // Risposta di test (qui puoi integrare la vera AI in futuro)
-  res.json({
-    reply: `🤖 Risposta di test ricevuta: "${message}"`
-  });
+  // Logica di risposta semplice
+  let reply = "🤖 Non ho capito la tua richiesta, prova con newsletter o supporto.";
+
+  const msg = message.toLowerCase();
+  if (msg.includes("newsletter")) {
+    reply = "📧 Puoi iscriverti alla newsletter qui: https://mewingmarket.it/newsletter";
+  } else if (msg.includes("supporto")) {
+    reply = "💬 Contatta il supporto via email a supporto@mewingmarket.it";
+  } else if (msg.includes("hero")) {
+    reply = "🚀 HERO è il nostro sistema di risorse digitali AI!";
+  }
+
+  res.json({ reply });
 });
 
-// Tutte le altre richieste GET servono index.html (per React, SPA o siti statici multipagina)
+// Tutte le richieste GET servono index.html (SPA o sito statico multipagina)
 app.get("*", (req, res) => {
   res.sendFile(path.join(process.cwd(), "public/index.html"));
 });
