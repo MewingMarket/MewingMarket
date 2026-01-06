@@ -4,6 +4,7 @@ const messages = document.getElementById("mm-chat-messages");
 const input = document.querySelector("#mm-chat-input input[type='text']");
 const sendBtn = document.querySelector("#mm-chat-input button");
 
+// Toggle chatbox
 launcher.addEventListener("click", () => {
   chatbox.style.display = chatbox.style.display === "flex" ? "none" : "flex";
   if (messages.innerHTML.trim() === "") showWelcome();
@@ -26,7 +27,7 @@ function user(msg) {
 }
 
 function showWelcome() {
-  bot("👋 Ciao! Scrivi la tua domanda, il supporto AI MewingMarket è attivo.");
+  bot("👋 Ciao! Scrivi la tua domanda, un operatore virtuale ti risponderà.");
 }
 
 async function sendMessage() {
@@ -38,35 +39,27 @@ async function sendMessage() {
   bot("⏳ Sto scrivendo...");
 
   try {
-    const res = await fetch(
-      "https://mewingmarket-ai.onrender.com/chat",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text })
-      }
-    );
+    const res = await fetch("https://mewingmarket-ai.onrender.com/chat", { // << PUNTO AL BACKEND Render
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: text })
+    });
 
     if (!res.ok) throw new Error("HTTP " + res.status);
 
     const data = await res.json();
-
     const lastBot = messages.querySelector(".mm-msg.mm-bot:last-child");
     if (lastBot) lastBot.remove();
 
-    bot(data.reply || "🤖 Nessuna risposta disponibile.");
+    bot(data.reply ?? "🤖 Nessuna risposta disponibile al momento.");
 
   } catch (err) {
     console.error("CHAT ERROR:", err);
-
     const lastBot = messages.querySelector(".mm-msg.mm-bot:last-child");
     if (lastBot) lastBot.remove();
-
-    bot("❌ Chat temporaneamente non disponibile. Scrivici a supporto@mewingmarket.it");
+    bot("❌ Il servizio chat non è attivo. Scrivici via email a supporto@mewingmarket.it");
   }
 }
 
 sendBtn.addEventListener("click", sendMessage);
-input.addEventListener("keydown", e => {
-  if (e.key === "Enter") sendMessage();
-});
+input.addEventListener("keydown", e => { if (e.key === "Enter") sendMessage(); });
