@@ -4,7 +4,6 @@
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css');
 
 * { box-sizing: border-box; margin:0; padding:0; }
-
 body {
   font-family:'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   background:#111 url('sfondo.jpg') no-repeat center center fixed;
@@ -123,30 +122,33 @@ footer {
   position: fixed;
   bottom: 20px; right: 20px;
   width:50px; height:50px;
-  background:#0084ff;
-  color:#fff;
+  background:#cc0000;
   border-radius:50%;
   display:flex; align-items:center; justify-content:center;
-  font-size:22px;
   cursor:pointer;
   z-index:9999;
+  box-shadow:0 4px 10px rgba(0,0,0,0.3);
 }
+#mm-chat-btn img {
+  width:80%; height:80%; border-radius:50%;
+}
+
 #mm-chatbox {
   position: fixed;
   bottom:80px; right:20px;
   width:350px; max-width:90%;
   height:450px;
-  background:#fff;
+  background:#1c1c1c;
   border-radius:14px;
-  box-shadow:0 10px 30px rgba(0,0,0,.25);
+  box-shadow:0 10px 30px rgba(0,0,0,.5);
   display:none;
   flex-direction:column;
   z-index:9999;
-  color:#333;
+  color:#fff;
   font-family:system-ui, sans-serif;
 }
 #mm-chat-header {
-  background:#0084ff;
+  background:#cc0000;
   color:#fff;
   padding:12px;
   font-weight:600;
@@ -158,31 +160,37 @@ footer {
   padding:10px;
   overflow-y:auto;
   font-size:14px;
+  color:#eee;
 }
 .mm-msg { margin-bottom:8px; }
-.mm-bot { color:#333; }
-.mm-user { text-align:right; color:#0084ff; }
+.mm-bot { color:#eee; background: rgba(255,255,255,0.05); padding:6px 10px; border-radius:8px; display:inline-block; max-width:85%; }
+.mm-user { text-align:right; color:#cc0000; background: rgba(204,0,0,0.1); padding:6px 10px; border-radius:8px; display:inline-block; max-width:85%; }
 #mm-chat-input {
   display:flex;
   gap:6px;
   padding:8px;
-  border-top:1px solid #ddd;
+  border-top:1px solid #444;
 }
 #mm-chat-input input[type="text"] {
   flex:1;
   padding:6px;
-  border:1px solid #ccc;
+  border:1px solid #444;
   border-radius:6px;
+  background:#222;
+  color:#fff;
+}
+#mm-chat-input input[type="text"]::placeholder {
+  color:#aaa;
 }
 #mm-chat-input button {
   padding:6px 10px;
-  background:#0084ff;
+  background:#cc0000;
   color:#fff;
   border:none;
   border-radius:6px;
   cursor:pointer;
 }
-#mm-chat-input button:hover { background:#006fdd; }
+#mm-chat-input button:hover { background:#ff3300; }
 
 /* =====================
    BANNER COOKIE
@@ -200,6 +208,10 @@ footer {
 }
 #consent-banner p {
   margin:0; font-size:14px;
+  color:#000;
+}
+#consent-banner a {
+  color:#cc0000;
 }
 #consent-banner button {
   margin-top:10px;
