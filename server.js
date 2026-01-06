@@ -110,7 +110,27 @@ app.post("/chat", (req, res) => {
 function handleConversation(req, res, intent, text) {
   const uid = req.uid;
   const state = req.userState.state;
+// =========================
+// PRIORITÀ SOCIAL (match diretto)
+// =========================
+if (
+  text.includes("instagram") ||
+  text.includes("tiktok") ||
+  text.includes("youtube") ||
+  text.includes("facebook") ||
+  text.includes("x ") || text === "x" ||
+  text.includes("twitter")
+) {
+  setState(req.uid, "social");
 
+  if (text.includes("instagram")) return reply(res, socialLinks.instagram);
+  if (text.includes("tiktok")) return reply(res, socialLinks.tiktok);
+  if (text.includes("youtube")) return reply(res, socialLinks.youtube);
+  if (text.includes("facebook")) return reply(res, socialLinks.facebook);
+  if (text.includes("x") || text.includes("twitter")) return reply(res, socialLinks.x);
+
+  return reply(res, socialBloc);
+}
   // --- BLOCCHI DI TESTO PRONTI ---
 
   // HERO – descrizione commerciale
