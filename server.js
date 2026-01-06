@@ -68,29 +68,174 @@ function reply(res, text) {
 }
 
 // =========================
-// INTENT MATCHER
+// INTENT MATCHER ULTRA
 // =========================
-function detectIntent(text) {
-  const t = text.toLowerCase();
-
-  const intents = {
-    hero: ["hero", "prodotto", "guida", "ecosistema"],
-    video: ["video", "anteprima", "presentazione"],
-    acquisto: ["acquista", "comprare", "prezzo", "pagare"],
-    supporto: ["supporto", "assistenza", "problema", "errore", "download", "payhip", "rimborso"],
-    newsletter: ["newsletter", "iscrizione", "email", "aggiornamenti", "disiscrizione"],
-    social: ["social", "instagram", "tiktok", "youtube", "facebook", "x", "twitter", "threads", "linkedin"],
-    sito: ["sito", "website", "pagina", "home"],
-    fallback: ["aiuto", "info", "informazioni", "non so", "boh"]
-  };
-
-  for (const [intent, keys] of Object.entries(intents)) {
-    if (keys.some(k => t.includes(k))) return intent;
-  }
-
-  return "fallback";
+function normalizeText(text) {
+  return text
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // rimuove accenti
+    .replace(/[^a-z0-9àèéìòóùç\s]/gi, " ") // toglie punteggiatura
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
+function detectIntent(rawText) {
+  const t = normalizeText(rawText);
+
+  // Se menziona chiaramente social, forziamo subito "social"
+  if (
+    t.includes("instagram") ||
+    t.includes("tik tok") ||
+    t.includes("tiktok") ||
+    t.includes("you tube") ||
+    t.includes("youtube") ||
+    t.includes("facebook") ||
+    t.includes("meta") ||
+    t.includes("thread") ||
+    t.includes("linkedin") ||
+    t === "x" ||
+    t.includes("twitter") ||
+    t.includes("social")
+  ) {
+    return "social";
+  }
+
+  const intents = {
+    hero: {
+      baseScore: 2,
+      keywords: [
+        "hero",
+        "guida completa",
+        "ecosistema digitale",
+        "prodotto digitale",
+        "direttore operativo",
+        "guida hero",
+        "ecosistema reale",
+        "mewingmarket hero"
+      ]
+    },
+    video: {
+      baseScore: 1,
+      keywords: [
+        "video",
+        "presentazione",
+        "video hero",
+        "anteprima",
+        "video di hero",
+        "guarda il video"
+      ]
+    },
+    acquisto: {
+      baseScore: 2,
+      keywords: [
+        "acquista",
+        "acquisto",
+        "comprare",
+        "compra",
+        "prendere",
+        "voglio hero",
+        "comprare hero",
+        "compra hero",
+        "prezzo",
+        "costo",
+        "costa",
+        "quanto costa",
+        "pagare",
+        "pago",
+        "pagamento",
+        "come pago",
+        "pagare hero",
+        "link acquisto",
+        "checkout"
+      ]
+    },
+    supporto: {
+      baseScore: 1,
+      keywords: [
+        "supporto",
+        "assistenza",
+        "aiuto",
+        "problema",
+        "errore",
+        "non funziona",
+        "download",
+        "scaricare",
+        "file",
+        "pagamento fallito",
+        "paypal",
+        "carta",
+        "rimborso",
+        "refund",
+        "supporto tecnico"
+      ]
+    },
+    newsletter: {
+      baseScore: 1,
+      keywords: [
+        "newsletter",
+        "iscrizione",
+        "iscrivermi",
+        "iscriviti",
+        "email",
+        "aggiornamenti",
+        "novita",
+        "disiscrizione",
+        "disiscrivermi",
+        "annulla iscrizione",
+        "cancellami",
+        "togli newsletter"
+      ]
+    },
+    sito: {
+      baseScore: 1,
+      keywords: [
+        "sito",
+        "sito web",
+        "website",
+        "pagina",
+        "home",
+        "home page",
+        "mewingmarket it",
+        "mewing market it",
+        "vai al sito"
+      ]
+    },
+    fallback: {
+      baseScore: 0,
+      keywords: [
+        "info",
+        "informazioni",
+        "non so",
+        "boh",
+        "spiegami",
+        "cosa fai",
+        "chi sei",
+        "aiuto generico"
+      ]
+    }
+  };
+
+  // punteggio per ogni intent
+  let bestIntent = "fallback";
+  let bestScore = 0;
+
+  for (const [intent, cfg] of Object.entries(intents)) {
+    let score = cfg.baseScore;
+
+    for (const k of cfg.keywords) {
+      if (t.includes(k)) {
+        score += 2; // ogni match pesa
+      }
+    }
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestIntent = intent;
+    }
+  }
+
+  return bestIntent || "fallback";
+}
 // =========================
 // ROUTER PRINCIPALE
 // =========================
