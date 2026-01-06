@@ -1,6 +1,9 @@
 
+// ===============================
+// FUNZIONI UTILI
+// ===============================
 
-// Gestione cookie mm_uid (se non esiste, lo crea lato server, ma qui ci assicuriamo di mandarlo sempre)
+// Recupera cookie (il server crea mm_uid)
 function getCookie(name) {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
@@ -8,49 +11,53 @@ function getCookie(name) {
   return null;
 }
 
-// Elementi base
-const chatBody = document.getElementById("chat-body");
-const chatForm = document.getElementById("chat-form");
-const chatInput = document.getElementById("chat-input");
-
-// Funzione per aggiungere bolle
-function addMessage(text, sender = "bot", isHtml = true) {
+// Aggiunge un messaggio alla chat
+function addMessage(text, sender = "bot") {
+  const box = document.getElementById("mm-chat-messages");
   const bubble = document.createElement("div");
-  bubble.classList.add("bubble", sender === "bot" ? "bot" : "user");
-  if (isHtml) {
-    bubble.innerHTML = text;
-  } else {
-    bubble.innerText = text;
-  }
-  chatBody.appendChild(bubble);
-  chatBody.scrollTop = chatBody.scrollHeight;
+  bubble.classList.add("mm-bubble", sender === "bot" ? "mm-bot" : "mm-user");
+  bubble.innerHTML = text;
+  box.appendChild(bubble);
+  box.scrollTop = box.scrollHeight;
 }
 
-// Messaggio di benvenuto automatico
-window.addEventListener("load", () => {
-  addMessage(
-    "<b>👋 Benvenuto, sono l’assistente di MewingMarket!</b><br>Sono qui per aiutarti con l’acquisto di HERO, il supporto tecnico, la newsletter o qualsiasi informazione sui nostri servizi.<br><br>Scrivi pure la tua domanda: ti accompagno io passo dopo passo.",
-    "bot",
-    true
-  );
+// ===============================
+// CHATBOX APERTURA/CHIUSURA
+// ===============================
+const chatBtn = document.getElementById("mm-chat-btn");
+const chatBox = document.getElementById("mm-chatbox");
+
+chatBtn.addEventListener("click", () => {
+  chatBox.classList.toggle("open");
+
+  // Mostra messaggio di benvenuto solo la prima volta
+  if (!chatBox.dataset.welcomeShown) {
+    addMessage(
+      "<b>👋 Benvenuto, sono l’assistente di MewingMarket!</b><br>Sono qui per aiutarti con l’acquisto di HERO, il supporto tecnico, la newsletter o qualsiasi informazione sui nostri servizi.<br><br>Scrivi pure la tua domanda: ti accompagno io passo dopo passo.",
+      "bot"
+    );
+    chatBox.dataset.welcomeShown = "true";
+  }
 });
 
-// Invio messaggio
-chatForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const message = chatInput.value.trim();
+// ===============================
+// INVIO MESSAGGI
+// ===============================
+const input = document.getElementById("mm-text");
+const sendBtn = document.getElementById("mm-send");
+
+async function sendMessage() {
+  const message = input.value.trim();
   if (!message) return;
 
   // Mostra messaggio utente
-  addMessage(message, "user", false);
-  chatInput.value = "";
+  addMessage(message, "user");
+  input.value = "";
 
   try {
     const response = await fetch("/chat", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify({ message })
     });
@@ -58,11 +65,20 @@ chatForm.addEventListener("submit", async (e) => {
     const data = await response.json();
 
     if (data && data.reply) {
-      addMessage(data.reply, "bot", true);
+      addMessage(data.reply, "bot");
     } else {
-      addMessage("⚠️ Si è verificato un problema nel rispondere. Riprova tra poco.", "bot", false);
+      addMessage("⚠️ Errore imprevisto. Riprova tra poco.", "bot");
     }
   } catch (err) {
-    addMessage("⚠️ Errore di connessione. Controlla la rete e riprova.", "bot", false);
+    addMessage("⚠️ Problema di connessione. Controlla la rete.", "bot");
+  }
+}
+
+sendBtn.addEventListener("click", sendMessage);
+
+input.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    sendMessage();
   }
 });
