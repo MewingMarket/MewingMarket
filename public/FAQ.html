@@ -15,28 +15,6 @@
     .faq-item.active p { display:block; }
     .faq-item i { transition:0.3s; }
     .faq-item.active i { transform:rotate(180deg); }
-
-    /* CHATBOX PICCOLA */
-    #mm-chat-btn {
-      position: fixed; bottom: 20px; right: 20px;
-      background:#0084ff; color:#fff; width:50px; height:50px;
-      border-radius:50%; display:flex; align-items:center; justify-content:center;
-      font-size:20px; cursor:pointer; z-index:9999;
-    }
-    #mm-chatbox {
-      position: fixed; bottom:80px; right:20px; width:300px; max-width:90%;
-      height:400px; background:#fff; border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,.25);
-      display:none; flex-direction:column; z-index:9999; font-family:system-ui, sans-serif;
-    }
-    #mm-chat-header { background:#0084ff; color:#fff; padding:10px; font-weight:600; border-radius:14px 14px 0 0; text-align:center; }
-    #mm-chat-messages { flex:1; padding:10px; overflow-y:auto; font-size:14px; }
-    .mm-msg { margin-bottom:8px; }
-    .mm-bot { color:#333; }
-    .mm-user { text-align:right; color:#0084ff; }
-    #mm-chat-input { display:flex; gap:5px; padding:6px; border-top:1px solid #ddd; }
-    #mm-chat-input input[type="text"] { flex:1; padding:5px; border:1px solid #ccc; border-radius:6px; }
-    #mm-chat-input button { padding:5px 8px; background:#0084ff; color:#fff; border:none; border-radius:6px; cursor:pointer; }
-    #mm-chat-input button:hover { background:#006fdd; }
   </style>
 </head>
 <body>
@@ -45,14 +23,15 @@
   <img src="logo.png" alt="Logo" class="logo">
 </header>
 
+<!-- NAV CORRETTO -->
 <nav>
-  <ul>
-    <li><a href="index.html">Home</a></li>
-    <li><a href="chisiamo.html">Chi Siamo</a></li>
-    <li><a href="contatti.html">Contatti</a></li>
-    <li><a href="dovesiamo.html">Dove Siamo</a></li>
-    <li><a href="FAQ.html" class="active">FAQ</a></li>
-  </ul>
+    <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="chisiamo.html">Chi Siamo</a></li>
+        <li><a href="contatti.html">Contatti</a></li>
+        <li><a href="dovesiamo.html">Dove Siamo</a></li>
+        <li><a href="FAQ.html" class="active">FAQ</a></li>
+    </ul>
 </nav>
 
 <main>
@@ -94,17 +73,6 @@
   </div>
 </main>
 
-<!-- CHATBOX PICCOLA -->
-<div id="mm-chat-btn"><i class="fas fa-comment"></i></div>
-<div id="mm-chatbox">
-  <div id="mm-chat-header">Chat MewingMarket</div>
-  <div id="mm-chat-messages"></div>
-  <div id="mm-chat-input">
-    <input type="text" id="user-input" placeholder="Scrivi qui...">
-    <button id="send-btn">Invia</button>
-  </div>
-</div>
-
 <footer>
   <ul class="footer-social">
     <li><a href="https://www.facebook.com/profile.php?id=61584779793628"><i class="fab fa-facebook"></i></a></li>
@@ -122,7 +90,7 @@
   </p>
 </footer>
 
-<script src="chat.js"></script>
+<!-- SCRIPT FAQ E CHAT -->
 <script>
   // Fisarmonica FAQ
   const items = document.querySelectorAll(".faq-item");
@@ -131,13 +99,7 @@
       item.classList.toggle("active");
     });
   });
-
-  // Chatbox toggle
-  const launcher = document.getElementById("mm-chat-btn");
-  const chatbox = document.getElementById("mm-chatbox");
-  launcher.onclick = () => {
-    chatbox.style.display = chatbox.style.display === "flex" ? "none" : "flex";
-  };
 </script>
+<script src="chat.js"></script> <!-- Chatbox -->
 </body>
 </html>
