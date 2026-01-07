@@ -1,18 +1,5 @@
-User-agent: *
-Allow: /
 
-Sitemap: https://www.mewingmarket.it/sitemap.xmlRewriteEngine On
-
-# Forza HTTPS
-RewriteCond %{HTTPS} off
-RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
-
-# Forza www
-RewriteCond %{HTTP_HOST} ^mewingmarket\.it [NC]
-RewriteRule ^(.*)$ https://www.mewingmarket.it/$1 [L,R=301]
-
-# Protezione base
-Options -IndexesRewriteEngine On
+RewriteEngine On
 
 # Forza HTTPS
 RewriteCond %{HTTPS} off
