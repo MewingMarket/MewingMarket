@@ -1,12 +1,48 @@
+# Attiva mod_rewrite
 RewriteEngine On
 
-# Forza HTTPS
+############################################
+# 1. FORZA HTTPS
+############################################
 RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-# Forza www
-RewriteCond %{HTTP_HOST} ^mewingmarket\.it [NC]
+############################################
+# 2. FORZA WWW (RISOLVE IL PROBLEMA GOOGLE)
+############################################
+RewriteCond %{HTTP_HOST} !^www\.mewingmarket\.it$ [NC]
 RewriteRule ^(.*)$ https://www.mewingmarket.it/$1 [L,R=301]
 
-# Protezione base
+############################################
+# 3. BLOCCA LISTING DELLE CARTELLE
+############################################
 Options -Indexes
+
+############################################
+# 4. COMPRESSIONE (SEO + PERFORMANCE)
+############################################
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+</IfModule>
+
+############################################
+# 5. CACHE STATICI (IMMAGINI, CSS, JS)
+############################################
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType image/jpg "access plus 30 days"
+  ExpiresByType image/jpeg "access plus 30 days"
+  ExpiresByType image/png "access plus 30 days"
+  ExpiresByType image/gif "access plus 30 days"
+  ExpiresByType image/svg+xml "access plus 30 days"
+  ExpiresByType text/css "access plus 7 days"
+  ExpiresByType application/javascript "access plus 7 days"
+</IfModule>
+
+############################################
+# 6. PROTEZIONE BASE
+############################################
+<FilesMatch "\.(htaccess|htpasswd|ini|log|env)$">
+  Order Allow,Deny
+  Deny from all
+</FilesMatch>
