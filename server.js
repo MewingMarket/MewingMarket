@@ -4,7 +4,25 @@ import cookieParser from "cookie-parser";
 import path from "path";
 
 const app = express();
-app.disable("x-powered-by");
+app.disable("x-powered-by");// =========================
+// REDIRECT SEO (HTTPS + WWW)
+// =========================
+app.use((req, res, next) => {
+  const proto = req.headers["x-forwarded-proto"];
+  const host = req.headers.host;
+
+  // Forza HTTPS
+  if (proto !== "https") {
+    return res.redirect(301, `https://${host}${req.url}`);
+  }
+
+  // Forza www
+  if (!host.startsWith("www.")) {
+    return res.redirect(301, `https://www.${host}${req.url}`);
+  }
+
+  next();
+});
 // =========================
 // CONFIGURAZIONE BASE
 // =========================
