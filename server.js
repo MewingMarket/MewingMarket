@@ -15,7 +15,9 @@ app.use((req, res, next) => {
   if (proto !== "https") {
     return res.redirect(301, `https://${host}${req.url}`);
   }
-
+if (req.hostname === "mewingmarket.it") {
+  return res.redirect(301, `https://www.mewingmarket.it${req.url}`);
+}
   // Forza www
   if (!host.startsWith("www.")) {
     return res.redirect(301, `https://www.${host}${req.url}`);
