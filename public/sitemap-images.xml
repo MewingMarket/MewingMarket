@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+
+  <url>
+    <loc>https://www.mewingmarket.it/</loc>
+    <image:image>
+      <image:loc>https://www.mewingmarket.it/logo.png</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://www.mewingmarket.it/logo.svg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://www.mewingmarket.it/sfondo.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://www.mewingmarket.it/chat-icon.png</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://www.mewingmarket.it/apple-touch-icon.png</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://www.mewingmarket.it/favicon-96x96.png</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://www.mewingmarket.it/web-app-manifest-192x192.png</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://www.mewingmarket.it/web-app-manifest-512x512.png</image:loc>
+    </image:image>
+  </url>
+
+</urlset>
