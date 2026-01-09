@@ -1,33 +1,52 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
-
   <url>
-    <loc>https://www.mewingmarket.it/</loc>
+    <loc>https://www.mewingmarket.it</loc>
     <image:image>
-      <image:loc>https://www.mewingmarket.it/logo.png</image:loc>
-    </image:image>
-    <image:image>
-      <image:loc>https://www.mewingmarket.it/logo.svg</image:loc>
-    </image:image>
-    <image:image>
-      <image:loc>https://www.mewingmarket.it/sfondo.jpg</image:loc>
-    </image:image>
-    <image:image>
-      <image:loc>https://www.mewingmarket.it/chat-icon.png</image:loc>
-    </image:image>
-    <image:image>
-      <image:loc>https://www.mewingmarket.it/apple-touch-icon.png</image:loc>
-    </image:image>
-    <image:image>
-      <image:loc>https://www.mewingmarket.it/favicon-96x96.png</image:loc>
-    </image:image>
-    <image:image>
-      <image:loc>https://www.mewingmarket.it/web-app-manifest-192x192.png</image:loc>
-    </image:image>
-    <image:image>
-      <image:loc>https://www.mewingmarket.it/web-app-manifest-512x512.png</image:loc>
+      <image:loc>https://i.ibb.co/qLbQby5f/Costruisci-il-Tuo-Ecosistema-Digitale-Strumenti-Costi-e-la-Guida-per-Espan-20251222-211740-0000.png</image:loc>
     </image:image>
   </url>
-
+  <url>
+    <loc>https://www.mewingmarket.it</loc>
+    <image:image>
+      <image:loc>https://i.ibb.co/gLsf0QYN/woorkbook.png</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.mewingmarket.it</loc>
+    <image:image>
+      <image:loc>https://i.ibb.co/Wv8QjTDv/analisi-competenze.png</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.mewingmarket.it</loc>
+    <image:image>
+      <image:loc>https://i.ibb.co/5WJHpJT2/Foto-copertina-guida-AI.png</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.mewingmarket.it</loc>
+    <image:image>
+      <image:loc>https://i.ibb.co/wFrZjdCb/plannercopertina.png</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.mewingmarket.it</loc>
+    <image:image>
+      <image:loc>https://i.ibb.co/sphKGjr6/copertina-ebook.jpg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.mewingmarket.it</loc>
+    <image:image>
+      <image:loc>https://i.ibb.co/GvyJv676/foto-copertina-sopravvivenza-2025.jpg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.mewingmarket.it</loc>
+    <image:image>
+      <image:loc>https://i.ibb.co/5WQ4nwSC/AZtc-Lg-Nd-Quaz-QCsc6f6-Mw-Q-AZtc-Lg-Ndr-Deq-Io7aak-BHPA-20251226-204142-0000.jpg</image:loc>
+    </image:image>
+  </url>
 </urlset>
