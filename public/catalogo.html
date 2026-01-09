@@ -4,58 +4,72 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Catalogo Prodotti Digitali – MewingMarket</title>
+
+  <meta name="description" content="Catalogo completo dei prodotti digitali MewingMarket: guide, workbook, planner, strumenti AI e risorse pratiche per il digitale moderno.">
+  <meta name="robots" content="index, follow">
+
+  <meta property="og:title" content="Catalogo Prodotti Digitali – MewingMarket">
+  <meta property="og:description" content="Esplora tutte le guide, i workbook e gli strumenti digitali creati per aiutarti a crescere nel digitale.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://mewingmarket.com/catalogo.html">
+  <meta property="og:image" content="https://mewingmarket.com/cover.jpg">
+
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<h1 style="text-align:center; margin-top:40px;">Catalogo Prodotti Digitali</h1>
+<header>
+  <h1>Catalogo Prodotti Digitali</h1>
+  <p>Strumenti pratici, guide e risorse per costruire e far crescere il tuo ecosistema digitale.</p>
+</header>
 
-<div id="catalogo" class="catalogo-grid"></div>
+<section id="catalogo" class="catalogo-grid"></section>
 
 <script>
-fetch("products.json")
-  .then(res => res.json())
-  .then(data => {
-    const container = document.getElementById("catalogo");
+// Carica products.json e genera il catalogo + schema.org dinamico
+fetch('products.json')
+  .then(response => response.json())
+  .then(products => {
+    const container = document.getElementById('catalogo');
+    const schemaItems = [];
 
-    data.forEach(prod => {
-      const card = document.createElement("div");
-      card.className = "product-card";
-
-      const linkFinale = prod.slug === "hero"
-        ? "hero.html"
-        : prod.link;
+    products.forEach((product, index) => {
+      const card = document.createElement('div');
+      card.className = 'product-card';
 
       card.innerHTML = `
-        <img src="${prod.immagine}" class="product-img">
-        <h2>${prod.titolo}</h2>
-        <p>${prod.descrizioneBreve}</p>
-        <p class="prezzo">${prod.prezzo}€</p>
-        <a href="${linkFinale}" class="btn-acquista">Scopri il prodotto</a>
+        <img src="${product.Immagine}" alt="${product.Titolo}" loading="lazy">
+        <h2>${product.TitoloBreve}</h2>
+        <p>${product.DescrizioneBreve}</p>
+        <p class="prezzo">€${product.Prezzo}</p>
+        <a href="${product.Link}" class="btn">Scopri di più</a>
       `;
 
       container.appendChild(card);
+
+      schemaItems.push({
+        "@type": "ListItem",
+        "position": index + 1,
+        "url": product.Link,
+        "name": product.Titolo
+      });
     });
+
+    // Inserisci schema.org dinamico
+    const schema = {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      "name": "Catalogo Prodotti Digitali MewingMarket",
+      "itemListElement": schemaItems
+    };
+
+    const script = document.createElement('script');
+    script.type = "application/ld+json";
+    script.textContent = JSON.stringify(schema);
+    document.head.appendChild(script);
   });
 </script>
-
-<footer>
-  <ul class="social-grid">
-    <li><a href="https://www.facebook.com/profile.php?id=61584779793628"><i class="fab fa-facebook"></i></a></li>
-    <li><a href="https://www.instagram.com/mewingmarket?igsh=eGZ2MHE0bTFtbmJt"><i class="fab fa-instagram"></i></a></li>
-    <li><a href="https://tiktok.com/@mewingmarket"><i class="fab fa-tiktok"></i></a></li>
-    <li><a href="https://x.com/mewingm8"><i class="fab fa-x-twitter"></i></a></li>
-    <li><a href="https://www.youtube.com/@mewingmarket2"><i class="fab fa-youtube"></i></a></li>
-    <li><a href="https://www.linkedin.com/in/simone-griseri-5368a7394"><i class="fab fa-linkedin"></i></a></li>
-    <li><a href="https://www.threads.com/@mewingmarket"><i class="fa-solid fa-at"></i></a></li>
-  </ul>
-  <p style="font-size:14px; color:#cc0000; margin:0; padding:12px 0; text-align:center; line-height:1.5;">
-    <strong>© 2025 MewingMarket</strong><br>
-    Prodotti digitali creati con Intelligenza Artificiale.<br>
-    Tutti i diritti riservati.
-  </p>
-</footer>
 
 </body>
 </html>
