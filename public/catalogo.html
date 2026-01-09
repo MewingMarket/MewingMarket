@@ -17,17 +17,21 @@
   <link rel="stylesheet" href="style.css">
 </head>
 
-<body>    <img src="logo.png" alt="Logo" class="logo">
+<body>
+
+<img src="logo.png" alt="Logo" class="logo">
+
 <nav>
     <ul>
         <li><a href="index.html">Home</a></li>
-        <li><a href="catalogo.html">Catalogo</a></li>
-        <li><a href="chisiamo.html" class="active">Chi Siamo</a></li>
+        <li><a href="catalogo.html" class="active">Catalogo</a></li>
+        <li><a href="chisiamo.html">Chi Siamo</a></li>
         <li><a href="contatti.html">Contatti</a></li>
         <li><a href="dovesiamo.html">Dove Siamo</a></li>
         <li><a href="FAQ.html">FAQ</a></li>
     </ul>
-</nav> 
+</nav>
+
 <header>
   <h1>Catalogo Prodotti Digitali</h1>
   <p>Strumenti pratici, guide e risorse per costruire e far crescere il tuo ecosistema digitale.</p>
@@ -37,7 +41,7 @@
 
 <script>
 // Carica products.json e genera il catalogo + schema.org dinamico
-fetch('products.json')
+fetch('/products.json')
   .then(response => response.json())
   .then(products => {
     const container = document.getElementById('catalogo');
