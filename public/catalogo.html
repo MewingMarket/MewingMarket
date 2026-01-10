@@ -106,6 +106,39 @@ fetch('/products.json')
 
   });
 </script>
+<script>
+document.addEventListener("click", function(e) {
+  const btn = e.target.closest(".btn, .btn-acquista");
+  if (!btn) return;
 
+  const card = e.target.closest(".product-card");
+  const isProductPage = document.getElementById("title") !== null;
+
+  let record = {
+    timestamp: new Date().toLocaleString(),
+    device: /Mobi|Android/i.test(navigator.userAgent) ? "mobile" : "desktop",
+    page: location.pathname
+  };
+
+  if (card) {
+    record.titolo = card.querySelector("h2")?.textContent || "";
+    record.slug = card.dataset.slug || "";
+    record.categoria = card.dataset.cat || "";
+    record.prezzo = card.querySelector(".prezzo")?.textContent || "";
+    record.link = btn.href;
+  }
+
+  if (isProductPage) {
+    record.titolo = document.getElementById("title").textContent;
+    record.slug = new URLSearchParams(location.search).get("slug");
+    record.prezzo = document.getElementById("price").textContent;
+    record.link = document.getElementById("payhip").href;
+  }
+
+  let logs = JSON.parse(localStorage.getItem("clickLogs") || "[]");
+  logs.push(record);
+  localStorage.setItem("clickLogs", JSON.stringify(logs));
+});
+</script>
 </body>
 </html>
