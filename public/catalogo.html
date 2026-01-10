@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Catalogo Prodotti Digitali – MewingMarket</title><link rel="canonical" href="https://www.mewingmarket.it/catalogo.html">
+
+  <title>Catalogo Prodotti Digitali – MewingMarket</title>
+  <link rel="canonical" href="https://www.mewingmarket.it/catalogo.html">
 
   <meta name="description" content="Catalogo completo dei prodotti digitali MewingMarket: guide, workbook, planner, strumenti AI e risorse pratiche per il digitale moderno.">
   <meta name="robots" content="index, follow">
@@ -11,8 +13,8 @@
   <meta property="og:title" content="Catalogo Prodotti Digitali – MewingMarket">
   <meta property="og:description" content="Esplora tutte le guide, i workbook e gli strumenti digitali creati per aiutarti a crescere nel digitale.">
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://mewingmarket.com/catalogo.html">
-  <meta property="og:image" content="https://mewingmarket.com/cover.jpg">
+  <meta property="og:url" content="https://www.mewingmarket.it/catalogo.html">
+  <meta property="og:image" content="https://www.mewingmarket.it/logo.png">
 
   <link rel="stylesheet" href="style.css">
 </head>
@@ -40,14 +42,16 @@
 <section id="catalogo" class="catalogo-grid"></section>
 
 <script>
-// Carica products.json e genera il catalogo + schema.org dinamico
+// Carica products.json e genera catalogo + schema.org dinamico
 fetch('/products.json')
   .then(response => response.json())
   .then(products => {
     const container = document.getElementById('catalogo');
     const schemaItems = [];
+    const productSchemas = [];
 
     products.forEach((product, index) => {
+      // CARD HTML
       const card = document.createElement('div');
       card.className = 'product-card';
 
@@ -61,20 +65,37 @@ fetch('/products.json')
 
       container.appendChild(card);
 
+      // ITEMLIST
       schemaItems.push({
         "@type": "ListItem",
         "position": index + 1,
         "url": product.Link,
         "name": product.Titolo
       });
+
+      // PRODUCT SCHEMA COMPLETO
+      productSchemas.push({
+        "@type": "Product",
+        "name": product.Titolo,
+        "image": product.Immagine,
+        "description": product.DescrizioneBreve,
+        "offers": {
+          "@type": "Offer",
+          "price": product.Prezzo,
+          "priceCurrency": "EUR",
+          "availability": "https://schema.org/InStock",
+          "url": product.Link
+        }
+      });
     });
 
-    // Inserisci schema.org dinamico
+    // SCHEMA.ORG COMPLETO
     const schema = {
       "@context": "https://schema.org",
       "@type": "ItemList",
       "name": "Catalogo Prodotti Digitali MewingMarket",
-      "itemListElement": schemaItems
+      "itemListElement": schemaItems,
+      "itemList": productSchemas
     };
 
     const script = document.createElement('script');
@@ -84,22 +105,23 @@ fetch('/products.json')
   });
 </script>
 
-    <footer>
-        <ul class="footer-social">
-            <li><a href="https://www.facebook.com/profile.php?id=61584779793628"><i class="fab fa-facebook"></i></a></li>
-            <li><a href="https://www.instagram.com/mewingmarket?igsh=eGZ2MHE0bTFtbmJt"><i class="fab fa-instagram"></i></a></li>
-            <li><a href="https://tiktok.com/@mewingmarket"><i class="fab fa-tiktok"></i></a></li>
-            <li><a href="https://x.com/mewingm8"><i class="fab fa-x-twitter"></i></a></li>
-            <li><a href="https://www.youtube.com/@mewingmarket2"><i class="fab fa-youtube"></i></a></li>
-            <li><a href="https://www.linkedin.com/in/simone-griseri-5368a7394"><i class="fab fa-linkedin"></i></a></li>
-            <li><a href="https://www.threads.com/@mewingmarket"><i class="fa-solid fa-at"></i></a></li>
-        </ul>
+<footer>
+    <ul class="footer-social">
+        <li><a href="https://www.facebook.com/profile.php?id=61584779793628"><i class="fab fa-facebook"></i></a></li>
+        <li><a href="https://www.instagram.com/mewingmarket?igsh=eGZ2MHE0bTFtbmJt"><i class="fab fa-instagram"></i></a></li>
+        <li><a href="https://tiktok.com/@mewingmarket"><i class="fab fa-tiktok"></i></a></li>
+        <li><a href="https://x.com/mewingm8"><i class="fab fa-x-twitter"></i></a></li>
+        <li><a href="https://www.youtube.com/@mewingmarket2"><i class="fab fa-youtube"></i></a></li>
+        <li><a href="https://www.linkedin.com/in/simone-griseri-5368a7394"><i class="fab fa-linkedin"></i></a></li>
+        <li><a href="https://www.threads.com/@mewingmarket"><i class="fa-solid fa-at"></i></a></li>
+    </ul>
 
-        <p style="font-size:14px; color:#cc0000; margin:0; padding:12px 0; text-align:center; line-height:1.5;">
-            <strong>© 2025 MewingMarket</strong><br>
-            Prodotti digitali creati con Intelligenza Artificiale.<br>
-            Tutti i diritti riservati.
-        </p>
-    </footer>
+    <p style="font-size:14px; color:#cc0000; margin:0; padding:12px 0; text-align:center; line-height:1.5;">
+        <strong>© 2025 MewingMarket</strong><br>
+        Prodotti digitali creati con Intelligenza Artificiale.<br>
+        Tutti i diritti riservati.
+    </p>
+</footer>
+
 </body>
 </html>
