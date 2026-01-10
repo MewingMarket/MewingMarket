@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Tracking Prodotti – MewingMarket</title>
+<style>
+body { font-family: Arial; padding: 20px; }
+table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+th, td { border: 1px solid #ccc; padding: 8px; }
+th { background: #eee; }
+</style>
+</head>
+<body>
+
+<h1>Tracking Click Prodotti</h1>
+<p>Dati raccolti automaticamente dal sito.</p>
+
+<table>
+<thead>
+<tr>
+  <th>Data</th>
+  <th>Titolo</th>
+  <th>Slug</th>
+  <th>Prezzo</th>
+  <th>Link</th>
+  <th>Device</th>
+  <th>Pagina</th>
+</tr>
+</thead>
+<tbody id="logTable"></tbody>
+</table>
+
+<script>
+const logs = JSON.parse(localStorage.getItem("clickLogs") || "[]");
+const table = document.getElementById("logTable");
+
+logs.forEach(log => {
+  const row = document.createElement("tr");
+  row.innerHTML = `
+    <td>${log.timestamp}</td>
+    <td>${log.titolo}</td>
+    <td>${log.slug}</td>
+    <td>${log.prezzo}</td>
+    <td><a href="${log.link}" target="_blank">Apri</a></td>
+    <td>${log.device}</td>
+    <td>${log.page}</td>
+  `;
+  table.appendChild(row);
+});
+</script>
+
+</body>
+</html>
