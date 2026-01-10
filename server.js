@@ -2,29 +2,33 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import path from "path";
+import fs from "fs";
 
 const app = express();
-app.disable("x-powered-by");// =========================
+app.disable("x-powered-by");
+
+// =========================
 // REDIRECT SEO (HTTPS + WWW)
 // =========================
 app.use((req, res, next) => {
   const proto = req.headers["x-forwarded-proto"];
   const host = req.headers.host;
 
-  // Forza HTTPS
   if (proto !== "https") {
     return res.redirect(301, `https://${host}${req.url}`);
   }
-if (req.hostname === "mewingmarket.it") {
-  return res.redirect(301, `https://www.mewingmarket.it${req.url}`);
-}
-  // Forza www
+
+  if (req.hostname === "mewingmarket.it") {
+    return res.redirect(301, `https://www.mewingmarket.it${req.url}`);
+  }
+
   if (!host.startsWith("www.")) {
     return res.redirect(301, `https://www.${host}${req.url}`);
   }
 
   next();
 });
+
 // =========================
 // CONFIGURAZIONE BASE
 // =========================
@@ -36,8 +40,7 @@ app.use(express.static(path.join(process.cwd(), "public")));
 // =========================
 // MEMORIA RAM PER UTENTI
 // =========================
-const userStates = {}; 
-// struttura: { mm_uid: { state: "menu", lastIntent: null, data: {} } }
+const userStates = {};
 
 // =========================
 // GENERATORE ID UTENTE
@@ -73,9 +76,23 @@ app.use((req, res, next) => {
   req.uid = uid;
   req.userState = userStates[uid];
   next();
-});
-
+});// =========================
+// CARICAMENTO CATALOGO DINAMICO
 // =========================
+let PRODUCTS = [];
+
+function loadProducts() {
+  try {
+    const raw = fs.readFileSync("./public/products.json", "utf8");
+    PRODUCTS = JSON.parse(raw);
+    console.log("Catalogo aggiornato:", PRODUCTS.length, "prodotti");
+  } catch (err) {
+    console.error("Errore caricamento products.json", err);
+  }
+}
+
+loadProducts();
+setInterval(loadProducts, 60000);// =========================
 // FUNZIONI DI SUPPORTO
 // =========================
 function setState(uid, newState) {
@@ -86,9 +103,6 @@ function reply(res, text) {
   res.json({ reply: text });
 }
 
-// =========================
-// NORMALIZZAZIONE TESTO
-// =========================
 function normalize(text) {
   return text
     .toLowerCase()
@@ -98,78 +112,89 @@ function normalize(text) {
     .trim();
 }
 
-// =========================
-// INTENT MATCHER ULTRA 3.0
+function findProduct(query) {
+  const t = normalize(query);
+  return PRODUCTS.find(p =>
+    normalize(p.Titolo).includes(t) ||
+    normalize(p.Slug).includes(t) ||
+    normalize(p.Categoria).includes(t)
+  );
+}
+
+const MAIN_PRODUCT_SLUG = "guida-ecosistema-digitale-reale";
+
+function productReply(p) {
+  let base = `
+📘 *${p.Titolo}*
+
+${p.DescrizioneBreve}
+
+💰 Prezzo: ${p.Prezzo}
+👉 Acquista ora  
+${p.Link}
+`;
+
+  if (p.Slug === MAIN_PRODUCT_SLUG) {
+    base += `
+🎥 Guarda il video  
+https://youtube.com/shorts/YoOXWUajbQc?feature=shared
+`;
+  }
+
+  return base + "\nVuoi sapere altro su questo prodotto?";
+}// =========================
+// INTENT MATCHER
 // =========================
 function detectIntent(rawText) {
   const t = normalize(rawText);
 
-  // PRIORITÀ ASSOLUTA SOCIAL
+  // SOCIAL
   if (
-    t.includes("instagram") ||
-    t.includes("tiktok") ||
-    t.includes("tik tok") ||
-    t.includes("youtube") ||
-    t.includes("you tube") ||
-    t.includes("facebook") ||
-    t.includes("threads") ||
-    t.includes("linkedin") ||
-    t === "x" ||
-    t.includes("twitter") ||
-    t.includes("social")
+    t.includes("instagram") || t.includes("tiktok") || t.includes("youtube") ||
+    t.includes("facebook") || t.includes("threads") || t.includes("linkedin") ||
+    t === "x" || t.includes("twitter") || t.includes("social")
   ) {
     return { intent: "social", sub: null };
   }
 
-  // ACQUISTO — sotto-intenti
-  if (t.includes("quanto costa") || t.includes("prezzo") || t.includes("costo") || t.includes("costa")) {
-    return { intent: "acquisto", sub: "prezzo" };
-  }
-  if (t.includes("come pago") || t.includes("pagamento") || t.includes("pago") || t.includes("pagare")) {
-    return { intent: "acquisto", sub: "pagamento" };
-  }
-  if (t.includes("paypal")) {
-    return { intent: "acquisto", sub: "paypal" };
-  }
-  if (t.includes("carta")) {
-    return { intent: "acquisto", sub: "carta" };
-  }
-  if (t.includes("acquista") || t.includes("comprare") || t.includes("compra") || t.includes("checkout")) {
-    return { intent: "acquisto", sub: "checkout" };
-  }
-  if (t.includes("hero")) {
-    return { intent: "acquisto", sub: "hero" };
+  // CATALOGO
+  if (t.includes("catalogo") || t.includes("prodotti") || t.includes("lista")) {
+    return { intent: "catalogo", sub: null };
   }
 
-  // SUPPORTO — sotto-intenti
-  if (t.includes("download") || t.includes("scaricare") || t.includes("file") || t.includes("zip")) {
-    return { intent: "supporto", sub: "download" };
+  // CONSIGLIO
+  if (t.includes("consigliami") || t.includes("consiglio") || t.includes("cosa compro")) {
+    return { intent: "consiglio", sub: null };
   }
-  if (t.includes("errore") || t.includes("non funziona") || t.includes("problema") || t.includes("bug") || t.includes("crash")) {
-    return { intent: "supporto", sub: "errore" };
+
+  // CATEGORIA
+  for (const p of PRODUCTS) {
+    if (t.includes(normalize(p.Categoria))) {
+      return { intent: "categoria", sub: p.Categoria };
+    }
   }
-  if (t.includes("pagamento fallito") || t.includes("transazione") || t.includes("rifiutata") || t.includes("rifiutato")) {
-    return { intent: "supporto", sub: "pagamento_fallito" };
+
+  // PRODOTTO SPECIFICO
+  for (const p of PRODUCTS) {
+    if (t.includes(normalize(p.Titolo)) || t.includes(normalize(p.Slug))) {
+      return { intent: "prodotto", sub: p.Slug };
+    }
   }
-  if (t.includes("rimborso") || t.includes("refund")) {
-    return { intent: "supporto", sub: "rimborso" };
-  }
-  if (t.includes("email") || t.includes("mail") || t.includes("ricevuta") || t.includes("conferma")) {
-    return { intent: "supporto", sub: "email" };
-  }
-  if (t.includes("file danneggiato") || t.includes("corrotto") || t.includes("zip non si apre")) {
-    return { intent: "supporto", sub: "file_danneggiato" };
-  }
-  if (t.includes("supporto") || t.includes("assistenza") || t.includes("aiuto") || t.includes("help")) {
-    return { intent: "supporto", sub: "generale" };
+
+  // SUPPORTO
+  if (t.includes("download") || t.includes("errore") || t.includes("rimborso") ||
+      t.includes("email") || t.includes("file") || t.includes("pagamento")) {
+    return { intent: "supporto", sub: null };
   }
 
   // NEWSLETTER
-  if (t.includes("newsletter") || t.includes("iscrizione") || t.includes("iscrivermi")) {
-    return { intent: "newsletter", sub: "iscrizione" };
+  if (t.includes("newsletter") || t.includes("iscrizione")) {
+    return { intent: "newsletter", sub: null };
   }
-  if (t.includes("disiscrizione") || t.includes("annulla") || t.includes("cancellami")) {
-    return { intent: "newsletter", sub: "disiscrizione" };
+
+  // VIDEO
+  if (t.includes("video")) {
+    return { intent: "video", sub: null };
   }
 
   // SITO
@@ -177,361 +202,148 @@ function detectIntent(rawText) {
     return { intent: "sito", sub: null };
   }
 
-  // VIDEO
-  if (t.includes("video") || t.includes("anteprima")) {
-    return { intent: "video", sub: null };
-  }
-
-  // HERO (informazioni generali)
-  if (t.includes("hero")) {
-    return { intent: "hero", sub: null };
-  }
-
-  // FALLBACK
   return { intent: "fallback", sub: null };
-}
-
-// =========================
-// ROUTER PRINCIPALE
-// =========================
-app.post("/chat", (req, res) => {
-  const { message } = req.body;
-  if (!message || message.trim() === "") {
-    return reply(res, "Scrivi un messaggio così posso aiutarti.");
-  }
-
-  const uid = req.uid;
-  const { intent, sub } = detectIntent(message);
-
-  setState(uid, intent);
-
-  return handleConversation(req, res, intent, sub);
-});
-// =========================
-// LINK UFFICIALI (CTA + link sotto)
+}// =========================
+// LINK UFFICIALI
 // =========================
 const LINKS = {
-  instagram: `👉 Vai su Instagram  
-https://www.instagram.com/mewingmarket?igsh=eGZ2MHE0bTFtbmJt`,
-
-  tiktok: `👉 Vai su TikTok  
-https://tiktok.com/@mewingmarket`,
-
-  youtube: `👉 Vai su YouTube  
-https://www.youtube.com/@mewingmarket2`,
-
-  facebook: `👉 Vai su Facebook  
-https://www.facebook.com/profile.php?id=61584779793628`,
-
-  x: `👉 Vai su X  
-https://x.com/mewingm8`,
-
-  threads: `👉 Vai su Threads  
-https://www.threads.net/@mewingmarket`,
-
-  linkedin: `👉 Vai su LinkedIn  
-https://www.linkedin.com/in/simone-griseri-5368a7394?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app`,
-
-  sito: `👉 Vai al sito  
-https://www.mewingmarket.it`,
-
-  store: `👉 Vai allo store  
-https://payhip.com/MewingMarket`,
-
-  hero: `👉 Acquista HERO  
-https://payhip.com/b/LhqQT`,
-
-  video: `👉 Guarda il video di HERO  
-https://youtube.com/shorts/YoOXWUajbQc?feature=shared`,
-
-  newsletter: `👉 Iscriviti alla newsletter  
-https://mewingmarket.it/iscrizione.html`,
-
-  disiscrizione: `👉 Annulla iscrizione newsletter  
-https://mewingmarket.it/disiscriviti.html`
+  instagram: "https://www.instagram.com/mewingmarket",
+  tiktok: "https://tiktok.com/@mewingmarket",
+  youtube: "https://www.youtube.com/@mewingmarket2",
+  facebook: "https://www.facebook.com/profile.php?id=61584779793628",
+  x: "https://x.com/mewingm8",
+  threads: "https://www.threads.net/@mewingmarket",
+  linkedin: "https://www.linkedin.com/in/simone-griseri-5368a7394",
+  sito: "https://www.mewingmarket.it",
+  store: "https://payhip.com/MewingMarket",
+  newsletter: "https://mewingmarket.it/iscrizione.html",
+  disiscrizione: "https://mewingmarket.it/disiscriviti.html"
 };
 
 // =========================
-// RISPOSTE SPECIFICHE — ACQUISTO
+// SUPPORTO
 // =========================
-const ACQUISTO = {
-  prezzo: `
-Il prezzo di HERO è 30 euro.
+const SUPPORTO = `
+📞 *Supporto MewingMarket*
 
-👉 Acquista HERO  
-https://payhip.com/b/LhqQT
-`,
+📧 Email: supporto@mewingmarket.it  
+📱 WhatsApp: 352 026 6660
 
-  pagamento: `
-Puoi pagare HERO con PayPal o carta di credito tramite Payhip.
-
-👉 Acquista HERO  
-https://payhip.com/b/LhqQT
-`,
-
-  paypal: `
-Sì, puoi pagare HERO con PayPal.
-
-👉 Acquista HERO  
-https://payhip.com/b/LhqQT
-`,
-
-  carta: `
-Sì, puoi pagare HERO con carta di credito o debito.
-
-👉 Acquista HERO  
-https://payhip.com/b/LhqQT
-`,
-
-  checkout: `
-Perfetto! Puoi acquistare HERO direttamente qui:
-
-👉 Acquista HERO  
-https://payhip.com/b/LhqQT
-`,
-
-  hero: `
-🔥 HERO è il tuo direttore operativo digitale: ti mostra come funziona davvero un ecosistema di prodotti digitali nel 2025.
-
-Vuoi acquistarlo o vuoi vedere il video?
-
-👉 Acquista HERO  
-https://payhip.com/b/LhqQT
-
-👉 Guarda il video di HERO  
-https://youtube.com/shorts/YoOXWUajbQc?feature=shared
-`
-};
-
+Rispondiamo entro poche ore.
+`;// =========================
+// GESTIONE CONVERSAZIONE
 // =========================
-// RISPOSTE SPECIFICHE — SUPPORTO
-// =========================
-const SUPPORTO = {
-  download: `
-Per scaricare HERO, dopo l’acquisto ricevi un link immediato via email da Payhip.
+function handleConversation(req, res, intent, sub) {
 
-Se hai problemi con il download, contattaci qui:
-📧 supporto@mewingmarket.it  
-📱 WhatsApp Business: 352 026 6660
+  // SOCIAL
+  if (intent === "social") {
+    return reply(res, `
+🌐 Social MewingMarket
 
-Ti rispondiamo entro poche ore.
-`,
+Instagram: ${LINKS.instagram}
+TikTok: ${LINKS.tiktok}
+YouTube: ${LINKS.youtube}
+Facebook: ${LINKS.facebook}
+X: ${LINKS.x}
+Threads: ${LINKS.threads}
+LinkedIn: ${LINKS.linkedin}
+`);
+  }
 
-  errore: `
-Mi dispiace per il problema, ti aiuto subito.
+  // CATALOGO
+  if (intent === "catalogo") {
+    let out = "📚 *Catalogo MewingMarket*\n\n";
+    for (const p of PRODUCTS) {
+      out += `• *${p.Titolo}* — ${p.Prezzo}\n${p.Link}\n\n`;
+    }
+    return reply(res, out);
+  }
 
-Scrivici cosa succede qui:
-📧 supporto@mewingmarket.it  
-📱 WhatsApp Business: 352 026 6660
+  // CONSIGLIO
+  if (intent === "consiglio") {
+    const p = PRODUCTS[0];
+    return reply(res, `
+Ti consiglio questo:
 
-Ti rispondiamo entro poche ore.
-`,
+${productReply(p)}
+`);
+  }
 
-  pagamento_fallito: `
-Se il pagamento non va a buon fine, puoi riprovare con PayPal o carta.
+  // CATEGORIA
+  if (intent === "categoria") {
+    const list = PRODUCTS.filter(p => p.Categoria === sub);
+    let out = `📂 *Categoria: ${sub}*\n\n`;
+    for (const p of list) {
+      out += `• *${p.Titolo}* — ${p.Prezzo}\n${p.Link}\n\n`;
+    }
+    return reply(res, out);
+  }
 
-Se il problema continua, contattaci:
-📧 supporto@mewingmarket.it  
-📱 WhatsApp Business: 352 026 6660
+  // PRODOTTO
+  if (intent === "prodotto") {
+    const p = PRODUCTS.find(p => p.Slug === sub);
+    if (p) return reply(res, productReply(p));
+    return reply(res, "Non ho trovato questo prodotto.");
+  }
 
-Ti rispondiamo entro poche ore.
-`,
+  // SUPPORTO
+  if (intent === "supporto") {
+    return reply(res, SUPPORTO);
+  }
 
-  rimborso: `
-Per richiedere un rimborso, scrivici qui:
-📧 supporto@mewingmarket.it  
-📱 WhatsApp Business: 352 026 6660
-
-Ti rispondiamo entro poche ore.
-`,
-
-  email: `
-Se non hai ricevuto l’email, controlla la cartella spam.
-
-Se non c’è nemmeno lì, scrivici:
-📧 supporto@mewingmarket.it  
-📱 WhatsApp Business: 352 026 6660
-
-Ti rispondiamo entro poche ore.
-`,
-
-  file_danneggiato: `
-Se il file ZIP non si apre, prova a riscaricarlo.
-
-Se il problema continua:
-📧 supporto@mewingmarket.it  
-📱 WhatsApp Business: 352 026 6660
-
-Ti rispondiamo entro poche ore.
-`,
-
-  generale: `
-Sono qui per aiutarti.
-
-Se hai bisogno di assistenza diretta:
-📧 supporto@mewingmarket.it  
-📱 WhatsApp Business: 352 026 6660
-
-Ti rispondiamo entro poche ore.
-`
-};
-
-// =========================
-// ALTRI BLOCCHI
-// =========================
-const BLOCKS = {
-  hero: `
-🔥 HERO è il tuo direttore operativo digitale: ti mostra come funziona davvero un ecosistema di prodotti digitali nel 2025.
-
-👉 Acquista HERO  
-https://payhip.com/b/LhqQT
-
-👉 Guarda il video di HERO  
-https://youtube.com/shorts/YoOXWUajbQc?feature=shared
-`,
-
-  video: `
-🎥 Video di presentazione di HERO
-
-👉 Guarda il video di HERO  
-https://youtube.com/shorts/YoOXWUajbQc?feature=shared
-
-Vuoi acquistarlo dopo aver visto il video?
-
-👉 Acquista HERO  
-https://payhip.com/b/LhqQT
-`,
-
-  newsletter: `
+  // NEWSLETTER
+  if (intent === "newsletter") {
+    return reply(res, `
 ✉️ Newsletter MewingMarket
 
 Iscriviti qui:
 ${LINKS.newsletter}
 
-Se vuoi annullare l’iscrizione:
+Disiscriviti qui:
 ${LINKS.disiscrizione}
-`,
-
-  sito: `
-Ecco il sito ufficiale:
-
-${LINKS.sito}
-
-E qui lo store:
-${LINKS.store}
-`,
-
-  socialMenu: `
-🌐 Social MewingMarket
-
-${LINKS.instagram}
-
-${LINKS.tiktok}
-
-${LINKS.youtube}
-
-${LINKS.facebook}
-
-${LINKS.x}
-
-${LINKS.threads}
-
-${LINKS.linkedin}
-`
-};
-
-// =========================
-// PRIORITÀ SOCIAL
-// =========================
-function handleSocial(text, res) {
-  const t = normalize(text);
-
-  if (t.includes("instagram")) return reply(res, LINKS.instagram);
-  if (t.includes("tiktok") || t.includes("tik tok")) return reply(res, LINKS.tiktok);
-  if (t.includes("youtube") || t.includes("you tube")) return reply(res, LINKS.youtube);
-  if (t.includes("facebook")) return reply(res, LINKS.facebook);
-  if (t.includes("threads")) return reply(res, LINKS.threads);
-  if (t.includes("linkedin")) return reply(res, LINKS.linkedin);
-  if (t.includes("x") || t.includes("twitter")) return reply(res, LINKS.x);
-
-  return reply(res, BLOCKS.socialMenu);
-  }// =========================
-// GESTIONE CONVERSAZIONE
-// =========================
-function handleConversation(req, res, intent, sub) {
-  const uid = req.uid;
-
-  // SOCIAL (priorità assoluta)
-  if (intent === "social") {
-    return handleSocial(req.body.message, res);
+`);
   }
 
-  // ACQUISTO — sotto-intenti
-  if (intent === "acquisto") {
-    if (sub === "prezzo") return reply(res, ACQUISTO.prezzo);
-    if (sub === "pagamento") return reply(res, ACQUISTO.pagamento);
-    if (sub === "paypal") return reply(res, ACQUISTO.paypal);
-    if (sub === "carta") return reply(res, ACQUISTO.carta);
-    if (sub === "checkout") return reply(res, ACQUISTO.checkout);
-    if (sub === "hero") return reply(res, ACQUISTO.hero);
+  // VIDEO (solo prodotto principale)
+  if (intent === "video") {
+    const p = PRODUCTS.find(p => p.Slug === MAIN_PRODUCT_SLUG);
+    return reply(res, `
+🎥 Video del prodotto principale
 
-    // fallback acquisto → sempre blocco acquisto
-    return reply(res, ACQUISTO.checkout);
-  }
+${p.Titolo}
 
-  // SUPPORTO — sotto-intenti
-  if (intent === "supporto") {
-    if (sub === "download") return reply(res, SUPPORTO.download);
-    if (sub === "errore") return reply(res, SUPPORTO.errore);
-    if (sub === "pagamento_fallito") return reply(res, SUPPORTO.pagamento_fallito);
-    if (sub === "rimborso") return reply(res, SUPPORTO.rimborso);
-    if (sub === "email") return reply(res, SUPPORTO.email);
-    if (sub === "file_danneggiato") return reply(res, SUPPORTO.file_danneggiato);
-    if (sub === "generale") return reply(res, SUPPORTO.generale);
-
-    // fallback supporto
-    return reply(res, SUPPORTO.generale);
-  }
-
-  // NEWSLETTER
-  if (intent === "newsletter") {
-    if (sub === "iscrizione") return reply(res, BLOCKS.newsletter);
-    if (sub === "disiscrizione") return reply(res, BLOCKS.newsletter);
-    return reply(res, BLOCKS.newsletter);
+👉 Guarda il video  
+https://youtube.com/shorts/YoOXWUajbQc?feature=shared
+`);
   }
 
   // SITO
   if (intent === "sito") {
-    return reply(res, BLOCKS.sito);
+    return reply(res, `
+🌐 Sito ufficiale:
+${LINKS.sito}
+
+🛒 Store:
+${LINKS.store}
+`);
   }
 
-  // VIDEO
-  if (intent === "video") {
-    return reply(res, BLOCKS.video);
-  }
-
-  // HERO
-  if (intent === "hero") {
-    return reply(res, BLOCKS.hero);
-  }
-
-  // FALLBACK → MENU
+  // FALLBACK
   return reply(res, `
 Posso aiutarti con:
 
-👉 HERO  
-👉 Video  
-👉 Acquisto  
-👉 Supporto tecnico  
+👉 Catalogo  
+👉 Prodotti  
+👉 Supporto  
 👉 Newsletter  
 👉 Social  
-👉 Sito
+👉 Video  
+👉 Consigliami un prodotto  
+👉 Nome di un prodotto
 
-Scrivi una parola chiave, ad esempio: "hero", "video", "social", "newsletter".
+Scrivi una parola chiave.
 `);
-}
-
-// =========================
+}// =========================
 // AVVIO SERVER
 // =========================
 const PORT = process.env.PORT || 3000;
