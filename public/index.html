@@ -93,50 +93,14 @@
     }
     </script>
 
-    <footer>
-        <ul class="footer-social">
-            <li><a href="https://www.facebook.com/profile.php?id=61584779793628"><i class="fab fa-facebook"></i></a></li>
-            <li><a href="https://www.instagram.com/mewingmarket?igsh=eGZ2MHE0bTFtbmJt"><i class="fab fa-instagram"></i></a></li>
-            <li><a href="https://tiktok.com/@mewingmarket"><i class="fab fa-tiktok"></i></a></li>
-            <li><a href="https://x.com/mewingm8"><i class="fab fa-x-twitter"></i></a></li>
-            <li><a href="https://www.youtube.com/@mewingmarket2"><i class="fab fa-youtube"></i></a></li>
-            <li><a href="https://www.linkedin.com/in/simone-griseri-5368a7394"><i class="fab fa-linkedin"></i></a></li>
-            <li><a href="https://www.threads.com/@mewingmarket"><i class="fa-solid fa-at"></i></a></li>
-        </ul>
-
-        <p style="font-size:14px; color:#cc0000; margin:0; padding:12px 0; text-align:center; line-height:1.5;">
-            <strong>© 2025 MewingMarket</strong><br>
-            Prodotti digitali creati con Intelligenza Artificiale.<br>
-            Tutti i diritti riservati.
-        </p>
-    </footer>
-
-    <!-- CONSENT BANNER -->
-    <div id="consent-banner" style="
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        background: #fff;
-        padding: 15px;
-        box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-        text-align: center;
-        font-family: Arial;
-        z-index: 9999;
-    ">
-        <p style="margin: 0; font-size: 14px;">
-            Vuoi gestire le tue preferenze?
-            <a href="/iscrizione.html">Iscrizione</a> |
-            <a href="/disiscriviti.html">Disiscrizione</a> |
-            <a href="/privacy.html">Privacy</a> |
-            <a href="/cookie.html">Cookie</a> |
-            <a href="/terms.html">Termini</a>
-        </p>
-        <button onclick="document.getElementById('consent-banner').style.display='none'"
-            style="margin-top:10px; padding:8px 20px; background:#000; color:#fff; border:none; border-radius:5px;">
-            OK
-        </button>
-    </div>
+    <div id="footer-placeholder"></div>
+<script>
+  fetch("footer.html")
+    .then(res => res.text())
+    .then(html => {
+      document.getElementById("footer-placeholder").innerHTML = html;
+    });
+</script>
 
 </body>
 </html>
