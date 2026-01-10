@@ -13,5 +13,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://www.mewingmarket.it/sitemap.xml
-Sitemap: https://www.mewingmarket.it/BingSiteAuth.xml
+
