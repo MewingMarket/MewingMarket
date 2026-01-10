@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Prodotto – MewingMarket</title>
+  <meta name="description" content="Scheda prodotto digitale MewingMarket.">
+  <link rel="stylesheet" href="style.css?v=1.4">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+
+<header>
+  <img src="logo.png" alt="Logo" class="logo">
+</header>
+
+<nav>
+  <ul id="category-nav">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="catalogo.html">Catalogo</a></li>
+    <li><a href="chisiamo.html">Chi Siamo</a></li>
+    <li><a href="contatti.html">Contatti</a></li>
+    <li><a href="dovesiamo.html">Dove Siamo</a></li>
+    <li><a href="FAQ.html">FAQ</a></li>
+  </ul>
+</nav>
+
+<main>
+  <section class="hero-wrapper">
+    <div class="hero-text">
+      <h1 id="title"></h1>
+      <p id="desc-lunga"></p>
+      <p class="prezzo" id="price"></p>
+      <a id="payhip" class="btn-acquista" target="_blank">Acquista su Payhip</a>
+    </div>
+
+    <div class="hero-image">
+      <img id="image" src="" alt="">
+    </div>
+  </section>
+</main>
+
+<footer>
+  <ul class="footer-social">
+    <li><a href="https://www.facebook.com/profile.php?id=61584779793628"><i class="fab fa-facebook"></i></a></li>
+    <li><a href="https://www.instagram.com/mewingmarket"><i class="fab fa-instagram"></i></a></li>
+    <li><a href="https://tiktok.com/@mewingmarket"><i class="fab fa-tiktok"></i></a></li>
+    <li><a href="https://x.com/mewingm8"><i class="fab fa-x-twitter"></i></a></li>
+    <li><a href="https://www.youtube.com/@mewingmarket2"><i class="fab fa-youtube"></i></a></li>
+    <li><a href="https://www.linkedin.com/in/simone-griseri-5368a7394"><i class="fab fa-linkedin"></i></a></li>
+    <li><a href="https://www.threads.com/@mewingmarket"><i class="fa-solid fa-at"></i></a></li>
+  </ul>
+
+  <p style="font-size:14px; color:#cc0000; margin:0; padding:12px 0; text-align:center;">
+    <strong>© 2025 MewingMarket</strong><br>
+    Prodotti digitali creati con Intelligenza Artificiale.<br>
+    Tutti i diritti riservati.
+  </p>
+</footer>
+
+<script>
+function getParam(name) {
+  return new URLSearchParams(window.location.search).get(name);
+}
+
+const slug = getParam('slug');
+
+fetch('/products.json')
+  .then(r => r.json())
+  .then(products => {
+    const p = products.find(x => x.Slug === slug);
+
+    if (!p) {
+      document.getElementById('title').textContent = "Prodotto non trovato";
+      return;
+    }
+
+    document.title = p.Titolo + " – MewingMarket";
+
+    document.getElementById('title').textContent = p.Titolo;
+    document.getElementById('desc-lunga').textContent = p.DescrizioneLunga;
+    document.getElementById('price').textContent = p.Prezzo;
+    document.getElementById('image').src = p.Immagine;
+    document.getElementById('image').alt = p.Titolo;
+    document.getElementById('payhip').href = p.LinkPayhip;
+
+    // Schema.org
+    const schema = {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      "name": p.Titolo,
+      "image": p.Immagine,
+      "description": p.DescrizioneLunga,
+      "offers": {
+        "@type": "Offer",
+        "price": p.Prezzo.replace('€',''),
+        "priceCurrency": "EUR",
+        "availability": "https://schema.org/InStock",
+        "url": p.LinkPayhip
+      }
+    };
+
+    const script = document.createElement('script');
+    script.type = "application/ld+json";
+    script.textContent = JSON.stringify(schema);
+    document.head.appendChild(script);
+  });
+</script>
+
+</body>
+</html>
