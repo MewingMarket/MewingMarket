@@ -241,45 +241,4 @@ p, li { font-size:17px; color:#e6e6e6; line-height:1.6; text-align:left; }
 footer {
     margin-top:40px;
     padding:20px 0;
-    background: rgba(0,0,0,0.9);
-    text-align:center;
-    border-top:1px solid rgba(255,255,255,0.1);
-}
-.footer-social {
-    list-style:none;
-    display:flex;
-    justify-content:center;
-    gap:25px;
-    margin-bottom:15px;
-}
-.footer-social li a {
-    color:#fff;
-    font-size:1.6rem;
-    transition:0.3s;
-    opacity:0.85;
-}
-.footer-social li a:hover {
-    color:#ff8c00;
-    opacity:1;
-    transform:scale(1.15);
-}
-
-/* RESPONSIVE */
-@media (max-width:600px){
-    nav ul { gap:10px; }
-    nav ul li a { font-size:0.75rem; }
-    main { margin:20px; padding:25px; }
-    h1 { font-size:1.7rem; }
-    .hero-wrapper { padding:25px; gap:25px; }
-    .product-card { padding:15px; }
-    .btn, .btn-acquista { padding:10px 18px; font-size:0.9rem; }
-             }#mm-chatbox {
-    width:260px;
-    height:360px;
-    bottom:65px;
-}
-
-#mm-chat-btn {
-    width:40px;
-    height:40px;
-}
+    background: rgba(0,
