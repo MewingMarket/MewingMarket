@@ -2,14 +2,12 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import path from "path";
-import fs from "fs";import dotenv from "dotenv";
+import fs from "fs";
+import dotenv from "dotenv";
+import { Client } from "@notionhq/client";
+
 dotenv.config();
 
-const NOTION_TOKEN = process.env.NOTION_TOKEN;
-const NOTION_DB = process.env.NOTION_DB;
-import { Client } from "@notionhq/client";
-import dotenv from "dotenv";
-dotenv.config();
 const app = express();
 app.disable("x-powered-by");
 
@@ -50,7 +48,7 @@ const userStates = {};
 // { mm_uid: { state, lastIntent, data: { lastProductSlug, lastHelpTopic } } }
 
 // =========================
-// GENERATORE ID UTENTE
+/** GENERATORE ID UTENTE */
 // =========================
 function generateUID() {
   return "mm_" + Math.random().toString(36).substring(2, 12);
@@ -99,7 +97,15 @@ function loadProducts() {
   } catch (err) {
     console.error("Errore caricamento products.json", err);
   }
-}const notion = new Client({ auth: process.env.NOTION_TOKEN });
+}
+
+loadProducts();
+setInterval(loadProducts, 60000);
+
+// =========================
+// NOTION → products.json
+// =========================
+const notion = new Client({ auth: process.env.NOTION_TOKEN });
 const NOTION_DB = process.env.NOTION_DB;
 
 async function updateProductsFromNotion() {
@@ -132,6 +138,9 @@ async function updateProductsFromNotion() {
 
     fs.writeFileSync("./public/products.json", JSON.stringify(products, null, 2), "utf8");
     console.log("✅ products.json aggiornato da Notion:", products.length, "prodotti");
+
+    // ricarica in RAM
+    loadProducts();
   } catch (err) {
     console.error("❌ Errore aggiornamento Notion:", err.message);
   }
@@ -145,9 +154,6 @@ app.get("/sync/notion", async (req, res) => {
   await updateProductsFromNotion();
   res.send("Aggiornamento completato.");
 });
-
-loadProducts();
-setInterval(loadProducts, 60000);
 
 // =========================
 // FUNZIONI DI SUPPORTO
@@ -464,7 +470,7 @@ function detectIntent(rawText) {
     t.includes("faq") || t.includes("domande frequenti") ||
     t.includes("download non funziona") || t.includes("download") ||
     t.includes("payhip") || t.includes("pagamento") ||
-    t.includes("rimborso") || t.includes("rimborso") ||
+    t.includes("rimborso") ||
     t.includes("non ho ricevuto l email")
   ) {
     return { intent: "supporto", sub: null };
@@ -474,7 +480,6 @@ function detectIntent(rawText) {
   if (
     t.includes("newsletter") ||
     t.includes("iscrizione") ||
-    t.includes("email") ||
     t.includes("aggiornamenti") ||
     t.includes("news")
   ) {
@@ -541,48 +546,29 @@ app.post("/chat", (req, res) => {
 });
 
 // =========================
-// GESTIONE CONVERSAZIONE
+// GESTIONE CONVERSAZIONE (FIXATA)
 // =========================
 function handleConversation(req, res, intent, sub, rawText) {
   const uid = req.uid;
   const state = userStates[uid];
-
   const mainProduct = findProductBySlug(MAIN_PRODUCT_SLUG);
 
   // MENU / BENVENUTO
-  if (intent === "menu" || state.state === "menu" && intent === "fallback_soft") {
+  if (intent === "menu") {
     setState(uid, "menu");
     return reply(res, `
 Ciao! 👋  
-Sono qui per aiutarti con la *Guida Completa all’Ecosistema Digitale Reale (Ebook + Video)*, con gli altri prodotti, il supporto, la newsletter e altro.
+Sono qui per aiutarti con la *Guida Completa all’Ecosistema Digitale Reale*, gli altri prodotti, il supporto, la newsletter e molto altro.
 
 Puoi chiedermi:
-- informazioni su un prodotto (es. "Ecosistema", "Workbook", "Fisco")
-- prezzo o cosa include un prodotto
-- vedere il video della guida principale (scrivi "video ecosistema")
-- aiuto su download, pagamenti o Payhip
-- iscrizione o disiscrizione dalla newsletter
-- link ai social
+• informazioni su un prodotto  
+• prezzo o cosa include  
+• vedere il video della guida principale  
+• supporto su download, pagamenti o Payhip  
+• iscrizione / disiscrizione newsletter  
+• link ai social  
 
-Scrivi quello che ti serve oppure "catalogo" per vedere tutti i prodotti.
-`);
-  }
-
-  // SOCIAL
-  if (intent === "social") {
-    setState(uid, "social");
-    return reply(res, `
-Ecco i nostri social ufficiali 📲  
-
-Instagram: ${LINKS.instagram}  
-TikTok: ${LINKS.tiktok}  
-YouTube: ${LINKS.youtube}  
-Facebook: ${LINKS.facebook}  
-X: ${LINKS.x}  
-Threads: ${LINKS.threads}  
-LinkedIn: ${LINKS.linkedin}  
-
-Vuoi tornare al menu?
+Scrivi quello che ti serve oppure "catalogo".
 `);
   }
 
@@ -705,11 +691,59 @@ Dimmi di quale prodotto vuoi vedere la copertina, ad esempio:
     return reply(res, productImageReply(p));
   }
 
+  // COMMERCIALE PRODOTTO PRINCIPALE
+  if (intent === "commerciale_main") {
+    setState(uid, "commerciale_main");
+    state.data.lastProductSlug = MAIN_PRODUCT_SLUG;
+
+    if (!mainProduct) {
+      return reply(res, "Non trovo la guida principale nel catalogo in questo momento.");
+    }
+
+    return reply(res, `
+📘 *${mainProduct.Titolo}*
+
+${mainProduct.DescrizioneBreve}
+
+💰 Prezzo: ${mainProduct.Prezzo}
+👉 Acquista ora  
+${mainProduct.LinkPayhip}
+
+Vuoi vedere il video di presentazione o preferisci acquistare subito?
+Scrivi "video" oppure "sì".
+`);
+  }
+
+  // SOTTO-LIVELLO COMMERCIALE
+  if (state.state === "commerciale_main") {
+    if (isYes(rawText)) {
+      setState(uid, "acquisto_main");
+      return reply(res, `
+Perfetto! Puoi acquistare qui:
+
+${mainProduct ? mainProduct.LinkPayhip : LINKS.store}
+
+Vuoi tornare al menu o hai bisogno di altro?
+`);
+    }
+
+    if (rawText.toLowerCase().includes("video")) {
+      setState(uid, "video_main");
+      return reply(res, `
+🎥 Ecco il video della guida:
+
+https://youtube.com/shorts/YoOXWUajbQc?feature=shared
+
+Vuoi acquistare o tornare al menu?
+`);
+    }
+  }
+
   // VIDEO PRODOTTO PRINCIPALE
   if (intent === "video_main") {
     setState(uid, "video_main");
     return reply(res, `
-Ecco il video di presentazione della *Guida Completa all’Ecosistema Digitale Reale (Ebook + Video)* 🎥
+🎥 Ecco il video della *Guida Completa all’Ecosistema Digitale Reale*:
 
 https://youtube.com/shorts/YoOXWUajbQc?feature=shared
 
@@ -717,93 +751,59 @@ Vuoi acquistare la guida o tornare al menu?
 `);
   }
 
-  // COMMERCIALE PRODOTTO PRINCIPALE
-  if (intent === "commerciale_main") {
-    setState(uid, "commerciale_main");
-    const p = mainProduct;
-    state.data.lastProductSlug = p?.Slug;
-    return reply(res, `
-${productReply(p)}
-
-Se vuoi acquistare subito la guida scrivi "sì".  
-Se preferisci vedere prima il video, scrivi "video".  
-Oppure "menu" per tornare alle opzioni principali.
-`);
-  }
-
-  // GESTIONE SOTTO-LIVELLI HERO (YES/NO dopo video o risposta commerciale)
-  if (state.state === "commerciale_main" || state.state === "video_main") {
+  // SOTTO-LIVELLO VIDEO
+  if (state.state === "video_main") {
     if (isYes(rawText)) {
-      setState(uid, "acquisto_main");
       return reply(res, `
-Perfetto! Puoi acquistare la *Guida Completa all’Ecosistema Digitale Reale (Ebook + Video)* qui:
+Ecco il link per acquistare:
 
-${mainProduct ? mainProduct.LinkPayhip : "https://payhip.com/MewingMarket"}
+${mainProduct ? mainProduct.LinkPayhip : LINKS.store}
 
 Hai bisogno di altro o vuoi tornare al menu?
 `);
     }
-    if (isNo(rawText)) {
-      setState(uid, "menu");
-      return reply(res, `
-Nessun problema.  
-
-Se hai bisogno di altro, scrivimi una domanda oppure digita "menu" per vedere le opzioni.
-`);
-    }
   }
 
-  // SUPPORTO / FAQ / HELP DESK
+  // SOCIAL
+  if (intent === "social") {
+    setState(uid, "social");
+    return reply(res, `
+📲 Social ufficiali:
+
+Instagram: ${LINKS.instagram}  
+TikTok: ${LINKS.tiktok}  
+YouTube: ${LINKS.youtube}  
+Facebook: ${LINKS.facebook}  
+X: ${LINKS.x}  
+Threads: ${LINKS.threads}  
+LinkedIn: ${LINKS.linkedin}
+
+Vuoi tornare al menu?
+`);
+  }
+
+  // SUPPORTO / FAQ
   if (intent === "supporto") {
     setState(uid, "supporto");
     const t = normalize(rawText);
 
-    if (t.includes("scaricare") || t.includes("download non funziona") || t.includes("download")) {
-      state.data.lastHelpTopic = "download";
-      return reply(res, HELP_DESK.download + `
-
-Se non è ancora chiaro, puoi scriverci a support@mewingmarket.it o su WhatsApp 352 026 6660.  
-Vuoi altro supporto o tornare al menu?
-`);
+    if (t.includes("scaricare") || t.includes("download")) {
+      return reply(res, HELP_DESK.download + "\n\nVuoi altro supporto o tornare al menu?");
     }
 
     if (t.includes("payhip")) {
-      state.data.lastHelpTopic = "payhip";
-      return reply(res, HELP_DESK.payhip + `
-
-Vuoi altre informazioni o tornare al menu?
-`);
+      return reply(res, HELP_DESK.payhip + "\n\nVuoi altro supporto o tornare al menu?");
     }
 
     if (t.includes("rimborso")) {
-      state.data.lastHelpTopic = "rimborso";
-      return reply(res, HELP_DESK.rimborso + `
-
-Vuoi altro supporto o tornare al menu?
-`);
+      return reply(res, HELP_DESK.rimborso + "\n\nVuoi altro supporto o tornare al menu?");
     }
 
-    if (t.includes("contattare") || t.includes("contatto") || t.includes("email") || t.includes("whatsapp")) {
-      state.data.lastHelpTopic = "contatto";
-      return reply(res, HELP_DESK.contatto + `
-
-Vuoi altro supporto o tornare al menu?
-`);
+    if (t.includes("email") || t.includes("contatto") || t.includes("whatsapp")) {
+      return reply(res, HELP_DESK.contatto + "\n\nVuoi altro supporto o tornare al menu?");
     }
 
-    if (t.includes("newsletter")) {
-      state.data.lastHelpTopic = "newsletter";
-      return reply(res, HELP_DESK.newsletter + `
-
-Vuoi iscriverti, disiscriverti o tornare al menu?
-`);
-    }
-
-    // Se generico → mostra FAQ
-    return reply(res, FAQ_BLOCK + `
-
-Scrivimi la tua domanda (es. "non riesco a scaricare") oppure "menu" per tornare alle opzioni principali.
-`);
+    return reply(res, FAQ_BLOCK + "\n\nScrivi la tua domanda oppure 'menu'.");
   }
 
   // NEWSLETTER
@@ -811,35 +811,32 @@ Scrivimi la tua domanda (es. "non riesco a scaricare") oppure "menu" per tornare
     setState(uid, "newsletter");
     const t = normalize(rawText);
 
-    if (t.includes("annulla") || t.includes("disiscriv") || t.includes("cancella")) {
+    if (t.includes("annulla") || t.includes("disiscriv")) {
       return reply(res, `
-Vuoi annullare l’iscrizione alla newsletter.
+Per annullare l’iscrizione:
 
-Puoi disiscriverti qui:  
 ${LINKS.disiscrizione}
 
-Se ti serve altro, scrivimi pure o torna al menu.
+Vuoi tornare al menu?
 `);
     }
 
-    if (t.includes("iscriv") || t.includes("voglio ricevere") || t.includes("ok newsletter")) {
+    if (t.includes("iscriv")) {
       return reply(res, `
-Vuoi iscriverti alla newsletter?  
-Riceverai contenuti utili, aggiornamenti e novità sui prodotti.
+Perfetto! Puoi iscriverti qui:
 
-Iscriviti qui:  
 ${LINKS.newsletter}
 
-Se ti serve altro, scrivimi pure o torna al menu.
+Vuoi tornare al menu?
 `);
     }
 
     return reply(res, `
-Vuoi iscriverti alla newsletter o annullare l’iscrizione?
+Vuoi iscriverti o annullare l’iscrizione?
 
-• Scrivi "iscrivimi" per ricevere aggiornamenti  
-• Scrivi "annulla iscrizione" per disiscriverti  
-• Oppure "menu" per tornare alle opzioni principali
+• "iscrivimi"  
+• "annulla iscrizione"  
+• "menu"
 `);
   }
 
@@ -879,29 +876,27 @@ Vuoi informazioni su un prodotto specifico o tornare al menu?
     return reply(res, out);
   }
 
-  // FALLBACK SOFT (domanda generica)
+  // FALLBACK SOFT
   if (intent === "fallback_soft") {
-    setState(uid, "menu");
     return reply(res, `
-Non ho capito bene la tua richiesta, ma posso aiutarti.
+Non ho capito bene, ma posso aiutarti.
 
-Vuoi tornare al menu, parlare di un prodotto specifico o ricevere supporto?
+Vuoi:
+• informazioni su un prodotto  
+• supporto  
+• newsletter  
+• social  
+• tornare al menu  
+
+Scrivi una parola chiave.
 `);
   }
 
   // FALLBACK GENERALE
   return reply(res, `
-Sono l’assistente di MewingMarket.
+Posso aiutarti con prodotti, supporto, newsletter o social.
 
-Posso aiutarti con:
-- Prodotti (es. "Ecosistema", "Workbook", "Fisco", "Business AI")
-- Catalogo (scrivi: "catalogo")
-- Video della guida principale (scrivi: "video ecosistema")
-- Supporto (download, Payhip, pagamenti, email)
-- Newsletter (iscrizione / disiscrizione)
-- Social (Instagram, TikTok, YouTube, ecc.)
-
-Scrivi una parola chiave o digita "menu" per tornare alle opzioni principali.
+Scrivi "menu" per vedere tutte le opzioni.
 `);
 }
 
