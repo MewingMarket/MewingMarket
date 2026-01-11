@@ -120,7 +120,7 @@ async function updateProductsFromNotion() {
       };
     });
 
-    fs.writeFileSync("./public/products.json", JSON.stringify(products, null, 2), "utf8");
+    fs.writeFileSync("./data/products.json", JSON.stringify(products, null, 2), "utf8");
     console.log("products.json aggiornato da Notion:", products.length, "prodotti");
 
     loadProducts();
