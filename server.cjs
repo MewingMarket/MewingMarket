@@ -1,13 +1,9 @@
-import express from "express";
-import cors from "cors";
-import cookieParser from "cookie-parser";
-import path from "path";
-import fs from "fs";
+const express = require("express");
+const cors = require("cors");
+const OpenAI = require("openai");
+const cookieParser = require("cookie-parser");
+const { Client } = require("@notionhq/client");
 require("dotenv").config();
-import { Client } from "@notionhq/client";
-
-dotenv.config();
-
 const app = express();
 app.disable("x-powered-by");
 
