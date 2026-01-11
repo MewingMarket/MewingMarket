@@ -1,10 +1,12 @@
 const path = require("path");
-const express = require("express");const fs = require("fs");
+const express = require("express");
+const fs = require("fs");
 const cors = require("cors");
 const OpenAI = require("openai");
 const cookieParser = require("cookie-parser");
 const { Client } = require("@notionhq/client");
 require("dotenv").config();
+
 const app = express();
 app.disable("x-powered-by");
 app.use(express.static(path.join(process.cwd(), "public")));
@@ -12,8 +14,7 @@ app.use(express.static(path.join(process.cwd(), "public")));
 app.get("/", (req, res) => {
   res.sendFile(path.join(process.cwd(), "public", "index.html"));
 });
-// REDIRECT SEO (HTTPS + WWW)
-// =========================
+
 app.use((req, res, next) => {
   const proto = req.headers["x-forwarded-proto"];
   const host = req.headers.host;
@@ -33,30 +34,17 @@ app.use((req, res, next) => {
   next();
 });
 
-// =========================
-// CONFIGURAZIONE BASE
-// =========================
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(path.join(process.cwd(), "public")));
 
-// =========================
-// MEMORIA RAM PER UTENTI
-// =========================
 const userStates = {};
-// { mm_uid: { state, lastIntent, data: { lastProductSlug, lastHelpTopic } } }
 
-// =========================
-/** GENERATORE ID UTENTE */
-// =========================
 function generateUID() {
   return "mm_" + Math.random().toString(36).substring(2, 12);
 }
 
-// =========================
-// MIDDLEWARE COOKIE + STATO
-// =========================
 app.use((req, res, next) => {
   let uid = req.cookies.mm_uid;
 
@@ -83,9 +71,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// =========================
-// CARICAMENTO CATALOGO DINAMICO
-// =========================
 let PRODUCTS = [];
 
 function loadProducts() {
@@ -102,9 +87,6 @@ function loadProducts() {
 loadProducts();
 setInterval(loadProducts, 60000);
 
-// =========================
-// NOTION → products.json
-// =========================
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
 const NOTION_DB = process.env.NOTION_DB;
 
@@ -137,28 +119,20 @@ async function updateProductsFromNotion() {
     });
 
     fs.writeFileSync("./public/products.json", JSON.stringify(products, null, 2), "utf8");
-    console.log("✅ products.json aggiornato da Notion:", products.length, "prodotti");
+    console.log("products.json aggiornato da Notion:", products.length, "prodotti");
 
-    // ricarica in RAM
     loadProducts();
   } catch (err) {
-    console.error("❌ Errore aggiornamento Notion:", err.message);
+    console.error("Errore aggiornamento Notion:", err.message);
   }
 }
 
-// Aggiorna ogni 5 minuti
 setInterval(updateProductsFromNotion, 5 * 60 * 1000);
 
-// Endpoint manuale
 app.get("/sync/notion", async (req, res) => {
   await updateProductsFromNotion();
   res.send("Aggiornamento completato.");
-});
-
-// =========================
-// FUNZIONI DI SUPPORTO
-// =========================
-function setState(uid, newState) {
+});function setState(uid, newState) {
   userStates[uid].state = newState;
 }
 
@@ -261,9 +235,6 @@ Vuoi altre info su questo prodotto o tornare al menu?
 `;
 }
 
-// =========================
-// BLOCCHI HELP DESK / FAQ
-// =========================
 const HELP_DESK = {
   download: `
 <b>Non riesci a scaricare il prodotto?</b>
@@ -338,12 +309,7 @@ const FAQ_BLOCK = `
 • Offrite assistenza post-vendita?
 
 Se mi scrivi la tua domanda in linguaggio naturale (es. "non riesco a scaricare"), ti rispondo in modo più preciso.
-`;
-
-// =========================
-// LINK UFFICIALI
-// =========================
-const LINKS = {
+`;const LINKS = {
   instagram: "https://www.instagram.com/mewingmarket",
   tiktok: "https://tiktok.com/@mewingmarket",
   youtube: "https://www.youtube.com/@mewingmarket2",
@@ -357,9 +323,6 @@ const LINKS = {
   disiscrizione: "https://mewingmarket.it/disiscriviti.html"
 };
 
-// =========================
-// SUPPORTO GENERICO
-// =========================
 const SUPPORTO = `
 📞 *Supporto MewingMarket*
 
@@ -371,13 +334,9 @@ Se hai problemi con download, pagamenti o file:
 Ti rispondiamo rapidamente.
 `;
 
-// =========================
-// INTENT MATCHER
-// =========================
 function detectIntent(rawText) {
   const t = normalize(rawText);
 
-  // MENU / HELP
   if (
     t.includes("menu") ||
     t.includes("inizio") ||
@@ -389,7 +348,6 @@ function detectIntent(rawText) {
     return { intent: "menu", sub: null };
   }
 
-  // VIDEO HERO (prodotto principale)
   if (
     t.includes("video hero") ||
     t.includes("video ecosistema") ||
@@ -399,7 +357,6 @@ function detectIntent(rawText) {
     return { intent: "video_main", sub: MAIN_PRODUCT_SLUG };
   }
 
-  // COMMERCIALE HERO / PRODOTTO PRINCIPALE
   if (
     t.includes("hero") ||
     t.includes("ecosistema") ||
@@ -417,7 +374,6 @@ function detectIntent(rawText) {
     return { intent: "commerciale_main", sub: MAIN_PRODUCT_SLUG };
   }
 
-  // SOCIAL
   if (
     t.includes("instagram") || t.includes("tiktok") || t.includes("tik tok") ||
     t.includes("youtube") || t.includes("you tube") ||
@@ -428,42 +384,34 @@ function detectIntent(rawText) {
     return { intent: "social", sub: null };
   }
 
-  // CATALOGO
   if (t.includes("catalogo") || t.includes("prodotti") || t.includes("lista")) {
     return { intent: "catalogo", sub: null };
   }
 
-  // NOVITÀ
   if (t.includes("novita") || t.includes("nuovi") || t.includes("nuovo")) {
     return { intent: "novita", sub: null };
   }
 
-  // PROMOZIONI
   if (t.includes("promo") || t.includes("sconto") || t.includes("offerta")) {
     return { intent: "promozioni", sub: null };
   }
 
-  // CONSIGLIO
   if (t.includes("consigliami") || t.includes("consiglio") || t.includes("cosa compro")) {
     return { intent: "consiglio", sub: null };
   }
 
-  // AIUTAMI A SCEGLIERE
   if (t.includes("scegli tu") || t.includes("aiutami a scegliere") || t.includes("non so cosa scegliere")) {
     return { intent: "scegli", sub: null };
   }
 
-  // APPROFONDISCI
   if (t.includes("approfondisci") || t.includes("piu dettagli") || t.includes("dimmi di piu")) {
     return { intent: "approfondisci", sub: null };
   }
 
-  // IMMAGINE / COPERTINA
   if (t.includes("immagine") || t.includes("copertina") || t.includes("cover")) {
     return { intent: "immagine", sub: null };
   }
 
-  // SUPPORTO / FAQ / HELP DESK
   if (
     t.includes("supporto") || t.includes("assistenza") ||
     t.includes("problema") || t.includes("errore") ||
@@ -476,7 +424,6 @@ function detectIntent(rawText) {
     return { intent: "supporto", sub: null };
   }
 
-  // NEWSLETTER
   if (
     t.includes("newsletter") ||
     t.includes("iscrizione") ||
@@ -486,17 +433,14 @@ function detectIntent(rawText) {
     return { intent: "newsletter", sub: null };
   }
 
-  // SITO
   if (t.includes("sito") || t.includes("website") || t.includes("home") || t.includes("mewingmarket")) {
     return { intent: "sito", sub: null };
   }
 
-  // CERCA PRODOTTO (ricerca generica)
   if (t.includes("cerca") || t.includes("trova") || t.includes("search")) {
     return { intent: "cerca", sub: rawText };
   }
 
-  // FALLBACK INTENZIONALE (non so, boh, ecc.)
   if (
     t.includes("non so") || t.includes("boh") || t.includes("cosa") ||
     t.includes("domanda generica") || t.includes("aiuto") || t.includes("info")
@@ -504,16 +448,6 @@ function detectIntent(rawText) {
     return { intent: "fallback_soft", sub: null };
   }
 
-  // PRODOTTO SPECIFICO (Titolo, TitoloBreve, Slug, ID)
-  for (const p of PRODUCTS) {
-    const titolo = normalize(p.Titolo);
-    const breve = normalize(p.TitoloBreve);
-    const slug = normalize(p.Slug);
-    const id = normalize(p.ID);
-    if (t.includes(titolo) || t.includes(breve) || t.includes(slug) || t.includes(id)) {
-      return { intent: "prodotto", sub: p.Slug };
-    }
-  }// ACQUISTO / BUY
   if (
     t.includes("acquisto") ||
     t.includes("acquista") ||
@@ -529,7 +463,6 @@ function detectIntent(rawText) {
     return { intent: "acquisto", sub: null };
   }
 
-  // VIDEO GENERICO
   if (
     t === "video" ||
     t.includes("guarda video") ||
@@ -540,7 +473,6 @@ function detectIntent(rawText) {
     return { intent: "video_generico", sub: null };
   }
 
-  // CONTATTI
   if (
     t.includes("contatti") ||
     t.includes("email") ||
@@ -552,7 +484,6 @@ function detectIntent(rawText) {
     return { intent: "contatti", sub: null };
   }
 
-  // PREZZO
   if (
     t.includes("prezzo") ||
     t.includes("quanto costa") ||
@@ -563,7 +494,6 @@ function detectIntent(rawText) {
     return { intent: "prezzo", sub: null };
   }
 
-  // DETTAGLI / INFO
   if (
     t.includes("dettagli") ||
     t.includes("info") ||
@@ -574,7 +504,6 @@ function detectIntent(rawText) {
     return { intent: "dettagli", sub: null };
   }
 
-  // NEWSLETTER: ISCRIZIONE
   if (
     t.includes("iscrivimi") ||
     t.includes("voglio iscrivermi") ||
@@ -583,7 +512,6 @@ function detectIntent(rawText) {
     return { intent: "newsletter_iscrizione", sub: null };
   }
 
-  // NEWSLETTER: DISISCRIZIONE
   if (
     t.includes("annulla iscrizione") ||
     t.includes("disiscrivimi") ||
@@ -592,7 +520,6 @@ function detectIntent(rawText) {
     return { intent: "newsletter_disiscrizione", sub: null };
   }
 
-  // SUPPORTO TECNICO SPECIFICO
   if (
     t.includes("non funziona") ||
     t.includes("errore") ||
@@ -602,7 +529,6 @@ function detectIntent(rawText) {
     return { intent: "supporto_tecnico", sub: null };
   }
 
-  // DOWNLOAD PROBLEMI
   if (
     t.includes("non riesco a scaricare") ||
     t.includes("download non va") ||
@@ -611,7 +537,6 @@ function detectIntent(rawText) {
     return { intent: "download", sub: null };
   }
 
-  // RIMBORSO
   if (
     t.includes("rimborso") ||
     t.includes("voglio un rimborso") ||
@@ -620,7 +545,22 @@ function detectIntent(rawText) {
     return { intent: "rimborso", sub: null };
   }
 
-  // CATEGORIA (se trova una categoria nel testo)
+  for (const p of PRODUCTS) {
+    const titolo = normalize(p.Titolo);
+    const breve = normalize(p.TitoloBreve);
+    const slug = normalize(p.Slug);
+    const id = normalize(p.ID);
+
+    if (
+      t.includes(titolo) ||
+      t.includes(breve) ||
+      t.includes(slug) ||
+      t.includes(id)
+    ) {
+      return { intent: "prodotto", sub: p.Slug };
+    }
+  }
+
   for (const p of PRODUCTS) {
     const catNorm = normalize(p.Categoria);
     if (catNorm && t.includes(catNorm)) {
@@ -628,14 +568,8 @@ function detectIntent(rawText) {
     }
   }
 
-  // FALLBACK GENERALE
   return { intent: "fallback", sub: null };
-}
-
-// =========================
-// ROUTER PRINCIPALE
-// =========================
-app.post("/chat", (req, res) => {
+}app.post("/chat", (req, res) => {
   const { message } = req.body;
 
   if (!message || message.trim() === "") {
@@ -650,15 +584,11 @@ app.post("/chat", (req, res) => {
   return handleConversation(req, res, intent, sub, message);
 });
 
-// =========================
-// GESTIONE CONVERSAZIONE (FIXATA)
-// =========================
 function handleConversation(req, res, intent, sub, rawText) {
   const uid = req.uid;
   const state = userStates[uid];
   const mainProduct = findProductBySlug(MAIN_PRODUCT_SLUG);
 
-  // MENU / BENVENUTO
   if (intent === "menu") {
     setState(uid, "menu");
     return reply(res, `
@@ -677,7 +607,6 @@ Scrivi quello che ti serve oppure "catalogo".
 `);
   }
 
-  // CATALOGO COMPLETO
   if (intent === "catalogo") {
     setState(uid, "catalogo");
     if (!PRODUCTS.length) return reply(res, "Per ora il catalogo è vuoto.");
@@ -690,7 +619,6 @@ Scrivi quello che ti serve oppure "catalogo".
     return reply(res, out);
   }
 
-  // NOVITÀ
   if (intent === "novita") {
     setState(uid, "novita");
     if (!PRODUCTS.length) return reply(res, "Non ci sono ancora novità in catalogo.");
@@ -703,7 +631,6 @@ Scrivi quello che ti serve oppure "catalogo".
     return reply(res, out);
   }
 
-  // PROMOZIONI
   if (intent === "promozioni") {
     setState(uid, "promozioni");
     return reply(res, `
@@ -715,7 +642,6 @@ Se vuoi, posso consigliarti da dove iniziare in base al tuo obiettivo. Scrivi: "
 `);
   }
 
-  // CONSIGLIO
   if (intent === "consiglio") {
     setState(uid, "consiglio");
     const main = mainProduct || PRODUCTS[0];
@@ -727,7 +653,6 @@ ${productReply(main)}
 `);
   }
 
-  // AIUTAMI A SCEGLIERE
   if (intent === "scegli") {
     setState(uid, "scegli");
     return reply(res, `
@@ -743,7 +668,6 @@ Oppure scrivi direttamente il tuo obiettivo (es. "voglio migliorare la produttiv
 `);
   }
 
-  // CATEGORIA
   if (intent === "categoria") {
     setState(uid, "categoria");
     const list = listProductsByCategory(sub);
@@ -756,7 +680,6 @@ Oppure scrivi direttamente il tuo obiettivo (es. "voglio migliorare la produttiv
     return reply(res, out);
   }
 
-  // PRODOTTO SPECIFICO
   if (intent === "prodotto") {
     setState(uid, "prodotto");
     const p = findProductBySlug(sub) || findProductFromText(rawText);
@@ -764,7 +687,6 @@ Oppure scrivi direttamente il tuo obiettivo (es. "voglio migliorare la produttiv
     return reply(res, productReply(p));
   }
 
-  // APPROFONDISCI
   if (intent === "approfondisci") {
     setState(uid, "approfondisci");
     let p = null;
@@ -780,7 +702,6 @@ Dimmi su quale prodotto vuoi approfondire, ad esempio:
     return reply(res, productLongReply(p));
   }
 
-  // IMMAGINE PRODOTTO
   if (intent === "immagine") {
     setState(uid, "immagine");
     let p = null;
@@ -796,28 +717,6 @@ Dimmi di quale prodotto vuoi vedere la copertina, ad esempio:
     return reply(res, productImageReply(p));
   }
 
-  // COMMERCIALE PRODOTTO PRINCIPALE
-  if (intent === "commerciale_main") {
-    setState(uid, "commerciale_main");
-    state.data.lastProductSlug = MAIN_PRODUCT_SLUG;
-
-    if (!mainProduct) {
-      return reply(res, "Non trovo la guida principale nel catalogo in questo momento.");
-    }
-
-    return reply(res, `
-📘 *${mainProduct.Titolo}*
-
-${mainProduct.DescrizioneBreve}
-
-💰 Prezzo: ${mainProduct.Prezzo}
-👉 Acquista ora  
-${mainProduct.LinkPayhip}
-
-Vuoi vedere il video di presentazione o preferisci acquistare subito?
-Scrivi "video" oppure "sì".
-`);
-  }// ACQUISTO DIRETTO
   if (intent === "acquisto") {
     let p = null;
 
@@ -844,7 +743,6 @@ Vuoi vedere altri dettagli o tornare al menu?
 `);
   }
 
-  // VIDEO GENERICO
   if (intent === "video_generico") {
     let p = null;
     if (state.data.lastProductSlug) p = findProductBySlug(state.data.lastProductSlug);
@@ -861,7 +759,6 @@ Vuoi acquistarlo o tornare al menu?
 `);
   }
 
-  // CONTATTI
   if (intent === "contatti") {
     return reply(res, `
 📞 *Contatti MewingMarket*
@@ -873,7 +770,6 @@ Scrivi pure il tuo problema e ti aiuto subito.
 `);
   }
 
-  // PREZZO
   if (intent === "prezzo") {
     let p = null;
     if (state.data.lastProductSlug) p = findProductBySlug(state.data.lastProductSlug);
@@ -888,7 +784,6 @@ Vuoi acquistarlo o vedere altri dettagli?
 `);
   }
 
-  // DETTAGLI
   if (intent === "dettagli") {
     let p = null;
     if (state.data.lastProductSlug) p = findProductBySlug(state.data.lastProductSlug);
@@ -899,7 +794,6 @@ Vuoi acquistarlo o vedere altri dettagli?
     return reply(res, productLongReply(p));
   }
 
-  // NEWSLETTER ISCRIZIONE
   if (intent === "newsletter_iscrizione") {
     return reply(res, `
 Perfetto! 🎉
@@ -907,11 +801,10 @@ Perfetto! 🎉
 Puoi iscriverti qui:
 ${LINKS.newsletter}
 
-Vuoi altro o torniamo al menu?
+Vuoi altro o tornare al menu?
 `);
   }
 
-  // NEWSLETTER DISISCRIZIONE
   if (intent === "newsletter_disiscrizione") {
     return reply(res, `
 Nessun problema.
@@ -919,26 +812,42 @@ Nessun problema.
 Puoi annullare l’iscrizione qui:
 ${LINKS.disiscrizione}
 
-Vuoi altro o torniamo al menu?
+Vuoi altro o tornare al menu?
 `);
   }
 
-  // SUPPORTO TECNICO
   if (intent === "supporto_tecnico") {
     return reply(res, SUPPORTO);
   }
 
-  // DOWNLOAD
   if (intent === "download") {
     return reply(res, HELP_DESK.download);
   }
 
-  // RIMBORSO
   if (intent === "rimborso") {
     return reply(res, HELP_DESK.rimborso);
+        }if (intent === "commerciale_main") {
+    setState(uid, "commerciale_main");
+    state.data.lastProductSlug = MAIN_PRODUCT_SLUG;
+
+    if (!mainProduct) {
+      return reply(res, "Non trovo la guida principale nel catalogo in questo momento.");
+    }
+
+    return reply(res, `
+📘 *${mainProduct.Titolo}*
+
+${mainProduct.DescrizioneBreve}
+
+💰 Prezzo: ${mainProduct.Prezzo}
+👉 Acquista ora  
+${mainProduct.LinkPayhip}
+
+Vuoi vedere il video di presentazione o preferisci acquistare subito?
+Scrivi "video" oppure "sì".
+`);
   }
 
-  // SOTTO-LIVELLO COMMERCIALE
   if (state.state === "commerciale_main") {
     if (isYes(rawText)) {
       setState(uid, "acquisto_main");
@@ -963,7 +872,6 @@ Vuoi acquistare o tornare al menu?
     }
   }
 
-  // VIDEO PRODOTTO PRINCIPALE
   if (intent === "video_main") {
     setState(uid, "video_main");
     return reply(res, `
@@ -975,7 +883,6 @@ Vuoi acquistare la guida o tornare al menu?
 `);
   }
 
-  // SOTTO-LIVELLO VIDEO
   if (state.state === "video_main") {
     if (isYes(rawText)) {
       return reply(res, `
@@ -988,7 +895,6 @@ Hai bisogno di altro o vuoi tornare al menu?
     }
   }
 
-  // SOCIAL
   if (intent === "social") {
     setState(uid, "social");
     return reply(res, `
@@ -1006,7 +912,6 @@ Vuoi tornare al menu?
 `);
   }
 
-  // SUPPORTO / FAQ
   if (intent === "supporto") {
     setState(uid, "supporto");
     const t = normalize(rawText);
@@ -1030,7 +935,6 @@ Vuoi tornare al menu?
     return reply(res, FAQ_BLOCK + "\n\nScrivi la tua domanda oppure 'menu'.");
   }
 
-  // NEWSLETTER
   if (intent === "newsletter") {
     setState(uid, "newsletter");
     const t = normalize(rawText);
@@ -1064,7 +968,6 @@ Vuoi iscriverti o annullare l’iscrizione?
 `);
   }
 
-  // SITO
   if (intent === "sito") {
     setState(uid, "sito");
     return reply(res, `
@@ -1078,7 +981,6 @@ Vuoi informazioni su un prodotto specifico o tornare al menu?
 `);
   }
 
-  // CERCA PRODOTTO
   if (intent === "cerca") {
     setState(uid, "cerca");
     const q = normalize(rawText);
@@ -1100,7 +1002,6 @@ Vuoi informazioni su un prodotto specifico o tornare al menu?
     return reply(res, out);
   }
 
-  // FALLBACK SOFT
   if (intent === "fallback_soft") {
     return reply(res, `
 Non ho capito bene, ma posso aiutarti.
@@ -1116,17 +1017,20 @@ Scrivi una parola chiave.
 `);
   }
 
-  // FALLBACK GENERALE
   return reply(res, `
 Posso aiutarti con prodotti, supporto, newsletter o social.
 
 Scrivi "menu" per vedere tutte le opzioni.
 `);
+}if (intent === "fallback") {
+    return reply(res, `
+Posso aiutarti con prodotti, supporto, newsletter o social.
+
+Scrivi "menu" per vedere tutte le opzioni.
+`);
+  }
 }
 
-// =========================
-// AVVIO SERVER
-// =========================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("MewingMarket AI attivo sulla porta " + PORT);
