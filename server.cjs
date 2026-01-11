@@ -513,6 +513,111 @@ function detectIntent(rawText) {
     if (t.includes(titolo) || t.includes(breve) || t.includes(slug) || t.includes(id)) {
       return { intent: "prodotto", sub: p.Slug };
     }
+  }// ACQUISTO / BUY
+  if (
+    t.includes("acquisto") ||
+    t.includes("acquista") ||
+    t.includes("compra") ||
+    t.includes("comprare") ||
+    t.includes("lo prendo") ||
+    t.includes("lo compro") ||
+    t.includes("prendo") ||
+    t.includes("comprare subito") ||
+    t.includes("voglio comprarlo") ||
+    t.includes("voglio acquistarlo")
+  ) {
+    return { intent: "acquisto", sub: null };
+  }
+
+  // VIDEO GENERICO
+  if (
+    t === "video" ||
+    t.includes("guarda video") ||
+    t.includes("mostra video") ||
+    t.includes("fammi vedere il video") ||
+    t.includes("trailer")
+  ) {
+    return { intent: "video_generico", sub: null };
+  }
+
+  // CONTATTI
+  if (
+    t.includes("contatti") ||
+    t.includes("email") ||
+    t.includes("whatsapp") ||
+    t.includes("numero") ||
+    t.includes("telefono") ||
+    t.includes("supporto diretto")
+  ) {
+    return { intent: "contatti", sub: null };
+  }
+
+  // PREZZO
+  if (
+    t.includes("prezzo") ||
+    t.includes("quanto costa") ||
+    t.includes("costo") ||
+    t.includes("quanto viene") ||
+    t.includes("quanto è")
+  ) {
+    return { intent: "prezzo", sub: null };
+  }
+
+  // DETTAGLI / INFO
+  if (
+    t.includes("dettagli") ||
+    t.includes("info") ||
+    t.includes("informazioni") ||
+    t.includes("dimmi di più") ||
+    t.includes("cosa include")
+  ) {
+    return { intent: "dettagli", sub: null };
+  }
+
+  // NEWSLETTER: ISCRIZIONE
+  if (
+    t.includes("iscrivimi") ||
+    t.includes("voglio iscrivermi") ||
+    t.includes("attiva newsletter")
+  ) {
+    return { intent: "newsletter_iscrizione", sub: null };
+  }
+
+  // NEWSLETTER: DISISCRIZIONE
+  if (
+    t.includes("annulla iscrizione") ||
+    t.includes("disiscrivimi") ||
+    t.includes("togli newsletter")
+  ) {
+    return { intent: "newsletter_disiscrizione", sub: null };
+  }
+
+  // SUPPORTO TECNICO SPECIFICO
+  if (
+    t.includes("non funziona") ||
+    t.includes("errore") ||
+    t.includes("problema") ||
+    t.includes("bug")
+  ) {
+    return { intent: "supporto_tecnico", sub: null };
+  }
+
+  // DOWNLOAD PROBLEMI
+  if (
+    t.includes("non riesco a scaricare") ||
+    t.includes("download non va") ||
+    t.includes("download non funziona")
+  ) {
+    return { intent: "download", sub: null };
+  }
+
+  // RIMBORSO
+  if (
+    t.includes("rimborso") ||
+    t.includes("voglio un rimborso") ||
+    t.includes("restituzione")
+  ) {
+    return { intent: "rimborso", sub: null };
   }
 
   // CATEGORIA (se trova una categoria nel testo)
@@ -712,6 +817,125 @@ ${mainProduct.LinkPayhip}
 Vuoi vedere il video di presentazione o preferisci acquistare subito?
 Scrivi "video" oppure "sì".
 `);
+  }// ACQUISTO DIRETTO
+  if (intent === "acquisto") {
+    let p = null;
+
+    if (state.data.lastProductSlug) {
+      p = findProductBySlug(state.data.lastProductSlug);
+    }
+    if (!p) p = findProductFromText(rawText);
+
+    if (!p) {
+      return reply(res, `
+Quale prodotto vuoi acquistare?
+
+Scrivi il nome, lo slug oppure "catalogo".
+`);
+    }
+
+    return reply(res, `
+Perfetto! 🎉
+
+👉 Puoi acquistarlo qui:
+${p.LinkPayhip}
+
+Vuoi vedere altri dettagli o tornare al menu?
+`);
+  }
+
+  // VIDEO GENERICO
+  if (intent === "video_generico") {
+    let p = null;
+    if (state.data.lastProductSlug) p = findProductBySlug(state.data.lastProductSlug);
+    if (!p) p = findProductFromText(rawText);
+    if (!p) p = mainProduct;
+
+    if (!p) return reply(res, "Non trovo un prodotto associato al video.");
+
+    return reply(res, `
+🎥 Ecco il video di presentazione:
+${p.Immagine || "https://youtube.com/shorts/YoOXWUajbQc"}
+
+Vuoi acquistarlo o tornare al menu?
+`);
+  }
+
+  // CONTATTI
+  if (intent === "contatti") {
+    return reply(res, `
+📞 *Contatti MewingMarket*
+
+Email: support@mewingmarket.it  
+WhatsApp: 352 026 6660  
+
+Scrivi pure il tuo problema e ti aiuto subito.
+`);
+  }
+
+  // PREZZO
+  if (intent === "prezzo") {
+    let p = null;
+    if (state.data.lastProductSlug) p = findProductBySlug(state.data.lastProductSlug);
+    if (!p) p = findProductFromText(rawText);
+
+    if (!p) return reply(res, "Di quale prodotto vuoi sapere il prezzo?");
+
+    return reply(res, `
+💰 Prezzo di *${p.TitoloBreve}*: ${p.Prezzo}
+
+Vuoi acquistarlo o vedere altri dettagli?
+`);
+  }
+
+  // DETTAGLI
+  if (intent === "dettagli") {
+    let p = null;
+    if (state.data.lastProductSlug) p = findProductBySlug(state.data.lastProductSlug);
+    if (!p) p = findProductFromText(rawText);
+
+    if (!p) return reply(res, "Dimmi quale prodotto vuoi approfondire.");
+
+    return reply(res, productLongReply(p));
+  }
+
+  // NEWSLETTER ISCRIZIONE
+  if (intent === "newsletter_iscrizione") {
+    return reply(res, `
+Perfetto! 🎉
+
+Puoi iscriverti qui:
+${LINKS.newsletter}
+
+Vuoi altro o torniamo al menu?
+`);
+  }
+
+  // NEWSLETTER DISISCRIZIONE
+  if (intent === "newsletter_disiscrizione") {
+    return reply(res, `
+Nessun problema.
+
+Puoi annullare l’iscrizione qui:
+${LINKS.disiscrizione}
+
+Vuoi altro o torniamo al menu?
+`);
+  }
+
+  // SUPPORTO TECNICO
+  if (intent === "supporto_tecnico") {
+    return reply(res, SUPPORTO);
+  }
+
+  // DOWNLOAD
+  if (intent === "download") {
+    return reply(res, HELP_DESK.download);
+  }
+
+  // RIMBORSO
+  if (intent === "rimborso") {
+    return reply(res, HELP_DESK.rimborso);
   }
 
   // SOTTO-LIVELLO COMMERCIALE
