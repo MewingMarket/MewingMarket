@@ -10,13 +10,13 @@ require("dotenv").config();
 const app = express();
 app.disable("x-powered-by");
 app.use(express.static(path.join(process.cwd(), "public")));
-app.get("/products.json", (req, res) => {
-  res.sendFile(path.join(process.cwd(), "data", "products.json"));
-});
+
 app.get("/", (req, res) => {
   res.sendFile(path.join(process.cwd(), "public", "index.html"));
 });
-
+app.get("/products.json", (req, res) => {
+  res.sendFile(path.join(process.cwd(), "data", "products.json"));
+});
 app.use((req, res, next) => {
   const proto = req.headers["x-forwarded-proto"];
   const host = req.headers.host;
