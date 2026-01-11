@@ -96,7 +96,7 @@ async function updateProductsFromNotion() {
       database_id: NOTION_DB,
       filter: {
         property: "Attivo",
-        checkbox: { equals: true }
+        select: { equals: "Yes" }
       }
     });
 
@@ -110,7 +110,7 @@ async function updateProductsFromNotion() {
         DescrizioneBreve: props.DescrizioneBreve?.rich_text?.[0]?.text?.content || "",
         DescrizioneLunga: props.DescrizioneLunga?.rich_text?.[0]?.text?.content || "",
         ID: props.ID?.rich_text?.[0]?.text?.content || "",
-        Immagine: props.Immagine?.url || "",
+        Immagine: props.Immagine?.rich_text?.[0]?.text?.content || "",
         LinkPayhip: props.LinkPayhip?.url || "",
         Prezzo: props.Prezzo?.rich_text?.[0]?.text?.content || "",
         Slug: props.Slug?.rich_text?.[0]?.text?.content || "",
@@ -126,6 +126,9 @@ async function updateProductsFromNotion() {
     console.error("Errore aggiornamento Notion:", err.message);
   }
 }
+
+// AGGIUNGI QUESTO SUBITO DOPO
+updateProductsFromNotion();
 
 setInterval(updateProductsFromNotion, 5 * 60 * 1000);
 
