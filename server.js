@@ -3,7 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import path from "path";
 import fs from "fs";
-import dotenv from "dotenv";
+require("dotenv").config();
 import { Client } from "@notionhq/client";
 
 dotenv.config();
