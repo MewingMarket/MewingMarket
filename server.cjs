@@ -1,4 +1,4 @@
-const path = require("path");
+seconst path = require("path");
 const express = require("express");
 const fs = require("fs");
 const cors = require("cors");
@@ -935,7 +935,10 @@ Vuoi tornare al menu?
     return reply(res, FAQ_BLOCK + "\n\nScrivi la tua domanda oppure 'menu'.");
   }
 
-  // NEWSLETTER — ISCRIZIONE DIRETTA
+// NEWSLETTER — NORMALIZZAZIONE TESTO
+const t = normalize(rawText);
+
+// NEWSLETTER — ISCRIZIONE DIRETTA
 if (
   t.includes("iscrizione") ||
   t.includes("iscrivimi") ||
