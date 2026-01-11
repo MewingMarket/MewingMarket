@@ -91,17 +91,18 @@ setInterval(loadProducts, 60000);
 
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
 const NOTION_DB = process.env.NOTION_DB;
-
 async function updateProductsFromNotion() {
   try {
     const response = await notion.databases.query({
-      database_id: 'cdd4f47ead8d4d599c85aeab594b94e8'
+      database_id: 'cdd4f47ead8d4d599c85aeab594b94e8',
       filter: {
-  property: "Attivo",
-  checkbox: { equals: true }
+        property: "Attivo",
+        checkbox: { equals: true }
       }
     });
-console.log("Risultati Notion:", response.results.length);
+
+    console.log("Risultati Notion:", response.results.length);
+
     const products = response.results.map(page => {
       const props = page.properties;
 
