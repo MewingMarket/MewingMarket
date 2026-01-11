@@ -147,15 +147,28 @@ let PRODUCTS = [];
 
 function loadProducts() {
   try {
-    const raw = fs.readFileSync("./data/products.json", "utf8");
-    const all = JSON.parse(raw);
+    if (!fs.existsSync("./data/products.json")) {
+      console.warn("products.json non trovato, creo file vuoto.");
+      fs.writeFileSync("./data/products.json", "[]");
+    }
 
-    // Airtable usa booleani → f.Attivo === true
+    const raw = fs.readFileSync("./data/products.json", "utf8");
+
+    if (!raw.trim()) {
+      console.warn("products.json vuoto, inizializzo array.");
+      fs.writeFileSync("./data/products.json", "[]");
+      PRODUCTS = [];
+      return;
+    }
+
+    const all = JSON.parse(raw);
     PRODUCTS = all.filter(p => p.attivo === true);
 
     console.log("Catalogo aggiornato:", PRODUCTS.length, "prodotti attivi");
+
   } catch (err) {
     console.error("Errore caricamento products.json", err);
+    PRODUCTS = [];
   }
 }
 
