@@ -1022,16 +1022,29 @@ Posso aiutarti con prodotti, supporto, newsletter o social.
 
 Scrivi "menu" per vedere tutte le opzioni.
 `);
-}if (intent === "fallback") {
+if (intent === "fallback_soft") {
     return reply(res, `
+Non ho capito bene, ma posso aiutarti.
+
+Vuoi:
+• informazioni su un prodotto  
+• supporto  
+• newsletter  
+• social  
+• tornare al menu  
+
+Scrivi una parola chiave.
+`);
+  }
+
+  return reply(res, `
 Posso aiutarti con prodotti, supporto, newsletter o social.
 
 Scrivi "menu" per vedere tutte le opzioni.
 `);
-  }
 }
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("MewingMarket AI attivo sulla porta " + PORT);
-});
+});                }
