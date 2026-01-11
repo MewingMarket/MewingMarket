@@ -128,7 +128,7 @@ async function updateProductsFromNotion() {
     console.error("Errore aggiornamento Notion:", err.message);
   }
 }
-
+console.log("Risultati Notion:", response.results.length);
 // AGGIUNGI QUESTO SUBITO DOPO
 updateProductsFromNotion();
 
