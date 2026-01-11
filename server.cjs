@@ -112,7 +112,7 @@ async function updateProductsFromNotion() {
         ID: props.ID?.rich_text?.[0]?.text?.content || "",
         Immagine: props.Immagine?.rich_text?.[0]?.text?.content || "",
         LinkPayhip: props.LinkPayhip?.url || "",
-        Prezzo: props.Prezzo?.rich_text?.[0]?.text?.content || "",
+        Prezzo: String(props.Prezzo?.number || 0),
         Slug: props.Slug?.rich_text?.[0]?.text?.content || "",
         TitoloBreve: props.TitoloBreve?.rich_text?.[0]?.text?.content || ""
       };
