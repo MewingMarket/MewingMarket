@@ -101,7 +101,7 @@ async function updateProductsFromNotion() {
   checkbox: { equals: true }
       }
     });
-
+console.log("Risultati Notion:", response.results.length);
     const products = response.results.map(page => {
       const props = page.properties;
 
@@ -128,7 +128,7 @@ async function updateProductsFromNotion() {
     console.error("Errore aggiornamento Notion:", err.message);
   }
 }
-console.log("Risultati Notion:", response.results.length);
+
 // AGGIUNGI QUESTO SUBITO DOPO
 updateProductsFromNotion();
 
