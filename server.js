@@ -2,8 +2,14 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import path from "path";
-import fs from "fs";
+import fs from "fs";import dotenv from "dotenv";
+dotenv.config();
 
+const NOTION_TOKEN = process.env.NOTION_TOKEN;
+const NOTION_DB = process.env.NOTION_DB;
+import { Client } from "@notionhq/client";
+import dotenv from "dotenv";
+dotenv.config();
 const app = express();
 app.disable("x-powered-by");
 
@@ -93,7 +99,52 @@ function loadProducts() {
   } catch (err) {
     console.error("Errore caricamento products.json", err);
   }
+}const notion = new Client({ auth: process.env.NOTION_TOKEN });
+const NOTION_DB = process.env.NOTION_DB;
+
+async function updateProductsFromNotion() {
+  try {
+    const response = await notion.databases.query({
+      database_id: NOTION_DB,
+      filter: {
+        property: "Attivo",
+        checkbox: { equals: true }
+      }
+    });
+
+    const products = response.results.map(page => {
+      const props = page.properties;
+
+      return {
+        Titolo: props.Titolo?.title?.[0]?.text?.content || "",
+        Attivo: "Yes",
+        Categoria: props.Categoria?.select?.name || "",
+        DescrizioneBreve: props.DescrizioneBreve?.rich_text?.[0]?.text?.content || "",
+        DescrizioneLunga: props.DescrizioneLunga?.rich_text?.[0]?.text?.content || "",
+        ID: props.ID?.rich_text?.[0]?.text?.content || "",
+        Immagine: props.Immagine?.url || "",
+        LinkPayhip: props.LinkPayhip?.url || "",
+        Prezzo: props.Prezzo?.rich_text?.[0]?.text?.content || "",
+        Slug: props.Slug?.rich_text?.[0]?.text?.content || "",
+        TitoloBreve: props.TitoloBreve?.rich_text?.[0]?.text?.content || ""
+      };
+    });
+
+    fs.writeFileSync("./public/products.json", JSON.stringify(products, null, 2), "utf8");
+    console.log("✅ products.json aggiornato da Notion:", products.length, "prodotti");
+  } catch (err) {
+    console.error("❌ Errore aggiornamento Notion:", err.message);
+  }
 }
+
+// Aggiorna ogni 5 minuti
+setInterval(updateProductsFromNotion, 5 * 60 * 1000);
+
+// Endpoint manuale
+app.get("/sync/notion", async (req, res) => {
+  await updateProductsFromNotion();
+  res.send("Aggiornamento completato.");
+});
 
 loadProducts();
 setInterval(loadProducts, 60000);
