@@ -75,7 +75,7 @@ let PRODUCTS = [];
 
 function loadProducts() {
   try {
-    const raw = fs.readFileSync("./public/products.json", "utf8");
+  const raw = fs.readFileSync("./data/products.json", "utf8");
     const all = JSON.parse(raw);
     PRODUCTS = all.filter(p => String(p.Attivo).toLowerCase() === "yes");
     console.log("Catalogo aggiornato:", PRODUCTS.length, "prodotti attivi");
