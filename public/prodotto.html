@@ -52,44 +52,50 @@
 </script>
 
 <script>
+// Ottieni parametro slug
 function getParam(name) {
   return new URLSearchParams(window.location.search).get(name);
 }
 
 const slug = getParam('slug');
 
+// Carica prodotti
 fetch('/products.json')
   .then(r => r.json())
   .then(products => {
-    const p = products.find(x => x.Slug === slug);
+
+    // Trova prodotto con slug corretto
+    const p = products.find(x => x.slug === slug);
 
     if (!p) {
       document.getElementById('title').textContent = "Prodotto non trovato";
       return;
     }
 
-    document.title = p.Titolo + " – MewingMarket";
+    // SEO dinamica
+    document.title = p.titolo + " – MewingMarket";
 
-    document.getElementById('title').textContent = p.Titolo;
-    document.getElementById('desc-lunga').textContent = p.DescrizioneLunga;
-    document.getElementById('price').textContent = p.Prezzo;
-    document.getElementById('image').src = p.Immagine;
-    document.getElementById('image').alt = p.Titolo;
-    document.getElementById('payhip').href = p.LinkPayhip;
+    // Popola pagina
+    document.getElementById('title').textContent = p.titolo;
+    document.getElementById('desc-lunga').textContent = p.descrizioneLunga;
+    document.getElementById('price').textContent = "€" + p.prezzo;
+    document.getElementById('image').src = p.immagine;
+    document.getElementById('image').alt = p.titolo;
+    document.getElementById('payhip').href = p.linkPayhip;
 
     // Schema.org
     const schema = {
       "@context": "https://schema.org",
       "@type": "Product",
-      "name": p.Titolo,
-      "image": p.Immagine,
-      "description": p.DescrizioneLunga,
+      "name": p.titolo,
+      "image": p.immagine,
+      "description": p.descrizioneLunga,
       "offers": {
         "@type": "Offer",
-        "price": p.Prezzo.replace('€',''),
+        "price": p.prezzo,
         "priceCurrency": "EUR",
         "availability": "https://schema.org/InStock",
-        "url": p.LinkPayhip
+        "url": p.linkPayhip
       }
     };
 
@@ -99,12 +105,13 @@ fetch('/products.json')
     document.head.appendChild(script);
   });
 </script>
+
 <script>
+// Tracking click
 document.addEventListener("click", function(e) {
   const btn = e.target.closest(".btn, .btn-acquista");
   if (!btn) return;
 
-  const card = e.target.closest(".product-card");
   const isProductPage = document.getElementById("title") !== null;
 
   let record = {
@@ -112,14 +119,6 @@ document.addEventListener("click", function(e) {
     device: /Mobi|Android/i.test(navigator.userAgent) ? "mobile" : "desktop",
     page: location.pathname
   };
-
-  if (card) {
-    record.titolo = card.querySelector("h2")?.textContent || "";
-    record.slug = card.dataset.slug || "";
-    record.categoria = card.dataset.cat || "";
-    record.prezzo = card.querySelector(".prezzo")?.textContent || "";
-    record.link = btn.href;
-  }
 
   if (isProductPage) {
     record.titolo = document.getElementById("title").textContent;
@@ -133,5 +132,6 @@ document.addEventListener("click", function(e) {
   localStorage.setItem("clickLogs", JSON.stringify(logs));
 });
 </script>
+
 </body>
 </html>
