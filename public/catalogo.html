@@ -44,6 +44,7 @@
 
   <section id="catalogo" class="catalogo-grid"></section>
 </main>
+
 <div id="footer-placeholder"></div>
 <script>
   fetch("footer.html")
@@ -53,6 +54,9 @@
     });
 </script>
 
+<!-- ===========================
+     CATALOGO DINAMICO
+=========================== -->
 <script>
 fetch('/products.json')
   .then(r => r.json())
@@ -62,7 +66,7 @@ fetch('/products.json')
     const categorieBox = document.getElementById('categorie');
 
     // CATEGORIE AUTOMATICHE
-    const categorie = [...new Set(products.map(p => p.Categoria))];
+    const categorie = [...new Set(products.map(p => p.categoria))];
 
     categorieBox.innerHTML = categorie.map(cat =>
       `<button class="cat-btn" onclick="filterCat('${cat}')">${cat}</button>`
@@ -72,15 +76,16 @@ fetch('/products.json')
     products.forEach(product => {
       const card = document.createElement('div');
       card.className = 'product-card';
-      card.dataset.cat = product.Categoria;
+      card.dataset.cat = product.categoria;
+      card.dataset.slug = product.slug;
 
-      const url = `prodotto.html?slug=${product.Slug}`;
+      const url = `prodotto.html?slug=${product.slug}`;
 
       card.innerHTML = `
-        <img src="${product.Immagine}" alt="${product.Titolo}">
-        <h2>${product.TitoloBreve}</h2>
-        <p>${product.DescrizioneBreve}</p>
-        <p class="prezzo">€${product.Prezzo.replace('€','')}</p>
+        <img src="${product.immagine}" alt="${product.titolo}">
+        <h2>${product.titoloBreve}</h2>
+        <p>${product.descrizioneBreve}</p>
+        <p class="prezzo">€${product.prezzo}</p>
         <a href="${url}" class="btn">Scopri di più</a>
       `;
 
@@ -96,6 +101,10 @@ fetch('/products.json')
 
   });
 </script>
+
+<!-- ===========================
+     TRACKING CLICK
+=========================== -->
 <script>
 document.addEventListener("click", function(e) {
   const btn = e.target.closest(".btn, .btn-acquista");
@@ -130,5 +139,6 @@ document.addEventListener("click", function(e) {
   localStorage.setItem("clickLogs", JSON.stringify(logs));
 });
 </script>
+
 </body>
 </html>
