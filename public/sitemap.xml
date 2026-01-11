@@ -1,8 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://mewingmarket.it/</loc>
-    <priority>1.0</priority>
-    <changefreq>weekly</changefreq>
-  </url>
-</urlset>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>https://www.mewingmarket.it/sitemap-pages.xml</loc>
+  </sitemap>
+  <sitemap>
+    <loc>https://www.mewingmarket.it/sitemap-store.xml</loc>
+  </sitemap>
+  <sitemap>
+    <loc>https://www.mewingmarket.it/sitemap-images.xml</loc>
+  </sitemap>
+  <sitemap>
+    <loc>https://www.mewingmarket.it/sitemap-social.xml</loc>
+  </sitemap>
+</sitemapindex>

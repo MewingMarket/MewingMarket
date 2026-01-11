@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Privacy Policy | MewingMarket</title>
+    <title>Privacy Policy | MewingMarket</title><link rel="canonical" href="https://www.mewingmarket.it/privacy.html"><link rel="stylesheet" href="style.css">
     <meta name="description" content="Informativa sulla privacy di MewingMarket. Scopri come trattiamo i tuoi dati personali in modo sicuro e trasparente.">
     <link rel="icon" href="/favicon.ico" type="image/x-icon">
     <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
@@ -16,25 +16,6 @@
     </style>
 </head>
 <body>
-
-<!-- BANNER COOKIE -->
-<div id="consent-banner" style="
-    position: fixed; bottom: 0; left: 0; width: 100%;
-    background: #fff; padding: 15px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-    text-align: center; font-family: Arial; z-index: 9999;">
-    <p style="margin: 0; font-size: 14px;">
-        Vuoi gestire le tue preferenze?
-        <a href="/iscrizione.html" style="margin-left:10px;">Iscrizione</a> |
-        <a href="/disiscriviti.html" style="margin-left:10px;">Disiscrizione</a> |
-        <a href="/privacy.html" style="margin-left:10px;">Privacy</a> |
-        <a href="/cookie.html" style="margin-left:10px;">Cookie</a> |
-        <a href="/terms.html" style="margin-left:10px;">Termini</a>
-    </p>
-    <button onclick="document.getElementById('consent-banner').style.display='none'"
-        style="margin-top:10px; padding:8px 20px; background:#000; color:#fff; border:none; border-radius:5px;">
-        OK
-    </button>
-</div>
 
 <div class="box">
     <h1>Privacy Policy</h1>
@@ -56,25 +37,14 @@
     <h2>Contatti</h2>
     <p>Per qualsiasi richiesta puoi contattarci tramite la chat del sito.</p>
 </div>
-
-<!-- FOOTER -->
-<footer>
-    <ul class="footer-social" style="list-style:none; padding:0; display:flex; justify-content:center; gap:15px; margin-top:40px;">
-      <li><a href="https://www.facebook.com/profile.php?id=61584779793628">Facebook</a></li>
-      <li><a href="https://www.instagram.com/mewingmarket?igsh=eGZ2MHE0bTFtbmJt">Instagram</a></li>
-      <li><a href="https://tiktok.com/@mewingmarket">TikTok</a></li>
-      <li><a href="https://x.com/mewingm8">X</a></li>
-      <li><a href="https://www.youtube.com/@mewingmarket2">YouTube</a></li>
-      <li><a href="https://www.linkedin.com/in/simone-griseri-5368a7394">LinkedIn</a></li>
-      <li><a href="https://www.threads.com/@mewingmarket">Threads</a></li>
-    </ul>
-
-    <p style="font-size:14px; color:#cc0000; margin:0; padding:12px 0; text-align:center; line-height:1.5;">
-      <strong>© 2025 MewingMarket</strong><br>
-      Prodotti digitali creati con Intelligenza Artificiale.<br>
-      Tutti i diritti riservati.
-    </p>
-</footer>
+<div id="footer-placeholder"></div>
+<script>
+  fetch("footer.html")
+    .then(res => res.text())
+    .then(html => {
+      document.getElementById("footer-placeholder").innerHTML = html;
+    });
+</script>
 
 </body>
 </html>

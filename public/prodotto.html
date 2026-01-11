@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Prodotto – MewingMarket</title>
+  <meta name="description" content="Scheda prodotto digitale MewingMarket.">
+  <link rel="stylesheet" href="style.css?v=1.4">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+
+<header>
+  <img src="logo.png" alt="Logo" class="logo">
+</header>
+
+<nav>
+  <ul id="category-nav">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="catalogo.html">Catalogo</a></li>
+    <li><a href="chisiamo.html">Chi Siamo</a></li>
+    <li><a href="contatti.html">Contatti</a></li>
+    <li><a href="dovesiamo.html">Dove Siamo</a></li>
+    <li><a href="FAQ.html">FAQ</a></li>
+  </ul>
+</nav>
+
+<main>
+  <section class="hero-wrapper">
+    <div class="hero-text">
+      <h1 id="title"></h1>
+      <p id="desc-lunga"></p>
+      <p class="prezzo" id="price"></p>
+      <a id="payhip" class="btn-acquista" target="_blank">Acquista su Payhip</a>
+    </div>
+
+    <div class="hero-image">
+      <img id="image" src="" alt="">
+    </div>
+  </section>
+</main>
+
+<div id="footer-placeholder"></div>
+<script>
+  fetch("footer.html")
+    .then(res => res.text())
+    .then(html => {
+      document.getElementById("footer-placeholder").innerHTML = html;
+    });
+</script>
+
+<script>
+function getParam(name) {
+  return new URLSearchParams(window.location.search).get(name);
+}
+
+const slug = getParam('slug');
+
+fetch('/products.json')
+  .then(r => r.json())
+  .then(products => {
+    const p = products.find(x => x.Slug === slug);
+
+    if (!p) {
+      document.getElementById('title').textContent = "Prodotto non trovato";
+      return;
+    }
+
+    document.title = p.Titolo + " – MewingMarket";
+
+    document.getElementById('title').textContent = p.Titolo;
+    document.getElementById('desc-lunga').textContent = p.DescrizioneLunga;
+    document.getElementById('price').textContent = p.Prezzo;
+    document.getElementById('image').src = p.Immagine;
+    document.getElementById('image').alt = p.Titolo;
+    document.getElementById('payhip').href = p.LinkPayhip;
+
+    // Schema.org
+    const schema = {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      "name": p.Titolo,
+      "image": p.Immagine,
+      "description": p.DescrizioneLunga,
+      "offers": {
+        "@type": "Offer",
+        "price": p.Prezzo.replace('€',''),
+        "priceCurrency": "EUR",
+        "availability": "https://schema.org/InStock",
+        "url": p.LinkPayhip
+      }
+    };
+
+    const script = document.createElement('script');
+    script.type = "application/ld+json";
+    script.textContent = JSON.stringify(schema);
+    document.head.appendChild(script);
+  });
+</script>
+<script>
+document.addEventListener("click", function(e) {
+  const btn = e.target.closest(".btn, .btn-acquista");
+  if (!btn) return;
+
+  const card = e.target.closest(".product-card");
+  const isProductPage = document.getElementById("title") !== null;
+
+  let record = {
+    timestamp: new Date().toLocaleString(),
+    device: /Mobi|Android/i.test(navigator.userAgent) ? "mobile" : "desktop",
+    page: location.pathname
+  };
+
+  if (card) {
+    record.titolo = card.querySelector("h2")?.textContent || "";
+    record.slug = card.dataset.slug || "";
+    record.categoria = card.dataset.cat || "";
+    record.prezzo = card.querySelector(".prezzo")?.textContent || "";
+    record.link = btn.href;
+  }
+
+  if (isProductPage) {
+    record.titolo = document.getElementById("title").textContent;
+    record.slug = new URLSearchParams(location.search).get("slug");
+    record.prezzo = document.getElementById("price").textContent;
+    record.link = document.getElementById("payhip").href;
+  }
+
+  let logs = JSON.parse(localStorage.getItem("clickLogs") || "[]");
+  logs.push(record);
+  localStorage.setItem("clickLogs", JSON.stringify(logs));
+});
+</script>
+</body>
+</html>

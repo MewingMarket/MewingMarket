@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Catalogo Prodotti Digitali – MewingMarket</title>
+  <link rel="canonical" href="https://www.mewingmarket.it/catalogo.html">
+
+  <meta name="description" content="Catalogo completo dei prodotti digitali MewingMarket: guide, strumenti AI, planner, workbook e risorse pratiche.">
+  <meta name="robots" content="index, follow">
+
+  <meta property="og:title" content="Catalogo Prodotti Digitali – MewingMarket">
+  <meta property="og:description" content="Esplora tutte le guide, i workbook e gli strumenti digitali creati per aiutarti a crescere nel digitale.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://www.mewingmarket.it/catalogo.html">
+  <meta property="og:image" content="https://www.mewingmarket.it/logo.png">
+
+  <link rel="stylesheet" href="style.css?v=1.4">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+
+<header>
+  <img src="logo.png" alt="Logo" class="logo">
+</header>
+
+<nav>
+  <ul id="category-nav">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="catalogo.html" class="active">Catalogo</a></li>
+    <li><a href="chisiamo.html">Chi Siamo</a></li>
+    <li><a href="contatti.html">Contatti</a></li>
+    <li><a href="dovesiamo.html">Dove Siamo</a></li>
+    <li><a href="FAQ.html">FAQ</a></li>
+  </ul>
+</nav>
+
+<main>
+  <h1>Catalogo Prodotti Digitali</h1>
+
+  <div id="categorie" class="categorie-nav"></div>
+
+  <section id="catalogo" class="catalogo-grid"></section>
+</main>
+<div id="footer-placeholder"></div>
+<script>
+  fetch("footer.html")
+    .then(res => res.text())
+    .then(html => {
+      document.getElementById("footer-placeholder").innerHTML = html;
+    });
+</script>
+
+<script>
+fetch('/products.json')
+  .then(r => r.json())
+  .then(products => {
+
+    const container = document.getElementById('catalogo');
+    const categorieBox = document.getElementById('categorie');
+
+    // CATEGORIE AUTOMATICHE
+    const categorie = [...new Set(products.map(p => p.Categoria))];
+
+    categorieBox.innerHTML = categorie.map(cat =>
+      `<button class="cat-btn" onclick="filterCat('${cat}')">${cat}</button>`
+    ).join('');
+
+    // CATALOGO
+    products.forEach(product => {
+      const card = document.createElement('div');
+      card.className = 'product-card';
+      card.dataset.cat = product.Categoria;
+
+      const url = `prodotto.html?slug=${product.Slug}`;
+
+      card.innerHTML = `
+        <img src="${product.Immagine}" alt="${product.Titolo}">
+        <h2>${product.TitoloBreve}</h2>
+        <p>${product.DescrizioneBreve}</p>
+        <p class="prezzo">€${product.Prezzo.replace('€','')}</p>
+        <a href="${url}" class="btn">Scopri di più</a>
+      `;
+
+      container.appendChild(card);
+    });
+
+    // FILTRO CATEGORIE
+    window.filterCat = function(cat) {
+      document.querySelectorAll('.product-card').forEach(card => {
+        card.style.display = card.dataset.cat === cat ? 'block' : 'none';
+      });
+    };
+
+  });
+</script>
+<script>
+document.addEventListener("click", function(e) {
+  const btn = e.target.closest(".btn, .btn-acquista");
+  if (!btn) return;
+
+  const card = e.target.closest(".product-card");
+  const isProductPage = document.getElementById("title") !== null;
+
+  let record = {
+    timestamp: new Date().toLocaleString(),
+    device: /Mobi|Android/i.test(navigator.userAgent) ? "mobile" : "desktop",
+    page: location.pathname
+  };
+
+  if (card) {
+    record.titolo = card.querySelector("h2")?.textContent || "";
+    record.slug = card.dataset.slug || "";
+    record.categoria = card.dataset.cat || "";
+    record.prezzo = card.querySelector(".prezzo")?.textContent || "";
+    record.link = btn.href;
+  }
+
+  if (isProductPage) {
+    record.titolo = document.getElementById("title").textContent;
+    record.slug = new URLSearchParams(location.search).get("slug");
+    record.prezzo = document.getElementById("price").textContent;
+    record.link = document.getElementById("payhip").href;
+  }
+
+  let logs = JSON.parse(localStorage.getItem("clickLogs") || "[]");
+  logs.push(record);
+  localStorage.setItem("clickLogs", JSON.stringify(logs));
+});
+</script>
+</body>
+</html>

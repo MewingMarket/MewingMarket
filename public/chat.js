@@ -1,4 +1,3 @@
-
 // ===============================
 // FUNZIONI UTILI
 // ===============================
@@ -28,12 +27,12 @@ const chatBtn = document.getElementById("mm-chat-btn");
 const chatBox = document.getElementById("mm-chatbox");
 
 chatBtn.addEventListener("click", () => {
-  chatBox.style.display = chatBox.style.display === "flex" ? "none" : "flex";
+  chatBox.classList.toggle("open");
 
   // Mostra messaggio di benvenuto solo la prima volta
   if (!chatBox.dataset.welcomeShown) {
     addMessage(
-      "<b>👋 Benvenuto, sono l’assistente di MewingMarket!</b><br>Sono qui per aiutarti con l’acquisto di HERO, il supporto tecnico, la newsletter o qualsiasi informazione sui nostri servizi.<br><br>Scrivi pure la tua domanda: ti accompagno io passo dopo passo.",
+      "<b>👋 Ciao!</b><br>Sono qui per aiutarti con la *Guida Completa all’Ecosistema Digitale Reale*, gli altri prodotti, il supporto, la newsletter e molto altro.<br><br>Scrivi pure la tua domanda oppure digita <b>menu</b> per vedere le opzioni.",
       "bot"
     );
     chatBox.dataset.welcomeShown = "true";

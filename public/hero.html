@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Ecosistema Digitale Reale – MewingMarket</title>
+  <link rel="canonical" href="https://www.mewingmarket.it/hero.html">
+
+  <meta name="description" content="La guida completa per capire davvero come funziona un ecosistema digitale nel 2025. Visione realistica, strumenti concreti e metodo replicabile.">
+  <meta name="robots" content="index, follow">
+
+  <meta property="og:title" content="Ecosistema Digitale Reale – MewingMarket">
+  <meta property="og:description" content="La guida completa per costruire basi solide nel digitale, senza fuffa e senza scorciatoie.">
+  <meta property="og:image" content="https://i.ibb.co/qLbQby5f/Costruisci-il-Tuo-Ecosistema-Digitale-Strumenti-Costi-e-la-Guida-per-Espan-20251222-211740-0000.png">
+  <meta property="og:url" content="https://www.mewingmarket.it/hero.html">
+  <meta property="og:type" content="product">
+
+  <link rel="stylesheet" href="style.css?v=1.4">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+
+<header>
+  <img src="logo.png" alt="MewingMarket Logo" class="logo">
+</header>
+
+<nav>
+  <ul>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="catalogo.html">Catalogo</a></li>
+    <li><a href="chisiamo.html">Chi Siamo</a></li>
+    <li><a href="contatti.html">Contatti</a></li>
+    <li><a href="dovesiamo.html">Dove Siamo</a></li>
+    <li><a href="FAQ.html">FAQ</a></li>
+  </ul>
+</nav>
+
+<main>
+  <section class="hero-wrapper">
+    <div class="hero-text">
+      <h1>Guida Completa all’Ecosistema Digitale Reale</h1>
+
+      <p class="prezzo">€30.00</p>
+
+      <p>
+        Un percorso completo per capire come funziona davvero un ecosistema digitale oggi,
+        senza scorciatoie e senza promesse irrealistiche.
+      </p>
+
+      <p>
+        All’interno trovi una visione d’insieme chiara di costi, tempi, competenze e leve principali
+        (contenuti, offerta, canali, acquisizione, conversione, retention), con esempi pratici e criteri
+        per prendere decisioni più solide.
+      </p>
+
+      <a href="https://payhip.com/b/LhqQT" class="btn-acquista" target="_blank" rel="noopener noreferrer">
+        Acquista ora su Payhip
+      </a>
+    </div>
+
+    <div class="hero-image">
+      <img src="https://i.ibb.co/qLbQby5f/Costruisci-il-Tuo-Ecosistema-Digitale-Strumenti-Costi-e-la-Guida-per-Espan-20251222-211740-0000.png" 
+           alt="Guida Ecosistema Digitale">
+    </div>
+  </section>
+</main>
+
+<div id="footer-placeholder"></div>
+<script>
+  fetch("footer.html")
+    .then(res => res.text())
+    .then(html => {
+      document.getElementById("footer-placeholder").innerHTML = html;
+    });
+</script>
+
+<!-- TRACKING AUTOMATICO -->
+<script>
+document.addEventListener("click", function(e) {
+  const btn = e.target.closest(".btn-acquista");
+  if (!btn) return;
+
+  const record = {
+    titolo: "Guida Completa all’Ecosistema Digitale Reale",
+    slug: "guida-ecosistema-digitale-reale",
+    prezzo: "€30.00",
+    link: btn.href,
+    timestamp: new Date().toLocaleString(),
+    device: /Mobi|Android/i.test(navigator.userAgent) ? "mobile" : "desktop",
+    page: location.pathname
+  };
+
+  let logs = JSON.parse(localStorage.getItem("clickLogs") || "[]");
+  logs.push(record);
+  localStorage.setItem("clickLogs", JSON.stringify(logs));
+});
+</script>
+
+<!-- SCHEMA.ORG -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": "Guida Completa all’Ecosistema Digitale Reale",
+  "image": "https://i.ibb.co/qLbQby5f/Costruisci-il-Tuo-Ecosistema-Digitale-Strumenti-Costi-e-la-Guida-per-Espan-20251222-211740-0000.png",
+  "description": "Un percorso completo per capire come funziona davvero un ecosistema digitale oggi, senza scorciatoie e senza promesse irrealistiche.",
+  "brand": {
+    "@type": "Brand",
+    "name": "MewingMarket"
+  },
+  "offers": {
+    "@type": "Offer",
+    "price": "30.00",
+    "priceCurrency": "EUR",
+    "availability": "https://schema.org/InStock",
+    "url": "https://payhip.com/b/LhqQT"
+  }
+}
+</script>
+
+</body>
+</html>
