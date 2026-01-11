@@ -935,39 +935,52 @@ Vuoi tornare al menu?
     return reply(res, FAQ_BLOCK + "\n\nScrivi la tua domanda oppure 'menu'.");
   }
 
-  if (intent === "newsletter") {
-    setState(uid, "newsletter");
-    const t = normalize(rawText);
+  // NEWSLETTER — ISCRIZIONE DIRETTA
+if (
+  t.includes("iscrizione") ||
+  t.includes("iscrivimi") ||
+  t.includes("voglio iscrivermi") ||
+  t.includes("attiva newsletter") ||
+  t.includes("newsletter iscrizione")
+) {
+  return reply(res, `
+Perfetto! 🎉
 
-    if (t.includes("annulla") || t.includes("disiscriv")) {
-      return reply(res, `
-Per annullare l’iscrizione:
-
-${LINKS.disiscrizione}
-
-Vuoi tornare al menu?
-`);
-    }
-
-    if (t.includes("iscriv")) {
-      return reply(res, `
-Perfetto! Puoi iscriverti qui:
-
+Puoi iscriverti qui:
 ${LINKS.newsletter}
 
-Vuoi tornare al menu?
+Vuoi altro o torniamo al menu?
 `);
-    }
+}
 
-    return reply(res, `
+// NEWSLETTER — DISISCRIZIONE DIRETTA
+if (
+  t.includes("annulla iscrizione") ||
+  t.includes("disiscrivimi") ||
+  t.includes("togli newsletter") ||
+  t.includes("stop newsletter") ||
+  t.includes("disiscrizione")
+) {
+  return reply(res, `
+Nessun problema.
+
+Puoi annullare l’iscrizione qui:
+${LINKS.disiscrizione}
+
+Vuoi altro o torniamo al menu?
+`);
+}
+
+// NEWSLETTER — MENU GENERALE
+if (intent === "newsletter") {
+  return reply(res, `
 Vuoi iscriverti o annullare l’iscrizione?
 
 • "iscrivimi"  
 • "annulla iscrizione"  
 • "menu"
 `);
-  }
-
+}
   if (intent === "sito") {
     setState(uid, "sito");
     return reply(res, `
