@@ -4,19 +4,25 @@ const fs = require("fs");
 const cors = require("cors");
 const OpenAI = require("openai");
 const cookieParser = require("cookie-parser");
-const { Client } = require("@notionhq/client");
 require("dotenv").config();
 
 const app = express();
 app.disable("x-powered-by");
+
+// Cartella pubblica
 app.use(express.static(path.join(process.cwd(), "public")));
 
+// Homepage
 app.get("/", (req, res) => {
   res.sendFile(path.join(process.cwd(), "public", "index.html"));
 });
+
+// File prodotti
 app.get("/products.json", (req, res) => {
   res.sendFile(path.join(process.cwd(), "data", "products.json"));
 });
+
+// Redirect HTTPS + WWW
 app.use((req, res, next) => {
   const proto = req.headers["x-forwarded-proto"];
   const host = req.headers.host;
@@ -41,12 +47,14 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(path.join(process.cwd(), "public")));
 
+// Stato utenti
 const userStates = {};
 
 function generateUID() {
   return "mm_" + Math.random().toString(36).substring(2, 12);
 }
 
+// Middleware gestione UID
 app.use((req, res, next) => {
   let uid = req.cookies.mm_uid;
 
@@ -72,14 +80,79 @@ app.use((req, res, next) => {
   req.userState = userStates[uid];
   next();
 });
+// ----------------------
+// CONFIG AIRTABLE
+// ----------------------
+const fetch = require("node-fetch");
 
+const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
+const BASE_ID = process.env.AIRTABLE_BASE_ID;
+const TABLE_NAME = process.env.AIRTABLE_TABLE_NAME; 
+// Esempio: Catalogo%20prodotti%20digitali
+
+// ----------------------
+// FUNZIONE SYNC AIRTABLE
+// ----------------------
+async function syncAirtable() {
+  try {
+    const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}`;
+
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${AIRTABLE_PAT}`,
+        "Content-Type": "application/json"
+      }
+    });
+
+    const data = await res.json();
+
+    if (!data.records) {
+      console.error("Errore Airtable:", data);
+      return [];
+    }
+
+    const products = data.records.map((record) => {
+      const f = record.fields;
+      return {
+        id: f.ID || "",
+        titolo: f.Titolo || "",
+        titoloBreve: f.TitoloBreve || "",
+        slug: f.Slug || "",
+        prezzo: f.Prezzo || 0,
+        categoria: f.Categoria || "",
+        attivo: f.Attivo === true,
+        immagine: f.Immagine?.[0]?.url || "",
+        linkPayhip: f.LinkPayhip || "",
+        descrizioneBreve: f.DescrizioneBreve || "",
+        descrizioneLunga: f.DescrizioneLunga || ""
+      };
+    });
+
+    // Salvataggio nella cartella data/
+    fs.writeFileSync("./data/products.json", JSON.stringify(products, null, 2));
+
+    console.log("products.json aggiornato da Airtable");
+    return products;
+
+  } catch (err) {
+    console.error("Errore sync Airtable:", err);
+    return [];
+  }
+}
+
+// ----------------------
+// CARICAMENTO PRODOTTI
+// ----------------------
 let PRODUCTS = [];
 
 function loadProducts() {
   try {
-  const raw = fs.readFileSync("./data/products.json", "utf8");
+    const raw = fs.readFileSync("./data/products.json", "utf8");
     const all = JSON.parse(raw);
-    PRODUCTS = all.filter(p => String(p.Attivo).toLowerCase() === "yes");
+
+    // Airtable usa booleani → f.Attivo === true
+    PRODUCTS = all.filter(p => p.attivo === true);
+
     console.log("Catalogo aggiornato:", PRODUCTS.length, "prodotti attivi");
   } catch (err) {
     console.error("Errore caricamento products.json", err);
@@ -89,56 +162,26 @@ function loadProducts() {
 loadProducts();
 setInterval(loadProducts, 60000);
 
-const notion = new Client({ auth: process.env.NOTION_TOKEN });
-const NOTION_DB = process.env.NOTION_DB;
-async function updateProductsFromNotion() {
+// ❌ Rimuovere completamente Notion
+// setInterval(updateProductsFromNotion, 5 * 60 * 1000);
+
+// ----------------------
+// ENDPOINT SYNC AIRTABLE
+// ----------------------
+app.get("/sync/airtable", async (req, res) => {
   try {
-    const response = await notion.databases.query({
-      database_id: '0b54369622994f0aa4c629aeaa5bcb23',
-      filter: {
-        property: "Attivo",
-        checkbox: { equals: true }
-      }
-    });
-
-    console.log("Risultati Notion:", response.results.length);
-
-    const products = response.results.map(page => {
-      const props = page.properties;
-
-      return {
-        Titolo: props.Titolo?.title?.[0]?.text?.content || "",
-        Attivo: "Yes",
-        Categoria: props.Categoria?.select?.name || "",
-        DescrizioneBreve: props.DescrizioneBreve?.rich_text?.[0]?.text?.content || "",
-        DescrizioneLunga: props.DescrizioneLunga?.rich_text?.[0]?.text?.content || "",
-        ID: props.ID?.rich_text?.[0]?.text?.content || "",
-        Immagine: props.Immagine?.rich_text?.[0]?.text?.content || "",
-        LinkPayhip: props.LinkPayhip?.url || "",
-        Prezzo: String(props.Prezzo?.number || 0),
-        Slug: props.Slug?.rich_text?.[0]?.text?.content || "",
-        TitoloBreve: props.TitoloBreve?.rich_text?.[0]?.text?.content || ""
-      };
-    });
-
-    fs.writeFileSync("./data/products.json", JSON.stringify(products, null, 2), "utf8");
-    console.log("products.json aggiornato da Notion:", products.length, "prodotti");
-
-    loadProducts();
+    const products = await syncAirtable();
+    res.send(`Aggiornamento completato. Prodotti sincronizzati: ${products.length}`);
   } catch (err) {
-    console.error("Errore aggiornamento Notion:", err.message);
+    console.error("Errore durante la sincronizzazione:", err);
+    res.status(500).send("Errore durante la sincronizzazione.");
   }
-}
+});
 
-// AGGIUNGI QUESTO SUBITO DOPO
-updateProductsFromNotion();
-
-setInterval(updateProductsFromNotion, 5 * 60 * 1000);
-
-app.get("/sync/notion", async (req, res) => {
-  await updateProductsFromNotion();
-  res.send("Aggiornamento completato.");
-});function setState(uid, newState) {
+// ----------------------
+// FUNZIONI BOT
+// ----------------------
+function setState(uid, newState) {
   userStates[uid].state = newState;
 }
 
