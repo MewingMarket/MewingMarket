@@ -94,7 +94,7 @@ const NOTION_DB = process.env.NOTION_DB;
 async function updateProductsFromNotion() {
   try {
     const response = await notion.databases.query({
-      database_id: 'cdd4f47ead8d4d599c85aeab594b94e8',
+      database_id: '0b54369622994f0aa4c629aeaa5bcb23',
       filter: {
         property: "Attivo",
         checkbox: { equals: true }
