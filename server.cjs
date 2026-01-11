@@ -7,8 +7,10 @@ const { Client } = require("@notionhq/client");
 require("dotenv").config();
 const app = express();
 app.disable("x-powered-by");
-
-// =========================
+app.use(express.static(path.join(process.cwd(), "public")));
+/app.get("/", (req, res) => {
+  res.sendFile(path.join(process.cwd(), "public", "index.html"));
+});
 // REDIRECT SEO (HTTPS + WWW)
 // =========================
 app.use((req, res, next) => {
