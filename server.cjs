@@ -826,17 +826,182 @@ Vuoi vedere il video di presentazione o preferisci acquistare subito?
 `);
   }
 
-  // VIDEO MAIN
+  // VIDEO MAIN (risposta generica)
   if (intent === "video_main") {
     setState(uid, "video_main");
     return reply(res, `
 🎥 Ecco il video della *Guida Completa all’Ecosistema Digitale Reale*:
 
 https://youtube.com/shorts/YoOXWUajbQc
+
+Vuoi acquistare la guida o tornare al menu?
 `);
   }
 
-  //
+  // Stato: video_main (utente risponde dopo il video)
+  if (state.state === "video_main") {
+    if (isYes(rawText)) {
+      return reply(res, `
+Perfetto! Puoi acquistare qui:
+
+${mainProduct ? mainProduct.linkPayhip : LINKS.store}
+
+Hai bisogno di altro o vuoi tornare al menu?
+`);
+    }
+  }
+
+  // SOCIAL
+  if (intent === "social") {
+    setState(uid, "social");
+    return reply(res, `
+📲 Social ufficiali:
+
+Instagram: ${LINKS.instagram}  
+TikTok: ${LINKS.tiktok}  
+YouTube: ${LINKS.youtube}  
+Facebook: ${LINKS.facebook}  
+X: ${LINKS.x}  
+Threads: ${LINKS.threads}  
+LinkedIn: ${LINKS.linkedin}
+
+Vuoi tornare al menu?
+`);
+  }
+
+  // SUPPORTO GENERALE
+  if (intent === "supporto") {
+    setState(uid, "supporto");
+    const t = normalize(rawText);
+
+    if (t.includes("scaricare") || t.includes("download")) {
+      return reply(res, HELP_DESK.download + "\n\nVuoi altro supporto o tornare al menu?");
+    }
+
+    if (t.includes("payhip")) {
+      return reply(res, HELP_DESK.payhip + "\n\nVuoi altro supporto o tornare al menu?");
+    }
+
+    if (t.includes("rimborso")) {
+      return reply(res, HELP_DESK.rimborso + "\n\nVuoi altro supporto o tornare al menu?");
+    }
+
+    if (t.includes("email") || t.includes("contatto") || t.includes("whatsapp")) {
+      return reply(res, HELP_DESK.contatto + "\n\nVuoi altro supporto o tornare al menu?");
+    }
+
+    return reply(res, FAQ_BLOCK + "\n\nScrivi la tua domanda oppure 'menu'.");
+  }
+
+  // NEWSLETTER — NORMALIZZAZIONE TESTO
+  const t = normalize(rawText);
+
+  // NEWSLETTER — ISCRIZIONE DIRETTA
+  if (
+    t.includes("iscrizione") ||
+    t.includes("iscrivimi") ||
+    t.includes("voglio iscrivermi") ||
+    t.includes("attiva newsletter") ||
+    t.includes("newsletter iscrizione")
+  ) {
+    return reply(res, `
+Perfetto! 🎉
+
+Puoi iscriverti qui:
+${LINKS.newsletter}
+
+Vuoi altro o torniamo al menu?
+`);
+  }
+
+  // NEWSLETTER — DISISCRIZIONE DIRETTA
+  if (
+    t.includes("annulla iscrizione") ||
+    t.includes("disiscrivimi") ||
+    t.includes("togli newsletter") ||
+    t.includes("stop newsletter") ||
+    t.includes("disiscrizione")
+  ) {
+    return reply(res, `
+Nessun problema.
+
+Puoi annullare l’iscrizione qui:
+${LINKS.disiscrizione}
+
+Vuoi altro o torniamo al menu?
+`);
+  }
+
+  // NEWSLETTER — MENU GENERALE
+  if (intent === "newsletter") {
+    return reply(res, `
+Vuoi iscriverti o annullare l’iscrizione?
+
+• "iscrivimi"  
+• "annulla iscrizione"  
+• "menu"
+`);
+  }
+
+  // SITO
+  if (intent === "sito") {
+    setState(uid, "sito");
+    return reply(res, `
+🌐 Sito ufficiale MewingMarket:
+${LINKS.sito}
+
+🛒 Store completo su Payhip:
+${LINKS.store}
+
+Vuoi informazioni su un prodotto specifico o tornare al menu?
+`);
+  }
+
+  // CERCA
+  if (intent === "cerca") {
+    setState(uid, "cerca");
+    const q = normalize(rawText);
+    const words = q.split(" ").filter(w => w.length > 3);
+    const matches = PRODUCTS.filter(p => {
+      const base = normalize(p.titolo + " " + p.titoloBreve + " " + p.categoria);
+      return words.some(w => base.includes(w));
+    });
+
+    if (!matches.length) {
+      return reply(res, "Non ho trovato prodotti per questa ricerca. Prova a usare il nome o la categoria.");
+    }
+
+    let out = "🔎 *Risultati trovati*\n\n";
+    for (const p of matches) {
+      out += `• *${p.titoloBreve}* — ${p.prezzo}\n${p.linkPayhip}\n\n`;
+    }
+    out += "Vuoi dettagli su uno di questi prodotti o tornare al menu?";
+    return reply(res, out);
+  }
+
+  // FALLBACK SOFT
+  if (intent === "fallback_soft") {
+    return reply(res, `
+Non ho capito bene, ma posso aiutarti.
+
+Vuoi:
+• informazioni su un prodotto  
+• supporto  
+• newsletter  
+• social  
+• tornare al menu  
+
+Scrivi una parola chiave.
+`);
+  }
+
+  // FALLBACK FINALE (ULTIMA RISPOSTA)
+  return reply(res, `
+Posso aiutarti con prodotti, supporto, newsletter o social.
+
+Scrivi "menu" per vedere tutte le opzioni.
+`);
+} // ← CHIUDE handleConversation
 // Avvio server
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`MewingMarket AI attivo sulla porta ${PORT}`));
