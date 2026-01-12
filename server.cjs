@@ -192,13 +192,14 @@ setTimeout(() => {
 // ENDPOINT SYNC MANUALE
 // ----------------------
 app.get("/sync/airtable", async (req, res) => {
-  const products = await syncAirtable();
-  res.send(`Aggiornamento completato. Prodotti sincronizzati: ${products.length}`);
-});\u036f]/g, "")
-    .replace(/[^a-z0-9\s]/gi, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
+  try {
+    const products = await syncAirtable();
+    res.send(`Aggiornamento completato. Prodotti sincronizzati: ${products.length}`);
+  } catch (err) {
+    console.error("Errore durante la sync manuale:", err);
+    res.status(500).send("Errore durante la sincronizzazione.");
+  }
+});
 
 function isYes(text) {
   const t = normalize(text);
