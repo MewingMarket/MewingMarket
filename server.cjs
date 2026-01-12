@@ -1085,7 +1085,4 @@ Scrivi "menu" per vedere tutte le opzioni.
 `);
 }
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log("MewingMarket AI attivo sulla porta " + PORT);
-});
+
