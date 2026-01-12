@@ -2,9 +2,9 @@ const path = require("path");
 const express = require("express");
 const fs = require("fs");
 const cors = require("cors");
-const OpenAI = require("openai");
 const cookieParser = require("cookie-parser");
 require("dotenv").config();
+const fetch = require("node-fetch");
 
 const app = express();
 app.disable("x-powered-by");
@@ -27,17 +27,9 @@ app.use((req, res, next) => {
   const proto = req.headers["x-forwarded-proto"];
   const host = req.headers.host;
 
-  if (proto !== "https") {
-    return res.redirect(301, `https://${host}${req.url}`);
-  }
-
-  if (req.hostname === "mewingmarket.it") {
-    return res.redirect(301, `https://www.mewingmarket.it${req.url}`);
-  }
-
-  if (!host.startsWith("www.")) {
-    return res.redirect(301, `https://www.${host}${req.url}`);
-  }
+  if (proto !== "https") return res.redirect(301, `https://${host}${req.url}`);
+  if (req.hostname === "mewingmarket.it") return res.redirect(301, `https://www.mewingmarket.it${req.url}`);
+  if (!host.startsWith("www.")) return res.redirect(301, `https://www.${host}${req.url}`);
 
   next();
 });
@@ -45,16 +37,13 @@ app.use((req, res, next) => {
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
-app.use(express.static(path.join(process.cwd(), "public")));
 
 // Stato utenti
 const userStates = {};
-
 function generateUID() {
   return "mm_" + Math.random().toString(36).substring(2, 12);
 }
 
-// Middleware gestione UID
 app.use((req, res, next) => {
   let uid = req.cookies.mm_uid;
 
@@ -69,58 +58,48 @@ app.use((req, res, next) => {
   }
 
   if (!userStates[uid]) {
-    userStates[uid] = {
-      state: "menu",
-      lastIntent: null,
-      data: {}
-    };
+    userStates[uid] = { state: "menu", lastIntent: null, data: {} };
   }
 
   req.uid = uid;
   req.userState = userStates[uid];
   next();
 });
+
 // ----------------------
 // CONFIG AIRTABLE
 // ----------------------
-const fetch = require("node-fetch");
-
 const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
 const BASE_ID = process.env.AIRTABLE_BASE_ID;
-const TABLE_NAME = process.env.AIRTABLE_TABLE_NAME; 
-// Esempio: Catalogo%20prodotti%20digitali
+const TABLE_NAME = process.env.AIRTABLE_TABLE_NAME;
 
 // ----------------------
-// FUNZIONE SYNC AIRTABLE
+// SYNC AIRTABLE
 // ----------------------
 async function syncAirtable() {
   try {
     const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}`;
 
-    const res = await fetch(url, {
+    const response = await fetch(url, {
       headers: {
-        Authorization: `Bearer ${AIRTABLE_PAT}`,
+        "Authorization": `Bearer ${AIRTABLE_PAT}`,
         "Content-Type": "application/json"
       }
     });
 
-    const data = await res.json();
+    const data = await response.json();
+    if (!data.records) return [];
 
-    if (!data.records) {
-      console.error("Errore Airtable:", data);
-      return [];
-    }
-
-    const products = data.records.map((record) => {
+    const products = data.records.map(record => {
       const f = record.fields;
       return {
-        id: f.ID || "",
+        id: record.id,
         titolo: f.Titolo || "",
         titoloBreve: f.TitoloBreve || "",
         slug: f.Slug || "",
         prezzo: f.Prezzo || 0,
         categoria: f.Categoria || "",
-        attivo: f.Attivo === true,
+        attivo: Boolean(f.Attivo),
         immagine: f.Immagine?.[0]?.url || "",
         linkPayhip: f.LinkPayhip || "",
         descrizioneBreve: f.DescrizioneBreve || "",
@@ -128,11 +107,12 @@ async function syncAirtable() {
       };
     });
 
-    // Salvataggio nella cartella data/
-    fs.writeFileSync("./data/products.json", JSON.stringify(products, null, 2));
+    const activeProducts = products.filter(p => p.attivo);
 
-    console.log("products.json aggiornato da Airtable");
-    return products;
+    fs.writeFileSync("./data/products.json", JSON.stringify(activeProducts, null, 2));
+    console.log(`products.json aggiornato da Airtable (${activeProducts.length} prodotti attivi)`);
+
+    return activeProducts;
 
   } catch (err) {
     console.error("Errore sync Airtable:", err);
@@ -148,14 +128,11 @@ let PRODUCTS = [];
 function loadProducts() {
   try {
     if (!fs.existsSync("./data/products.json")) {
-      console.warn("products.json non trovato, creo file vuoto.");
       fs.writeFileSync("./data/products.json", "[]");
     }
 
     const raw = fs.readFileSync("./data/products.json", "utf8");
-
     if (!raw.trim()) {
-      console.warn("products.json vuoto, inizializzo array.");
       fs.writeFileSync("./data/products.json", "[]");
       PRODUCTS = [];
       return;
@@ -175,21 +152,28 @@ function loadProducts() {
 loadProducts();
 setInterval(loadProducts, 60000);
 
-// ❌ Rimuovere completamente Notion
-// setInterval(updateProductsFromNotion, 5 * 60 * 1000);
+// ----------------------
+// SYNC AUTOMATICO OGNI 5 MINUTI
+// ----------------------
+setInterval(async () => {
+  console.log("⏳ Sync automatico Airtable...");
+  await syncAirtable();
+  loadProducts();
+}, 5 * 60 * 1000);
 
 // ----------------------
-// ENDPOINT SYNC AIRTABLE
+// ENDPOINT SYNC MANUALE
 // ----------------------
 app.get("/sync/airtable", async (req, res) => {
-  try {
-    const products = await syncAirtable();
-    res.send(`Aggiornamento completato. Prodotti sincronizzati: ${products.length}`);
-  } catch (err) {
-    console.error("Errore durante la sincronizzazione:", err);
-    res.status(500).send("Errore durante la sincronizzazione.");
-  }
+  const products = await syncAirtable();
+  res.send(`Aggiornamento completato. Prodotti sincronizzati: ${products.length}`);
 });
+
+app.listen(10000, () => console.log("MewingMarket AI attivo sulla porta 10000"));
+ 
+  
+
+  
 
 // ----------------------
 // FUNZIONI BOT
