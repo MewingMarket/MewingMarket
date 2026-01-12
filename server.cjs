@@ -205,7 +205,19 @@ app.get("/sync/airtable", async (req, res) => {
     console.error("Errore durante la sync manuale:", err);
     res.status(500).send("Errore durante la sincronizzazione.");
   }
-});// ---------------------------------------------
+});    // ---------------------------------------------
+// FUNZIONI BOT MANCANTI (DEVONO ESSERCI!)
+// ---------------------------------------------
+
+// Cambia lo stato dell’utente
+function setState(uid, newState) {
+  userStates[uid].state = newState;
+}
+
+// Risposta standard del bot
+function reply(res, text) {
+  res.json({ reply: text });
+}  // ---------------------------------------------
 // NORMALIZZAZIONE TESTO + FUNZIONI DI RICERCA
 // ---------------------------------------------
 function normalize(text) {
