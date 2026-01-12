@@ -110,7 +110,7 @@ function cleanNumber(value) {
 function cleanURL(value) {
   const url = (value || "").toString().trim();
   return url.startsWith("http") ? url : "";
-  }// ---------------------------------------------
+}// ---------------------------------------------
 // SYNC AIRTABLE (BLINDATO + SANITIZZATO)
 // ---------------------------------------------
 async function syncAirtable() {
