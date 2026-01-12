@@ -169,10 +169,9 @@ app.get("/sync/airtable", async (req, res) => {
   res.send(`Aggiornamento completato. Prodotti sincronizzati: ${products.length}`);
 });
 
-app.listen(10000, () => console.log("MewingMarket AI attivo sulla porta 10000"));
- 
   
-
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => console.log(`MewingMarket AI attivo sulla porta ${PORT}`));
   
 
 // ----------------------
