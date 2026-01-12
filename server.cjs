@@ -1,3 +1,6 @@
+// ---------------------------------------------
+// BLOCCHI BASE: IMPORT, SETUP, STATICI, REDIRECT
+// ---------------------------------------------
 const path = require("path");
 const express = require("express");
 const fs = require("fs");
@@ -9,7 +12,7 @@ const fetch = require("node-fetch");
 const app = express();
 app.disable("x-powered-by");
 
-// Cartella pubblica
+// Cartella pubblica (serve HTML, CSS, JS)
 app.use(express.static(path.join(process.cwd(), "public")));
 
 // Homepage
@@ -17,7 +20,7 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(process.cwd(), "public", "index.html"));
 });
 
-// File prodotti
+// Espone products.json al frontend
 app.get("/products.json", (req, res) => {
   res.sendFile(path.join(process.cwd(), "data", "products.json"));
 });
@@ -36,9 +39,9 @@ app.use((req, res, next) => {
 
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
-app.use(cookieParser());
-
-// Stato utenti
+app.use(cookieParser());// ---------------------------------------------
+// USER STATE (BOT) + COOKIE UID
+// ---------------------------------------------
 const userStates = {};
 function generateUID() {
   return "mm_" + Math.random().toString(36).substring(2, 12);
@@ -66,16 +69,50 @@ app.use((req, res, next) => {
   next();
 });
 
-// ----------------------
+// ---------------------------------------------
 // CONFIG AIRTABLE
-// ----------------------
+// ---------------------------------------------
 const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
 const BASE_ID = process.env.AIRTABLE_BASE_ID;
 const TABLE_NAME = process.env.AIRTABLE_TABLE_NAME;
 
-// ----------------------
-// SYNC AIRTABLE
-// ----------------------
+// ---------------------------------------------
+// SANITIZZAZIONE CAMPI (BLINDATURA TOTALE)
+// ---------------------------------------------
+function safeSlug(text) {
+  return (text || "")
+    .toString()
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    || "prodotto-" + Date.now();
+}
+
+function cleanText(value, fallback = "") {
+  return (value || "")
+    .toString()
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/[^\p{L}\p{N}\p{P}\p{Z}]/gu, "")
+    || fallback;
+}
+
+function cleanNumber(value) {
+  const n = parseFloat(value);
+  return isNaN(n) ? 0 : n;
+}
+
+function cleanURL(value) {
+  const url = (value || "").toString().trim();
+  return url.startsWith("http") ? url : "";
+  }// ---------------------------------------------
+// SYNC AIRTABLE (BLINDATO + SANITIZZATO)
+// ---------------------------------------------
 async function syncAirtable() {
   try {
     const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}`;
@@ -94,16 +131,16 @@ async function syncAirtable() {
       const f = record.fields;
       return {
         id: record.id,
-        titolo: f.Titolo || "",
-        titoloBreve: f.TitoloBreve || "",
-        slug: f.Slug || "",
-        prezzo: f.Prezzo || 0,
-        categoria: f.Categoria || "",
+        titolo: cleanText(f.Titolo, "Titolo mancante"),
+        titoloBreve: cleanText(f.TitoloBreve, ""),
+        slug: safeSlug(f.Slug),
+        prezzo: cleanNumber(f.Prezzo),
+        categoria: cleanText(f.Categoria, "Generico"),
         attivo: Boolean(f.Attivo),
-        immagine: f.Immagine?.[0]?.url || "",
-        linkPayhip: f.LinkPayhip || "",
-        descrizioneBreve: f.DescrizioneBreve || "",
-        descrizioneLunga: f.DescrizioneLunga || ""
+        immagine: cleanURL(f.Immagine?.[0]?.url),
+        linkPayhip: cleanURL(f.LinkPayhip),
+        descrizioneBreve: cleanText(f.DescrizioneBreve, ""),
+        descrizioneLunga: cleanText(f.DescrizioneLunga, "")
       };
     });
 
@@ -118,11 +155,9 @@ async function syncAirtable() {
     console.error("Errore sync Airtable:", err);
     return [];
   }
-}
-
-// ----------------------
-// CARICAMENTO PRODOTTI
-// ----------------------
+}// ---------------------------------------------
+// CARICAMENTO PRODOTTI DA FILE
+// ---------------------------------------------
 let PRODUCTS = [];
 
 function loadProducts() {
@@ -149,37 +184,10 @@ function loadProducts() {
   }
 }
 
-
-
-  
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`MewingMarket AI attivo sulla porta ${PORT}`));
-  
-
-// ----------------------
-// FUNZIONI BOT
-// ----------------------
-function setState(uid, newState) {
-  userStates[uid].state = newState;
-}
-
-function reply(res, text) {
-  res.json({ reply: text });
-}
-
-function normalize(text) {
-  return text
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // rimuove accenti
-    .replace(/[^a-z0-9]+/g, "-")     // sostituisce spazi e simboli
-    .replace(/^-+|-+$/g, "");        // rimuove trattini iniziali/finali
-}
-
-// Carica prodotti una sola volta all'avvio
+// Carica prodotti all'avvio
 loadProducts();
 
-// Avvia il sync automatico dopo 5 secondi (evita race condition)
+// Sync automatico ogni 5 minuti
 setTimeout(() => {
   setInterval(async () => {
     console.log("⏳ Sync automatico Airtable...");
@@ -188,9 +196,7 @@ setTimeout(() => {
   }, 5 * 60 * 1000);
 }, 5000);
 
-// ----------------------
-// ENDPOINT SYNC MANUALE
-// ----------------------
+// Endpoint sync manuale
 app.get("/sync/airtable", async (req, res) => {
   try {
     const products = await syncAirtable();
@@ -199,52 +205,58 @@ app.get("/sync/airtable", async (req, res) => {
     console.error("Errore durante la sync manuale:", err);
     res.status(500).send("Errore durante la sincronizzazione.");
   }
-});
-
-function isYes(text) {
-  const t = normalize(text);
-  return ["si", "sì", "yes", "ok", "va bene", "certo"].some(w => t.includes(w));
-}
-
-function isNo(text) {
-  const t = normalize(text);
-  return ["no", "non ora", "magari dopo"].some(w => t.includes(w));
+});// ---------------------------------------------
+// NORMALIZZAZIONE TESTO + FUNZIONI DI RICERCA
+// ---------------------------------------------
+function normalize(text) {
+  return (text || "")
+    .toString()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 const MAIN_PRODUCT_SLUG = "guida-ecosistema-digitale-reale";
 
+// Trova prodotto per slug
 function findProductBySlug(slug) {
-  return PRODUCTS.find(p => p.Slug === slug);
+  return PRODUCTS.find(p => p.slug === slug);
 }
 
+// Trova prodotto da testo
 function findProductFromText(text) {
   const t = normalize(text);
   return PRODUCTS.find(p =>
-    normalize(p.Titolo).includes(t) ||
-    normalize(p.TitoloBreve).includes(t) ||
-    normalize(p.Slug).includes(t) ||
-    normalize(p.ID).includes(t)
+    normalize(p.titolo).includes(t) ||
+    normalize(p.titoloBreve).includes(t) ||
+    normalize(p.slug).includes(t) ||
+    normalize(p.id).includes(t)
   );
 }
 
+// Lista prodotti per categoria
 function listProductsByCategory(cat) {
-  return PRODUCTS.filter(p => p.Categoria === cat);
+  return PRODUCTS.filter(p => p.categoria === cat);
 }
-
+// ---------------------------------------------
+// RISPOSTE PRODOTTO (BOT)
+// ---------------------------------------------
 function productReply(p) {
   if (!p) return "Non ho trovato questo prodotto nel catalogo.";
 
   let base = `
-📘 *${p.Titolo}*
+📘 *${p.titolo}*
 
-${p.DescrizioneBreve}
+${p.descrizioneBreve}
 
-💰 Prezzo: ${p.Prezzo}
+💰 Prezzo: ${p.prezzo}
 👉 Acquista ora su Payhip  
-${p.LinkPayhip}
+${p.linkPayhip}
 `;
 
-  if (p.Slug === MAIN_PRODUCT_SLUG) {
+  if (p.slug === MAIN_PRODUCT_SLUG) {
     base += `
 🎥 Vuoi vedere il video di presentazione?  
 Scrivi: "video" oppure "video ecosistema".
@@ -261,13 +273,13 @@ Se vuoi un altro prodotto, scrivi il nome o "catalogo".`;
 function productLongReply(p) {
   if (!p) return "Non ho trovato questo prodotto nel catalogo.";
   return `
-📘 *${p.Titolo}* — Dettagli completi
+📘 *${p.titolo}* — Dettagli completi
 
-${p.DescrizioneLunga}
+${p.descrizioneLunga}
 
-💰 Prezzo: ${p.Prezzo}
+💰 Prezzo: ${p.prezzo}
 👉 Acquista ora su Payhip  
-${p.LinkPayhip}
+${p.linkPayhip}
 
 Vuoi acquistarlo o tornare al menu?
 `;
@@ -276,116 +288,18 @@ Vuoi acquistarlo o tornare al menu?
 function productImageReply(p) {
   if (!p) return "Non ho trovato questo prodotto nel catalogo.";
   return `
-🖼 Copertina di *${p.TitoloBreve}*
+🖼 Copertina di *${p.titoloBreve}*
 
-${p.Immagine}
+${p.immagine}
 
 Puoi acquistarlo qui:  
-${p.LinkPayhip}
+${p.linkPayhip}
 
 Vuoi altre info su questo prodotto o tornare al menu?
 `;
-}
-
-const HELP_DESK = {
-  download: `
-<b>Non riesci a scaricare il prodotto?</b>
-
-1. Controlla la tua email: dopo l’acquisto ricevi un’email con il link di download Payhip.
-2. Verifica la cartella Spam o Promozioni.
-3. Se non trovi l’email, accedi alla tua area Payhip usando lo stesso indirizzo usato per l’acquisto.
-4. Se il link non funziona, prova con un altro browser o dispositivo.
-
-Se hai ancora problemi, scrivi a <b>support@mewingmarket.it</b> o su WhatsApp al <b>352 026 6660</b>.
-`,
-
-  payhip: `
-<b>Come funziona Payhip per i download digitali?</b>
-
-Payhip gestisce pagamenti e download dei prodotti digitali.
-
-- Dopo il pagamento ricevi subito un’email con il link per scaricare il prodotto.
-- Il link è sicuro e personale.
-- Puoi accedere ai tuoi acquisti anche dalla tua area Payhip usando la stessa email dell’acquisto.
-- Il download è immediato e non richiede installazioni.
-
-Se hai problemi con Payhip, scrivici in chat: ti aiutiamo subito.
-`,
-
-  rimborso: `
-<b>Politica di rimborso per i prodotti digitali</b>
-
-I prodotti digitali non prevedono rimborso una volta scaricati, in linea con la normativa sui contenuti digitali.
-
-Se hai problemi tecnici con il download o non riesci ad accedere al prodotto, contattaci in chat, via email o WhatsApp: ti aiutiamo subito a risolvere.
-`,
-
-  contatto: `
-<b>Come contattare il supporto</b>
-
-Puoi contattare il supporto direttamente da questa chat oppure:
-
-📧 Email: support@mewingmarket.it  
-📱 WhatsApp: 352 026 6660  
-
-Siamo disponibili per:
-- problemi di download
-- informazioni sui prodotti
-- assistenza sugli acquisti
-- domande tecniche
-`,
-
-  newsletter: `
-<b>Come funziona la newsletter di MewingMarket?</b>
-
-La newsletter ti permette di ricevere aggiornamenti, contenuti utili e novità sui prodotti.
-
-Puoi iscriverti:
-- dalla chat (rispondendo "iscrivimi")
-- dalle pagine del sito
-- dai link presenti nei nostri contenuti
-
-L’iscrizione è gratuita e puoi annullarla in qualsiasi momento.
-`
-};
-
-const FAQ_BLOCK = `
-📌 *Supporto & Domande Frequenti*
-
-• Come ricevo i prodotti dopo l'acquisto?  
-• Quali metodi di pagamento accettate?  
-• Posso richiedere un rimborso?  
-• Non ho ricevuto l'email, cosa faccio?  
-• I prodotti hanno una scadenza?  
-• Posso condividere i file acquistati?  
-• Offrite assistenza post-vendita?
-
-Se mi scrivi la tua domanda in linguaggio naturale (es. "non riesco a scaricare"), ti rispondo in modo più preciso.
-`;const LINKS = {
-  instagram: "https://www.instagram.com/mewingmarket",
-  tiktok: "https://tiktok.com/@mewingmarket",
-  youtube: "https://www.youtube.com/@mewingmarket2",
-  facebook: "https://www.facebook.com/profile.php?id=61584779793628",
-  x: "https://x.com/mewingm8",
-  threads: "https://www.threads.net/@mewingmarket",
-  linkedin: "https://www.linkedin.com/in/simone-griseri-5368a7394",
-  sito: "https://www.mewingmarket.it",
-  store: "https://payhip.com/MewingMarket",
-  newsletter: "https://mewingmarket.it/iscrizione.html",
-  disiscrizione: "https://mewingmarket.it/disiscriviti.html"
-};
-
-const SUPPORTO = `
-📞 *Supporto MewingMarket*
-
-Se hai problemi con download, pagamenti o file:
-
-📧 Email: support@mewingmarket.it  
-📱 WhatsApp: 352 026 6660
-
-Ti rispondiamo rapidamente.
-`;
-
+}// ---------------------------------------------
+// DETECT INTENT (BOT) — PATCHATO SOLO NEI CAMPI
+// ---------------------------------------------
 function detectIntent(rawText) {
   const t = normalize(rawText);
 
@@ -597,11 +511,12 @@ function detectIntent(rawText) {
     return { intent: "rimborso", sub: null };
   }
 
+  // MATCH PRODOTTI (PATCHATO)
   for (const p of PRODUCTS) {
-    const titolo = normalize(p.Titolo);
-    const breve = normalize(p.TitoloBreve);
-    const slug = normalize(p.Slug);
-    const id = normalize(p.ID);
+    const titolo = normalize(p.titolo);
+    const breve = normalize(p.titoloBreve);
+    const slug = normalize(p.slug);
+    const id = normalize(p.id);
 
     if (
       t.includes(titolo) ||
@@ -609,19 +524,25 @@ function detectIntent(rawText) {
       t.includes(slug) ||
       t.includes(id)
     ) {
-      return { intent: "prodotto", sub: p.Slug };
+      return { intent: "prodotto", sub: p.slug };
     }
   }
 
+  // MATCH CATEGORIA (PATCHATO)
   for (const p of PRODUCTS) {
-    const catNorm = normalize(p.Categoria);
+    const catNorm = normalize(p.categoria);
     if (catNorm && t.includes(catNorm)) {
-      return { intent: "categoria", sub: p.Categoria };
+      return { intent: "categoria", sub: p.categoria };
     }
   }
 
   return { intent: "fallback", sub: null };
-}app.post("/chat", (req, res) => {
+}
+
+// ---------------------------------------------
+// CHAT ENDPOINT
+// ---------------------------------------------
+app.post("/chat", (req, res) => {
   const { message } = req.body;
 
   if (!message || message.trim() === "") {
@@ -636,68 +557,68 @@ function detectIntent(rawText) {
   return handleConversation(req, res, intent, sub, message);
 });
 
+// ---------------------------------------------
+// HANDLE CONVERSATION (PATCHATI SOLO I CAMPI)
+// ---------------------------------------------
 function handleConversation(req, res, intent, sub, rawText) {
   const uid = req.uid;
   const state = userStates[uid];
   const mainProduct = findProductBySlug(MAIN_PRODUCT_SLUG);
 
+  // MENU
   if (intent === "menu") {
     setState(uid, "menu");
     return reply(res, `
 Ciao! 👋  
 Sono qui per aiutarti con la *Guida Completa all’Ecosistema Digitale Reale*, gli altri prodotti, il supporto, la newsletter e molto altro.
 
-Puoi chiedermi:
-• informazioni su un prodotto  
-• prezzo o cosa include  
-• vedere il video della guida principale  
-• supporto su download, pagamenti o Payhip  
-• iscrizione / disiscrizione newsletter  
-• link ai social  
-
 Scrivi quello che ti serve oppure "catalogo".
 `);
   }
 
+  // CATALOGO
   if (intent === "catalogo") {
     setState(uid, "catalogo");
     if (!PRODUCTS.length) return reply(res, "Per ora il catalogo è vuoto.");
 
     let out = "📚 *Catalogo MewingMarket*\n\n";
     for (const p of PRODUCTS) {
-      out += `• *${p.TitoloBreve}* — ${p.Prezzo}\n${p.LinkPayhip}\n\n`;
+      out += `• *${p.titoloBreve}* — ${p.prezzo}\n${p.linkPayhip}\n\n`;
     }
     out += "Se vuoi dettagli su un prodotto, scrivi il nome o lo slug.";
     return reply(res, out);
   }
 
+  // NOVITÀ
   if (intent === "novita") {
     setState(uid, "novita");
     if (!PRODUCTS.length) return reply(res, "Non ci sono ancora novità in catalogo.");
     const latest = PRODUCTS.slice(-3);
     let out = "🆕 *Novità in MewingMarket*\n\n";
     for (const p of latest) {
-      out += `• *${p.TitoloBreve}* — ${p.Prezzo}\n${p.LinkPayhip}\n\n`;
+      out += `• *${p.titoloBreve}* — ${p.prezzo}\n${p.linkPayhip}\n\n`;
     }
     out += "Vuoi altre informazioni o tornare al menu?";
     return reply(res, out);
   }
 
+  // PROMOZIONI
   if (intent === "promozioni") {
     setState(uid, "promozioni");
     return reply(res, `
 Al momento non ci sono promozioni attive.
 
-I prezzi sono già impostati per offrirti il massimo valore in rapporto a tempo, competenze e risultati.
+I prezzi sono già impostati per offrirti il massimo valore.
 
-Se vuoi, posso consigliarti da dove iniziare in base al tuo obiettivo. Scrivi: "consigliami un prodotto" oppure torna al menu.
+Scrivi "consigliami un prodotto" oppure torna al menu.
 `);
   }
 
+  // CONSIGLIO
   if (intent === "consiglio") {
     setState(uid, "consiglio");
     const main = mainProduct || PRODUCTS[0];
-    state.data.lastProductSlug = main?.Slug;
+    state.data.lastProductSlug = main?.slug;
     return reply(res, `
 Ti consiglio di partire da questo:
 
@@ -705,40 +626,42 @@ ${productReply(main)}
 `);
   }
 
+  // SCEGLI
   if (intent === "scegli") {
     setState(uid, "scegli");
     return reply(res, `
 Per aiutarti a scegliere, dimmi cosa ti interessa di più:
 
-• "Strumenti" → workbook e template operativi  
-• "Produttività" → planner e strumenti per organizzarti  
-• "AI" → guide e prompt sull'Intelligenza Artificiale  
-• "Guide" → ecosistema digitale, contenuti, business  
-• "Fiscale" → gestione Partita IVA e numeri
-
-Oppure scrivi direttamente il tuo obiettivo (es. "voglio migliorare la produttività").
+• "Strumenti"  
+• "Produttività"  
+• "AI"  
+• "Guide"  
+• "Fiscale"
 `);
   }
 
+  // CATEGORIA
   if (intent === "categoria") {
     setState(uid, "categoria");
     const list = listProductsByCategory(sub);
     if (!list.length) return reply(res, "Non ho trovato prodotti in questa categoria.");
     let out = `📂 *Categoria: ${sub}*\n\n`;
     for (const p of list) {
-      out += `• *${p.TitoloBreve}* — ${p.Prezzo}\n${p.LinkPayhip}\n\n`;
+      out += `• *${p.titoloBreve}* — ${p.prezzo}\n${p.linkPayhip}\n\n`;
     }
     out += "Vuoi dettagli su uno di questi prodotti o tornare al menu?";
     return reply(res, out);
   }
 
+  // PRODOTTO
   if (intent === "prodotto") {
     setState(uid, "prodotto");
     const p = findProductBySlug(sub) || findProductFromText(rawText);
-    state.data.lastProductSlug = p?.Slug;
+    state.data.lastProductSlug = p?.slug;
     return reply(res, productReply(p));
   }
 
+  // APPROFONDISCI
   if (intent === "approfondisci") {
     setState(uid, "approfondisci");
     let p = null;
@@ -746,14 +669,13 @@ Oppure scrivi direttamente il tuo obiettivo (es. "voglio migliorare la produttiv
     if (!p) p = findProductFromText(rawText);
     if (!p) {
       return reply(res, `
-Dimmi su quale prodotto vuoi approfondire, ad esempio:
-
-"Approfondisci Ecosistema", "Approfondisci Workbook", "Approfondisci Fisco".
+Dimmi su quale prodotto vuoi approfondire.
 `);
     }
     return reply(res, productLongReply(p));
   }
 
+  // IMMAGINE
   if (intent === "immagine") {
     setState(uid, "immagine");
     let p = null;
@@ -761,14 +683,13 @@ Dimmi su quale prodotto vuoi approfondire, ad esempio:
     if (!p) p = findProductFromText(rawText);
     if (!p) {
       return reply(res, `
-Dimmi di quale prodotto vuoi vedere la copertina, ad esempio:
-
-"Copertina Ecosistema", "Copertina Workbook", "Copertina Fisco".
+Dimmi di quale prodotto vuoi vedere la copertina.
 `);
     }
     return reply(res, productImageReply(p));
   }
 
+  // ACQUISTO
   if (intent === "acquisto") {
     let p = null;
 
@@ -789,12 +710,13 @@ Scrivi il nome, lo slug oppure "catalogo".
 Perfetto! 🎉
 
 👉 Puoi acquistarlo qui:
-${p.LinkPayhip}
+${p.linkPayhip}
 
 Vuoi vedere altri dettagli o tornare al menu?
 `);
   }
 
+  // VIDEO GENERICO
   if (intent === "video_generico") {
     let p = null;
     if (state.data.lastProductSlug) p = findProductBySlug(state.data.lastProductSlug);
@@ -805,23 +727,23 @@ Vuoi vedere altri dettagli o tornare al menu?
 
     return reply(res, `
 🎥 Ecco il video di presentazione:
-${p.Immagine || "https://youtube.com/shorts/YoOXWUajbQc"}
+${p.immagine || "https://youtube.com/shorts/YoOXWUajbQc"}
 
 Vuoi acquistarlo o tornare al menu?
 `);
   }
 
+  // CONTATTI
   if (intent === "contatti") {
     return reply(res, `
 📞 *Contatti MewingMarket*
 
 Email: support@mewingmarket.it  
 WhatsApp: 352 026 6660  
-
-Scrivi pure il tuo problema e ti aiuto subito.
 `);
   }
 
+  // PREZZO
   if (intent === "prezzo") {
     let p = null;
     if (state.data.lastProductSlug) p = findProductBySlug(state.data.lastProductSlug);
@@ -830,12 +752,13 @@ Scrivi pure il tuo problema e ti aiuto subito.
     if (!p) return reply(res, "Di quale prodotto vuoi sapere il prezzo?");
 
     return reply(res, `
-💰 Prezzo di *${p.TitoloBreve}*: ${p.Prezzo}
+💰 Prezzo di *${p.titoloBreve}*: ${p.prezzo}
 
 Vuoi acquistarlo o vedere altri dettagli?
 `);
   }
 
+  // DETTAGLI
   if (intent === "dettagli") {
     let p = null;
     if (state.data.lastProductSlug) p = findProductBySlug(state.data.lastProductSlug);
@@ -846,250 +769,74 @@ Vuoi acquistarlo o vedere altri dettagli?
     return reply(res, productLongReply(p));
   }
 
+  // NEWSLETTER ISCRIZIONE
   if (intent === "newsletter_iscrizione") {
     return reply(res, `
 Perfetto! 🎉
 
 Puoi iscriverti qui:
 ${LINKS.newsletter}
-
-Vuoi altro o tornare al menu?
 `);
   }
 
+  // NEWSLETTER DISISCRIZIONE
   if (intent === "newsletter_disiscrizione") {
     return reply(res, `
 Nessun problema.
 
 Puoi annullare l’iscrizione qui:
 ${LINKS.disiscrizione}
-
-Vuoi altro o tornare al menu?
 `);
   }
 
+  // SUPPORTO TECNICO
   if (intent === "supporto_tecnico") {
     return reply(res, SUPPORTO);
   }
 
+  // DOWNLOAD
   if (intent === "download") {
     return reply(res, HELP_DESK.download);
   }
 
+  // RIMBORSO
   if (intent === "rimborso") {
     return reply(res, HELP_DESK.rimborso);
-        }if (intent === "commerciale_main") {
+  }
+
+  // COMMERCIALE MAIN
+  if (intent === "commerciale_main") {
     setState(uid, "commerciale_main");
     state.data.lastProductSlug = MAIN_PRODUCT_SLUG;
 
     if (!mainProduct) {
-      return reply(res, "Non trovo la guida principale nel catalogo in questo momento.");
+      return reply(res, "Non trovo la guida principale nel catalogo.");
     }
 
     return reply(res, `
-📘 *${mainProduct.Titolo}*
+📘 *${mainProduct.titolo}*
 
-${mainProduct.DescrizioneBreve}
+${mainProduct.descrizioneBreve}
 
-💰 Prezzo: ${mainProduct.Prezzo}
+💰 Prezzo: ${mainProduct.prezzo}
 👉 Acquista ora  
-${mainProduct.LinkPayhip}
+${mainProduct.linkPayhip}
 
 Vuoi vedere il video di presentazione o preferisci acquistare subito?
-Scrivi "video" oppure "sì".
 `);
   }
 
-  if (state.state === "commerciale_main") {
-    if (isYes(rawText)) {
-      setState(uid, "acquisto_main");
-      return reply(res, `
-Perfetto! Puoi acquistare qui:
-
-${mainProduct ? mainProduct.LinkPayhip : LINKS.store}
-
-Vuoi tornare al menu o hai bisogno di altro?
-`);
-    }
-
-    if (rawText.toLowerCase().includes("video")) {
-      setState(uid, "video_main");
-      return reply(res, `
-🎥 Ecco il video della guida:
-
-https://youtube.com/shorts/YoOXWUajbQc?feature=shared
-
-Vuoi acquistare o tornare al menu?
-`);
-    }
-  }
-
+  // VIDEO MAIN
   if (intent === "video_main") {
     setState(uid, "video_main");
     return reply(res, `
 🎥 Ecco il video della *Guida Completa all’Ecosistema Digitale Reale*:
 
-https://youtube.com/shorts/YoOXWUajbQc?feature=shared
-
-Vuoi acquistare la guida o tornare al menu?
+https://youtube.com/shorts/YoOXWUajbQc
 `);
   }
 
-  if (state.state === "video_main") {
-    if (isYes(rawText)) {
-      return reply(res, `
-Ecco il link per acquistare:
-
-${mainProduct ? mainProduct.LinkPayhip : LINKS.store}
-
-Hai bisogno di altro o vuoi tornare al menu?
-`);
-    }
-  }
-
-  if (intent === "social") {
-    setState(uid, "social");
-    return reply(res, `
-📲 Social ufficiali:
-
-Instagram: ${LINKS.instagram}  
-TikTok: ${LINKS.tiktok}  
-YouTube: ${LINKS.youtube}  
-Facebook: ${LINKS.facebook}  
-X: ${LINKS.x}  
-Threads: ${LINKS.threads}  
-LinkedIn: ${LINKS.linkedin}
-
-Vuoi tornare al menu?
-`);
-  }
-
-  if (intent === "supporto") {
-    setState(uid, "supporto");
-    const t = normalize(rawText);
-
-    if (t.includes("scaricare") || t.includes("download")) {
-      return reply(res, HELP_DESK.download + "\n\nVuoi altro supporto o tornare al menu?");
-    }
-
-    if (t.includes("payhip")) {
-      return reply(res, HELP_DESK.payhip + "\n\nVuoi altro supporto o tornare al menu?");
-    }
-
-    if (t.includes("rimborso")) {
-      return reply(res, HELP_DESK.rimborso + "\n\nVuoi altro supporto o tornare al menu?");
-    }
-
-    if (t.includes("email") || t.includes("contatto") || t.includes("whatsapp")) {
-      return reply(res, HELP_DESK.contatto + "\n\nVuoi altro supporto o tornare al menu?");
-    }
-
-    return reply(res, FAQ_BLOCK + "\n\nScrivi la tua domanda oppure 'menu'.");
-  }
-
-// NEWSLETTER — NORMALIZZAZIONE TESTO
-const t = normalize(rawText);
-
-// NEWSLETTER — ISCRIZIONE DIRETTA
-if (
-  t.includes("iscrizione") ||
-  t.includes("iscrivimi") ||
-  t.includes("voglio iscrivermi") ||
-  t.includes("attiva newsletter") ||
-  t.includes("newsletter iscrizione")
-) {
-  return reply(res, `
-Perfetto! 🎉
-
-Puoi iscriverti qui:
-${LINKS.newsletter}
-
-Vuoi altro o torniamo al menu?
-`);
-}
-
-// NEWSLETTER — DISISCRIZIONE DIRETTA
-if (
-  t.includes("annulla iscrizione") ||
-  t.includes("disiscrivimi") ||
-  t.includes("togli newsletter") ||
-  t.includes("stop newsletter") ||
-  t.includes("disiscrizione")
-) {
-  return reply(res, `
-Nessun problema.
-
-Puoi annullare l’iscrizione qui:
-${LINKS.disiscrizione}
-
-Vuoi altro o torniamo al menu?
-`);
-}
-
-// NEWSLETTER — MENU GENERALE
-if (intent === "newsletter") {
-  return reply(res, `
-Vuoi iscriverti o annullare l’iscrizione?
-
-• "iscrivimi"  
-• "annulla iscrizione"  
-• "menu"
-`);
-}
-  if (intent === "sito") {
-    setState(uid, "sito");
-    return reply(res, `
-🌐 Sito ufficiale MewingMarket:
-${LINKS.sito}
-
-🛒 Store completo su Payhip:
-${LINKS.store}
-
-Vuoi informazioni su un prodotto specifico o tornare al menu?
-`);
-  }
-
-  if (intent === "cerca") {
-    setState(uid, "cerca");
-    const q = normalize(rawText);
-    const words = q.split(" ").filter(w => w.length > 3);
-    const matches = PRODUCTS.filter(p => {
-      const base = normalize(p.Titolo + " " + p.TitoloBreve + " " + p.Categoria);
-      return words.some(w => base.includes(w));
-    });
-
-    if (!matches.length) {
-      return reply(res, "Non ho trovato prodotti per questa ricerca. Prova a usare il nome o la categoria.");
-    }
-
-    let out = "🔎 *Risultati trovati*\n\n";
-    for (const p of matches) {
-      out += `• *${p.TitoloBreve}* — ${p.Prezzo}\n${p.LinkPayhip}\n\n`;
-    }
-    out += "Vuoi dettagli su uno di questi prodotti o tornare al menu?";
-    return reply(res, out);
-  }
-
-if (intent === "fallback_soft") {
-    return reply(res, `
-Non ho capito bene, ma posso aiutarti.
-
-Vuoi:
-• informazioni su un prodotto  
-• supporto  
-• newsletter  
-• social  
-• tornare al menu  
-
-Scrivi una parola chiave.
-`);
-  }
-
-  return reply(res, `
-Posso aiutarti con prodotti, supporto, newsletter o social.
-
-Scrivi "menu" per vedere tutte le opzioni.
-`);
-}
-
-
+  //
+// Avvio server
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => console.log(`MewingMarket AI attivo sulla porta ${PORT}`));
