@@ -170,11 +170,14 @@ function reply(res, text) {
 function normalize(text) {
   return text
     .toLowerCase()
-    .normalize("NFD").replace(/[\u0300-// Carica prodotti una sola volta all'avvio
-loadProducts();
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // rimuove accenti
+    .replace(/[^a-z0-9]+/g, "-")     // sostituisce spazi e simboli
+    .replace(/^-+|-+$/g, "");        // rimuove trattini iniziali/finali
+}
 
-// Aggiorna il catalogo ogni minuto (solo lettura)
-setInterval(loadProducts, 60000);
+// Carica prodotti una sola volta all'avvio
+loadProducts();
 
 // Avvia il sync automatico dopo 5 secondi (evita race condition)
 setTimeout(() => {
