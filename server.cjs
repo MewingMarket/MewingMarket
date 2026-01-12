@@ -149,25 +149,7 @@ function loadProducts() {
   }
 }
 
-loadProducts();
-setInterval(loadProducts, 60000);
 
-// ----------------------
-// SYNC AUTOMATICO OGNI 5 MINUTI
-// ----------------------
-setInterval(async () => {
-  console.log("⏳ Sync automatico Airtable...");
-  await syncAirtable();
-  loadProducts();
-}, 5 * 60 * 1000);
-
-// ----------------------
-// ENDPOINT SYNC MANUALE
-// ----------------------
-app.get("/sync/airtable", async (req, res) => {
-  const products = await syncAirtable();
-  res.send(`Aggiornamento completato. Prodotti sincronizzati: ${products.length}`);
-});
 
   
 const PORT = process.env.PORT || 10000;
@@ -188,7 +170,28 @@ function reply(res, text) {
 function normalize(text) {
   return text
     .toLowerCase()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .normalize("NFD").replace(/[\u0300-// Carica prodotti una sola volta all'avvio
+loadProducts();
+
+// Aggiorna il catalogo ogni minuto (solo lettura)
+setInterval(loadProducts, 60000);
+
+// Avvia il sync automatico dopo 5 secondi (evita race condition)
+setTimeout(() => {
+  setInterval(async () => {
+    console.log("⏳ Sync automatico Airtable...");
+    await syncAirtable();
+    loadProducts();
+  }, 5 * 60 * 1000);
+}, 5000);
+
+// ----------------------
+// ENDPOINT SYNC MANUALE
+// ----------------------
+app.get("/sync/airtable", async (req, res) => {
+  const products = await syncAirtable();
+  res.send(`Aggiornamento completato. Prodotti sincronizzati: ${products.length}`);
+});\u036f]/g, "")
     .replace(/[^a-z0-9\s]/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
