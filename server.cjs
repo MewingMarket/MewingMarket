@@ -568,7 +568,60 @@ app.post("/chat", (req, res) => {
 
   return handleConversation(req, res, intent, sub, message);
 });
+// ---------------------------------------------
+// COSTANTI BOT (LINKS, SUPPORTO, FAQ, HELP DESK)
+// ---------------------------------------------
 
+const LINKS = {
+  sito: "https://www.mewingmarket.it",
+  store: "https://mewingmarket.payhip.com",
+  newsletter: "https://mewingmarket.it/newsletter",
+  disiscrizione: "https://mewingmarket.it/unsubscribe",
+
+  instagram: "https://instagram.com/mewingmarket",
+  tiktok: "https://tiktok.com/@mewingmarket",
+  youtube: "https://youtube.com/@mewingmarket",
+  facebook: "https://facebook.com/mewingmarket",
+  x: "https://x.com/mewingmarket",
+  threads: "https://threads.net/@mewingmarket",
+  linkedin: "https://linkedin.com/company/mewingmarket"
+};
+
+const HELP_DESK = {
+  download: "📥 *Problemi con il download?*\nControlla la tua email Payhip o la sezione 'I miei acquisti'.",
+  payhip: "💳 *Problemi con Payhip?*\nAssicurati che la carta sia abilitata agli acquisti online.",
+  rimborso: "↩️ *Rimborso*\nScrivi a support@mewingmarket.it con il numero d’ordine.",
+  contatto: "📞 *Contatti diretti*\nEmail: support@mewingmarket.it\nWhatsApp: 352 026 6660"
+};
+
+const FAQ_BLOCK = `
+❓ *Domande frequenti*
+
+• Non ho ricevuto l’email  
+• Il download non funziona  
+• Problemi con Payhip  
+• Voglio un rimborso  
+• Voglio contattare il supporto
+`;
+
+const SUPPORTO = `
+🛠 *Supporto tecnico*
+
+Descrivi il problema e ti aiuto subito.
+`;
+
+// Funzione per interpretare "sì"
+function isYes(text) {
+  const t = text.toLowerCase();
+  return (
+    t.includes("si") ||
+    t.includes("sì") ||
+    t.includes("ok") ||
+    t.includes("va bene") ||
+    t.includes("certo") ||
+    t.includes("yes")
+  );
+}
 // ---------------------------------------------
 // HANDLE CONVERSATION (PATCHATI SOLO I CAMPI)
 // ---------------------------------------------
