@@ -101,6 +101,52 @@ app.get("/sync/airtable", async (req, res) => {
 app.get("/newsletter/html", (req, res) => {
   const { html } = generateNewsletterHTML();
   res.type("html").send(html);
+});app.get("/newsletter/json", (req, res) => {
+  const products = getProducts();
+  const latest = products.at(-1);
+
+  if (!latest) {
+    return res.json({ error: "Nessun prodotto disponibile" });
+  }
+
+  const { html, oggetto } = generateNewsletterHTML();
+
+  res.json({
+    oggetto,
+    prodotto: latest,
+    html
+  });
+});app.get("/newsletter/text", (req, res) => {
+  const { html } = generateNewsletterHTML();
+
+  // Conversione semplice HTML → testo
+  const text = html
+    .replace(/<[^>]+>/g, " ")   // rimuove tag
+    .replace(/\s+/g, " ")       // pulisce spazi
+    .trim();
+
+  res.type("text/plain").send(text);
+});app.get("/newsletter/send", (req, res) => {
+  const products = getProducts();
+  const latest = products.at(-1);
+
+  if (!latest) {
+    return res.json({ error: "Nessun prodotto disponibile" });
+  }
+
+  const { html, oggetto } = generateNewsletterHTML();
+
+  res.json({
+    mittente: "vendite@mewingmarket.it",
+    oggetto,
+    html,
+    prodotto: {
+      titolo: latest.titoloBreve || latest.titolo,
+      descrizione: latest.descrizioneBreve,
+      immagine: latest.immagine,
+      link: latest.linkPayhip
+    }
+  });
 });
 // ---------------------------------------------
 // CHAT ENDPOINT (BOT)
