@@ -18,7 +18,13 @@ const { inviaNewsletter } = require("./modules/brevo");
 // ---------------------------------------------
 const app = express();
 app.disable("x-powered-by");
-
+// 🔥 Anti-cache
+app.use((req, res, next) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  next();
+});
 app.use(express.static(path.join(process.cwd(), "public")));
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
