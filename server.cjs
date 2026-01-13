@@ -268,4 +268,29 @@ app.post("/chat", (req, res) => {
 // AVVIO SERVER
 // ---------------------------------------------
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`MewingMarket AI attivo sulla porta ${PORT}`));
+
+app.listen(PORT, () => {
+  console.log(`MewingMarket AI attivo sulla porta ${PORT}`);
+
+  // 🔥 Sync all'avvio
+  (async () => {
+    try {
+      console.log("⏳ Sync automatico Airtable all'avvio...");
+      await syncAirtable();
+      loadProducts();
+      console.log("✅ Sync completato all'avvio");
+    } catch (err) {
+      console.error("❌ Errore nel sync all'avvio:", err);
+    }
+  })();
+});// 🔥 Cron job ogni 30 minuti
+setInterval(async () => {
+  try {
+    console.log("⏳ Sync programmato Airtable...");
+    await syncAirtable();
+    loadProducts();
+    console.log("✅ Sync programmato completato");
+  } catch (err) {
+    console.error("❌ Errore nel sync programmato:", err);
+  }
+}, 30 * 60 * 1000);
