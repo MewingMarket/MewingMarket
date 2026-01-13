@@ -96,7 +96,7 @@ app.get("/sync/airtable", async (req, res) => {
     res.status(500).send("Errore durante la sincronizzazione.");
   }
 });
-const { generateNewsletterHTML } = require("./modules/newsletter");
+
 
 app.get("/newsletter/html", (req, res) => {
   const { html } = generateNewsletterHTML();
