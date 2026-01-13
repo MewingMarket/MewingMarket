@@ -160,7 +160,81 @@ app.get("/newsletter/send", async (req, res) => {
     res.status(500).json({ error: "Errore invio newsletter" });
   }
 });
+// ---------------------------------------------
+// META FEED (XML)
+// ---------------------------------------------
+app.get("/meta/feed", (req, res) => {
+  const products = getProducts();
 
+  let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
+  <channel>
+    <title>MewingMarket Catalog</title>
+    <link>https://www.mewingmarket.it</link>
+    <description>Catalogo prodotti MewingMarket</description>
+`;
+
+  products.forEach((p, i) => {
+    xml += `
+    <item>
+      <g:id>${p.id || i + 1}</g:id>
+      <g:title><![CDATA[${p.titoloBreve || p.titolo}]]></g:title>
+      <g:description><![CDATA[${p.descrizioneBreve || p.descrizione || ""}]]></g:description>
+      <g:link>${p.linkPayhip}</g:link>
+      <g:image_link>${p.immagine}</g:image_link>
+      <g:availability>in stock</g:availability>
+      <g:price>${p.prezzo || "0.00"} EUR</g:price>
+      <g:brand>MewingMarket</g:brand>
+      <g:condition>new</g:condition>
+    </item>
+`;
+  });
+
+  xml += `
+  </channel>
+</rss>`;
+
+  res.type("application/xml").send(xml);
+});
+
+
+// ---------------------------------------------
+// GOOGLE MERCHANT FEED (XML)
+// ---------------------------------------------
+app.get("/google/feed", (req, res) => {
+  const products = getProducts();
+
+  let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
+  <channel>
+    <title>MewingMarket Google Feed</title>
+    <link>https://www.mewingmarket.it</link>
+    <description>Feed prodotti per Google Merchant</description>
+`;
+
+  products.forEach((p, i) => {
+    xml += `
+    <item>
+      <g:id>${p.id || i + 1}</g:id>
+      <g:title><![CDATA[${p.titoloBreve || p.titolo}]]></g:title>
+      <g:description><![CDATA[${p.descrizioneBreve || p.descrizione || ""}]]></g:description>
+      <g:link>${p.linkPayhip}</g:link>
+      <g:image_link>${p.immagine}</g:image_link>
+      <g:availability>in stock</g:availability>
+      <g:price>${p.prezzo || "0.00"} EUR</g:price>
+      <g:brand>MewingMarket</g:brand>
+      <g:condition>new</g:condition>
+      <g:google_product_category>2271</g:google_product_category>
+    </item>
+`;
+  });
+
+  xml += `
+  </channel>
+</rss>`;
+
+  res.type("application/xml").send(xml);
+});
 // ---------------------------------------------
 // CHAT ENDPOINT (BOT)
 // ---------------------------------------------
