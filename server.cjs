@@ -234,6 +234,11 @@ app.get("/google/feed", (req, res) => {
 </rss>`;
 
   res.type("application/xml").send(xml);
+});const { generateSitemap } = require("./modules/sitemap");
+
+app.get("/sitemap.xml", (req, res) => {
+  const xml = generateSitemap();
+  res.type("application/xml").send(xml);
 });
 // ---------------------------------------------
 // CHAT ENDPOINT (BOT)
