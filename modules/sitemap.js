@@ -1,6 +1,5 @@
 // modules/sitemap.js
 
-<<<<<<< HEAD
 const { listAllProducts } = require("./catalogo");
 
 function generateSitemap() {
@@ -34,14 +33,6 @@ ${urls
 `.trim();
 
   return xml;
-=======
-// File placeholder per futura sitemap dinamica.
-// Attualmente non contiene logica, come richiesto.
-
-function generateSitemap() {
-  // Da implementare in futuro
-  return "";
->>>>>>> b6c9553 (Install axios)
 }
 
 module.exports = {
