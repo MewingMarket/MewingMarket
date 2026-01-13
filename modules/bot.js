@@ -62,12 +62,14 @@ const LINKS = {
   threads: "https://threads.net/@mewingmarket",
   linkedin: "https://linkedin.com/company/mewingmarket"
 };
-
 const HELP_DESK = {
-  download: "📥 *Problemi con il download?*\nControlla la tua email Payhip o la sezione 'I miei acquisti'.",
-  payhip: "💳 *Problemi con Payhip?*\nAssicurati che la carta sia abilitata agli acquisti online.",
-  rimborso: "↩️ *Rimborso*\nScrivi a support@mewingmarket.it con il numero d’ordine.",
-  contatto: "📞 *Contatti diretti*\nEmail: support@mewingmarket.it\nWhatsApp: 352 026 6660"
+  download: "📥 *Problemi con il download?*\nControlla la tua email Payhip o la sezione 'I miei acquisti'. Se serve aiuto scrivi a supporto@mewingmarket.it o su WhatsApp 352 026 6660.",
+  
+  payhip: "💳 *Problemi con Payhip?*\nAssicurati che la carta sia abilitata agli acquisti online. Se il problema persiste, contattaci su WhatsApp 352 026 6660.",
+
+  rimborso: "↩️ *Resi e Rimborsi*\nLeggi la politica completa qui:\nhttps://www.mewingmarket.it/resi.html\n\nPer assistenza:\n📩 supporto@mewingmarket.it\n💬 WhatsApp: 352 026 6660",
+
+  contatto: "📞 *Contatti diretti*\nSupporto: supporto@mewingmarket.it\nCommerciale: vendite@mewingmarket.it\nWhatsApp: 352 026 6660"
 };
 
 const FAQ_BLOCK = `
@@ -293,15 +295,18 @@ function detectIntent(rawText) {
   ) {
     return { intent: "download", sub: null };
   }
-
-  if (
+if (
     t.includes("rimborso") ||
     t.includes("voglio un rimborso") ||
-    t.includes("restituzione")
+    t.includes("restituzione") ||
+    t.includes("resi") ||
+    t.includes("reso") ||
+    t.includes("politica resi") ||
+    t.includes("res i") ||
+    t.includes("pagina resi")
   ) {
-    return { intent: "rimborso", sub: null };
-  }
-
+    return { intent: "resi_pagina", sub: null };
+}
   // MATCH PRODOTTI
   for (const p of PRODUCTS) {
     const titolo = normalize(p.titolo);
@@ -580,7 +585,7 @@ ${LINKS.disiscrizione}
   // RIMBORSO
   if (intent === "rimborso") {
     return reply(res, HELP_DESK.rimborso);
-  }
+  } 
 
   // COMMERCIALE MAIN
   if (intent === "commerciale_main") {
