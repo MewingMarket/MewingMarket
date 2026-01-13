@@ -9,20 +9,40 @@ async function inviaNewsletter({ oggetto, html }) {
     name: oggetto,
     subject: oggetto,
     htmlContent: html,
-    recipients: { listIds: [listaId] },
-    scheduledAt: new Date().toISOString()
+    recipients: { listIds: [listaId] }
   };
 
   try {
-    const res = await axios.post("https://api.brevo.com/v3/emailCampaigns", payload, {
-      headers: {
-        "api-key": apiKey,
-        "Content-Type": "application/json"
+    // 1️⃣ CREA LA CAMPAGNA
+    const create = await axios.post(
+      "https://api.brevo.com/v3/emailCampaigns",
+      payload,
+      {
+        headers: {
+          "api-key": apiKey,
+          "Content-Type": "application/json"
+        }
       }
-    });
+    );
 
-    console.log("✅ Newsletter inviata via Brevo:", res.data.id);
-    return res.data;
+    const campaignId = create.data.id;
+    console.log("📨 Campagna creata:", campaignId);
+
+    // 2️⃣ INVIA LA CAMPAGNA
+    const send = await axios.post(
+      `https://api.brevo.com/v3/emailCampaigns/${campaignId}/sendNow`,
+      {},
+      {
+        headers: {
+          "api-key": apiKey,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    console.log("✅ Newsletter inviata via Brevo:", campaignId);
+    return { campaignId, status: "sent" };
+
   } catch (err) {
     console.error("❌ Errore invio Brevo:", err.response?.data || err.message);
     throw err;
