@@ -7,10 +7,11 @@ const fs = require("fs");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 require("dotenv").config();
+
 const { generateNewsletterHTML } = require("./modules/newsletter");
-// Moduli separati
 const { syncAirtable, loadProducts, getProducts } = require("./modules/airtable");
 const { detectIntent, handleConversation, reply, userStates, generateUID } = require("./modules/bot");
+const { inviaNewsletter } = require("./modules/brevo");
 
 // ---------------------------------------------
 // SETUP EXPRESS
@@ -97,11 +98,15 @@ app.get("/sync/airtable", async (req, res) => {
   }
 });
 
-
+// ---------------------------------------------
+// NEWSLETTER ENDPOINTS
+// ---------------------------------------------
 app.get("/newsletter/html", (req, res) => {
   const { html } = generateNewsletterHTML();
   res.type("html").send(html);
-});app.get("/newsletter/json", (req, res) => {
+});
+
+app.get("/newsletter/json", (req, res) => {
   const products = getProducts();
   const latest = products.at(-1);
 
@@ -116,57 +121,46 @@ app.get("/newsletter/html", (req, res) => {
     prodotto: latest,
     html
   });
-});app.get("/newsletter/text", (req, res) => {
+});
+
+app.get("/newsletter/text", (req, res) => {
   const { html } = generateNewsletterHTML();
 
-  // Conversione semplice HTML → testo
   const text = html
-    .replace(/<[^>]+>/g, " ")   // rimuove tag
-    .replace(/\s+/g, " ")       // pulisce spazi
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
     .trim();
 
   res.type("text/plain").send(text);
-});app.get("/newsletter/send", (req, res) => {
-  const products = getProducts();
-  const latest = products.at(-1);
+});
 
-  if (!latest) {
-    return res.json({ error: "Nessun prodotto disponibile" });
-  }
-
-  const { html, oggetto } = generateNewsletterHTML();
-
-  res.json({
-    mittente: "vendite@mewingmarket.it",
-    oggetto,
-    html,
-    prodotto: {
-      titolo: latest.titoloBreve || latest.titolo,
-      descrizione: latest.descrizioneBreve,
-      immagine: latest.immagine,
-      link: latest.linkPayhip
-    }
-  });
-});const { inviaNewsletter } = require("./modules/brevo");
-
-app.post("/webhook/payhip", express.json(), async (req, res) => {
+// ---------------------------------------------
+// INVIO NEWSLETTER (BREVO MCP)
+// ---------------------------------------------
+app.get("/newsletter/send", async (req, res) => {
   try {
-    const evento = req.body;
-    console.log("📩 Webhook Payhip ricevuto:", evento);
+    const products = getProducts();
+    const latest = products.at(-1);
 
-    // Verifica tipo evento (opzionale)
-    if (!evento || !evento.product || !evento.product.name) {
-      return res.status(400).send("Webhook non valido");
+    if (!latest) {
+      return res.json({ error: "Nessun prodotto disponibile" });
     }
 
     const { html, oggetto } = generateNewsletterHTML();
     const risultato = await inviaNewsletter({ oggetto, html });
 
-    res.send(`Newsletter inviata. ID campagna: ${risultato.id}`);
+    res.json({
+      status: "ok",
+      message: "Newsletter inviata",
+      campaignId: risultato.campaignId
+    });
+
   } catch (err) {
-    res.status(500).send("Errore invio newsletter");
+    console.error("Errore invio newsletter:", err);
+    res.status(500).json({ error: "Errore invio newsletter" });
   }
 });
+
 // ---------------------------------------------
 // CHAT ENDPOINT (BOT)
 // ---------------------------------------------
