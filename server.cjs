@@ -147,6 +147,25 @@ app.get("/newsletter/html", (req, res) => {
       link: latest.linkPayhip
     }
   });
+});const { inviaNewsletter } = require("./modules/brevo");
+
+app.post("/webhook/payhip", express.json(), async (req, res) => {
+  try {
+    const evento = req.body;
+    console.log("📩 Webhook Payhip ricevuto:", evento);
+
+    // Verifica tipo evento (opzionale)
+    if (!evento || !evento.product || !evento.product.name) {
+      return res.status(400).send("Webhook non valido");
+    }
+
+    const { html, oggetto } = generateNewsletterHTML();
+    const risultato = await inviaNewsletter({ oggetto, html });
+
+    res.send(`Newsletter inviata. ID campagna: ${risultato.id}`);
+  } catch (err) {
+    res.status(500).send("Errore invio newsletter");
+  }
 });
 // ---------------------------------------------
 // CHAT ENDPOINT (BOT)
