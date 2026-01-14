@@ -1,10 +1,10 @@
 // whatsapp.js
-import axios from "axios";
+const axios = require("axios");
 
 const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN;
 const WHATSAPP_PHONE_ID = process.env.WHATSAPP_PHONE_ID;
 
-export async function sendWhatsAppMessage(to, text) {
+async function sendWhatsAppMessage(to, text) {
   try {
     const url = `https://graph.facebook.com/v17.0/${WHATSAPP_PHONE_ID}/messages`;
 
@@ -28,7 +28,7 @@ export async function sendWhatsAppMessage(to, text) {
   }
 }
 
-export async function sendTemplate(to, templateName, language = "it") {
+async function sendTemplate(to, templateName, language = "it") {
   try {
     const url = `https://graph.facebook.com/v17.0/${WHATSAPP_PHONE_ID}/messages`;
 
@@ -54,3 +54,8 @@ export async function sendTemplate(to, templateName, language = "it") {
     return null;
   }
 }
+
+module.exports = {
+  sendWhatsAppMessage,
+  sendTemplate
+};
