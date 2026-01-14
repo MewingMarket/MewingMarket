@@ -39,7 +39,8 @@ app.get("/", (req, res) => {
 app.get("/products.json", (req, res) => {
   res.sendFile(path.join(process.cwd(), "data", "products.json"));
 });
-
+// WEBHOOK WHATSAPP
+app.use("/webhook", whatsappWebhook);
 // ---------------------------------------------
 // REDIRECT HTTPS + WWW
 // ---------------------------------------------
