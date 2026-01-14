@@ -8,6 +8,26 @@
   <meta name="description" content="Scheda prodotto digitale MewingMarket.">
   <link rel="stylesheet" href="style.css?v=1.4">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- JSON-LD STATICO (Google lo legge SEMPRE) -->
+  <script id="schema-product" type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": "",
+    "image": "",
+    "description": "",
+    "sku": "",
+    "offers": {
+      "@type": "Offer",
+      "price": "",
+      "priceCurrency": "EUR",
+      "availability": "https://schema.org/InStock",
+      "url": ""
+    }
+  }
+  </script>
+
 </head>
 
 <body>
@@ -30,8 +50,8 @@
 <main>
   <section class="hero-wrapper">
     <div class="hero-text">
-      <h1 id="title"></h1>
-      <p id="desc-lunga"></p>
+      <h1 id="title">Caricamento...</h1>
+      <p id="desc-lunga">Caricamento descrizione...</p>
       <p class="prezzo" id="price"></p>
       <a id="payhip" class="btn-acquista" target="_blank">Acquista su Payhip</a>
     </div>
@@ -64,7 +84,6 @@ fetch('/products.json')
   .then(r => r.json())
   .then(products => {
 
-    // Trova prodotto con slug corretto
     const p = products.find(x => x.slug === slug);
 
     if (!p) {
@@ -83,26 +102,18 @@ fetch('/products.json')
     document.getElementById('image').alt = p.titolo;
     document.getElementById('payhip').href = p.linkPayhip;
 
-    // Schema.org
-    const schema = {
-      "@context": "https://schema.org",
-      "@type": "Product",
-      "name": p.titolo,
-      "image": p.immagine,
-      "description": p.descrizioneLunga,
-      "offers": {
-        "@type": "Offer",
-        "price": p.prezzo,
-        "priceCurrency": "EUR",
-        "availability": "https://schema.org/InStock",
-        "url": p.linkPayhip
-      }
-    };
+    // JSON-LD STATICO → aggiornato via JS (Google lo legge)
+    const schemaTag = document.getElementById("schema-product");
+    const schemaObj = JSON.parse(schemaTag.textContent);
 
-    const script = document.createElement('script');
-    script.type = "application/ld+json";
-    script.textContent = JSON.stringify(schema);
-    document.head.appendChild(script);
+    schemaObj.name = p.titolo;
+    schemaObj.image = p.immagine;
+    schemaObj.description = p.descrizioneLunga;
+    schemaObj.sku = p.slug;
+    schemaObj.offers.price = p.prezzo;
+    schemaObj.offers.url = p.linkPayhip;
+
+    schemaTag.textContent = JSON.stringify(schemaObj);
   });
 </script>
 
