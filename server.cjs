@@ -7,7 +7,7 @@ const fs = require("fs");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 require("dotenv").config();
-
+const whatsappWebhook = require("./webhook.js").default || require("./webhook.js");
 const { generateNewsletterHTML } = require("./modules/newsletter");
 const { syncAirtable, loadProducts, getProducts } = require("./modules/airtable");
 const { detectIntent, handleConversation, reply, userStates, generateUID } = require("./modules/bot");
