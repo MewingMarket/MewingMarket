@@ -245,6 +245,24 @@ app.get("/google/feed", (req, res) => {
 app.get("/sitemap.xml", (req, res) => {
   const xml = generateSitemap();
   res.type("application/xml").send(xml);
+});// VERIFICA META (necessaria solo per collegare il webhook)
+app.get("/webhook/facebook", (req, res) => {
+  const VERIFY_TOKEN = process.env.FB_VERIFY_TOKEN;
+
+  const mode = req.query["hub.mode"];
+  const token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
+
+  if (mode === "subscribe" && token === VERIFY_TOKEN) {
+    res.status(200).send(challenge);
+  } else {
+    res.sendStatus(403);
+  }
+}); const facebookBot = createFacebookBot({ airtable, products });
+
+app.post("/webhook/facebook", async (req, res) => {
+  await facebookBot.handleMessage(req.body);
+  res.sendStatus(200);
 });
 // ---------------------------------------------
 // CHAT ENDPOINT (BOT)
@@ -263,7 +281,9 @@ app.post("/chat", (req, res) => {
 
   return handleConversation(req, res, intent, sub, message);
 });
-
+setInterval(() => {
+  facebookBot.publishNewProduct();
+}, 1000 * 60 * 10); // ogni 10 minuti
 // ---------------------------------------------
 // AVVIO SERVER
 // ---------------------------------------------
