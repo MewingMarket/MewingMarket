@@ -1,5 +1,4 @@
 // bots/facebook.js
-
 const axios = require("axios");
 
 module.exports = function createFacebookBot({ airtable, products }) {
@@ -10,24 +9,16 @@ module.exports = function createFacebookBot({ airtable, products }) {
   // 🔹 1. Pubblica un post sulla pagina Facebook
   async function publishPost(text, imageUrl = null) {
     try {
-      if (imageUrl) {
-        await axios.post(
-          `https://graph.facebook.com/${PAGE_ID}/photos`,
-          {
-            url: imageUrl,
-            caption: text,
-            access_token: PAGE_ACCESS_TOKEN
-          }
-        );
-      } else {
-        await axios.post(
-          `https://graph.facebook.com/${PAGE_ID}/feed`,
-          {
-            message: text,
-            access_token: PAGE_ACCESS_TOKEN
-          }
-        );
-      }
+      const url = imageUrl
+        ? `https://graph.facebook.com/${PAGE_ID}/photos`
+        : `https://graph.facebook.com/${PAGE_ID}/feed`;
+
+      const payload = imageUrl
+        ? { url: imageUrl, caption: text, access_token: PAGE_ACCESS_TOKEN }
+        : { message: text, access_token: PAGE_ACCESS_TOKEN };
+
+      await axios.post(url, payload);
+
     } catch (err) {
       console.error("Errore pubblicazione Facebook:", err.response?.data || err);
     }
@@ -42,10 +33,16 @@ module.exports = function createFacebookBot({ airtable, products }) {
     );
 
     for (const p of nuovi) {
-      const testo = `${p.titolo}\n\n${p.descrizione}\n\nAcquista qui: ${p.link_payhip}\n\nVideo: ${p.video_youtube}`;
+
+      const testo = 
+`${p.titolo}
+
+${p.descrizioneBreve}
+
+Acquista qui: ${p.linkPayhip}`;
+
       await publishPost(testo, p.immagine);
 
-      // aggiorna Airtable
       await airtable.update(p.id, { pubblicato_social: true });
     }
   }
@@ -64,11 +61,11 @@ module.exports = function createFacebookBot({ airtable, products }) {
       let risposta = "Ciao! Come posso aiutarti?";
 
       if (text.includes("catalogo")) {
-        risposta = "Ecco il catalogo completo: https://www.mewingmarket.it/catalogo.html";
+        risposta = "Ecco il catalogo completo:\nhttps://www.mewingmarket.it/catalogo.html";
       }
 
       if (text.includes("novità")) {
-        risposta = "Ecco le novità di oggi: https://www.mewingmarket.it/catalogo.html?categoria=novita";
+        risposta = "Ecco le novità di oggi:\nhttps://www.mewingmarket.it/catalogo.html?categoria=novita";
       }
 
       if (text.includes("newsletter")) {
@@ -77,10 +74,9 @@ module.exports = function createFacebookBot({ airtable, products }) {
 
       if (text.includes("iscrivimi")) {
         risposta = "Perfetto! Sei iscritto alla newsletter.";
-        // qui puoi aggiungere iscrizione a Brevo
+        // TODO: integrazione Brevo
       }
 
-      // invia risposta
       await axios.post(
         `https://graph.facebook.com/v17.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`,
         {
