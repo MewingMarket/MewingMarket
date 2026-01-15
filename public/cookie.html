@@ -1,38 +1,50 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="UTF-8">
-<title>Cookie Policy – MewingMarket</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+
+  <title>Cookie Policy – MewingMarket</title>
+  <meta name="description" content="Informazioni sui cookie utilizzati da MewingMarket: tecnici, analitici e di terze parti.">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="index, follow">
+
+  <meta property="og:title" content="Cookie Policy – MewingMarket">
+  <meta property="og:description" content="Dettagli sui cookie tecnici e analitici utilizzati dal sito.">
+  <meta property="og:url" content="https://www.mewingmarket.it/cookie.html">
+
+  <link rel="icon" href="favicon.png" type="image/png">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<header><img src="logo.png" class="logo"></header>
+<div id="header-placeholder"></div>
+<script>
+fetch("header.html").then(r=>r.text()).then(h=>document.getElementById("header-placeholder").innerHTML=h);
+</script>
 
 <main style="max-width:900px;margin:auto;padding:20px;">
-<h1>Cookie Policy</h1>
+  <h1>Cookie Policy</h1>
 
-<p>Questo sito utilizza cookie tecnici e di analisi anonima per garantire il corretto funzionamento e migliorare l’esperienza utente.</p>
+  <p>Questo sito utilizza cookie tecnici e di analisi anonima per garantire il corretto funzionamento e migliorare l’esperienza utente.</p>
 
-<h2>1. Cosa sono i cookie</h2>
-<p>I cookie sono piccoli file di testo salvati nel browser dell’utente.</p>
+  <h2>1. Cosa sono i cookie</h2>
+  <p>I cookie sono piccoli file di testo salvati nel browser dell’utente.</p>
 
-<h2>2. Tipologie di cookie utilizzati</h2>
-<ul>
-<li><strong>Cookie tecnici</strong>: necessari al funzionamento del sito.</li>
-<li><strong>Cookie analitici anonimi</strong>: per statistiche aggregate.</li>
-</ul>
+  <h2>2. Tipologie di cookie utilizzati</h2>
+  <ul>
+    <li><strong>Cookie tecnici</strong>: necessari al funzionamento del sito.</li>
+    <li><strong>Cookie analitici anonimi</strong>: per statistiche aggregate.</li>
+  </ul>
 
-<h2>3. Cookie di terze parti</h2>
-<p>Utilizziamo:</p>
-<ul>
-<li>Google Analytics (anonimizzato)</li>
-<li>Payhip (per gli acquisti)</li>
-</ul>
+  <h2>3. Cookie di terze parti</h2>
+  <p>Utilizziamo:</p>
+  <ul>
+    <li>Google Analytics (anonimizzato)</li>
+    <li>Payhip (per gli acquisti)</li>
+  </ul>
 
-<h2>4. Come disattivare i cookie</h2>
-<p>Puoi disattivarli dalle impostazioni del browser.</p>
-
+  <h2>4. Come disattivare i cookie</h2>
+  <p>Puoi disattivarli dalle impostazioni del browser.</p>
 </main>
 
 <div id="footer-placeholder"></div>
