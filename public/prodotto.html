@@ -2,146 +2,39 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Prodotto – MewingMarket</title>
-  <meta name="description" content="Scheda prodotto digitale MewingMarket.">
-  <link rel="stylesheet" href="style.css?v=1.4">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <title id="seo-title">Prodotto – MewingMarket</title>
+  <meta id="seo-description" name="description" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- JSON-LD STATICO (Google lo legge SEMPRE) -->
-  <script id="schema-product" type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    "name": "",
-    "image": "",
-    "description": "",
-    "sku": "",
-    "offers": {
-      "@type": "Offer",
-      "price": "",
-      "priceCurrency": "EUR",
-      "availability": "https://schema.org/InStock",
-      "url": ""
-    }
-  }
-  </script>
+  <meta property="og:type" content="product">
+  <meta property="og:site_name" content="MewingMarket">
+  <meta property="og:title" id="og-title" content="">
+  <meta property="og:description" id="og-description" content="">
+  <meta property="og:image" id="og-image" content="">
+  <meta property="og:url" id="og-url" content="">
 
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" id="tw-title" content="">
+  <meta name="twitter:description" id="tw-description" content="">
+  <meta name="twitter:image" id="tw-image" content="">
+
+  <link rel="icon" href="favicon.png" type="image/png">
+  <link rel="stylesheet" href="style.css">
+  <script src="prodotto.js" defer></script>
 </head>
-
 <body>
 
-<header>
-  <img src="logo.png" alt="Logo" class="logo">
-</header>
+<div id="header-placeholder"></div>
+<script>
+fetch("header.html").then(r=>r.text()).then(h=>document.getElementById("header-placeholder").innerHTML=h);
+</script>
 
-<nav>
-  <ul id="category-nav">
-    <li><a href="index.html">Home</a></li>
-    <li><a href="catalogo.html">Catalogo</a></li>
-    <li><a href="chisiamo.html">Chi Siamo</a></li>
-    <li><a href="contatti.html">Contatti</a></li>
-    <li><a href="dovesiamo.html">Dove Siamo</a></li>
-    <li><a href="FAQ.html">FAQ</a></li>
-  </ul>
-</nav>
-
-<main>
-  <section class="hero-wrapper">
-    <div class="hero-text">
-      <h1 id="title">Caricamento...</h1>
-      <p id="desc-lunga">Caricamento descrizione...</p>
-      <p class="prezzo" id="price"></p>
-      <a id="payhip" class="btn-acquista" target="_blank">Acquista su Payhip</a>
-    </div>
-
-    <div class="hero-image">
-      <img id="image" src="" alt="">
-    </div>
-  </section>
-</main>
+<div class="hero-wrapper" id="prodotto"></div>
 
 <div id="footer-placeholder"></div>
 <script>
-  fetch("footer.html")
-    .then(res => res.text())
-    .then(html => {
-      document.getElementById("footer-placeholder").innerHTML = html;
-    });
-</script>
-
-<script>
-// Ottieni parametro slug
-function getParam(name) {
-  return new URLSearchParams(window.location.search).get(name);
-}
-
-const slug = getParam('slug');
-
-// Carica prodotti
-fetch('/products.json')
-  .then(r => r.json())
-  .then(products => {
-
-    const p = products.find(x => x.slug === slug);
-
-    if (!p) {
-      document.getElementById('title').textContent = "Prodotto non trovato";
-      return;
-    }
-
-    // SEO dinamica
-    document.title = p.titolo + " – MewingMarket";
-
-    // Popola pagina
-    document.getElementById('title').textContent = p.titolo;
-    document.getElementById('desc-lunga').textContent = p.descrizioneLunga;
-    document.getElementById('price').textContent = "€" + p.prezzo;
-    document.getElementById('image').src = p.immagine;
-    document.getElementById('image').alt = p.titolo;
-    document.getElementById('payhip').href = p.linkPayhip;
-
-    // JSON-LD STATICO → aggiornato via JS (Google lo legge)
-    const schemaTag = document.getElementById("schema-product");
-    const schemaObj = JSON.parse(schemaTag.textContent);
-
-    schemaObj.name = p.titolo;
-    schemaObj.image = p.immagine;
-    schemaObj.description = p.descrizioneLunga;
-    schemaObj.sku = p.slug;
-    schemaObj.offers.price = p.prezzo;
-    schemaObj.offers.url = p.linkPayhip;
-
-    schemaTag.textContent = JSON.stringify(schemaObj);
-  });
-</script>
-
-<script>
-// Tracking click
-document.addEventListener("click", function(e) {
-  const btn = e.target.closest(".btn, .btn-acquista");
-  if (!btn) return;
-
-  const isProductPage = document.getElementById("title") !== null;
-
-  let record = {
-    timestamp: new Date().toLocaleString(),
-    device: /Mobi|Android/i.test(navigator.userAgent) ? "mobile" : "desktop",
-    page: location.pathname
-  };
-
-  if (isProductPage) {
-    record.titolo = document.getElementById("title").textContent;
-    record.slug = new URLSearchParams(location.search).get("slug");
-    record.prezzo = document.getElementById("price").textContent;
-    record.link = document.getElementById("payhip").href;
-  }
-
-  let logs = JSON.parse(localStorage.getItem("clickLogs") || "[]");
-  logs.push(record);
-  localStorage.setItem("clickLogs", JSON.stringify(logs));
-});
+fetch("footer.html").then(r=>r.text()).then(h=>document.getElementById("footer-placeholder").innerHTML=h);
 </script>
 
 </body>
