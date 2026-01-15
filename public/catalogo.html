@@ -1,12 +1,10 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="it">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>Catalogo Prodotti Digitali – MewingMarket</title>
   <link rel="canonical" href="https://www.mewingmarket.it/catalogo.html">
-
   <meta name="description" content="Catalogo completo dei prodotti digitali MewingMarket: guide, strumenti AI, planner, workbook e risorse pratiche.">
   <meta name="robots" content="index, follow">
 
@@ -19,7 +17,6 @@
   <link rel="stylesheet" href="style.css?v=1.4">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
-
 <body>
 
 <header>
@@ -41,7 +38,6 @@
   <h1>Catalogo Prodotti Digitali</h1>
 
   <div id="categorie" class="categorie-nav"></div>
-
   <section id="catalogo" class="catalogo-grid"></section>
 </main>
 
@@ -49,30 +45,23 @@
 <script>
   fetch("footer.html")
     .then(res => res.text())
-    .then(html => {
-      document.getElementById("footer-placeholder").innerHTML = html;
-    });
+    .then(html => { document.getElementById("footer-placeholder").innerHTML = html; });
 </script>
 
-<!-- ===========================
-     CATALOGO DINAMICO
-=========================== -->
 <script>
+// Carica catalogo dinamico
 fetch('/products.json')
   .then(r => r.json())
   .then(products => {
-
     const container = document.getElementById('catalogo');
     const categorieBox = document.getElementById('categorie');
 
-    // CATEGORIE AUTOMATICHE
-    const categorie = [...new Set(products.map(p => p.categoria))];
+    const categorie = [...new Set(products.map(p => p.categoria))].filter(Boolean);
 
     categorieBox.innerHTML = categorie.map(cat =>
       `<button class="cat-btn" onclick="filterCat('${cat}')">${cat}</button>`
     ).join('');
 
-    // CATALOGO
     products.forEach(product => {
       const card = document.createElement('div');
       card.className = 'product-card';
@@ -92,20 +81,14 @@ fetch('/products.json')
       container.appendChild(card);
     });
 
-    // FILTRO CATEGORIE
     window.filterCat = function(cat) {
       document.querySelectorAll('.product-card').forEach(card => {
         card.style.display = card.dataset.cat === cat ? 'block' : 'none';
       });
     };
-
   });
-</script>
 
-<!-- ===========================
-     TRACKING CLICK
-=========================== -->
-<script>
+// Tracking click
 document.addEventListener("click", function(e) {
   const btn = e.target.closest(".btn, .btn-acquista");
   if (!btn) return;
@@ -140,5 +123,6 @@ document.addEventListener("click", function(e) {
 });
 </script>
 
+<script src="chat.js"></script>
 </body>
 </html>
