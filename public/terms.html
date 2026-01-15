@@ -1,53 +1,45 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Termini e Condizioni | MewingMarket</title><link rel="canonical" href="https://www.mewingmarket.it/terms.html"><link rel="stylesheet" href="style.css">
-    <meta name="description" content="Termini e condizioni di utilizzo dei prodotti digitali MewingMarket.">
-
-    <!-- Favicon e Manifest -->
-    <link rel="icon" href="/favicon.ico" type="image/x-icon">
-    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
-    <link rel="manifest" href="/site.webmanifest">
-
-    <style>
-        body { font-family: Arial; background:#f7f7f7; padding:40px; color:#333; }
-        .box { background:#fff; padding:30px; max-width:900px; margin:auto; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.08); }
-        h1, h2 { text-align:center; }
-        p { font-size:16px; line-height:1.6; }
-    </style>
+<meta charset="UTF-8">
+<title>Termini e Condizioni – MewingMarket</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+<header><img src="logo.png" class="logo"></header>
 
+<main style="max-width:900px;margin:auto;padding:20px;">
+<h1>Termini e Condizioni</h1>
 
-<div class="box">
-    <h1>Termini e Condizioni</h1>
+<h2>1. Oggetto</h2>
+<p>MewingMarket vende prodotti digitali scaricabili tramite Payhip.</p>
 
-    <p>Accedendo a questo sito accetti i presenti Termini e Condizioni.</p>
+<h2>2. Acquisto</h2>
+<p>L’acquisto avviene tramite Payhip, che gestisce pagamenti e consegna digitale.</p>
 
-    <h2>Prodotti digitali</h2>
-    <p>I prodotti digitali sono forniti in formato elettronico e non sono rimborsabili dopo il download.</p>
-<p>Per maggiori informazioni consulta la nostra pagina dedicata ai resi:  
-<a href="resi.html">➡️ Politica Resi e Rimborsi</a></p>
-    <h2>Uso consentito</h2>
-    <p>I contenuti acquistati sono per uso personale e non possono essere rivenduti o distribuiti.</p>
+<h2>3. Licenza d’uso</h2>
+<p>I prodotti sono ad uso personale.  
+È vietata la condivisione o rivendita.</p>
 
-    <h2>Limitazioni di responsabilità</h2>
-    <p>MewingMarket non è responsabile per eventuali danni derivanti dall’uso improprio dei prodotti digitali.</p>
+<h2>4. Prezzi</h2>
+<p>I prezzi sono indicati in euro e possono variare senza preavviso.</p>
 
-    <h2>Modifiche</h2>
-    <p>Possiamo aggiornare questi termini in qualsiasi momento. Le modifiche saranno pubblicate su questa pagina.</p>
-</div>
+<h2>5. Disponibilità</h2>
+<p>I prodotti digitali sono sempre disponibili per il download.</p>
+
+<h2>6. Limitazioni di responsabilità</h2>
+<p>MewingMarket non è responsabile per problemi tecnici di terze parti (Payhip, email provider).</p>
+
+<h2>7. Contatti</h2>
+<p>Email: supporto@mewingmarket.it</p>
+
+</main>
 
 <div id="footer-placeholder"></div>
 <script>
-  fetch("footer.html")
-    .then(res => res.text())
-    .then(html => {
-      document.getElementById("footer-placeholder").innerHTML = html;
-    });
+fetch("footer.html").then(r=>r.text()).then(h=>document.getElementById("footer-placeholder").innerHTML=h);
 </script>
+
 </body>
 </html>
