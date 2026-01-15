@@ -1,48 +1,43 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iscrizione Newsletter | MewingMarket</title><link rel="canonical" href="https://www.mewingmarket.it/iscrizione.html">
-    <meta name="description" content="Iscriviti alla newsletter di MewingMarket per ricevere strumenti digitali, template e risorse esclusive.">
+  <meta charset="UTF-8">
 
-    <link rel="icon" href="/favicon.ico" type="image/x-icon">
-    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
-    <link rel="manifest" href="/site.webmanifest">
-    <link rel="stylesheet" href="style.css?v=1.4">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <title>Iscrizione Newsletter – MewingMarket</title>
+  <meta name="description" content="Iscriviti alla newsletter di MewingMarket per ricevere aggiornamenti, nuovi prodotti digitali e contenuti esclusivi.">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="index, follow">
+
+  <meta property="og:title" content="Iscrizione Newsletter – MewingMarket">
+  <meta property="og:description" content="Rimani aggiornato sui nuovi prodotti digitali creati con AI.">
+  <meta property="og:url" content="https://www.mewingmarket.it/iscrizione.html">
+
+  <link rel="icon" href="favicon.png" type="image/png">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<header>
-    <img src="logo.png" alt="Logo MewingMarket" class="logo">
-</header>
+<div id="header-placeholder"></div>
+<script>
+fetch("header.html").then(r=>r.text()).then(h=>document.getElementById("header-placeholder").innerHTML=h);
+</script>
 
-<nav>
-    <ul>
-        <li><a href="index.html">Home</a></li>
-        <li><a href="chisiamo.html">Chi Siamo</a></li>
-        <li><a href="contatti.html">Contatti</a></li>
-        <li><a href="dovesiamo.html">Dove Siamo</a></li>
-        <li><a href="FAQ.html">FAQ</a></li>
-    </ul>
-</nav>
+<section class="form-premium">
+  <h2>Iscriviti alla Newsletter</h2>
 
-<main style="max-width:700px; margin:40px auto; padding:40px; background:#fff; border-radius:15px; box-shadow:0 0 15px rgba(0,0,0,0.1); text-align:center;">
-    <h1>Iscriviti alla Newsletter</h1>
-    <p>Ricevi strumenti digitali, template e risorse esclusive direttamente nella tua email.</p>
+  <form action="https://www.mewingmarket.it/newsletter/subscribe" method="POST">
+    <label for="email">La tua email</label>
+    <input type="email" id="email" name="email" placeholder="nome@email.com" required>
 
-    <!-- IFRAME BREVO ISCRIZIONE -->
-    <iframe width="540" height="305" src="https://c605f83e.sibforms.com/serve/MUIFAJOWHg_Ef-ZEflBs2VMkNUHuALq9paArtpbp6RkNO6p-qOCgFNkWXqlyAbDSE5dMKQKULR1Yrj5kB_Rzed-QYBv1mj0wAJ_P0mASzgssOAbpqwEB9UtslRBx9tUv9b0brOQYIYo_oQ1TjT7MEYpylWav0TInZE9SfLkgXEtImPf2cag0_w6ErTpWW8fcbugB2mnlao_cq_co-w==" frameborder="0" scrolling="auto" allowfullscreen style="display:block;margin:30px auto 0 auto; max-width:100%;"></iframe>
-</main>
+    <button type="submit">Iscriviti ora</button>
+
+    <p>Riceverai solo contenuti utili e nuovi prodotti.</p>
+  </form>
+</section>
 
 <div id="footer-placeholder"></div>
 <script>
-  fetch("footer.html")
-    .then(res => res.text())
-    .then(html => {
-      document.getElementById("footer-placeholder").innerHTML = html;
-    });
+fetch("footer.html").then(r=>r.text()).then(h=>document.getElementById("footer-placeholder").innerHTML=h);
 </script>
 
 </body>
