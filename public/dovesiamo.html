@@ -1,84 +1,42 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
 
-    <title>Dove Siamo – MewingMarket</title>
-    <link rel="canonical" href="https://www.mewingmarket.it/dovesiamo.html">
+  <title>Dove siamo – MewingMarket</title>
+  <meta name="description" content="MewingMarket ha sede a Sanremo (IM), Liguria. Scopri dove trovarci.">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="index, follow">
 
-    <meta name="description" content="Scopri dove si trova MewingMarket: sede operativa a Sanremo e attività completamente digitale.">
+  <meta property="og:title" content="Dove siamo – MewingMarket">
+  <meta property="og:description" content="Sede MewingMarket: Sanremo (IM), Liguria.">
+  <meta property="og:url" content="https://www.mewingmarket.it/dovesiamo.html">
 
-    <link rel="icon" href="/favicon.ico" type="image/x-icon">
-    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
-    <link rel="manifest" href="/site.webmanifest">
-
-    <link rel="stylesheet" href="style.css?v=1.4">
-
-    <!-- FONT AWESOME -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="icon" href="favicon.png" type="image/png">
+  <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
-<header>
-    <img src="logo.png" alt="MewingMarket Logo" class="logo">
-</header>
+<div id="header-placeholder"></div>
+<script>
+fetch("header.html").then(r=>r.text()).then(h=>document.getElementById("header-placeholder").innerHTML=h);
+</script>
 
-<nav>
-    <ul>
-        <li><a href="index.html">Home</a></li>
-        <li><a href="catalogo.html">Catalogo</a></li>
-        <li><a href="chisiamo.html">Chi Siamo</a></li>
-        <li><a href="contatti.html">Contatti</a></li>
-        <li><a href="dovesiamo.html" class="active">Dove Siamo</a></li>
-        <li><a href="FAQ.html">FAQ</a></li>
-    </ul>
-</nav>
+<section style="max-width:900px;margin:auto;padding:40px 20px;">
+  <h1>Dove siamo</h1>
+  <p>Siamo basati a Sanremo (IM), Liguria.</p>
 
-<main>
-    <h1>Dove Siamo</h1>
-
-    <p>
-        MewingMarket è un progetto digitale nato in Italia e operativo ovunque.
-        Offriamo prodotti digitali accessibili 24/7, acquistabili da qualsiasi dispositivo.
-    </p>
-
-    <p>
-        La nostra sede operativa si trova a:
-    </p>
-
-    <h2 style="color:#ff8c00; margin-top:10px;">📍 Strada Ciousse 35, 18038 Sanremo (IM)</h2>
-
-    <!-- MAPPA GOOGLE -->
-    <div style="margin:25px 0; border-radius:12px; overflow:hidden; box-shadow:0 8px 20px rgba(0,0,0,0.5);">
-        <iframe 
-            width="100%" 
-            height="350" 
-            style="border:0;" 
-            loading="lazy"
-            allowfullscreen
-            src="https://maps.google.com/maps?q=Via%20ciouse%2035%2C%20Sanremo%20(im)&t=&z=13&ie=UTF8&iwloc=&output=embed">
-        </iframe>
-    </div>
-
-    <h2 style="color:#ff8c00; margin-top:30px;">Operatività</h2>
-
-    <ul style="text-align:left; max-width:600px; margin:20px auto;">
-        <li>Servizio completamente digitale</li>
-        <li>Accessibile da qualsiasi dispositivo</li>
-        <li>Supporto tramite email e WhatsApp</li>
-        <li>Store attivo 24/7</li>
-    </ul>
-</main>
+  <div style="margin-top:20px;">
+    <iframe 
+      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2878.123!2d7.777!3d43.815!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x12cdf3!2sSanremo!5e0!3m2!1sit!2sit!4v000000000"
+      width="100%" height="350" style="border:0;border-radius:12px;" allowfullscreen loading="lazy">
+    </iframe>
+  </div>
+</section>
 
 <div id="footer-placeholder"></div>
 <script>
-  fetch("footer.html")
-    .then(res => res.text())
-    .then(html => {
-      document.getElementById("footer-placeholder").innerHTML = html;
-    });
+fetch("footer.html").then(r=>r.text()).then(h=>document.getElementById("footer-placeholder").innerHTML=h);
 </script>
 
 </body>
