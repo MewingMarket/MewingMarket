@@ -317,7 +317,40 @@ app.post("/webhook/facebook", async (req, res) => {
   await facebookBot.handleMessage(req.body);
   res.sendStatus(200);
 });
+app.get("/auth/threads/callback", async (req, res) => {
+  const code = req.query.code;
+  if (!code) return res.status(400).send("Missing code");
 
+  try {
+    // Scambia il code per un access token
+    const tokenRes = await fetch(
+      `https://graph.facebook.com/v19.0/oauth/access_token?client_id=${process.env.THREADS_APP_ID}&client_secret=${process.env.THREADS_APP_SECRET}&redirect_uri=${encodeURIComponent("https://www.mewingmarket.it/auth/threads/callback")}&code=${code}`
+    );
+
+    const data = await tokenRes.json();
+    console.log("THREADS TOKEN:", data);
+
+    res.send("Autorizzazione completata. Puoi chiudere questa pagina.");
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Errore durante l'autorizzazione Threads");
+  }
+});app.post("/threads/uninstall", async (req, res) => {
+  console.log("THREADS UNINSTALL EVENT:", req.body);
+
+  // Qui puoi pulire dati utente se li memorizzi
+  res.status(200).send("OK");
+});app.post("/threads/delete", async (req, res) => {
+  console.log("THREADS DELETE REQUEST:", req.body);
+
+  // Cancella eventuali dati utente
+  // (se non memorizzi nulla, rispondi semplicemente OK)
+
+  res.status(200).json({
+    url: "https://www.mewingmarket.it",
+    confirmation_code: "deleted"
+  });
+});
 // ---------------------------------------------
 // CHAT ENDPOINT (BOT)
 –---------------------------------------------
