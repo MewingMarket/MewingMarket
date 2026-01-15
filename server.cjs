@@ -7,17 +7,28 @@ const fs = require("fs");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 require("dotenv").config();
+
 const whatsappWebhook = require("./webhook.js").default || require("./webhook.js");
 const { generateNewsletterHTML } = require("./modules/newsletter");
 const { syncAirtable, loadProducts, getProducts } = require("./modules/airtable");
 const { detectIntent, handleConversation, reply, userStates, generateUID } = require("./modules/bot");
 const { inviaNewsletter } = require("./modules/brevo");
+const { generateSitemap } = require("./modules/sitemap");
+
+// ---------------------------------------------
+// IMPORT SOCIAL BOTS
+// ---------------------------------------------
+const createFacebookBot = require("./bots/facebook");
+const createInstagramBot = require("./bots/instagram");
+const createThreadsBot = require("./bots/threads");
+const createLinkedinBot = require("./bots/linkedin");
 
 // ---------------------------------------------
 // SETUP EXPRESS
 // ---------------------------------------------
 const app = express();
 app.disable("x-powered-by");
+
 // 🔥 Anti-cache
 app.use((req, res, next) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
@@ -25,6 +36,7 @@ app.use((req, res, next) => {
   res.setHeader("Expires", "0");
   next();
 });
+
 app.use(express.static(path.join(process.cwd(), "public")));
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
@@ -39,8 +51,10 @@ app.get("/", (req, res) => {
 app.get("/products.json", (req, res) => {
   res.sendFile(path.join(process.cwd(), "data", "products.json"));
 });
+
 // WEBHOOK WHATSAPP
 app.use("/webhook", whatsappWebhook);
+
 // ---------------------------------------------
 // REDIRECT HTTPS + WWW
 // ---------------------------------------------
@@ -141,9 +155,7 @@ app.get("/newsletter/text", (req, res) => {
   res.type("text/plain").send(text);
 });
 
-// ---------------------------------------------
-// INVIO NEWSLETTER (BREVO MCP)
-// ---------------------------------------------
+// INVIO NEWSLETTER
 app.get("/newsletter/send", async (req, res) => {
   try {
     const products = getProducts();
@@ -167,6 +179,7 @@ app.get("/newsletter/send", async (req, res) => {
     res.status(500).json({ error: "Errore invio newsletter" });
   }
 });
+
 // ---------------------------------------------
 // META FEED (XML)
 // ---------------------------------------------
@@ -204,7 +217,6 @@ app.get("/meta/feed", (req, res) => {
   res.type("application/xml").send(xml);
 });
 
-
 // ---------------------------------------------
 // GOOGLE MERCHANT FEED (XML)
 // ---------------------------------------------
@@ -241,12 +253,19 @@ app.get("/google/feed", (req, res) => {
 </rss>`;
 
   res.type("application/xml").send(xml);
-});const { generateSitemap } = require("./modules/sitemap");
+});
 
+// ---------------------------------------------
+// SITEMAP
+// ---------------------------------------------
 app.get("/sitemap.xml", (req, res) => {
   const xml = generateSitemap();
   res.type("application/xml").send(xml);
-});// VERIFICA META (necessaria solo per collegare il webhook)
+});
+
+// ---------------------------------------------
+// FACEBOOK WEBHOOK VERIFICA
+// ---------------------------------------------
 app.get("/webhook/facebook", (req, res) => {
   const VERIFY_TOKEN = process.env.FB_VERIFY_TOKEN;
 
@@ -259,15 +278,49 @@ app.get("/webhook/facebook", (req, res) => {
   } else {
     res.sendStatus(403);
   }
-}); const facebookBot = createFacebookBot({ airtable, products });
+});
 
+// ---------------------------------------------
+// INIZIALIZZA SOCIAL BOTS
+// ---------------------------------------------
+let products = getProducts();
+
+const facebookBot = createFacebookBot({
+  airtable: { update: syncAirtable },
+  products
+});
+
+const instagramBot = createInstagramBot({
+  airtable: { update: syncAirtable },
+  products
+});
+
+const threadsBot = createThreadsBot({
+  airtable: { update: syncAirtable },
+  products
+});
+
+const linkedinBot = createLinkedinBot({
+  airtable: { update: syncAirtable },
+  products
+});
+
+// Aggiorna prodotti ogni 5 secondi
+setInterval(() => {
+  products = getProducts();
+}, 5000);
+
+// ---------------------------------------------
+// FACEBOOK WEBHOOK MESSAGGI
+// ---------------------------------------------
 app.post("/webhook/facebook", async (req, res) => {
   await facebookBot.handleMessage(req.body);
   res.sendStatus(200);
 });
+
 // ---------------------------------------------
 // CHAT ENDPOINT (BOT)
-// ---------------------------------------------
+–---------------------------------------------
 app.post("/chat", (req, res) => {
   const { message } = req.body;
 
@@ -282,9 +335,38 @@ app.post("/chat", (req, res) => {
 
   return handleConversation(req, res, intent, sub, message);
 });
-setInterval(() => {
-  facebookBot.publishNewProduct();
+
+// ---------------------------------------------
+// PUBBLICAZIONE AUTOMATICA SOCIAL
+// ---------------------------------------------
+setInterval(async () => {
+  console.log("📢 Pubblicazione automatica nuovi prodotti...");
+
+  await facebookBot.publishNewProduct();
+  await instagramBot.publishNewProduct();
+  await threadsBot.publishNewProduct();
+  await linkedinBot.publishNewProduct();
+
+  console.log("✅ Pubblicazione completata");
 }, 1000 * 60 * 10); // ogni 10 minuti
+
+// ---------------------------------------------
+// PUBBLICAZIONE MANUALE
+// ---------------------------------------------
+app.get("/publish/social", async (req, res) => {
+  try {
+    await facebookBot.publishNewProduct();
+    await instagramBot.publishNewProduct();
+    await threadsBot.publishNewProduct();
+    await linkedinBot.publishNewProduct();
+
+    res.json({ status: "ok", message: "Pubblicazione completata su tutti i social" });
+  } catch (err) {
+    console.error("Errore pubblicazione social:", err);
+    res.status(500).json({ status: "error", message: "Errore durante la pubblicazione" });
+  }
+});
+
 // ---------------------------------------------
 // AVVIO SERVER
 // ---------------------------------------------
@@ -304,7 +386,9 @@ app.listen(PORT, () => {
       console.error("❌ Errore nel sync all'avvio:", err);
     }
   })();
-});// 🔥 Cron job ogni 30 minuti
+});
+
+// 🔥 Cron job ogni 30 minuti
 setInterval(async () => {
   try {
     console.log("⏳ Sync programmato Airtable...");
