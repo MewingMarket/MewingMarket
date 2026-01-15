@@ -1,76 +1,53 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resi e Rimborsi | MewingMarket</title>
-    <link rel="canonical" href="https://www.mewingmarket.it/resi.html">
-    <link rel="stylesheet" href="style.css">
-    <meta name="description" content="Politica Resi e Rimborsi di MewingMarket per prodotti digitali. Informazioni chiare e trasparenti.">
-    <style>
-        body { font-family: Arial; background:#f7f7f7; padding:40px; color:#333; }
-        .box { background:#fff; padding:30px; max-width:900px; margin:auto; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.08); }
-        h1, h2 { text-align:center; }
-        p { font-size:16px; line-height:1.6; }
-    </style>
+  <meta charset="UTF-8">
+
+  <title>Resi e Rimborsi – MewingMarket</title>
+  <meta name="description" content="Politica resi e rimborsi per i prodotti digitali MewingMarket. Valutiamo ogni richiesta caso per caso.">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="index, follow">
+
+  <meta property="og:title" content="Resi e Rimborsi – MewingMarket">
+  <meta property="og:description" content="Informazioni su resi e rimborsi per prodotti digitali.">
+  <meta property="og:url" content="https://www.mewingmarket.it/resi.html">
+
+  <link rel="icon" href="favicon.png" type="image/png">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div class="box">
-    <h1>Resi e Rimborsi</h1>
+<div id="header-placeholder"></div>
+<script>
+fetch("header.html").then(r=>r.text()).then(h=>document.getElementById("header-placeholder").innerHTML=h);
+</script>
 
-    <p>La presente pagina descrive la politica di resi e rimborsi applicata ai prodotti digitali acquistati su MewingMarket.</p>
+<main style="max-width:900px;margin:auto;padding:20px;">
+  <h1>Resi e Rimborsi</h1>
 
-    <h2>Prodotti digitali e diritto di recesso</h2>
-    <p>
-        Ai sensi dell’art. 59 del Codice del Consumo, il diritto di recesso <strong>non si applica</strong> ai contenuti digitali
-        forniti tramite download o accesso immediato, una volta che il contenuto è stato reso disponibile al cliente.
-    </p>
-    <p>
-        Acquistando un prodotto digitale su MewingMarket, il cliente accetta che il download o l’accesso immediato
-        comporta la rinuncia al diritto di recesso.
-    </p>
+  <p>I prodotti digitali non prevedono reso automatico, ma valutiamo ogni richiesta caso per caso.</p>
 
-    <h2>Quando è possibile ottenere un rimborso</h2>
-    <p>Nonostante l’assenza del diritto di recesso, offriamo un rimborso nei seguenti casi:</p>
-    <ul>
-        <li>file danneggiato o non funzionante;</li>
-        <li>link di download non accessibile;</li>
-        <li>errore tecnico imputabile a noi;</li>
-        <li>acquisto duplicato per errore.</li>
-    </ul>
-    <p>
-        In questi casi, il cliente deve contattarci entro <strong>14 giorni</strong> dall’acquisto fornendo il numero d’ordine.
-    </p>
+  <h2>1. Quando è possibile richiedere un rimborso</h2>
+  <ul>
+    <li>File non scaricabile</li>
+    <li>Errore tecnico imputabile a noi</li>
+    <li>Acquisto duplicato</li>
+  </ul>
 
-    <h2>Come richiedere assistenza o rimborso</h2>
-    <p>Puoi contattarci tramite i seguenti canali:</p>
+  <h2>2. Quando non è previsto</h2>
+  <ul>
+    <li>Prodotto già scaricato</li>
+    <li>Uso improprio</li>
+    <li>Richieste non motivate</li>
+  </ul>
 
-    <p><strong>Email Supporto (problemi tecnici / resi):</strong><br>
-    <a href="mailto:supporto@mewingmarket.it">supporto@mewingmarket.it</a></p>
-
-    <p><strong>Email Commerciale / Informazioni:</strong><br>
-    <a href="mailto:vendite@mewingmarket.it">vendite@mewingmarket.it</a></p>
-
-    <p><strong>Email Generale:</strong><br>
-    <a href="mailto:MewingMarket@outlook.it">MewingMarket@outlook.it</a></p>
-
-    <p><strong>Email Alternativa:</strong><br>
-    <a href="mailto:mewingmarket2@gmail.com">mewingmarket2@gmail.com</a></p>
-
-    <p><strong>WhatsApp Business:</strong><br>
-    <a href="https://wa.me/393520266660">352 026 6660</a></p>
-
-    <p>Rispondiamo entro 24/48 ore.</p>
-</div>
+  <h2>3. Come richiedere assistenza</h2>
+  <p>Email: supporto@mewingmarket.it<br>WhatsApp: 352 026 6660</p>
+</main>
 
 <div id="footer-placeholder"></div>
 <script>
-  fetch("footer.html")
-    .then(res => res.text())
-    .then(html => {
-      document.getElementById("footer-placeholder").innerHTML = html;
-    });
+fetch("footer.html").then(r=>r.text()).then(h=>document.getElementById("footer-placeholder").innerHTML=h);
 </script>
 
 </body>
