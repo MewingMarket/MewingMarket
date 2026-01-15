@@ -1,90 +1,47 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FAQ – Domande Frequenti | MewingMarket</title>
-<link rel="canonical" href="https://www.mewingmarket.it/FAQ.html">
-<link rel="stylesheet" href="style.css?v=1.4">
+  <meta charset="UTF-8">
+
+  <title>FAQ – MewingMarket</title>
+  <meta name="description" content="Domande frequenti su download, pagamenti, rimborsi e supporto tecnico. Assistenza rapida e professionale.">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="index, follow">
+
+  <meta property="og:title" content="FAQ – MewingMarket">
+  <meta property="og:description" content="Risposte rapide su download, pagamenti e supporto.">
+  <meta property="og:url" content="https://www.mewingmarket.it/FAQ.html">
+
+  <link rel="icon" href="favicon.png" type="image/png">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<header><img src="logo.png" alt="Logo" class="logo"></header>
+<div id="header-placeholder"></div>
+<script>
+fetch("header.html").then(r=>r.text()).then(h=>document.getElementById("header-placeholder").innerHTML=h);
+</script>
 
-<nav>
-  <ul>
-    <li><a href="index.html">Home</a></li>
-    <li><a href="catalogo.html">Catalogo</a></li>
-    <li><a href="chisiamo.html">Chi Siamo</a></li>
-    <li><a href="contatti.html">Contatti</a></li>
-    <li><a href="dovesiamo.html">Dove Siamo</a></li>
-    <li><a href="FAQ.html" class="active">FAQ</a></li>
-  </ul>
-</nav>
-
-<main>
+<section style="max-width:900px;margin:auto;padding:40px 20px;">
   <h1>Domande Frequenti</h1>
 
-  <div class="faq-item">
-    <h3>Come ricevo i prodotti dopo l'acquisto?</h3>
-    <p>Riceverai un'email automatica con il link per il download immediato subito dopo la conferma del pagamento sul nostro store Payhip.</p>
-  </div>
+  <h3>Non ho ricevuto l’email del prodotto</h3>
+  <p>Controlla la cartella spam o promozioni. In alternativa scrivici su WhatsApp.</p>
 
-  <div class="faq-item">
-    <h3>Quali metodi di pagamento accettate?</h3>
-    <p>Accettiamo PayPal e le principali carte di credito.</p>
-  </div>
+  <h3>Il download non funziona</h3>
+  <p>Payhip gestisce i download. Se hai problemi, contattaci e ti inviamo il file manualmente.</p>
 
-  <div class="faq-item">
-    <h3>Posso richiedere un rimborso?</h3>
-    <p>I rimborsi vengono valutati caso per caso solo se il file non è stato scaricato o presenta difetti tecnici.</p>
-  </div>
+  <h3>Posso chiedere un rimborso?</h3>
+  <p>Sì, in caso di problemi tecnici o acquisti duplicati.</p>
 
-  <p>Consulta la nostra pagina dedicata ai resi qui:<br>
-    <a href="resi.html">➡️ Politica Resi e Rimborsi</a>
-  </p>
-
-  <div class="faq-item">
-    <h3>Non ho ricevuto l'email, cosa faccio?</h3>
-    <p>Controlla Spam o Promozioni. Se non trovi nulla, scrivi a <strong>supporto@mewingmarket.it</strong>.</p>
-  </div>
-
-  <div class="faq-item">
-    <h3>I prodotti hanno una scadenza?</h3>
-    <p>No, rimangono tuoi per sempre.</p>
-  </div>
-
-  <div class="faq-item">
-    <h3>Posso condividere i file acquistati?</h3>
-    <p>No, l'acquisto garantisce licenza d'uso personale.</p>
-  </div>
-
-  <div class="faq-item">
-    <h3>Offrite assistenza post-vendita?</h3>
-    <p>Sì, puoi contattarci tramite WhatsApp o email.</p>
-  </div>
-</main>
-
-<div id="mm-chat-btn">
-  <img src="chat-icon.png" alt="Chat" style="width:100%; height:100%; border-radius:50%;">
-</div>
-<div id="mm-chatbox">
-  <div id="mm-chat-header">MewingMarket</div>
-  <div id="mm-chat-messages"></div>
-  <div id="mm-chat-input">
-    <input type="text" id="mm-text" placeholder="Scrivi un messaggio…">
-    <button id="mm-send">➤</button>
-  </div>
-</div>
+  <h3>Come posso contattarvi?</h3>
+  <p>Email: supporto@mewingmarket.it<br>WhatsApp: 352 026 6660</p>
+</section>
 
 <div id="footer-placeholder"></div>
 <script>
-  fetch("footer.html")
-    .then(res => res.text())
-    .then(html => { document.getElementById("footer-placeholder").innerHTML = html; });
+fetch("footer.html").then(r=>r.text()).then(h=>document.getElementById("footer-placeholder").innerHTML=h);
 </script>
 
-<script src="FAQ.js"></script>
-<script src="chat.js"></script>
 </body>
 </html>
