@@ -347,3 +347,58 @@ footer {
   padding: 10px 14px;
   border: none;
    }
+/* --------------------------------------------------
+   FORM PREMIUM
+-------------------------------------------------- */
+.form-premium {
+  max-width: 500px;
+  margin: 40px auto;
+  background: #fff;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.form-premium h2 {
+  font-family: 'Playfair Display', serif;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.form-premium label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.form-premium input[type="email"] {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+.form-premium button {
+  width: 100%;
+  padding: 12px;
+  background: #ffcc00;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.form-premium button:hover {
+  background: #e6b800;
+}
+
+.form-premium p {
+  text-align: center;
+  margin-top: 15px;
+  font-size: 14px;
+  opacity: 0.8;
+}
