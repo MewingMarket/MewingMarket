@@ -316,6 +316,23 @@ setInterval(() => {
 app.post("/webhook/facebook", async (req, res) => {
   await facebookBot.handleMessage(req.body);
   res.sendStatus(200);
+});app.get("/webhook/facebook", (req, res) => {
+  const VERIFY_TOKEN = process.env.FB_VERIFY_TOKEN;
+
+  const mode = req.query["hub.mode"];
+  const token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
+
+  if (mode === "subscribe" && token === VERIFY_TOKEN) {
+    res.status(200).send(challenge);
+  } else {
+    res.sendStatus(403);
+  }
+});app.post("/webhook/facebook", (req, res) => {
+  console.log("EVENTO FACEBOOK:", JSON.stringify(req.body, null, 2));
+
+  // Qui puoi gestire commenti, messaggi, ecc.
+  res.sendStatus(200);
 });
 app.get("/auth/threads/callback", async (req, res) => {
   const code = req.query.code;
@@ -350,6 +367,22 @@ app.get("/auth/threads/callback", async (req, res) => {
     url: "https://www.mewingmarket.it",
     confirmation_code: "deleted"
   });
+});app.get("/webhook/instagram", (req, res) => {
+  const VERIFY_TOKEN = process.env.IG_VERIFY_TOKEN;
+  const mode = req.query["hub.mode"];
+  const token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
+
+  if (mode === "subscribe" && token === VERIFY_TOKEN) {
+    res.status(200).send(challenge);
+  } else {
+    res.sendStatus(403);
+  }
+});app.post("/webhook/instagram", async (req, res) => {
+  console.log("EVENTO INSTAGRAM:", JSON.stringify(req.body, null, 2));
+
+  // Puoi gestire commenti, menzioni, ecc.
+  res.sendStatus(200);
 });
 // ---------------------------------------------
 // CHAT ENDPOINT (BOT)
