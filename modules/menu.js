@@ -1,6 +1,7 @@
-// menu.js
+// modules/menu.js
+
 const { sendWhatsAppMessage } = require("./whatsapp");
-const { getProducts } = require("./modules/airtable");
+const { getProducts } = require("./airtable");
 
 async function handleMenu(from, text) {
   const msg = (text || "").trim().toLowerCase();
