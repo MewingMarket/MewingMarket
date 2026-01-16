@@ -1,6 +1,6 @@
-// ---------------------------------------------
-// IMPORT BASE
-// ---------------------------------------------
+/* =========================================================
+   IMPORT BASE
+========================================================= */
 const path = require("path");
 const express = require("express");
 const fs = require("fs");
@@ -15,21 +15,20 @@ const { detectIntent, handleConversation, reply, userStates, generateUID } = req
 const { inviaNewsletter } = require("./modules/brevo");
 const { generateSitemap } = require("./modules/sitemap");
 
-// ---------------------------------------------
-// IMPORT SOCIAL BOTS
-// ---------------------------------------------
+/* =========================================================
+   IMPORT SOCIAL BOTS
+========================================================= */
 const createFacebookBot = require("./bots/facebook");
 const createInstagramBot = require("./bots/instagram");
 const createThreadsBot = require("./bots/threads");
 const createLinkedinBot = require("./bots/linkedin");
 
-// ---------------------------------------------
-// SETUP EXPRESS
-// ---------------------------------------------
+/* =========================================================
+   SETUP EXPRESS
+========================================================= */
 const app = express();
 app.disable("x-powered-by");
 
-// 🔥 Anti-cache
 app.use((req, res, next) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
   res.setHeader("Pragma", "no-cache");
@@ -42,22 +41,66 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
-// Homepage
+/* =========================================================
+   HOMEPAGE + PRODUCTS.JSON
+========================================================= */
 app.get("/", (req, res) => {
   res.sendFile(path.join(process.cwd(), "public", "index.html"));
 });
 
-// Espone products.json
 app.get("/products.json", (req, res) => {
   res.sendFile(path.join(process.cwd(), "data", "products.json"));
 });
 
-// WEBHOOK WHATSAPP
-app.use("/webhook", whatsappWebhook);
+/* =========================================================
+   WHATSAPP WEBHOOK (FIXATO)
+========================================================= */
+app.use("/webhook/whatsapp", whatsappWebhook);
 
-// ---------------------------------------------
-// REDIRECT HTTPS + WWW
-// ---------------------------------------------
+/* =========================================================
+   FACEBOOK WEBHOOK (GET + POST)
+========================================================= */
+app.get("/webhook/facebook", (req, res) => {
+  const VERIFY_TOKEN = process.env.FB_VERIFY_TOKEN;
+  const mode = req.query["hub.mode"];
+  const token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
+
+  if (mode === "subscribe" && token === VERIFY_TOKEN) {
+    return res.status(200).send(challenge);
+  }
+  res.sendStatus(403);
+});
+
+app.post("/webhook/facebook", async (req, res) => {
+  console.log("EVENTO FACEBOOK:", JSON.stringify(req.body, null, 2));
+  await facebookBot.handleMessage(req.body);
+  res.sendStatus(200);
+});
+
+/* =========================================================
+   INSTAGRAM WEBHOOK (GET + POST)
+========================================================= */
+app.get("/webhook/instagram", (req, res) => {
+  const VERIFY_TOKEN = process.env.IG_VERIFY_TOKEN;
+  const mode = req.query["hub.mode"];
+  const token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
+
+  if (mode === "subscribe" && token === VERIFY_TOKEN) {
+    return res.status(200).send(challenge);
+  }
+  res.sendStatus(403);
+});
+
+app.post("/webhook/instagram", (req, res) => {
+  console.log("EVENTO INSTAGRAM:", JSON.stringify(req.body, null, 2));
+  res.sendStatus(200);
+});
+
+/* =========================================================
+   REDIRECT HTTPS + WWW (SPOSTATO DOPO I WEBHOOK)
+========================================================= */
 app.use((req, res, next) => {
   const proto = req.headers["x-forwarded-proto"];
   const host = req.headers.host;
@@ -69,9 +112,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// ---------------------------------------------
-// USER STATE + COOKIE UID
-// ---------------------------------------------
+/* =========================================================
+   USER STATE + COOKIE UID
+========================================================= */
 app.use((req, res, next) => {
   let uid = req.cookies.mm_uid;
 
@@ -94,12 +137,11 @@ app.use((req, res, next) => {
   next();
 });
 
-// ---------------------------------------------
-// SYNC AIRTABLE + CARICAMENTO PRODOTTI
-// ---------------------------------------------
+/* =========================================================
+   SYNC AIRTABLE
+========================================================= */
 loadProducts();
 
-// Sync automatico ogni 5 minuti
 setTimeout(() => {
   setInterval(async () => {
     console.log("⏳ Sync automatico Airtable...");
@@ -108,7 +150,6 @@ setTimeout(() => {
   }, 5 * 60 * 1000);
 }, 5000);
 
-// Sync manuale
 app.get("/sync/airtable", async (req, res) => {
   try {
     const products = await syncAirtable();
@@ -119,9 +160,9 @@ app.get("/sync/airtable", async (req, res) => {
   }
 });
 
-// ---------------------------------------------
-// NEWSLETTER ENDPOINTS
-// ---------------------------------------------
+/* =========================================================
+   NEWSLETTER
+========================================================= */
 app.get("/newsletter/html", (req, res) => {
   const { html } = generateNewsletterHTML();
   res.type("html").send(html);
@@ -131,61 +172,41 @@ app.get("/newsletter/json", (req, res) => {
   const products = getProducts();
   const latest = products.at(-1);
 
-  if (!latest) {
-    return res.json({ error: "Nessun prodotto disponibile" });
-  }
+  if (!latest) return res.json({ error: "Nessun prodotto disponibile" });
 
   const { html, oggetto } = generateNewsletterHTML();
 
-  res.json({
-    oggetto,
-    prodotto: latest,
-    html
-  });
+  res.json({ oggetto, prodotto: latest, html });
 });
 
 app.get("/newsletter/text", (req, res) => {
   const { html } = generateNewsletterHTML();
-
-  const text = html
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
+  const text = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
   res.type("text/plain").send(text);
 });
 
-// INVIO NEWSLETTER
 app.get("/newsletter/send", async (req, res) => {
   try {
     const products = getProducts();
     const latest = products.at(-1);
 
-    if (!latest) {
-      return res.json({ error: "Nessun prodotto disponibile" });
-    }
+    if (!latest) return res.json({ error: "Nessun prodotto disponibile" });
 
     const { html, oggetto } = generateNewsletterHTML();
     const risultato = await inviaNewsletter({ oggetto, html });
 
-    res.json({
-      status: "ok",
-      message: "Newsletter inviata",
-      campaignId: risultato.campaignId
-    });
-
+    res.json({ status: "ok", message: "Newsletter inviata", campaignId: risultato.campaignId });
   } catch (err) {
     console.error("Errore invio newsletter:", err);
     res.status(500).json({ error: "Errore invio newsletter" });
   }
 });
 
-// ---------------------------------------------
-// META FEED (XML)
-// ---------------------------------------------
+/* =========================================================
+   META FEED + GOOGLE FEED + SITEMAP
+========================================================= */
 app.get("/meta/feed", (req, res) => {
   const products = getProducts();
-
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
   <channel>
@@ -206,8 +227,7 @@ app.get("/meta/feed", (req, res) => {
       <g:price>${p.prezzo || "0.00"} EUR</g:price>
       <g:brand>MewingMarket</g:brand>
       <g:condition>new</g:condition>
-    </item>
-`;
+    </item>`;
   });
 
   xml += `
@@ -217,12 +237,8 @@ app.get("/meta/feed", (req, res) => {
   res.type("application/xml").send(xml);
 });
 
-// ---------------------------------------------
-// GOOGLE MERCHANT FEED (XML)
-// ---------------------------------------------
 app.get("/google/feed", (req, res) => {
   const products = getProducts();
-
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
   <channel>
@@ -244,8 +260,7 @@ app.get("/google/feed", (req, res) => {
       <g:brand>MewingMarket</g:brand>
       <g:condition>new</g:condition>
       <g:google_product_category>2271</g:google_product_category>
-    </item>
-`;
+    </item>`;
   });
 
   xml += `
@@ -255,91 +270,33 @@ app.get("/google/feed", (req, res) => {
   res.type("application/xml").send(xml);
 });
 
-// ---------------------------------------------
-// SITEMAP
-// ---------------------------------------------
 app.get("/sitemap.xml", (req, res) => {
   const xml = generateSitemap();
   res.type("application/xml").send(xml);
 });
 
-// ---------------------------------------------
-// FACEBOOK WEBHOOK VERIFICA
-// ---------------------------------------------
-app.get("/webhook/facebook", (req, res) => {
-  const VERIFY_TOKEN = process.env.FB_VERIFY_TOKEN;
-
-  const mode = req.query["hub.mode"];
-  const token = req.query["hub.verify_token"];
-  const challenge = req.query["hub.challenge"];
-
-  if (mode === "subscribe" && token === VERIFY_TOKEN) {
-    res.status(200).send(challenge);
-  } else {
-    res.sendStatus(403);
-  }
-});
-
-// ---------------------------------------------
-// INIZIALIZZA SOCIAL BOTS
-// ---------------------------------------------
+/* =========================================================
+   INIZIALIZZA SOCIAL BOTS
+========================================================= */
 let products = getProducts();
 
-const facebookBot = createFacebookBot({
-  airtable: { update: syncAirtable },
-  products
-});
+const facebookBot = createFacebookBot({ airtable: { update: syncAirtable }, products });
+const instagramBot = createInstagramBot({ airtable: { update: syncAirtable }, products });
+const threadsBot = createThreadsBot({ airtable: { update: syncAirtable }, products });
+const linkedinBot = createLinkedinBot({ airtable: { update: syncAirtable }, products });
 
-const instagramBot = createInstagramBot({
-  airtable: { update: syncAirtable },
-  products
-});
-
-const threadsBot = createThreadsBot({
-  airtable: { update: syncAirtable },
-  products
-});
-
-const linkedinBot = createLinkedinBot({
-  airtable: { update: syncAirtable },
-  products
-});
-
-// Aggiorna prodotti ogni 5 secondi
 setInterval(() => {
   products = getProducts();
 }, 5000);
 
-// ---------------------------------------------
-// FACEBOOK WEBHOOK MESSAGGI
-// ---------------------------------------------
-app.post("/webhook/facebook", async (req, res) => {
-  await facebookBot.handleMessage(req.body);
-  res.sendStatus(200);
-});app.get("/webhook/facebook", (req, res) => {
-  const VERIFY_TOKEN = process.env.FB_VERIFY_TOKEN;
-
-  const mode = req.query["hub.mode"];
-  const token = req.query["hub.verify_token"];
-  const challenge = req.query["hub.challenge"];
-
-  if (mode === "subscribe" && token === VERIFY_TOKEN) {
-    res.status(200).send(challenge);
-  } else {
-    res.sendStatus(403);
-  }
-});app.post("/webhook/facebook", (req, res) => {
-  console.log("EVENTO FACEBOOK:", JSON.stringify(req.body, null, 2));
-
-  // Qui puoi gestire commenti, messaggi, ecc.
-  res.sendStatus(200);
-});
+/* =========================================================
+   THREADS CALLBACK
+========================================================= */
 app.get("/auth/threads/callback", async (req, res) => {
   const code = req.query.code;
   if (!code) return res.status(400).send("Missing code");
 
   try {
-    // Scambia il code per un access token
     const tokenRes = await fetch(
       `https://graph.facebook.com/v19.0/oauth/access_token?client_id=${process.env.THREADS_APP_ID}&client_secret=${process.env.THREADS_APP_SECRET}&redirect_uri=${encodeURIComponent("https://www.mewingmarket.it/auth/threads/callback")}&code=${code}`
     );
@@ -352,41 +309,25 @@ app.get("/auth/threads/callback", async (req, res) => {
     console.error(err);
     res.status(500).send("Errore durante l'autorizzazione Threads");
   }
-});app.post("/threads/uninstall", async (req, res) => {
+});
+
+app.post("/threads/uninstall", (req, res) => {
   console.log("THREADS UNINSTALL EVENT:", req.body);
-
-  // Qui puoi pulire dati utente se li memorizzi
   res.status(200).send("OK");
-});app.post("/threads/delete", async (req, res) => {
-  console.log("THREADS DELETE REQUEST:", req.body);
+});
 
-  // Cancella eventuali dati utente
-  // (se non memorizzi nulla, rispondi semplicemente OK)
+app.post("/threads/delete", (req, res) => {
+  console.log("THREADS DELETE REQUEST:", req.body);
 
   res.status(200).json({
     url: "https://www.mewingmarket.it",
     confirmation_code: "deleted"
   });
-});app.get("/webhook/instagram", (req, res) => {
-  const VERIFY_TOKEN = process.env.IG_VERIFY_TOKEN;
-  const mode = req.query["hub.mode"];
-  const token = req.query["hub.verify_token"];
-  const challenge = req.query["hub.challenge"];
-
-  if (mode === "subscribe" && token === VERIFY_TOKEN) {
-    res.status(200).send(challenge);
-  } else {
-    res.sendStatus(403);
-  }
-});app.post("/webhook/instagram", async (req, res) => {
-  console.log("EVENTO INSTAGRAM:", JSON.stringify(req.body, null, 2));
-
-  // Puoi gestire commenti, menzioni, ecc.
-  res.sendStatus(200);
 });
-// ---------------------------------------------
-// CHAT ENDPOINT (BOT)
-–---------------------------------------------
+
+/* =========================================================
+   CHAT BOT
+========================================================= */
 app.post("/chat", (req, res) => {
   const { message } = req.body;
 
@@ -402,9 +343,9 @@ app.post("/chat", (req, res) => {
   return handleConversation(req, res, intent, sub, message);
 });
 
-// ---------------------------------------------
-// PUBBLICAZIONE AUTOMATICA SOCIAL
-// ---------------------------------------------
+/* =========================================================
+   PUBBLICAZIONE AUTOMATICA
+========================================================= */
 setInterval(async () => {
   console.log("📢 Pubblicazione automatica nuovi prodotti...");
 
@@ -414,11 +355,11 @@ setInterval(async () => {
   await linkedinBot.publishNewProduct();
 
   console.log("✅ Pubblicazione completata");
-}, 1000 * 60 * 10); // ogni 10 minuti
+}, 1000 * 60 * 10);
 
-// ---------------------------------------------
-// PUBBLICAZIONE MANUALE
-// ---------------------------------------------
+/* =========================================================
+   PUBBLICAZIONE MANUALE
+========================================================= */
 app.get("/publish/social", async (req, res) => {
   try {
     await facebookBot.publishNewProduct();
@@ -433,15 +374,14 @@ app.get("/publish/social", async (req, res) => {
   }
 });
 
-// ---------------------------------------------
-// AVVIO SERVER
-// ---------------------------------------------
+/* =========================================================
+   AVVIO SERVER
+========================================================= */
 const PORT = process.env.PORT || 10000;
 
 app.listen(PORT, () => {
   console.log(`MewingMarket AI attivo sulla porta ${PORT}`);
 
-  // 🔥 Sync all'avvio
   (async () => {
     try {
       console.log("⏳ Sync automatico Airtable all'avvio...");
@@ -454,7 +394,6 @@ app.listen(PORT, () => {
   })();
 });
 
-// 🔥 Cron job ogni 30 minuti
 setInterval(async () => {
   try {
     console.log("⏳ Sync programmato Airtable...");
