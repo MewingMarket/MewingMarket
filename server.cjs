@@ -21,7 +21,6 @@ const { generateSitemap } = require("./modules/sitemap");
 const createFacebookBot = require("./bots/facebook");
 const createInstagramBot = require("./bots/instagram");
 const createThreadsBot = require("./bots/threads");
-const createLinkedinBot = require("./bots/linkedin");
 
 /* =========================================================
    SETUP EXPRESS
@@ -53,12 +52,12 @@ app.get("/products.json", (req, res) => {
 });
 
 /* =========================================================
-   WHATSAPP WEBHOOK (FIXATO)
+   WHATSAPP WEBHOOK
 ========================================================= */
 app.use("/webhook/whatsapp", whatsappWebhook);
 
 /* =========================================================
-   FACEBOOK WEBHOOK (GET + POST)
+   FACEBOOK WEBHOOK
 ========================================================= */
 app.get("/webhook/facebook", (req, res) => {
   const VERIFY_TOKEN = process.env.FB_VERIFY_TOKEN;
@@ -79,7 +78,7 @@ app.post("/webhook/facebook", async (req, res) => {
 });
 
 /* =========================================================
-   INSTAGRAM WEBHOOK (GET + POST)
+   INSTAGRAM WEBHOOK
 ========================================================= */
 app.get("/webhook/instagram", (req, res) => {
   const VERIFY_TOKEN = process.env.IG_VERIFY_TOKEN;
@@ -99,7 +98,7 @@ app.post("/webhook/instagram", (req, res) => {
 });
 
 /* =========================================================
-   REDIRECT HTTPS + WWW (SPOSTATO DOPO I WEBHOOK)
+   REDIRECT HTTPS + WWW
 ========================================================= */
 app.use((req, res, next) => {
   const proto = req.headers["x-forwarded-proto"];
@@ -203,7 +202,7 @@ app.get("/newsletter/send", async (req, res) => {
 });
 
 /* =========================================================
-   META FEED + GOOGLE FEED + SITEMAP
+   FEED + SITEMAP
 ========================================================= */
 app.get("/meta/feed", (req, res) => {
   const products = getProducts();
@@ -283,7 +282,6 @@ let products = getProducts();
 const facebookBot = createFacebookBot({ airtable: { update: syncAirtable }, products });
 const instagramBot = createInstagramBot({ airtable: { update: syncAirtable }, products });
 const threadsBot = createThreadsBot({ airtable: { update: syncAirtable }, products });
-const linkedinBot = createLinkedinBot({ airtable: { update: syncAirtable }, products });
 
 setInterval(() => {
   products = getProducts();
@@ -352,7 +350,6 @@ setInterval(async () => {
   await facebookBot.publishNewProduct();
   await instagramBot.publishNewProduct();
   await threadsBot.publishNewProduct();
-  await linkedinBot.publishNewProduct();
 
   console.log("✅ Pubblicazione completata");
 }, 1000 * 60 * 10);
@@ -365,7 +362,6 @@ app.get("/publish/social", async (req, res) => {
     await facebookBot.publishNewProduct();
     await instagramBot.publishNewProduct();
     await threadsBot.publishNewProduct();
-    await linkedinBot.publishNewProduct();
 
     res.json({ status: "ok", message: "Pubblicazione completata su tutti i social" });
   } catch (err) {
