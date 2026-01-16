@@ -8,7 +8,7 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 require("dotenv").config();
 
-const whatsappWebhook = require("./webhook.js").default || require("./webhook.js");
+const whatsappWebhook = require("./modules/webhook.js");
 const { generateNewsletterHTML } = require("./modules/newsletter");
 const { syncAirtable, loadProducts, getProducts } = require("./modules/airtable");
 const { detectIntent, handleConversation, reply, userStates, generateUID } = require("./modules/bot");
@@ -16,11 +16,11 @@ const { inviaNewsletter } = require("./modules/brevo");
 const { generateSitemap } = require("./modules/sitemap");
 
 /* =========================================================
-   IMPORT SOCIAL BOTS
+   IMPORT SOCIAL BOTS (TUTTO IN /modules)
 ========================================================= */
-const createFacebookBot = require("./bots/facebook");
-const createInstagramBot = require("./bots/instagram");
-const createThreadsBot = require("./bots/threads");
+const createFacebookBot = require("./modules/facebook");
+const createInstagramBot = require("./modules/instagram");
+const createThreadsBot = require("./modules/threads");
 
 /* =========================================================
    SETUP EXPRESS
@@ -98,7 +98,7 @@ app.post("/webhook/instagram", (req, res) => {
 });
 
 /* =========================================================
-   REDIRECT HTTPS + WWW
+   REDIRECT HTTPS + WWW (DOPO I WEBHOOK)
 ========================================================= */
 app.use((req, res, next) => {
   const proto = req.headers["x-forwarded-proto"];
