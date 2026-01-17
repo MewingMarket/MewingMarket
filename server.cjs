@@ -369,50 +369,35 @@ app.get("/publish/social", async (req, res) => {
     res.status(500).json({ status: "error", message: "Errore durante la pubblicazione" });
   }
 });
-
 /* =========================================================
    ENDPOINT META (OAuth + Delete Data)
 ========================================================= */
 
-// Callback OAuth
+// Callback OAuth (GET)
 app.get("/oauth/callback", (req, res) => {
   res.status(200).send("OAuth callback OK");
 });
 
-// Revoca autorizzazione
+// Revoca autorizzazione (GET richiesto da Meta)
+app.get("/oauth/revoke", (req, res) => {
+  res.status(200).send("Revoca OK");
+});
+
+// Revoca autorizzazione (POST)
 app.post("/oauth/revoke", (req, res) => {
   console.log("Revoca autorizzazione:", req.body);
   res.status(200).send("Revoca OK");
 });
 
-// GDPR Delete Data
-app.post("/delete-data", (req, res) => {
-  console.log("Richiesta eliminazione dati:", req.body);
-
-  const response = {
+// GDPR Delete Data (GET richiesto da Meta)
+app.get("/delete-data", (req, res) => {
+  res.status(200).json({
     url: "https://www.mewingmarket.it/delete.html",
     confirmation_code: "delete_12345"
-  };
-
-  res.status(200).json(response);
+  });
 });
 
-/* =========================================================
-   ENDPOINT META (OAuth + Delete Data)
-========================================================= */
-
-// Callback OAuth
-app.get("/oauth/callback", (req, res) => {
-  res.status(200).send("OAuth callback OK");
-});
-
-// Revoca autorizzazione
-app.post("/oauth/revoke", (req, res) => {
-  console.log("Revoca autorizzazione:", req.body);
-  res.status(200).send("Revoca OK");
-});
-
-// GDPR Delete Data
+// GDPR Delete Data (POST)
 app.post("/delete-data", (req, res) => {
   console.log("Richiesta eliminazione dati:", req.body);
 
