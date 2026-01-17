@@ -8,7 +8,6 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 require("dotenv").config();
 
-const whatsappWebhook = require("./modules/webhook.js");
 const { generateNewsletterHTML } = require("./modules/newsletter");
 const { syncAirtable, loadProducts, getProducts } = require("./modules/airtable");
 const { detectIntent, handleConversation, reply, userStates, generateUID } = require("./modules/bot");
@@ -50,11 +49,6 @@ app.get("/", (req, res) => {
 app.get("/products.json", (req, res) => {
   res.sendFile(path.join(process.cwd(), "data", "products.json"));
 });
-
-/* =========================================================
-   WHATSAPP WEBHOOK
-========================================================= */
-app.use("/webhook/whatsapp", whatsappWebhook);
 
 /* =========================================================
    FACEBOOK WEBHOOK
@@ -369,6 +363,7 @@ app.get("/publish/social", async (req, res) => {
     res.status(500).json({ status: "error", message: "Errore durante la pubblicazione" });
   }
 });
+
 /* =========================================================
    ENDPOINT META (OAuth + Delete Data)
 ========================================================= */
@@ -408,7 +403,6 @@ app.post("/delete-data", (req, res) => {
 
   res.status(200).json(response);
 });
-
 
 /* =========================================================
    AVVIO SERVER
