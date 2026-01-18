@@ -10,6 +10,7 @@
 </head>
 <body>
 
+<!-- HEADER -->
 <div id="header-placeholder"></div>
 <script>
   fetch("header.html")
@@ -17,19 +18,22 @@
     .then(h => document.getElementById("header-placeholder").innerHTML = h);
 </script>
 
-<section class="form-premium">
-  <h2>Iscriviti alla Newsletter</h2>
+<main>
+  <section class="form-premium">
+    <h2>Iscriviti alla Newsletter</h2>
 
-  <form id="subscribeForm">
-    <label for="email">La tua email</label>
-    <input type="email" id="email" name="email" placeholder="nome@email.com" required>
+    <form id="subscribeForm">
+      <label for="email">La tua email</label>
+      <input type="email" id="email" name="email" placeholder="nome@email.com" required>
 
-    <button type="submit">Iscriviti ora</button>
+      <button type="submit">Iscriviti ora</button>
 
-    <p>Riceverai solo contenuti utili e nuovi prodotti.</p>
-  </form>
-</section>
+      <p>Riceverai solo contenuti utili e nuovi prodotti.</p>
+    </form>
+  </section>
+</main>
 
+<!-- FOOTER -->
 <div id="footer-placeholder"></div>
 <script>
   fetch("footer.html")
