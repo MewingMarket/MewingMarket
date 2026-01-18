@@ -154,7 +154,9 @@ app.get("/sync/airtable", async (req, res) => {
 });
 
 /* =========================================================
-   NEWSLETTER */const { iscriviEmail } = require(path.join(process.cwd(), "modules", "brevoSubscribe"));
+   NEWSLETTER
+========================================================= */
+const { iscriviEmail } = require(path.join(process.cwd(), "modules", "brevoSubscribe"));
 const { disiscriviEmail } = require(path.join(process.cwd(), "modules", "brevoUnsubscribe"));
 app.get("/newsletter/html", (req, res) => {
   const { html } = generateNewsletterHTML();
