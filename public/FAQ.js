@@ -1,22 +1,29 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // Seleziona tutti i titoli delle domande
-    const faqTitles = document.querySelectorAll('.faq-item h3');
-    
-    faqTitles.forEach(title => {
-        // Aggiunge l'evento del click a ogni domanda
-        title.addEventListener('click', () => {
-            const answer = title.nextElementSibling;
-            
-            // Verifica se la risposta è già visibile
-            if (answer.style.display === 'block') {
-                answer.style.display = 'none';
-            } else {
-                // Chiude eventuali altre risposte aperte (opzionale, per ordine)
-                document.querySelectorAll('.faq-item p').forEach(p => p.style.display = 'none');
-                
-                // Mostra la risposta selezionata
-                answer.style.display = 'block';
-            }
-        });
+// FAQ.js — versione blindata
+
+document.addEventListener("DOMContentLoaded", () => {
+  const items = document.querySelectorAll(".faq-item");
+
+  items.forEach(item => {
+    const question = item.querySelector(".faq-question");
+    const answer = item.querySelector(".faq-answer");
+
+    // Altezza iniziale chiusa
+    answer.style.maxHeight = "0px";
+
+    question.addEventListener("click", () => {
+      const isOpen = item.classList.contains("open");
+
+      // Chiude tutte le altre
+      document.querySelectorAll(".faq-item").forEach(i => {
+        i.classList.remove("open");
+        i.querySelector(".faq-answer").style.maxHeight = "0px";
+      });
+
+      // Se non era aperto, aprilo
+      if (!isOpen) {
+        item.classList.add("open");
+        answer.style.maxHeight = answer.scrollHeight + "px";
+      }
     });
+  });
 });
