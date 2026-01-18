@@ -195,8 +195,7 @@ app.get("/newsletter/send", async (req, res) => {
     res.status(500).json({ error: "Errore invio newsletter" });
   }
 });
-const { iscriviEmail } = require("./modules/brevoSubscribe");
-const { disiscriviEmail } = require("./modules/brevoUnsubscribe");
+
 
 app.post("/newsletter/subscribe", async (req, res) => {
   const { email } = req.body;
