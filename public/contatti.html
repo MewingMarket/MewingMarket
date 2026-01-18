@@ -29,10 +29,11 @@ fetch("header.html").then(r=>r.text()).then(h=>document.getElementById("header-p
   <p>WhatsApp: <a href="https://wa.me/393520266660">352 026 6660</a></p>
   <p>Sede: Sanremo (IM), Liguria</p>
 </section>
-
 <div id="footer-placeholder"></div>
 <script>
-fetch("footer.html").then(r=>r.text()).then(h=>document.getElementById("footer-placeholder").innerHTML=h);
+fetch("/footer.html")
+  .then(r => r.text())
+  .then(h => document.getElementById("footer-placeholder").innerHTML = h);
 </script>
 
 </body>
