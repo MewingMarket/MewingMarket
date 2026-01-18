@@ -1,4 +1,5 @@
-// prodotto.js
+// prodotto.js — blindato
+
 (async function () {
   const params = new URLSearchParams(window.location.search);
   const slug = params.get("slug");
@@ -24,19 +25,6 @@
       </div>
     </div>
   `;
-
-  // SEO dinamico
-  document.getElementById("seo-title").innerText = `${p.titolo} – MewingMarket`;
-  document.getElementById("seo-description").setAttribute("content", p.descrizioneBreve || p.descrizioneLunga || "");
-
-  document.getElementById("og-title").setAttribute("content", p.titolo);
-  document.getElementById("og-description").setAttribute("content", p.descrizioneBreve || p.descrizioneLunga || "");
-  document.getElementById("og-image").setAttribute("content", p.immagine);
-  document.getElementById("og-url").setAttribute("content", window.location.href);
-
-  document.getElementById("tw-title").setAttribute("content", p.titolo);
-  document.getElementById("tw-description").setAttribute("content", p.descrizioneBreve || p.descrizioneLunga || "");
-  document.getElementById("tw-image").setAttribute("content", p.immagine);
 
   // Prodotti correlati
   const relatedBox = document.getElementById("related");
