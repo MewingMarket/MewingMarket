@@ -152,7 +152,9 @@ fetch("products.json")
 <!-- FOOTER -->
 <div id="footer-placeholder"></div>
 <script>
-fetch("footer.html").then(r=>r.text()).then(h=>document.getElementById("footer-placeholder").innerHTML=h);
+fetch("/footer.html")
+  .then(r => r.text())
+  .then(h => document.getElementById("footer-placeholder").innerHTML = h);
 </script>
 
 <script src="chat.js"></script>
