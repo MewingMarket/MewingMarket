@@ -341,6 +341,21 @@ footer {
   margin-top: 30px;
   font-size: 14px;
   opacity: 0.7;
+}.footer-social {
+  display: flex;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.footer-social a {
+  color: #fff;
+  font-size: 20px;
+  transition: 0.2s;
+}
+
+.footer-social a:hover {
+  color: #ffcc00;
+  transform: scale(1.15);
 }
 
 /* --------------------------------------------------
