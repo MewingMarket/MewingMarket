@@ -10,6 +10,7 @@
 </head>
 <body>
 
+<!-- HEADER -->
 <div id="header-placeholder"></div>
 <script>
   fetch("header.html")
@@ -17,19 +18,22 @@
     .then(h => document.getElementById("header-placeholder").innerHTML = h);
 </script>
 
-<section class="form-premium">
-  <h2>Disiscriviti dalla Newsletter</h2>
+<main>
+  <section class="form-premium">
+    <h2>Disiscriviti dalla Newsletter</h2>
 
-  <form id="unsubscribeForm">
-    <label for="email">La tua email</label>
-    <input type="email" id="email" name="email" placeholder="nome@email.com" required>
+    <form id="unsubscribeForm">
+      <label for="email">La tua email</label>
+      <input type="email" id="email" name="email" placeholder="nome@email.com" required>
 
-    <button type="submit">Disiscrivimi</button>
+      <button type="submit">Disiscrivimi</button>
 
-    <p>Non riceverai più aggiornamenti via email.</p>
-  </form>
-</section>
+      <p>Non riceverai più aggiornamenti via email.</p>
+    </form>
+  </section>
+</main>
 
+<!-- FOOTER -->
 <div id="footer-placeholder"></div>
 <script>
   fetch("footer.html")
