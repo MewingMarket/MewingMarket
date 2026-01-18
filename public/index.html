@@ -2,12 +2,12 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-<meta name="facebook-domain-verification" content="bxhq4e3tus4rgp1b05ym1xxdi573nz" />
+  <meta name="facebook-domain-verification" content="bxhq4e3tus4rgp1b05ym1xxdi573nz" />
   <title>MewingMarket – Prodotti Digitali Premium Creati con AI</title>
+
   <meta name="description" content="Prodotti digitali premium creati con intelligenza artificiale. Strumenti moderni, chiari e immediati per la tua crescita digitale.">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="index, follow">
-  <meta name="author" content="MewingMarket">
 
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="MewingMarket">
@@ -22,7 +22,8 @@
   <meta name="twitter:image" content="https://www.mewingmarket.it/og-image.jpg">
 
   <link rel="icon" href="favicon.png" type="image/png">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
   <script type="application/ld+json">
   {
@@ -45,31 +46,117 @@
 </head>
 <body>
 
+<!-- HEADER -->
 <div id="header-placeholder"></div>
 <script>
-fetch("header.html").then(r=>r.text()).then(h=>document.getElementById("header-placeholder").innerHTML=h);
+fetch("header.html")
+  .then(r => r.text())
+  .then(h => document.getElementById("header-placeholder").innerHTML = h);
 </script>
 
-<section class="hero-premium">
-  <div class="hero-text">
+<!-- HERO SLIDER DINAMICO -->
+<section class="hero-slider">
+  <div class="slider-container" id="heroSlider"></div>
+
+  <div class="hero-overlay">
     <h1>Prodotti Digitali Creati con Intelligenza Artificiale</h1>
     <p>Strumenti moderni, chiari e immediati per la tua crescita digitale.</p>
     <a href="catalogo.html" class="btn-premium">Esplora il Catalogo</a>
   </div>
-  
 </section>
 
-<section style="max-width:1200px;margin:auto;padding:40px 20px;">
-  <h2 style="text-align:center;">Perché scegliere MewingMarket</h2>
-  <p style="text-align:center;max-width:700px;margin:auto;">
-    Creiamo prodotti digitali che risolvono problemi reali. Nessun contenuto inutile, solo valore immediato.
-  </p>
-</section>
-
-<div id="footer-placeholder"></div>
 <script>
-fetch("footer.html").then(r=>r.text()).then(h=>document.getElementById("footer-placeholder").innerHTML=h);
+// Carica immagini dinamiche dal catalogo
+fetch("products.json")
+  .then(r => r.json())
+  .then(products => {
+    const slider = document.getElementById("heroSlider");
+
+    const immagini = products
+      .slice(0, 5)
+      .map(p => `<div class="slide"><img src="${p.immagine}" alt="${p.titolo}"></div>`)
+      .join("");
+
+    slider.innerHTML = immagini;
+
+    let index = 0;
+    const slides = document.querySelectorAll(".slide");
+
+    setInterval(() => {
+      slides.forEach((s, i) => s.style.opacity = i === index ? 1 : 0);
+      index = (index + 1) % slides.length;
+    }, 3500);
+  });
 </script>
 
+<!-- SEZIONE NOVITÀ -->
+<section class="home-section">
+  <h2>Novità</h2>
+  <div class="catalogo-grid" id="novita"></div>
+</section>
+
+<script>
+fetch("products.json")
+  .then(r => r.json())
+  .then(products => {
+    const box = document.getElementById("novita");
+
+    products
+      .filter(p => p.novita === true)
+      .slice(0, 4)
+      .forEach(product => {
+        const card = `
+          <div class="product-card">
+            <img src="${product.immagine}" alt="${product.titolo}">
+            <h2>${product.titoloBreve}</h2>
+            <p>${product.descrizioneBreve}</p>
+            <p class="prezzo">€${product.prezzo}</p>
+            <a href="prodotto.html?slug=${product.slug}" class="btn">Scopri di più</a>
+          </div>
+        `;
+        box.innerHTML += card;
+      });
+  });
+</script>
+
+<!-- SEZIONE SOTTO I 10€ -->
+<section class="home-section">
+  <h2>Prodotti sotto i 10€</h2>
+  <div class="catalogo-grid" id="sotto10"></div>
+</section>
+
+<script>
+fetch("products.json")
+  .then(r => r.json())
+  .then(products => {
+    const box = document.getElementById("sotto10");
+
+    products
+      .filter(p => parseFloat(p.prezzo) <= 10)
+      .slice(0, 4)
+      .forEach(product => {
+        const card = `
+          <div class="product-card">
+            <img src="${product.immagine}" alt="${product.titolo}">
+            <h2>${product.titoloBreve}</h2>
+            <p>${product.descrizioneBreve}</p>
+            <p class="prezzo">€${product.prezzo}</p>
+            <a href="prodotto.html?slug=${product.slug}" class="btn">Scopri di più</a>
+          </div>
+        `;
+        box.innerHTML += card;
+      });
+  });
+</script>
+
+<!-- FOOTER -->
+<div id="footer-placeholder"></div>
+<script>
+fetch("footer.html")
+  .then(r => r.text())
+  .then(h => document.getElementById("footer-placeholder").innerHTML = h);
+</script>
+
+<script src="chat.js"></script>
 </body>
 </html>
