@@ -2,56 +2,21 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <meta name="facebook-domain-verification" content="bxhq4e3tus4rgp1b05ym1xxdi573nz" />
   <title>MewingMarket – Prodotti Digitali Premium Creati con AI</title>
 
-  <meta name="description" content="Prodotti digitali premium creati con intelligenza artificiale. Strumenti moderni, chiari e immediati per la tua crescita digitale.">
+  <meta name="description" content="Prodotti digitali premium creati con intelligenza artificiale. Guide, template, strumenti AI e risorse per la tua crescita digitale.">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="index, follow">
 
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="MewingMarket">
-  <meta property="og:title" content="MewingMarket – Prodotti Digitali Premium">
-  <meta property="og:description" content="Strumenti digitali creati con AI per migliorare la tua vita digitale.">
-  <meta property="og:image" content="https://www.mewingmarket.it/og-image.jpg">
-  <meta property="og:url" content="https://www.mewingmarket.it/">
-
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="MewingMarket – Prodotti Digitali Premium">
-  <meta name="twitter:description" content="Prodotti digitali creati con AI. Qualità, velocità, valore.">
-  <meta name="twitter:image" content="https://www.mewingmarket.it/og-image.jpg">
-
-  <link rel="icon" href="favicon.png" type="image/png">
   <link rel="stylesheet" href="style.css?v=2.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    "name": "MewingMarket",
-    "url": "https://www.mewingmarket.it",
-    "logo": "https://www.mewingmarket.it/logo.png",
-    "sameAs": [
-      "https://www.instagram.com/mewingmarket",
-      "https://www.tiktok.com/@mewingmarket",
-      "https://www.youtube.com/@mewingmarket2",
-      "https://www.facebook.com/profile.php?id=61584779793628",
-      "https://x.com/mewingm8",
-      "https://www.threads.net/@mewingmarket",
-      "https://www.linkedin.com/company/mewingmarket"
-    ]
-  }
-  </script>
 </head>
 <body>
 
 <!-- HEADER -->
 <div id="header-placeholder"></div>
 <script>
-fetch("header.html")
-  .then(r => r.text())
-  .then(h => document.getElementById("header-placeholder").innerHTML = h);
+fetch("header.html").then(r=>r.text()).then(h=>document.getElementById("header-placeholder").innerHTML=h);
 </script>
 
 <!-- HERO SLIDER DINAMICO -->
@@ -66,7 +31,7 @@ fetch("header.html")
 </section>
 
 <script>
-// Carica immagini dinamiche dal catalogo
+// Slider dinamico
 fetch("products.json")
   .then(r => r.json())
   .then(products => {
@@ -88,6 +53,41 @@ fetch("products.json")
     }, 3500);
   });
 </script>
+
+<!-- CATEGORIE (Donna/Uomo/Bambino → Digitali) -->
+<section class="home-section">
+  <div class="catalogo-grid">
+    <div class="product-card">
+      <img src="img/categoria-guide.jpg" alt="Guide Digitali">
+      <h2>Guide Digitali</h2>
+      <p>Manuali pratici per crescere nel digitale.</p>
+      <a href="catalogo.html?cat=Guide" class="btn">Esplora</a>
+    </div>
+
+    <div class="product-card">
+      <img src="img/categoria-template.jpg" alt="Template">
+      <h2>Template</h2>
+      <p>Modelli pronti all’uso per velocizzare il tuo lavoro.</p>
+      <a href="catalogo.html?cat=Template" class="btn">Esplora</a>
+    </div>
+
+    <div class="product-card">
+      <img src="img/categoria-ai.jpg" alt="Strumenti AI">
+      <h2>Strumenti AI</h2>
+      <p>Tool intelligenti per automatizzare e creare.</p>
+      <a href="catalogo.html?cat=AI" class="btn">Esplora</a>
+    </div>
+  </div>
+</section>
+
+<!-- BANNER PROMOZIONALE (stile gioielli) -->
+<section class="home-section" style="text-align:center;">
+  <div style="background:#ffcc00;padding:25px;border-radius:12px;max-width:900px;margin:auto;">
+    <h2 style="margin:0;">🎁 Prodotto Gratuito del Mese</h2>
+    <p>Scarica subito una risorsa digitale premium senza alcun costo.</p>
+    <a href="catalogo.html?gratis=true" class="btn" style="background:#000;color:#fff;">Scarica Gratis</a>
+  </div>
+</section>
 
 <!-- SEZIONE NOVITÀ -->
 <section class="home-section">
@@ -119,7 +119,7 @@ fetch("products.json")
   });
 </script>
 
-<!-- SEZIONE SOTTO I 10€ -->
+<!-- SEZIONI PREZZO (Sotto i 10€, 20€, 30€) -->
 <section class="home-section">
   <h2>Prodotti sotto i 10€</h2>
   <div class="catalogo-grid" id="sotto10"></div>
@@ -152,9 +152,7 @@ fetch("products.json")
 <!-- FOOTER -->
 <div id="footer-placeholder"></div>
 <script>
-fetch("footer.html")
-  .then(r => r.text())
-  .then(h => document.getElementById("footer-placeholder").innerHTML = h);
+fetch("footer.html").then(r=>r.text()).then(h=>document.getElementById("footer-placeholder").innerHTML=h);
 </script>
 
 <script src="chat.js"></script>
