@@ -1,28 +1,24 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-
-  <title>Cookie Policy – MewingMarket</title>
-  <meta name="description" content="Informazioni sui cookie utilizzati da MewingMarket: tecnici, analitici e di terze parti.">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="robots" content="index, follow">
-
-  <meta property="og:title" content="Cookie Policy – MewingMarket">
-  <meta property="og:description" content="Dettagli sui cookie tecnici e analitici utilizzati dal sito.">
-  <meta property="og:url" content="https://www.mewingmarket.it/cookie.html">
-
-  <link rel="icon" href="favicon.png" type="image/png">
-<link rel="stylesheet" href="style.css?v=3.0">
+  <div id="head-placeholder"></div>
+  <script>
+    fetch("head.html")
+      .then(r => r.text())
+      .then(h => document.getElementById("head-placeholder").innerHTML = h);
+  </script>
 </head>
 <body>
 
+<!-- HEADER -->
 <div id="header-placeholder"></div>
 <script>
-fetch("header.html").then(r=>r.text()).then(h=>document.getElementById("header-placeholder").innerHTML=h);
+  fetch("header.html")
+    .then(r => r.text())
+    .then(h => document.getElementById("header-placeholder").innerHTML = h);
 </script>
 
-<main style="max-width:900px;margin:auto;padding:20px;">
+<main class="pagina-standard">
   <h1>Cookie Policy</h1>
 
   <p>Questo sito utilizza cookie tecnici e di analisi anonima per garantire il corretto funzionamento e migliorare l’esperienza utente.</p>
@@ -47,11 +43,12 @@ fetch("header.html").then(r=>r.text()).then(h=>document.getElementById("header-p
   <p>Puoi disattivarli dalle impostazioni del browser.</p>
 </main>
 
+<!-- FOOTER -->
 <div id="footer-placeholder"></div>
 <script>
-fetch("footer.html")
-  .then(r => r.text())
-  .then(h => document.getElementById("footer-placeholder").innerHTML = h);
+  fetch("footer.html")
+    .then(r => r.text())
+    .then(h => document.getElementById("footer-placeholder").innerHTML = h);
 </script>
 
 </body>
