@@ -1,28 +1,23 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-
-  <title>Termini e Condizioni – MewingMarket</title>
-  <meta name="description" content="Termini e condizioni di utilizzo e acquisto dei prodotti digitali MewingMarket.">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="robots" content="index, follow">
-
-  <meta property="og:title" content="Termini e Condizioni – MewingMarket">
-  <meta property="og:description" content="Condizioni di vendita e utilizzo dei prodotti digitali.">
-  <meta property="og:url" content="https://www.mewingmarket.it/terms.html">
-
-  <link rel="icon" href="favicon.png" type="image/png">
-  <link rel="stylesheet" href="style.css?v=3.0">
+  <div id="head-placeholder"></div>
+  <script>
+    fetch("head.html")
+      .then(r => r.text())
+      .then(h => document.getElementById("head-placeholder").innerHTML = h);
+  </script>
 </head>
 <body>
 
 <div id="header-placeholder"></div>
 <script>
-fetch("header.html").then(r=>r.text()).then(h=>document.getElementById("header-placeholder").innerHTML=h);
+  fetch("header.html")
+    .then(r => r.text())
+    .then(h => document.getElementById("header-placeholder").innerHTML = h);
 </script>
 
-<main style="max-width:900px;margin:auto;padding:20px;">
+<main class="pagina-standard">
   <h1>Termini e Condizioni</h1>
 
   <h2>1. Oggetto</h2>
@@ -49,9 +44,9 @@ fetch("header.html").then(r=>r.text()).then(h=>document.getElementById("header-p
 
 <div id="footer-placeholder"></div>
 <script>
-fetch("footer.html")
-  .then(r => r.text())
-  .then(h => document.getElementById("footer-placeholder").innerHTML = h);
+  fetch("footer.html")
+    .then(r => r.text())
+    .then(h => document.getElementById("footer-placeholder").innerHTML = h);
 </script>
 
 </body>
