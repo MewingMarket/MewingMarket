@@ -1,28 +1,24 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-
-  <title>Privacy Policy – MewingMarket</title>
-  <meta name="description" content="Informativa sulla privacy di MewingMarket: trattamento dati, finalità, diritti dell’utente e contatti.">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="robots" content="index, follow">
-
-  <meta property="og:title" content="Privacy Policy – MewingMarket">
-  <meta property="og:description" content="Informativa completa sul trattamento dei dati personali.">
-  <meta property="og:url" content="https://www.mewingmarket.it/privacy.html">
-
-  <link rel="icon" href="favicon.png" type="image/png">
-<link rel="stylesheet" href="style.css?v=3.0">
+  <div id="head-placeholder"></div>
+  <script>
+    fetch("head.html")
+      .then(r => r.text())
+      .then(h => document.getElementById("head-placeholder").innerHTML = h);
+  </script>
 </head>
 <body>
 
+<!-- HEADER -->
 <div id="header-placeholder"></div>
 <script>
-fetch("header.html").then(r=>r.text()).then(h=>document.getElementById("header-placeholder").innerHTML=h);
+  fetch("header.html")
+    .then(r => r.text())
+    .then(h => document.getElementById("header-placeholder").innerHTML = h);
 </script>
 
-<main style="max-width:900px;margin:auto;padding:20px;">
+<main class="pagina-standard">
   <h1>Privacy Policy</h1>
 
   <p>La presente Privacy Policy descrive come MewingMarket raccoglie, utilizza, conserva e protegge i dati personali degli utenti.</p>
@@ -62,11 +58,12 @@ fetch("header.html").then(r=>r.text()).then(h=>document.getElementById("header-p
   <p>Email: supporto@mewingmarket.it</p>
 </main>
 
+<!-- FOOTER -->
 <div id="footer-placeholder"></div>
 <script>
-fetch("footer.html")
-  .then(r => r.text())
-  .then(h => document.getElementById("footer-placeholder").innerHTML = h);
+  fetch("footer.html")
+    .then(r => r.text())
+    .then(h => document.getElementById("footer-placeholder").innerHTML = h);
 </script>
 
 </body>
