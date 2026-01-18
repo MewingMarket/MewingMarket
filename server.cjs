@@ -154,10 +154,9 @@ app.get("/sync/airtable", async (req, res) => {
 });
 
 /* =========================================================
-   NEWSLETTER
-========================================================= */
-const { iscriviEmail } = require("./modules/brevoSubscribe");
-const { disiscriviEmail } = require("./modules/brevoUnsubscribe");app.get("/newsletter/html", (req, res) => {
+   NEWSLETTER */const { iscriviEmail } = require(path.join(process.cwd(), "modules", "brevoSubscribe"));
+const { disiscriviEmail } = require(path.join(process.cwd(), "modules", "brevoUnsubscribe"));
+app.get("/newsletter/html", (req, res) => {
   const { html } = generateNewsletterHTML();
   res.type("html").send(html);
 });
