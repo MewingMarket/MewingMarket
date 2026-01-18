@@ -194,7 +194,32 @@ app.get("/newsletter/send", async (req, res) => {
     res.status(500).json({ error: "Errore invio newsletter" });
   }
 });
+const { iscriviEmail } = require("./modules/brevoSubscribe");
+const { disiscriviEmail } = require("./modules/brevoUnsubscribe");
 
+app.post("/newsletter/subscribe", async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: "Email mancante" });
+
+  try {
+    await iscriviEmail(email);
+    res.json({ status: "ok" });
+  } catch (err) {
+    res.status(500).json({ error: "Errore iscrizione" });
+  }
+});
+
+app.post("/newsletter/unsubscribe", async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: "Email mancante" });
+
+  try {
+    await disiscriviEmail(email);
+    res.json({ status: "ok" });
+  } catch (err) {
+    res.status(500).json({ error: "Errore disiscrizione" });
+  }
+});
 /* =========================================================
    FEED + SITEMAP
 ========================================================= */
