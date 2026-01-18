@@ -1,10 +1,23 @@
-// Carica prodotti
+// index.js — blindato
+
 async function loadProducts() {
-  const res = await fetch("/products.json");
+  const res = await fetch("products.json", { cache: "no-store" });
   return await res.json();
 }
 
-// Popola slider
+function cardHTML(p) {
+  return `
+    <div class="product-card">
+      <img src="${p.immagine}" alt="${p.titolo}">
+      <h2>${p.titoloBreve || p.titolo}</h2>
+      <p>${p.descrizioneBreve || ""}</p>
+      <div class="prezzo">€${p.prezzo}</div>
+      <a href="prodotto.html?slug=${p.slug}" class="btn">Scopri</a>
+    </div>
+  `;
+}
+
+// SLIDER
 async function initSlider() {
   const products = await loadProducts();
   const slider = document.getElementById("slider");
@@ -26,7 +39,7 @@ async function initSlider() {
   }, 4000);
 }
 
-// Popola sezioni
+// SEZIONI
 async function populateSections() {
   const products = await loadProducts();
 
@@ -51,18 +64,6 @@ async function populateSections() {
     .forEach(p => {
       bestseller.innerHTML += cardHTML(p);
     });
-}
-
-function cardHTML(p) {
-  return `
-    <div class="product-card">
-      <img src="${p.immagine}" alt="${p.titolo}">
-      <h2>${p.titoloBreve || p.titolo}</h2>
-      <p>${p.descrizioneBreve || ""}</p>
-      <div class="prezzo">${p.prezzo}€</div>
-      <a href="prodotto.html?id=${p.id}" class="btn">Scopri</a>
-    </div>
-  `;
 }
 
 initSlider();
