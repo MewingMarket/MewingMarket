@@ -10,6 +10,7 @@
 </head>
 <body>
 
+<!-- HEADER -->
 <div id="header-placeholder"></div>
 <script>
   fetch("header.html")
@@ -20,28 +21,54 @@
 <main class="pagina-standard">
   <h1>FAQ – Domande Frequenti</h1>
 
-  <h2>Come funziona l’acquisto?</h2>
-  <p>Tutti i prodotti vengono venduti tramite Payhip, che gestisce pagamento e download.</p>
+  <div class="faq-item">
+    <div class="faq-question">Come funziona l’acquisto?</div>
+    <div class="faq-answer">
+      <p>Tutti i prodotti vengono venduti tramite Payhip, che gestisce pagamento e download.</p>
+    </div>
+  </div>
 
-  <h2>Posso chiedere un rimborso?</h2>
-  <p>Sì, valutiamo ogni richiesta caso per caso. Consulta la pagina “Resi e Rimborsi”.</p>
+  <div class="faq-item">
+    <div class="faq-question">Posso chiedere un rimborso?</div>
+    <div class="faq-answer">
+      <p>Sì, valutiamo ogni richiesta caso per caso. Consulta la pagina “Resi e Rimborsi”.</p>
+    </div>
+  </div>
 
-  <h2>Come ricevo il prodotto?</h2>
-  <p>Dopo il pagamento ricevi subito il link per scaricare il file digitale.</p>
+  <div class="faq-item">
+    <div class="faq-question">Come ricevo il prodotto?</div>
+    <div class="faq-answer">
+      <p>Dopo il pagamento ricevi subito il link per scaricare il file digitale.</p>
+    </div>
+  </div>
 
-  <h2>Posso usare i prodotti commercialmente?</h2>
-  <p>No, tutti i prodotti sono ad uso personale salvo diversa indicazione.</p>
+  <div class="faq-item">
+    <div class="faq-question">Posso usare i prodotti commercialmente?</div>
+    <div class="faq-answer">
+      <p>No, tutti i prodotti sono ad uso personale salvo diversa indicazione.</p>
+    </div>
+  </div>
 
-  <h2>Non riesco a scaricare il file</h2>
-  <p>Scrivici a supporto@mewingmarket.it e risolviamo subito.</p>
+  <div class="faq-item">
+    <div class="faq-question">Non riesco a scaricare il file</div>
+    <div class="faq-answer">
+      <p>Scrivici a supporto@mewingmarket.it e risolviamo subito.</p>
+    </div>
+  </div>
+
 </main>
 
+<!-- FOOTER -->
 <div id="footer-placeholder"></div>
 <script>
   fetch("footer.html")
     .then(r => r.text())
     .then(h => document.getElementById("footer-placeholder").innerHTML = h);
 </script>
-<script src="FAQ.js"></script> <script src="chat.js"></script>
+
+<!-- JS -->
+<script src="FAQ.js"></script>
+<script src="chat.js"></script>
+
 </body>
 </html>
