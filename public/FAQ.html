@@ -1,49 +1,47 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-
-  <title>FAQ – MewingMarket</title>
-  <meta name="description" content="Domande frequenti su download, pagamenti, rimborsi e supporto tecnico. Assistenza rapida e professionale.">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="robots" content="index, follow">
-
-  <meta property="og:title" content="FAQ – MewingMarket">
-  <meta property="og:description" content="Risposte rapide su download, pagamenti e supporto.">
-  <meta property="og:url" content="https://www.mewingmarket.it/FAQ.html">
-
-  <link rel="icon" href="favicon.png" type="image/png">
-  <link rel="stylesheet" href="style.css?v=3.0">
+  <div id="head-placeholder"></div>
+  <script>
+    fetch("head.html")
+      .then(r => r.text())
+      .then(h => document.getElementById("head-placeholder").innerHTML = h);
+  </script>
 </head>
 <body>
 
 <div id="header-placeholder"></div>
 <script>
-fetch("header.html").then(r=>r.text()).then(h=>document.getElementById("header-placeholder").innerHTML=h);
+  fetch("header.html")
+    .then(r => r.text())
+    .then(h => document.getElementById("header-placeholder").innerHTML = h);
 </script>
 
-<section style="max-width:900px;margin:auto;padding:40px 20px;">
-  <h1>Domande Frequenti</h1>
+<main class="pagina-standard">
+  <h1>FAQ – Domande Frequenti</h1>
 
-  <h3>Non ho ricevuto l’email del prodotto</h3>
-  <p>Controlla la cartella spam o promozioni. In alternativa scrivici su WhatsApp.</p>
+  <h2>Come funziona l’acquisto?</h2>
+  <p>Tutti i prodotti vengono venduti tramite Payhip, che gestisce pagamento e download.</p>
 
-  <h3>Il download non funziona</h3>
-  <p>Payhip gestisce i download. Se hai problemi, contattaci e ti inviamo il file manualmente.</p>
+  <h2>Posso chiedere un rimborso?</h2>
+  <p>Sì, valutiamo ogni richiesta caso per caso. Consulta la pagina “Resi e Rimborsi”.</p>
 
-  <h3>Posso chiedere un rimborso?</h3>
-  <p>Sì, in caso di problemi tecnici o acquisti duplicati.</p>
+  <h2>Come ricevo il prodotto?</h2>
+  <p>Dopo il pagamento ricevi subito il link per scaricare il file digitale.</p>
 
-  <h3>Come posso contattarvi?</h3>
-  <p>Email: supporto@mewingmarket.it<br>WhatsApp: 352 026 6660</p>
-</section>
+  <h2>Posso usare i prodotti commercialmente?</h2>
+  <p>No, tutti i prodotti sono ad uso personale salvo diversa indicazione.</p>
+
+  <h2>Non riesco a scaricare il file</h2>
+  <p>Scrivici a supporto@mewingmarket.it e risolviamo subito.</p>
+</main>
 
 <div id="footer-placeholder"></div>
 <script>
-fetch("footer.html")
-  .then(r => r.text())
-  .then(h => document.getElementById("footer-placeholder").innerHTML = h);
+  fetch("footer.html")
+    .then(r => r.text())
+    .then(h => document.getElementById("footer-placeholder").innerHTML = h);
 </script>
-
+<script src="FAQ.js"></script> <script src="chat.js"></script>
 </body>
 </html>
