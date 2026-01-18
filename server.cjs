@@ -158,6 +158,7 @@ app.get("/sync/airtable", async (req, res) => {
 ========================================================= */
 const { iscriviEmail } = require(path.join(process.cwd(), "modules", "brevoSubscribe"));
 const { disiscriviEmail } = require(path.join(process.cwd(), "modules", "brevoUnsubscribe"));
+
 app.get("/newsletter/html", (req, res) => {
   const { html } = generateNewsletterHTML();
   res.type("html").send(html);
@@ -197,7 +198,6 @@ app.get("/newsletter/send", async (req, res) => {
   }
 });
 
-
 app.post("/newsletter/subscribe", async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: "Email mancante" });
@@ -221,6 +221,7 @@ app.post("/newsletter/unsubscribe", async (req, res) => {
     res.status(500).json({ error: "Errore disiscrizione" });
   }
 });
+
 /* =========================================================
    FEED + SITEMAP
 ========================================================= */
@@ -342,12 +343,14 @@ app.post("/threads/delete", (req, res) => {
     confirmation_code: "deleted"
   });
 });
+
 app.get("/auth/instagram/callback", async (req, res) => {
   const code = req.query.code;
   if (!code) return res.status(400).send("Missing code");
 
   res.send("Instagram autorizzato. Puoi chiudere questa pagina.");
 });
+
 /* =========================================================
    CHAT BOT
 ========================================================= */
