@@ -31,7 +31,7 @@ fetch("header.html").then(r=>r.text()).then(h=>document.getElementById("header-p
 </section>
 <div id="footer-placeholder"></div>
 <script>
-fetch("/footer.html")
+fetch("footer.html")
   .then(r => r.text())
   .then(h => document.getElementById("footer-placeholder").innerHTML = h);
 </script>
