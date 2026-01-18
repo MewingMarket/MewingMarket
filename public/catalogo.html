@@ -2,71 +2,74 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Catalogo Prodotti Digitali – MewingMarket</title>
-  <link rel="canonical" href="https://www.mewingmarket.it/catalogo.html">
   <meta name="description" content="Catalogo completo dei prodotti digitali MewingMarket: guide, strumenti AI, planner, workbook e risorse pratiche.">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="index, follow">
 
-  <meta property="og:title" content="Catalogo Prodotti Digitali – MewingMarket">
-  <meta property="og:description" content="Esplora tutte le guide, i workbook e gli strumenti digitali creati per aiutarti a crescere nel digitale.">
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://www.mewingmarket.it/catalogo.html">
-  <meta property="og:image" content="https://www.mewingmarket.it/logo.png">
-
-  <link rel="stylesheet" href="style.css?v=1.4">
+  <link rel="stylesheet" href="style.css?v=2.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
 
-<header>
-  <img src="logo.png" alt="Logo" class="logo">
-</header>
+<!-- HEADER -->
+<div id="header-placeholder"></div>
+<script>
+fetch("header.html")
+  .then(r => r.text())
+  .then(h => document.getElementById("header-placeholder").innerHTML = h);
+</script>
 
-<nav>
-  <ul id="category-nav">
-    <li><a href="index.html">Home</a></li>
-    <li><a href="catalogo.html" class="active">Catalogo</a></li>
-    <li><a href="chisiamo.html">Chi Siamo</a></li>
-    <li><a href="contatti.html">Contatti</a></li>
-    <li><a href="dovesiamo.html">Dove Siamo</a></li>
-    <li><a href="FAQ.html">FAQ</a></li>
-  </ul>
-</nav>
+<main style="max-width:1200px;margin:auto;padding:40px 20px;">
 
-<main>
-  <h1>Catalogo Prodotti Digitali</h1>
+  <h1 style="text-align:center;margin-bottom:30px;">Catalogo Prodotti Digitali</h1>
 
-  <div id="categorie" class="categorie-nav"></div>
+  <!-- FILTRI CATEGORIA -->
+  <div id="categorie" class="categorie-nav" style="text-align:center;margin-bottom:25px;"></div>
+
+  <!-- FILTRI PREZZO -->
+  <div style="text-align:center;margin-bottom:30px;">
+    <button class="btn" onclick="filterPrezzo(10)">Sotto i 10€</button>
+    <button class="btn" onclick="filterPrezzo(20)">Sotto i 20€</button>
+    <button class="btn" onclick="filterPrezzo(30)">Sotto i 30€</button>
+    <button class="btn" onclick="resetFilters()">Tutti</button>
+  </div>
+
+  <!-- GRID CATALOGO -->
   <section id="catalogo" class="catalogo-grid"></section>
+
 </main>
 
+<!-- FOOTER -->
 <div id="footer-placeholder"></div>
 <script>
-  fetch("footer.html")
-    .then(res => res.text())
-    .then(html => { document.getElementById("footer-placeholder").innerHTML = html; });
+fetch("footer.html")
+  .then(r => r.text())
+  .then(h => document.getElementById("footer-placeholder").innerHTML = h);
 </script>
 
 <script>
 // Carica catalogo dinamico
-fetch('/products.json')
+fetch('products.json')
   .then(r => r.json())
   .then(products => {
     const container = document.getElementById('catalogo');
     const categorieBox = document.getElementById('categorie');
 
+    // Categorie dinamiche
     const categorie = [...new Set(products.map(p => p.categoria))].filter(Boolean);
 
     categorieBox.innerHTML = categorie.map(cat =>
-      `<button class="cat-btn" onclick="filterCat('${cat}')">${cat}</button>`
+      `<button class="btn" onclick="filterCat('${cat}')">${cat}</button>`
     ).join('');
 
+    // Card prodotti
     products.forEach(product => {
       const card = document.createElement('div');
       card.className = 'product-card';
       card.dataset.cat = product.categoria;
       card.dataset.slug = product.slug;
+      card.dataset.prezzo = product.prezzo;
 
       const url = `prodotto.html?slug=${product.slug}`;
 
@@ -81,48 +84,30 @@ fetch('/products.json')
       container.appendChild(card);
     });
 
+    // Filtri categoria
     window.filterCat = function(cat) {
       document.querySelectorAll('.product-card').forEach(card => {
         card.style.display = card.dataset.cat === cat ? 'block' : 'none';
       });
     };
+
+    // Filtri prezzo
+    window.filterPrezzo = function(max) {
+      document.querySelectorAll('.product-card').forEach(card => {
+        const prezzo = parseFloat(card.dataset.prezzo);
+        card.style.display = prezzo <= max ? 'block' : 'none';
+      });
+    };
+
+    // Reset filtri
+    window.resetFilters = function() {
+      document.querySelectorAll('.product-card').forEach(card => {
+        card.style.display = 'block';
+      });
+    };
   });
-
-// Tracking click
-document.addEventListener("click", function(e) {
-  const btn = e.target.closest(".btn, .btn-acquista");
-  if (!btn) return;
-
-  const card = e.target.closest(".product-card");
-  const isProductPage = document.getElementById("title") !== null;
-
-  let record = {
-    timestamp: new Date().toLocaleString(),
-    device: /Mobi|Android/i.test(navigator.userAgent) ? "mobile" : "desktop",
-    page: location.pathname
-  };
-
-  if (card) {
-    record.titolo = card.querySelector("h2")?.textContent || "";
-    record.slug = card.dataset.slug || "";
-    record.categoria = card.dataset.cat || "";
-    record.prezzo = card.querySelector(".prezzo")?.textContent || "";
-    record.link = btn.href;
-  }
-
-  if (isProductPage) {
-    record.titolo = document.getElementById("title").textContent;
-    record.slug = new URLSearchParams(location.search).get("slug");
-    record.prezzo = document.getElementById("price").textContent;
-    record.link = document.getElementById("payhip").href;
-  }
-
-  let logs = JSON.parse(localStorage.getItem("clickLogs") || "[]");
-  logs.push(record);
-  localStorage.setItem("clickLogs", JSON.stringify(logs));
-});
 </script>
 
-<script src="chat.js"></script>
+
 </body>
 </html>
