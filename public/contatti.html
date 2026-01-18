@@ -1,39 +1,45 @@
     <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-
-  <title>Contatti – MewingMarket</title>
-  <meta name="description" content="Contatta MewingMarket per supporto, informazioni commerciali o assistenza sui prodotti digitali.">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="robots" content="index, follow">
-
-  <meta property="og:title" content="Contatti – MewingMarket">
-  <meta property="og:description" content="Supporto, assistenza e informazioni commerciali MewingMarket.">
-  <meta property="og:url" content="https://www.mewingmarket.it/contatti.html">
-
-  <link rel="icon" href="favicon.png" type="image/png">
-  <link rel="stylesheet" href="style.css?v=3.0">
+  <div id="head-placeholder"></div>
+  <script>
+    fetch("head.html")
+      .then(r => r.text())
+      .then(h => document.getElementById("head-placeholder").innerHTML = h);
+  </script>
 </head>
 <body>
 
+<!-- HEADER -->
 <div id="header-placeholder"></div>
 <script>
-fetch("header.html").then(r=>r.text()).then(h=>document.getElementById("header-placeholder").innerHTML=h);
+  fetch("header.html")
+    .then(r => r.text())
+    .then(h => document.getElementById("header-placeholder").innerHTML = h);
 </script>
 
-<section style="max-width:900px;margin:auto;padding:40px 20px;">
+<main class="pagina-standard">
   <h1>Contatti</h1>
+
   <p>Per qualsiasi domanda, supporto o richiesta commerciale:</p>
-  <p>Email: <a href="mailto:supporto@mewingmarket.it">supporto@mewingmarket.it</a></p>
-  <p>WhatsApp: <a href="https://wa.me/393520266660">352 026 6660</a></p>
+
+  <p>Email: 
+    <a href="mailto:supporto@mewingmarket.it">supporto@mewingmarket.it</a>
+  </p>
+
+  <p>WhatsApp: 
+    <a href="https://wa.me/393520266660">352 026 6660</a>
+  </p>
+
   <p>Sede: Sanremo (IM), Liguria</p>
-</section>
+</main>
+
+<!-- FOOTER -->
 <div id="footer-placeholder"></div>
 <script>
-fetch("footer.html")
-  .then(r => r.text())
-  .then(h => document.getElementById("footer-placeholder").innerHTML = h);
+  fetch("footer.html")
+    .then(r => r.text())
+    .then(h => document.getElementById("footer-placeholder").innerHTML = h);
 </script>
 
 </body>
