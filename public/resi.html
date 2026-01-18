@@ -1,28 +1,23 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-
-  <title>Resi e Rimborsi – MewingMarket</title>
-  <meta name="description" content="Politica resi e rimborsi per i prodotti digitali MewingMarket. Valutiamo ogni richiesta caso per caso.">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="robots" content="index, follow">
-
-  <meta property="og:title" content="Resi e Rimborsi – MewingMarket">
-  <meta property="og:description" content="Informazioni su resi e rimborsi per prodotti digitali.">
-  <meta property="og:url" content="https://www.mewingmarket.it/resi.html">
-
-  <link rel="icon" href="favicon.png" type="image/png">
-  <link rel="stylesheet" href="style.css?v=3.0">
+  <div id="head-placeholder"></div>
+  <script>
+    fetch("head.html")
+      .then(r => r.text())
+      .then(h => document.getElementById("head-placeholder").innerHTML = h);
+  </script>
 </head>
 <body>
 
 <div id="header-placeholder"></div>
 <script>
-fetch("header.html").then(r=>r.text()).then(h=>document.getElementById("header-placeholder").innerHTML=h);
+  fetch("header.html")
+    .then(r => r.text())
+    .then(h => document.getElementById("header-placeholder").innerHTML = h);
 </script>
 
-<main style="max-width:900px;margin:auto;padding:20px;">
+<main class="pagina-standard">
   <h1>Resi e Rimborsi</h1>
 
   <p>I prodotti digitali non prevedono reso automatico, ma valutiamo ogni richiesta caso per caso.</p>
@@ -44,11 +39,12 @@ fetch("header.html").then(r=>r.text()).then(h=>document.getElementById("header-p
   <h2>3. Come richiedere assistenza</h2>
   <p>Email: supporto@mewingmarket.it<br>WhatsApp: 352 026 6660</p>
 </main>
+
 <div id="footer-placeholder"></div>
 <script>
-fetch("footer.html")
-  .then(r => r.text())
-  .then(h => document.getElementById("footer-placeholder").innerHTML = h);
+  fetch("footer.html")
+    .then(r => r.text())
+    .then(h => document.getElementById("footer-placeholder").innerHTML = h);
 </script>
 
 </body>
