@@ -1,35 +1,21 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-
-  <title id="seo-title">Prodotto – MewingMarket</title>
-  <meta id="seo-description" name="description" content="">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <meta property="og:type" content="product">
-  <meta property="og:site_name" content="MewingMarket">
-  <meta property="og:title" id="og-title" content="">
-  <meta property="og:description" id="og-description" content="">
-  <meta property="og:image" id="og-image" content="">
-  <meta property="og:url" id="og-url" content="">
-
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" id="tw-title" content="">
-  <meta name="twitter:description" id="tw-description" content="">
-  <meta name="twitter:image" id="tw-image" content="">
-
-  <link rel="icon" href="favicon.png" type="image/png">
-  <link rel="stylesheet" href="style.css?v=3.0">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
-  <script defer src="prodotto.js"></script>
+  <div id="head-placeholder"></div>
+  <script>
+    fetch("head.html")
+      .then(r => r.text())
+      .then(h => document.getElementById("head-placeholder").innerHTML = h);
+  </script>
 </head>
 <body>
 
+<!-- HEADER -->
 <div id="header-placeholder"></div>
 <script>
-fetch("header.html").then(r=>r.text()).then(h=>document.getElementById("header-placeholder").innerHTML=h);
+  fetch("header.html")
+    .then(r => r.text())
+    .then(h => document.getElementById("header-placeholder").innerHTML = h);
 </script>
 
 <main>
@@ -40,12 +26,16 @@ fetch("header.html").then(r=>r.text()).then(h=>document.getElementById("header-p
     <div class="catalogo-grid" id="related"></div>
   </section>
 </main>
+
+<!-- FOOTER -->
 <div id="footer-placeholder"></div>
 <script>
-fetch("footer.html")
-  .then(r => r.text())
-  .then(h => document.getElementById("footer-placeholder").innerHTML = h);
+  fetch("footer.html")
+    .then(r => r.text())
+    .then(h => document.getElementById("footer-placeholder").innerHTML = h);
 </script>
+
+<script src="prodotto.js"></script>
 
 </body>
 </html>
