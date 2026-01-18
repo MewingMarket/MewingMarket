@@ -1,33 +1,27 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
   <meta charset="UTF-8">
   <title>Catalogo Prodotti Digitali – MewingMarket</title>
-  <meta name="description" content="Catalogo completo dei prodotti digitali MewingMarket: guide, strumenti AI, planner, workbook e risorse pratiche.">
+  <meta name="description" content="Catalogo completo dei prodotti digitali MewingMarket: guide, template, strumenti AI e risorse pratiche.">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="robots" content="index, follow">
 
   <link rel="stylesheet" href="style.css?v=2.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
 
-<!-- HEADER -->
 <div id="header-placeholder"></div>
 <script>
-fetch("header.html")
-  .then(r => r.text())
-  .then(h => document.getElementById("header-placeholder").innerHTML = h);
+fetch("header.html").then(r=>r.text()).then(h=>document.getElementById("header-placeholder").innerHTML=h);
 </script>
 
 <main style="max-width:1200px;margin:auto;padding:40px 20px;">
 
   <h1 style="text-align:center;margin-bottom:30px;">Catalogo Prodotti Digitali</h1>
 
-  <!-- FILTRI CATEGORIA -->
-  <div id="categorie" class="categorie-nav" style="text-align:center;margin-bottom:25px;"></div>
+  <div id="categorie" style="text-align:center;margin-bottom:25px;"></div>
 
-  <!-- FILTRI PREZZO -->
   <div style="text-align:center;margin-bottom:30px;">
     <button class="btn" onclick="filterPrezzo(10)">Sotto i 10€</button>
     <button class="btn" onclick="filterPrezzo(20)">Sotto i 20€</button>
@@ -35,79 +29,67 @@ fetch("header.html")
     <button class="btn" onclick="resetFilters()">Tutti</button>
   </div>
 
-  <!-- GRID CATALOGO -->
   <section id="catalogo" class="catalogo-grid"></section>
 
 </main>
 
-<!-- FOOTER -->
 <div id="footer-placeholder"></div>
 <script>
-fetch("footer.html")
-  .then(r => r.text())
-  .then(h => document.getElementById("footer-placeholder").innerHTML = h);
+fetch("footer.html").then(r=>r.text()).then(h=>document.getElementById("footer-placeholder").innerHTML=h);
 </script>
 
 <script>
-// Carica catalogo dinamico
-fetch('products.json')
+// Caricamento dinamico catalogo
+fetch("products.json")
   .then(r => r.json())
   .then(products => {
-    const container = document.getElementById('catalogo');
-    const categorieBox = document.getElementById('categorie');
+    const container = document.getElementById("catalogo");
+    const categorieBox = document.getElementById("categorie");
 
-    // Categorie dinamiche
     const categorie = [...new Set(products.map(p => p.categoria))].filter(Boolean);
 
     categorieBox.innerHTML = categorie.map(cat =>
       `<button class="btn" onclick="filterCat('${cat}')">${cat}</button>`
-    ).join('');
+    ).join("");
 
-    // Card prodotti
     products.forEach(product => {
-      const card = document.createElement('div');
-      card.className = 'product-card';
+      const card = document.createElement("div");
+      card.className = "product-card";
       card.dataset.cat = product.categoria;
-      card.dataset.slug = product.slug;
       card.dataset.prezzo = product.prezzo;
-
-      const url = `prodotto.html?slug=${product.slug}`;
 
       card.innerHTML = `
         <img src="${product.immagine}" alt="${product.titolo}">
         <h2>${product.titoloBreve}</h2>
         <p>${product.descrizioneBreve}</p>
         <p class="prezzo">€${product.prezzo}</p>
-        <a href="${url}" class="btn">Scopri di più</a>
+        <a href="prodotto.html?slug=${product.slug}" class="btn">Scopri di più</a>
       `;
 
       container.appendChild(card);
     });
 
-    // Filtri categoria
     window.filterCat = function(cat) {
-      document.querySelectorAll('.product-card').forEach(card => {
-        card.style.display = card.dataset.cat === cat ? 'block' : 'none';
+      document.querySelectorAll(".product-card").forEach(card => {
+        card.style.display = card.dataset.cat === cat ? "block" : "none";
       });
     };
 
-    // Filtri prezzo
     window.filterPrezzo = function(max) {
-      document.querySelectorAll('.product-card').forEach(card => {
+      document.querySelectorAll(".product-card").forEach(card => {
         const prezzo = parseFloat(card.dataset.prezzo);
-        card.style.display = prezzo <= max ? 'block' : 'none';
+        card.style.display = prezzo <= max ? "block" : "none";
       });
     };
 
-    // Reset filtri
     window.resetFilters = function() {
-      document.querySelectorAll('.product-card').forEach(card => {
-        card.style.display = 'block';
+      document.querySelectorAll(".product-card").forEach(card => {
+        card.style.display = "block";
       });
     };
   });
 </script>
 
-
+<script src="chat.js"></script>
 </body>
 </html>
