@@ -1,3 +1,4 @@
+
 // modules/airtable.js
 
 const fs = require("fs");
@@ -49,7 +50,16 @@ async function syncAirtable() {
         immagine: cleanURL(f.Immagine?.[0]?.url),
         linkPayhip: cleanURL(f.LinkPayhip),
         descrizioneBreve: cleanText(f.DescrizioneBreve, ""),
-        descrizioneLunga: cleanText(f.DescrizioneLunga, "")
+        descrizioneLunga: cleanText(f.DescrizioneLunga, ""),
+
+        // 🔥 NUOVI CAMPI YOUTUBE + SEO + SOCIAL
+        youtube_url: cleanURL(f.youtube_url),
+        youtube_title: cleanText(f.youtube_title, ""),
+        youtube_description: cleanText(f.youtube_description, ""),
+        youtube_thumbnail: cleanURL(f.youtube_thumbnail),
+        catalog_video_block: cleanText(f.catalog_video_block, ""),
+        meta_description: cleanText(f.meta_description, ""),
+        social_caption_full: cleanText(f.social_caption_full, "")
       };
     });
 
