@@ -1,4 +1,19 @@
-// prodotto.js — blindato
+// prodotto.js — blindato + video YouTube
+
+function renderYouTubeEmbed(p) {
+  if (!p.youtube_url) return "";
+  const embedUrl = p.youtube_url.replace("watch?v=", "embed/");
+  return `
+    <div class="video-embed">
+      <iframe width="560" height="315"
+        src="${embedUrl}"
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen>
+      </iframe>
+    </div>
+  `;
+}
 
 (async function () {
   const params = new URLSearchParams(window.location.search);
@@ -16,6 +31,7 @@
     <div class="hero-wrapper">
       <div class="hero-media">
         <img src="${p.immagine}" alt="${p.titolo}">
+        ${renderYouTubeEmbed(p)}
       </div>
       <div class="hero-content">
         <h1>${p.titolo}</h1>
