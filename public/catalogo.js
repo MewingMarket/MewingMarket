@@ -1,8 +1,19 @@
-// catalogo.js — blindato
+// catalogo.js — blindato + video YouTube
 
 async function loadProducts() {
   const res = await fetch("products.json", { cache: "no-store" });
   return await res.json();
+}
+
+function renderYouTubeLink(p) {
+  if (!p.youtube_url) return "";
+  return `
+    <div class="video-link">
+      <a href="${p.youtube_url}" target="_blank">
+        🎥 Guarda il video su YouTube
+      </a>
+    </div>
+  `;
 }
 
 function cardHTML(p) {
@@ -12,6 +23,7 @@ function cardHTML(p) {
       <h2>${p.titoloBreve || p.titolo}</h2>
       <p>${p.descrizioneBreve || ""}</p>
       <p class="prezzo">€${p.prezzo}</p>
+      ${renderYouTubeLink(p)}
       <a href="prodotto.html?slug=${p.slug}" class="btn">Scopri di più</a>
     </div>
   `;
