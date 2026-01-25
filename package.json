@@ -1,9 +1,9 @@
 {
   "name": "mewingmarket-ai",
   "version": "1.0.0",
-  "main": "server.cjs",
+  "main": "src/server.cjs",
   "scripts": {
-    "start": "node server.cjs"
+    "start": "node src/server.cjs"
   },
   "dependencies": {
     "axios": "^1.13.2",
