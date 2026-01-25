@@ -1,4 +1,4 @@
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
   <div id="head-placeholder"></div>
@@ -6,12 +6,12 @@
     fetch("head.html")
       .then(r => r.text())
       .then(h => document.getElementById("head-placeholder").innerHTML = h);
-  </script><script src="seo.js"></script>
-<script src="structured-data.js"></script>
+  </script>
+  <script src="seo.js"></script>
+  <script src="structured-data.js"></script>
 </head>
 <body>
 
-<!-- HEADER -->
 <div id="header-placeholder"></div>
 <script>
   fetch("header.html")
@@ -22,20 +22,20 @@
 <main class="pagina-standard">
   <h1>Contatti</h1>
 
-  <p>Per qualsiasi domanda, supporto o richiesta commerciale:</p>
-
   <p>Email: 
     <a href="mailto:supporto@mewingmarket.it">supporto@mewingmarket.it</a>
   </p>
 
   <p>WhatsApp: 
-    <a href="https://wa.me/393520266660">352 026 6660</a>
+    <a href="https://wa.me/393520266660">
+      <i class="fab fa-whatsapp"></i> 352 026 6660
+    </a>
   </p>
 
-  <p>Sede: Sanremo (IM), Liguria</p>
+  <p>Sede:<br>
+  Strada Ciousse 35, 18038 Sanremo (IM), Italia</p>
 </main>
 
-<!-- FOOTER -->
 <div id="footer-placeholder"></div>
 <script>
   fetch("footer.html")
