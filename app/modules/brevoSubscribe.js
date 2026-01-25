@@ -1,3 +1,5 @@
+// FILE: brevoSubscribe.js
+
 const axios = require("axios");
 
 async function iscriviEmail(email) {
