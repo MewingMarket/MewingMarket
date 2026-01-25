@@ -1,3 +1,5 @@
+// FILE: brevoUnsubscribe.js
+
 const axios = require("axios");
 
 async function disiscriviEmail(email) {
