@@ -27,7 +27,8 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.static(path.join(process.cwd(), "public")));
+// STATICI: ora basati su __dirname dentro /src
+app.use(express.static(path.join(__dirname, "public")));
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
@@ -36,11 +37,11 @@ app.use(cookieParser());
    HOMEPAGE + PRODUCTS.JSON
 ========================================================= */
 app.get("/", (req, res) => {
-  res.sendFile(path.join(process.cwd(), "public", "index.html"));
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 app.get("/products.json", (req, res) => {
-  res.sendFile(path.join(process.cwd(), "data", "products.json"));
+  res.sendFile(path.join(__dirname, "data", "products.json"));
 });
 
 /* =========================================================
@@ -108,8 +109,8 @@ app.get("/sync/airtable", async (req, res) => {
 /* =========================================================
    NEWSLETTER
 ========================================================= */
-const { iscriviEmail } = require(path.join(process.cwd(), "modules", "brevoSubscribe"));
-const { disiscriviEmail } = require(path.join(process.cwd(), "modules", "brevoUnsubscribe"));
+const { iscriviEmail } = require(path.join(__dirname, "modules", "brevoSubscribe"));
+const { disiscriviEmail } = require(path.join(__dirname, "modules", "brevoUnsubscribe"));
 
 app.get("/newsletter/html", (req, res) => {
   const { html } = generateNewsletterHTML();
