@@ -8,11 +8,11 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 require("dotenv").config();
 
-const { generateNewsletterHTML } = require("./modules/newsletter");
-const { syncAirtable, loadProducts, getProducts } = require("./modules/airtable");
-const { detectIntent, handleConversation, reply, userStates, generateUID } = require("./modules/bot");
-const { inviaNewsletter } = require("./modules/brevo");
-const { generateSitemap } = require("./modules/sitemap");
+const { generateNewsletterHTML } = require(path.join(__dirname, "modules", "newsletter"));
+const { syncAirtable, loadProducts, getProducts } = require(path.join(__dirname, "modules", "airtable"));
+const { detectIntent, handleConversation, reply, userStates, generateUID } = require(path.join(__dirname, "modules", "bot"));
+const { inviaNewsletter } = require(path.join(__dirname, "modules", "brevo"));
+const { generateSitemap } = require(path.join(__dirname, "modules", "sitemap"));
 
 /* =========================================================
    SETUP EXPRESS
@@ -27,7 +27,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// STATICI: ora basati su __dirname dentro /src
+// STATICI: ora basati su __dirname dentro /app
 app.use(express.static(path.join(__dirname, "public")));
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
