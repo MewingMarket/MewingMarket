@@ -1,4 +1,3 @@
-
 // modules/airtable.js
 
 const fs = require("fs");
@@ -21,7 +20,7 @@ const TABLE_NAME = process.env.AIRTABLE_TABLE_NAME;
 let PRODUCTS = [];
 
 // ---------------------------------------------
-// SYNC AIRTABLE (BLINDATO + SANITIZZATO)
+// SYNC AIRTABLE
 // ---------------------------------------------
 async function syncAirtable() {
   try {
@@ -52,7 +51,6 @@ async function syncAirtable() {
         descrizioneBreve: cleanText(f.DescrizioneBreve, ""),
         descrizioneLunga: cleanText(f.DescrizioneLunga, ""),
 
-        // 🔥 NUOVI CAMPI YOUTUBE + SEO + SOCIAL
         youtube_url: cleanURL(f.youtube_url),
         youtube_title: cleanText(f.youtube_title, ""),
         youtube_description: cleanText(f.youtube_description, ""),
@@ -65,8 +63,9 @@ async function syncAirtable() {
 
     const activeProducts = products.filter(p => p.attivo);
 
+    // 🔥 percorso corretto
     fs.writeFileSync(
-      path.join(process.cwd(), "data", "products.json"),
+      path.join(__dirname, "..", "data", "products.json"),
       JSON.stringify(activeProducts, null, 2)
     );
 
@@ -81,11 +80,11 @@ async function syncAirtable() {
 }
 
 // ---------------------------------------------
-// CARICAMENTO PRODOTTI DA FILE
+// CARICAMENTO PRODOTTI
 // ---------------------------------------------
 function loadProducts() {
   try {
-    const filePath = path.join(process.cwd(), "data", "products.json");
+    const filePath = path.join(__dirname, "..", "data", "products.json");
 
     if (!fs.existsSync(filePath)) {
       fs.writeFileSync(filePath, "[]");
@@ -110,7 +109,6 @@ function loadProducts() {
   }
 }
 
-// Getter per altri moduli
 function getProducts() {
   return PRODUCTS;
 }
