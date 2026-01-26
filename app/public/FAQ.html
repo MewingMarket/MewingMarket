@@ -6,8 +6,9 @@
     fetch("head.html")
       .then(r => r.text())
       .then(h => document.getElementById("head-placeholder").innerHTML = h);
-  </script> <script src="seo.js"></script>
-<script src="structured-data.js"></script>
+  </script>
+  <script src="seo.js"></script>
+  <script src="structured-data.js"></script>
 </head>
 <body>
 
@@ -58,6 +59,18 @@
   </div>
 
 </main>
+
+<!-- CHATBOT -->
+<div id="mm-chat-btn"></div>
+
+<div id="mm-chatbox">
+  <div id="mm-chat-header">Supporto MewingMarket</div>
+  <div id="mm-chat-messages"></div>
+  <div id="mm-chat-input">
+    <input type="text" placeholder="Scrivi un messaggio...">
+    <button>Invia</button>
+  </div>
+</div>
 
 <!-- FOOTER -->
 <div id="footer-placeholder"></div>
