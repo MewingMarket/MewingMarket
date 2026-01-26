@@ -1,16 +1,39 @@
-// prodotto.js — blindato + video YouTube
+// prodotto.js — versione blindata + YouTube fix totale
+
+function extractYouTubeID(url) {
+  if (!url) return null;
+
+  // Caso: https://youtu.be/ID
+  if (url.includes("youtu.be/")) {
+    return url.split("youtu.be/")[1].split("?")[0];
+  }
+
+  // Caso: https://www.youtube.com/watch?v=ID
+  if (url.includes("watch?v=")) {
+    return url.split("watch?v=")[1].split("&")[0];
+  }
+
+  // Caso: embed già pronto
+  if (url.includes("embed/")) {
+    return url.split("embed/")[1].split("?")[0];
+  }
+
+  return null;
+}
 
 function renderYouTubeEmbed(p) {
-  if (!p.youtube_url) return "";
-  const embedUrl = p.youtube_url.replace("watch?v=", "embed/");
+  const id = extractYouTubeID(p.youtube_url);
+  if (!id) return "";
+
   return `
     <div class="video-embed">
-      <iframe width="560" height="315"
-        src="${embedUrl}"
-        frameborder="0"
+      <iframe
+        src="https://www.youtube.com/embed/${id}"
+        title="YouTube video"
+        loading="lazy"
+        allowfullscreen
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowfullscreen>
-      </iframe>
+      ></iframe>
     </div>
   `;
 }
@@ -33,6 +56,7 @@ function renderYouTubeEmbed(p) {
         <img src="${p.immagine}" alt="${p.titolo}">
         ${renderYouTubeEmbed(p)}
       </div>
+
       <div class="hero-content">
         <h1>${p.titolo}</h1>
         <p>${p.descrizioneLunga || p.descrizioneBreve || ""}</p>
