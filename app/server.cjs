@@ -19,11 +19,11 @@ const { generateSitemap } = require(path.join(__dirname, "modules", "sitemap"));
 ========================================================= */
 const app = express();
 app.disable("x-powered-by");
-app.get("/test", (req, res) => res.send("OK"));
+
 /* =========================================================
-   DEBUG AIRTABLE (PRIMA DI TUTTO)
+   ENDPOINT DI DEBUG COMPATIBILE CON CLOUDFLARE
 ========================================================= */
-app.get("/debug/airtable", async (req, res) => {
+app.get("/mm-check", async (req, res) => {
   try {
     const url = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/${process.env.AIRTABLE_TABLE_ID}`;
 
@@ -41,6 +41,9 @@ app.get("/debug/airtable", async (req, res) => {
   }
 });
 
+/* =========================================================
+   CACHE HEADERS
+========================================================= */
 app.use((req, res, next) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
   res.setHeader("Pragma", "no-cache");
@@ -48,7 +51,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// STATICI: ora basati su __dirname dentro /app
+// STATICI
 app.use(express.static(path.join(__dirname, "public")));
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
@@ -65,10 +68,12 @@ app.get("/products.json", (req, res) => {
   res.sendFile(path.join(__dirname, "data", "products.json"));
 });
 
-// Skip redirect for debug endpoint
+/* =========================================================
+   SKIP REDIRECT PER ENDPOINT DI DEBUG
+========================================================= */
 app.use((req, res, next) => {
   const p = req.url.toLowerCase();
-  if (p.startsWith("/debug/airtable")) return next();
+  if (p.startsWith("/mm-check")) return next();
   next();
 });
 
@@ -300,7 +305,7 @@ app.post("/chat", (req, res) => {
 const PORT = process.env.PORT || 10000;
 
 app.listen(PORT, () => {
-  console.log(`MewingMarket  attivo sulla porta ${PORT}`);
+  console.log(`MewingMarket attivo sulla porta ${PORT}`);
 
   (async () => {
     try {
