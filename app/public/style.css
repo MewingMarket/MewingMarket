@@ -305,6 +305,45 @@ a {
 }
 
 /* --------------------------------------------------
+   FAQ FIX
+-------------------------------------------------- */
+.faq-answer {
+  display: none;
+  margin-top: 10px;
+}
+
+.faq-question.active {
+  font-weight: bold;
+}
+
+/* --------------------------------------------------
+   CONTATTI FOOTER (Email + WhatsApp)
+-------------------------------------------------- */
+.contatti-footer {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+}
+
+.footer-icon-link {
+  font-size: 24px;
+  color: #ffffff;
+  transition: 0.25s ease;
+}
+
+.footer-icon-link:hover {
+  color: #ff7b00;
+}
+
+.footer-icon-link.whatsapp {
+  color: #25D366;
+}
+
+.footer-icon-link.whatsapp:hover {
+  color: #1da851;
+}
+
+/* --------------------------------------------------
    FOOTER PREMIUM
 -------------------------------------------------- */
 footer {
