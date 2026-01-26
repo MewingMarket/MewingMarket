@@ -54,6 +54,14 @@ async function syncAirtable() {
         descrizioneBreve: cleanText(f.DescrizioneBreve, ""),
         descrizioneLunga: cleanText(f.DescrizioneLunga, ""),
 
+        // 🔥 CAMPI YOUTUBE
+        youtube_url: cleanURL(f.youtube_url),
+        youtube_title: cleanText(f.youtube_title, ""),
+        youtube_description: cleanText(f.youtube_description, ""),
+        youtube_thumbnail: cleanURL(f.youtube_thumbnail),
+        catalog_video_block: cleanText(f.catalog_video_block, ""),
+
+        // 🔥 CAMPI SEO / SOCIAL
         meta_description: cleanText(f.meta_description, ""),
         social_caption_full: cleanText(f.social_caption_full, "")
       };
