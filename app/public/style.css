@@ -1,4 +1,454 @@
 /* --------------------------------------------------
+   RESET & BASE STYLE
+-------------------------------------------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+  background: #ffffff;
+  color: #111;
+  line-height: 1.6;
+}
+
+h1, h2, h3 {
+  font-family: 'Playfair Display', serif;
+  font-weight: 600;
+  color: #000;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* --------------------------------------------------
+   PAGINE STANDARD
+-------------------------------------------------- */
+.pagina-standard {
+  max-width: 900px;
+  margin: auto;
+  padding: 40px 20px;
+}
+
+/* --------------------------------------------------
+   MAPPA (Dove siamo)
+-------------------------------------------------- */
+.mappa-box {
+  margin-top: 20px;
+}
+
+.mappa-box iframe {
+  border: 0;
+  border-radius: 12px;
+}
+
+/* --------------------------------------------------
+   HEADER PREMIUM
+-------------------------------------------------- */
+.header-premium {
+  background: #000;
+  padding: 12px 0;
+  width: 100%;
+}
+
+.header-container {
+  max-width: 1200px;
+  margin: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+}
+
+.header-logo {
+  width: 150px;
+}
+
+.header-nav ul {
+  list-style: none;
+  display: flex;
+  gap: 28px;
+  margin: 0;
+  padding: 0;
+}
+
+.header-nav a {
+  color: #fff;
+  font-weight: 500;
+  transition: 0.2s;
+}
+
+.header-nav a:hover,
+.header-nav a.active {
+  color: #ffcc00;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .header-container {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .header-nav ul {
+    gap: 18px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+
+/* --------------------------------------------------
+   HERO SLIDER
+-------------------------------------------------- */
+.hero-slider {
+  position: relative;
+  height: 420px;
+  overflow: hidden;
+  border-bottom: 4px solid #000;
+}
+
+.slider-container {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.slide {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 1.2s ease-in-out;
+}
+
+.slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hero-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: #fff;
+  text-shadow: 0 3px 10px rgba(0,0,0,0.6);
+}
+
+.hero-overlay h1 {
+  font-size: 38px;
+  margin-bottom: 10px;
+}
+
+.hero-overlay p {
+  font-size: 18px;
+  margin-bottom: 20px;
+}
+
+.btn-premium {
+  background: #ffcc00;
+  padding: 12px 22px;
+  border-radius: 6px;
+  color: #000;
+  font-weight: 600;
+  display: inline-block;
+  transition: 0.2s;
+}
+
+.btn-premium:hover {
+  background: #e6b800;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .hero-slider {
+    height: 320px;
+  }
+
+  .hero-overlay h1 {
+    font-size: 26px;
+  }
+
+  .hero-overlay p {
+    font-size: 15px;
+  }
+}
+
+/* --------------------------------------------------
+   SEZIONI HOME
+-------------------------------------------------- */
+.home-section {
+  max-width: 1200px;
+  margin: 50px auto;
+  padding: 0 20px;
+}
+
+.home-section h2 {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+/* --------------------------------------------------
+   CATALOGO GRID
+-------------------------------------------------- */
+.catalogo-grid {
+  max-width: 1200px;
+  margin: 20px auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 30px;
+  padding: 0 20px;
+}
+
+.product-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+  transition: 0.25s;
+  text-align: center;
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+}
+
+.product-card img {
+  width: 100%;
+  border-radius: 10px;
+}
+
+.product-card h2 {
+  font-size: 20px;
+  margin: 12px 0 6px;
+}
+
+.product-card p {
+  font-size: 15px;
+  color: #444;
+}
+
+.prezzo {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 10px 0;
+}
+
+.btn {
+  background: #000;
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 6px;
+  display: inline-block;
+  margin-top: 10px;
+  transition: 0.2s;
+}
+
+.btn:hover {
+  background: #ffcc00;
+  color: #000;
+}
+
+/* --------------------------------------------------
+   PAGINA PRODOTTO
+-------------------------------------------------- */
+.hero-wrapper {
+  max-width: 1200px;
+  margin: auto;
+  padding: 40px 20px;
+  display: flex;
+  gap: 40px;
+  align-items: center;
+}
+
+.hero-wrapper img {
+  width: 100%;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.btn-acquista {
+  background: #ffcc00;
+  padding: 12px 22px;
+  border-radius: 6px;
+  color: #000;
+  font-weight: 600;
+  display: inline-block;
+  margin-top: 20px;
+  transition: 0.2s;
+}
+
+.btn-acquista:hover {
+  background: #e6b800;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .hero-wrapper {
+    flex-direction: column;
+  }
+}
+
+/* --------------------------------------------------
+   VIDEO YOUTUBE RESPONSIVE
+-------------------------------------------------- */
+.video-embed {
+  margin-top: 20px;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.video-embed iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* --------------------------------------------------
+   FAQ — ANIMAZIONE FLUIDA
+-------------------------------------------------- */
+.faq-answer {
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.35s ease;
+  margin-top: 10px;
+}
+
+.faq-item.open .faq-answer {
+  max-height: 500px;
+}
+
+.faq-question {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 10px 0;
+  border-bottom: 1px solid #ddd;
+  transition: color 0.2s ease;
+}
+
+.faq-question:hover {
+  color: #ffcc00;
+}
+
+.faq-item.open .faq-question {
+  color: #ffcc00;
+}
+
+/* --------------------------------------------------
+   CONTATTI FOOTER
+-------------------------------------------------- */
+.contatti-footer {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+}
+
+.footer-icon-link {
+  font-size: 24px;
+  color: #ffffff;
+  transition: 0.25s ease;
+}
+
+.footer-icon-link:hover {
+  color: #ff7b00;
+}
+
+.footer-icon-link.whatsapp {
+  color: #25D366;
+}
+
+.footer-icon-link.whatsapp:hover {
+  color: #1da851;
+}
+
+/* --------------------------------------------------
+   FOOTER PREMIUM
+-------------------------------------------------- */
+footer {
+  background: #000;
+  color: #fff;
+  padding: 40px 20px 20px;
+  margin-top: 60px;
+}
+
+.footer-inner {
+  max-width: 1200px;
+  margin: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 40px;
+}
+
+.footer-block h4 {
+  margin-bottom: 12px;
+  font-size: 20px;
+  color: #ffcc00;
+}
+
+.footer-links,
+.footer-legal {
+  list-style: none;
+  padding: 0;
+}
+
+.footer-links li,
+.footer-legal li {
+  margin-bottom: 8px;
+}
+
+.footer-links a,
+.footer-legal a {
+  color: #fff;
+  transition: 0.2s;
+}
+
+.footer-links a:hover,
+.footer-legal a:hover {
+  color: #ffcc00;
+}
+
+.footer-social {
+  display: flex;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.footer-social a {
+  font-size: 22px;
+  color: #fff;
+  transition: 0.2s;
+}
+
+.footer-social a:hover {
+  color: #ffcc00;
+  transform: scale(1.15);
+}
+
+.footer-bottom {
+  text-align: center;
+  margin-top: 30px;
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+/* --------------------------------------------------
    CHATBOT PREMIUM (VERSIONE C COMPLETA)
 -------------------------------------------------- */
 
@@ -175,4 +625,36 @@
 
 .mm-product-btn:hover {
   background: #e6b800;
+}
+
+/* --------------------------------------------------
+   FIX GLOBALI — ISOLAMENTO CHATBOT
+-------------------------------------------------- */
+#mm-chatbox,
+#mm-chat-btn,
+#mm-chatbox * {
+  all: revert;
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+}
+
+#mm-chatbox,
+#mm-chat-btn {
+  display: block;
+}
+
+.catalogo-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important;
+  gap: 30px !important;
+}
+
+footer,
+.footer-inner,
+.footer-block,
+.footer-links,
+.footer-legal {
+  display: block;
+  font-size: 16px;
+  line-height: 1.6;
    }
