@@ -38,19 +38,25 @@ async function syncAirtable() {
 
     const products = data.records.map(record => {
       const f = record.fields;
+
       return {
         id: record.id,
+
+        // 🔥 CAMPI BASE
         titolo: cleanText(f.Titolo, "Titolo mancante"),
         titoloBreve: cleanText(f.TitoloBreve, ""),
         slug: safeSlug(f.Slug),
         prezzo: cleanNumber(f.Prezzo),
         categoria: cleanText(f.Categoria, "Generico"),
 
-        // 🔥 CAMPO ATTIVO CORRETTO
-        attivo: Boolean(f.Attivofld41LBrz9ATfqf9D),
+        // 🔥 CAMPO ATTIVO CORRETTO (nome campo Airtable = "Attivo")
+        attivo: Boolean(f.Attivo),
 
+        // 🔥 IMMAGINE E LINK
         immagine: cleanURL(f.Immagine?.[0]?.url),
         linkPayhip: cleanURL(f.LinkPayhip),
+
+        // 🔥 DESCRIZIONI
         descrizioneBreve: cleanText(f.DescrizioneBreve, ""),
         descrizioneLunga: cleanText(f.DescrizioneLunga, ""),
 
@@ -61,14 +67,16 @@ async function syncAirtable() {
         youtube_thumbnail: cleanURL(f.youtube_thumbnail),
         catalog_video_block: cleanText(f.catalog_video_block, ""),
 
-        // 🔥 CAMPI SEO / SOCIAL
+        // 🔥 SEO / SOCIAL
         meta_description: cleanText(f.meta_description, ""),
         social_caption_full: cleanText(f.social_caption_full, "")
       };
     });
 
+    // 🔥 FILTRO SOLO PRODOTTI ATTIVI
     const activeProducts = products.filter(p => p.attivo);
 
+    // 🔥 SALVA SU FILE
     fs.writeFileSync(
       path.join(__dirname, "..", "data", "products.json"),
       JSON.stringify(activeProducts, null, 2)
