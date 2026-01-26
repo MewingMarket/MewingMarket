@@ -64,7 +64,11 @@ app.get("/debug/airtable", async (req, res) => {
     res.json({ error: String(err) });
   }
 });
-
+// Skip redirect for debug endpoint
+app.use((req, res, next) => {
+  if (req.path === "/debug/airtable") return next();
+  next();
+});
 /* =========================================================
    REDIRECT HTTPS + WWW
 ========================================================= */
