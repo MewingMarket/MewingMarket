@@ -67,7 +67,31 @@ app.get("/", (req, res) => {
 app.get("/products.json", (req, res) => {
   res.sendFile(path.join(__dirname, "data", "products.json"));
 });
+// DEBUG: mostra i record grezzi di Airtable
+app.get("/debug-airtable", async (req, res) => {
+  try {
+    const url = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/${process.env.AIRTABLE_TABLE_NAME}`;
 
+    const response = await fetch(url, {
+      headers: {
+        "Authorization": `Bearer ${process.env.AIRTABLE_PAT}`,
+        "Content-Type": "application/json"
+      }
+    });
+
+    const data = await response.json();
+
+    const cleaned = data.records.map(r => ({
+      id: r.id,
+      fields: r.fields
+    }));
+
+    res.json(cleaned);
+
+  } catch (err) {
+    res.json({ error: String(err) });
+  }
+});
 /* =========================================================
    SKIP REDIRECT PER /s
 ========================================================= */
