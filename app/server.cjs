@@ -65,11 +65,10 @@ app.get("/products.json", (req, res) => {
   res.sendFile(path.join(__dirname, "data", "products.json"));
 });
 
-/* =========================================================
-   SKIP REDIRECT PER DEBUG
-========================================================= */
+// Skip redirect for debug endpoint
 app.use((req, res, next) => {
-  if (req.path === "/debug/airtable") return next();
+  const p = req.url.toLowerCase();
+  if (p.startsWith("/debug/airtable")) return next();
   next();
 });
 
