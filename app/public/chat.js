@@ -1,83 +1,138 @@
-// ===============================
-// FUNZIONI UTILI
-// ===============================
+// chat.js — versione AI completa
 
-// Recupera cookie (il server crea mm_uid)
-function getCookie(name) {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(";").shift();
-  return null;
-}
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("mm-chat-btn");
+  const box = document.getElementById("mm-chatbox");
+  const messages = document.getElementById("mm-chat-messages");
+  const input = document.querySelector("#mm-chat-input input");
+  const sendBtn = document.querySelector("#mm-chat-input button");
 
-// Aggiunge un messaggio alla chat
-function addMessage(text, sender = "bot") {
-  const box = document.getElementById("mm-chat-messages");
-  const bubble = document.createElement("div");
-  bubble.classList.add("mm-bubble", sender === "bot" ? "mm-bot" : "mm-user");
-  bubble.innerHTML = text;
-  box.appendChild(bubble);
-  box.scrollTop = box.scrollHeight;
-}
+  // Inserisci icona PNG nel bottone
+  btn.innerHTML = `<img src="chat-icon.png" alt="Chat" class="mm-chat-icon">`;
 
-// ===============================
-// CHATBOX APERTURA/CHIUSURA
-// ===============================
-const chatBtn = document.getElementById("mm-chat-btn");
-const chatBox = document.getElementById("mm-chatbox");
+  // Apri/chiudi chat
+  btn.addEventListener("click", () => {
+    box.classList.toggle("open");
 
-chatBtn.addEventListener("click", () => {
-  chatBox.classList.toggle("open");
+    if (!box.dataset.welcomeShown) {
+      addBot(`
+        👋 <b>Ciao!</b><br>
+        Sono il tuo assistente MewingMarket.<br>
+        Scrivi <b>menu</b> per vedere le opzioni.
+      `);
+      box.dataset.welcomeShown = "true";
+    }
+  });
 
-  // Mostra messaggio di benvenuto solo la prima volta
-  if (!chatBox.dataset.welcomeShown) {
-    addMessage(
-      "<b>👋 Ciao!</b><br>Sono qui per aiutarti con la *Guida Completa all’Ecosistema Digitale Reale*, gli altri prodotti, il supporto, la newsletter e molto altro.<br><br>Scrivi pure la tua domanda oppure digita <b>menu</b> per vedere le opzioni.",
-      "bot"
-    );
-    chatBox.dataset.welcomeShown = "true";
+  // Aggiunge messaggio utente
+  function addUser(text) {
+    const div = document.createElement("div");
+    div.className = "mm-bubble mm-user";
+    div.innerHTML = text;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
   }
-});
 
-// ===============================
-// INVIO MESSAGGI
-// ===============================
-const input = document.getElementById("mm-text");
-const sendBtn = document.getElementById("mm-send");
+  // Aggiunge messaggio bot
+  function addBot(text) {
+    const div = document.createElement("div");
+    div.className = "mm-bubble mm-bot";
+    div.innerHTML = text;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+  }
 
-async function sendMessage() {
-  const message = input.value.trim();
-  if (!message) return;
+  // Quick replies (B)
+  function addQuickReplies(buttons) {
+    const wrap = document.createElement("div");
+    wrap.className = "mm-quick-wrap";
 
-  // Mostra messaggio utente
-  addMessage(message, "user");
-  input.value = "";
-
-  try {
-    const response = await fetch("/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ message })
+    buttons.forEach(b => {
+      const btn = document.createElement("button");
+      btn.className = "mm-quick-btn";
+      btn.textContent = b;
+      btn.onclick = () => {
+        addUser(b);
+        sendMessage(b);
+        wrap.remove();
+      };
+      wrap.appendChild(btn);
     });
 
-    const data = await response.json();
+    messages.appendChild(wrap);
+    messages.scrollTop = messages.scrollHeight;
+  }
 
-    if (data && data.reply) {
-      addMessage(data.reply, "bot");
-    } else {
-      addMessage("⚠️ Errore imprevisto. Riprova tra poco.", "bot");
+  // Card prodotto (C)
+  function addProductCard(reply) {
+    const card = document.createElement("div");
+    card.className = "mm-product-card";
+
+    const img = reply.match(/https?:\/\/[^\s]+(jpg|png|jpeg|webp)/i);
+    const link = reply.match(/https?:\/\/[^\s]+payhip[^\s]*/i);
+
+    card.innerHTML = `
+      <img src="${img ? img[0] : "logo.png"}" class="mm-product-img">
+      <div class="mm-product-body">
+        ${reply}
+      </div>
+      ${link ? `<a href="${link[0]}" target="_blank" class="mm-product-btn">Acquista</a>` : ""}
+    `;
+
+    messages.appendChild(card);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  // Invio messaggio
+  async function sendMessage(forceText = null) {
+    const text = forceText || input.value.trim();
+    if (!text) return;
+
+    addUser(text);
+    input.value = "";
+
+    try {
+      const res = await fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ message: text })
+      });
+
+      const data = await res.json();
+      const reply = data.reply || "Errore imprevisto.";
+
+      // C → Risposta commerciale (contiene prezzo o Payhip)
+      if (reply.includes("€") || reply.includes("payhip.com")) {
+        addProductCard(reply);
+        addQuickReplies(["Acquista", "Dettagli", "Menu"]);
+        return;
+      }
+
+      // B → Navigazione / menu
+      if (
+        reply.toLowerCase().includes("menu") ||
+        reply.toLowerCase().includes("catalogo") ||
+        reply.toLowerCase().includes("supporto")
+      ) {
+        addBot(reply);
+        addQuickReplies(["Catalogo", "Supporto", "Contatti", "Menu"]);
+        return;
+      }
+
+      // A → Risposta diretta
+      addBot(reply);
+
+    } catch (err) {
+      addBot("⚠️ Problema di connessione.");
     }
-  } catch (err) {
-    addMessage("⚠️ Problema di connessione. Controlla la rete.", "bot");
   }
-}
 
-sendBtn.addEventListener("click", sendMessage);
-
-input.addEventListener("keypress", (e) => {
-  if (e.key === "Enter") {
-    e.preventDefault();
-    sendMessage();
-  }
+  sendBtn.addEventListener("click", () => sendMessage());
+  input.addEventListener("keypress", e => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
 });
