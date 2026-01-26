@@ -305,15 +305,50 @@ a {
 }
 
 /* --------------------------------------------------
-   FAQ FIX
+   VIDEO YOUTUBE RESPONSIVE
+-------------------------------------------------- */
+.video-embed {
+  margin-top: 20px;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.video-embed iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* --------------------------------------------------
+   FAQ — ANIMAZIONE FLUIDA
 -------------------------------------------------- */
 .faq-answer {
-  display: none;
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.35s ease;
   margin-top: 10px;
 }
 
-.faq-question.active {
-  font-weight: bold;
+.faq-item.open .faq-answer {
+  max-height: 500px;
+}
+
+.faq-question {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 10px 0;
+  border-bottom: 1px solid #ddd;
+  transition: color 0.2s ease;
+}
+
+.faq-question:hover {
+  color: #ffcc00;
+}
+
+.faq-item.open .faq-question {
+  color: #ffcc00;
 }
 
 /* --------------------------------------------------
@@ -549,4 +584,4 @@ footer {
   margin-top: 15px;
   font-size: 14px;
   opacity: 0.8;
-}
+   }
