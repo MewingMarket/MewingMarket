@@ -21,10 +21,10 @@ const app = express();
 app.disable("x-powered-by");
 
 /* =========================================================
-   ENDPOINT DEBUG COMPATIBILE CON CLOUDFLARE
+   ENDPOINT DEBUG ULTRA-STEALTH (CLOUDFLARE SAFE)
 ========================================================= */
-app.get("/mm-check", async (req, res) => {
-  console.log(">>> mm-check endpoint raggiunto <<<");
+app.get("/s", async (req, res) => {
+  console.log(">>> /s endpoint raggiunto <<<");
 
   try {
     const url = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/${process.env.AIRTABLE_TABLE_ID}`;
@@ -71,11 +71,11 @@ app.get("/products.json", (req, res) => {
 });
 
 /* =========================================================
-   SKIP REDIRECT PER /mm-check
+   SKIP REDIRECT PER /s
 ========================================================= */
 app.use((req, res, next) => {
   const p = req.url.toLowerCase();
-  if (p.startsWith("/mm-check")) return next();
+  if (p.startsWith("/s")) return next();
   next();
 });
 
