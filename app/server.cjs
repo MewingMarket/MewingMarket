@@ -19,13 +19,10 @@ const { generateSitemap } = require(path.join(__dirname, "modules", "sitemap"));
 ========================================================= */
 const app = express();
 app.disable("x-powered-by");
-
-/* =========================================================
-   ENDPOINT DEBUG CLOUDFLARE-SAFE
-========================================================= */
-app.get("/s", async (req, res) => {
+// DEBUG: mostra i record grezzi di Airtable
+app.get("/debug-airtable", async (req, res) => {
   try {
-    const url = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/${process.env.AIRTABLE_TABLE_NAME}`;
+    const url = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/${process.env.AIRTABLE_TABLE_ID}`;
 
     const response = await fetch(url, {
       headers: {
@@ -35,7 +32,13 @@ app.get("/s", async (req, res) => {
     });
 
     const data = await response.json();
-    res.json(data);
+
+    res.json({
+      url,
+      status: response.status,
+      data
+    });
+
   } catch (err) {
     res.json({ error: String(err) });
   }
