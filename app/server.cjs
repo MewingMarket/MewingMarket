@@ -21,13 +21,11 @@ const app = express();
 app.disable("x-powered-by");
 
 /* =========================================================
-   ENDPOINT DEBUG ULTRA-STEALTH (CLOUDFLARE SAFE)
+   ENDPOINT DEBUG CLOUDFLARE-SAFE
 ========================================================= */
 app.get("/s", async (req, res) => {
-  console.log(">>> /s endpoint raggiunto <<<");
-
   try {
-    const url = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/${process.env.AIRTABLE_TABLE_ID}`;
+    const url = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/${process.env.AIRTABLE_TABLE_NAME}`;
 
     const response = await fetch(url, {
       headers: {
