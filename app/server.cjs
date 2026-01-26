@@ -105,7 +105,26 @@ app.get("/sync/airtable", async (req, res) => {
     res.status(500).send("Errore durante la sincronizzazione.");
   }
 });
+/* =========================================================
+   DEBUG AIRTABLE
+========================================================= */
+app.get("/debug/airtable", async (req, res) => {
+  try {
+    const url = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/${process.env.AIRTABLE_TABLE_NAME}`;
 
+    const response = await fetch(url, {
+      headers: {
+        "Authorization": `Bearer ${process.env.AIRTABLE_PAT}`,
+        "Content-Type": "application/json"
+      }
+    });
+
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    res.json({ error: String(err) });
+  }
+});
 /* =========================================================
    NEWSLETTER
 ========================================================= */
