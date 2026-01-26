@@ -19,7 +19,7 @@ const { generateSitemap } = require(path.join(__dirname, "modules", "sitemap"));
 ========================================================= */
 const app = express();
 app.disable("x-powered-by");
-
+app.get("/test", (req, res) => res.send("OK"));
 /* =========================================================
    DEBUG AIRTABLE (PRIMA DI TUTTO)
 ========================================================= */
