@@ -21,9 +21,11 @@ const app = express();
 app.disable("x-powered-by");
 
 /* =========================================================
-   ENDPOINT DI DEBUG COMPATIBILE CON CLOUDFLARE
+   ENDPOINT DEBUG COMPATIBILE CON CLOUDFLARE
 ========================================================= */
 app.get("/mm-check", async (req, res) => {
+  console.log(">>> mm-check endpoint raggiunto <<<");
+
   try {
     const url = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/${process.env.AIRTABLE_TABLE_ID}`;
 
@@ -69,7 +71,7 @@ app.get("/products.json", (req, res) => {
 });
 
 /* =========================================================
-   SKIP REDIRECT PER ENDPOINT DI DEBUG
+   SKIP REDIRECT PER /mm-check
 ========================================================= */
 app.use((req, res, next) => {
   const p = req.url.toLowerCase();
