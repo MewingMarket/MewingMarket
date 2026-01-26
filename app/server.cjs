@@ -20,32 +20,8 @@ const { generateSitemap } = require(path.join(__dirname, "modules", "sitemap"));
 const app = express();
 app.disable("x-powered-by");
 
-app.use((req, res, next) => {
-  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
-  res.setHeader("Pragma", "no-cache");
-  res.setHeader("Expires", "0");
-  next();
-});
-
-// STATICI: ora basati su __dirname dentro /app
-app.use(express.static(path.join(__dirname, "public")));
-app.use(cors({ origin: true, credentials: true }));
-app.use(express.json());
-app.use(cookieParser());
-
 /* =========================================================
-   HOMEPAGE + PRODUCTS.JSON
-========================================================= */
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
-
-app.get("/products.json", (req, res) => {
-  res.sendFile(path.join(__dirname, "data", "products.json"));
-});
-
-/* =========================================================
-   DEBUG AIRTABLE (DEVE STARE PRIMA DEL REDIRECT)
+   DEBUG AIRTABLE (PRIMA DI TUTTO)
 ========================================================= */
 app.get("/debug/airtable", async (req, res) => {
   try {
@@ -64,11 +40,39 @@ app.get("/debug/airtable", async (req, res) => {
     res.json({ error: String(err) });
   }
 });
-// Skip redirect for debug endpoint
+
+app.use((req, res, next) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  next();
+});
+
+// STATICI: ora basati su __dirname dentro /app
+app.use(express.static(path.join(__dirname, "public")));
+app.use(cors({ origin: true, credentials: true }));
+app.use(express.json()));
+app.use(cookieParser());
+
+/* =========================================================
+   HOMEPAGE + PRODUCTS.JSON
+========================================================= */
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+app.get("/products.json", (req, res) => {
+  res.sendFile(path.join(__dirname, "data", "products.json"));
+});
+
+/* =========================================================
+   SKIP REDIRECT PER DEBUG
+========================================================= */
 app.use((req, res, next) => {
   if (req.path === "/debug/airtable") return next();
   next();
 });
+
 /* =========================================================
    REDIRECT HTTPS + WWW
 ========================================================= */
@@ -297,7 +301,7 @@ app.post("/chat", (req, res) => {
 const PORT = process.env.PORT || 10000;
 
 app.listen(PORT, () => {
-  console.log(`MewingMarket AI attivo sulla porta ${PORT}`);
+  console.log(`MewingMarket  attivo sulla porta ${PORT}`);
 
   (async () => {
     try {
