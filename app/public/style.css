@@ -660,15 +660,18 @@ footer,
 }
 
 /* --------------------------------------------------
-   RESPONSIVE CHATBOT MOBILE
+   RESPONSIVE CHATBOT MOBILE (PATCH FINALE)
 -------------------------------------------------- */
 @media (max-width: 480px) {
   #mm-chatbox {
-    width: 100%;
+    position: fixed;
+    bottom: 0;
     right: 0;
-    bottom: 80px;
-    height: 380px;
+    width: 100%;
+    height: calc(100vh - 80px);
+    max-height: 100vh;
     border-radius: 0;
+    box-shadow: 0 -2px 20px rgba(0,0,0,0.2);
   }
 
   #mm-chat-btn {
