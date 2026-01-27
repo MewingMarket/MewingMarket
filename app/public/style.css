@@ -262,7 +262,9 @@ a {
 .btn:hover {
   background: #ffcc00;
   color: #000;
-}/* --------------------------------------------------
+}
+
+/* --------------------------------------------------
    PAGINA PRODOTTO
 -------------------------------------------------- */
 .hero-wrapper {
@@ -447,7 +449,7 @@ footer {
 }
 
 /* --------------------------------------------------
-   CHATBOT PREMIUM (VERSIONE C COMPLETA)
+   CHATBOT PREMIUM (VERSIONE C)
 -------------------------------------------------- */
 
 /* Pulsante chat */
@@ -478,7 +480,7 @@ footer {
   pointer-events: none;
 }
 
-/* Box chat */
+/* Chatbox */
 #mm-chatbox {
   position: fixed;
   bottom: 100px;
@@ -508,7 +510,7 @@ footer {
   text-align: center;
 }
 
-/* Area messaggi */
+/* Messaggi */
 #mm-chat-messages {
   flex: 1;
   padding: 14px;
@@ -558,8 +560,10 @@ footer {
   border: none;
   font-size: 14px;
   cursor: pointer;
-}/* --------------------------------------------------
-   QUICK REPLIES (B)
+}
+
+/* --------------------------------------------------
+   QUICK REPLIES
 -------------------------------------------------- */
 .mm-quick-wrap {
   display: flex;
@@ -585,7 +589,7 @@ footer {
 }
 
 /* --------------------------------------------------
-   CARD PRODOTTO (C)
+   CARD PRODOTTO
 -------------------------------------------------- */
 .mm-product-card {
   background: #fff;
@@ -624,43 +628,20 @@ footer {
 }
 
 /* --------------------------------------------------
-   FIX GLOBALI — ISOLAMENTO CHATBOT
+   FIX GLOBALI — SENZA all: revert
 -------------------------------------------------- */
 #mm-chatbox,
 #mm-chat-btn,
 #mm-chatbox * {
-  all: revert;
   box-sizing: border-box;
   font-family: 'Inter', sans-serif;
 }
 
-#mm-chatbox,
-#mm-chat-btn {
-  display: block;
-}
-
-.catalogo-grid {
-  display: grid !important;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important;
-  gap: 30px !important;
-}
-
-footer,
-.footer-inner,
-.footer-block,
-.footer-links,
-.footer-legal {
-  display: block;
-  font-size: 16px;
-  line-height: 1.6;
-}
-
 /* --------------------------------------------------
-   RESPONSIVE CHATBOT MOBILE — VERSIONE FISSA
+   MOBILE — CHATBOX FISSA, NON ESPANDIBILE
 -------------------------------------------------- */
 @media (max-width: 480px) {
 
-  /* Chatbox fissa, NON fullscreen */
   #mm-chatbox {
     position: fixed;
     bottom: 90px;
@@ -681,13 +662,11 @@ footer,
     display: flex;
   }
 
-  /* Area messaggi scrollabile */
   #mm-chat-messages {
     flex: 1;
     overflow-y: auto;
   }
 
-  /* Bottone chat */
   #mm-chat-btn {
     bottom: 20px;
     right: 20px;
@@ -700,7 +679,6 @@ footer,
     height: 28px;
   }
 
-  /* Ridimensionamento testi */
   #mm-chat-header {
     font-size: 14px;
     padding: 10px;
