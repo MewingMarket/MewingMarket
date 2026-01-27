@@ -262,9 +262,7 @@ a {
 .btn:hover {
   background: #ffcc00;
   color: #000;
-}
-
-/* --------------------------------------------------
+}/* --------------------------------------------------
    PAGINA PRODOTTO
 -------------------------------------------------- */
 .hero-wrapper {
@@ -560,9 +558,7 @@ footer {
   border: none;
   font-size: 14px;
   cursor: pointer;
-}
-
-/* --------------------------------------------------
+}/* --------------------------------------------------
    QUICK REPLIES (B)
 -------------------------------------------------- */
 .mm-quick-wrap {
@@ -660,23 +656,41 @@ footer,
 }
 
 /* --------------------------------------------------
-   RESPONSIVE CHATBOT MOBILE (PATCH FINALE)
+   RESPONSIVE CHATBOT MOBILE — VERSIONE FISSA
 -------------------------------------------------- */
 @media (max-width: 480px) {
+
+  /* Chatbox fissa, NON fullscreen */
   #mm-chatbox {
     position: fixed;
-    bottom: 0;
-    right: 0;
-    width: 100%;
-    height: calc(100vh - 80px);
-    max-height: 100vh;
-    border-radius: 0;
-    box-shadow: 0 -2px 20px rgba(0,0,0,0.2);
+    bottom: 90px;
+    right: 15px;
+    width: 320px;
+    height: 420px;
+    max-width: calc(100% - 30px);
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    overflow: hidden;
+    display: none;
+    flex-direction: column;
+    z-index: 9999;
   }
 
+  #mm-chatbox.open {
+    display: flex;
+  }
+
+  /* Area messaggi scrollabile */
+  #mm-chat-messages {
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  /* Bottone chat */
   #mm-chat-btn {
-    bottom: 15px;
-    right: 15px;
+    bottom: 20px;
+    right: 20px;
     width: 54px;
     height: 54px;
   }
@@ -686,6 +700,7 @@ footer,
     height: 28px;
   }
 
+  /* Ridimensionamento testi */
   #mm-chat-header {
     font-size: 14px;
     padding: 10px;
