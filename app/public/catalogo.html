@@ -1,14 +1,23 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <div id="head-placeholder"></div>
+
+  <!-- IMPORTA HEAD.HTML PRIMA DEL PARSING -->
   <script>
-    fetch("head.html")
+    document.write('<link rel="import" href="head.html" id="head-import">');
+  </script>
+  <script>
+    const link = document.getElementById("head-import");
+    fetch(link.getAttribute("href"))
       .then(r => r.text())
-      .then(h => document.getElementById("head-placeholder").innerHTML = h);
-  </script> <script src="seo.js"></script>
-<script src="structured-data.js"></script>
+      .then(html => link.insertAdjacentHTML("afterend", html));
+  </script>
+
+  <script src="seo.js" defer></script>
+  <script src="structured-data.js" defer></script>
+
 </head>
+
 <body>
 
 <!-- HEADER -->
