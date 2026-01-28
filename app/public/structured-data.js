@@ -142,7 +142,7 @@
   injectSchema(breadcrumb);
 
   // -------------------------------------------------------
-  // 6) PRODUCT – dinamico
+  // 6) PRODUCT – dinamico (con AggregateRating)
   // -------------------------------------------------------
   if (slug) {
     const res = await fetch("products.json", { cache: "no-store" });
@@ -161,6 +161,11 @@
         "@type": "Brand",
         "name": "MewingMarket"
       },
+      "aggregateRating": p.rating_value ? {
+        "@type": "AggregateRating",
+        "ratingValue": p.rating_value,
+        "reviewCount": p.review_count || p.rating_count
+      } : undefined,
       "offers": {
         "@type": "Offer",
         "url": `https://www.mewingmarket.it/prodotto.html?slug=${p.slug}`,
