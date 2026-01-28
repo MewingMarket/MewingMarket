@@ -1,14 +1,16 @@
-// SEO DINAMICO MEWINGMARKET
+// SEO DINAMICO COMPLETO – MEWINGMARKET
 
-(function () {
+(async function () {
   const path = window.location.pathname.toLowerCase();
+  const params = new URLSearchParams(window.location.search);
+  const slug = params.get("slug");
 
   // Titolo e descrizione di default (homepage)
   let title = "MewingMarket – Prodotti digitali";
   let description = "Prodotti digitali chiari, utili e immediati. Guide, planner e strumenti per lavorare meglio ogni giorno.";
   let canonical = "https://www.mewingmarket.it/";
 
-  // Mappa titoli per pagina
+  // Mappa titoli per pagine statiche
   const pages = {
     "/catalogo.html": {
       title: "Catalogo – MewingMarket",
@@ -26,14 +28,6 @@
       title: "Contatti – MewingMarket",
       description: "Contatta il supporto o il reparto vendite di MewingMarket."
     },
-    "/dovesiamo.html": {
-      title: "Dove siamo – MewingMarket",
-      description: "Scopri dove si trova la sede di MewingMarket."
-    },
-    "/resi.html": {
-      title: "Resi e rimborsi – MewingMarket",
-      description: "Politica resi e rimborsi di MewingMarket."
-    },
     "/privacy.html": {
       title: "Privacy Policy – MewingMarket",
       description: "Informativa sulla privacy di MewingMarket."
@@ -45,39 +39,42 @@
     "/termini-e-condizioni.html": {
       title: "Termini e condizioni – MewingMarket",
       description: "Termini e condizioni di utilizzo del sito MewingMarket."
-    },
-    "/iscrizione.html": {
-      title: "Iscriviti alla newsletter – MewingMarket",
-      description: "Iscriviti alla newsletter ufficiale di MewingMarket."
-    },
-    "/disiscriviti.html": {
-      title: "Annulla iscrizione – MewingMarket",
-      description: "Gestisci la tua iscrizione alla newsletter di MewingMarket."
     }
   };
 
-  // Se la pagina è nella mappa, aggiorna titolo e descrizione
+  // Se è una pagina statica → aggiorna meta
   if (pages[path]) {
     title = pages[path].title;
     description = pages[path].description;
     canonical = "https://www.mewingmarket.it" + path;
   }
 
-  // Aggiorna titolo
+  // Se è una pagina prodotto → SEO dinamico
+  if (slug) {
+    const res = await fetch("products.json", { cache: "no-store" });
+    const products = await res.json();
+    const p = products.find(pr => pr.slug === slug);
+
+    if (p) {
+      title = p.titolo;
+      description = p.descrizioneBreve || p.descrizioneLunga || "";
+      canonical = `https://www.mewingmarket.it/prodotto.html?slug=${p.slug}`;
+
+      // OpenGraph dinamici
+      document.getElementById("og-title").setAttribute("content", title);
+      document.getElementById("og-description").setAttribute("content", description);
+      document.getElementById("og-url").setAttribute("content", canonical);
+      document.getElementById("og-image").setAttribute("content", p.immagine);
+
+      // Twitter dinamici
+      document.getElementById("twitter-title").setAttribute("content", title);
+      document.getElementById("twitter-description").setAttribute("content", description);
+      document.getElementById("twitter-image").setAttribute("content", p.immagine);
+    }
+  }
+
+  // Aggiorna meta comuni
   document.getElementById("dynamic-title").textContent = title;
-
-  // Aggiorna description
   document.getElementById("dynamic-description").setAttribute("content", description);
-
-  // Aggiorna canonical
   document.getElementById("dynamic-canonical").setAttribute("href", canonical);
-
-  // Open Graph
-  document.getElementById("og-title").setAttribute("content", title);
-  document.getElementById("og-description").setAttribute("content", description);
-  document.getElementById("og-url").setAttribute("content", canonical);
-
-  // Twitter
-  document.getElementById("twitter-title").setAttribute("content", title);
-  document.getElementById("twitter-description").setAttribute("content", description);
 })();
