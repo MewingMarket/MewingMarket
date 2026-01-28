@@ -1,29 +1,22 @@
-// STRUCTURED DATA DINAMICO MEWINGMARKET
+// STRUCTURED DATA COMPLETO – MEWINGMARKET
 
-(function () {
+(async function () {
   const path = window.location.pathname.toLowerCase();
+  const params = new URLSearchParams(window.location.search);
+  const slug = params.get("slug");
 
-  // Mappa titoli per breadcrumb
-  const titles = {
-    "/": "MewingMarket – Prodotti digitali",
-    "/catalogo.html": "Catalogo – MewingMarket",
-    "/chisiamo.html": "Chi siamo – MewingMarket",
-    "/faq.html": "FAQ – MewingMarket",
-    "/contatti.html": "Contatti – MewingMarket",
-    "/dovesiamo.html": "Dove siamo – MewingMarket",
-    "/resi.html": "Resi e rimborsi – MewingMarket",
-    "/privacy.html": "Privacy Policy – MewingMarket",
-    "/cookie.html": "Cookie Policy – MewingMarket",
-    "/termini-e-condizioni.html": "Termini e condizioni – MewingMarket",
-    "/iscrizione.html": "Iscriviti alla newsletter – MewingMarket",
-    "/disiscriviti.html": "Annulla iscrizione – MewingMarket"
-  };
+  // Funzione per inserire JSON-LD
+  function injectSchema(data) {
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.textContent = JSON.stringify(data);
+    document.head.appendChild(script);
+  }
 
-  const pageTitle = titles[path] || "MewingMarket – Prodotti digitali";
-  const canonical = "https://www.mewingmarket.it" + (path === "/" ? "" : path);
-
-  // ORGANIZATION SCHEMA
-  const organization = {
+  // -------------------------------------------------------
+  // 1) ORGANIZATION (sempre presente)
+  // -------------------------------------------------------
+  injectSchema({
     "@context": "https://schema.org",
     "@type": "Organization",
     "name": "MewingMarket",
@@ -38,33 +31,43 @@
       "https://www.threads.net/@mewingmarket",
       "https://www.linkedin.com/company/mewingmarket"
     ]
-  };
+  });
 
-  // BREADCRUMB SCHEMA
-  const breadcrumb = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    "itemListElement": [
-      {
-        "@type": "ListItem",
-        "position": 1,
-        "name": "Home",
-        "item": "https://www.mewingmarket.it/"
-      },
-      {
-        "@type": "ListItem",
-        "position": 2,
-        "name": pageTitle.replace(" – MewingMarket", ""),
-        "item": canonical
+  // -------------------------------------------------------
+  // 2) HOMEPAGE – WebSite
+  // -------------------------------------------------------
+  if (path === "/" || path === "/index.html") {
+    injectSchema({
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "MewingMarket",
+      "url": "https://www.mewingmarket.it/",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://www.mewingmarket.it/catalogo.html?search={search_term_string}",
+        "query-input": "required name=search_term_string"
       }
-    ]
-  };
+    });
+  }
 
-  // FAQ SCHEMA (solo per FAQ.html)
-  let faqSchema = null;
+  // -------------------------------------------------------
+  // 3) CATALOGO – CollectionPage
+  // -------------------------------------------------------
+  if (path === "/catalogo.html") {
+    injectSchema({
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "name": "Catalogo prodotti digitali – MewingMarket",
+      "url": "https://www.mewingmarket.it/catalogo.html",
+      "description": "Esplora il catalogo completo dei prodotti digitali MewingMarket."
+    });
+  }
 
+  // -------------------------------------------------------
+  // 4) FAQ – FAQPage
+  // -------------------------------------------------------
   if (path === "/faq.html") {
-    faqSchema = {
+    injectSchema({
       "@context": "https://schema.org",
       "@type": "FAQPage",
       "mainEntity": [
@@ -85,19 +88,86 @@
           }
         }
       ]
-    };
+    });
   }
 
-  // Inserimento dinamico degli script
-  function injectSchema(data) {
-    const script = document.createElement("script");
-    script.type = "application/ld+json";
-    script.textContent = JSON.stringify(data);
-    document.head.appendChild(script);
+  // -------------------------------------------------------
+  // 5) BREADCRUMB – dinamico (catalogo + prodotto)
+  // -------------------------------------------------------
+  const breadcrumb = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://www.mewingmarket.it/"
+      }
+    ]
+  };
+
+  if (path === "/catalogo.html") {
+    breadcrumb.itemListElement.push({
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Catalogo",
+      "item": "https://www.mewingmarket.it/catalogo.html"
+    });
   }
 
-  injectSchema(organization);
+  if (slug) {
+    const res = await fetch("products.json", { cache: "no-store" });
+    const products = await res.json();
+    const p = products.find(pr => pr.slug === slug);
+
+    if (p) {
+      breadcrumb.itemListElement.push(
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Catalogo",
+          "item": "https://www.mewingmarket.it/catalogo.html"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": p.titolo,
+          "item": `https://www.mewingmarket.it/prodotto.html?slug=${p.slug}`
+        }
+      );
+    }
+  }
+
   injectSchema(breadcrumb);
 
-  if (faqSchema) injectSchema(faqSchema);
+  // -------------------------------------------------------
+  // 6) PRODUCT – dinamico
+  // -------------------------------------------------------
+  if (slug) {
+    const res = await fetch("products.json", { cache: "no-store" });
+    const products = await res.json();
+    const p = products.find(pr => pr.slug === slug);
+    if (!p) return;
+
+    injectSchema({
+      "@context": "https://schema.org/",
+      "@type": "Product",
+      "name": p.titolo,
+      "description": p.descrizioneBreve || p.descrizioneLunga || "",
+      "image": p.immagine,
+      "sku": p.slug,
+      "brand": {
+        "@type": "Brand",
+        "name": "MewingMarket"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": `https://www.mewingmarket.it/prodotto.html?slug=${p.slug}`,
+        "priceCurrency": "EUR",
+        "price": p.prezzo,
+        "availability": "https://schema.org/InStock"
+      }
+    });
+  }
 })();
