@@ -43,7 +43,9 @@ app.use((req, res, next) => {
 app.use(express.static(path.join(__dirname, "public")));
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
-app.use(cookieParser());/* =========================================================
+app.use(cookieParser());
+
+/* =========================================================
    REDIRECT HTTPS + WWW (BLINDATO)
 ========================================================= */
 app.use((req, res, next) => {
@@ -65,24 +67,24 @@ app.use((req, res, next) => {
   }
 
   next();
-});/* =========================================================
+});
+
+/* =========================================================
    USER STATE + COOKIE UID (BLINDATO)
 ========================================================= */
 app.use((req, res, next) => {
   let uid = req.cookies.mm_uid;
 
-  // Se non esiste, creiamo un nuovo UID
   if (!uid) {
     uid = generateUID();
     res.cookie("mm_uid", uid, {
       httpOnly: false,
       secure: true,
       sameSite: "None",
-      maxAge: 1000 * 60 * 60 * 24 * 30 // 30 giorni
+      maxAge: 1000 * 60 * 60 * 24 * 30
     });
   }
 
-  // Inizializza lo stato utente se non esiste
   if (!userStates[uid]) {
     userStates[uid] = {
       state: "menu",
@@ -94,27 +96,27 @@ app.use((req, res, next) => {
   req.uid = uid;
   req.userState = userStates[uid];
   next();
-});/* =========================================================
+});
+
+/* =========================================================
    SITEMAP DINAMICHE (IMMAGINI + STORE + SOCIAL)
 ========================================================= */
-
-// Sitemap immagini dinamica
 app.get("/sitemap-images.xml", (req, res) => {
   const xml = generateImagesSitemap();
   res.type("application/xml").send(xml);
 });
 
-// Sitemap store dinamica (Payhip + Airtable)
 app.get("/sitemap-store.xml", (req, res) => {
   const xml = generateStoreSitemap();
   res.type("application/xml").send(xml);
 });
 
-// Sitemap social dinamica
 app.get("/sitemap-social.xml", (req, res) => {
   const xml = generateSocialSitemap();
   res.type("application/xml").send(xml);
-});/* =========================================================
+});
+
+/* =========================================================
    FEED META (UNICO FEED UFFICIALE)
 ========================================================= */
 app.get("/meta/feed", (req, res) => {
@@ -148,7 +150,9 @@ app.get("/meta/feed", (req, res) => {
 </rss>`;
 
   res.type("application/xml").send(xml);
-});/* =========================================================
+});
+
+/* =========================================================
    HOMEPAGE + PRODUCTS.JSON
 ========================================================= */
 app.get("/", (req, res) => {
@@ -157,25 +161,24 @@ app.get("/", (req, res) => {
 
 app.get("/products.json", (req, res) => {
   res.sendFile(path.join(__dirname, "data", "products.json"));
-});/* =========================================================
+});
+
+/* =========================================================
    PAGINA PRODOTTO DINAMICA (NOINDEX)
 ========================================================= */
 app.get("/prodotto.html", (req, res) => {
   const slug = req.query.slug;
-  if (!slug) {
-    return res.status(400).send("Parametro slug mancante");
-  }
+  if (!slug) return res.status(400).send("Parametro slug mancante");
 
   const products = getProducts();
   const prodotto = products.find(p => p.slug === slug);
 
-  if (!prodotto) {
-    return res.status(404).send("Prodotto non trovato");
-  }
+  if (!prodotto) return res.status(404).send("Prodotto non trovato");
 
-  // Serve la pagina prodotto statica
   res.sendFile(path.join(__dirname, "public", "prodotto.html"));
-});/* =========================================================
+});
+
+/* =========================================================
    CHAT BOT
 ========================================================= */
 app.post("/chat", (req, res) => {
@@ -191,7 +194,9 @@ app.post("/chat", (req, res) => {
   userStates[uid].lastIntent = intent;
 
   return handleConversation(req, res, intent, sub, message);
-});/* =========================================================
+});
+
+/* =========================================================
    AVVIO SERVER
 ========================================================= */
 const PORT = process.env.PORT || 10000;
@@ -211,7 +216,9 @@ app.listen(PORT, () => {
   })();
 });
 
-// Sync programmata ogni 30 minuti
+/* =========================================================
+   SYNC PROGRAMMATA
+========================================================= */
 setInterval(async () => {
   try {
     console.log("⏳ Sync programmato Airtable...");
