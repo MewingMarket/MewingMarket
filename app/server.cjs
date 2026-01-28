@@ -20,7 +20,7 @@ const { inviaNewsletter } = require(path.join(__dirname, "modules", "brevo"));
 const { generateImagesSitemap } = require(path.join(__dirname, "modules", "sitemap-images"));
 const { generateStoreSitemap } = require(path.join(__dirname, "modules", "sitemap-store"));
 const { generateSocialSitemap } = require(path.join(__dirname, "modules", "sitemap-social"));
-
+const { generateFooterSitemap } = require(path.join(__dirname, "modules", "sitemap-footer"));
 /* =========================================================
    SETUP EXPRESS
 ========================================================= */
@@ -115,7 +115,10 @@ app.get("/sitemap-social.xml", (req, res) => {
   const xml = generateSocialSitemap();
   res.type("application/xml").send(xml);
 });
-
+app.get("/sitemap.xml", (req, res) => {
+  const xml = generateFooterSitemap();
+  res.type("application/xml").send(xml);
+});
 /* =========================================================
    FEED META (UNICO FEED UFFICIALE)
 ========================================================= */
