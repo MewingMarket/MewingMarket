@@ -1,4 +1,4 @@
-8/* =========================================================
+/* =========================================================
    IMPORT BASE
 ========================================================= */
 const path = require("path");
@@ -8,41 +8,24 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 require("dotenv").config();
 
+/* =========================================================
+   IMPORT MODULI INTERNI
+========================================================= */
 const { generateNewsletterHTML } = require(path.join(__dirname, "modules", "newsletter"));
 const { syncAirtable, loadProducts, getProducts } = require(path.join(__dirname, "modules", "airtable"));
 const { detectIntent, handleConversation, reply, userStates, generateUID } = require(path.join(__dirname, "modules", "bot"));
 const { inviaNewsletter } = require(path.join(__dirname, "modules", "brevo"));
-const { generateSitemap } = require(path.join(__dirname, "modules", "sitemap"));
+
+/* NUOVE SITEMAP DINAMICHE */
+const { generateImagesSitemap } = require(path.join(__dirname, "modules", "sitemap-images"));
+const { generateStoreSitemap } = require(path.join(__dirname, "modules", "sitemap-store"));
+const { generateSocialSitemap } = require(path.join(__dirname, "modules", "sitemap-social"));
 
 /* =========================================================
    SETUP EXPRESS
 ========================================================= */
 const app = express();
 app.disable("x-powered-by");
-// DEBUG: mostra i record grezzi di Airtable
-app.get("/debug-airtable", async (req, res) => {
-  try {
-    const url = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/${process.env.AIRTABLE_TABLE_ID}`;
-
-    const response = await fetch(url, {
-      headers: {
-        "Authorization": `Bearer ${process.env.AIRTABLE_PAT}`,
-        "Content-Type": "application/json"
-      }
-    });
-
-    const data = await response.json();
-
-    res.json({
-      url,
-      status: response.status,
-      data
-    });
-
-  } catch (err) {
-    res.json({ error: String(err) });
-  }
-});
 
 /* =========================================================
    CACHE HEADERS
@@ -54,191 +37,89 @@ app.use((req, res, next) => {
   next();
 });
 
-// STATICI
+/* =========================================================
+   STATICI + MIDDLEWARE
+========================================================= */
 app.use(express.static(path.join(__dirname, "public")));
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
-app.use(cookieParser());
-
-/* =========================================================
-   HOMEPAGE + PRODUCTS.JSON
-========================================================= */
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
-
-app.get("/products.json", (req, res) => {
-  res.sendFile(path.join(__dirname, "data", "products.json"));
-});
-app.get("/debug-airtable", async (req, res) => {
-  try {
-    const url = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/${process.env.AIRTABLE_TABLE_NAME}`;
-
-    const response = await fetch(url, {
-      headers: {
-        "Authorization": `Bearer ${process.env.AIRTABLE_PAT}`,
-        "Content-Type": "application/json"
-      }
-    });
-
-    const data = await response.json();
-
-    // Mostra tutto, anche gli errori
-    res.json({
-      url,
-      status: response.status,
-      data
-    });
-
-  } catch (err) {
-    res.json({ error: String(err) });
-  }
-});
-/* =========================================================
-   SKIP REDIRECT PER /s
-========================================================= */
-app.use((req, res, next) => {
-  const p = req.url.toLowerCase();
-  if (p.startsWith("/s")) return next();
-  next();
-});
-
-/* =========================================================
-   REDIRECT HTTPS + WWW
+app.use(cookieParser());/* =========================================================
+   REDIRECT HTTPS + WWW (BLINDATO)
 ========================================================= */
 app.use((req, res, next) => {
   const proto = req.headers["x-forwarded-proto"];
   const host = req.headers.host;
 
-  if (proto !== "https") return res.redirect(301, `https://${host}${req.url}`);
-  if (req.hostname === "mewingmarket.it") return res.redirect(301, `https://www.mewingmarket.it${req.url}`);
-  if (!host.startsWith("www.")) return res.redirect(301, `https://www.${host}${req.url}`);
+  // 1) Forza HTTPS
+  if (proto !== "https") {
+    return res.redirect(301, `https://${host}${req.url}`);
+  }
+
+  // 2) Forza WWW
+  if (host === "mewingmarket.it") {
+    return res.redirect(301, `https://www.mewingmarket.it${req.url}`);
+  }
+
+  if (!host.startsWith("www.")) {
+    return res.redirect(301, `https://www.${host}${req.url}`);
+  }
 
   next();
-});
-
-/* =========================================================
-   USER STATE + COOKIE UID
+});/* =========================================================
+   USER STATE + COOKIE UID (BLINDATO)
 ========================================================= */
 app.use((req, res, next) => {
   let uid = req.cookies.mm_uid;
 
+  // Se non esiste, creiamo un nuovo UID
   if (!uid) {
     uid = generateUID();
     res.cookie("mm_uid", uid, {
       httpOnly: false,
       secure: true,
       sameSite: "None",
-      maxAge: 1000 * 60 * 60 * 24 * 30
+      maxAge: 1000 * 60 * 60 * 24 * 30 // 30 giorni
     });
   }
 
+  // Inizializza lo stato utente se non esiste
   if (!userStates[uid]) {
-    userStates[uid] = { state: "menu", lastIntent: null, data: {} };
+    userStates[uid] = {
+      state: "menu",
+      lastIntent: null,
+      data: {}
+    };
   }
 
   req.uid = uid;
   req.userState = userStates[uid];
   next();
-});
-
-/* =========================================================
-   SYNC AIRTABLE
+});/* =========================================================
+   SITEMAP DINAMICHE (IMMAGINI + STORE + SOCIAL)
 ========================================================= */
-loadProducts();
 
-setTimeout(() => {
-  setInterval(async () => {
-    console.log("⏳ Sync automatico Airtable...");
-    await syncAirtable();
-    loadProducts();
-  }, 5 * 60 * 1000);
-}, 5000);
-
-app.get("/sync/airtable", async (req, res) => {
-  try {
-    const products = await syncAirtable();
-    res.send(`Aggiornamento completato. Prodotti sincronizzati: ${products.length}`);
-  } catch (err) {
-    console.error("Errore durante la sync manuale:", err);
-    res.status(500).send("Errore durante la sincronizzazione.");
-  }
+// Sitemap immagini dinamica
+app.get("/sitemap-images.xml", (req, res) => {
+  const xml = generateImagesSitemap();
+  res.type("application/xml").send(xml);
 });
 
-/* =========================================================
-   NEWSLETTER
-========================================================= */
-const { iscriviEmail } = require(path.join(__dirname, "modules", "brevoSubscribe"));
-const { disiscriviEmail } = require(path.join(__dirname, "modules", "brevoUnsubscribe"));
-
-app.get("/newsletter/html", (req, res) => {
-  const { html } = generateNewsletterHTML();
-  res.type("html").send(html);
+// Sitemap store dinamica (Payhip + Airtable)
+app.get("/sitemap-store.xml", (req, res) => {
+  const xml = generateStoreSitemap();
+  res.type("application/xml").send(xml);
 });
 
-app.get("/newsletter/json", (req, res) => {
-  const products = getProducts();
-  const latest = products.at(-1);
-
-  if (!latest) return res.json({ error: "Nessun prodotto disponibile" });
-
-  const { html, oggetto } = generateNewsletterHTML();
-
-  res.json({ oggetto, prodotto: latest, html });
-});
-
-app.get("/newsletter/text", (req, res) => {
-  const { html } = generateNewsletterHTML();
-  const text = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-  res.type("text/plain").send(text);
-});
-
-app.get("/newsletter/send", async (req, res) => {
-  try {
-    const products = getProducts();
-    const latest = products.at(-1);
-
-    if (!latest) return res.json({ error: "Nessun prodotto disponibile" });
-
-    const { html, oggetto } = generateNewsletterHTML();
-    const risultato = await inviaNewsletter({ oggetto, html });
-
-    res.json({ status: "ok", message: "Newsletter inviata", campaignId: risultato.campaignId });
-  } catch (err) {
-    console.error("Errore invio newsletter:", err);
-    res.status(500).json({ error: "Errore invio newsletter" });
-  }
-});
-
-app.post("/newsletter/subscribe", async (req, res) => {
-  const { email } = req.body;
-  if (!email) return res.status(400).json({ error: "Email mancante" });
-
-  try {
-    await iscriviEmail(email);
-    res.json({ status: "ok" });
-  } catch (err) {
-    res.status(500).json({ error: "Errore iscrizione" });
-  }
-});
-
-app.post("/newsletter/unsubscribe", async (req, res) => {
-  const { email } = req.body;
-  if (!email) return res.status(400).json({ error: "Email mancante" });
-
-  try {
-    await disiscriviEmail(email);
-    res.json({ status: "ok" });
-  } catch (err) {
-    res.status(500).json({ error: "Errore disiscrizione" });
-  }
-});
-
-/* =========================================================
-   FEED + SITEMAP
+// Sitemap social dinamica
+app.get("/sitemap-social.xml", (req, res) => {
+  const xml = generateSocialSitemap();
+  res.type("application/xml").send(xml);
+});/* =========================================================
+   FEED META (UNICO FEED UFFICIALE)
 ========================================================= */
 app.get("/meta/feed", (req, res) => {
   const products = getProducts();
+
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
   <channel>
@@ -267,47 +148,34 @@ app.get("/meta/feed", (req, res) => {
 </rss>`;
 
   res.type("application/xml").send(xml);
+});/* =========================================================
+   HOMEPAGE + PRODUCTS.JSON
+========================================================= */
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-app.get("/google/feed", (req, res) => {
+app.get("/products.json", (req, res) => {
+  res.sendFile(path.join(__dirname, "data", "products.json"));
+});/* =========================================================
+   PAGINA PRODOTTO DINAMICA (NOINDEX)
+========================================================= */
+app.get("/prodotto.html", (req, res) => {
+  const slug = req.query.slug;
+  if (!slug) {
+    return res.status(400).send("Parametro slug mancante");
+  }
+
   const products = getProducts();
-  let xml = `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
-  <channel>
-    <title>MewingMarket Google Feed</title>
-    <link>https://www.mewingmarket.it</link>
-    <description>Feed prodotti per Google Merchant</description>
-`;
+  const prodotto = products.find(p => p.slug === slug);
 
-  products.forEach((p, i) => {
-    xml += `
-    <item>
-      <g:id>${p.id || i + 1}</g:id>
-      <g:title><![CDATA[${p.titoloBreve || p.titolo}]]></g:title>
-      <g:description><![CDATA[${p.descrizioneBreve || p.descrizione || ""}]]></g:description>
-      <g:link>${p.linkPayhip}</g:link>
-      <g:image_link>${p.immagine}</g:image_link>
-      <g:availability>in stock</g:availability>
-      <g:price>${p.prezzo || "0.00"} EUR</g:price>
-      <g:brand>MewingMarket</g:brand>
-      <g:condition>new</g:condition>
-      <g:google_product_category>2271</g:google_product_category>
-    </item>`;
-  });
+  if (!prodotto) {
+    return res.status(404).send("Prodotto non trovato");
+  }
 
-  xml += `
-  </channel>
-</rss>`;
-
-  res.type("application/xml").send(xml);
-});
-
-app.get("/sitemap.xml", (req, res) => {
-  const xml = generateSitemap();
-  res.type("application/xml").send(xml);
-});
-
-/* =========================================================
+  // Serve la pagina prodotto statica
+  res.sendFile(path.join(__dirname, "public", "prodotto.html"));
+});/* =========================================================
    CHAT BOT
 ========================================================= */
 app.post("/chat", (req, res) => {
@@ -323,9 +191,7 @@ app.post("/chat", (req, res) => {
   userStates[uid].lastIntent = intent;
 
   return handleConversation(req, res, intent, sub, message);
-});
-
-/* =========================================================
+});/* =========================================================
    AVVIO SERVER
 ========================================================= */
 const PORT = process.env.PORT || 10000;
@@ -345,6 +211,7 @@ app.listen(PORT, () => {
   })();
 });
 
+// Sync programmata ogni 30 minuti
 setInterval(async () => {
   try {
     console.log("⏳ Sync programmato Airtable...");
