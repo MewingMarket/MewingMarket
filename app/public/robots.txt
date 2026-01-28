@@ -1,16 +1,7 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Googlebot-Image
-Allow: /
-
-User-agent: AdsBot-Google
-Allow: /
-
 User-agent: *
 Allow: /
 
-
+Sitemap: https://www.mewingmarket.it/sitemap.xml
+Sitemap: https://www.mewingmarket.it/sitemap-images.xml
+Sitemap: https://www.mewingmarket.it/sitemap-store.xml
+Sitemap: https://www.mewingmarket.it/sitemap-social.xml
