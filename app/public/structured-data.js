@@ -1,29 +1,29 @@
-// structured-data.js — JSON-LD automatico (Org + Breadcrumb + Product + FAQ)
+// STRUCTURED DATA DINAMICO MEWINGMARKET
 
-document.addEventListener("DOMContentLoaded", async () => {
+(function () {
+  const path = window.location.pathname.toLowerCase();
 
-  const path = window.location.pathname.split("/").pop().replace(".html", "");
-
+  // Mappa titoli per breadcrumb
   const titles = {
-    "index": "Home",
-    "catalogo": "Catalogo",
-    "chisiamo": "Chi siamo",
-    "contatti": "Contatti",
-    "faq": "FAQ",
-    "dovesiamo": "Dove siamo",
-    "privacy": "Privacy Policy",
-    "cookie": "Cookie Policy",
-    "resi": "Resi e rimborsi",
-    "termini-e-condizioni": "Termini e condizioni",
-    "iscrizione": "Iscrizione newsletter",
-    "disiscriviti": "Annulla iscrizione",
-    "prodotto": "Prodotto"
+    "/": "MewingMarket – Prodotti digitali",
+    "/catalogo.html": "Catalogo – MewingMarket",
+    "/chisiamo.html": "Chi siamo – MewingMarket",
+    "/faq.html": "FAQ – MewingMarket",
+    "/contatti.html": "Contatti – MewingMarket",
+    "/dovesiamo.html": "Dove siamo – MewingMarket",
+    "/resi.html": "Resi e rimborsi – MewingMarket",
+    "/privacy.html": "Privacy Policy – MewingMarket",
+    "/cookie.html": "Cookie Policy – MewingMarket",
+    "/termini-e-condizioni.html": "Termini e condizioni – MewingMarket",
+    "/iscrizione.html": "Iscriviti alla newsletter – MewingMarket",
+    "/disiscriviti.html": "Annulla iscrizione – MewingMarket"
   };
 
-  const pageName = titles[path] || "Pagina";
+  const pageTitle = titles[path] || "MewingMarket – Prodotti digitali";
+  const canonical = "https://www.mewingmarket.it" + (path === "/" ? "" : path);
 
-  // 1. ORGANIZZAZIONE
-  const org = {
+  // ORGANIZATION SCHEMA
+  const organization = {
     "@context": "https://schema.org",
     "@type": "Organization",
     "name": "MewingMarket",
@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     ]
   };
 
-  // 2. BREADCRUMB
+  // BREADCRUMB SCHEMA
   const breadcrumb = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -49,83 +49,55 @@ document.addEventListener("DOMContentLoaded", async () => {
         "@type": "ListItem",
         "position": 1,
         "name": "Home",
-        "item": "https://www.mewingmarket.it"
+        "item": "https://www.mewingmarket.it/"
       },
       {
         "@type": "ListItem",
         "position": 2,
-        "name": pageName,
-        "item": window.location.href
+        "name": pageTitle.replace(" – MewingMarket", ""),
+        "item": canonical
       }
     ]
   };
 
-  // 3. PRODUCT (solo su prodotto.html)
-  let productSchema = null;
-
-  if (path === "prodotto") {
-    const params = new URLSearchParams(window.location.search);
-    const slug = params.get("slug");
-
-    if (slug) {
-      const res = await fetch("products.json");
-      const products = await res.json();
-      const p = products.find(pr => pr.slug === slug);
-
-      if (p) {
-        productSchema = {
-          "@context": "https://schema.org",
-          "@type": "Product",
-          "name": p.titolo,
-          "image": p.immagine,
-          "description": p.descrizioneBreve || p.descrizioneLunga,
-          "sku": p.slug,
-          "brand": "MewingMarket",
-          "offers": {
-            "@type": "Offer",
-            "priceCurrency": "EUR",
-            "price": p.prezzo,
-            "availability": "https://schema.org/InStock",
-            "url": window.location.href
-          }
-        };
-      }
-    }
-  }
-
-  // 4. FAQ (solo su faq.html)
+  // FAQ SCHEMA (solo per FAQ.html)
   let faqSchema = null;
 
-  if (path === "faq") {
-    const res = await fetch("faq.json");
-    const faq = await res.json();
-
+  if (path === "/faq.html") {
     faqSchema = {
       "@context": "https://schema.org",
       "@type": "FAQPage",
-      "mainEntity": faq.map(q => ({
-        "@type": "Question",
-        "name": q.domanda,
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": q.risposta
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Come funziona MewingMarket?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "MewingMarket offre prodotti digitali chiari, utili e immediati per migliorare il tuo lavoro quotidiano."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Come ricevo i prodotti?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Dopo l'acquisto ricevi subito il link per scaricare il prodotto digitale."
+          }
         }
-      }))
+      ]
     };
   }
 
-  // Inserimento JSON-LD
-  function inject(data) {
-    if (!data) return;
+  // Inserimento dinamico degli script
+  function injectSchema(data) {
     const script = document.createElement("script");
     script.type = "application/ld+json";
     script.textContent = JSON.stringify(data);
     document.head.appendChild(script);
   }
 
-  inject(org);
-  inject(breadcrumb);
-  inject(productSchema);
-  inject(faqSchema);
+  injectSchema(organization);
+  injectSchema(breadcrumb);
 
-});
+  if (faqSchema) injectSchema(faqSchema);
+})();
