@@ -5,13 +5,30 @@ const axios = require("axios");
 async function disiscriviEmail(email) {
   const apiKey = process.env.BREVO_API_KEY;
 
-  await axios.post(
-    "https://api.brevo.com/v3/contacts/removeFromList",
-    { emails: [email], listIds: [8] },
-    { headers: { "api-key": apiKey, "Content-Type": "application/json" } }
-  );
+  try {
+    console.log("📭 Tentativo disiscrizione:", email);
 
-  return { status: "ok" };
+    const response = await axios.post(
+      "https://api.brevo.com/v3/contacts/removeFromList",
+      {
+        emails: [email],
+        listIds: [8]
+      },
+      {
+        headers: {
+          "api-key": apiKey,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    console.log("🟦 Disiscrizione completata:", response.data);
+    return { status: "ok" };
+
+  } catch (err) {
+    console.error("❌ Errore disiscrizione Brevo:", err.response?.data || err);
+    throw err;
+  }
 }
 
 module.exports = { disiscriviEmail };
