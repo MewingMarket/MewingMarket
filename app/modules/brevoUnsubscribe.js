@@ -6,29 +6,25 @@ async function disiscriviEmail(email) {
     "Content-Type": "application/json"
   };
 
+  // 1) GET diretto
   try {
-    // 1) GET diretto
     await axios.get(
       `https://api.brevo.com/v3/contacts/${encodeURIComponent(email)}`,
       { headers }
     );
 
-    // Se GET funziona → blacklist
     await axios.patch(
       `https://api.brevo.com/v3/contacts/${encodeURIComponent(email)}`,
       { emailBlacklisted: true },
       { headers }
     );
 
-    console.log("📭 Disiscrizione completata via GET:", email);
+    console.log("📭 Disiscrizione via GET:", email);
     return;
+  } catch (_) {}
 
-  } catch (err) {
-    // Se GET fallisce → continua
-  }
-
+  // 2) POST → crea contatto
   try {
-    // 2) POST → crea contatto in blacklist
     await axios.post(
       "https://api.brevo.com/v3/contacts",
       { email, emailBlacklisted: true },
@@ -37,19 +33,24 @@ async function disiscriviEmail(email) {
 
     console.log("📭 Contatto creato e disiscritto:", email);
     return;
-
   } catch (err) {
     if (err.response?.data?.code !== "duplicate_parameter") {
-      console.error("❌ Errore POST:", err.response?.data || err);
+      console.error("❌ POST errore:", err.response?.data || err);
       throw err;
     }
   }
 
+  // 3) SEARCH avanzata
   try {
-    // 3) SEARCH → trova ID nascosto
     const search = await axios.post(
       "https://api.brevo.com/v3/contacts/search",
-      { email },
+      {
+        filter: {
+          email: {
+            $contains: email
+          }
+        }
+      },
       { headers }
     );
 
@@ -62,25 +63,25 @@ async function disiscriviEmail(email) {
         { headers }
       );
 
-      console.log("📭 Disiscrizione completata via SEARCH ID:", email);
+      console.log("📭 Disiscrizione via SEARCH avanzata:", email);
       return;
     }
+  } catch (_) {}
 
-  } catch (err) {
-    // Se SEARCH fallisce → continua
-  }
-
-  // 4) Ultimo fallback → forza PATCH via email
+  // 4) FALLBACK FINALE → crea contatto forzato
   try {
-    await axios.patch(
-      `https://api.brevo.com/v3/contacts/${encodeURIComponent(email)}`,
-      { emailBlacklisted: true },
+    await axios.post(
+      "https://api.brevo.com/v3/contacts",
+      {
+        email,
+        emailBlacklisted: true,
+        updateEnabled: true
+      },
       { headers }
     );
 
-    console.log("📭 Disiscrizione forzata via PATCH email:", email);
+    console.log("📭 Disiscrizione forzata:", email);
     return;
-
   } catch (err) {
     console.error("❌ Errore finale disiscrizione:", err.response?.data || err);
     throw err;
