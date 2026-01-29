@@ -302,4 +302,41 @@ setInterval(async () => {
   } catch (err) {
     console.error("❌ Errore nel sync programmato:", err);
   }
-}, 30 * 60 * 1000);
+}, 30 * 60 * 1000);/* =========================================================
+   NEWSLETTER AUTOMATICA — NUOVO PRODOTTO
+========================================================= */
+
+let lastProductId = null;
+
+async function checkNewProduct() {
+  try {
+    const products = getProducts();
+    if (!products || products.length === 0) return;
+
+    const latest = products.at(-1);
+
+    // Primo avvio → memorizza ma non invia
+    if (!lastProductId) {
+      lastProductId = latest.id;
+      console.log("🟦 Primo avvio: memorizzato ultimo prodotto:", lastProductId);
+      return;
+    }
+
+    // Se c’è un nuovo prodotto → invia newsletter
+    if (latest.id !== lastProductId) {
+      console.log("🆕 Nuovo prodotto rilevato:", latest.titoloBreve);
+
+      const { html, oggetto } = generateNewsletterHTML();
+      await inviaNewsletter({ oggetto, html });
+
+      console.log("📨 Newsletter nuovo prodotto inviata");
+
+      lastProductId = latest.id;
+    }
+  } catch (err) {
+    console.error("❌ Errore controllo nuovo prodotto:", err.response?.data || err);
+  }
+}
+
+// Controllo ogni 5 minuti
+setInterval(checkNewProduct, 5 * 60 * 1000);
