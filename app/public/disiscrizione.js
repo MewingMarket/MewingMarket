@@ -1,19 +1,43 @@
-document.getElementById("unsubscribeForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
+document.addEventListener("DOMContentLoaded", () => {
+  // Aspetta che header/footer siano caricati
+  setTimeout(() => {
+    const form = document.getElementById("unsubscribeForm");
+    const emailInput = document.getElementById("email");
 
-  const email = document.getElementById("email").value.trim();
+    if (!form) {
+      console.error("❌ unsubscribeForm non trovato nella pagina");
+      return;
+    }
 
-  const res = await fetch("/newsletter/unsubscribe", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email })
-  });
+    if (!emailInput) {
+      console.error("❌ Input email non trovato nella pagina");
+      return;
+    }
 
-  const data = await res.json();
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-  if (data.status === "ok") {
-    alert("Disiscrizione completata.");
-  } else {
-    alert("Errore durante la disiscrizione.");
-  }
+      const email = emailInput.value.trim();
+
+      try {
+        const res = await fetch("/newsletter/unsubscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email })
+        });
+
+        const data = await res.json();
+
+        if (data.status === "ok") {
+          alert("Disiscrizione completata.");
+        } else {
+          alert("Errore durante la disiscrizione.");
+        }
+
+      } catch (err) {
+        console.error("❌ Errore durante la disiscrizione:", err);
+        alert("Errore di connessione.");
+      }
+    });
+  }, 200); // 🔥 attesa minima per caricamento header/footer
 });
