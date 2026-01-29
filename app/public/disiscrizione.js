@@ -1,23 +1,19 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // Aspetta che header/footer siano caricati
   setTimeout(() => {
+    console.log("✅ disiscrizione.js caricato");
+
     const form = document.getElementById("unsubscribeForm");
     const emailInput = document.getElementById("email");
 
-    if (!form) {
-      console.error("❌ unsubscribeForm non trovato nella pagina");
-      return;
-    }
-
-    if (!emailInput) {
-      console.error("❌ Input email non trovato nella pagina");
+    if (!form || !emailInput) {
+      console.error("❌ Form o input email non trovati");
       return;
     }
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-
       const email = emailInput.value.trim();
+      console.log("📭 Tentativo disiscrizione:", email);
 
       try {
         const res = await fetch("/newsletter/unsubscribe", {
@@ -27,6 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         const data = await res.json();
+        console.log("📬 Risposta server:", data);
 
         if (data.status === "ok") {
           alert("Disiscrizione completata.");
@@ -35,9 +32,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
       } catch (err) {
-        console.error("❌ Errore durante la disiscrizione:", err);
+        console.error("❌ Errore fetch:", err);
         alert("Errore di connessione.");
       }
     });
-  }, 200); // 🔥 attesa minima per caricamento header/footer
+  }, 200);
 });
