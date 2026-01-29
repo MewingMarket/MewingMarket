@@ -6,6 +6,7 @@ const express = require("express");
 const fs = require("fs");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
+const axios = require("axios"); // <--- AGGIUNTO
 require("dotenv").config();
 
 /* =========================================================
@@ -21,6 +22,7 @@ const { generateImagesSitemap } = require(path.join(__dirname, "modules", "sitem
 const { generateStoreSitemap } = require(path.join(__dirname, "modules", "sitemap-store"));
 const { generateSocialSitemap } = require(path.join(__dirname, "modules", "sitemap-social"));
 const { generateFooterSitemap } = require(path.join(__dirname, "modules", "sitemap-footer"));
+
 /* =========================================================
    SETUP EXPRESS
 ========================================================= */
@@ -52,12 +54,10 @@ app.use((req, res, next) => {
   const proto = req.headers["x-forwarded-proto"];
   const host = req.headers.host;
 
-  // 1) Forza HTTPS
   if (proto !== "https") {
     return res.redirect(301, `https://${host}${req.url}`);
   }
 
-  // 2) Forza WWW
   if (host === "mewingmarket.it") {
     return res.redirect(301, `https://www.mewingmarket.it${req.url}`);
   }
@@ -115,10 +115,12 @@ app.get("/sitemap-social.xml", (req, res) => {
   const xml = generateSocialSitemap();
   res.type("application/xml").send(xml);
 });
+
 app.get("/sitemap.xml", (req, res) => {
   const xml = generateFooterSitemap();
   res.type("application/xml").send(xml);
 });
+
 /* =========================================================
    FEED META (UNICO FEED UFFICIALE)
 ========================================================= */
@@ -197,6 +199,75 @@ app.post("/chat", (req, res) => {
   userStates[uid].lastIntent = intent;
 
   return handleConversation(req, res, intent, sub, message);
+});
+
+/* =========================================================
+   NEWSLETTER: ISCRIZIONE / DISISCRIZIONE / INVIO
+========================================================= */
+const { iscriviEmail } = require("./modules/brevoSubscribe");
+const { disiscriviEmail } = require("./modules/brevoUnsubscribe");
+
+const welcomeHTML = fs.readFileSync(
+  path.join(__dirname, "modules", "welcome.html"),
+  "utf8"
+);
+
+// 1) ISCRIZIONE
+app.post("/newsletter/subscribe", async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.json({ status: "error", message: "Email mancante" });
+
+    await iscriviEmail(email);
+
+    await axios.post(
+      "https://api.brevo.com/v3/smtp/email",
+      {
+        sender: { name: "MewingMarket", email: "vendite@mewingmarket.it" },
+        to: [{ email }],
+        subject: "👋 Benvenuto in MewingMarket",
+        htmlContent: welcomeHTML
+      },
+      {
+        headers: {
+          "api-key": process.env.BREVO_API_KEY,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    return res.json({ status: "ok" });
+  } catch (err) {
+    console.error("❌ Errore iscrizione newsletter:", err.response?.data || err);
+    return res.json({ status: "error" });
+  }
+});
+
+// 2) DISISCRIZIONE
+app.post("/newsletter/unsubscribe", async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.json({ status: "error", message: "Email mancante" });
+
+    await disiscriviEmail(email);
+
+    return res.json({ status: "ok" });
+  } catch (err) {
+    console.error("❌ Errore disiscrizione newsletter:", err.response?.data || err);
+    return res.json({ status: "error" });
+  }
+});
+
+// 3) INVIO MANUALE NEWSLETTER
+app.post("/newsletter/send", async (req, res) => {
+  try {
+    const { html, oggetto } = generateNewsletterHTML();
+    const result = await inviaNewsletter({ oggetto, html });
+    return res.json({ status: "ok", result });
+  } catch (err) {
+    console.error("❌ Errore invio newsletter:", err.response?.data || err);
+    return res.json({ status: "error" });
+  }
 });
 
 /* =========================================================
