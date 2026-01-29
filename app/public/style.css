@@ -704,14 +704,15 @@ footer {
 }
 
 .site-header {
-  padding: 1rem 0;
-  text-align: center;
+  padding: 2rem 0;        /* più spazio sopra e sotto */
+  text-align: center;     /* centra tutto l’header */
 }
 
 .site-header .logo img {
-  height: 80px; /* dimensione finale del logo */
+  height: 80px;           /* dimensione finale del logo */
   width: auto;
-  display: inline-block;
+  display: inline-block;  /* evita comportamenti strani */
+  margin: 0 auto;         /* centratura perfetta */
 }
 
 @media (max-width: 480px) {
