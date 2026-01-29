@@ -9,7 +9,7 @@ function generateNewsletterHTML() {
   if (!latest) return "<p>Nessun prodotto disponibile.</p>";
 
   const titolo = latest.titoloBreve || latest.titolo;
-  const descrizione = latest.descrizioneBreve;
+  const descrizione = latest.descrizioneBreve || latest.descrizione || ""; // 🔥 FIX CORRETTO
   const immagine = latest.immagine;
   const link = latest.linkPayhip;
 
