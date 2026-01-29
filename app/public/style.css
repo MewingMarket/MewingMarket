@@ -703,4 +703,13 @@ footer {
     font-size: 13px;
     padding: 8px;
   }
+}.site-header {
+  padding: 1rem 0;
+  text-align: center;
+}
+
+.site-header .logo img {
+  height: 50px; /* puoi aumentare o diminuire */
+  width: auto;
+  display: inline-block;
 }
