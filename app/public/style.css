@@ -698,18 +698,24 @@ footer {
     font-size: 13px;
     padding: 8px 12px;
   }
+.mm-product-btn {
+  font-size: 13px;
+  padding: 8px;
+}
 
-  .mm-product-btn {
-    font-size: 13px;
-    padding: 8px;
-  }
-}.site-header {
+.site-header {
   padding: 1rem 0;
   text-align: center;
 }
 
 .site-header .logo img {
-  height: 50px; /* puoi aumentare o diminuire */
+  height: 80px; /* dimensione finale del logo */
   width: auto;
   display: inline-block;
+}
+
+@media (max-width: 480px) {
+  .site-header .logo img {
+    height: 60px; /* leggermente più piccolo su smartphone */
+  }
 }
