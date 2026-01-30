@@ -1,70 +1,55 @@
-// index.js — blindato
+// public/index.js
 
-async function loadProducts() {
-  const res = await fetch("products.json", { cache: "no-store" });
-  return await res.json();
-}
+document.addEventListener("DOMContentLoaded", async () => {
+  const grid = document.getElementById("products-grid");
+  if (!grid) return;
 
-function cardHTML(p) {
-  return `
-    <div class="product-card">
-      <img src="${p.immagine}" alt="${p.titolo}">
-      <h2>${p.titoloBreve || p.titolo}</h2>
-      <p>${p.descrizioneBreve || ""}</p>
-      <div class="prezzo">€${p.prezzo}</div>
-      <a href="prodotto.html?slug=${p.slug}" class="btn">Scopri</a>
-    </div>
-  `;
-}
+  try {
+    const res = await fetch("/products.json");
+    if (!res.ok) {
+      console.warn("Nessun products.json ancora disponibile");
+      return;
+    }
 
-// SLIDER
-async function initSlider() {
-  const products = await loadProducts();
-  const slider = document.getElementById("slider");
+    const products = await res.json();
+    if (!Array.isArray(products) || products.length === 0) {
+      grid.innerHTML = `<p>Il catalogo sarà presto disponibile. Stiamo preparando i primi prodotti.</p>`;
+      return;
+    }
 
-  products.slice(0, 3).forEach((p, i) => {
-    const slide = document.createElement("div");
-    slide.className = "slide";
-    slide.style.opacity = i === 0 ? "1" : "0";
-    slide.innerHTML = `<img src="${p.immagine}" alt="${p.titolo}">`;
-    slider.appendChild(slide);
-  });
+    grid.innerHTML = "";
 
-  let index = 0;
-  setInterval(() => {
-    const slides = document.querySelectorAll(".slide");
-    slides.forEach(s => s.style.opacity = "0");
-    slides[index].style.opacity = "1";
-    index = (index + 1) % slides.length;
-  }, 4000);
-}
+    products.forEach((p) => {
+      const card = document.createElement("article");
+      card.className = "product-card";
 
-// SEZIONI
-async function populateSections() {
-  const products = await loadProducts();
+      card.innerHTML = `
+        <img src="${p.immagine}" alt="${p.titolo}" loading="lazy">
+        <h3>${p.titoloBreve || p.titolo}</h3>
+        <p>${p.descrizioneBreve || ""}</p>
+        <p class="price">${p.prezzo ? p.prezzo + " €" : ""}</p>
+        <div class="actions">
+          <a href="/prodotto.html?slug=${encodeURIComponent(p.slug)}"
+             class="btn"
+             data-track="product_open"
+             data-track-extra='${JSON.stringify({ slug: p.slug })}'>
+            Dettagli
+          </a>
+          <a href="${p.linkPayhip}"
+             class="btn-secondary"
+             target="_blank" rel="noopener"
+             data-track="product_buy_click"
+             data-track-extra='${JSON.stringify({ slug: p.slug })}'>
+            Acquista su Payhip
+          </a>
+        </div>
+      `;
 
-  const novita = document.getElementById("novita");
-  const bestseller = document.getElementById("bestseller");
-  const lowcost = document.getElementById("lowcost");
-
-  products.slice(-6).forEach(p => {
-    novita.innerHTML += cardHTML(p);
-  });
-
-  products
-    .filter(p => p.prezzo <= 10)
-    .slice(0, 6)
-    .forEach(p => {
-      lowcost.innerHTML += cardHTML(p);
+      grid.appendChild(card);
     });
 
-  products
-    .sort((a, b) => (b.vendite || 0) - (a.vendite || 0))
-    .slice(0, 6)
-    .forEach(p => {
-      bestseller.innerHTML += cardHTML(p);
-    });
-}
-
-initSlider();
-populateSections();
+  } catch (err) {
+    console.error("Errore caricamento prodotti:", err);
+    grid.innerHTML = `<p>Al momento il catalogo non è disponibile. Riprova più tardi.</p>`;
+  }
+});
