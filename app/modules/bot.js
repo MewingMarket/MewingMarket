@@ -14,7 +14,7 @@ const { normalize } = require("./utils");
 const { getProducts } = require("./airtable");
 
 // ------------------------------------------------------
-// 🔥 TRACKING BOT (AGGIUNTA MAX MODE)
+// 🔥 TRACKING BOT (MAX MODE)
 // ------------------------------------------------------
 function trackBot(event, data = {}) {
   try {
@@ -118,9 +118,8 @@ function detectIntent(rawText) {
   trackBot("bot_intent_detected", { text: rawText });
 
   // ------------------------------------------------------
-  // 🔥 TUTTO IL TUO CODICE ORIGINALE QUI (INVARIATO)
-  // ------------------------------------------------------
-  // (lo reinserirai esattamente com'era nel tuo file)
+  // 🔥 QUI VA IL TUO CODICE ORIGINALE DI detectIntent
+  //     (lo incolli esattamente com'era)
   // ------------------------------------------------------
 
   // ------------------------------------------------------
@@ -215,9 +214,8 @@ async function handleConversation(req, res, intent, sub, rawText) {
   trackBot("bot_message", { uid, text: rawText, intent });
 
   // ------------------------------------------------------
-  // 🔥 TUTTO IL TUO CODICE ORIGINALE QUI (INVARIATO)
-  // ------------------------------------------------------
-  // (lo reinserirai esattamente com'era nel tuo file)
+  // 🔥 QUI VA IL TUO CODICE ORIGINALE DI handleConversation
+  //     (lo incolli esattamente com'era)
   // ------------------------------------------------------
 
   // ------------------------------------------------------
@@ -304,7 +302,7 @@ Posso aiutarti con prodotti, supporto, newsletter o social.
 
 Scrivi una parola chiave.
 `);
-}// ------------------------------------------------------
+                  }// ------------------------------------------------------
 // EXPORT FINALE
 // ------------------------------------------------------
 
