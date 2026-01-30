@@ -1,26 +1,19 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-
-  <!-- IMPORTA HEAD.HTML PRIMA DEL PARSING -->
+  <div id="head-placeholder"></div>
   <script>
-    document.write('<link rel="import" href="head.html" id="head-import">');
-  </script>
-  <script>
-    const link = document.getElementById("head-import");
-    fetch(link.getAttribute("href"))
+    fetch("head.html")
       .then(r => r.text())
-      .then(html => link.insertAdjacentHTML("afterend", html));
+      .then(h => document.getElementById("head-placeholder").innerHTML = h);
   </script>
-
   <script src="seo.js" defer></script>
   <script src="structured-data.js" defer></script>
-
+  <script src="tracking.js" defer></script>
+  <script src="index.js" defer></script>
 </head>
-
 <body>
 
-<!-- HEADER -->
 <div id="header-placeholder"></div>
 <script>
   fetch("header.html")
@@ -28,75 +21,26 @@
     .then(h => document.getElementById("header-placeholder").innerHTML = h);
 </script>
 
-<main>
+<main class="home">
+  <section class="hero">
+    <h1>Prodotti digitali chiari, utili e immediati.</h1>
+    <p>Quando il catalogo sarà attivo, qui vedrai i prodotti in evidenza.</p>
+  </section>
 
-  <!-- HERO -->
-  <section class="hero-slider">
-    <div class="slider-container" id="slider"></div>
-    <div class="hero-overlay">
-      <h1>Soluzioni digitali per crescere</h1>
-      <p>Prodotti creati con Intelligenza Artificiale, chiari, moderni e subito utili.</p>
-      <a href="catalogo.html" class="btn-premium">Esplora il catalogo</a>
+  <section class="catalogo" id="catalogo">
+    <h2>Catalogo MewingMarket</h2>
+    <div id="products-grid" class="products-grid">
+      <!-- Si popola solo quando products.json ha dati reali -->
     </div>
   </section>
-
-  <!-- SEZIONE PRESENTAZIONE -->
-  <section class="home-section intro-premium">
-    <h2>Benvenuto su MewingMarket</h2>
-    <p>
-      MewingMarket è un progetto dedicato alla creazione di prodotti digitali, guide e risorse sviluppate con l’Intelligenza Artificiale.
-      Il nostro obiettivo è offrirti strumenti moderni, chiari e immediati per migliorare la tua vita personale e professionale.
-    </p>
-    <p>
-      Ogni contenuto nasce da un processo di ricerca, sperimentazione e ottimizzazione continua. Non vendiamo semplici file, ma soluzioni
-      pensate per aiutarti davvero, ridurre la complessità e accelerare i tuoi risultati.
-    </p>
-    <a href="chi-siamo.html" class="btn">Scopri chi siamo</a>
-  </section>
-
-  <!-- NOVITÀ -->
-  <section class="home-section">
-    <h2>Novità dal catalogo</h2>
-    <div class="catalogo-grid" id="novita"></div>
-  </section>
-
-  <!-- BEST SELLER -->
-  <section class="home-section">
-    <h2>I più scelti</h2>
-    <div class="catalogo-grid" id="bestseller"></div>
-  </section>
-
-  <!-- BLOCCO PREMIUM -->
-  <section class="home-section premium-block">
-    <h2>Il nostro metodo</h2>
-    <p>
-      Studiamo i bisogni reali delle persone, individuiamo le soluzioni più efficaci e trasformiamo tutto in prodotti digitali chiari,
-      immediati e facili da utilizzare. Crediamo nella trasparenza, nella qualità e nella semplicità: tre elementi che guidano ogni fase
-      del nostro lavoro.
-    </p>
-    <p>
-      Scegliendo MewingMarket accedi a un ecosistema in continua evoluzione, pensato per offrirti valore concreto e strumenti moderni.
-    </p>
-    <a href="catalogo.html" class="btn-premium">Vai al catalogo</a>
-  </section>
-
-  <!-- LOW COST -->
-  <section class="home-section">
-    <h2>Sotto i 10€</h2>
-    <div class="catalogo-grid" id="lowcost"></div>
-  </section>
-
 </main>
 
-<!-- FOOTER -->
 <div id="footer-placeholder"></div>
 <script>
   fetch("footer.html")
     .then(r => r.text())
     .then(h => document.getElementById("footer-placeholder").innerHTML = h);
 </script>
-
-<script src="index.js"></script>
 
 </body>
 </html>
