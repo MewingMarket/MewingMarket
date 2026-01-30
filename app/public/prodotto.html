@@ -45,6 +45,18 @@
     .then(h => document.getElementById("footer-placeholder").innerHTML = h);
 </script>
 
+<!-- TRACKING VIEW PRODOTTO -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const params = new URLSearchParams(window.location.search);
+  const slug = params.get("slug");
+
+  if (window.trackEvent && slug) {
+    trackEvent("product_view", { slug });
+  }
+});
+</script>
+
 <script src="prodotto.js"></script>
 
 </body>
