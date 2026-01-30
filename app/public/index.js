@@ -24,10 +24,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       card.className = "product-card";
 
       card.innerHTML = `
-        <img src="${p.immagine}" alt="${p.titolo}" loading="lazy">
+        <img src="${p.immagine}" 
+             alt="${p.titolo}" 
+             loading="lazy"
+             data-track="product_image_click"
+             data-track-extra='${JSON.stringify({ slug: p.slug })}'>
+
         <h3>${p.titoloBreve || p.titolo}</h3>
         <p>${p.descrizioneBreve || ""}</p>
         <p class="price">${p.prezzo ? p.prezzo + " €" : ""}</p>
+
         <div class="actions">
           <a href="/prodotto.html?slug=${encodeURIComponent(p.slug)}"
              class="btn"
@@ -35,9 +41,11 @@ document.addEventListener("DOMContentLoaded", async () => {
              data-track-extra='${JSON.stringify({ slug: p.slug })}'>
             Dettagli
           </a>
+
           <a href="${p.linkPayhip}"
              class="btn-secondary"
-             target="_blank" rel="noopener"
+             target="_blank" 
+             rel="noopener"
              data-track="product_buy_click"
              data-track-extra='${JSON.stringify({ slug: p.slug })}'>
             Acquista su Payhip
