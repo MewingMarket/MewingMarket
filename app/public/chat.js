@@ -96,7 +96,15 @@ document.addEventListener("DOMContentLoaded", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ message: text })
+        body: JSON.stringify({
+          message: text,
+
+          // 🔥 PATCH MAX MODE (Aggiunta contesto pagina)
+          page: window.location.pathname,
+
+          // 🔥 PATCH MAX MODE (Aggiunta slug prodotto)
+          slug: new URLSearchParams(window.location.search).get("slug") || null
+        })
       });
 
       const data = await res.json();
