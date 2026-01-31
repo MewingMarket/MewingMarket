@@ -7,13 +7,16 @@
       .then(r => r.text())
       .then(h => document.getElementById("head-placeholder").innerHTML = h);
   </script>
+
   <script src="seo.js" defer></script>
   <script src="structured-data.js" defer></script>
   <script src="tracking.js" defer></script>
   <script src="index.js" defer></script>
 </head>
+
 <body>
 
+<!-- HEADER -->
 <div id="header-placeholder"></div>
 <script>
   fetch("header.html")
@@ -22,19 +25,37 @@
 </script>
 
 <main class="home">
+
+  <!-- HERO COME NELLA FOTO -->
   <section class="hero">
-    <h1>Prodotti digitali chiari, utili e immediati.</h1>
-    <p>Quando il catalogo sarà attivo, qui vedrai i prodotti in evidenza.</p>
+    <h1>Soluzioni digitali per crescere.</h1>
+    <p>Prodotti creati con Intelligenza Artificiale, chiari, moderni e subito utili.</p>
+    <a href="#catalogo" class="btn-hero">Esplora il catalogo</a>
   </section>
 
-  <section class="catalogo" id="catalogo">
-    <h2>Catalogo MewingMarket</h2>
-    <div id="products-grid" class="products-grid">
-      <!-- Si popola solo quando products.json ha dati reali -->
-    </div>
+  <!-- TESTO BENVENUTO COME NELLA FOTO -->
+  <section class="home-section">
+    <h2>Benvenuto su MewingMarket</h2>
+    <p>
+      MewingMarket è un progetto dedicato alla creazione di prodotti digitali, guide e risorse sviluppate con l’Intelligenza Artificiale.
+      Il nostro obiettivo è offrirti strumenti moderni, chiari e immediati per migliorare la tua vita personale e professionale.
+    </p>
+    <p>
+      Ogni contenuto nasce da un processo di ricerca, sperimentazione e ottimizzazione continua.
+      Non vendiamo semplici file, ma soluzioni pensate per aiutarti davvero, ridurre la complessità e accelerare i tuoi risultati.
+    </p>
+    <a href="chisiamo.html" class="btn">Scopri chi siamo</a>
   </section>
+
+  <!-- NOVITÀ DAL CATALOGO -->
+  <section class="home-section" id="catalogo">
+    <h2>Novità dal catalogo</h2>
+    <div id="products-grid" class="products-grid"></div>
+  </section>
+
 </main>
 
+<!-- FOOTER -->
 <div id="footer-placeholder"></div>
 <script>
   fetch("footer.html")
