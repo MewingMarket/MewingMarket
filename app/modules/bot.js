@@ -406,7 +406,16 @@ async function handleConversation(req, res, intent, sub, rawText) {
     const risposta = await callGPT(rawText, Memory.get(uid), pageContext);
     return reply(res, risposta);
   }
-
+// CONVERSAZIONE GENERALE
+if (intent === "conversazione") {
+  const risposta = await callGPT(
+    rawText,
+    Memory.get(uid),
+    pageContext,
+    "\nRispondi in modo amichevole, breve, coerente con il brand MewingMarket, e se possibile collega la conversazione ai prodotti o al valore del digitale."
+  );
+  return reply(res, risposta);
+}
   // MENU
   if (intent === "menu") {
     setState(req, "menu");
@@ -440,7 +449,37 @@ Scrivi una parola chiave come:
     out += `Puoi scrivere il nome di un prodotto o il tuo obiettivo, e ti consiglio cosa scegliere.`;
     return reply(res, out);
   }
+// CONVERSAZIONE GENERALE
+if (
+  q.includes("come va") ||
+  q.includes("come stai") ||
+  q.includes("tutto bene") ||
+  q.includes("e te") ||
+  q.includes("che fai") ||
+  q.includes("parlami") ||
+  q.includes("dimmi qualcosa")
+) {
+  return { intent: "conversazione", sub: null };
+}
 
+// ISCRIZIONE GENERICA
+if (
+  q.includes("iscrizione") ||
+  q.includes("mi iscrivo") ||
+  q.includes("voglio iscrivermi")
+) {
+  return { intent: "newsletter", sub: "subscribe" };
+}
+
+// ACQUISTO GENERICO
+if (
+  q.includes("acquisto") ||
+  q.includes("fare un acquisto") ||
+  q.includes("voglio acquistare") ||
+  q.includes("procedo all acquisto")
+) {
+  return { intent: "acquisto_diretto", sub: null };
+}
   // NEWSLETTER
   if (intent === "newsletter") {
     setState(req, "newsletter");
