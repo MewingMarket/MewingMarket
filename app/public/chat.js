@@ -1,4 +1,4 @@
-// chat.js — versione AI completa
+// chat.js — VERSIONE MAX (blindato + UX premium)
 
 document.addEventListener("DOMContentLoaded", () => {
   const btn = document.getElementById("mm-chat-btn");
@@ -9,6 +9,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Inserisci icona PNG nel bottone
   btn.innerHTML = `<img src="chat-icon.png" alt="Chat" class="mm-chat-icon">`;
+
+  // Stato invio (evita doppi invii)
+  let sending = false;
+
+  // Typing indicator
+  function showTyping() {
+    const div = document.createElement("div");
+    div.className = "mm-bubble mm-bot mm-typing";
+    div.innerHTML = `<span class="dot"></span><span class="dot"></span><span class="dot"></span>`;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function hideTyping() {
+    const typing = document.querySelector(".mm-typing");
+    if (typing) typing.remove();
+  }
 
   // Apri/chiudi chat
   btn.addEventListener("click", () => {
@@ -35,6 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Aggiunge messaggio bot
   function addBot(text) {
+    hideTyping();
     const div = document.createElement("div");
     div.className = "mm-bubble mm-bot";
     div.innerHTML = text;
@@ -42,7 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
     messages.scrollTop = messages.scrollHeight;
   }
 
-  // Quick replies (B)
+  // Quick replies
   function addQuickReplies(buttons) {
     const wrap = document.createElement("div");
     wrap.className = "mm-quick-wrap";
@@ -63,8 +81,10 @@ document.addEventListener("DOMContentLoaded", () => {
     messages.scrollTop = messages.scrollHeight;
   }
 
-  // Card prodotto (C)
+  // Product card premium
   function addProductCard(reply) {
+    hideTyping();
+
     const card = document.createElement("div");
     card.className = "mm-product-card";
 
@@ -85,11 +105,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Invio messaggio
   async function sendMessage(forceText = null) {
+    if (sending) return; // evita spam
+    sending = true;
+
     const text = forceText || input.value.trim();
-    if (!text) return;
+    if (!text) {
+      sending = false;
+      return;
+    }
 
     addUser(text);
     input.value = "";
+
+    showTyping();
 
     try {
       const res = await fetch("/chat", {
@@ -99,10 +127,10 @@ document.addEventListener("DOMContentLoaded", () => {
         body: JSON.stringify({
           message: text,
 
-          // 🔥 PATCH MAX MODE (Aggiunta contesto pagina)
+          // 🔥 Contesto pagina
           page: window.location.pathname,
 
-          // 🔥 PATCH MAX MODE (Aggiunta slug prodotto)
+          // 🔥 Contesto slug prodotto
           slug: new URLSearchParams(window.location.search).get("slug") || null
         })
       });
@@ -110,32 +138,39 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await res.json();
       const reply = data.reply || "Errore imprevisto.";
 
-      // C → Risposta commerciale (contiene prezzo o Payhip)
+      // Risposta commerciale
       if (reply.includes("€") || reply.includes("payhip.com")) {
         addProductCard(reply);
         addQuickReplies(["Acquista", "Dettagli", "Menu"]);
+        sending = false;
         return;
       }
 
-      // B → Navigazione / menu
+      // Navigazione / menu
+      const low = reply.toLowerCase();
       if (
-        reply.toLowerCase().includes("menu") ||
-        reply.toLowerCase().includes("catalogo") ||
-        reply.toLowerCase().includes("supporto")
+        low.includes("menu") ||
+        low.includes("catalogo") ||
+        low.includes("supporto")
       ) {
         addBot(reply);
         addQuickReplies(["Catalogo", "Supporto", "Contatti", "Menu"]);
+        sending = false;
         return;
       }
 
-      // A → Risposta diretta
+      // Risposta diretta
       addBot(reply);
 
     } catch (err) {
-      addBot("⚠️ Problema di connessione.");
+      hideTyping();
+      addBot("⚠️ Problema di connessione. Riprova tra qualche secondo.");
     }
+
+    sending = false;
   }
 
+  // Eventi input
   sendBtn.addEventListener("click", () => sendMessage());
   input.addEventListener("keypress", e => {
     if (e.key === "Enter") {
