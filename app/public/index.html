@@ -1,17 +1,23 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <div id="head-placeholder"></div>
+
+  <!-- HEAD IMPORTATA (corretto: niente <div> dentro <head>) -->
   <script>
     fetch("head.html")
       .then(r => r.text())
-      .then(h => document.getElementById("head-placeholder").innerHTML = h);
+      .then(h => {
+        const temp = document.createElement("div");
+        temp.innerHTML = h;
+        document.head.append(...temp.children);
+      });
   </script>
 
   <script src="seo.js" defer></script>
   <script src="structured-data.js" defer></script>
   <script src="tracking.js" defer></script>
   <script src="index.js" defer></script>
+
 </head>
 
 <body>
@@ -26,14 +32,28 @@
 
 <main class="home">
 
-  <!-- HERO COME NELLA FOTO -->
-  <section class="hero">
-    <h1>Soluzioni digitali per crescere.</h1>
-    <p>Prodotti creati con Intelligenza Artificiale, chiari, moderni e subito utili.</p>
-    <a href="#catalogo" class="btn-hero">Esplora il catalogo</a>
+  <!-- HERO PREMIUM (mantiene il tuo testo, aggiunge layout premium) -->
+  <section class="hero hero-premium">
+    <div class="hero-left">
+      <h1>Soluzioni digitali per crescere.</h1>
+      <p>Prodotti creati con Intelligenza Artificiale, chiari, moderni e subito utili.</p>
+
+      <div class="hero-cta">
+        <a href="#catalogo" class="btn-hero">Esplora il catalogo</a>
+        <a href="video-presentazione.html" class="btn-hero-secondary">Guarda il video</a>
+      </div>
+    </div>
+
+    <div class="hero-right">
+      <div class="hero-slider">
+        <img src="hero1.webp" alt="MewingMarket Hero 1">
+        <img src="hero2.webp" alt="MewingMarket Hero 2">
+        <img src="hero3.webp" alt="MewingMarket Hero 3">
+      </div>
+    </div>
   </section>
 
-  <!-- TESTO BENVENUTO COME NELLA FOTO -->
+  <!-- TESTO BENVENUTO (il tuo testo, intatto) -->
   <section class="home-section">
     <h2>Benvenuto su MewingMarket</h2>
     <p>
@@ -47,7 +67,65 @@
     <a href="chisiamo.html" class="btn">Scopri chi siamo</a>
   </section>
 
-  <!-- NOVITÀ DAL CATALOGO -->
+  <!-- SEZIONE PREMIUM: PERCHÉ MEWINGMARKET -->
+  <section class="home-section why-mm">
+    <h2>Perché scegliere MewingMarket</h2>
+
+    <div class="why-grid">
+      <div class="why-card">
+        <h3>🎯 Soluzioni pratiche</h3>
+        <p>Ogni prodotto è progettato per risolvere un problema reale, non per riempire spazio.</p>
+      </div>
+
+      <div class="why-card">
+        <h3>⚡ Velocità e chiarezza</h3>
+        <p>Contenuti sintetici, moderni e subito applicabili, senza fronzoli inutili.</p>
+      </div>
+
+      <div class="why-card">
+        <h3>🤖 Intelligenza Artificiale</h3>
+        <p>Ogni guida nasce da un processo avanzato di ricerca e ottimizzazione AI.</p>
+      </div>
+
+      <div class="why-card">
+        <h3>📈 Crescita continua</h3>
+        <p>Aggiornamenti costanti, nuovi prodotti e supporto dedicato.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SEZIONE PREMIUM: COME FUNZIONA -->
+  <section class="home-section how-it-works">
+    <h2>Come funziona</h2>
+
+    <div class="how-grid">
+      <div class="how-step">
+        <span class="step-number">1</span>
+        <h3>Scegli il prodotto</h3>
+        <p>Trova la guida o la risorsa più adatta alle tue esigenze.</p>
+      </div>
+
+      <div class="how-step">
+        <span class="step-number">2</span>
+        <h3>Acquista in sicurezza</h3>
+        <p>Pagamento gestito da Payhip, sicuro e immediato.</p>
+      </div>
+
+      <div class="how-step">
+        <span class="step-number">3</span>
+        <h3>Scarica subito</h3>
+        <p>Ricevi il file immediatamente via email.</p>
+      </div>
+
+      <div class="how-step">
+        <span class="step-number">4</span>
+        <h3>Inizia a crescere</h3>
+        <p>Applica i contenuti e ottieni risultati concreti.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- NOVITÀ DAL CATALOGO (il tuo blocco, intatto) -->
   <section class="home-section" id="catalogo">
     <h2>Novità dal catalogo</h2>
     <div id="products-grid" class="products-grid"></div>
@@ -62,6 +140,16 @@
     .then(r => r.text())
     .then(h => document.getElementById("footer-placeholder").innerHTML = h);
 </script>
+
+<!-- CHAT (già gestita da chat.js) -->
+<div id="mm-chat-btn"></div>
+<div id="mm-chatbox">
+  <div id="mm-chat-messages"></div>
+  <div id="mm-chat-input">
+    <input type="text" placeholder="Scrivi un messaggio...">
+    <button>Invia</button>
+  </div>
+</div>
 
 </body>
 </html>
