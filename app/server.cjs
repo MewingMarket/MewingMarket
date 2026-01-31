@@ -6,7 +6,7 @@ const express = require("express");
 const fs = require("fs");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
-const axios = require("axios"); // <--- AGGIUNTO
+const axios = require("axios");
 require("dotenv").config();
 
 /* =========================================================
@@ -22,6 +22,37 @@ const { generateImagesSitemap } = require(path.join(__dirname, "modules", "sitem
 const { generateStoreSitemap } = require(path.join(__dirname, "modules", "sitemap-store"));
 const { generateSocialSitemap } = require(path.join(__dirname, "modules", "sitemap-social"));
 const { generateFooterSitemap } = require(path.join(__dirname, "modules", "sitemap-footer"));
+
+/* =========================================================
+   ⭐ IMPORT MAX MODE
+========================================================= */
+const { safeText } = require(path.join(__dirname, "modules", "utils"));
+const Context = require(path.join(__dirname, "modules", "context"));
+
+/* Tracking GA4 server-side */
+const GA4_ID = process.env.GA4_ID;
+const GA4_API_SECRET = process.env.GA4_API_SECRET;
+
+async function trackGA4(eventName, params = {}) {
+  try {
+    if (!GA4_ID || !GA4_API_SECRET) return;
+
+    await axios.post(
+      `https://www.google-analytics.com/mp/collect?measurement_id=${GA4_ID}&api_secret=${GA4_API_SECRET}`,
+      {
+        client_id: params.uid || "unknown",
+        events: [
+          {
+            name: eventName,
+            params
+          }
+        ]
+      }
+    );
+  } catch (err) {
+    console.error("GA4 tracking error:", err?.response?.data || err);
+  }
+}
 
 /* =========================================================
    SETUP EXPRESS
@@ -99,7 +130,33 @@ app.use((req, res, next) => {
 });
 
 /* =========================================================
-   SITEMAP DINAMICHE (IMMAGINI + STORE + SOCIAL)
+   ⭐ MIDDLEWARE MAX: CONTESTO + SANITIZZAZIONE + TRACKING
+========================================================= */
+app.use((req, res, next) => {
+  const uid = req.uid;
+
+  const page = req.body?.page || req.query?.page || null;
+  const slug = req.body?.slug || req.query?.slug || null;
+
+  if (page || slug) {
+    Context.update(uid, page, slug);
+
+    trackGA4("page_view", {
+      uid,
+      page: page || "",
+      slug: slug || ""
+    });
+  }
+
+  if (req.body?.message) {
+    req.body.message = safeText(req.body.message);
+  }
+
+  next();
+});
+
+/* =========================================================
+   SITEMAP DINAMICHE
 ========================================================= */
 app.get("/sitemap-images.xml", (req, res) => {
   const xml = generateImagesSitemap();
@@ -122,7 +179,7 @@ app.get("/sitemap.xml", (req, res) => {
 });
 
 /* =========================================================
-   FEED META (UNICO FEED UFFICIALE)
+   FEED META
 ========================================================= */
 app.get("/meta/feed", (req, res) => {
   const products = getProducts();
@@ -169,7 +226,7 @@ app.get("/products.json", (req, res) => {
 });
 
 /* =========================================================
-   PAGINA PRODOTTO DINAMICA (NOINDEX)
+   PAGINA PRODOTTO DINAMICA
 ========================================================= */
 app.get("/prodotto.html", (req, res) => {
   const slug = req.query.slug;
@@ -184,25 +241,55 @@ app.get("/prodotto.html", (req, res) => {
 });
 
 /* =========================================================
-   CHAT BOT
+   ⭐ CHAT BOT — VERSIONE MAX
 ========================================================= */
-app.post("/chat", (req, res) => {
-  const { message } = req.body;
+app.post("/chat", async (req, res) => {
+  try {
+    const uid = req.uid;
+    const rawMessage = req.body.message;
 
-  if (!message || message.trim() === "") {
-    return reply(res, "Scrivi un messaggio così posso aiutarti.");
+    if (!rawMessage || rawMessage.trim() === "") {
+      return reply(res, "Scrivi un messaggio così posso aiutarti.");
+    }
+
+    trackGA4("chat_message_sent", {
+      uid,
+      message: rawMessage
+    });
+
+    const { intent, sub } = detectIntent(rawMessage);
+
+    trackGA4("intent_detected", {
+      uid,
+      intent,
+      sub: sub || ""
+    });
+
+    userStates[uid].lastIntent = intent;
+
+    const response = await handleConversation(req, res, intent, sub, rawMessage);
+
+    trackGA4("chat_message_received", {
+      uid,
+      intent,
+      sub: sub || ""
+    });
+
+    return response;
+
+  } catch (err) {
+    console.error("❌ Errore /chat MAX:", err);
+
+    trackGA4("chat_error", {
+      error: err?.message || "unknown"
+    });
+
+    return reply(res, "Sto avendo un problema temporaneo. Riprova tra poco.");
   }
-
-  const uid = req.uid;
-  const { intent, sub } = detectIntent(message);
-
-  userStates[uid].lastIntent = intent;
-
-  return handleConversation(req, res, intent, sub, message);
 });
 
 /* =========================================================
-   NEWSLETTER: ISCRIZIONE / DISISCRIZIONE / INVIO
+   NEWSLETTER
 ========================================================= */
 const { iscriviEmail } = require("./modules/brevoSubscribe");
 const { disiscriviEmail } = require("./modules/brevoUnsubscribe");
@@ -212,7 +299,7 @@ const welcomeHTML = fs.readFileSync(
   "utf8"
 );
 
-// 1) ISCRIZIONE
+// ISCRIZIONE
 app.post("/newsletter/subscribe", async (req, res) => {
   try {
     const { email } = req.body;
@@ -243,7 +330,7 @@ app.post("/newsletter/subscribe", async (req, res) => {
   }
 });
 
-// 2) DISISCRIZIONE
+// DISISCRIZIONE
 app.post("/newsletter/unsubscribe", async (req, res) => {
   try {
     const { email } = req.body;
@@ -258,7 +345,7 @@ app.post("/newsletter/unsubscribe", async (req, res) => {
   }
 });
 
-// 3) INVIO MANUALE NEWSLETTER
+// INVIO MANUALE
 app.post("/newsletter/send", async (req, res) => {
   try {
     const { html, oggetto } = generateNewsletterHTML();
@@ -302,10 +389,11 @@ setInterval(async () => {
   } catch (err) {
     console.error("❌ Errore nel sync programmato:", err);
   }
-}, 30 * 60 * 1000);/* =========================================================
+}, 30 * 60 * 1000);
+
+/* =========================================================
    NEWSLETTER AUTOMATICA — NUOVO PRODOTTO
 ========================================================= */
-
 let lastProductId = null;
 
 async function checkNewProduct() {
@@ -315,14 +403,12 @@ async function checkNewProduct() {
 
     const latest = products.at(-1);
 
-    // Primo avvio → memorizza ma non invia
     if (!lastProductId) {
       lastProductId = latest.id;
       console.log("🟦 Primo avvio: memorizzato ultimo prodotto:", lastProductId);
       return;
     }
 
-    // Se c’è un nuovo prodotto → invia newsletter
     if (latest.id !== lastProductId) {
       console.log("🆕 Nuovo prodotto rilevato:", latest.titoloBreve);
 
@@ -338,5 +424,4 @@ async function checkNewProduct() {
   }
 }
 
-// Controllo ogni 5 minuti
 setInterval(checkNewProduct, 5 * 60 * 1000);
