@@ -11,10 +11,10 @@ const {
   cleanURL
 } = require("./utils");
 
-// Variabili ambiente
+// Variabili ambiente (✔ CORRETTE)
 const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
-const BASE_ID = process.env.AIRTABLE_BASE_ID;
-const TABLE_NAME = process.env.AIRTABLE_TABLE_ID;   // ✅ USIAMO TABLE_ID
+const BASE_ID = process.env.AIRTABLE_BASE;      // ✔ ID base
+const TABLE_NAME = process.env.AIRTABLE_TABLE;  // ✔ ID tabella
 
 // Catalogo in memoria
 let PRODUCTS = [];
