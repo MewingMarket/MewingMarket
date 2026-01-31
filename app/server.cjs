@@ -9,14 +9,14 @@ const cookieParser = require("cookie-parser");
 const axios = require("axios");
 require("dotenv").config();
 
-/* =========================================================
+// Stato utenti globale blindato (FONDAMENTALE)
+const userStates = {};/* =========================================================
    IMPORT MODULI INTERNI
 ========================================================= */
 const { generateNewsletterHTML } = require(path.join(__dirname, "modules", "newsletter"));
 const { syncAirtable, loadProducts, getProducts } = require(path.join(__dirname, "modules", "airtable"));
-const { detectIntent, handleConversation, reply, userStates, generateUID } = require(path.join(__dirname, "modules", "bot"));
+const { detectIntent, handleConversation, reply, generateUID } = require(path.join(__dirname, "modules", "bot"));
 const { inviaNewsletter } = require(path.join(__dirname, "modules", "brevo"));
-
 /* NUOVE SITEMAP DINAMICHE */
 const { generateImagesSitemap } = require(path.join(__dirname, "modules", "sitemap-images"));
 const { generateStoreSitemap } = require(path.join(__dirname, "modules", "sitemap-store"));
