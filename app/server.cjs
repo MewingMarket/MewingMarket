@@ -99,14 +99,14 @@ app.use((req, res, next) => {
 
   next();
 });
-
 /* =========================================================
    USER STATE + COOKIE UID (BLINDATO)
 ========================================================= */
 app.use((req, res, next) => {
   let uid = req.cookies.mm_uid;
 
-  if (!uid) {
+  // 🔥 Se il cookie è mancante, corrotto o non valido → rigenera
+  if (!uid || typeof uid !== "string" || !uid.startsWith("mm_")) {
     uid = generateUID();
     res.cookie("mm_uid", uid, {
       httpOnly: false,
@@ -116,6 +116,7 @@ app.use((req, res, next) => {
     });
   }
 
+  // 🔥 Se lo stato utente non esiste → crealo sempre
   if (!userStates[uid]) {
     userStates[uid] = {
       state: "menu",
@@ -128,7 +129,6 @@ app.use((req, res, next) => {
   req.userState = userStates[uid];
   next();
 });
-
 /* =========================================================
    ⭐ MIDDLEWARE MAX: CONTESTO + SANITIZZAZIONE + TRACKING
 ========================================================= */
