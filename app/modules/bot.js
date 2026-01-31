@@ -1,4 +1,4 @@
-// modules/bot.js
+// modules/bot.js — VERSIONE MAX
 
 const {
   MAIN_PRODUCT_SLUG,
@@ -12,6 +12,8 @@ const {
 
 const { normalize } = require("./utils");
 const { getProducts } = require("./airtable");
+const Context = require("./context");
+const Memory = require("./memory");
 
 // ------------------------------
 // 🔥 TRACKING BOT
@@ -27,7 +29,7 @@ function trackBot(event, data = {}) {
 }
 
 // ------------------------------
-// 🔥 GPT MAX
+// 🔥 GPT MAX — con memoria + contesto
 // ------------------------------
 const SYSTEM_PROMPT = `
 Sei l'assistente ufficiale di MewingMarket.
@@ -41,7 +43,7 @@ Se chiede idee → generane.
 Se chiede riscrittura → riscrivi.
 `;
 
-async function callGPT(prompt, memory = {}, context = {}) {
+async function callGPT(prompt, memory = [], context = {}) {
   try {
     const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
@@ -53,8 +55,8 @@ async function callGPT(prompt, memory = {}, context = {}) {
         model: "meta-llama/llama-3.1-70b-instruct",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          { role: "assistant", content: "Memoria: " + JSON.stringify(memory) },
-          { role: "assistant", content: "Contesto: " + JSON.stringify(context) },
+          { role: "assistant", content: "Memoria conversazione: " + JSON.stringify(memory) },
+          { role: "assistant", content: "Contesto pagina: " + JSON.stringify(context) },
           { role: "user", content: prompt }
         ]
       })
@@ -96,51 +98,7 @@ function isYes(text) {
     t.includes("certo") ||
     t.includes("yes")
   );
-}
-
-// ------------------------------
-// COSTANTI BOT (TUO CODICE)
-// ------------------------------
-const LINKS = {
-  sito: "https://www.mewingmarket.it",
-  store: "https://mewingmarket.payhip.com",
-  newsletter: "https://mewingmarket.it/newsletter",
-  disiscrizione: "https://mewingmarket.it/unsubscribe",
-
-  instagram: "https://instagram.com/mewingmarket",
-  tiktok: "https://tiktok.com/@mewingmarket",
-  youtube: "https://youtube.com/@mewingmarket",
-  facebook: "https://facebook.com/mewingmarket",
-  x: "https://x.com/mewingmarket",
-  threads: "https://threads.net/@mewingmarket",
-  linkedin: "https://linkedin.com/company/mewingmarket"
-};
-
-const HELP_DESK = {
-  download: "📥 *Problemi con il download?*\nControlla la tua email Payhip o la sezione 'I miei acquisti'. Se serve aiuto scrivi a supporto@mewingmarket.it o su WhatsApp 352 026 6660.",
-  
-  payhip: "💳 *Problemi con Payhip?*\nAssicurati che la carta sia abilitata agli acquisti online. Se il problema persiste, contattaci su WhatsApp 352 026 6660.",
-
-  rimborso: "↩️ *Resi e Rimborsi*\nLeggi la politica completa qui:\nhttps://www.mewingmarket.it/resi.html\n\nPer assistenza:\n📩 supporto@mewingmarket.it\n💬 WhatsApp: 352 026 6660",
-
-  contatto: "📞 *Contatti diretti*\nSupporto: supporto@mewingmarket.it\nCommerciale: vendite@mewingmarket.it\nWhatsApp: 352 026 6660"
-};
-
-const FAQ_BLOCK = `
-❓ *Domande frequenti*
-
-• Non ho ricevuto l’email  
-• Il download non funziona  
-• Problemi con Payhip  
-• Voglio un rimborso  
-• Voglio contattare il supporto
-`;
-
-const SUPPORTO = `
-🛠 *Supporto tecnico*
-
-Descrivi il problema e ti aiuto subito.
-`;// ------------------------------------------------------
+    }// ------------------------------------------------------
 // DETECT INTENT — VERSIONE MAX (ORIGINALE + AGGIUNTE GPT)
 // ------------------------------------------------------
 
@@ -199,6 +157,16 @@ function detectIntent(rawText) {
     t.includes("non so cosa prendere")
   ) {
     return { intent: "advisor", sub: null };
+  }
+
+  // Supporto tecnico GPT (nuovo)
+  if (
+    t.includes("supporto gpt") ||
+    t.includes("aiuto tecnico") ||
+    t.includes("problema tecnico") ||
+    t.includes("assistenza tecnica")
+  ) {
+    return { intent: "support_gpt", sub: null };
   }
 
   // ------------------------------
@@ -467,6 +435,12 @@ async function handleConversation(req, res, intent, sub, rawText) {
   const state = userStates[uid];
   state.lastIntent = intent;
 
+  // 🔥 Memoria conversazionale avanzata
+  Memory.push(uid, rawText);
+
+  // 🔥 Contesto pagina/slug
+  const pageContext = Context.get(uid);
+
   trackBot("conversation_step", { uid, intent, sub, text: rawText });
 
   // ------------------------------------------------------
@@ -478,8 +452,8 @@ async function handleConversation(req, res, intent, sub, rawText) {
     const risposta = await callGPT(
       `Confronta prodotti MewingMarket in base a ciò che l'utente ha scritto: "${rawText}". 
        Se non sono chiari i prodotti, proponi tu i più rilevanti.`,
-      state,
-      {}
+      Memory.get(uid),
+      pageContext
     );
     return reply(res, risposta);
   }
@@ -488,8 +462,8 @@ async function handleConversation(req, res, intent, sub, rawText) {
   if (intent === "ideas") {
     const risposta = await callGPT(
       `Genera idee utili e pratiche per l'utente basate su: "${rawText}".`,
-      state,
-      {}
+      Memory.get(uid),
+      pageContext
     );
     return reply(res, risposta);
   }
@@ -498,8 +472,8 @@ async function handleConversation(req, res, intent, sub, rawText) {
   if (intent === "rewrite") {
     const risposta = await callGPT(
       `Riscrivi e migliora questo testo mantenendo il senso originale:\n\n"${rawText}"`,
-      state,
-      {}
+      Memory.get(uid),
+      pageContext
     );
     return reply(res, risposta);
   }
@@ -508,8 +482,8 @@ async function handleConversation(req, res, intent, sub, rawText) {
   if (intent === "explain") {
     const risposta = await callGPT(
       `Spiega in modo semplice e concreto ciò che l'utente chiede:\n\n"${rawText}"`,
-      state,
-      {}
+      Memory.get(uid),
+      pageContext
     );
     return reply(res, risposta);
   }
@@ -518,14 +492,25 @@ async function handleConversation(req, res, intent, sub, rawText) {
   if (intent === "advisor") {
     const risposta = await callGPT(
       `Consiglia il prodotto o la combinazione di prodotti MewingMarket più adatti in base a:\n\n"${rawText}"`,
-      state,
-      {}
+      Memory.get(uid),
+      pageContext
+    );
+    return reply(res, risposta);
+  }
+
+  // 🔥 Supporto tecnico GPT
+  if (intent === "support_gpt") {
+    const risposta = await callGPT(
+      `Sei il supporto tecnico di MewingMarket. L'utente descrive questo problema:\n\n"${rawText}"\n\n
+      Fai troubleshooting pratico, in punti, con massimo 6 step. Se serve, chiedi 1 sola domanda di chiarimento.`,
+      Memory.get(uid),
+      pageContext
     );
     return reply(res, risposta);
   }
 
   // ------------------------------------------------------
-  // 🔥 DA QUI IN POI — TUO CODICE ORIGINALE
+  // 🔥 DA QUI IN POI — TUO CODICE ORIGINALE (MIGLIORATO)
   // ------------------------------------------------------
 
   const mainProduct = findProductBySlug(MAIN_PRODUCT_SLUG);
@@ -565,7 +550,9 @@ Scrivi quello che ti serve oppure "catalogo".
     }
     out += "Vuoi altre informazioni o tornare al menu?";
     return reply(res, out);
-}// PROMOZIONI
+  }
+
+  // PROMOZIONI
   if (intent === "promozioni") {
     setState(uid, "promozioni");
     return reply(res, `
@@ -692,7 +679,9 @@ ${p.immagine || "https://youtube.com/shorts/YoOXWUajbQc"}
 
 Vuoi acquistarlo o tornare al menu?
 `);
-      }// CONTATTI
+  }
+
+  // CONTATTI
   if (intent === "contatti") {
     return reply(res, `
 📞 *Contatti MewingMarket*
@@ -748,7 +737,7 @@ ${LINKS.disiscrizione}
 `);
   }
 
-  // SUPPORTO TECNICO
+  // SUPPORTO TECNICO (statico)
   if (intent === "supporto_tecnico") {
     return reply(res, SUPPORTO);
   }
@@ -904,7 +893,7 @@ Scrivi una parola chiave.
 
   // 🔥 FALLBACK GPT
   if (intent === "gpt") {
-    const risposta = await callGPT(rawText, state, {});
+    const risposta = await callGPT(rawText, Memory.get(uid), pageContext);
     return reply(res, risposta);
   }
 
@@ -918,7 +907,7 @@ Scrivi una parola chiave come:
 • "newsletter"
 • "social"
 `);
-  }// ------------------------------------------------------
+      }// ------------------------------------------------------
 // EXPORT FINALE — BOT MAX COMPLETO
 // ------------------------------------------------------
 
