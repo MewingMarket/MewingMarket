@@ -69,25 +69,29 @@ async function callGPT(prompt, memory = [], context = {}) {
     return "Sto avendo un problema temporaneo. Riprova tra poco.";
   }
 }
-
 // ------------------------------
-// STATO UTENTI
+// STATO UTENTE GESTITO DAL SERVER
 // ------------------------------
-const userStates = {};
 
+// generateUID rimane qui
 function generateUID() {
   return "mm_" + Math.random().toString(36).substring(2, 12);
 }
 
-function setState(uid, newState) {
-  userStates[uid].state = newState;
+// setState ora usa req.userState (non userStates)
+function setState(req, newState) {
+  if (req.userState && typeof req.userState === "object") {
+    req.userState.state = newState;
+  }
 }
 
+// reply rimane identico
 function reply(res, text) {
   trackBot("bot_reply", { text });
   res.json({ reply: text });
 }
 
+// isYes rimane identico
 function isYes(text) {
   const t = text.toLowerCase();
   return (
@@ -98,7 +102,8 @@ function isYes(text) {
     t.includes("certo") ||
     t.includes("yes")
   );
-    }// ------------------------------------------------------
+}
+// ------------------------------------------------------
 // DETECT INTENT — VERSIONE MAX (ORIGINALE + AGGIUNTE GPT)
 // ------------------------------------------------------
 
