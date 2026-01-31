@@ -79,34 +79,49 @@ app.use(express.json());
 app.use(cookieParser());
 
 /* =========================================================
-   REDIRECT HTTPS + WWW (BLINDATO)
+   REDIRECT HTTPS + WWW (SMART + BLINDATO)
 ========================================================= */
 app.use((req, res, next) => {
-  const proto = req.headers["x-forwarded-proto"];
-  const host = req.headers.host;
+  try {
+    const proto = req.headers["x-forwarded-proto"];
+    const host = req.headers.host;
 
-  if (proto !== "https") {
-    return res.redirect(301, `https://${host}${req.url}`);
+    // Se proto è definito e NON è https → redirect
+    if (proto && proto !== "https") {
+      return res.redirect(301, `https://${host}${req.url}`);
+    }
+
+    // Se host è mewingmarket.it → forza www
+    if (host === "mewingmarket.it") {
+      return res.redirect(301, `https://www.mewingmarket.it${req.url}`);
+    }
+
+    // Se manca www → aggiungilo
+    if (!host.startsWith("www.")) {
+      return res.redirect(301, `https://www.${host}${req.url}`);
+    }
+
+    next();
+  } catch (err) {
+    console.error("Redirect error:", err);
+    next();
   }
-
-  if (host === "mewingmarket.it") {
-    return res.redirect(301, `https://www.mewingmarket.it${req.url}`);
-  }
-
-  if (!host.startsWith("www.")) {
-    return res.redirect(301, `https://www.${host}${req.url}`);
-  }
-
-  next();
 });
+
 /* =========================================================
-   USER STATE + COOKIE UID (BLINDATO)
+   USER STATE + COOKIE UID (ULTRA BLINDATO)
 ========================================================= */
 app.use((req, res, next) => {
-  let uid = req.cookies.mm_uid;
+  let uid = null;
 
-  // 🔥 Se il cookie è mancante, corrotto o non valido → rigenera
-  if (!uid || typeof uid !== "string" || !uid.startsWith("mm_")) {
+  try {
+    uid = req.cookies?.mm_uid;
+  } catch {
+    uid = null;
+  }
+
+  // Cookie non valido → rigenera
+  if (!uid || typeof uid !== "string" || !uid.startsWith("mm_") || uid.length < 5) {
     uid = generateUID();
     res.cookie("mm_uid", uid, {
       httpOnly: false,
@@ -116,7 +131,7 @@ app.use((req, res, next) => {
     });
   }
 
-  // 🔥 Se lo stato utente non esiste → crealo sempre
+  // Stato utente inesistente → crea
   if (!userStates[uid]) {
     userStates[uid] = {
       state: "menu",
@@ -129,62 +144,81 @@ app.use((req, res, next) => {
   req.userState = userStates[uid];
   next();
 });
+
 /* =========================================================
    ⭐ MIDDLEWARE MAX: CONTESTO + SANITIZZAZIONE + TRACKING
 ========================================================= */
 app.use((req, res, next) => {
-  const uid = req.uid;
+  try {
+    const uid = req.uid;
 
-  const page = req.body?.page || req.query?.page || null;
-  const slug = req.body?.slug || req.query?.slug || null;
+    const page = req.body?.page || req.query?.page || null;
+    const slug = req.body?.slug || req.query?.slug || null;
 
-  if (page || slug) {
-    Context.update(uid, page, slug);
+    if (page || slug) {
+      Context.update(uid, page, slug);
 
-    trackGA4("page_view", {
-      uid,
-      page: page || "",
-      slug: slug || ""
-    });
+      trackGA4("page_view", {
+        uid,
+        page: page || "",
+        slug: slug || ""
+      });
+    }
+
+    if (req.body?.message) {
+      req.body.message = safeText(req.body.message);
+    }
+
+    next();
+  } catch (err) {
+    console.error("Middleware MAX error:", err);
+    next();
   }
-
-  if (req.body?.message) {
-    req.body.message = safeText(req.body.message);
-  }
-
-  next();
 });
 
 /* =========================================================
    SITEMAP DINAMICHE
 ========================================================= */
 app.get("/sitemap-images.xml", (req, res) => {
-  const xml = generateImagesSitemap();
-  res.type("application/xml").send(xml);
+  try {
+    res.type("application/xml").send(generateImagesSitemap());
+  } catch (err) {
+    res.status(500).send("Errore sitemap");
+  }
 });
 
 app.get("/sitemap-store.xml", (req, res) => {
-  const xml = generateStoreSitemap();
-  res.type("application/xml").send(xml);
+  try {
+    res.type("application/xml").send(generateStoreSitemap());
+  } catch {
+    res.status(500).send("Errore sitemap");
+  }
 });
 
 app.get("/sitemap-social.xml", (req, res) => {
-  const xml = generateSocialSitemap();
-  res.type("application/xml").send(xml);
+  try {
+    res.type("application/xml").send(generateSocialSitemap());
+  } catch {
+    res.status(500).send("Errore sitemap");
+  }
 });
 
 app.get("/sitemap.xml", (req, res) => {
-  const xml = generateFooterSitemap();
-  res.type("application/xml").send(xml);
+  try {
+    res.type("application/xml").send(generateFooterSitemap());
+  } catch {
+    res.status(500).send("Errore sitemap");
+  }
 });
 
 /* =========================================================
    FEED META
 ========================================================= */
 app.get("/meta/feed", (req, res) => {
-  const products = getProducts();
+  try {
+    const products = getProducts();
 
-  let xml = `<?xml version="1.0" encoding="UTF-8"?>
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
   <channel>
     <title>MewingMarket Catalog</title>
@@ -192,8 +226,8 @@ app.get("/meta/feed", (req, res) => {
     <description>Catalogo prodotti MewingMarket</description>
 `;
 
-  products.forEach((p, i) => {
-    xml += `
+    products.forEach((p, i) => {
+      xml += `
     <item>
       <g:id>${p.id || i + 1}</g:id>
       <g:title><![CDATA[${p.titoloBreve || p.titolo}]]></g:title>
@@ -205,13 +239,16 @@ app.get("/meta/feed", (req, res) => {
       <g:brand>MewingMarket</g:brand>
       <g:condition>new</g:condition>
     </item>`;
-  });
+    });
 
-  xml += `
+    xml += `
   </channel>
 </rss>`;
 
-  res.type("application/xml").send(xml);
+    res.type("application/xml").send(xml);
+  } catch (err) {
+    res.status(500).send("Errore feed");
+  }
 });
 
 /* =========================================================
@@ -229,61 +266,50 @@ app.get("/products.json", (req, res) => {
    PAGINA PRODOTTO DINAMICA
 ========================================================= */
 app.get("/prodotto.html", (req, res) => {
-  const slug = req.query.slug;
-  if (!slug) return res.status(400).send("Parametro slug mancante");
+  try {
+    const slug = req.query.slug;
+    if (!slug) return res.status(400).send("Parametro slug mancante");
 
-  const products = getProducts();
-  const prodotto = products.find(p => p.slug === slug);
+    const products = getProducts();
+    const prodotto = products.find(p => p.slug === slug);
 
-  if (!prodotto) return res.status(404).send("Prodotto non trovato");
+    if (!prodotto) return res.status(404).send("Prodotto non trovato");
 
-  res.sendFile(path.join(__dirname, "public", "prodotto.html"));
+    res.sendFile(path.join(__dirname, "public", "prodotto.html"));
+  } catch {
+    res.status(500).send("Errore pagina prodotto");
+  }
 });
 
 /* =========================================================
-   ⭐ CHAT BOT — VERSIONE MAX
+   ⭐ CHAT BOT — VERSIONE MAX BLINDATA
 ========================================================= */
 app.post("/chat", async (req, res) => {
   try {
     const uid = req.uid;
-    const rawMessage = req.body.message;
+    const rawMessage = req.body?.message;
 
     if (!rawMessage || rawMessage.trim() === "") {
       return reply(res, "Scrivi un messaggio così posso aiutarti.");
     }
 
-    trackGA4("chat_message_sent", {
-      uid,
-      message: rawMessage
-    });
+    trackGA4("chat_message_sent", { uid, message: rawMessage });
 
     const { intent, sub } = detectIntent(rawMessage);
 
-    trackGA4("intent_detected", {
-      uid,
-      intent,
-      sub: sub || ""
-    });
+    trackGA4("intent_detected", { uid, intent, sub: sub || "" });
 
     userStates[uid].lastIntent = intent;
 
     const response = await handleConversation(req, res, intent, sub, rawMessage);
 
-    trackGA4("chat_message_received", {
-      uid,
-      intent,
-      sub: sub || ""
-    });
+    trackGA4("chat_message_received", { uid, intent, sub: sub || "" });
 
     return response;
 
   } catch (err) {
     console.error("❌ Errore /chat MAX:", err);
-
-    trackGA4("chat_error", {
-      error: err?.message || "unknown"
-    });
-
+    trackGA4("chat_error", { error: err?.message || "unknown" });
     return reply(res, "Sto avendo un problema temporaneo. Riprova tra poco.");
   }
 });
