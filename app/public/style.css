@@ -626,4 +626,150 @@ footer {
     font-size: 13px;
     padding: 8px;
   }
-                              }
+   /* --------------------------------------------------
+   HERO PREMIUM (due colonne + slider)
+-------------------------------------------------- */
+.hero-premium {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 60px 20px;
+  max-width: 1200px;
+  margin: auto;
+  gap: 40px;
+}
+
+.hero-left {
+  flex: 1;
+}
+
+.hero-left h1 {
+  font-size: 2.4rem;
+  margin-bottom: 12px;
+}
+
+.hero-left p {
+  font-size: 1.1rem;
+  color: #444;
+  margin-bottom: 20px;
+}
+
+.hero-cta {
+  display: flex;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.btn-hero-secondary {
+  background: #000;
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.hero-right {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.hero-slider {
+  width: 100%;
+  max-width: 480px;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+
+.hero-slider img {
+  width: 100%;
+  display: block;
+  animation: sliderFade 12s infinite;
+}
+
+@keyframes sliderFade {
+  0% { opacity: 1; }
+  33% { opacity: 0; }
+  66% { opacity: 1; }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .hero-premium {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .hero-cta {
+    justify-content: center;
+  }
+}                           }/* --------------------------------------------------
+   PERCHÉ MEWINGMARKET
+-------------------------------------------------- */
+.why-mm {
+  background: #fafafa;
+  padding: 60px 20px;
+}
+
+.why-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 30px;
+  max-width: 1200px;
+  margin: auto;
+}
+
+.why-card {
+  background: #fff;
+  padding: 22px;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+  text-align: center;
+}
+
+.why-card h3 {
+  margin-bottom: 10px;
+  font-size: 1.2rem;
+}
+
+.why-card p {
+  color: #444;
+  font-size: 0.95rem;
+   }
+/* --------------------------------------------------
+   COME FUNZIONA
+-------------------------------------------------- */
+.how-it-works {
+  padding: 60px 20px;
+}
+
+.how-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 30px;
+  max-width: 1200px;
+  margin: auto;
+}
+
+.how-step {
+  background: #fff;
+  padding: 22px;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+  text-align: center;
+}
+
+.step-number {
+  width: 42px;
+  height: 42px;
+  background: #ffcc00;
+  color: #000;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  margin: 0 auto 12px;
+  font-size: 1.1rem;
+}
