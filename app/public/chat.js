@@ -71,6 +71,15 @@ document.addEventListener("DOMContentLoaded", () => {
       btn.textContent = b;
       btn.onclick = () => {
         addUser(b);
+
+        // ⭐ TRACKING MAX — quick reply cliccata
+        if (window.MAX_TRACKING) {
+          window.MAX_TRACKING.log("chat_message_sent", {
+            message: b,
+            type: "quick_reply"
+          });
+        }
+
         sendMessage(b);
         wrap.remove();
       };
@@ -105,7 +114,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Invio messaggio
   async function sendMessage(forceText = null) {
-    if (sending) return; // evita spam
+    if (sending) return;
     sending = true;
 
     const text = forceText || input.value.trim();
@@ -117,6 +126,14 @@ document.addEventListener("DOMContentLoaded", () => {
     addUser(text);
     input.value = "";
 
+    // ⭐ TRACKING MAX — messaggio utente
+    if (window.MAX_TRACKING) {
+      window.MAX_TRACKING.log("chat_message_sent", {
+        message: text,
+        type: "user"
+      });
+    }
+
     showTyping();
 
     try {
@@ -126,17 +143,20 @@ document.addEventListener("DOMContentLoaded", () => {
         credentials: "include",
         body: JSON.stringify({
           message: text,
-
-          // 🔥 Contesto pagina
           page: window.location.pathname,
-
-          // 🔥 Contesto slug prodotto
           slug: new URLSearchParams(window.location.search).get("slug") || null
         })
       });
 
       const data = await res.json();
       const reply = data.reply || "Errore imprevisto.";
+
+      // ⭐ TRACKING MAX — risposta bot
+      if (window.MAX_TRACKING) {
+        window.MAX_TRACKING.log("chat_message_received", {
+          reply
+        });
+      }
 
       // Risposta commerciale
       if (reply.includes("€") || reply.includes("payhip.com")) {
