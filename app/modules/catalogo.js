@@ -1,4 +1,4 @@
-// modules/catalogo.js
+// modules/catalogo.js — VERSIONE MAX (UX PREMIUM)
 
 const { normalize } = require("./utils");
 const { getProducts } = require("./airtable");
@@ -32,59 +32,100 @@ function listProductsByCategory(cat) {
 }
 
 // ---------------------------------------------
-// RISPOSTE PRODOTTO (BOT)
+// RISPOSTE PRODOTTO — VERSIONE MAX
 // ---------------------------------------------
 
 function productReply(p) {
   if (!p) return "Non ho trovato questo prodotto nel catalogo.";
 
-  let base = `
-📘 *${p.titolo}*
+  let out = `
+📘 <b>${p.titolo}</b>
 
 ${p.descrizioneBreve}
 
-💰 Prezzo: ${p.prezzo}
-👉 Acquista ora su Payhip  
+💰 <b>Prezzo:</b> ${p.prezzo}
+👉 <b>Acquista ora</b>  
 ${p.linkPayhip}
 `;
 
-  if (p.slug === MAIN_PRODUCT_SLUG) {
-    base += `
-🎥 Vuoi vedere il video di presentazione?  
-Scrivi: "video" oppure "video ecosistema".
+  // Video principale
+  if (p.youtube_url) {
+    out += `
+🎥 <b>Video di presentazione</b>  
+${p.youtube_url}
 `;
   }
 
-  base += `
+  // Video catalogo (campo Airtable dedicato)
+  if (p.catalog_video_block) {
+    out += `
+
+🎬 <b>Anteprima</b>  
+${p.catalog_video_block}
+`;
+  }
+
+  // Prodotto principale → CTA speciale
+  if (p.slug === MAIN_PRODUCT_SLUG) {
+    out += `
+
+✨ Vuoi vedere il video di presentazione completo?  
+Scrivi: <b>"video"</b> oppure <b>"video ecosistema"</b>.
+`;
+  }
+
+  out += `
 
 Se vuoi un altro prodotto, scrivi il nome o "catalogo".`;
 
-  return base;
+  return out;
 }
 
 function productLongReply(p) {
   if (!p) return "Non ho trovato questo prodotto nel catalogo.";
-  return `
-📘 *${p.titolo}* — Dettagli completi
+
+  let out = `
+📘 <b>${p.titolo}</b> — <b>Dettagli completi</b>
 
 ${p.descrizioneLunga}
 
-💰 Prezzo: ${p.prezzo}
-👉 Acquista ora su Payhip  
+💰 <b>Prezzo:</b> ${p.prezzo}
+👉 <b>Acquista ora</b>  
 ${p.linkPayhip}
-
-Vuoi acquistarlo o tornare al menu?
 `;
+
+  if (p.youtube_url) {
+    out += `
+
+🎥 <b>Video</b>  
+${p.youtube_url}
+`;
+  }
+
+  if (p.youtube_description) {
+    out += `
+
+📝 <b>Descrizione video</b>  
+${p.youtube_description}
+`;
+  }
+
+  out += `
+
+Vuoi acquistarlo o tornare al menu?`;
+
+  return out;
 }
 
 function productImageReply(p) {
   if (!p) return "Non ho trovato questo prodotto nel catalogo.";
+
   return `
-🖼 Copertina di *${p.titoloBreve}*
+🖼 <b>Copertina di ${p.titoloBreve}</b>
 
 ${p.immagine}
 
-Puoi acquistarlo qui:  
+👉 <b>Acquista qui:</b>  
 ${p.linkPayhip}
 
 Vuoi altre info su questo prodotto o tornare al menu?
