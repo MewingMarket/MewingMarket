@@ -254,13 +254,13 @@ app.get("/sitemap.xml", (req, res) => {
     res.status(500).send("Errore sitemap");
   }
 });
-
 /* =========================================================
    FEED META
 ========================================================= */
 app.get("/meta/feed", (req, res) => {
   try {
-    const products = getProducts();
+    // Blindatura prodotti
+    const products = Array.isArray(getProducts()) ? getProducts() : [];
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
@@ -271,13 +271,16 @@ app.get("/meta/feed", (req, res) => {
 `;
 
     products.forEach((p, i) => {
+      // Blindatura singolo prodotto
+      if (!p || typeof p !== "object") return;
+
       xml += `
     <item>
       <g:id>${p.id || i + 1}</g:id>
-      <g:title><![CDATA[${p.titoloBreve || p.titolo}]]></g:title>
+      <g:title><![CDATA[${p.titoloBreve || p.titolo || ""}]]></g:title>
       <g:description><![CDATA[${p.descrizioneBreve || p.descrizione || ""}]]></g:description>
-      <g:link>${p.linkPayhip}</g:link>
-      <g:image_link>${p.immagine}</g:image_link>
+      <g:link>${p.linkPayhip || ""}</g:link>
+      <g:image_link>${p.immagine || ""}</g:image_link>
       <g:availability>in stock</g:availability>
       <g:price>${p.prezzo || "0.00"} EUR</g:price>
       <g:brand>MewingMarket</g:brand>
@@ -291,10 +294,10 @@ app.get("/meta/feed", (req, res) => {
 
     res.type("application/xml").send(xml);
   } catch (err) {
+    console.error("Errore feed META:", err);
     res.status(500).send("Errore feed");
   }
 });
-
 /* =========================================================
    HOMEPAGE + PRODUCTS.JSON
 ========================================================= */
@@ -385,8 +388,14 @@ const welcomeHTML = fs.readFileSync(
 // ISCRIZIONE
 app.post("/newsletter/subscribe", async (req, res) => {
   try {
-    const { email } = req.body;
-    if (!email) return res.json({ status: "error", message: "Email mancante" });
+    // Blindatura email
+    const email = req.body && typeof req.body.email === "string"
+      ? req.body.email.trim()
+      : null;
+
+    if (!email) {
+      return res.json({ status: "error", message: "Email mancante" });
+    }
 
     await iscriviEmail(email);
 
@@ -408,7 +417,7 @@ app.post("/newsletter/subscribe", async (req, res) => {
 
     return res.json({ status: "ok" });
   } catch (err) {
-    console.error("❌ Errore iscrizione newsletter:", err.response?.data || err);
+    console.error("❌ Errore iscrizione newsletter:", err?.response?.data || err);
     return res.json({ status: "error" });
   }
 });
@@ -416,26 +425,37 @@ app.post("/newsletter/subscribe", async (req, res) => {
 // DISISCRIZIONE
 app.post("/newsletter/unsubscribe", async (req, res) => {
   try {
-    const { email } = req.body;
-    if (!email) return res.json({ status: "error", message: "Email mancante" });
+    // Blindatura email
+    const email = req.body && typeof req.body.email === "string"
+      ? req.body.email.trim()
+      : null;
+
+    if (!email) {
+      return res.json({ status: "error", message: "Email mancante" });
+    }
 
     await disiscriviEmail(email);
 
     return res.json({ status: "ok" });
   } catch (err) {
-    console.error("❌ Errore disiscrizione newsletter:", err.response?.data || err);
+    console.error("❌ Errore disiscrizione newsletter:", err?.response?.data || err);
     return res.json({ status: "error" });
   }
 });
-
 // INVIO MANUALE
 app.post("/newsletter/send", async (req, res) => {
   try {
     const { html, oggetto } = generateNewsletterHTML();
+
+    if (!html || !oggetto) {
+      return res.json({ status: "error", message: "Contenuto newsletter mancante" });
+    }
+
     const result = await inviaNewsletter({ oggetto, html });
+
     return res.json({ status: "ok", result });
   } catch (err) {
-    console.error("❌ Errore invio newsletter:", err.response?.data || err);
+    console.error("❌ Errore invio newsletter:", err?.response?.data || err);
     return res.json({ status: "error" });
   }
 });
