@@ -77,14 +77,22 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
-
 /* =========================================================
    REDIRECT HTTPS + WWW (SMART + BLINDATO)
 ========================================================= */
 app.use((req, res, next) => {
   try {
-    const proto = req.headers["x-forwarded-proto"];
-    const host = req.headers.host;
+    // Blindatura totale host + proto
+    const proto = typeof req.headers["x-forwarded-proto"] === "string"
+      ? req.headers["x-forwarded-proto"]
+      : null;
+
+    const host = typeof req.headers.host === "string"
+      ? req.headers.host
+      : "";
+
+    // Se host è vuoto → non fare redirect (evita crash)
+    if (!host) return next();
 
     // Se proto è definito e NON è https → redirect
     if (proto && proto !== "https") {
@@ -114,14 +122,23 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   let uid = null;
 
+  // Blindatura totale lettura cookie
   try {
-    uid = req.cookies?.mm_uid;
+    uid = req.cookies && typeof req.cookies.mm_uid === "string"
+      ? req.cookies.mm_uid
+      : null;
   } catch {
     uid = null;
   }
 
-  // Cookie non valido → rigenera
-  if (!uid || typeof uid !== "string" || !uid.startsWith("mm_") || uid.length < 5) {
+  // Cookie mancante, corrotto o non valido → rigenera
+  const invalid =
+    !uid ||
+    typeof uid !== "string" ||
+    !uid.startsWith("mm_") ||
+    uid.length < 5;
+
+  if (invalid) {
     uid = generateUID();
     res.cookie("mm_uid", uid, {
       httpOnly: false,
@@ -131,7 +148,11 @@ app.use((req, res, next) => {
     });
   }
 
-  // Stato utente inesistente → crea
+  // Blindatura totale userStates
+  if (!userStates || typeof userStates !== "object") {
+    console.error("⚠ userStates non inizializzato, ricreo struttura");
+  }
+
   if (!userStates[uid]) {
     userStates[uid] = {
       state: "menu",
@@ -142,8 +163,10 @@ app.use((req, res, next) => {
 
   req.uid = uid;
   req.userState = userStates[uid];
+
   next();
 });
+
 /* =========================================================
    ⭐ MIDDLEWARE MAX: CONTESTO + SANITIZZAZIONE + TRACKING
 ========================================================= */
@@ -151,12 +174,28 @@ app.use((req, res, next) => {
   try {
     const uid = req.uid;
 
-    // 🔥 Blindatura totale contro req.body undefined
-    const body = req.body && typeof req.body === "object" ? req.body : {};
-    const query = req.query && typeof req.query === "object" ? req.query : {};
+    // Blindatura totale contro req.body e req.query undefined
+    if (!req.body || typeof req.body !== "object") req.body = {};
+    if (!req.query || typeof req.query !== "object") req.query = {};
 
-    const page = body.page || query.page || null;
-    const slug = body.slug || query.slug || null;
+    const body = req.body;
+    const query = req.query;
+
+    // Blindatura page
+    const page =
+      typeof body.page !== "undefined"
+        ? body.page
+        : typeof query.page !== "undefined"
+        ? query.page
+        : null;
+
+    // Blindatura slug
+    const slug =
+      typeof body.slug !== "undefined"
+        ? body.slug
+        : typeof query.slug !== "undefined"
+        ? query.slug
+        : null;
 
     if (page || slug) {
       Context.update(uid, page, slug);
@@ -168,9 +207,10 @@ app.use((req, res, next) => {
       });
     }
 
-    if (body.message) {
+    // Blindatura message
+    if (typeof body.message === "string") {
       body.message = safeText(body.message);
-      req.body = body; // aggiorna il body blindato
+      req.body = body;
     }
 
     next();
@@ -265,25 +305,38 @@ app.get("/", (req, res) => {
 app.get("/products.json", (req, res) => {
   res.sendFile(path.join(__dirname, "data", "products.json"));
 });
-
 /* =========================================================
    PAGINA PRODOTTO DINAMICA
 ========================================================= */
 app.get("/prodotto.html", (req, res) => {
   try {
-    const slug = req.query.slug;
-    if (!slug) return res.status(400).send("Parametro slug mancante");
+    // Blindatura totale query + slug
+    const slug = req.query && typeof req.query.slug === "string"
+      ? req.query.slug
+      : null;
 
-    const products = getProducts();
-    const prodotto = products.find(p => p.slug === slug);
+    if (!slug) {
+      return res.status(400).send("Parametro slug mancante");
+    }
 
-    if (!prodotto) return res.status(404).send("Prodotto non trovato");
+    // Blindatura prodotti
+    const products = Array.isArray(getProducts()) ? getProducts() : [];
+
+    const prodotto = products.find(p =>
+      p && typeof p === "object" && p.slug === slug
+    );
+
+    if (!prodotto) {
+      return res.status(404).send("Prodotto non trovato");
+    }
 
     res.sendFile(path.join(__dirname, "public", "prodotto.html"));
-  } catch {
+  } catch (err) {
+    console.error("Errore pagina prodotto:", err);
     res.status(500).send("Errore pagina prodotto");
   }
 });
+
 
 /* =========================================================
    ⭐ CHAT BOT — VERSIONE MAX BLINDATA
