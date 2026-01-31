@@ -144,7 +144,6 @@ app.use((req, res, next) => {
   req.userState = userStates[uid];
   next();
 });
-
 /* =========================================================
    ⭐ MIDDLEWARE MAX: CONTESTO + SANITIZZAZIONE + TRACKING
 ========================================================= */
@@ -152,8 +151,12 @@ app.use((req, res, next) => {
   try {
     const uid = req.uid;
 
-    const page = req.body?.page || req.query?.page || null;
-    const slug = req.body?.slug || req.query?.slug || null;
+    // 🔥 Blindatura totale contro req.body undefined
+    const body = req.body && typeof req.body === "object" ? req.body : {};
+    const query = req.query && typeof req.query === "object" ? req.query : {};
+
+    const page = body.page || query.page || null;
+    const slug = body.slug || query.slug || null;
 
     if (page || slug) {
       Context.update(uid, page, slug);
@@ -165,8 +168,9 @@ app.use((req, res, next) => {
       });
     }
 
-    if (req.body?.message) {
-      req.body.message = safeText(req.body.message);
+    if (body.message) {
+      body.message = safeText(body.message);
+      req.body = body; // aggiorna il body blindato
     }
 
     next();
