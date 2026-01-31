@@ -2,50 +2,70 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<title>Tracking Prodotti – MewingMarket</title>
+<title>Tracking – MewingMarket MAX</title>
+
 <style>
-body { font-family: Arial; padding: 20px; }
-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-th, td { border: 1px solid #ccc; padding: 8px; }
-th { background: #eee; }
+body { 
+  font-family: Arial, sans-serif; 
+  padding: 20px; 
+  background: #0b0c10; 
+  color: #f5f5f5;
+}
+h1 { margin-bottom: 10px; }
+table { 
+  width: 100%; 
+  border-collapse: collapse; 
+  margin-top: 20px; 
+  background: #111827;
+}
+th, td { 
+  border: 1px solid #374151; 
+  padding: 8px; 
+  vertical-align: top;
+}
+th { background: #1f2937; }
+pre { color: #d1d5db; margin: 0; white-space: pre-wrap; }
+button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background: #1f6feb;
+  color: #fff;
+  margin-right: 10px;
+}
+button.secondary {
+  background: #30363d;
+}
 </style>
+
 </head>
 <body>
 
-<h1>Tracking Click Prodotti</h1>
-<p>Dati raccolti automaticamente dal sito.</p>
+<h1>MewingMarket – Tracking MAX</h1>
+<p>Eventi raccolti dal bot e dal sito (solo sessione corrente).</p>
+
+<div class="toolbar">
+  <button onclick="TRACKING.render('logTable')">🔄 Aggiorna</button>
+  <button class="secondary" onclick="location.reload()">♻️ Reload</button>
+</div>
 
 <table>
 <thead>
 <tr>
   <th>Data</th>
-  <th>Titolo</th>
-  <th>Slug</th>
-  <th>Prezzo</th>
-  <th>Link</th>
-  <th>Device</th>
-  <th>Pagina</th>
+  <th>Evento</th>
+  <th>Descrizione</th>
+  <th>Parametri</th>
 </tr>
 </thead>
 <tbody id="logTable"></tbody>
 </table>
 
+<script src="/tracking.js"></script>
 <script>
-const logs = JSON.parse(localStorage.getItem("clickLogs") || "[]");
-const table = document.getElementById("logTable");
-
-logs.forEach(log => {
-  const row = document.createElement("tr");
-  row.innerHTML = `
-    <td>${log.timestamp}</td>
-    <td>${log.titolo}</td>
-    <td>${log.slug}</td>
-    <td>${log.prezzo}</td>
-    <td><a href="${log.link}" target="_blank">Apri</a></td>
-    <td>${log.device}</td>
-    <td>${log.page}</td>
-  `;
-  table.appendChild(row);
+document.addEventListener("DOMContentLoaded", () => {
+  TRACKING.render("logTable");
 });
 </script>
 
