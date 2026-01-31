@@ -1,4 +1,4 @@
-// chat.js — VERSIONE MAX (blindato + UX premium)
+// chat.js — VERSIONE MAX (blindato + UX premium + tracking.js MAX)
 
 document.addEventListener("DOMContentLoaded", () => {
   const btn = document.getElementById("mm-chat-btn");
@@ -30,6 +30,14 @@ document.addEventListener("DOMContentLoaded", () => {
   // Apri/chiudi chat
   btn.addEventListener("click", () => {
     box.classList.toggle("open");
+
+    // ⭐ TRACKING — apertura chat
+    if (window.TRACKING) {
+      window.TRACKING.log("chat_opened", {
+        page: window.location.pathname,
+        slug: new URLSearchParams(window.location.search).get("slug") || null
+      });
+    }
 
     if (!box.dataset.welcomeShown) {
       addBot(`
@@ -72,11 +80,10 @@ document.addEventListener("DOMContentLoaded", () => {
       btn.onclick = () => {
         addUser(b);
 
-        // ⭐ TRACKING MAX — quick reply cliccata
-        if (window.MAX_TRACKING) {
-          window.MAX_TRACKING.log("chat_message_sent", {
-            message: b,
-            type: "quick_reply"
+        // ⭐ TRACKING — quick reply cliccata
+        if (window.TRACKING) {
+          window.TRACKING.log("quick_reply_click", {
+            label: b
           });
         }
 
@@ -108,6 +115,25 @@ document.addEventListener("DOMContentLoaded", () => {
       ${link ? `<a href="${link[0]}" target="_blank" class="mm-product-btn">Acquista</a>` : ""}
     `;
 
+    // ⭐ TRACKING — product view
+    if (window.TRACKING) {
+      window.TRACKING.log("product_view", {
+        product: reply
+      });
+    }
+
+    // ⭐ TRACKING — click su Acquista
+    const buyBtn = card.querySelector(".mm-product-btn");
+    if (buyBtn) {
+      buyBtn.addEventListener("click", () => {
+        if (window.TRACKING) {
+          window.TRACKING.log("product_buy_click", {
+            url: buyBtn.href
+          });
+        }
+      });
+    }
+
     messages.appendChild(card);
     messages.scrollTop = messages.scrollHeight;
   }
@@ -126,11 +152,11 @@ document.addEventListener("DOMContentLoaded", () => {
     addUser(text);
     input.value = "";
 
-    // ⭐ TRACKING MAX — messaggio utente
-    if (window.MAX_TRACKING) {
-      window.MAX_TRACKING.log("chat_message_sent", {
+    // ⭐ TRACKING — messaggio utente
+    if (window.TRACKING) {
+      window.TRACKING.log("chat_message_sent", {
         message: text,
-        type: "user"
+        type: forceText ? "quick_reply" : "user"
       });
     }
 
@@ -151,9 +177,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await res.json();
       const reply = data.reply || "Errore imprevisto.";
 
-      // ⭐ TRACKING MAX — risposta bot
-      if (window.MAX_TRACKING) {
-        window.MAX_TRACKING.log("chat_message_received", {
+      // ⭐ TRACKING — risposta bot
+      if (window.TRACKING) {
+        window.TRACKING.log("chat_message_received", {
           reply
         });
       }
@@ -185,6 +211,13 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) {
       hideTyping();
       addBot("⚠️ Problema di connessione. Riprova tra qualche secondo.");
+
+      // ⭐ TRACKING — errore locale
+      if (window.TRACKING) {
+        window.TRACKING.log("chat_error", {
+          error: err.message
+        });
+      }
     }
 
     sending = false;
