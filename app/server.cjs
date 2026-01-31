@@ -459,7 +459,6 @@ app.post("/newsletter/send", async (req, res) => {
     return res.json({ status: "error" });
   }
 });
-
 /* =========================================================
    AVVIO SERVER
 ========================================================= */
@@ -471,8 +470,19 @@ app.listen(PORT, () => {
   (async () => {
     try {
       console.log("⏳ Sync automatico Airtable all'avvio...");
-      await syncAirtable();
-      loadProducts();
+
+      // Blindatura sync Airtable
+      await syncAirtable().catch(err => {
+        console.error("❌ Errore sync Airtable all'avvio:", err);
+      });
+
+      // Blindatura loadProducts
+      try {
+        loadProducts();
+      } catch (err) {
+        console.error("❌ Errore loadProducts all'avvio:", err);
+      }
+
       console.log("✅ Sync completato all'avvio");
     } catch (err) {
       console.error("❌ Errore nel sync all'avvio:", err);
@@ -486,14 +496,24 @@ app.listen(PORT, () => {
 setInterval(async () => {
   try {
     console.log("⏳ Sync programmato Airtable...");
-    await syncAirtable();
-    loadProducts();
+
+    // Blindatura sync Airtable
+    await syncAirtable().catch(err => {
+      console.error("❌ Errore sync Airtable programmato:", err);
+    });
+
+    // Blindatura loadProducts
+    try {
+      loadProducts();
+    } catch (err) {
+      console.error("❌ Errore loadProducts programmato:", err);
+    }
+
     console.log("✅ Sync programmato completato");
   } catch (err) {
     console.error("❌ Errore nel sync programmato:", err);
   }
 }, 30 * 60 * 1000);
-
 /* =========================================================
    NEWSLETTER AUTOMATICA — NUOVO PRODOTTO
 ========================================================= */
@@ -501,29 +521,49 @@ let lastProductId = null;
 
 async function checkNewProduct() {
   try {
-    const products = getProducts();
-    if (!products || products.length === 0) return;
+    // Blindatura prodotti
+    const products = Array.isArray(getProducts()) ? getProducts() : [];
+    if (products.length === 0) return;
 
-    const latest = products.at(-1);
+    // Blindatura latest
+    const latest = products.length > 0 ? products[products.length - 1] : null;
+    if (!latest || typeof latest !== "object") return;
 
+    // Blindatura ID
+    const latestId = latest.id || null;
+    if (!latestId) return;
+
+    // Primo avvio → memorizza ID
     if (!lastProductId) {
-      lastProductId = latest.id;
+      lastProductId = latestId;
       console.log("🟦 Primo avvio: memorizzato ultimo prodotto:", lastProductId);
       return;
     }
 
-    if (latest.id !== lastProductId) {
-      console.log("🆕 Nuovo prodotto rilevato:", latest.titoloBreve);
+    // Nuovo prodotto rilevato
+    if (latestId !== lastProductId) {
+      console.log("🆕 Nuovo prodotto rilevato:", latest.titoloBreve || latest.titolo || latestId);
 
-      const { html, oggetto } = generateNewsletterHTML();
-      await inviaNewsletter({ oggetto, html });
+      // Blindatura newsletter HTML
+      const { html, oggetto } = generateNewsletterHTML() || {};
+      if (!html || !oggetto) {
+        console.error("❌ Newsletter non generata: contenuto mancante");
+        lastProductId = latestId; // evita loop
+        return;
+      }
 
-      console.log("📨 Newsletter nuovo prodotto inviata");
+      // Blindatura invio newsletter
+      try {
+        await inviaNewsletter({ oggetto, html });
+        console.log("📨 Newsletter nuovo prodotto inviata");
+      } catch (err) {
+        console.error("❌ Errore invio newsletter nuovo prodotto:", err?.response?.data || err);
+      }
 
-      lastProductId = latest.id;
+      lastProductId = latestId;
     }
   } catch (err) {
-    console.error("❌ Errore controllo nuovo prodotto:", err.response?.data || err);
+    console.error("❌ Errore controllo nuovo prodotto:", err?.response?.data || err);
   }
 }
 
