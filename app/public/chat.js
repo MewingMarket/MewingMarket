@@ -1,4 +1,4 @@
-// chat.js — VERSIONE MAX (blindato + UX premium + tracking.js MAX)
+// chat.js — VERSIONE DEFINITIVA (UX PREMIUM + ANDROID14 SAFE + GPT-FIRST)
 
 document.addEventListener("DOMContentLoaded", () => {
   const btn = document.getElementById("mm-chat-btn");
@@ -7,31 +7,44 @@ document.addEventListener("DOMContentLoaded", () => {
   const input = document.querySelector("#mm-chat-input input");
   const sendBtn = document.querySelector("#mm-chat-input button");
 
-  // Inserisci icona PNG nel bottone
+  // Icona PNG
   btn.innerHTML = `<img src="chat-icon.png" alt="Chat" class="mm-chat-icon">`;
 
-  // Stato invio (evita doppi invii)
   let sending = false;
 
-  // Typing indicator
+  // ---------------------------------------------
+  // SCROLL MORBIDO
+  // ---------------------------------------------
+  function smoothScroll() {
+    messages.scrollTo({
+      top: messages.scrollHeight,
+      behavior: "smooth"
+    });
+  }
+
+  // ---------------------------------------------
+  // TYPING REALISTICO
+  // ---------------------------------------------
   function showTyping() {
+    hideTyping();
     const div = document.createElement("div");
     div.className = "mm-bubble mm-bot mm-typing";
     div.innerHTML = `<span class="dot"></span><span class="dot"></span><span class="dot"></span>`;
     messages.appendChild(div);
-    messages.scrollTop = messages.scrollHeight;
+    smoothScroll();
   }
 
   function hideTyping() {
-    const typing = document.querySelector(".mm-typing");
-    if (typing) typing.remove();
+    const t = document.querySelector(".mm-typing");
+    if (t) t.remove();
   }
 
-  // Apri/chiudi chat
+  // ---------------------------------------------
+  // APRI / CHIUDI CHAT
+  // ---------------------------------------------
   btn.addEventListener("click", () => {
     box.classList.toggle("open");
 
-    // ⭐ TRACKING — apertura chat
     if (window.TRACKING) {
       window.TRACKING.log("chat_opened", {
         page: window.location.pathname,
@@ -49,96 +62,94 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Aggiunge messaggio utente
+  // ---------------------------------------------
+  // MESSAGGI
+  // ---------------------------------------------
   function addUser(text) {
     const div = document.createElement("div");
     div.className = "mm-bubble mm-user";
     div.innerHTML = text;
     messages.appendChild(div);
-    messages.scrollTop = messages.scrollHeight;
+    smoothScroll();
   }
 
-  // Aggiunge messaggio bot
   function addBot(text) {
     hideTyping();
     const div = document.createElement("div");
     div.className = "mm-bubble mm-bot";
     div.innerHTML = text;
     messages.appendChild(div);
-    messages.scrollTop = messages.scrollHeight;
+    smoothScroll();
   }
 
-  // Quick replies
+  // ---------------------------------------------
+  // QUICK REPLIES INTELLIGENTI
+  // ---------------------------------------------
   function addQuickReplies(buttons) {
     const wrap = document.createElement("div");
     wrap.className = "mm-quick-wrap";
 
-    buttons.forEach(b => {
-      const btn = document.createElement("button");
-      btn.className = "mm-quick-btn";
-      btn.textContent = b;
-      btn.onclick = () => {
-        addUser(b);
+    buttons.forEach(label => {
+      const b = document.createElement("button");
+      b.className = "mm-quick-btn";
+      b.textContent = label;
 
-        // ⭐ TRACKING — quick reply cliccata
+      b.onclick = () => {
+        addUser(label);
+
         if (window.TRACKING) {
-          window.TRACKING.log("quick_reply_click", {
-            label: b
-          });
+          window.TRACKING.log("quick_reply_click", { label });
         }
 
-        sendMessage(b);
+        sendMessage(label);
         wrap.remove();
       };
-      wrap.appendChild(btn);
+
+      wrap.appendChild(b);
     });
 
     messages.appendChild(wrap);
-    messages.scrollTop = messages.scrollHeight;
+    smoothScroll();
   }
 
-  // Product card premium
+  // ---------------------------------------------
+  // PRODUCT CARD PREMIUM (BLINDATA)
+  // ---------------------------------------------
   function addProductCard(reply) {
     hideTyping();
 
     const card = document.createElement("div");
     card.className = "mm-product-card";
 
-    const img = reply.match(/https?:\/\/[^\s]+(jpg|png|jpeg|webp)/i);
-    const link = reply.match(/https?:\/\/[^\s]+payhip[^\s]*/i);
+    const img = reply.match(/https?:\/\/[^\s]+(jpg|jpeg|png|webp|gif|avif)/i);
+    const link = reply.match(/https?:\/\/[^\s]*payhip[^\s]*/i);
 
     card.innerHTML = `
       <img src="${img ? img[0] : "logo.png"}" class="mm-product-img">
-      <div class="mm-product-body">
-        ${reply}
-      </div>
+      <div class="mm-product-body">${reply}</div>
       ${link ? `<a href="${link[0]}" target="_blank" class="mm-product-btn">Acquista</a>` : ""}
     `;
 
-    // ⭐ TRACKING — product view
     if (window.TRACKING) {
-      window.TRACKING.log("product_view", {
-        product: reply
-      });
+      window.TRACKING.log("product_view", { product: reply });
     }
 
-    // ⭐ TRACKING — click su Acquista
     const buyBtn = card.querySelector(".mm-product-btn");
     if (buyBtn) {
       buyBtn.addEventListener("click", () => {
         if (window.TRACKING) {
-          window.TRACKING.log("product_buy_click", {
-            url: buyBtn.href
-          });
+          window.TRACKING.log("product_buy_click", { url: buyBtn.href });
         }
       });
     }
 
     messages.appendChild(card);
-    messages.scrollTop = messages.scrollHeight;
+    smoothScroll();
   }
 
-  // Invio messaggio
+  // ---------------------------------------------
+  // INVIO MESSAGGIO
+  // ---------------------------------------------
   async function sendMessage(forceText = null) {
     if (sending) return;
     sending = true;
@@ -152,7 +163,6 @@ document.addEventListener("DOMContentLoaded", () => {
     addUser(text);
     input.value = "";
 
-    // ⭐ TRACKING — messaggio utente
     if (window.TRACKING) {
       window.TRACKING.log("chat_message_sent", {
         message: text,
@@ -175,29 +185,35 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       const data = await res.json();
-      const reply = data.reply || "Errore imprevisto.";
+      let reply = data.reply || "Errore imprevisto.";
 
-      // ⭐ TRACKING — risposta bot
       if (window.TRACKING) {
-        window.TRACKING.log("chat_message_received", {
-          reply
-        });
+        window.TRACKING.log("chat_message_received", { reply });
       }
 
-      // Risposta commerciale
-      if (reply.includes("€") || reply.includes("payhip.com")) {
+      // ---------------------------------------------
+      // DETECTION PRODOTTO (BLINDATA)
+      // ---------------------------------------------
+      if (
+        reply.includes("€") &&
+        reply.includes("payhip.com") &&
+        reply.toLowerCase().includes("acquista")
+      ) {
         addProductCard(reply);
         addQuickReplies(["Acquista", "Dettagli", "Menu"]);
         sending = false;
         return;
       }
 
-      // Navigazione / menu
+      // ---------------------------------------------
+      // NAVIGAZIONE / MENU
+      // ---------------------------------------------
       const low = reply.toLowerCase();
       if (
         low.includes("menu") ||
         low.includes("catalogo") ||
-        low.includes("supporto")
+        low.includes("supporto") ||
+        low.includes("contatti")
       ) {
         addBot(reply);
         addQuickReplies(["Catalogo", "Supporto", "Contatti", "Menu"]);
@@ -205,25 +221,26 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // Risposta diretta
+      // ---------------------------------------------
+      // RISPOSTA NORMALE
+      // ---------------------------------------------
       addBot(reply);
 
     } catch (err) {
       hideTyping();
       addBot("⚠️ Problema di connessione. Riprova tra qualche secondo.");
 
-      // ⭐ TRACKING — errore locale
       if (window.TRACKING) {
-        window.TRACKING.log("chat_error", {
-          error: err.message
-        });
+        window.TRACKING.log("chat_error", { error: err.message });
       }
     }
 
     sending = false;
   }
 
-  // Eventi input
+  // ---------------------------------------------
+  // EVENTI INPUT
+  // ---------------------------------------------
   sendBtn.addEventListener("click", () => sendMessage());
   input.addEventListener("keypress", e => {
     if (e.key === "Enter") {
