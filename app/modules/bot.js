@@ -77,22 +77,28 @@ Stile:
 async function callGPT(userPrompt, memory = [], context = {}, extraSystem = "", extraData = {}) {
   try {
     const system = BASE_SYSTEM_PROMPT + (extraSystem || "");
+
     const payload = {
       model: "meta-llama/llama-3.1-70b-instruct",
       messages: [
         { role: "system", content: system },
+
+        // 🔥 Memoria ridotta → GPT risponde SEMPRE
         {
           role: "assistant",
-          content: "Memoria conversazione (estratto): " + JSON.stringify(memory || [])
+          content: "Memoria recente: " + JSON.stringify(memory.slice(-6) || [])
         },
+
         {
           role: "assistant",
           content: "Contesto pagina: " + JSON.stringify(context || {})
         },
+
         {
           role: "assistant",
           content: "Dati strutturati disponibili: " + JSON.stringify(extraData || {})
         },
+
         { role: "user", content: userPrompt }
       ]
     };
@@ -107,13 +113,103 @@ async function callGPT(userPrompt, memory = [], context = {}, extraSystem = "", 
     });
 
     const json = await res.json();
-    return json.choices?.[0]?.message?.content || "In questo momento non riesco a formulare una risposta utile.";
+
+    // 🔥 Blindatura totale: GPT non può più restituire vuoto
+    if (!json || !json.choices || !json.choices[0] || !json.choices[0].message) {
+      console.error("GPT EMPTY RESPONSE:", JSON.stringify(json));
+
+      return (
+        "Capito 👍\n" +
+        "Ecco come posso aiutarti:\n" +
+        "• catalogo — vedere tutti i prodotti\n" +
+        "• supporto — problemi download o pagamenti\n" +
+        "• contatti — email e WhatsApp\n" +
+        "• newsletter — iscrizione o disiscrizione\n" +
+        "• prodotti — consigli personalizzati\n\n" +
+        "Scrivi una parola chiave e ti indirizzo subito."
+      );
+    }
+
+    const out = json.choices[0].message.content?.trim();
+
+    // 🔥 Se GPT risponde vuoto → fallback intelligente
+    if (!out || out.length < 2) {
+      return (
+        "Sono qui 👋\n" +
+        "Puoi chiedermi:\n" +
+        "• catalogo\n" +
+        "• supporto\n" +
+        "• contatti\n" +
+        "• newsletter\n" +
+        "• consigli sui prodotti\n\n" +
+        "Dimmi pure cosa ti serve."
+      );
+    }
+
+    return out;
+
   } catch (err) {
     console.error("GPT error:", err);
-    return "Sto avendo un problema temporaneo. Riprova tra poco.";
+
+    // 🔥 Anche in caso di errore → risposta utile
+    return (
+      "Sto avendo un piccolo problema tecnico, ma ci sono 👍\n" +
+      "Nel frattempo posso aiutarti con:\n" +
+      "• catalogo\n" +
+      "• supporto\n" +
+      "• contatti\n" +
+      "• newsletter\n" +
+      "• prodotti\n\n" +
+      "Scrivi una parola chiave."
+    );
   }
 }
 
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const json = await res.json();
+
+// 🔥 Blindatura totale: GPT non può più restituire vuoto
+if (!json || !json.choices || !json.choices[0] || !json.choices[0].message) {
+  console.error("GPT EMPTY RESPONSE:", JSON.stringify(json));
+
+  return (
+    "Capito 👍\n" +
+    "Ecco come posso aiutarti:\n" +
+    "• catalogo — vedere tutti i prodotti\n" +
+    "• supporto — problemi download o pagamenti\n" +
+    "• contatti — email e WhatsApp\n" +
+    "• newsletter — iscrizione o disiscrizione\n" +
+    "• prodotti — consigli personalizzati\n\n" +
+    "Scrivi una parola chiave e ti indirizzo subito."
+  );
+}
+
+// 🔥 Risposta GPT valida
+const out = json.choices[0].message.content?.trim();
+
+// 🔥 Se GPT risponde vuoto → fallback intelligente
+if (!out || out.length < 2) {
+  return (
+    "Sono qui 👋\n" +
+    "Puoi chiedermi:\n" +
+    "• catalogo\n" +
+    "• supporto\n" +
+    "• contatti\n" +
+    "• newsletter\n" +
+    "• consigli sui prodotti\n\n" +
+    "Dimmi pure cosa ti serve."
+  );
+}
+
+return out;
 // ------------------------------
 // UTILS STATO
 // ------------------------------
@@ -564,12 +660,21 @@ function detectIntent(rawText) {
   }
 if (rawText.startsWith("FILE:")) {
   return { intent: "allegato", sub: rawText.replace("FILE:", "").trim() };
+}// FALLBACK GPT — blindato e intelligente
+if (!rawText || rawText.trim().length < 2) {
+  // Testo troppo corto → indirizza al menu
+  return { intent: "menu", sub: null };
 }
-  // ------------------------------
-  // FALLBACK GPT
-  // ------------------------------
-  return { intent: "gpt", sub: null };
-               }// ------------------------------
+
+// Se il testo è generico → indirizza al menu
+const generic = ["ok", "si", "sì", "eh", "boh", "yo", "ciao", "hey", "hello"];
+if (generic.includes(rawText.toLowerCase().trim())) {
+  return { intent: "menu", sub: null };
+}
+
+// Altrimenti GPT-first
+return { intent: "gpt", sub: null };
+}// ------------------------------
 // HANDLE CONVERSATION — GPT-FIRST, COMMERCIALE, COMPLETO
 // ------------------------------
 
@@ -1412,7 +1517,23 @@ Se mi dici in che situazione sei (es. "sto iniziando", "sono già avviato", "son
   // FALLBACK INTELLIGENTE FINALE
   // ------------------------------
   const risposta = await callGPT(rawText, Memory.get(uid), pageContext);
-  return reply(res, risposta);
+
+// 🔥 Blindatura finale: il bot risponde SEMPRE
+if (!risposta || typeof risposta !== "string" || risposta.trim().length < 2) {
+  return reply(
+    res,
+    "Sono qui 👋\n" +
+    "Ecco come posso aiutarti subito:\n" +
+    "• catalogo — vedere tutti i prodotti\n" +
+    "• supporto — problemi download o pagamenti\n" +
+    "• contatti — email e WhatsApp\n" +
+    "• newsletter — iscrizione o disiscrizione\n" +
+    "• consigli — ti suggerisco il prodotto giusto\n\n" +
+    "Scrivi una parola chiave e ti indirizzo."
+  );
+}
+
+return reply(res, risposta.trim());
 }// ------------------------------
 // EXPORT
 // ------------------------------
