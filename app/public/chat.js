@@ -4,27 +4,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const btn = document.getElementById("mm-chat-btn");
   const box = document.getElementById("mm-chatbox");
   const messages = document.getElementById("mm-chat-messages");
-  const input = document.querySelector("#mm-chat-input input");
-  const sendBtn = document.querySelector("#mm-chat-input button");
+  const input = document.querySelector("#mm-chat-input input[type='text']");
+  const sendBtn = document.querySelector("#mm-chat-input button:not(#mm-attach)");
 
-  // Icona PNG
   btn.innerHTML = `<img src="chat-icon.png" alt="Chat" class="mm-chat-icon">`;
 
   let sending = false;
 
-  // ---------------------------------------------
-  // SCROLL MORBIDO
-  // ---------------------------------------------
   function smoothScroll() {
-    messages.scrollTo({
-      top: messages.scrollHeight,
-      behavior: "smooth"
-    });
+    messages.scrollTo({ top: messages.scrollHeight, behavior: "smooth" });
   }
 
-  // ---------------------------------------------
-  // TYPING REALISTICO
-  // ---------------------------------------------
   function showTyping() {
     hideTyping();
     const div = document.createElement("div");
@@ -39,18 +29,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (t) t.remove();
   }
 
-  // ---------------------------------------------
-  // APRI / CHIUDI CHAT
-  // ---------------------------------------------
   btn.addEventListener("click", () => {
     box.classList.toggle("open");
-
-    if (window.TRACKING) {
-      window.TRACKING.log("chat_opened", {
-        page: window.location.pathname,
-        slug: new URLSearchParams(window.location.search).get("slug") || null
-      });
-    }
 
     if (!box.dataset.welcomeShown) {
       addBot(`
@@ -62,9 +42,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // ---------------------------------------------
-  // MESSAGGI
-  // ---------------------------------------------
   function addUser(text) {
     const div = document.createElement("div");
     div.className = "mm-bubble mm-user";
@@ -82,9 +59,6 @@ document.addEventListener("DOMContentLoaded", () => {
     smoothScroll();
   }
 
-  // ---------------------------------------------
-  // QUICK REPLIES INTELLIGENTI
-  // ---------------------------------------------
   function addQuickReplies(buttons) {
     const wrap = document.createElement("div");
     wrap.className = "mm-quick-wrap";
@@ -96,11 +70,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       b.onclick = () => {
         addUser(label);
-
-        if (window.TRACKING) {
-          window.TRACKING.log("quick_reply_click", { label });
-        }
-
         sendMessage(label);
         wrap.remove();
       };
@@ -112,9 +81,6 @@ document.addEventListener("DOMContentLoaded", () => {
     smoothScroll();
   }
 
-  // ---------------------------------------------
-  // PRODUCT CARD PREMIUM (BLINDATA)
-  // ---------------------------------------------
   function addProductCard(reply) {
     hideTyping();
 
@@ -130,26 +96,10 @@ document.addEventListener("DOMContentLoaded", () => {
       ${link ? `<a href="${link[0]}" target="_blank" class="mm-product-btn">Acquista</a>` : ""}
     `;
 
-    if (window.TRACKING) {
-      window.TRACKING.log("product_view", { product: reply });
-    }
-
-    const buyBtn = card.querySelector(".mm-product-btn");
-    if (buyBtn) {
-      buyBtn.addEventListener("click", () => {
-        if (window.TRACKING) {
-          window.TRACKING.log("product_buy_click", { url: buyBtn.href });
-        }
-      });
-    }
-
     messages.appendChild(card);
     smoothScroll();
   }
 
-  // ---------------------------------------------
-  // INVIO MESSAGGIO
-  // ---------------------------------------------
   async function sendMessage(forceText = null) {
     if (sending) return;
     sending = true;
@@ -162,13 +112,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     addUser(text);
     input.value = "";
-
-    if (window.TRACKING) {
-      window.TRACKING.log("chat_message_sent", {
-        message: text,
-        type: forceText ? "quick_reply" : "user"
-      });
-    }
 
     showTyping();
 
@@ -187,17 +130,12 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await res.json();
       let reply = data.reply || "Errore imprevisto.";
 
-      if (window.TRACKING) {
-        window.TRACKING.log("chat_message_received", { reply });
-      }
+      const low = reply.toLowerCase();
 
-      // ---------------------------------------------
-      // DETECTION PRODOTTO (BLINDATA)
-      // ---------------------------------------------
       if (
         reply.includes("€") &&
         reply.includes("payhip.com") &&
-        reply.toLowerCase().includes("acquista")
+        low.includes("acquista")
       ) {
         addProductCard(reply);
         addQuickReplies(["Acquista", "Dettagli", "Menu"]);
@@ -205,10 +143,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // ---------------------------------------------
-      // NAVIGAZIONE / MENU
-      // ---------------------------------------------
-      const low = reply.toLowerCase();
       if (
         low.includes("menu") ||
         low.includes("catalogo") ||
@@ -221,61 +155,53 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // ---------------------------------------------
-      // RISPOSTA NORMALE
-      // ---------------------------------------------
       addBot(reply);
 
     } catch (err) {
       hideTyping();
       addBot("⚠️ Problema di connessione. Riprova tra qualche secondo.");
-
-      if (window.TRACKING) {
-        window.TRACKING.log("chat_error", { error: err.message });
-      }
     }
 
     sending = false;
   }
-// --- Upload allegati ---
-const attachBtn = document.getElementById("mm-attach");
-const fileInput = document.getElementById("mm-file-input");
 
-attachBtn.addEventListener("click", () => fileInput.click());
+  // --- Upload allegati (VERSIONE CORRETTA) ---
+  const attachBtn = document.getElementById("mm-attach");
+  const fileInput = document.getElementById("mm-file-input");
 
-fileInput.addEventListener("change", async () => {
-  const file = fileInput.files[0];
-  if (!file) return;
+  if (attachBtn && fileInput) {
+    attachBtn.addEventListener("click", () => fileInput.click());
 
-  const formData = new FormData();
-  formData.append("file", file);
+    fileInput.addEventListener("change", async () => {
+      const file = fileInput.files[0];
+      if (!file) return;
 
-  // Mostra subito la bubble "file inviato"
-  addMessage("Hai inviato un file: " + file.name, "user");
+      addUser("📎 File inviato: " + file.name);
 
-  try {
-    const res = await fetch("/chat/upload", {
-      method: "POST",
-      body: formData
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const res = await fetch("/chat/upload", {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await res.json();
+
+        if (data.fileUrl) {
+          sendMessage("FILE:" + data.fileUrl);
+        } else {
+          addBot("Errore durante l'upload del file.");
+        }
+      } catch (err) {
+        addBot("Errore di connessione durante l'upload.");
+      }
+
+      fileInput.value = "";
     });
-
-    const data = await res.json();
-
-    if (data.fileUrl) {
-      // Invia al bot il link del file
-      sendMessageToBot("FILE:" + data.fileUrl);
-    } else {
-      addMessage("Errore durante l'upload del file.", "bot");
-    }
-  } catch (err) {
-    addMessage("Errore di connessione durante l'upload.", "bot");
   }
 
-  fileInput.value = "";
-});
-  // ---------------------------------------------
-  // EVENTI INPUT
-  // ---------------------------------------------
   sendBtn.addEventListener("click", () => sendMessage());
   input.addEventListener("keypress", e => {
     if (e.key === "Enter") {
