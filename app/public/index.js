@@ -1,6 +1,43 @@
 // public/index.js
 
 document.addEventListener("DOMContentLoaded", async () => {
+  /* =========================================================
+     HERO SLIDER (immagini animate ogni 4 secondi)
+  ========================================================= */
+  try {
+    const resHero = await fetch("/products.json", { cache: "no-store" });
+    const productsHero = await resHero.json();
+
+    const images = productsHero
+      .map(p => p.immagine)
+      .filter(Boolean);
+
+    const slider = document.getElementById("hero-slider");
+
+    if (slider && images.length > 0) {
+      let index = 0;
+
+      function showImage() {
+        slider.style.opacity = 0;
+
+        setTimeout(() => {
+          slider.src = images[index];
+          slider.style.opacity = 1;
+        }, 300);
+
+        index = (index + 1) % images.length;
+      }
+
+      showImage();
+      setInterval(showImage, 4000);
+    }
+  } catch (err) {
+    console.error("Errore slider hero:", err);
+  }
+
+  /* =========================================================
+     SEZIONE 3 PRODOTTI (come nella foto)
+  ========================================================= */
   const grid = document.getElementById("products-grid");
   if (!grid) return;
 
