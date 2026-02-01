@@ -28,3 +28,64 @@
       "a": "Sì. L’ecosistema è modulare: puoi iniziare da un singolo prodotto e aggiungerne altri quando vuoi. Ogni prodotto è compatibile con gli altri e non richiede competenze tecniche."
     }
   ],
+"produttivita_ai": [
+    {
+      "q": "Come posso usare l’AI per migliorare la mia produttività?",
+      "a": "L’AI è perfetta per automatizzare attività ripetitive: riassunti, email, organizzazione, idee, analisi. Il segreto è creare prompt brevi e ripetibili che puoi usare ogni giorno."
+    },
+    {
+      "q": "Quali strumenti AI dovrei usare per iniziare?",
+      "a": "Bastano tre strumenti: un assistente AI, un planner digitale e un sistema di note. Con questi puoi gestire il 90% delle attività quotidiane."
+    },
+    {
+      "q": "Come evito di perdere tempo con l’AI?",
+      "a": "Usa l’AI solo per compiti specifici. Se inizi a esplorare senza obiettivo, perdi tempo. Se invece hai un compito chiaro, l’AI accelera tutto."
+    }
+  ],
+
+  "business_digitale": [
+    {
+      "q": "Come inizio un business digitale senza esperienza?",
+      "a": "Parti da un micro‑prodotto digitale semplice: una guida, un template, un mini‑corso. Non serve un brand enorme: serve un problema reale da risolvere."
+    },
+    {
+      "q": "Come scelgo cosa vendere?",
+      "a": "Scegli un problema che conosci bene. Se hai esperienza in un’area, anche minima, puoi trasformarla in un prodotto digitale utile."
+    },
+    {
+      "q": "Come faccio a crescere senza investire soldi?",
+      "a": "Contenuti brevi, costanti e utili. Non serve pubblicità: serve valore. Se aiuti le persone, le persone tornano."
+    }
+  ],"problemi_comuni": [
+    {
+      "q": "Perché non riesco a mantenere una routine?",
+      "a": "Perché la routine è troppo lunga. Riducila a 2 minuti. Una routine breve è sostenibile e crea slancio."
+    },
+    {
+      "q": "Come supero la procrastinazione?",
+      "a": "Usa la regola dei 2 minuti: inizia un compito per 2 minuti. Il cervello odia iniziare, non continuare."
+    }
+  ],
+
+  "lead_magnet": [
+    {
+      "q": "Cos’è il lead magnet di MewingMarket?",
+      "a": "È una risorsa gratuita che ti aiuta a iniziare subito: checklist, mini‑guide, strumenti rapidi. È pensata per darti valore immediato."
+    },
+    {
+      "q": "Come lo scarico?",
+      "a": "Il bot ti fornisce il link diretto. Puoi anche iscriverti alla newsletter per ricevere aggiornamenti e risorse extra."
+    }
+  ],
+
+  "sicurezza": [
+    {
+      "q": "I miei dati sono al sicuro?",
+      "a": "Sì. Non memorizziamo dati sensibili sul sito. Newsletter e pagamenti sono gestiti da piattaforme esterne sicure come Brevo e Payhip."
+    },
+    {
+      "q": "Posso cancellare i miei dati?",
+      "a": "Sì. Puoi richiedere la cancellazione via email in qualsiasi momento. Rispettiamo il GDPR e non conserviamo dati inutili."
+    }
+  ]
+}
