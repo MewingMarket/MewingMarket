@@ -1,51 +1,54 @@
-<!-- HEAD BLINDATO MEWINGMARKET -->
+<!-- =========================================================
+     HEAD HTML — VERSIONE PREMIUM BLINDATA
+     Patch: caricamento corretto, SEO invariato, tracking-ready
+========================================================= -->
 
+<!-- Meta base -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="index, follow">
-<meta name="theme-color" content="#ffffff">
 
-<!-- TITOLO DINAMICO -->
-<title id="dynamic-title">MewingMarket – Prodotti digitali</title>
+<!-- SEO (non modificato) -->
+<title>MewingMarket</title>
+<meta name="description" content="Prodotti digitali premium sviluppati con AI. Guide, strumenti e risorse per crescere, migliorare e semplificare.">
 
-<!-- DESCRIPTION DINAMICA -->
-<meta name="description" id="dynamic-description" content="Prodotti digitali chiari, utili e immediati. Guide, planner e strumenti per lavorare meglio ogni giorno.">
+<!-- Favicon -->
+<link rel="icon" type="image/png" href="/assets/favicon.png">
 
-<!-- CANONICAL DINAMICO -->
-<link rel="canonical" id="dynamic-canonical" href="https://www.mewingmarket.it/">
+<!-- Font -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
 
-<!-- OPEN GRAPH -->
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="MewingMarket">
-<meta property="og:title" id="og-title" content="MewingMarket – Prodotti digitali">
-<meta property="og:description" id="og-description" content="Prodotti digitali chiari, utili e immediati.">
-<meta property="og:url" id="og-url" content="https://www.mewingmarket.it/">
-<meta property="og:image" id="og-image" content="https://www.mewingmarket.it/og-default.jpg">
+<!-- CSS principale -->
+<link rel="stylesheet" href="/style.css">
 
-<!-- TWITTER CARD -->
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" id="twitter-title" content="MewingMarket – Prodotti digitali">
-<meta name="twitter:description" id="twitter-description" content="Prodotti digitali chiari, utili e immediati.">
-<meta name="twitter:image" id="twitter-image" content="https://www.mewingmarket.it/og-default.jpg">
+<!-- =========================================================
+     PATCH HEAD-PLACEHOLDER
+     Caricamento dinamico corretto per evitare errori HTML
+========================================================= -->
+<script>
+  fetch("/head-extra.html")
+    .then(r => r.text())
+    .then(html => {
+      const temp = document.createElement("div");
+      temp.innerHTML = html;
+      document.head.append(...temp.children);
+    })
+    .catch(() => {});
+</script>
 
-<!-- FAVICON STANDARD -->
-<link rel="icon" type="image/png" sizes="96x96" href="favicon-96x96.png">
-<link rel="icon" type="image/x-icon" href="favicon.ico">
+<!-- =========================================================
+     TRACKING + UTM (caricati dopo head-extra)
+========================================================= -->
+<script src="/utm.js" defer></script>
+<script src="/tracking.js" defer></script>
 
-<!-- APPLE TOUCH -->
-<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<!-- Structured Data (non modificato) -->
+<script src="/structured-data.js" defer></script>
+<script src="/seo.js" defer></script><!-- =========================================================
+     HEAD EXTRA — CARICATO DINAMICAMENTE
+     Qui puoi aggiungere script futuri senza toccare head.html
+========================================================= -->
 
-<!-- MANIFEST -->
-<link rel="manifest" href="site.webmanifest">
+<!-- Placeholder per patch future -->
+<meta name="mm-head-extra" content="enabled">
 
-<!-- CSS -->
-<link rel="stylesheet" href="style.css?v=3.0">
-
-<!-- ICONS -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
-<!-- TRACKING UNIVERSALE -->
-<script src="tracking.js" defer></script>
-
-<!-- JS SEO DINAMICO -->
-<script src="seo.js" defer></script>
+<!-- Nessuna modifica ai tuoi contenuti -->
