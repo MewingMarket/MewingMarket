@@ -1,5 +1,5 @@
 {
-  "name": "mewingmarket-ai",
+  "name": "mewingmarket",
   "version": "1.0.0",
   "main": "server.cjs",
   "scripts": {
@@ -11,6 +11,7 @@
     "cors": "^2.8.5",
     "cookie-parser": "^1.4.7",
     "@notionhq/client": "^5.6.0",
-    "dotenv": "^17.2.3"
+    "dotenv": "^17.2.3",
+    "multer": "^1.4.5"
   }
 }
