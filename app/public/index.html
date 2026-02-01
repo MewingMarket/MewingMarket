@@ -32,26 +32,17 @@
 
 <main class="home">
 
-  <!-- HERO PREMIUM (mantiene il tuo testo, aggiunge layout premium) -->
-  <section class="hero hero-premium">
-    <div class="hero-left">
-      <h1>Soluzioni digitali per crescere.</h1>
-      <p>Prodotti creati con Intelligenza Artificiale, chiari, moderni e subito utili.</p>
+<section class="hero-premium">
+  <div class="hero-left">
+    <h1>Soluzioni digitali per crescere</h1>
+    <p>Prodotti creati con Intelligenza Artificiale, chiari, moderni e subito utili.</p>
+    <a href="catalogo.html" class="btn-hero">Esplora il catalogo</a>
+  </div>
 
-      <div class="hero-cta">
-        <a href="#catalogo" class="btn-hero">Esplora il catalogo</a>
-        <a href="video-presentazione.html" class="btn-hero-secondary">Guarda il video</a>
-      </div>
-    </div>
-
-    <div class="hero-right">
-      <div class="hero-slider">
-        <img src="hero1.webp" alt="MewingMarket Hero 1">
-        <img src="hero2.webp" alt="MewingMarket Hero 2">
-        <img src="hero3.webp" alt="MewingMarket Hero 3">
-      </div>
-    </div>
-  </section>
+  <div class="hero-right">
+    <img id="hero-slider" src="" alt="Anteprima prodotto">
+  </div>
+</section>
 
   <!-- TESTO BENVENUTO (il tuo testo, intatto) -->
   <section class="home-section">
@@ -141,15 +132,7 @@
     .then(h => document.getElementById("footer-placeholder").innerHTML = h);
 </script>
 
-<!-- CHAT (già gestita da chat.js) -->
-<div id="mm-chat-btn"></div>
-<div id="mm-chatbox">
-  <div id="mm-chat-messages"></div>
-  <div id="mm-chat-input">
-    <input type="text" placeholder="Scrivi un messaggio...">
-    <button>Invia</button>
-  </div>
-</div>
+
 
 </body>
 </html>
