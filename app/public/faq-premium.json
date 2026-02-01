@@ -1,0 +1,30 @@
+{
+  "mindset": [
+    {
+      "q": "Da dove inizio se voglio migliorare davvero?",
+      "a": "Il punto di partenza è sempre uno: scegliere un singolo obiettivo e lavorare su quello. L’errore più comune è voler cambiare tutto insieme. Parti da un’area (postura, produttività, studio, business) e costruisci un’abitudine semplice che puoi mantenere ogni giorno."
+    },
+    {
+      "q": "Come mantengo la motivazione nel tempo?",
+      "a": "La motivazione non è costante. Quello che funziona è la disciplina minima: routine brevi, ripetibili e sostenibili. Se un’abitudine richiede meno di 2 minuti, la manterrai anche nei giorni difficili."
+    },
+    {
+      "q": "Perché fallisco quando provo a migliorarmi?",
+      "a": "Perché cerchi risultati immediati. Il miglioramento reale è composto da micro‑progressi quotidiani. Se misuri i progressi ogni 7 giorni invece che ogni giorno, noterai cambiamenti reali."
+    }
+  ],
+
+  "ecosistema": [
+    {
+      "q": "Cos’è l’ecosistema MewingMarket?",
+      "a": "È un insieme di prodotti digitali progettati per funzionare insieme: guide, strumenti, modelli, percorsi e risorse che ti aiutano a migliorare in modo semplice e progressivo. Ogni prodotto è indipendente, ma combinati creano un percorso completo."
+    },
+    {
+      "q": "Come scelgo il prodotto giusto per me?",
+      "a": "Dipende dal tuo obiettivo: postura → prodotti mewing; produttività → planner e sistemi; business → guide strategiche; AI → strumenti e modelli. Il bot può consigliarti il prodotto più adatto in base alla tua situazione."
+    },
+    {
+      "q": "Posso usare più prodotti insieme?",
+      "a": "Sì. L’ecosistema è modulare: puoi iniziare da un singolo prodotto e aggiungerne altri quando vuoi. Ogni prodotto è compatibile con gli altri e non richiede competenze tecniche."
+    }
+  ],
