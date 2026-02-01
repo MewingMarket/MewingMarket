@@ -773,3 +773,48 @@ footer {
   margin: 0 auto 12px;
   font-size: 1.1rem;
 }
+.hero-premium {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
+  padding: 60px 20px;
+}
+
+.hero-left {
+  flex: 1;
+}
+
+.hero-left h1 {
+  font-size: 2.2rem;
+  margin-bottom: 15px;
+}
+
+.hero-left p {
+  font-size: 1.1rem;
+  margin-bottom: 20px;
+}
+
+.btn-hero {
+  display: inline-block;
+  background: #f7c600;
+  padding: 12px 22px;
+  border-radius: 8px;
+  font-weight: bold;
+  color: #000;
+}
+
+.hero-right {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.hero-right img {
+  width: 100%;
+  max-width: 480px;
+  border-radius: 18px;
+  object-fit: cover;
+  transition: opacity 0.8s ease-in-out;
+  opacity: 0;
+}
