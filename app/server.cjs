@@ -8,9 +8,17 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const axios = require("axios");
 require("dotenv").config();
-const multer = require("multer"); // <-- OK, path NON va ripetuto
+const multer = require("multer"); // OK
 
-// Storage con rinomina automatica
+/* =========================================================
+   SETUP EXPRESS
+========================================================= */
+const app = express();
+app.disable("x-powered-by");
+
+/* =========================================================
+   MULTER — UPLOAD FILE CHAT
+========================================================= */
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "public/uploads");
@@ -27,9 +35,7 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB
 });
 
-/* =========================================================
-   ENDPOINT UPLOAD FILE CHAT
-========================================================= */
+// Endpoint upload — ORA È NEL PUNTO GIUSTO
 app.post("/chat/upload", upload.single("file"), (req, res) => {
   if (!req.file) {
     return res.json({ error: "Nessun file ricevuto" });
@@ -43,7 +49,6 @@ app.post("/chat/upload", upload.single("file"), (req, res) => {
    STATO UTENTI GLOBALE
 ========================================================= */
 const userStates = {};
-
 /* =========================================================
    IMPORT MODULI INTERNI
 ========================================================= */
