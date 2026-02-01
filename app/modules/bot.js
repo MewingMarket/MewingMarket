@@ -1,4 +1,7 @@
+// ======================================================
 // modules/bot.js — COPILOT VERSIONE MASSIMA (GPT-FIRST)
+// File pulito, ordinato, corretto e patchato
+// ======================================================
 
 const fetch = require("node-fetch");
 
@@ -28,7 +31,7 @@ function trackBot(event, data = {}) {
 }
 
 // ------------------------------
-// GPT CORE
+// GPT CORE — SYSTEM PROMPT
 // ------------------------------
 const BASE_SYSTEM_PROMPT = `
 Sei il Copilot ufficiale di MewingMarket, integrato nel sito.
@@ -61,7 +64,7 @@ Social:
   - LinkedIn: contenuti più professionali, business, posizionamento.
 
 Contatto umano:
-- Se l'utente chiede aiuto su qualcosa di molto personale, privato, o che richiede accesso a dati sensibili (es. problemi fiscali specifici, dati personali, casi particolari di pagamento, situazioni delicate):
+- Se l'utente chiede aiuto su qualcosa di molto personale, privato, o che richiede accesso a dati sensibili:
   - Suggerisci SEMPRE come opzione finale:
     - Email supporto: supporto@mewingmarket.it
     - Email vendite: vendite@mewingmarket.it
@@ -72,8 +75,9 @@ Stile:
 - Risposte brevi ma dense, niente muri di testo inutili.
 - Usa elenchi solo quando servono davvero.
 - Mantieni sempre il ruolo di Copilot MewingMarket.
-`;
-
+`; // ------------------------------
+// GPT CALL — VERSIONE BLINDATA E OTTIMIZZATA
+// ------------------------------
 async function callGPT(userPrompt, memory = [], context = {}, extraSystem = "", extraData = {}) {
   try {
     const system = BASE_SYSTEM_PROMPT + (extraSystem || "");
@@ -83,7 +87,7 @@ async function callGPT(userPrompt, memory = [], context = {}, extraSystem = "", 
       messages: [
         { role: "system", content: system },
 
-        // 🔥 Memoria ridotta → GPT risponde SEMPRE
+        // Memoria ridotta → GPT più stabile
         {
           role: "assistant",
           content: "Memoria recente: " + JSON.stringify(memory.slice(-6) || [])
@@ -114,7 +118,7 @@ async function callGPT(userPrompt, memory = [], context = {}, extraSystem = "", 
 
     const json = await res.json();
 
-    // 🔥 Blindatura totale: GPT non può più restituire vuoto
+    // Blindatura: GPT non può restituire vuoto
     if (!json || !json.choices || !json.choices[0] || !json.choices[0].message) {
       console.error("GPT EMPTY RESPONSE:", JSON.stringify(json));
 
@@ -132,7 +136,7 @@ async function callGPT(userPrompt, memory = [], context = {}, extraSystem = "", 
 
     const out = json.choices[0].message.content?.trim();
 
-    // 🔥 Se GPT risponde vuoto → fallback intelligente
+    // Se GPT risponde vuoto → fallback intelligente
     if (!out || out.length < 2) {
       return (
         "Sono qui 👋\n" +
@@ -151,7 +155,7 @@ async function callGPT(userPrompt, memory = [], context = {}, extraSystem = "", 
   } catch (err) {
     console.error("GPT error:", err);
 
-    // 🔥 Anche in caso di errore → risposta utile
+    // Anche in caso di errore → risposta utile
     return (
       "Sto avendo un piccolo problema tecnico, ma ci sono 👍\n" +
       "Nel frattempo posso aiutarti con:\n" +
@@ -163,56 +167,10 @@ async function callGPT(userPrompt, memory = [], context = {}, extraSystem = "", 
       "Scrivi una parola chiave."
     );
   }
-}
-
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
-
-    const json = await res.json();
-
-// 🔥 Blindatura totale: GPT non può più restituire vuoto
-if (!json || !json.choices || !json.choices[0] || !json.choices[0].message) {
-  console.error("GPT EMPTY RESPONSE:", JSON.stringify(json));
-
-  return (
-    "Capito 👍\n" +
-    "Ecco come posso aiutarti:\n" +
-    "• catalogo — vedere tutti i prodotti\n" +
-    "• supporto — problemi download o pagamenti\n" +
-    "• contatti — email e WhatsApp\n" +
-    "• newsletter — iscrizione o disiscrizione\n" +
-    "• prodotti — consigli personalizzati\n\n" +
-    "Scrivi una parola chiave e ti indirizzo subito."
-  );
-}
-
-// 🔥 Risposta GPT valida
-const out = json.choices[0].message.content?.trim();
-
-// 🔥 Se GPT risponde vuoto → fallback intelligente
-if (!out || out.length < 2) {
-  return (
-    "Sono qui 👋\n" +
-    "Puoi chiedermi:\n" +
-    "• catalogo\n" +
-    "• supporto\n" +
-    "• contatti\n" +
-    "• newsletter\n" +
-    "• consigli sui prodotti\n\n" +
-    "Dimmi pure cosa ti serve."
-  );
-}
-
-return out;
+}// ------------------------------
+// UTILS — STATO, UID, RISPOSTE
 // ------------------------------
-// UTILS STATO
-// ------------------------------
+
 function generateUID() {
   return "mm_" + Math.random().toString(36).substring(2, 12);
 }
@@ -238,7 +196,7 @@ function isYes(text) {
     t.includes("certo") ||
     t.includes("yes")
   );
-}// ------------------------------
+} // ------------------------------
 // MATCH PRODOTTI — FUZZY + SINONIMI + PAROLE CHIAVE
 // ------------------------------
 
@@ -387,7 +345,7 @@ function fuzzyMatchProduct(text) {
   }
 
   return null;
-        }// ------------------------------
+} // ------------------------------
 // DETECT INTENT V5 — GPT-FIRST, COMMERCIALE, CONVERSAZIONALE
 // ------------------------------
 
@@ -474,7 +432,7 @@ function detectIntent(rawText) {
   }
 
   // ------------------------------
-  // SOCIAL — DISTINGUI UNO PER UNO
+  // SOCIAL — SPECIFICI
   // ------------------------------
   if (q.includes("instagram")) return { intent: "social_specifico", sub: "instagram" };
   if (q.includes("tiktok")) return { intent: "social_specifico", sub: "tiktok" };
@@ -497,7 +455,7 @@ function detectIntent(rawText) {
   }
 
   if (q.includes("termini") || q.includes("condizioni") || q.includes("terms")) {
-    return { intent: "termini", sub: null };
+    return { intent: "terminni", sub: null };
   }
 
   if (q.includes("cookie")) {
@@ -658,26 +616,31 @@ function detectIntent(rawText) {
   if (product) {
     return { intent: "prodotto", sub: product.slug };
   }
-if (rawText.startsWith("FILE:")) {
-  return { intent: "allegato", sub: rawText.replace("FILE:", "").trim() };
-}// FALLBACK GPT — blindato e intelligente
-if (!rawText || rawText.trim().length < 2) {
-  // Testo troppo corto → indirizza al menu
-  return { intent: "menu", sub: null };
-}
 
-// Se il testo è generico → indirizza al menu
-const generic = ["ok", "si", "sì", "eh", "boh", "yo", "ciao", "hey", "hello"];
-if (generic.includes(rawText.toLowerCase().trim())) {
-  return { intent: "menu", sub: null };
-}
+  // ------------------------------
+  // FILE ALLEGATI
+  // ------------------------------
+  if (rawText.startsWith("FILE:")) {
+    return { intent: "allegato", sub: rawText.replace("FILE:", "").trim() };
+  }
 
-// Altrimenti GPT-first
-return { intent: "gpt", sub: null };
-}// ------------------------------
+  // ------------------------------
+  // FALLBACK GPT — blindato
+  // ------------------------------
+  if (!rawText || rawText.trim().length < 2) {
+    return { intent: "menu", sub: null };
+  }
+
+  const generic = ["ok", "si", "sì", "eh", "boh", "yo", "ciao", "hey", "hello"];
+  if (generic.includes(rawText.toLowerCase().trim())) {
+    return { intent: "menu", sub: null };
+  }
+
+  // GPT-first
+  return { intent: "gpt", sub: null };
+      } // ------------------------------
 // HANDLE CONVERSATION — GPT-FIRST, COMMERCIALE, COMPLETO
 // ------------------------------
-
 async function handleConversation(req, res, intent, sub, rawText) {
   const uid = req.uid;
   const state = req.userState || {};
@@ -739,7 +702,9 @@ Scrivi una parola chiave come:
     );
 
     return reply(res, enriched || base);
-      }// ------------------------------
+  }
+
+  // ------------------------------
   // CATALOGO
   // ------------------------------
   if (intent === "catalogo") {
@@ -821,7 +786,7 @@ Hai bisogno di altro o vuoi tornare al menu?
     );
 
     return reply(res, enriched || base);
-  }// ------------------------------
+  } // ------------------------------
   // SOCIAL SPECIFICI
   // ------------------------------
   if (intent === "social_specifico") {
@@ -988,7 +953,9 @@ Hai bisogno di altro o vuoi tornare al menu?
     );
 
     return reply(res, enriched || base);
-  }// ------------------------------
+  }
+
+  // ------------------------------
   // FAQ
   // ------------------------------
   if (intent === "faq") {
@@ -1189,7 +1156,7 @@ Scrivi una parola chiave come:
     );
 
     return reply(res, enriched || base);
-        }// ------------------------------
+      }// ------------------------------
   // PRODOTTI
   // ------------------------------
   const lastProductSlug = state.lastProductSlug;
@@ -1240,7 +1207,9 @@ Vuoi:
     );
 
     return reply(res, enriched || base);
-  }// ------------------------------
+  }
+
+  // ------------------------------
   // ACQUISTO DIRETTO
   // ------------------------------
   if (intent === "acquisto_diretto") {
@@ -1289,7 +1258,9 @@ Vuoi un consiglio su come iniziare?
     );
 
     return reply(res, enriched || base);
-  }// ------------------------------
+  }
+
+  // ------------------------------
   // DETTAGLI PRODOTTO
   // ------------------------------
   if (intent === "dettagli_prodotto") {
@@ -1332,7 +1303,9 @@ Vuoi:
     );
 
     return reply(res, enriched || base);
-  }// ------------------------------
+  }
+
+  // ------------------------------
   // VIDEO PRODOTTO
   // ------------------------------
   if (intent === "video_prodotto") {
@@ -1398,7 +1371,9 @@ Vuoi un riassunto dei punti chiave?
     );
 
     return reply(res, enriched || base);
-  }// ------------------------------
+  }
+
+  // ------------------------------
   // PREZZO PRODOTTO
   // ------------------------------
   if (intent === "prezzo_prodotto") {
@@ -1443,7 +1418,9 @@ Vuoi:
     );
 
     return reply(res, enriched || base);
-  }// ------------------------------
+  }
+
+  // ------------------------------
   // TRATTATIVA / SCONTO
   // ------------------------------
   if (intent === "trattativa" && sub === "sconto") {
@@ -1470,7 +1447,9 @@ Se vuoi, ti spiego in modo diretto:
     );
 
     return reply(res, enriched || base);
-  }// ------------------------------
+  }
+
+  // ------------------------------
   // OBIETTA PREZZO
   // ------------------------------
   if (intent === "obiezione" && sub === "prezzo") {
@@ -1493,48 +1472,56 @@ Se mi dici in che situazione sei (es. "sto iniziando", "sono già avviato", "son
     );
 
     return reply(res, enriched || base);
-  } if (intent === "allegato") {
-  const url = sub || "";
-
-  if (url.endsWith(".pdf")) {
-    return reply(res, "Hai caricato un PDF. Vuoi che lo riassuma o che estragga i punti chiave?");
   }
 
-  if (url.match(/\.(png|jpg|jpeg|gif|webp)$/i)) {
-    return reply(res, "Hai caricato un'immagine. Vuoi che la descriva o che analizzi cosa contiene?");
+  // ------------------------------
+  // ALLEGATI
+  // ------------------------------
+  if (intent === "allegato") {
+    const url = sub || "";
+
+    if (url.endsWith(".pdf")) {
+      return reply(res, "Hai caricato un PDF. Vuoi che lo riassuma o che estragga i punti chiave?");
+    }
+
+    if (url.match(/\.(png|jpg|jpeg|gif|webp)$/i)) {
+      return reply(res, "Hai caricato un'immagine. Vuoi che la descriva o che analizzi cosa contiene?");
+    }
+
+    if (url.endsWith(".txt")) {
+      return reply(res, "Hai caricato un file di testo. Vuoi che lo legga e ti dica cosa contiene?");
+    }
+
+    if (url.endsWith(".zip")) {
+      return reply(res, "Hai caricato un file ZIP. Vuoi che ti dica come estrarlo o cosa potrebbe contenere?");
+    }
+
+    return reply(res, "File ricevuto. Vuoi che ti dica cosa posso farci?");
   }
 
-  if (url.endsWith(".txt")) {
-    return reply(res, "Hai caricato un file di testo. Vuoi che lo legga e ti dica cosa contiene?");
-  }
-
-  if (url.endsWith(".zip")) {
-    return reply(res, "Hai caricato un file ZIP. Vuoi che ti dica come estrarlo o cosa potrebbe contenere?");
-  }
-
-  return reply(res, "File ricevuto. Vuoi che ti dica cosa posso farci?");
-  }// ------------------------------
+  // ------------------------------
   // FALLBACK INTELLIGENTE FINALE
   // ------------------------------
   const risposta = await callGPT(rawText, Memory.get(uid), pageContext);
 
-// 🔥 Blindatura finale: il bot risponde SEMPRE
-if (!risposta || typeof risposta !== "string" || risposta.trim().length < 2) {
-  return reply(
-    res,
-    "Sono qui 👋\n" +
-    "Ecco come posso aiutarti subito:\n" +
-    "• catalogo — vedere tutti i prodotti\n" +
-    "• supporto — problemi download o pagamenti\n" +
-    "• contatti — email e WhatsApp\n" +
-    "• newsletter — iscrizione o disiscrizione\n" +
-    "• consigli — ti suggerisco il prodotto giusto\n\n" +
-    "Scrivi una parola chiave e ti indirizzo."
-  );
+  if (!risposta || typeof risposta !== "string" || risposta.trim().length < 2) {
+    return reply(
+      res,
+      "Sono qui 👋\n" +
+      "Ecco come posso aiutarti subito:\n" +
+      "• catalogo — vedere tutti i prodotti\n" +
+      "• supporto — problemi download o pagamenti\n" +
+      "• contatti — email e WhatsApp\n" +
+      "• newsletter — iscrizione o disiscrizione\n" +
+      "• consigli — ti suggerisco il prodotto giusto\n\n" +
+      "Scrivi una parola chiave e ti indirizzo."
+    );
+  }
+
+  return reply(res, risposta.trim());
 }
 
-return reply(res, risposta.trim());
-}// ------------------------------
+// ------------------------------
 // EXPORT
 // ------------------------------
 module.exports = {
