@@ -8,7 +8,35 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const axios = require("axios");
 require("dotenv").config();
+const multer = require("multer");
+const path = require("path");
 
+// Storage con rinomina automatica
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "public/uploads");
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    const safeName = "upload_" + Date.now() + ext;
+    cb(null, safeName);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB
+});
+
+// Endpoint upload
+app.post("/chat/upload", upload.single("file"), (req, res) => {
+  if (!req.file) {
+    return res.json({ error: "Nessun file ricevuto" });
+  }
+
+  const fileUrl = "/uploads/" + req.file.filename;
+  res.json({ fileUrl });
+});
 // Stato utenti globale blindato (FONDAMENTALE)
 const userStates = {};/* =========================================================
    IMPORT MODULI INTERNI
