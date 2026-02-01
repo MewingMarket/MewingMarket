@@ -832,3 +832,26 @@ footer {
     transform: translateY(0);
   }
 }
+/* Icona allegati stile WhatsApp */
+.mm-attach-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #f1f1f1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+  cursor: pointer;
+  font-size: 20px;
+  user-select: none;
+  transition: background 0.2s ease;
+}
+
+.mm-attach-btn:hover {
+  background: #e5e5e5;
+}
+
+#mm-file-input {
+  display: none;
+}
