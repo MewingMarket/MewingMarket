@@ -562,7 +562,9 @@ function detectIntent(rawText) {
   if (product) {
     return { intent: "prodotto", sub: product.slug };
   }
-
+if (rawText.startsWith("FILE:")) {
+  return { intent: "allegato", sub: rawText.replace("FILE:", "").trim() };
+}
   // ------------------------------
   // FALLBACK GPT
   // ------------------------------
@@ -1386,6 +1388,26 @@ Se mi dici in che situazione sei (es. "sto iniziando", "sono già avviato", "son
     );
 
     return reply(res, enriched || base);
+  } if (intent === "allegato") {
+  const url = sub || "";
+
+  if (url.endsWith(".pdf")) {
+    return reply(res, "Hai caricato un PDF. Vuoi che lo riassuma o che estragga i punti chiave?");
+  }
+
+  if (url.match(/\.(png|jpg|jpeg|gif|webp)$/i)) {
+    return reply(res, "Hai caricato un'immagine. Vuoi che la descriva o che analizzi cosa contiene?");
+  }
+
+  if (url.endsWith(".txt")) {
+    return reply(res, "Hai caricato un file di testo. Vuoi che lo legga e ti dica cosa contiene?");
+  }
+
+  if (url.endsWith(".zip")) {
+    return reply(res, "Hai caricato un file ZIP. Vuoi che ti dica come estrarlo o cosa potrebbe contenere?");
+  }
+
+  return reply(res, "File ricevuto. Vuoi che ti dica cosa posso farci?");
   }// ------------------------------
   // FALLBACK INTELLIGENTE FINALE
   // ------------------------------
