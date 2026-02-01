@@ -237,7 +237,42 @@ document.addEventListener("DOMContentLoaded", () => {
 
     sending = false;
   }
+// --- Upload allegati ---
+const attachBtn = document.getElementById("mm-attach");
+const fileInput = document.getElementById("mm-file-input");
 
+attachBtn.addEventListener("click", () => fileInput.click());
+
+fileInput.addEventListener("change", async () => {
+  const file = fileInput.files[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  // Mostra subito la bubble "file inviato"
+  addMessage("Hai inviato un file: " + file.name, "user");
+
+  try {
+    const res = await fetch("/chat/upload", {
+      method: "POST",
+      body: formData
+    });
+
+    const data = await res.json();
+
+    if (data.fileUrl) {
+      // Invia al bot il link del file
+      sendMessageToBot("FILE:" + data.fileUrl);
+    } else {
+      addMessage("Errore durante l'upload del file.", "bot");
+    }
+  } catch (err) {
+    addMessage("Errore di connessione durante l'upload.", "bot");
+  }
+
+  fileInput.value = "";
+});
   // ---------------------------------------------
   // EVENTI INPUT
   // ---------------------------------------------
