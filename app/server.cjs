@@ -8,7 +8,7 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const axios = require("axios");
 require("dotenv").config();
-const multer = require("multer"); // OK
+const multer = require("multer");
 
 /* =========================================================
    SETUP EXPRESS
@@ -32,10 +32,12 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB
+  limits: { fileSize: 5 * 1024 * 1024 }
 });
 
-// Endpoint upload — ORA È NEL PUNTO GIUSTO
+/* =========================================================
+   ENDPOINT UPLOAD FILE CHAT
+========================================================= */
 app.post("/chat/upload", upload.single("file"), (req, res) => {
   if (!req.file) {
     return res.json({ error: "Nessun file ricevuto" });
