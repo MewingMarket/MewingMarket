@@ -8,8 +8,7 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const axios = require("axios");
 require("dotenv").config();
-const multer = require("multer");
-const path = require("path");
+const multer = require("multer"); // <-- OK, path NON va ripetuto
 
 // Storage con rinomina automatica
 const storage = multer.diskStorage({
@@ -28,7 +27,9 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB
 });
 
-// Endpoint upload
+/* =========================================================
+   ENDPOINT UPLOAD FILE CHAT
+========================================================= */
 app.post("/chat/upload", upload.single("file"), (req, res) => {
   if (!req.file) {
     return res.json({ error: "Nessun file ricevuto" });
@@ -37,8 +38,13 @@ app.post("/chat/upload", upload.single("file"), (req, res) => {
   const fileUrl = "/uploads/" + req.file.filename;
   res.json({ fileUrl });
 });
-// Stato utenti globale blindato (FONDAMENTALE)
-const userStates = {};/* =========================================================
+
+/* =========================================================
+   STATO UTENTI GLOBALE
+========================================================= */
+const userStates = {};
+
+/* =========================================================
    IMPORT MODULI INTERNI
 ========================================================= */
 const { generateNewsletterHTML } = require(path.join(__dirname, "modules", "newsletter"));
