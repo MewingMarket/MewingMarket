@@ -16,7 +16,26 @@ const { normalize, cleanSearchQuery } = require("./utils");
 const { getProducts } = require("./airtable");
 const Context = require("./context");
 const Memory = require("./memory");
+// ------------------------------
+// UTM + TRACKING INTEGRATION
+// ------------------------------
+function extractUTM(req) {
+  try {
+    return req.body?.utm || {};
+  } catch {
+    return {};
+  }
+}
 
+function trackBotEvent(event, data = {}) {
+  try {
+    if (global.trackEvent) {
+      global.trackEvent("bot_" + event, data);
+    }
+  } catch (err) {
+    console.error("Bot tracking error:", err);
+  }
+}
 // ------------------------------
 // TRACKING
 // ------------------------------
