@@ -1555,25 +1555,30 @@ Se mi dici in che situazione sei (es. "sto iniziando", "sono già avviato", "son
       page: pageContext?.page || null,
       lastProduct: state.lastProductSlug || null
     });
+const enriched = await callGPT(
+  rawText || "Obiezione prezzo",
+  Memory.get(uid),
+  pageContext,
+  "\nRendi il messaggio un po' più empatico, senza togliere fermezza."
+);
 
-    const enriched = await callGPT(
-      rawText || "Obiezione prezzo",
-      Memory.get(uid),
-      pageContext,
-      "\nRendi il messaggio un po' più empatico, senza togliere fermezza."
+return reply(
+  res,
+  enriched,
+  { intent, sub, uid, utm, page: pageContext?.page || null }
+);
+
+// ALLEGATI
+if (intent === "allegato") {
+  const url = sub || "";
+
+  if (url.endsWith(".pdf")) {
+    return reply(
+      res,
+      "Hai caricato un PDF. Vuoi che lo riassuma o che estragga i punti chiave?",
+      { intent, sub, uid, utm, page: pageContext?.page || null }
     );
-
-    return reply(res, e// ALLEGATI
-  if (intent === "allegato") {
-    const url = sub || "";
-
-    if (url.endsWith(".pdf")) {
-      return reply(
-        res,
-        "Hai caricato un PDF. Vuoi che lo riassuma o che estragga i punti chiave?",
-        { intent, sub, uid, utm, page: pageContext?.page || null }
-      );
-    }
+  }
 
     if (url.match(/\.(png|jpg|jpeg|gif|webp)$/i)) {
       return reply(
