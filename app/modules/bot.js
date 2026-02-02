@@ -1113,24 +1113,28 @@ Vuoi che ti dica come usarla al meglio?
 
     return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
   }
-
-  if (intent === "faq_premium") {
-    const base = `
+if (intent === "faq_premium") {
+  const base = `
 Ecco le FAQ avanzate:  
 <a href="FAQ.html">FAQ Premium</a>
 
 Vuoi che ti risponda direttamente a una domanda specifica?
 `;
 
-    const enriched = await callGPT(
-      rawText || "FAQ Premium",
-      Memory.get(uid),
-      pageContext,
-      "\nRendi il messaggio più orientato all’aiuto diretto."
-    );
+  const enriched = await callGPT(
+    rawText || "FAQ Premium",
+    Memory.get(uid),
+    pageContext,
+    "\nRendi il messaggio più orientato all’aiuto diretto."
+  );
 
-    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
-                   } // ------------------------------
+  return reply(
+    res,
+    enriched || base,
+    { intent, sub, uid, utm, page: pageContext?.page || null }
+  );
+}
+  
   // PRODOTTI
   // ------------------------------
   const lastProductSlug = state.lastProductSlug;
