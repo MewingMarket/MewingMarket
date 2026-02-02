@@ -1,8 +1,3 @@
-// ======================================================
-// modules/bot.js — COPILOT VERSIONE MASSIMA (GPT-FIRST)
-// File pulito, ordinato, corretto e patchato
-// ======================================================
-
 const fetch = require("node-fetch");
 
 const {
@@ -16,6 +11,7 @@ const { normalize, cleanSearchQuery } = require("./utils");
 const { getProducts } = require("./airtable");
 const Context = require("./context");
 const Memory = require("./memory");
+
 // ------------------------------
 // UTM + TRACKING INTEGRATION
 // ------------------------------
@@ -36,8 +32,9 @@ function trackBotEvent(event, data = {}) {
     console.error("Bot tracking error:", err);
   }
 }
+
 // ------------------------------
-// TRACKING
+// TRACKING (legacy)
 // ------------------------------
 function trackBot(event, data = {}) {
   try {
@@ -50,52 +47,16 @@ function trackBot(event, data = {}) {
 }
 
 // ------------------------------
-// GPT CORE — SYSTEM PROMPT
+// GPT SYSTEM PROMPT
 // ------------------------------
 const BASE_SYSTEM_PROMPT = `
 Sei il Copilot ufficiale di MewingMarket, integrato nel sito.
+Tono: chiaro, diretto, professionale, amichevole.
+Non inventare prodotti o prezzi. Consiglia solo ciò che esiste.
+`;
 
-Tono:
-- chiaro
-- diretto
-- professionale
-- amichevole
-- commerciale quando serve
-- mai aggressivo, ma deciso
-
-Regole generali:
-- Non inventare prodotti, prezzi, link o contatti.
-- Usa solo prodotti MewingMarket se sono nel contesto.
-- Se l'utente chiede consigli: consiglia il prodotto migliore in base al suo obiettivo.
-- Se l'utente ha dubbi: chiarisci, rassicura, spiega il valore.
-- Se l'utente tratta: mantieni il valore, non inventare sconti, ma spiega perché il prezzo è giustificato.
-- Se l'utente è pronto: porta alla chiusura con link Payhip (se fornito nel contesto).
-- Se l'utente chiede cose generiche (anche fuori tema): rispondi comunque in modo coerente, ma senza uscire dal ruolo di assistente MewingMarket.
-
-Social:
-- Se l'utente chiede di un social specifico, spiega cosa trova lì:
-  - Instagram: contenuti visivi, aggiornamenti veloci, dietro le quinte.
-  - TikTok: clip brevi, spiegazioni rapide, pillole pratiche.
-  - YouTube: contenuti più lunghi, spiegazioni approfondite, walkthrough.
-  - Facebook: aggiornamenti, post informativi, link alle risorse.
-  - X: pensieri brevi, aggiornamenti rapidi, note veloci.
-  - Threads: conversazioni più discorsive, riflessioni.
-  - LinkedIn: contenuti più professionali, business, posizionamento.
-
-Contatto umano:
-- Se l'utente chiede aiuto su qualcosa di molto personale, privato, o che richiede accesso a dati sensibili:
-  - Suggerisci SEMPRE come opzione finale:
-    - Email supporto: supporto@mewingmarket.it
-    - Email vendite: vendite@mewingmarket.it
-    - WhatsApp Business: 352 026 6660
-  - Spiega che per casi specifici è meglio un contatto diretto.
-
-Stile:
-- Risposte brevi ma dense, niente muri di testo inutili.
-- Usa elenchi solo quando servono davvero.
-- Mantieni sempre il ruolo di Copilot MewingMarket.
-`; // ------------------------------
-// GPT CALL — VERSIONE BLINDATA E OTTIMIZZATA
+// ------------------------------
+// GPT CALL
 // ------------------------------
 async function callGPT(userPrompt, memory = [], context = {}, extraSystem = "", extraData = {}) {
   try {
@@ -105,23 +66,9 @@ async function callGPT(userPrompt, memory = [], context = {}, extraSystem = "", 
       model: "meta-llama/llama-3.1-70b-instruct",
       messages: [
         { role: "system", content: system },
-
-        // Memoria ridotta → GPT più stabile
-        {
-          role: "assistant",
-          content: "Memoria recente: " + JSON.stringify(memory.slice(-6) || [])
-        },
-
-        {
-          role: "assistant",
-          content: "Contesto pagina: " + JSON.stringify(context || {})
-        },
-
-        {
-          role: "assistant",
-          content: "Dati strutturati disponibili: " + JSON.stringify(extraData || {})
-        },
-
+        { role: "assistant", content: "Memoria recente: " + JSON.stringify(memory.slice(-6) || []) },
+        { role: "assistant", content: "Contesto pagina: " + JSON.stringify(context || {}) },
+        { role: "assistant", content: "Dati strutturati disponibili: " + JSON.stringify(extraData || {}) },
         { role: "user", content: userPrompt }
       ]
     };
@@ -136,60 +83,23 @@ async function callGPT(userPrompt, memory = [], context = {}, extraSystem = "", 
     });
 
     const json = await res.json();
+    const out = json?.choices?.[0]?.message?.content?.trim();
 
-    // Blindatura: GPT non può restituire vuoto
-    if (!json || !json.choices || !json.choices[0] || !json.choices[0].message) {
-      console.error("GPT EMPTY RESPONSE:", JSON.stringify(json));
-
-      return (
-        "Capito 👍\n" +
-        "Ecco come posso aiutarti:\n" +
-        "• catalogo — vedere tutti i prodotti\n" +
-        "• supporto — problemi download o pagamenti\n" +
-        "• contatti — email e WhatsApp\n" +
-        "• newsletter — iscrizione o disiscrizione\n" +
-        "• prodotti — consigli personalizzati\n\n" +
-        "Scrivi una parola chiave e ti indirizzo subito."
-      );
-    }
-
-    const out = json.choices[0].message.content?.trim();
-
-    // Se GPT risponde vuoto → fallback intelligente
-    if (!out || out.length < 2) {
-      return (
-        "Sono qui 👋\n" +
-        "Puoi chiedermi:\n" +
-        "• catalogo\n" +
-        "• supporto\n" +
-        "• contatti\n" +
-        "• newsletter\n" +
-        "• consigli sui prodotti\n\n" +
-        "Dimmi pure cosa ti serve."
-      );
+    if (!out) {
+      return "Sono qui 👋 Dimmi pure come posso aiutarti.";
     }
 
     return out;
 
   } catch (err) {
     console.error("GPT error:", err);
-
-    // Anche in caso di errore → risposta utile
-    return (
-      "Sto avendo un piccolo problema tecnico, ma ci sono 👍\n" +
-      "Nel frattempo posso aiutarti con:\n" +
-      "• catalogo\n" +
-      "• supporto\n" +
-      "• contatti\n" +
-      "• newsletter\n" +
-      "• prodotti\n\n" +
-      "Scrivi una parola chiave."
-    );
+    return "Sto avendo un piccolo problema tecnico, ma ci sono 👍";
   }
-}// ------------------------------
-// UTILS — STATO, UID, RISPOSTE
-// ------------------------------
+}
 
+// ------------------------------
+// UTILS — UID, STATE, REPLY
+// ------------------------------
 function generateUID() {
   return "mm_" + Math.random().toString(36).substring(2, 12);
 }
@@ -230,7 +140,6 @@ function isYes(text) {
 } // ------------------------------
 // MATCH PRODOTTI — FUZZY + SINONIMI + PAROLE CHIAVE
 // ------------------------------
-
 function buildProductIndex() {
   const products = getProducts() || [];
 
@@ -238,10 +147,8 @@ function buildProductIndex() {
     const titolo = (p.titolo || "").toLowerCase();
     const slug = (p.slug || "").toLowerCase();
 
-    // Sinonimi dinamici basati sul titolo
     const synonyms = [];
 
-    // Ecosistema Digitale
     if (titolo.includes("ecosistema")) {
       synonyms.push(
         "ecosistema",
@@ -254,7 +161,6 @@ function buildProductIndex() {
       );
     }
 
-    // Business Digitale AI
     if (titolo.includes("business") && titolo.includes("ai")) {
       synonyms.push(
         "business ai",
@@ -266,7 +172,6 @@ function buildProductIndex() {
       );
     }
 
-    // Contenuti
     if (titolo.includes("contenuti")) {
       synonyms.push(
         "contenuti",
@@ -278,7 +183,6 @@ function buildProductIndex() {
       );
     }
 
-    // Competenze
     if (titolo.includes("competenze")) {
       synonyms.push(
         "competenze",
@@ -289,7 +193,6 @@ function buildProductIndex() {
       );
     }
 
-    // Produttività / Planner
     if (titolo.includes("produttività") || titolo.includes("planner")) {
       synonyms.push(
         "produttività",
@@ -301,7 +204,6 @@ function buildProductIndex() {
       );
     }
 
-    // Business Plan
     if (titolo.includes("business plan")) {
       synonyms.push(
         "business plan",
@@ -312,7 +214,6 @@ function buildProductIndex() {
       );
     }
 
-    // Fisco / Forfettario / Flessinance
     if (
       titolo.includes("fiscale") ||
       titolo.includes("forfettario") ||
@@ -348,7 +249,6 @@ function fuzzyMatchProduct(text) {
   const products = buildProductIndex();
   const t = (text || "").toLowerCase();
 
-  // 1) Match diretto su slug o titolo
   for (const p of products) {
     if (!p._index) continue;
     if (t.includes(p._index.slug) || t.includes(p._index.titolo)) {
@@ -356,7 +256,6 @@ function fuzzyMatchProduct(text) {
     }
   }
 
-  // 2) Match su sinonimi
   for (const p of products) {
     if (!p._index) continue;
     if (textIncludesAny(t, p._index.synonyms)) {
@@ -364,7 +263,6 @@ function fuzzyMatchProduct(text) {
     }
   }
 
-  // 3) Match su parole chiave (fallback molto lasco)
   const keywords = t.split(/\s+/).filter(w => w.length > 3);
   if (keywords.length) {
     for (const p of products) {
@@ -376,10 +274,11 @@ function fuzzyMatchProduct(text) {
   }
 
   return null;
-} // ------------------------------
+}
+
+// ------------------------------
 // DETECT INTENT V5 — GPT-FIRST, COMMERCIALE, CONVERSAZIONALE
 // ------------------------------
-
 function detectIntent(rawText) {
   const text = rawText || "";
   const t = normalize(text);
@@ -387,9 +286,7 @@ function detectIntent(rawText) {
 
   trackBot("intent_detect", { text: rawText });
 
-  // ------------------------------
   // CONVERSAZIONE GENERALE
-  // ------------------------------
   if (
     q.includes("come va") ||
     q.includes("come stai") ||
@@ -408,9 +305,7 @@ function detectIntent(rawText) {
     return { intent: "conversazione", sub: null };
   }
 
-  // ------------------------------
   // MENU / BENVENUTO
-  // ------------------------------
   if (
     q.includes("menu") ||
     q.includes("inizio") ||
@@ -422,9 +317,7 @@ function detectIntent(rawText) {
     return { intent: "menu", sub: null };
   }
 
-  // ------------------------------
   // CATALOGO
-  // ------------------------------
   if (
     q.includes("catalogo") ||
     q.includes("prodotti") ||
@@ -434,9 +327,7 @@ function detectIntent(rawText) {
     return { intent: "catalogo", sub: null };
   }
 
-  // ------------------------------
   // ISCRIZIONE GENERICA
-  // ------------------------------
   if (
     q.includes("iscrizione") ||
     q.includes("mi iscrivo") ||
@@ -446,9 +337,7 @@ function detectIntent(rawText) {
     return { intent: "newsletter", sub: "subscribe" };
   }
 
-  // ------------------------------
   // NEWSLETTER
-  // ------------------------------
   if (
     q.includes("newsletter") ||
     q.includes("iscrivermi") ||
@@ -462,9 +351,7 @@ function detectIntent(rawText) {
     return { intent: "newsletter", sub: "subscribe" };
   }
 
-  // ------------------------------
-  // SOCIAL — SPECIFICI
-  // ------------------------------
+  // SOCIAL SPECIFICI
   if (q.includes("instagram")) return { intent: "social_specifico", sub: "instagram" };
   if (q.includes("tiktok")) return { intent: "social_specifico", sub: "tiktok" };
   if (q.includes("youtube")) return { intent: "social_specifico", sub: "youtube" };
@@ -473,20 +360,17 @@ function detectIntent(rawText) {
   if (q.includes("linkedin")) return { intent: "social_specifico", sub: "linkedin" };
   if (q.includes("x ") || q === "x") return { intent: "social_specifico", sub: "x" };
 
-  // Social generico
   if (q.includes("social")) {
     return { intent: "social", sub: null };
   }
 
-  // ------------------------------
-  // LEGALI / POLICY
-  // ------------------------------
+  // LEGALI
   if (q.includes("privacy") || q.includes("dati") || q.includes("gdpr")) {
     return { intent: "privacy", sub: null };
   }
 
   if (q.includes("termini") || q.includes("condizioni") || q.includes("terms")) {
-    return { intent: "terminni", sub: null };
+    return { intent: "termini", sub: null };
   }
 
   if (q.includes("cookie")) {
@@ -497,9 +381,7 @@ function detectIntent(rawText) {
     return { intent: "resi", sub: null };
   }
 
-  // ------------------------------
   // FAQ / CONTATTI / DOVE SIAMO
-  // ------------------------------
   if (q.includes("faq")) {
     return { intent: "faq", sub: null };
   }
@@ -523,9 +405,7 @@ function detectIntent(rawText) {
     return { intent: "dovesiamo", sub: null };
   }
 
-  // ------------------------------
-  // SUPPORTO / HELP DESK
-  // ------------------------------
+  // SUPPORTO
   if (
     q.includes("supporto") ||
     q.includes("assistenza") ||
@@ -553,9 +433,7 @@ function detectIntent(rawText) {
     return { intent: "supporto", sub: null };
   }
 
-  // ------------------------------
-  // ACQUISTO GENERICO
-  // ------------------------------
+  // ACQUISTO
   if (
     q.includes("acquisto") ||
     q.includes("fare un acquisto") ||
@@ -566,9 +444,6 @@ function detectIntent(rawText) {
     return { intent: "acquisto_diretto", sub: null };
   }
 
-  // ------------------------------
-  // ACQUISTO DIRETTO
-  // ------------------------------
   if (
     q.includes("acquista") ||
     q.includes("compra") ||
@@ -579,9 +454,7 @@ function detectIntent(rawText) {
     return { intent: "acquisto_diretto", sub: null };
   }
 
-  // ------------------------------
-  // DETTAGLI PRODOTTO
-  // ------------------------------
+  // DETTAGLI
   if (
     q.includes("dettagli") ||
     q.includes("approfondisci") ||
@@ -592,9 +465,7 @@ function detectIntent(rawText) {
     return { intent: "dettagli_prodotto", sub: null };
   }
 
-  // ------------------------------
-  // VIDEO PRODOTTO
-  // ------------------------------
+  // VIDEO
   if (
     q.includes("video") ||
     q.includes("anteprima") ||
@@ -603,9 +474,7 @@ function detectIntent(rawText) {
     return { intent: "video_prodotto", sub: null };
   }
 
-  // ------------------------------
-  // PREZZO PRODOTTO
-  // ------------------------------
+  // PREZZO
   if (
     q.includes("prezzo") ||
     q.includes("quanto costa") ||
@@ -615,9 +484,7 @@ function detectIntent(rawText) {
     return { intent: "prezzo_prodotto", sub: null };
   }
 
-  // ------------------------------
   // TRATTATIVA
-  // ------------------------------
   if (
     q.includes("sconto") ||
     q.includes("sconti") ||
@@ -627,9 +494,7 @@ function detectIntent(rawText) {
     return { intent: "trattativa", sub: "sconto" };
   }
 
-  // ------------------------------
   // OBIETTA PREZZO
-  // ------------------------------
   if (
     q.includes("è caro") ||
     q.includes("troppo caro") ||
@@ -639,42 +504,38 @@ function detectIntent(rawText) {
   ) {
     return { intent: "obiezione", sub: "prezzo" };
   }
-// ------------------------------
-// INTENT PREMIUM
-// ------------------------------
-if (q.includes("ecosistema") || q.includes("da dove inizio") || q.includes("iniziare")) {
-  return { intent: "ecosistema", sub: null };
-}
 
-if (q.includes("mindset") || q.includes("motivazione") || q.includes("mentalità")) {
-  return { intent: "mindset", sub: null };
-}
-
-if (q.includes("lead magnet") || q.includes("risorsa gratuita") || q.includes("freebie")) {
-  return { intent: "lead_magnet", sub: null };
-}
-
-if (q.includes("faq premium") || q.includes("domande avanzate")) {
-  return { intent: "faq_premium", sub: null };
-}
   // ------------------------------
+  // INTENT PREMIUM
+  // ------------------------------
+  if (q.includes("ecosistema") || q.includes("da dove inizio") || q.includes("iniziare")) {
+    return { intent: "ecosistema", sub: null };
+  }
+
+  if (q.includes("mindset") || q.includes("motivazione") || q.includes("mentalità")) {
+    return { intent: "mindset", sub: null };
+  }
+
+  if (q.includes("lead magnet") || q.includes("risorsa gratuita") || q.includes("freebie")) {
+    return { intent: "lead_magnet", sub: null };
+  }
+
+  if (q.includes("faq premium") || q.includes("domande avanzate")) {
+    return { intent: "faq_premium", sub: null };
+  }
+
   // MATCH PRODOTTO FUZZY
-  // ------------------------------
   const product = fuzzyMatchProduct(text);
   if (product) {
     return { intent: "prodotto", sub: product.slug };
   }
 
-  // ------------------------------
   // FILE ALLEGATI
-  // ------------------------------
   if (rawText.startsWith("FILE:")) {
     return { intent: "allegato", sub: rawText.replace("FILE:", "").trim() };
   }
 
-  // ------------------------------
-  // FALLBACK GPT — blindato
-  // ------------------------------
+  // FALLBACK GPT
   if (!rawText || rawText.trim().length < 2) {
     return { intent: "menu", sub: null };
   }
@@ -684,9 +545,8 @@ if (q.includes("faq premium") || q.includes("domande avanzate")) {
     return { intent: "menu", sub: null };
   }
 
-  // GPT-first
   return { intent: "gpt", sub: null };
-      } // ------------------------------
+    } // ------------------------------
 // HANDLE CONVERSATION — GPT-FIRST, COMMERCIALE, COMPLETO
 // ------------------------------
 async function handleConversation(req, res, intent, sub, rawText) {
@@ -699,30 +559,26 @@ async function handleConversation(req, res, intent, sub, rawText) {
   const pageContext = Context.get(uid);
 
   trackBot("conversation_step", { uid, intent, sub, text: rawText });
-// ------------------------------
-// TRACKING PREMIUM + UTM
-// ------------------------------
-const utm = extractUTM(req);
 
-trackBotEvent("message", {
-  uid,
-  text: rawText,
-  intent,
-  sub,
-  utm,
-  page: pageContext?.page || null
-});
-  // ------------------------------
+  // TRACKING PREMIUM + UTM
+  const utm = extractUTM(req);
+
+  trackBotEvent("message", {
+    uid,
+    text: rawText,
+    intent,
+    sub,
+    utm,
+    page: pageContext?.page || null
+  });
+
   // GPT FALLBACK / GENERALE
-  // ------------------------------
   if (intent === "gpt") {
     const risposta = await callGPT(rawText, Memory.get(uid), pageContext);
-    return reply(res, risposta);
+    return reply(res, risposta, { intent, sub, uid, utm, page: pageContext?.page || null });
   }
 
-  // ------------------------------
   // CONVERSAZIONE GENERALE
-  // ------------------------------
   if (intent === "conversazione") {
     const risposta = await callGPT(
       rawText,
@@ -730,12 +586,10 @@ trackBotEvent("message", {
       pageContext,
       "\nRispondi in modo amichevole, breve, coerente con il brand MewingMarket, e collega la conversazione ai prodotti o al valore del digitale quando ha senso."
     );
-    return reply(res, risposta);
+    return reply(res, risposta, { intent, sub, uid, utm, page: pageContext?.page || null });
   }
 
-  // ------------------------------
   // MENU
-  // ------------------------------
   if (intent === "menu") {
     setState(req, "menu");
 
@@ -761,17 +615,19 @@ Scrivi una parola chiave come:
       "\nRendi il messaggio più umano e accogliente, senza cambiare la struttura."
     );
 
-    return reply(res, enriched || base);
+    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
   }
 
-  // ------------------------------
   // CATALOGO
-  // ------------------------------
   if (intent === "catalogo") {
     setState(req, "catalogo");
 
     if (!PRODUCTS.length) {
-      return reply(res, "Il catalogo sarà presto disponibile. Stiamo preparando i primi prodotti.");
+      return reply(
+        res,
+        "Il catalogo sarà presto disponibile. Stiamo preparando i primi prodotti.",
+        { intent, sub, uid, utm, page: pageContext?.page || null }
+      );
     }
 
     let out = "📚 <b>Catalogo MewingMarket</b>\n\n";
@@ -790,16 +646,19 @@ Scrivi una parola chiave come:
       { products: PRODUCTS }
     );
 
-    return reply(res, out + "\n\n" + (enriched || ""));
+    return reply(res, out + "\n\n" + (enriched || ""), {
+      intent,
+      sub,
+      uid,
+      utm,
+      page: pageContext?.page || null
+    });
   }
 
-  // ------------------------------
   // NEWSLETTER
-  // ------------------------------
   if (intent === "newsletter") {
     setState(req, "newsletter");
 
-    // DISISCRIZIONE
     if (sub === "unsubscribe") {
       const base = `
 Vuoi annullare l'iscrizione alla newsletter?
@@ -820,10 +679,9 @@ Hai bisogno di altro o vuoi tornare al menu?
         "\nRendi il messaggio più empatico ma chiaro."
       );
 
-      return reply(res, enriched || base);
+      return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
     }
 
-    // ISCRIZIONE
     const base = `
 Vuoi iscriverti alla newsletter di MewingMarket?
 
@@ -845,10 +703,8 @@ Hai bisogno di altro o vuoi tornare al menu?
       "\nRendi il messaggio più motivante, senza esagerare."
     );
 
-    return reply(res, enriched || base);
-  } // ------------------------------
-  // SOCIAL SPECIFICI
-  // ------------------------------
+    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+      } // SOCIAL SPECIFICI
   if (intent === "social_specifico") {
     const socials = {
       instagram: "https://www.instagram.com/mewingmarket",
@@ -876,12 +732,10 @@ Vuoi vedere anche gli altri social o tornare al menu?
       "\nAggiungi una frase che spieghi cosa trova l’utente su questo social."
     );
 
-    return reply(res, enriched || base);
+    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
   }
 
-  // ------------------------------
   // SOCIAL GENERICO
-  // ------------------------------
   if (intent === "social") {
     const base = `
 Ecco i nostri social ufficiali 📲
@@ -904,12 +758,10 @@ Vuoi tornare al menu o vedere il catalogo?
       "\nAggiungi una frase che inviti a seguire almeno un social."
     );
 
-    return reply(res, enriched || base);
+    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
   }
 
-  // ------------------------------
   // PRIVACY
-  // ------------------------------
   if (intent === "privacy") {
     const base = `
 La Privacy Policy di MewingMarket spiega come gestiamo i tuoi dati.
@@ -933,12 +785,10 @@ Hai bisogno di altro o vuoi tornare al menu?
       "\nRendi il tono più rassicurante."
     );
 
-    return reply(res, enriched || base);
+    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
   }
 
-  // ------------------------------
   // TERMINI E CONDIZIONI
-  // ------------------------------
   if (intent === "termini") {
     const base = `
 I Termini e Condizioni spiegano come funziona MewingMarket.
@@ -962,12 +812,10 @@ Hai bisogno di altro o vuoi tornare al menu?
       "\nRendi il tono più umano."
     );
 
-    return reply(res, enriched || base);
+    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
   }
 
-  // ------------------------------
   // COOKIE
-  // ------------------------------
   if (intent === "cookie") {
     const base = `
 Usiamo cookie tecnici e analytics per migliorare il sito.
@@ -985,12 +833,10 @@ Hai bisogno di altro o vuoi tornare al menu?
       "\nNormalizza l'uso dei cookie senza banalizzare."
     );
 
-    return reply(res, enriched || base);
+    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
   }
 
-  // ------------------------------
   // RESI E RIMBORSI
-  // ------------------------------
   if (intent === "resi") {
     const base = `
 I prodotti digitali non prevedono reso automatico, ma valutiamo ogni richiesta caso per caso.
@@ -1012,12 +858,10 @@ Hai bisogno di altro o vuoi tornare al menu?
       "\nRendi il tono fermo ma comprensivo."
     );
 
-    return reply(res, enriched || base);
+    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
   }
 
-  // ------------------------------
   // FAQ
-  // ------------------------------
   if (intent === "faq") {
     const base = `
 Puoi consultare le FAQ qui:  
@@ -1036,12 +880,10 @@ Vuoi tornare al menu o hai bisogno di altro?
       "\nAggiungi una frase che inviti a chiedere se non trova la risposta."
     );
 
-    return reply(res, enriched || base);
+    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
   }
 
-  // ------------------------------
   // CONTATTI
-  // ------------------------------
   if (intent === "contatti") {
     const base = `
 Ecco i contatti ufficiali MewingMarket:
@@ -1064,12 +906,8 @@ Vuoi tornare al menu o vedere il catalogo?
       "\nAggiungi una frase che spieghi quando usare vendite e quando supporto."
     );
 
-    return reply(res, enriched || base);
-  }
-
-  // ------------------------------
-  // DOVE SIAMO
-  // ------------------------------
+    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+  } // DOVE SIAMO
   if (intent === "dovesiamo") {
     const base = `
 La sede di MewingMarket è:
@@ -1090,16 +928,13 @@ Vuoi tornare al menu o hai bisogno di altro?
       "\nNormalizza il fatto che il progetto è digitale ma ha una base reale."
     );
 
-    return reply(res, enriched || base);
+    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
   }
 
-  // ------------------------------
   // SUPPORTO
-  // ------------------------------
   if (intent === "supporto") {
     setState(req, "supporto");
 
-    // DOWNLOAD
     if (sub === "download") {
       const base = `
 Se non riesci a scaricare il prodotto:
@@ -1122,10 +957,9 @@ Vuoi tornare al menu o hai bisogno di altro?
         "\nRendi il messaggio più guidato e rassicurante."
       );
 
-      return reply(res, enriched || base);
+      return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
     }
 
-    // PAYHIP
     if (sub === "payhip") {
       const base = `
 Payhip gestisce pagamenti e download.
@@ -1147,10 +981,9 @@ Vuoi tornare al menu o hai bisogno di altro?
         "\nRendi il tono rassicurante."
       );
 
-      return reply(res, enriched || base);
+      return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
     }
 
-    // RIMBORSO
     if (sub === "rimborso") {
       const base = `
 I prodotti digitali non prevedono reso automatico, ma valutiamo ogni caso.
@@ -1172,10 +1005,9 @@ Vuoi tornare al menu o hai bisogno di altro?
         "\nRendi il tono fermo ma gentile."
       );
 
-      return reply(res, enriched || base);
+      return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
     }
 
-    // CONTATTO DIRETTO
     if (sub === "contatto") {
       const base = `
 Puoi contattare il supporto:
@@ -1198,10 +1030,9 @@ Vuoi tornare al menu o hai bisogno di altro?
         "\nAggiungi una frase che inviti a descrivere bene il problema."
       );
 
-      return reply(res, enriched || base);
+      return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
     }
 
-    // SUPPORTO GENERICO
     const base = `
 Sono qui per aiutarti 💬  
 Scrivi una parola chiave come:  
@@ -1215,12 +1046,14 @@ Scrivi una parola chiave come:
       "\nRendi il messaggio più naturale."
     );
 
-    return reply(res, enriched || base);
-  } // ------------------------------
-// ECOSISTEMA DIGITALE
-// ------------------------------
-if (intent === "ecosistema") {
-  const base = `
+    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+  }
+
+  // ------------------------------
+  // INTENT PREMIUM — ECOSISTEMA, MINDSET, LEAD MAGNET, FAQ PREMIUM
+  // ------------------------------
+  if (intent === "ecosistema") {
+    const base = `
 L’Ecosistema Digitale è il punto di partenza ideale se vuoi:
 
 • capire come funziona il digitale  
@@ -1231,21 +1064,18 @@ L’Ecosistema Digitale è il punto di partenza ideale se vuoi:
 Vuoi che ti dica se è adatto alla tua situazione?
 `;
 
-  const enriched = await callGPT(
-    rawText || "Ecosistema Digitale",
-    Memory.get(uid),
-    pageContext,
-    "\nRendi il messaggio più motivante e orientato all'azione."
-  );
+    const enriched = await callGPT(
+      rawText || "Ecosistema Digitale",
+      Memory.get(uid),
+      pageContext,
+      "\nRendi il messaggio più motivante e orientato all'azione."
+    );
 
-  return reply(res, enriched || base);
-}
+    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+  }
 
-// ------------------------------
-// MINDSET / MOTIVAZIONE
-// ------------------------------
-if (intent === "mindset") {
-  const base = `
+  if (intent === "mindset") {
+    const base = `
 Il mindset è la base di tutto.
 
 Se vuoi posso darti:
@@ -1256,57 +1086,51 @@ Se vuoi posso darti:
 Vuoi una routine veloce o un metodo completo?
 `;
 
-  const enriched = await callGPT(
-    rawText || "Mindset",
-    Memory.get(uid),
-    pageContext,
-    "\nRendi il messaggio più empatico e pratico."
-  );
+    const enriched = await callGPT(
+      rawText || "Mindset",
+      Memory.get(uid),
+      pageContext,
+      "\nRendi il messaggio più empatico e pratico."
+    );
 
-  return reply(res, enriched || base);
-}
+    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+  }
 
-// ------------------------------
-// LEAD MAGNET / RISORSA GRATUITA
-// ------------------------------
-if (intent === "lead_magnet") {
-  const base = `
+  if (intent === "lead_magnet") {
+    const base = `
 Ecco la risorsa gratuita per iniziare subito 👇  
 https://mewingmarket.com/free
 
 Vuoi che ti dica come usarla al meglio?
 `;
 
-  const enriched = await callGPT(
-    rawText || "Lead magnet",
-    Memory.get(uid),
-    pageContext,
-    "\nAggiungi una frase che inviti a usarla subito."
-  );
+    const enriched = await callGPT(
+      rawText || "Lead magnet",
+      Memory.get(uid),
+      pageContext,
+      "\nAggiungi una frase che inviti a usarla subito."
+    );
 
-  return reply(res, enriched || base);
-}
+    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+  }
 
-// ------------------------------
-// FAQ PREMIUM
-// ------------------------------
-if (intent === "faq_premium") {
-  const base = `
+  if (intent === "faq_premium") {
+    const base = `
 Ecco le FAQ avanzate:  
 <a href="FAQ.html">FAQ Premium</a>
 
 Vuoi che ti risponda direttamente a una domanda specifica?
 `;
 
-  const enriched = await callGPT(
-    rawText || "FAQ Premium",
-    Memory.get(uid),
-    pageContext,
-    "\nRendi il messaggio più orientato all’aiuto diretto."
-  );
+    const enriched = await callGPT(
+      rawText || "FAQ Premium",
+      Memory.get(uid),
+      pageContext,
+      "\nRendi il messaggio più orientato all’aiuto diretto."
+    );
 
-  return reply(res, enriched || base);
-}
+    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+                   } // ------------------------------
   // PRODOTTI
   // ------------------------------
   const lastProductSlug = state.lastProductSlug;
@@ -1334,22 +1158,36 @@ Scrivi il nome del prodotto o "catalogo".
         "\nRendi il messaggio più simile a una chat reale."
       );
 
-      return reply(res, enriched || base);
+      return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
     }
 
     state.lastProductSlug = product.slug;
     setState(req, "prodotto");
-// TRACKING PRODOTTO CONSIGLIATO
-trackBotEvent("product_recommendation", {
-  uid,
-  product: product.slug,
-  titolo: product.titolo,
-  prezzo: product.prezzo,
-  intent,
-  sub,
-  utm: extractUTM(req),
-  page: pageContext?.page || null
-});
+
+    // TRACKING PRODOTTO CONSIGLIATO
+    trackBotEvent("product_recommendation", {
+      uid,
+      product: product.slug,
+      titolo: product.titolo,
+      prezzo: product.prezzo,
+      intent,
+      sub,
+      utm,
+      page: pageContext?.page || null
+    });
+
+    // TRACKING HOT LEAD
+    trackBotEvent("hot_lead", {
+      uid,
+      product: product.slug,
+      titolo: product.titolo,
+      prezzo: product.prezzo,
+      intent,
+      sub,
+      utm,
+      page: pageContext?.page || null
+    });
+
     const base = productReply(product) + `
 
 Vuoi:
@@ -1366,26 +1204,14 @@ Vuoi:
       { product }
     );
 
-    return reply(res, enriched || base);
+    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
   }
 
-  // ------------------------------
   // ACQUISTO DIRETTO
-  // ------------------------------
   if (intent === "acquisto_diretto") {
     let product = fuzzyMatchProduct(rawText);
     if (!product && lastProductSlug) product = findProductBySlug(lastProductSlug);
-// TRACKING PRODOTTO CONSIGLIATO
-trackBotEvent("product_recommendation", {
-  uid,
-  product: product.slug,
-  titolo: product.titolo,
-  prezzo: product.prezzo,
-  intent,
-  sub,
-  utm: extractUTM(req),
-  page: pageContext?.page || null
-});
+
     if (!product) {
       const base = `
 Non ho capito quale prodotto vuoi acquistare.
@@ -1400,11 +1226,35 @@ Scrivi il nome del prodotto o "catalogo".
         "\nRendi il messaggio più conversazionale."
       );
 
-      return reply(res, enriched || base);
+      return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
     }
 
     state.lastProductSlug = product.slug;
     setState(req, "acquisto_diretto");
+
+    // TRACKING PRODOTTO CONSIGLIATO
+    trackBotEvent("product_recommendation", {
+      uid,
+      product: product.slug,
+      titolo: product.titolo,
+      prezzo: product.prezzo,
+      intent,
+      sub,
+      utm,
+      page: pageContext?.page || null
+    });
+
+    // TRACKING HOT LEAD
+    trackBotEvent("hot_lead", {
+      uid,
+      product: product.slug,
+      titolo: product.titolo,
+      prezzo: product.prezzo,
+      intent,
+      sub,
+      utm,
+      page: pageContext?.page || null
+    });
 
     const base = `
 Perfetto.
@@ -1427,26 +1277,14 @@ Vuoi un consiglio su come iniziare?
       { product }
     );
 
-    return reply(res, enriched || base);
+    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
   }
 
-  // ------------------------------
   // DETTAGLI PRODOTTO
-  // ------------------------------
   if (intent === "dettagli_prodotto") {
     let product = fuzzyMatchProduct(rawText);
     if (!product && lastProductSlug) product = findProductBySlug(lastProductSlug);
-// TRACKING PRODOTTO CONSIGLIATO
-trackBotEvent("product_recommendation", {
-  uid,
-  product: product.slug,
-  titolo: product.titolo,
-  prezzo: product.prezzo,
-  intent,
-  sub,
-  utm: extractUTM(req),
-  page: pageContext?.page || null
-});
+
     if (!product) {
       const base = `
 Dimmi il nome del prodotto di cui vuoi i dettagli  
@@ -1460,11 +1298,35 @@ Dimmi il nome del prodotto di cui vuoi i dettagli
         "\nRendi il messaggio più amichevole."
       );
 
-      return reply(res, enriched || base);
+      return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
     }
 
     state.lastProductSlug = product.slug;
     setState(req, "dettagli_prodotto");
+
+    // TRACKING PRODOTTO CONSIGLIATO
+    trackBotEvent("product_recommendation", {
+      uid,
+      product: product.slug,
+      titolo: product.titolo,
+      prezzo: product.prezzo,
+      intent,
+      sub,
+      utm,
+      page: pageContext?.page || null
+    });
+
+    // TRACKING HOT LEAD
+    trackBotEvent("hot_lead", {
+      uid,
+      product: product.slug,
+      titolo: product.titolo,
+      prezzo: product.prezzo,
+      intent,
+      sub,
+      utm,
+      page: pageContext?.page || null
+    });
 
     const base = productLongReply(product) + `
 
@@ -1482,12 +1344,8 @@ Vuoi:
       { product }
     );
 
-    return reply(res, enriched || base);
-  }
-
-  // ------------------------------
-  // VIDEO PRODOTTO
-  // ------------------------------
+    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+} // VIDEO PRODOTTO
   if (intent === "video_prodotto") {
     let product = fuzzyMatchProduct(rawText);
     if (!product && lastProductSlug) product = findProductBySlug(lastProductSlug);
@@ -1509,7 +1367,7 @@ Scrivi:
         "\nRendi il messaggio più naturale."
       );
 
-      return reply(res, enriched || base);
+      return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
     }
 
     if (!product.youtube_url) {
@@ -1529,22 +1387,36 @@ Preferisci:
         { product }
       );
 
-      return reply(res, enriched || base);
+      return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
     }
 
     state.lastProductSlug = product.slug;
     setState(req, "video_prodotto");
-// TRACKING PRODOTTO CONSIGLIATO
-trackBotEvent("product_recommendation", {
-  uid,
-  product: product.slug,
-  titolo: product.titolo,
-  prezzo: product.prezzo,
-  intent,
-  sub,
-  utm: extractUTM(req),
-  page: pageContext?.page || null
-});
+
+    // TRACKING PRODOTTO CONSIGLIATO
+    trackBotEvent("product_recommendation", {
+      uid,
+      product: product.slug,
+      titolo: product.titolo,
+      prezzo: product.prezzo,
+      intent,
+      sub,
+      utm,
+      page: pageContext?.page || null
+    });
+
+    // TRACKING HOT LEAD
+    trackBotEvent("hot_lead", {
+      uid,
+      product: product.slug,
+      titolo: product.titolo,
+      prezzo: product.prezzo,
+      intent,
+      sub,
+      utm,
+      page: pageContext?.page || null
+    });
+
     const base = `
 🎥 <b>Video di presentazione di ${product.titolo}</b>  
 <a href="${product.youtube_url}">${product.youtube_url}</a>
@@ -1560,12 +1432,10 @@ Vuoi un riassunto dei punti chiave?
       { product }
     );
 
-    return reply(res, enriched || base);
+    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
   }
 
-  // ------------------------------
   // PREZZO PRODOTTO
-  // ------------------------------
   if (intent === "prezzo_prodotto") {
     let product = fuzzyMatchProduct(rawText);
     if (!product && lastProductSlug) product = findProductBySlug(lastProductSlug);
@@ -1583,22 +1453,36 @@ Dimmi il nome del prodotto di cui vuoi sapere il prezzo
         "\nRendi il messaggio più colloquiale."
       );
 
-      return reply(res, enriched || base);
+      return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
     }
 
     state.lastProductSlug = product.slug;
     setState(req, "prezzo_prodotto");
-// TRACKING PRODOTTO CONSIGLIATO
-trackBotEvent("product_recommendation", {
-  uid,
-  product: product.slug,
-  titolo: product.titolo,
-  prezzo: product.prezzo,
-  intent,
-  sub,
-  utm: extractUTM(req),
-  page: pageContext?.page || null
-});
+
+    // TRACKING PRODOTTO CONSIGLIATO
+    trackBotEvent("product_recommendation", {
+      uid,
+      product: product.slug,
+      titolo: product.titolo,
+      prezzo: product.prezzo,
+      intent,
+      sub,
+      utm,
+      page: pageContext?.page || null
+    });
+
+    // TRACKING HOT LEAD
+    trackBotEvent("hot_lead", {
+      uid,
+      product: product.slug,
+      titolo: product.titolo,
+      prezzo: product.prezzo,
+      intent,
+      sub,
+      utm,
+      page: pageContext?.page || null
+    });
+
     const base = `
 📘 <b>${product.titolo}</b>  
 💰 <b>Prezzo:</b> ${product.prezzo}€
@@ -1617,12 +1501,10 @@ Vuoi:
       { product }
     );
 
-    return reply(res, enriched || base);
+    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
   }
 
-  // ------------------------------
   // TRATTATIVA / SCONTO
-  // ------------------------------
   if (intent === "trattativa" && sub === "sconto") {
     const base = `
 Capisco la domanda sullo sconto.
@@ -1646,12 +1528,10 @@ Se vuoi, ti spiego in modo diretto:
       "\nRendi il messaggio fermo ma rispettoso, come in una trattativa seria."
     );
 
-    return reply(res, enriched || base);
+    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
   }
 
-  // ------------------------------
   // OBIETTA PREZZO
-  // ------------------------------
   if (intent === "obiezione" && sub === "prezzo") {
     const base = `
 Capisco il dubbio sul prezzo, è una domanda intelligente.
@@ -1662,17 +1542,19 @@ Il punto non è pagare per un file, ma per:
 • una guida che ti fa risparmiare tempo e fatica  
 
 Se mi dici in che situazione sei (es. "sto iniziando", "sono già avviato", "sono bloccato"), posso dirti in modo onesto se il prodotto ha senso per te oppure no.
-`;// TRACKING OBIETTA PREZZO
-trackBotEvent("objection", {
-  uid,
-  type: "prezzo",
-  text: rawText,
-  intent,
-  sub,
-  utm: extractUTM(req),
-  page: pageContext?.page || null,
-  lastProduct: state.lastProductSlug || null
-});
+`;
+
+    // TRACKING OBIETTA PREZZO
+    trackBotEvent("objection", {
+      uid,
+      type: "prezzo",
+      text: rawText,
+      intent,
+      sub,
+      utm,
+      page: pageContext?.page || null,
+      lastProduct: state.lastProductSlug || null
+    });
 
     const enriched = await callGPT(
       rawText || "Obiezione prezzo",
@@ -1681,37 +1563,50 @@ trackBotEvent("objection", {
       "\nRendi il messaggio un po' più empatico, senza togliere fermezza."
     );
 
-    return reply(res, enriched || base);
-  }
-
-  // ------------------------------
-  // ALLEGATI
-  // ------------------------------
+    return reply(res, e// ALLEGATI
   if (intent === "allegato") {
     const url = sub || "";
 
     if (url.endsWith(".pdf")) {
-      return reply(res, "Hai caricato un PDF. Vuoi che lo riassuma o che estragga i punti chiave?");
+      return reply(
+        res,
+        "Hai caricato un PDF. Vuoi che lo riassuma o che estragga i punti chiave?",
+        { intent, sub, uid, utm, page: pageContext?.page || null }
+      );
     }
 
     if (url.match(/\.(png|jpg|jpeg|gif|webp)$/i)) {
-      return reply(res, "Hai caricato un'immagine. Vuoi che la descriva o che analizzi cosa contiene?");
+      return reply(
+        res,
+        "Hai caricato un'immagine. Vuoi che la descriva o che analizzi cosa contiene?",
+        { intent, sub, uid, utm, page: pageContext?.page || null }
+      );
     }
 
     if (url.endsWith(".txt")) {
-      return reply(res, "Hai caricato un file di testo. Vuoi che lo legga e ti dica cosa contiene?");
+      return reply(
+        res,
+        "Hai caricato un file di testo. Vuoi che lo legga e ti dica cosa contiene?",
+        { intent, sub, uid, utm, page: pageContext?.page || null }
+      );
     }
 
     if (url.endsWith(".zip")) {
-      return reply(res, "Hai caricato un file ZIP. Vuoi che ti dica come estrarlo o cosa potrebbe contenere?");
+      return reply(
+        res,
+        "Hai caricato un file ZIP. Vuoi che ti dica come estrarlo o cosa potrebbe contenere?",
+        { intent, sub, uid, utm, page: pageContext?.page || null }
+      );
     }
 
-    return reply(res, "File ricevuto. Vuoi che ti dica cosa posso farci?");
+    return reply(
+      res,
+      "File ricevuto. Vuoi che ti dica cosa posso farci?",
+      { intent, sub, uid, utm, page: pageContext?.page || null }
+    );
   }
 
-  // ------------------------------
   // FALLBACK INTELLIGENTE FINALE
-  // ------------------------------
   const risposta = await callGPT(rawText, Memory.get(uid), pageContext);
 
   if (!risposta || typeof risposta !== "string" || risposta.trim().length < 2) {
@@ -1724,11 +1619,12 @@ trackBotEvent("objection", {
       "• contatti — email e WhatsApp\n" +
       "• newsletter — iscrizione o disiscrizione\n" +
       "• consigli — ti suggerisco il prodotto giusto\n\n" +
-      "Scrivi una parola chiave e ti indirizzo."
+      "Scrivi una parola chiave e ti indirizzo.",
+      { intent, sub, uid, utm, page: pageContext?.page || null }
     );
   }
 
-  return reply(res, risposta.trim());
+  return reply(res, risposta.trim(), { intent, sub, uid, utm, page: pageContext?.page || null });
 }
 
 // ------------------------------
@@ -1741,4 +1637,5 @@ module.exports = {
   generateUID,
   setState,
   isYes
-};
+};nriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+  } 
