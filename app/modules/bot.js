@@ -1331,25 +1331,10 @@ Dimmi il nome del prodotto di cui vuoi i dettagli
       utm,
       page: pageContext?.page || null
     });
+return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+  }
 
-    const base = productLongReply(product) + `
-
-Vuoi:
-• un confronto con altri prodotti  
-• capire se è adatto alla tua situazione  
-• andare all’acquisto  
-`;
-
-    const enriched = await callGPT(
-      rawText || "Dettagli prodotto " + product.titolo,
-      Memory.get(uid),
-      pageContext,
-      "\nAggiungi una frase finale che aiuti a decidere.",
-      { product }
-    );
-
-    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
-} // VIDEO PRODOTTO
+  // VIDEO PRODOTTO
   if (intent === "video_prodotto") {
     let product = fuzzyMatchProduct(rawText);
     if (!product && lastProductSlug) product = findProductBySlug(lastProductSlug);
@@ -1397,7 +1382,6 @@ Preferisci:
     state.lastProductSlug = product.slug;
     setState(req, "video_prodotto");
 
-    // TRACKING PRODOTTO CONSIGLIATO
     trackBotEvent("product_recommendation", {
       uid,
       product: product.slug,
@@ -1409,7 +1393,6 @@ Preferisci:
       page: pageContext?.page || null
     });
 
-    // TRACKING HOT LEAD
     trackBotEvent("hot_lead", {
       uid,
       product: product.slug,
@@ -1463,7 +1446,6 @@ Dimmi il nome del prodotto di cui vuoi sapere il prezzo
     state.lastProductSlug = product.slug;
     setState(req, "prezzo_prodotto");
 
-    // TRACKING PRODOTTO CONSIGLIATO
     trackBotEvent("product_recommendation", {
       uid,
       product: product.slug,
@@ -1475,7 +1457,6 @@ Dimmi il nome del prodotto di cui vuoi sapere il prezzo
       page: pageContext?.page || null
     });
 
-    // TRACKING HOT LEAD
     trackBotEvent("hot_lead", {
       uid,
       product: product.slug,
@@ -1548,7 +1529,6 @@ Il punto non è pagare per un file, ma per:
 Se mi dici in che situazione sei (es. "sto iniziando", "sono già avviato", "sono bloccato"), posso dirti in modo onesto se il prodotto ha senso per te oppure no.
 `;
 
-    // TRACKING OBIETTA PREZZO
     trackBotEvent("objection", {
       uid,
       type: "prezzo",
@@ -1559,30 +1539,32 @@ Se mi dici in che situazione sei (es. "sto iniziando", "sono già avviato", "son
       page: pageContext?.page || null,
       lastProduct: state.lastProductSlug || null
     });
-const enriched = await callGPT(
-  rawText || "Obiezione prezzo",
-  Memory.get(uid),
-  pageContext,
-  "\nRendi il messaggio un po' più empatico, senza togliere fermezza."
-);
 
-return reply(
-  res,
-  enriched,
-  { intent, sub, uid, utm, page: pageContext?.page || null }
-);
+    const enriched = await callGPT(
+      rawText || "Obiezione prezzo",
+      Memory.get(uid),
+      pageContext,
+      "\nRendi il messaggio un po' più empatico, senza togliere fermezza."
+    );
 
-// ALLEGATI
-if (intent === "allegato") {
-  const url = sub || "";
-
-  if (url.endsWith(".pdf")) {
     return reply(
       res,
-      "Hai caricato un PDF. Vuoi che lo riassuma o che estragga i punti chiave?",
+      enriched,
       { intent, sub, uid, utm, page: pageContext?.page || null }
     );
   }
+
+  // ALLEGATI
+  if (intent === "allegato") {
+    const url = sub || "";
+
+    if (url.endsWith(".pdf")) {
+      return reply(
+        res,
+        "Hai caricato un PDF. Vuoi che lo riassuma o che estragga i punti chiave?",
+        { intent, sub, uid, utm, page: pageContext?.page || null }
+      );
+    }
 
     if (url.match(/\.(png|jpg|jpeg|gif|webp)$/i)) {
       return reply(
@@ -1632,13 +1614,14 @@ if (intent === "allegato") {
       { intent, sub, uid, utm, page: pageContext?.page || null }
     );
   }
-return reply(
+
+  return reply(
     res,
     risposta.trim(),
     { intent, sub, uid, utm, page: pageContext?.page || null }
   );
-} 
-
+}
+    
 // ------------------------------
 // EXPORT
 // ------------------------------
