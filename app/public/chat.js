@@ -1,3 +1,6 @@
+  // DIAGNOSTICA: conferma che il file giusto viene caricato
+alert("🔥 chat.js CARICATO");
+
 // chat.js — VERSIONE DEFINITIVA (UX PREMIUM + ANDROID14 SAFE + GPT-FIRST)
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -116,7 +119,8 @@ document.addEventListener("DOMContentLoaded", () => {
     showTyping();
 
     try {
-      const res = await fetch("/bot", {
+      // 🔥 ENDPOINT CORRETTO
+      const res = await fetch("https://mewingmarket.it/bot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -165,7 +169,7 @@ document.addEventListener("DOMContentLoaded", () => {
     sending = false;
   }
 
-  // --- Upload allegati (VERSIONE CORRETTA) ---
+  // --- Upload allegati ---
   const attachBtn = document.getElementById("mm-attach");
   const fileInput = document.getElementById("mm-file-input");
 
@@ -182,7 +186,7 @@ document.addEventListener("DOMContentLoaded", () => {
       formData.append("file", file);
 
       try {
-        const res = await fetch("/chat/upload", {
+        const res = await fetch("https://mewingmarket.it/chat/upload", {
           method: "POST",
           body: formData
         });
