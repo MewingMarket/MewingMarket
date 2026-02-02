@@ -116,7 +116,7 @@ document.addEventListener("DOMContentLoaded", () => {
     showTyping();
 
     try {
-      const res = await fetch("/chat", {
+      const res = await fetch("/bot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
