@@ -539,14 +539,14 @@ function detectIntent(rawText) {
   if (!rawText || rawText.trim().length < 2) {
     return { intent: "menu", sub: null };
   }
+const generic = ["ok", "si", "sì", "eh", "boh", "yo", "ciao", "hey", "hello"];
+if (generic.includes(rawText.toLowerCase().trim())) {
+  return { intent: "menu", sub: null };
+}
 
-  const generic = ["ok", "si", "sì", "eh", "boh", "yo", "ciao", "hey", "hello"];
-  if (generic.includes(rawText.toLowerCase().trim())) {
-    return { intent: "menu", sub: null };
-  }
-
-  return { intent: "gpt", sub: null };
-    } // ------------------------------
+return { intent: "gpt", sub: null };
+}
+  // ------------------------------
 // HANDLE CONVERSATION — GPT-FIRST, COMMERCIALE, COMPLETO
 // ------------------------------
 async function handleConversation(req, res, intent, sub, rawText) {
