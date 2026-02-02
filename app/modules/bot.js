@@ -200,8 +200,20 @@ function setState(req, newState) {
   }
 }
 
-function reply(res, text) {
-  trackBot("bot_reply", { text });
+function reply(res, text, meta = {}) {
+  try {
+    trackBotEvent("reply", {
+      reply: text,
+      intent: meta.intent || null,
+      sub: meta.sub || null,
+      uid: meta.uid || null,
+      utm: meta.utm || null,
+      page: meta.page || null
+    });
+  } catch (e) {
+    console.error("Bot reply tracking error:", e);
+  }
+
   res.json({ reply: text });
 }
 
@@ -627,7 +639,24 @@ function detectIntent(rawText) {
   ) {
     return { intent: "obiezione", sub: "prezzo" };
   }
+// ------------------------------
+// INTENT PREMIUM
+// ------------------------------
+if (q.includes("ecosistema") || q.includes("da dove inizio") || q.includes("iniziare")) {
+  return { intent: "ecosistema", sub: null };
+}
 
+if (q.includes("mindset") || q.includes("motivazione") || q.includes("mentalità")) {
+  return { intent: "mindset", sub: null };
+}
+
+if (q.includes("lead magnet") || q.includes("risorsa gratuita") || q.includes("freebie")) {
+  return { intent: "lead_magnet", sub: null };
+}
+
+if (q.includes("faq premium") || q.includes("domande avanzate")) {
+  return { intent: "faq_premium", sub: null };
+}
   // ------------------------------
   // MATCH PRODOTTO FUZZY
   // ------------------------------
@@ -670,7 +699,19 @@ async function handleConversation(req, res, intent, sub, rawText) {
   const pageContext = Context.get(uid);
 
   trackBot("conversation_step", { uid, intent, sub, text: rawText });
+// ------------------------------
+// TRACKING PREMIUM + UTM
+// ------------------------------
+const utm = extractUTM(req);
 
+trackBotEvent("message", {
+  uid,
+  text: rawText,
+  intent,
+  sub,
+  utm,
+  page: pageContext?.page || null
+});
   // ------------------------------
   // GPT FALLBACK / GENERALE
   // ------------------------------
@@ -1175,7 +1216,97 @@ Scrivi una parola chiave come:
     );
 
     return reply(res, enriched || base);
-      }// ------------------------------
+  } // ------------------------------
+// ECOSISTEMA DIGITALE
+// ------------------------------
+if (intent === "ecosistema") {
+  const base = `
+L’Ecosistema Digitale è il punto di partenza ideale se vuoi:
+
+• capire come funziona il digitale  
+• evitare errori da principiante  
+• avere una mappa chiara dei passi da fare  
+• sapere quali strumenti usare e in che ordine  
+
+Vuoi che ti dica se è adatto alla tua situazione?
+`;
+
+  const enriched = await callGPT(
+    rawText || "Ecosistema Digitale",
+    Memory.get(uid),
+    pageContext,
+    "\nRendi il messaggio più motivante e orientato all'azione."
+  );
+
+  return reply(res, enriched || base);
+}
+
+// ------------------------------
+// MINDSET / MOTIVAZIONE
+// ------------------------------
+if (intent === "mindset") {
+  const base = `
+Il mindset è la base di tutto.
+
+Se vuoi posso darti:
+• una routine mentale semplice  
+• un metodo per restare costante  
+• un modo per evitare blocchi e procrastinazione  
+
+Vuoi una routine veloce o un metodo completo?
+`;
+
+  const enriched = await callGPT(
+    rawText || "Mindset",
+    Memory.get(uid),
+    pageContext,
+    "\nRendi il messaggio più empatico e pratico."
+  );
+
+  return reply(res, enriched || base);
+}
+
+// ------------------------------
+// LEAD MAGNET / RISORSA GRATUITA
+// ------------------------------
+if (intent === "lead_magnet") {
+  const base = `
+Ecco la risorsa gratuita per iniziare subito 👇  
+https://mewingmarket.com/free
+
+Vuoi che ti dica come usarla al meglio?
+`;
+
+  const enriched = await callGPT(
+    rawText || "Lead magnet",
+    Memory.get(uid),
+    pageContext,
+    "\nAggiungi una frase che inviti a usarla subito."
+  );
+
+  return reply(res, enriched || base);
+}
+
+// ------------------------------
+// FAQ PREMIUM
+// ------------------------------
+if (intent === "faq_premium") {
+  const base = `
+Ecco le FAQ avanzate:  
+<a href="FAQ.html">FAQ Premium</a>
+
+Vuoi che ti risponda direttamente a una domanda specifica?
+`;
+
+  const enriched = await callGPT(
+    rawText || "FAQ Premium",
+    Memory.get(uid),
+    pageContext,
+    "\nRendi il messaggio più orientato all’aiuto diretto."
+  );
+
+  return reply(res, enriched || base);
+}
   // PRODOTTI
   // ------------------------------
   const lastProductSlug = state.lastProductSlug;
@@ -1208,7 +1339,17 @@ Scrivi il nome del prodotto o "catalogo".
 
     state.lastProductSlug = product.slug;
     setState(req, "prodotto");
-
+// TRACKING PRODOTTO CONSIGLIATO
+trackBotEvent("product_recommendation", {
+  uid,
+  product: product.slug,
+  titolo: product.titolo,
+  prezzo: product.prezzo,
+  intent,
+  sub,
+  utm: extractUTM(req),
+  page: pageContext?.page || null
+});
     const base = productReply(product) + `
 
 Vuoi:
@@ -1234,7 +1375,17 @@ Vuoi:
   if (intent === "acquisto_diretto") {
     let product = fuzzyMatchProduct(rawText);
     if (!product && lastProductSlug) product = findProductBySlug(lastProductSlug);
-
+// TRACKING PRODOTTO CONSIGLIATO
+trackBotEvent("product_recommendation", {
+  uid,
+  product: product.slug,
+  titolo: product.titolo,
+  prezzo: product.prezzo,
+  intent,
+  sub,
+  utm: extractUTM(req),
+  page: pageContext?.page || null
+});
     if (!product) {
       const base = `
 Non ho capito quale prodotto vuoi acquistare.
@@ -1285,7 +1436,17 @@ Vuoi un consiglio su come iniziare?
   if (intent === "dettagli_prodotto") {
     let product = fuzzyMatchProduct(rawText);
     if (!product && lastProductSlug) product = findProductBySlug(lastProductSlug);
-
+// TRACKING PRODOTTO CONSIGLIATO
+trackBotEvent("product_recommendation", {
+  uid,
+  product: product.slug,
+  titolo: product.titolo,
+  prezzo: product.prezzo,
+  intent,
+  sub,
+  utm: extractUTM(req),
+  page: pageContext?.page || null
+});
     if (!product) {
       const base = `
 Dimmi il nome del prodotto di cui vuoi i dettagli  
@@ -1373,7 +1534,17 @@ Preferisci:
 
     state.lastProductSlug = product.slug;
     setState(req, "video_prodotto");
-
+// TRACKING PRODOTTO CONSIGLIATO
+trackBotEvent("product_recommendation", {
+  uid,
+  product: product.slug,
+  titolo: product.titolo,
+  prezzo: product.prezzo,
+  intent,
+  sub,
+  utm: extractUTM(req),
+  page: pageContext?.page || null
+});
     const base = `
 🎥 <b>Video di presentazione di ${product.titolo}</b>  
 <a href="${product.youtube_url}">${product.youtube_url}</a>
@@ -1417,7 +1588,17 @@ Dimmi il nome del prodotto di cui vuoi sapere il prezzo
 
     state.lastProductSlug = product.slug;
     setState(req, "prezzo_prodotto");
-
+// TRACKING PRODOTTO CONSIGLIATO
+trackBotEvent("product_recommendation", {
+  uid,
+  product: product.slug,
+  titolo: product.titolo,
+  prezzo: product.prezzo,
+  intent,
+  sub,
+  utm: extractUTM(req),
+  page: pageContext?.page || null
+});
     const base = `
 📘 <b>${product.titolo}</b>  
 💰 <b>Prezzo:</b> ${product.prezzo}€
@@ -1481,7 +1662,17 @@ Il punto non è pagare per un file, ma per:
 • una guida che ti fa risparmiare tempo e fatica  
 
 Se mi dici in che situazione sei (es. "sto iniziando", "sono già avviato", "sono bloccato"), posso dirti in modo onesto se il prodotto ha senso per te oppure no.
-`;
+`;// TRACKING OBIETTA PREZZO
+trackBotEvent("objection", {
+  uid,
+  type: "prezzo",
+  text: rawText,
+  intent,
+  sub,
+  utm: extractUTM(req),
+  page: pageContext?.page || null,
+  lastProduct: state.lastProductSlug || null
+});
 
     const enriched = await callGPT(
       rawText || "Obiezione prezzo",
