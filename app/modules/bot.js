@@ -1629,8 +1629,12 @@ if (intent === "allegato") {
     );
   }
 
-  return reply(res, risposta.trim(), { intent, sub, uid, utm, page: pageContext?.page || null });
-}
+return reply(
+    res,
+    risposta.trim(),
+    { intent, sub, uid, utm, page: pageContext?.page || null }
+  );
+} // <-- QUESTA GRAFFA MANCA NEL TUO FILE
 
 // ------------------------------
 // EXPORT
@@ -1642,4 +1646,4 @@ module.exports = {
   generateUID,
   setState,
   isYes
-}
+};
