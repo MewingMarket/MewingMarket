@@ -107,7 +107,35 @@ app.use((req, res, next) => {
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
+/* =========================================================
+   🔥 DEBUG BACKEND — LOGGA TUTTO
+========================================================= */
+app.use((req, res, next) => {
+  const start = Date.now();
 
+  addDebugLog("request", {
+    method: req.method,
+    url: req.url,
+    ip: req.ip,
+    body: req.body,
+    query: req.query,
+    headers: req.headers
+  });
+
+  const send = res.send;
+  res.send = function (body) {
+    addDebugLog("response", {
+      url: req.url,
+      status: res.statusCode,
+      duration: Date.now() - start,
+      body: typeof body === "string" ? body.substring(0, 500) : body
+    });
+
+    return send.call(this, body);
+  };
+
+  next();
+});
 /* =========================================================
    REDIRECT HTTPS + WWW — PATCH RENDER SAFE
 ========================================================= */
