@@ -257,6 +257,29 @@ app.use((req, res, next) => {
   };
 
   next();
+});/* =========================================================
+   🔥 INIEZIONE AUTOMATICA DI debug.js IN TUTTE LE PAGINE HTML
+========================================================= */
+app.use((req, res, next) => {
+  const send = res.send;
+
+  res.send = function (body) {
+    try {
+      if (typeof body === "string" && body.includes("</body>")) {
+        addDebugLog("inject", { url: req.url });
+        body = body.replace(
+          "</body>",
+          `<script src="/debug.js"></script></body>`
+        );
+      }
+    } catch (err) {
+      addDebugLog("inject-error", err.toString());
+    }
+
+    return send.call(this, body);
+  };
+
+  next();
 });
 /* =========================================================
    SITEMAP + FEED + PAGINE
@@ -304,7 +327,49 @@ app.get("/prodotto.html", (req, res) => {
     res.status(500).send("Errore pagina prodotto");
   }
 });
+/* =========================================================
+   🔥 DASHBOARD DEBUG — /debug
+========================================================= */
+app.get("/debug", (req, res) => {
+  res.send(`
+    <html>
+    <head>
+      <title>MewingMarket Debug Dashboard</title>
+      <style>
+        body { background:#111; color:#0f0; font-family:monospace; padding:20px; }
+        pre { white-space:pre-wrap; }
+      </style>
+    </head>
+    <body>
+      <h1>🔥 MewingMarket Debug Dashboard</h1>
+      <p>Aggiornamento ogni 2 secondi</p>
+      <pre id="log">Caricamento...</pre>
 
+      <script>
+        async function loadLogs() {
+          const res = await fetch("/debug/feed");
+          const logs = await res.json();
+          document.getElementById("log").textContent =
+            logs.map(l => "[" + l.time + "] (" + l.type + ") " + JSON.stringify(l.data)).join("\\n\\n");
+        }
+        setInterval(loadLogs, 2000);
+        loadLogs();
+      </script>
+    </body>
+    </html>
+  `);
+});/* =========================================================
+   🔥 FEED LOG — /debug/feed
+========================================================= */
+app.get("/debug/feed", (req, res) => {
+  res.json(DEBUG_LOG);
+});/* =========================================================
+   🔥 RICEZIONE LOG FRONTEND — /debug/log
+========================================================= */
+app.post("/debug/log", (req, res) => {
+  addDebugLog(req.body.type || "frontend", req.body.message || "");
+  res.json({ ok: true });
+});
 /* =========================================================
    ⭐ CHAT BOT — PATCHATA
 ========================================================= */
