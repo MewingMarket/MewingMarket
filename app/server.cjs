@@ -451,7 +451,90 @@ app.post("/newsletter/send", async (req, res) => {
     return res.json({ status: "error" });
   }
 });
+/* =========================================================
+   🔥 TRACKING PREMIUM — ARCHIVIO EVENTI
+========================================================= */
+const TRACKING_LOG = [];
+const TRACKING_MAX = 5000;
 
+/* =========================================================
+   🔥 POST /tracking/event — RICEVE EVENTI DAL FRONTEND
+========================================================= */
+app.post("/tracking/event", express.json(), (req, res) => {
+  try {
+    const evt = req.body || {};
+    evt.time = evt.time || new Date().toISOString();
+
+    TRACKING_LOG.push(evt);
+
+    if (TRACKING_LOG.length > TRACKING_MAX) {
+      TRACKING_LOG.splice(0, TRACKING_LOG.length - TRACKING_MAX);
+    }
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Errore tracking:", err);
+    res.status(500).json({ ok: false });
+  }
+});
+
+/* =========================================================
+   🔥 GET /tracking/feed — FEED PER DASHBOARD
+========================================================= */
+app.get("/tracking/feed", (req, res) => {
+  res.json({ events: TRACKING_LOG });
+});
+
+/* =========================================================
+   🔥 GET /tracking — DASHBOARD TRACKING
+========================================================= */
+app.get("/tracking", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "tracking.html"));
+});
+
+/* =========================================================
+   🔥 THANK-YOU PAGE PAYHIP
+========================================================= */
+app.get("/thankyou-payhip", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "thankyou-payhip.html"));
+});
+
+/* =========================================================
+   🔥 WEBHOOK PAYHIP (OPZIONALE MA CONSIGLIATO)
+========================================================= */
+app.post("/tracking/payhip", express.json(), (req, res) => {
+  try {
+    const body = req.body || {};
+
+    const evt = {
+      event: "purchase",
+      type: "store",
+      channel: "store",
+      source: "payhip",
+      uid: body.custom_uid || null,
+      utm: body.utm || {},
+      data: {
+        product_id: body.product_id,
+        product_name: body.product_name,
+        price: body.price,
+        currency: body.currency || "EUR",
+        email: body.email
+      },
+      time: new Date().toISOString()
+    };
+
+    TRACKING_LOG.push(evt);
+
+    if (TRACKING_LOG.length > TRACKING_MAX) {
+      TRACKING_LOG.splice(0, TRACKING_LOG.length - TRACKING_MAX);
+    }
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Errore webhook Payhip:", err);
+    res.status(500).json({ ok: false });
+  }
+});
 /* =========================================================
    STATICI — DOPO TUTTE LE API
 ========================================================= */
