@@ -1,72 +1,53 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="UTF-8">
-<title>Tracking – MewingMarket MAX</title>
+  <!-- Head dinamico condiviso -->
+  <div id="head-placeholder"></div>
+  <script>
+    fetch("head.html")
+      .then(r => r.text())
+      .then(h => document.getElementById("head-placeholder").innerHTML = h);
+  </script>
 
-<style>
-body { 
-  font-family: Arial, sans-serif; 
-  padding: 20px; 
-  background: #0b0c10; 
-  color: #f5f5f5;
-}
-h1 { margin-bottom: 10px; }
-table { 
-  width: 100%; 
-  border-collapse: collapse; 
-  margin-top: 20px; 
-  background: #111827;
-}
-th, td { 
-  border: 1px solid #374151; 
-  padding: 8px; 
-  vertical-align: top;
-}
-th { background: #1f2937; }
-pre { color: #d1d5db; margin: 0; white-space: pre-wrap; }
-button {
-  padding: 6px 12px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  background: #1f6feb;
-  color: #fff;
-  margin-right: 10px;
-}
-button.secondary {
-  background: #30363d;
-}
-</style>
+  <!-- SEO + Structured Data -->
+  <script src="seo.js"></script>
+  <script src="structured-data.js"></script>
 
+  <!-- Stile globale -->
+  <link rel="stylesheet" href="/style.css">
 </head>
-<body>
+
+<body class="tracking-page">
 
 <h1>MewingMarket – Tracking MAX</h1>
-<p>Eventi raccolti dal bot e dal sito (solo sessione corrente).</p>
+<p>Eventi raccolti da bot, sito, social, newsletter e store (solo sessione server, max 5000 eventi).</p>
 
-<div class="toolbar">
-  <button onclick="TRACKING.render('logTable')">🔄 Aggiorna</button>
-  <button class="secondary" onclick="location.reload()">♻️ Reload</button>
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab-btn active" data-tab="overview">Overview</button>
+  <button class="tab-btn" data-tab="vendite">Vendite</button>
+  <button class="tab-btn" data-tab="prodotti">Prodotti</button>
+  <button class="tab-btn" data-tab="social">Social</button>
+  <button class="tab-btn" data-tab="bot">Bot</button>
+  <button class="tab-btn" data-tab="eventi">Eventi grezzi</button>
 </div>
 
-<table>
-<thead>
-<tr>
-  <th>Data</th>
-  <th>Evento</th>
-  <th>Descrizione</th>
-  <th>Parametri</th>
-</tr>
-</thead>
-<tbody id="logTable"></tbody>
-</table>
+<!-- Toolbar -->
+<div class="toolbar">
+  <button id="btn-refresh">🔄 Aggiorna</button>
+  <button class="secondary" id="btn-autorefresh">⏱️ Auto-refresh ON</button>
+  <button class="secondary" onclick="location.reload()">♻️ Reload pagina</button>
+</div>
 
+<!-- Tab content -->
+<div id="tab-content"></div>
+
+<!-- Tracking JS -->
 <script src="/tracking.js"></script>
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-  TRACKING.render("logTable");
-});
+  document.addEventListener("DOMContentLoaded", () => {
+    TRACKING_UI.init();
+  });
 </script>
 
 </body>
