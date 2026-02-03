@@ -9,7 +9,20 @@ const cookieParser = require("cookie-parser");
 const axios = require("axios");
 require("dotenv").config();
 const multer = require("multer");
+/* =========================================================
+   🔥 ARCHIVIO LOG UNIVERSALE
+========================================================= */
+const DEBUG_LOG = [];
+function addDebugLog(type, data) {
+  DEBUG_LOG.push({
+    time: new Date().toISOString(),
+    type,
+    data
+  });
 
+  // Mantieni massimo 5000 log
+  if (DEBUG_LOG.length > 5000) DEBUG_LOG.shift();
+}
 /* =========================================================
    SETUP EXPRESS
 ========================================================= */
