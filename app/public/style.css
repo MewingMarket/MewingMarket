@@ -780,3 +780,143 @@ footer {
   margin: 0 auto 12px;
   font-size: 1.1rem;
 }
+/* =========================================================
+   TRACKING DASHBOARD PREMIUM – MEWINGMARKET
+   (incollare in fondo a style.css)
+========================================================= */
+
+body.tracking-page {
+  background: #020617;
+  color: #e5e7eb;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  padding: 20px;
+}
+
+h1 {
+  margin-bottom: 4px;
+}
+
+h2 {
+  margin-top: 24px;
+  margin-bottom: 8px;
+}
+
+.tabs {
+  margin-top: 16px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tab-btn {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid #1f2937;
+  background: #020617;
+  color: #e5e7eb;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.tab-btn.active {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.toolbar {
+  margin-top: 12px;
+  margin-bottom: 8px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background: #1f6feb;
+  color: #fff;
+  font-size: 13px;
+}
+
+button.secondary {
+  background: #374151;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+  background: #020617;
+  font-size: 12px;
+}
+
+th, td {
+  border: 1px solid #1f2937;
+  padding: 6px;
+  vertical-align: top;
+}
+
+th {
+  background: #0f172a;
+  text-align: left;
+}
+
+pre {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 11px;
+  color: #e5e7eb;
+}
+
+.pill {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-size: 11px;
+  border: 1px solid #1f2937;
+}
+
+.pill.bot { background: #0f172a; color: #38bdf8; }
+.pill.social { background: #0f172a; color: #22c55e; }
+.pill.site { background: #0f172a; color: #eab308; }
+.pill.store { background: #0f172a; color: #f97316; }
+.pill.newsletter { background: #0f172a; color: #a855f7; }
+.pill.system { background: #0f172a; color: #9ca3af; }
+
+.tag {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: #111827;
+  border: 1px solid #1f2937;
+  font-size: 10px;
+  margin-right: 4px;
+  margin-bottom: 2px;
+}
+
+.json-toggle {
+  cursor: pointer;
+  color: #60a5fa;
+  font-size: 11px;
+}
+
+.json-content {
+  display: none;
+  margin-top: 4px;
+}
+
+.semaforo {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.sem-verde { background: #22c55e; }
+.sem-giallo { background: #eab308; }
+.sem-rosso { background: #ef4444; }
