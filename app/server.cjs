@@ -9,6 +9,7 @@ const cookieParser = require("cookie-parser");
 const axios = require("axios");
 require("dotenv").config();
 const multer = require("multer");
+
 /* =========================================================
    🔥 ARCHIVIO LOG UNIVERSALE
 ========================================================= */
@@ -20,9 +21,9 @@ function addDebugLog(type, data) {
     data
   });
 
-  // Mantieni massimo 5000 log
   if (DEBUG_LOG.length > 5000) DEBUG_LOG.shift();
 }
+
 /* =========================================================
    SETUP EXPRESS
 ========================================================= */
@@ -102,11 +103,12 @@ app.use((req, res, next) => {
 });
 
 /* =========================================================
-   MIDDLEWARE BASE (PRIMA DELLE API)
+   MIDDLEWARE BASE
 ========================================================= */
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
+
 /* =========================================================
    🔥 DEBUG BACKEND — LOGGA TUTTO
 ========================================================= */
@@ -136,6 +138,7 @@ app.use((req, res, next) => {
 
   next();
 });
+
 /* =========================================================
    REDIRECT HTTPS + WWW — PATCH RENDER SAFE
 ========================================================= */
@@ -144,9 +147,7 @@ app.use((req, res, next) => {
     const proto = req.headers["x-forwarded-proto"];
     const host = req.headers.host || "";
 
-    // 🔥 SU RENDER NON FARE MAI REDIRECT
     if (process.env.RENDER === "true") return next();
-
     if (!host) return next();
 
     if (proto && proto !== "https") {
@@ -233,32 +234,9 @@ app.use((req, res, next) => {
     next();
   }
 });
+
 /* =========================================================
-   🔥 INIEZIONE AUTOMATICA DEBUG.JS IN TUTTE LE PAGINE HTML
-========================================================= */
-app.use((req, res, next) => {
-  const send = res.send;
-
-  res.send = function (body) {
-    try {
-      // Inietta solo se è HTML
-      if (typeof body === "string" && body.includes("</body>")) {
-        console.log("🔧 Injecting debug.js in:", req.url);
-        body = body.replace(
-          "</body>",
-          `<script src="/debug.js"></script></body>`
-        );
-      }
-    } catch (err) {
-      console.error("❌ Errore in iniezione debug.js:", err);
-    }
-
-    return send.call(this, body);
-  };
-
-  next();
-});/* =========================================================
-   🔥 INIEZIONE AUTOMATICA DI debug.js IN TUTTE LE PAGINE HTML
+   🔥 INIEZIONE AUTOMATICA DI debug.js (VERSIONE CORRETTA)
 ========================================================= */
 app.use((req, res, next) => {
   const send = res.send;
@@ -281,8 +259,9 @@ app.use((req, res, next) => {
 
   next();
 });
+
 /* =========================================================
-   SITEMAP + FEED + PAGINE
+   SITEMAP + PAGINE
 ========================================================= */
 app.get("/sitemap-images.xml", (req, res) => {
   try { res.type("application/xml").send(generateImagesSitemap()); }
@@ -327,8 +306,9 @@ app.get("/prodotto.html", (req, res) => {
     res.status(500).send("Errore pagina prodotto");
   }
 });
+
 /* =========================================================
-   🔥 DASHBOARD DEBUG — /debug
+   🔥 DASHBOARD DEBUG
 ========================================================= */
 app.get("/debug", (req, res) => {
   res.send(`
@@ -358,20 +338,25 @@ app.get("/debug", (req, res) => {
     </body>
     </html>
   `);
-});/* =========================================================
-   🔥 FEED LOG — /debug/feed
+});
+
+/* =========================================================
+   🔥 FEED LOG
 ========================================================= */
 app.get("/debug/feed", (req, res) => {
   res.json(DEBUG_LOG);
-});/* =========================================================
-   🔥 RICEZIONE LOG FRONTEND — /debug/log
+});
+
+/* =========================================================
+   🔥 RICEZIONE LOG FRONTEND
 ========================================================= */
 app.post("/debug/log", (req, res) => {
   addDebugLog(req.body.type || "frontend", req.body.message || "");
   res.json({ ok: true });
 });
+
 /* =========================================================
-   ⭐ CHAT BOT — PATCHATA
+   ⭐ CHAT BOT
 ========================================================= */
 app.post("/chat", async (req, res) => {
   try {
@@ -468,7 +453,7 @@ app.post("/newsletter/send", async (req, res) => {
 });
 
 /* =========================================================
-   STATICI — DOPO TUTTE LE API (PATCH FONDAMENTALE)
+   STATICI — DOPO TUTTE LE API
 ========================================================= */
 app.use(express.static(path.join(__dirname, "public")));
 
