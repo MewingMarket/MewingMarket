@@ -1,16 +1,36 @@
-  // DIAGNOSTICA: conferma che il file giusto viene caricato
-alert("🔥 chat.js CARICATO");
+// ======================================================
+// 🔥 DEBUG MODE ATTIVO
+// ======================================================
 
-// chat.js — VERSIONE DEFINITIVA (UX PREMIUM + ANDROID14 SAFE + GPT-FIRST)
+alert("🔥 chat.js VERSIONE DEBUG ATTIVA");
+
+// Log universale
+console.log("🔥 chat.js caricato");
+
+// Intercetta errori globali
+window.onerror = function(msg, url, line, col, error) {
+  console.error("❌ ERRORE GLOBALE:", msg, url, line, col, error);
+};
+
+// Intercetta promise non gestite
+window.addEventListener("unhandledrejection", function(e) {
+  console.error("❌ PROMISE NON GESTITA:", e.reason);
+});
+
+// ======================================================
+// CHATBOT
+// ======================================================
 
 document.addEventListener("DOMContentLoaded", () => {
+  console.log("📌 DOM completamente caricato");
+
   const btn = document.getElementById("mm-chat-btn");
   const box = document.getElementById("mm-chatbox");
   const messages = document.getElementById("mm-chat-messages");
   const input = document.querySelector("#mm-chat-input input[type='text']");
   const sendBtn = document.querySelector("#mm-chat-input button:not(#mm-attach)");
 
-  btn.innerHTML = `<img src="chat-icon.png" alt="Chat" class="mm-chat-icon">`;
+  console.log("📌 Elementi trovati:", { btn, box, messages, input, sendBtn });
 
   let sending = false;
 
@@ -33,19 +53,17 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   btn.addEventListener("click", () => {
+    console.log("🟢 Chat aperta");
     box.classList.toggle("open");
 
     if (!box.dataset.welcomeShown) {
-      addBot(`
-        👋 <b>Ciao!</b><br>
-        Sono il tuo assistente MewingMarket.<br>
-        Scrivi <b>menu</b> per vedere le opzioni.
-      `);
+      addBot("👋 Ciao! Scrivi 'menu' per iniziare.");
       box.dataset.welcomeShown = "true";
     }
   });
 
   function addUser(text) {
+    console.log("👤 Utente:", text);
     const div = document.createElement("div");
     div.className = "mm-bubble mm-user";
     div.innerHTML = text;
@@ -54,52 +72,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function addBot(text) {
+    console.log("🤖 Bot:", text);
     hideTyping();
     const div = document.createElement("div");
     div.className = "mm-bubble mm-bot";
     div.innerHTML = text;
     messages.appendChild(div);
-    smoothScroll();
-  }
-
-  function addQuickReplies(buttons) {
-    const wrap = document.createElement("div");
-    wrap.className = "mm-quick-wrap";
-
-    buttons.forEach(label => {
-      const b = document.createElement("button");
-      b.className = "mm-quick-btn";
-      b.textContent = label;
-
-      b.onclick = () => {
-        addUser(label);
-        sendMessage(label);
-        wrap.remove();
-      };
-
-      wrap.appendChild(b);
-    });
-
-    messages.appendChild(wrap);
-    smoothScroll();
-  }
-
-  function addProductCard(reply) {
-    hideTyping();
-
-    const card = document.createElement("div");
-    card.className = "mm-product-card";
-
-    const img = reply.match(/https?:\/\/[^\s]+(jpg|jpeg|png|webp|gif|avif)/i);
-    const link = reply.match(/https?:\/\/[^\s]*payhip[^\s]*/i);
-
-    card.innerHTML = `
-      <img src="${img ? img[0] : "logo.png"}" class="mm-product-img">
-      <div class="mm-product-body">${reply}</div>
-      ${link ? `<a href="${link[0]}" target="_blank" class="mm-product-btn">Acquista</a>` : ""}
-    `;
-
-    messages.appendChild(card);
     smoothScroll();
   }
 
@@ -118,9 +96,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     showTyping();
 
+    const endpoint = "https://www.mewingmarket.it/bot";
+
+    console.log("📡 FETCH →", endpoint);
+    console.log("📨 BODY →", {
+      message: text,
+      page: window.location.pathname,
+      slug: new URLSearchParams(window.location.search).get("slug") || null
+    });
+
     try {
-      // 🔥 ENDPOINT CORRETTO
-      const res = await fetch("https://mewingmarket.it/bot", {
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -131,79 +117,24 @@ document.addEventListener("DOMContentLoaded", () => {
         })
       });
 
-      const data = await res.json();
-      let reply = data.reply || "Errore imprevisto.";
+      console.log("📥 RISPOSTA RAW:", res);
 
-      const low = reply.toLowerCase();
+      const data = await res.json().catch(err => {
+        console.error("❌ ERRORE PARSING JSON:", err);
+        throw new Error("JSON non valido");
+      });
 
-      if (
-        reply.includes("€") &&
-        reply.includes("payhip.com") &&
-        low.includes("acquista")
-      ) {
-        addProductCard(reply);
-        addQuickReplies(["Acquista", "Dettagli", "Menu"]);
-        sending = false;
-        return;
-      }
+      console.log("📥 RISPOSTA JSON:", data);
 
-      if (
-        low.includes("menu") ||
-        low.includes("catalogo") ||
-        low.includes("supporto") ||
-        low.includes("contatti")
-      ) {
-        addBot(reply);
-        addQuickReplies(["Catalogo", "Supporto", "Contatti", "Menu"]);
-        sending = false;
-        return;
-      }
-
-      addBot(reply);
+      addBot(data.reply || "Errore imprevisto.");
 
     } catch (err) {
+      console.error("❌ ERRORE FETCH:", err);
       hideTyping();
       addBot("⚠️ Problema di connessione. Riprova tra qualche secondo.");
     }
 
     sending = false;
-  }
-
-  // --- Upload allegati ---
-  const attachBtn = document.getElementById("mm-attach");
-  const fileInput = document.getElementById("mm-file-input");
-
-  if (attachBtn && fileInput) {
-    attachBtn.addEventListener("click", () => fileInput.click());
-
-    fileInput.addEventListener("change", async () => {
-      const file = fileInput.files[0];
-      if (!file) return;
-
-      addUser("📎 File inviato: " + file.name);
-
-      const formData = new FormData();
-      formData.append("file", file);
-
-      try {
-        const res = await fetch("https://mewingmarket.it/chat/upload", {
-          method: "POST",
-          body: formData
-        });
-
-        const data = await res.json();
-
-        if (data.fileUrl) {
-          sendMessage("FILE:" + data.fileUrl);
-        } else {
-          addBot("Errore durante l'upload del file.");
-        }
-      } catch (err) {
-        addBot("Errore di connessione durante l'upload.");
-      }
-
-      fileInput.value = "";
-    });
   }
 
   sendBtn.addEventListener("click", () => sendMessage());
