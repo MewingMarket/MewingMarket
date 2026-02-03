@@ -192,7 +192,31 @@ app.use((req, res, next) => {
     next();
   }
 });
+/* =========================================================
+   🔥 INIEZIONE AUTOMATICA DEBUG.JS IN TUTTE LE PAGINE HTML
+========================================================= */
+app.use((req, res, next) => {
+  const send = res.send;
 
+  res.send = function (body) {
+    try {
+      // Inietta solo se è HTML
+      if (typeof body === "string" && body.includes("</body>")) {
+        console.log("🔧 Injecting debug.js in:", req.url);
+        body = body.replace(
+          "</body>",
+          `<script src="/debug.js"></script></body>`
+        );
+      }
+    } catch (err) {
+      console.error("❌ Errore in iniezione debug.js:", err);
+    }
+
+    return send.call(this, body);
+  };
+
+  next();
+});
 /* =========================================================
    SITEMAP + FEED + PAGINE
 ========================================================= */
