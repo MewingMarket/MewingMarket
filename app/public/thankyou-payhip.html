@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <!-- Head dinamico condiviso -->
+  <div id="head-placeholder"></div>
+  <script>
+    fetch("head.html")
+      .then(r => r.text())
+      .then(h => document.getElementById("head-placeholder").innerHTML = h);
+  </script>
+
+  <!-- SEO + Structured Data -->
+  <script src="seo.js"></script>
+  <script src="structured-data.js"></script>
+
+  <!-- Stile globale -->
+  <link rel="stylesheet" href="/style.css">
+</head>
+
+<body class="tracking-page">
+
+  <h1>Grazie per il tuo acquisto!</h1>
+  <p>Stiamo registrando i dettagli della transazione…</p>
+
+  <!-- Tracking -->
+  <script src="/tracking.js"></script>
+
+  <script>
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+
+      const product_id   = params.get("product_id")   || null;
+      const product_name = params.get("product_name") || product_id;
+      const price        = params.get("price")        || null;
+      const currency     = params.get("currency")     || "EUR";
+
+      // Evento store → dashboard tracking
+      mmStore.purchase(product_id, product_name, price, currency);
+    })();
+  </script>
+
+</body>
+</html>
