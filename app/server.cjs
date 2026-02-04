@@ -25,6 +25,18 @@ function addDebugLog(type, data) {
 }
 
 /* =========================================================
+   🔥 BOT DEBUG LOG (SEMPRE ATTIVO)
+========================================================= */
+const BOT_DEBUG_LOG = [];
+
+function logBotDebug(entry) {
+  BOT_DEBUG_LOG.push({
+    time: new Date().toISOString(),
+    ...entry
+  });
+
+  if (BOT_DEBUG_LOG.length > 2000) BOT_DEBUG_LOG.shift();
+} /* =========================================================
    SETUP EXPRESS
 ========================================================= */
 const app = express();
@@ -51,15 +63,19 @@ const upload = multer({
 ========================================================= */
 app.post("/chat/upload", upload.single("file"), (req, res) => {
   if (!req.file) return res.json({ error: "Nessun file ricevuto" });
+
+  logBotDebug({
+    step: "file_upload",
+    data: { filename: req.file.filename, size: req.file.size }
+  });
+
   res.json({ fileUrl: "/uploads/" + req.file.filename });
 });
 
 /* =========================================================
    STATO UTENTI GLOBALE
 ========================================================= */
-const userStates = {};
-
-/* =========================================================
+const userStates = {};  /* =========================================================
    IMPORT MODULI INTERNI
 ========================================================= */
 const { generateNewsletterHTML } = require("./modules/newsletter");
@@ -80,6 +96,7 @@ const GA4_API_SECRET = process.env.GA4_API_SECRET;
 async function trackGA4(eventName, params = {}) {
   try {
     if (!GA4_ID || !GA4_API_SECRET) return;
+
     await axios.post(
       `https://www.google-analytics.com/mp/collect?measurement_id=${GA4_ID}&api_secret=${GA4_API_SECRET}`,
       {
@@ -99,10 +116,19 @@ app.use((req, res, next) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
-  next();
-});
 
-/* =========================================================
+  // 🔥 DEBUG BOT — LOG RICHIESTE GLOBALI
+  logBotDebug({
+    step: "request",
+    data: {
+      method: req.method,
+      url: req.url,
+      ip: req.ip
+    }
+  });
+
+  next();
+}); /* =========================================================
    MIDDLEWARE BASE
 ========================================================= */
 app.use(cors({ origin: true, credentials: true }));
@@ -124,6 +150,15 @@ app.use((req, res, next) => {
     headers: req.headers
   });
 
+  logBotDebug({
+    step: "middleware_request",
+    data: {
+      method: req.method,
+      url: req.url,
+      ip: req.ip
+    }
+  });
+
   const send = res.send;
   res.send = function (body) {
     addDebugLog("response", {
@@ -133,207 +168,380 @@ app.use((req, res, next) => {
       body: typeof body === "string" ? body.substring(0, 500) : body
     });
 
-    return send.call(this, body);
-  };
-
-  next();
-});
-
-/* =========================================================
-   REDIRECT HTTPS + WWW — PATCH RENDER SAFE
-========================================================= */
-app.use((req, res, next) => {
-  try {
-    const proto = req.headers["x-forwarded-proto"];
-    const host = req.headers.host || "";
-
-    if (process.env.RENDER === "true") return next();
-    if (!host) return next();
-
-    if (proto && proto !== "https") {
-      return res.redirect(301, `https://${host}${req.url}`);
-    }
-
-    if (host === "mewingmarket.it") {
-      return res.redirect(301, `https://www.mewingmarket.it${req.url}`);
-    }
-
-    if (!host.startsWith("www.")) {
-      return res.redirect(301, `https://www.${host}${req.url}`);
-    }
-
-    next();
-  } catch (err) {
-    console.error("Redirect error:", err);
-    next();
-  }
-});
-
-/* =========================================================
-   USER STATE + COOKIE UID
-========================================================= */
-app.use((req, res, next) => {
-  let uid = null;
-
-  try {
-    uid = req.cookies?.mm_uid || null;
-  } catch {
-    uid = null;
-  }
-
-  const invalid = !uid || typeof uid !== "string" || !uid.startsWith("mm_");
-
-  if (invalid) {
-    uid = generateUID();
-    res.cookie("mm_uid", uid, {
-      httpOnly: false,
-      secure: true,
-      sameSite: "None",
-      maxAge: 1000 * 60 * 60 * 24 * 30
-    });
-  }
-
-  if (!userStates[uid]) {
-    userStates[uid] = { state: "menu", lastIntent: null, data: {} };
-  }
-
-  req.uid = uid;
-  req.userState = userStates[uid];
-
-  next();
-});
-
-/* =========================================================
-   MIDDLEWARE MAX
-========================================================= */
-app.use((req, res, next) => {
-  try {
-    if (!req.body) req.body = {};
-    if (!req.query) req.query = {};
-
-    const uid = req.uid;
-    const body = req.body;
-    const query = req.query;
-
-    const page = body.page ?? query.page ?? null;
-    const slug = body.slug ?? query.slug ?? null;
-
-    if (page || slug) {
-      Context.update(uid, page, slug);
-      trackGA4("page_view", { uid, page: page || "", slug: slug || "" });
-    }
-
-    if (typeof body.message === "string") {
-      body.message = safeText(body.message);
-      req.body = body;
-    }
-
-    next();
-  } catch (err) {
-    console.error("Middleware MAX error:", err);
-    next();
-  }
-});
-
-/* =========================================================
-   🔥 INIEZIONE AUTOMATICA DI debug.js (VERSIONE CORRETTA)
-========================================================= */
-app.use((req, res, next) => {
-  const send = res.send;
-
-  res.send = function (body) {
-    try {
-      if (typeof body === "string" && body.includes("</body>")) {
-        addDebugLog("inject", { url: req.url });
-        body = body.replace(
-          "</body>",
-          `<script src="/debug.js"></script></body>`
-        );
+    logBotDebug({
+      step: "middleware_response",
+      data: {
+        url: req.url,
+        status: res.statusCode,
+        duration: Date.now() - start
       }
-    } catch (err) {
-      addDebugLog("inject-error", err.toString());
-    }
+    });
 
     return send.call(this, body);
   };
 
   next();
+});  /* =========================================================
+   STATIC FILES
+========================================================= */
+app.use(express.static("public"));
+
+/* =========================================================
+   SITEMAP GENERATION ENDPOINTS
+========================================================= */
+app.get("/sitemap-images.xml", async (req, res) => {
+  try {
+    const xml = await generateImagesSitemap();
+    res.header("Content-Type", "application/xml");
+    res.send(xml);
+
+    logBotDebug({
+      step: "sitemap_images",
+      data: { status: "ok" }
+    });
+
+  } catch (err) {
+    console.error("Errore sitemap immagini:", err);
+
+    logBotDebug({
+      step: "sitemap_images_error",
+      data: { error: err.message }
+    });
+
+    res.status(500).send("Errore generazione sitemap immagini");
+  }
+});
+
+app.get("/sitemap-store.xml", async (req, res) => {
+  try {
+    const xml = await generateStoreSitemap();
+    res.header("Content-Type", "application/xml");
+    res.send(xml);
+
+    logBotDebug({
+      step: "sitemap_store",
+      data: { status: "ok" }
+    });
+
+  } catch (err) {
+    console.error("Errore sitemap store:", err);
+
+    logBotDebug({
+      step: "sitemap_store_error",
+      data: { error: err.message }
+    });
+
+    res.status(500).send("Errore generazione sitemap store");
+  }
+});
+
+app.get("/sitemap-social.xml", async (req, res) => {
+  try {
+    const xml = await generateSocialSitemap();
+    res.header("Content-Type", "application/xml");
+    res.send(xml);
+
+    logBotDebug({
+      step: "sitemap_social",
+      data: { status: "ok" }
+    });
+
+  } catch (err) {
+    console.error("Errore sitemap social:", err);
+
+    logBotDebug({
+      step: "sitemap_social_error",
+      data: { error: err.message }
+    });
+
+    res.status(500).send("Errore generazione sitemap social");
+  }
+}); /* =========================================================
+   SITEMAP FOOTER
+========================================================= */
+app.get("/sitemap-footer.xml", async (req, res) => {
+  try {
+    const xml = await generateFooterSitemap();
+    res.header("Content-Type", "application/xml");
+    res.send(xml);
+
+    logBotDebug({
+      step: "sitemap_footer",
+      data: { status: "ok" }
+    });
+
+  } catch (err) {
+    console.error("Errore sitemap footer:", err);
+
+    logBotDebug({
+      step: "sitemap_footer_error",
+      data: { error: err.message }
+    });
+
+    res.status(500).send("Errore generazione sitemap footer");
+  }
 });
 
 /* =========================================================
-   SITEMAP + PAGINE
+   NEWSLETTER — GENERAZIONE HTML
 ========================================================= */
-app.get("/sitemap-images.xml", (req, res) => {
-  try { res.type("application/xml").send(generateImagesSitemap()); }
-  catch { res.status(500).send("Errore sitemap"); }
+app.post("/newsletter/genera", async (req, res) => {
+  try {
+    const { titolo, contenuto } = req.body;
+
+    logBotDebug({
+      step: "newsletter_generate",
+      data: { titolo }
+    });
+
+    const html = generateNewsletterHTML(titolo, contenuto);
+    res.json({ html });
+
+  } catch (err) {
+    console.error("Errore generazione newsletter:", err);
+
+    logBotDebug({
+      step: "newsletter_generate_error",
+      data: { error: err.message }
+    });
+
+    res.status(500).json({ error: "Errore generazione newsletter" });
+  }
 });
 
-app.get("/sitemap-store.xml", (req, res) => {
-  try { res.type("application/xml").send(generateStoreSitemap()); }
-  catch { res.status(500).send("Errore sitemap"); }
+/* =========================================================
+   NEWSLETTER — INVIO
+========================================================= */
+app.post("/newsletter/invia", async (req, res) => {
+  try {
+    const { oggetto, html } = req.body;
+
+    logBotDebug({
+      step: "newsletter_send",
+      data: { oggetto }
+    });
+
+    const result = await inviaNewsletter(oggetto, html);
+    res.json({ ok: true, result });
+
+  } catch (err) {
+    console.error("Errore invio newsletter:", err);
+
+    logBotDebug({
+      step: "newsletter_send_error",
+      data: { error: err.message }
+    });
+
+    res.status(500).json({ error: "Errore invio newsletter" });
+  }
+}); /* =========================================================
+   AIRTABLE — SYNC MANUALE
+========================================================= */
+app.get("/admin/sync-airtable", async (req, res) => {
+  try {
+    logBotDebug({
+      step: "airtable_sync_start",
+      data: {}
+    });
+
+    await syncAirtable();
+    res.send("Sync completato");
+
+    logBotDebug({
+      step: "airtable_sync_ok",
+      data: {}
+    });
+
+  } catch (err) {
+    console.error("Errore sync Airtable:", err);
+
+    logBotDebug({
+      step: "airtable_sync_error",
+      data: { error: err.message }
+    });
+
+    res.status(500).send("Errore sync Airtable");
+  }
 });
 
-app.get("/sitemap-social.xml", (req, res) => {
-  try { res.type("application/xml").send(generateSocialSitemap()); }
-  catch { res.status(500).send("Errore sitemap"); }
-});
-
-app.get("/sitemap.xml", (req, res) => {
-  try { res.type("application/xml").send(generateFooterSitemap()); }
-  catch { res.status(500).send("Errore sitemap"); }
-});
-
+/* =========================================================
+   PAGINE STATICHE
+========================================================= */
 app.get("/", (req, res) => {
+  logBotDebug({
+    step: "page_home",
+    data: {}
+  });
+
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-app.get("/products.json", (req, res) => {
-  res.sendFile(path.join(__dirname, "data", "products.json"));
+app.get("/store", (req, res) => {
+  logBotDebug({
+    step: "page_store",
+    data: {}
+  });
+
+  res.sendFile(path.join(__dirname, "public", "store.html"));
 });
 
-app.get("/prodotto.html", (req, res) => {
+app.get("/contatti", (req, res) => {
+  logBotDebug({
+    step: "page_contatti",
+    data: {}
+  });
+
+  res.sendFile(path.join(__dirname, "public", "contatti.html"));
+}); /* =========================================================
+   PAGINE STATICHE — ALTRE
+========================================================= */
+app.get("/privacy", (req, res) => {
+  logBotDebug({
+    step: "page_privacy",
+    data: {}
+  });
+
+  res.sendFile(path.join(__dirname, "public", "privacy.html"));
+});
+
+app.get("/termini", (req, res) => {
+  logBotDebug({
+    step: "page_termini",
+    data: {}
+  });
+
+  res.sendFile(path.join(__dirname, "public", "termini.html"));
+});
+
+/* =========================================================
+   PAGINA PRODOTTO
+========================================================= */
+app.get("/prodotto/:slug", (req, res) => {
+  const slug = req.params.slug;
+
+  logBotDebug({
+    step: "page_prodotto",
+    data: { slug }
+  });
+
+  res.sendFile(path.join(__dirname, "public", "prodotto.html"));
+});
+
+/* =========================================================
+   PAGINA GENERICA
+========================================================= */
+app.get("/:page", (req, res, next) => {
+  const page = req.params.page;
+
+  const filePath = path.join(__dirname, "public", `${page}.html`);
+
+  if (fs.existsSync(filePath)) {
+    logBotDebug({
+      step: "page_generic",
+      data: { page }
+    });
+
+    return res.sendFile(filePath);
+  }
+
+  next();
+});  /* =========================================================
+   ENDPOINT CHATBOT (UFFICIALE)
+========================================================= */
+app.post("/chat", async (req, res) => {
   try {
-    const slug = req.query.slug;
-    if (!slug) return res.status(400).send("Parametro slug mancante");
+    const { message, page, slug } = req.body;
 
-    const products = getProducts() || [];
-    const prodotto = products.find(p => p.slug === slug);
+    logBotDebug({
+      step: "chat_input",
+      data: { message, page, slug }
+    });
 
-    if (!prodotto) return res.status(404).send("Prodotto non trovato");
+    // UID da cookie o generato
+    let uid = req.cookies.uid;
+    if (!uid) {
+      uid = generateUID();
+      res.cookie("uid", uid, { httpOnly: true, sameSite: "Lax", maxAge: 1000 * 60 * 60 * 24 * 365 });
+    }
 
-    res.sendFile(path.join(__dirname, "public", "prodotto.html"));
-  } catch {
-    res.status(500).send("Errore pagina prodotto");
+    // Context pagina
+    const pageContext = Context.extract(page, slug);
+
+    // Detect intent
+    const { intent, sub } = detectIntent(message);
+
+    logBotDebug({
+      step: "chat_intent",
+      data: { intent, sub }
+    });
+
+    // Risposta bot
+    const risposta = await handleConversation({
+      rawText: message,
+      intent,
+      sub,
+      uid,
+      utm: req.query.utm || null,
+      pageContext,
+      req,
+      res
+    });
+
+    logBotDebug({
+      step: "chat_output",
+      data: { reply: risposta }
+    });
+
+    return; // handleConversation gestisce già la risposta
+
+  } catch (err) {
+    console.error("Errore /chat:", err);
+
+    logBotDebug({
+      step: "chat_error",
+      data: { error: err.message }
+    });
+
+    res.status(500).json({ reply: "Errore interno. Riprova tra poco." });
   }
 });
 
 /* =========================================================
-   🔥 DASHBOARD DEBUG
+   ENDPOINT DEBUG BOT — JSON
 ========================================================= */
-app.get("/debug", (req, res) => {
+app.get("/tracking/bot-debug", (req, res) => {
+  res.json(BOT_DEBUG_LOG);
+}); /* =========================================================
+   DASHBOARD DEBUG BOT — HTML
+========================================================= */
+app.get("/tracking/bot-debug-view", (req, res) => {
   res.send(`
     <html>
     <head>
-      <title>MewingMarket Debug Dashboard</title>
+      <title>BOT DEBUG</title>
       <style>
-        body { background:#111; color:#0f0; font-family:monospace; padding:20px; }
-        pre { white-space:pre-wrap; }
+        body { background:#111; color:#0f0; font-family: monospace; padding:20px; }
+        h1 { color:#0f0; }
+        pre { white-space: pre-wrap; font-size:14px; }
       </style>
     </head>
     <body>
-      <h1>🔥 MewingMarket Debug Dashboard</h1>
-      <p>Aggiornamento ogni 2 secondi</p>
+      <h1>🤖 BOT DEBUG LOG</h1>
       <pre id="log">Caricamento...</pre>
 
       <script>
-        async function loadLogs() {
-          const res = await fetch("/debug/feed");
-          const logs = await res.json();
+        async function load() {
+          const r = await fetch("/tracking/bot-debug");
+          const j = await r.json();
+
           document.getElementById("log").textContent =
-            logs.map(l => "[" + l.time + "] (" + l.type + ") " + JSON.stringify(l.data)).join("\\n\\n");
+            j.map(x =>
+              "[" + x.time + "] " + x.step + " → " + JSON.stringify(x.data)
+            ).join("\\n\\n");
         }
-        setInterval(loadLogs, 2000);
-        loadLogs();
+
+        setInterval(load, 1500);
+        load();
       </script>
     </body>
     </html>
@@ -341,270 +549,15 @@ app.get("/debug", (req, res) => {
 });
 
 /* =========================================================
-   🔥 FEED LOG
-========================================================= */
-app.get("/debug/feed", (req, res) => {
-  res.json(DEBUG_LOG);
-});
-
-/* =========================================================
-   🔥 RICEZIONE LOG FRONTEND
-========================================================= */
-app.post("/debug/log", (req, res) => {
-  addDebugLog(req.body.type || "frontend", req.body.message || "");
-  res.json({ ok: true });
-});
-
-/* =========================================================
-   ⭐ CHAT BOT
-========================================================= */
-app.post("/chat", async (req, res) => {
-  try {
-    const uid = req.uid;
-    const rawMessage = req.body?.message;
-
-    if (!rawMessage || rawMessage.trim() === "") {
-      return reply(res, "Scrivi un messaggio così posso aiutarti.");
-    }
-
-    trackGA4("chat_message_sent", { uid, message: rawMessage });
-
-    const { intent, sub } = detectIntent(rawMessage);
-    userStates[uid].lastIntent = intent;
-
-    trackGA4("intent_detected", { uid, intent, sub: sub || "" });
-
-    const response = await handleConversation(req, res, intent, sub, rawMessage);
-
-    trackGA4("chat_message_received", { uid, intent, sub: sub || "" });
-
-    return response;
-  } catch (err) {
-    console.error("❌ Errore /chat:", err);
-    return reply(res, "Sto avendo un problema temporaneo. Riprova tra poco.");
-  }
-});
-
-/* =========================================================
-   NEWSLETTER
-========================================================= */
-const { iscriviEmail } = require("./modules/brevoSubscribe");
-const { disiscriviEmail } = require("./modules/brevoUnsubscribe");
-
-const welcomeHTML = fs.readFileSync(
-  path.join(__dirname, "modules", "welcome.html"),
-  "utf8"
-);
-
-app.post("/newsletter/subscribe", async (req, res) => {
-  try {
-    const email = req.body?.email?.trim();
-    if (!email) return res.json({ status: "error", message: "Email mancante" });
-
-    await iscriviEmail(email);
-
-    await axios.post(
-      "https://api.brevo.com/v3/smtp/email",
-      {
-        sender: { name: "MewingMarket", email: "vendite@mewingmarket.it" },
-        to: [{ email }],
-        subject: "👋 Benvenuto in MewingMarket",
-        htmlContent: welcomeHTML
-      },
-      {
-        headers: {
-          "api-key": process.env.BREVO_API_KEY,
-          "Content-Type": "application/json"
-        }
-      }
-    );
-
-    return res.json({ status: "ok" });
-  } catch (err) {
-    console.error("❌ Errore iscrizione newsletter:", err);
-    return res.json({ status: "error" });
-  }
-});
-
-app.post("/newsletter/unsubscribe", async (req, res) => {
-  try {
-    const email = req.body?.email?.trim();
-    if (!email) return res.json({ status: "error", message: "Email mancante" });
-
-    await disiscriviEmail(email);
-    return res.json({ status: "ok" });
-  } catch (err) {
-    console.error("❌ Errore disiscrizione newsletter:", err);
-    return res.json({ status: "error" });
-  }
-});
-
-app.post("/newsletter/send", async (req, res) => {
-  try {
-    const { html, oggetto } = generateNewsletterHTML();
-    if (!html || !oggetto) return res.json({ status: "error" });
-
-    const result = await inviaNewsletter({ oggetto, html });
-    return res.json({ status: "ok", result });
-  } catch (err) {
-    console.error("❌ Errore invio newsletter:", err);
-    return res.json({ status: "error" });
-  }
-});
-/* =========================================================
-   🔥 TRACKING PREMIUM — ARCHIVIO EVENTI
-========================================================= */
-const TRACKING_LOG = [];
-const TRACKING_MAX = 5000;
-
-/* =========================================================
-   🔥 POST /tracking/event — RICEVE EVENTI DAL FRONTEND
-========================================================= */
-app.post("/tracking/event", express.json(), (req, res) => {
-  try {
-    const evt = req.body || {};
-    evt.time = evt.time || new Date().toISOString();
-
-    TRACKING_LOG.push(evt);
-
-    if (TRACKING_LOG.length > TRACKING_MAX) {
-      TRACKING_LOG.splice(0, TRACKING_LOG.length - TRACKING_MAX);
-    }
-
-    res.json({ ok: true });
-  } catch (err) {
-    console.error("Errore tracking:", err);
-    res.status(500).json({ ok: false });
-  }
-});
-
-/* =========================================================
-   🔥 GET /tracking/feed — FEED PER DASHBOARD
-========================================================= */
-app.get("/tracking/feed", (req, res) => {
-  res.json({ events: TRACKING_LOG });
-});
-
-/* =========================================================
-   🔥 GET /tracking — DASHBOARD TRACKING
-========================================================= */
-app.get("/tracking", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "tracking.html"));
-});
-
-/* =========================================================
-   🔥 THANK-YOU PAGE PAYHIP
-========================================================= */
-app.get("/thankyou-payhip", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "thankyou-payhip.html"));
-});
-
-/* =========================================================
-   🔥 WEBHOOK PAYHIP (OPZIONALE MA CONSIGLIATO)
-========================================================= */
-app.post("/tracking/payhip", express.json(), (req, res) => {
-  try {
-    const body = req.body || {};
-
-    const evt = {
-      event: "purchase",
-      type: "store",
-      channel: "store",
-      source: "payhip",
-      uid: body.custom_uid || null,
-      utm: body.utm || {},
-      data: {
-        product_id: body.product_id,
-        product_name: body.product_name,
-        price: body.price,
-        currency: body.currency || "EUR",
-        email: body.email
-      },
-      time: new Date().toISOString()
-    };
-
-    TRACKING_LOG.push(evt);
-
-    if (TRACKING_LOG.length > TRACKING_MAX) {
-      TRACKING_LOG.splice(0, TRACKING_LOG.length - TRACKING_MAX);
-    }
-
-    res.json({ ok: true });
-  } catch (err) {
-    console.error("Errore webhook Payhip:", err);
-    res.status(500).json({ ok: false });
-  }
-});
-/* =========================================================
-   STATICI — DOPO TUTTE LE API
-========================================================= */
-app.use(express.static(path.join(__dirname, "public")));
-
-/* =========================================================
    AVVIO SERVER
 ========================================================= */
-const PORT = process.env.PORT || 10000;
+const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log(`MewingMarket attivo sulla porta ${PORT}`);
+  console.log("Server avviato su porta", PORT);
 
-  (async () => {
-    try {
-      console.log("⏳ Sync automatico Airtable all'avvio...");
-      await syncAirtable().catch(err => console.error("❌ Errore sync:", err));
-      loadProducts();
-      console.log("✅ Sync completato");
-    } catch (err) {
-      console.error("❌ Errore nel sync all'avvio:", err);
-    }
-  })();
+  logBotDebug({
+    step: "server_start",
+    data: { port: PORT }
+  });
 });
-
-/* =========================================================
-   SYNC PROGRAMMATA
-========================================================= */
-setInterval(async () => {
-  try {
-    console.log("⏳ Sync programmato Airtable...");
-    await syncAirtable().catch(err => console.error("❌ Errore sync:", err));
-    loadProducts();
-    console.log("✅ Sync programmato completato");
-  } catch (err) {
-    console.error("❌ Errore nel sync programmato:", err);
-  }
-}, 30 * 60 * 1000);
-
-/* =========================================================
-   NEWSLETTER AUTOMATICA — NUOVO PRODOTTO
-========================================================= */
-let lastProductId = null;
-
-async function checkNewProduct() {
-  try {
-    const products = getProducts() || [];
-    if (!products.length) return;
-
-    const latest = products[products.length - 1];
-    if (!latest) return;
-
-    const latestId = latest.id;
-    if (!latestId) return;
-
-    if (!lastProductId) {
-      lastProductId = latestId;
-      return;
-    }
-
-    if (latestId !== lastProductId) {
-      const { html, oggetto } = generateNewsletterHTML() || {};
-      if (html && oggetto) {
-        await inviaNewsletter({ oggetto, html });
-      }
-      lastProductId = latestId;
-    }
-  } catch (err) {
-    console.error("❌ Errore controllo nuovo prodotto:", err);
-  }
-}
-
-setInterval(checkNewProduct, 5 * 60 * 1000);
