@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>MewingMarket — Debug Dashboard</title>
+<style>
+  body {
+    background: #111;
+    color: #0f0;
+    font-family: monospace;
+    margin: 0;
+    padding: 0;
+  }
+
+  h1 {
+    padding: 20px;
+    margin: 0;
+    background: #000;
+    border-bottom: 2px solid #0f0;
+  }
+
+  #container {
+    display: flex;
+    height: calc(100vh - 60px);
+  }
+
+  .panel {
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+    border-right: 1px solid #0f0;
+    white-space: pre-wrap;
+  }
+
+  .panel:last-child {
+    border-right: none;
+  }
+
+  .title {
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #0ff;
+  }
+
+  .entry {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed #0f0;
+  }
+
+  .timestamp {
+    color: #888;
+  }
+</style>
+</head>
+<body>
+
+<h1>🔥 MewingMarket — Debug Dashboard</h1>
+
+<div id="container">
+  <div class="panel" id="frontend-panel">
+    <div class="title">📗 FRONTEND LOG</div>
+  </div>
+
+  <div class="panel" id="backend-panel">
+    <div class="title">🟩 BACKEND LOG</div>
+  </div>
+</div>
+
+<script>
+// ======================================================
+// 🔥 FRONTEND LOG STREAM (via debug.js)
+// ======================================================
+const frontendPanel = document.getElementById("frontend-panel");
+
+// Riceve log dal backend (che il frontend ha inviato)
+async function loadFrontendLogs() {
+  const res = await fetch("/debug/frontend");
+  const data = await res.json();
+
+  frontendPanel.innerHTML = '<div class="title">📗 FRONTEND LOG</div>';
+
+  data.forEach(entry => {
+    const div = document.createElement("div");
+    div.className = "entry";
+    div.innerHTML = `
+      <span class="timestamp">${entry.time}</span>
+      <br>${entry.type}: ${entry.message}
+    `;
+    frontendPanel.appendChild(div);
+  });
+}
+
+// ======================================================
+// 🔥 BACKEND LOG STREAM (BOT_DEBUG_LOG)
+// ======================================================
+const backendPanel = document.getElementById("backend-panel");
+
+async function loadBackendLogs() {
+  const res = await fetch("/debug/backend");
+  const data = await res.json();
+
+  backendPanel.innerHTML = '<div class="title">🟩 BACKEND LOG</div>';
+
+  data.forEach(entry => {
+    const div = document.createElement("div");
+    div.className = "entry";
+    div.innerHTML = `
+      <span class="timestamp">${entry.time}</span>
+      <br><b>${entry.step}</b>
+      <br>${JSON.stringify(entry.data, null, 2)}
+    `;
+    backendPanel.appendChild(div);
+  });
+}
+
+// ======================================================
+// 🔥 AGGIORNAMENTO LIVE OGNI 1.5s
+// ======================================================
+setInterval(() => {
+  loadFrontendLogs();
+  loadBackendLogs();
+}, 1500);
+
+</script>
+
+</body>
+</html>
