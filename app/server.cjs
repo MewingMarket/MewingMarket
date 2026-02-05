@@ -9,7 +9,35 @@ const cookieParser = require("cookie-parser");
 const axios = require("axios");
 require("dotenv").config();
 const multer = require("multer");
+// ======================================================
+// 🔥 DEBUG FRONTEND STORAGE
+// ======================================================
+let FRONTEND_LOG = [];
 
+app.post("/debug/log", (req, res) => {
+  const { type, message } = req.body;
+
+  FRONTEND_LOG.push({
+    time: new Date().toISOString(),
+    type,
+    message
+  });
+
+  if (FRONTEND_LOG.length > 2000) FRONTEND_LOG.shift();
+
+  res.json({ ok: true });
+});
+
+app.get("/debug/frontend", (req, res) => {
+  res.json(FRONTEND_LOG);
+});
+
+// ======================================================
+// 🔥 DEBUG BACKEND STORAGE (usa BOT_DEBUG_LOG globale)
+// ======================================================
+app.get("/debug/backend", (req, res) => {
+  res.json(global.BOT_DEBUG_LOG || []);
+});
 /* =========================================================
    🔥 ARCHIVIO LOG UNIVERSALE
 ========================================================= */
