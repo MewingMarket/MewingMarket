@@ -1,3 +1,6 @@
+/* =========================================================
+   IMPORT ORIGINALI
+========================================================= */
 const fetch = require("node-fetch");
 
 const {
@@ -12,39 +15,127 @@ const { getProducts } = require("./airtable");
 const Context = require("./context");
 const Memory = require("./memory");
 
+/* =========================================================
+   DEBUG ULTRA — ARCHIVIO LOG
+========================================================= */
+const BOT_DEBUG_LOG = global.BOT_DEBUG_LOG || [];
+global.BOT_DEBUG_LOG = BOT_DEBUG_LOG;
+
+function logBotDebug(entry) {
+  BOT_DEBUG_LOG.push({
+    time: new Date().toISOString(),
+    ...entry
+  });
+
+  if (BOT_DEBUG_LOG.length > 5000) BOT_DEBUG_LOG.shift();
+}
+
+/* =========================================================
+   DEBUG: LOG AVVIO FILE
+========================================================= */
+logBotDebug({
+  step: "bot_file_loaded",
+  data: { status: "OK" }
+});
+
+/* =========================================================
+   UTM EXTRACTOR
+========================================================= */
 function extractUTM(req) {
+  logBotDebug({
+    step: "extract_utm_start",
+    data: { body: req.body || null }
+  });
+
   try {
-    return req.body?.utm || {};
-  } catch {
+    const utm = req.body?.utm || {};
+
+    logBotDebug({
+      step: "extract_utm_success",
+      data: { utm }
+    });
+
+    return utm;
+  } catch (err) {
+    logBotDebug({
+      step: "extract_utm_error",
+      data: { error: err.message }
+    });
+
     return {};
   }
 }
 
+/* =========================================================
+   TRACKING WRAPPERS
+========================================================= */
 function trackBotEvent(event, data = {}) {
+  logBotDebug({
+    step: "track_event",
+    data: { event, data }
+  });
+
   try {
     if (global.trackEvent) {
       global.trackEvent("bot_" + event, data);
     }
   } catch (err) {
     console.error("Bot tracking error:", err);
+
+    logBotDebug({
+      step: "track_event_error",
+      data: { error: err.message }
+    });
   }
 }
 
 function trackBot(event, data = {}) {
+  logBotDebug({
+    step: "track_bot",
+    data: { event, data }
+  });
+
   try {
     if (global.trackEvent) {
       global.trackEvent(event, data);
     }
   } catch (e) {
     console.error("Tracking bot error:", e);
+
+    logBotDebug({
+      step: "track_bot_error",
+      data: { error: e.message }
+    });
   }
 }
 
+/* =========================================================
+   SYSTEM PROMPT BASE
+========================================================= */
 const BASE_SYSTEM_PROMPT = `
 Sei il Copilot ufficiale di MewingMarket, integrato nel sito.
 Tono: chiaro, diretto, professionale, amichevole.
 Non inventare prodotti o prezzi. Consiglia solo ciò che esiste.
-`; async function callGPT(userPrompt, memory = [], context = {}, extraSystem = "", extraData = {}) {
+`;
+
+logBotDebug({
+  step: "system_prompt_loaded",
+  data: { length: BASE_SYSTEM_PROMPT.length }
+}); /* =========================================================
+   GPT WRAPPER — DEBUG ULTRA
+========================================================= */
+async function callGPT(userPrompt, memory = [], context = {}, extraSystem = "", extraData = {}) {
+  logBotDebug({
+    step: "gpt_call_start",
+    data: {
+      userPrompt,
+      memory_preview: memory.slice(-6),
+      context,
+      extraSystem,
+      extraData
+    }
+  });
+
   try {
     const system = BASE_SYSTEM_PROMPT + (extraSystem || "");
 
@@ -59,6 +150,11 @@ Non inventare prodotti o prezzi. Consiglia solo ciò che esiste.
       ]
     };
 
+    logBotDebug({
+      step: "gpt_payload_ready",
+      data: { payload }
+    });
+
     const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -69,28 +165,74 @@ Non inventare prodotti o prezzi. Consiglia solo ciò che esiste.
     });
 
     const json = await res.json();
+
+    logBotDebug({
+      step: "gpt_raw_response",
+      data: { json }
+    });
+
     const out = json?.choices?.[0]?.message?.content?.trim();
+
+    logBotDebug({
+      step: "gpt_output",
+      data: { out }
+    });
 
     if (!out) return "Sono qui 👋 Dimmi pure come posso aiutarti.";
     return out;
 
   } catch (err) {
     console.error("GPT error:", err);
+
+    logBotDebug({
+      step: "gpt_error",
+      data: { error: err.message }
+    });
+
     return "Sto avendo un piccolo problema tecnico, ma ci sono 👍";
   }
 }
 
+/* =========================================================
+   UID GENERATOR — DEBUG
+========================================================= */
 function generateUID() {
-  return "mm_" + Math.random().toString(36).substring(2, 12);
+  const uid = "mm_" + Math.random().toString(36).substring(2, 12);
+
+  logBotDebug({
+    step: "generate_uid",
+    data: { uid }
+  });
+
+  return uid;
 }
 
+/* =========================================================
+   STATE MANAGER — DEBUG
+========================================================= */
 function setState(req, newState) {
+  logBotDebug({
+    step: "set_state",
+    data: {
+      oldState: req.userState?.state || null,
+      newState
+    }
+  });
+
   if (req.userState && typeof req.userState === "object") {
     req.userState.state = newState;
   }
 }
 
+/* =========================================================
+   REPLY WRAPPER — DEBUG ULTRA
+========================================================= */
 function reply(res, text, meta = {}) {
+  logBotDebug({
+    step: "reply_start",
+    data: { text, meta }
+  });
+
   try {
     trackBotEvent("reply", {
       reply: text,
@@ -102,13 +244,30 @@ function reply(res, text, meta = {}) {
     });
   } catch (e) {
     console.error("Bot reply tracking error:", e);
+
+    logBotDebug({
+      step: "reply_tracking_error",
+      data: { error: e.message }
+    });
   }
 
-  res.json({ reply: text });
-}
+  logBotDebug({
+    step: "reply_send",
+    data: { text }
+  });
 
+  res.json({ reply: text });
+    } /* =========================================================
+   YES DETECTOR — DEBUG
+========================================================= */
 function isYes(text) {
   const t = (text || "").toLowerCase();
+
+  logBotDebug({
+    step: "is_yes_check",
+    data: { text, normalized: t }
+  });
+
   return (
     t.includes("si") ||
     t.includes("sì") ||
@@ -117,14 +276,30 @@ function isYes(text) {
     t.includes("certo") ||
     t.includes("yes")
   );
-} function buildProductIndex() {
+}
+
+/* =========================================================
+   BUILD PRODUCT INDEX — DEBUG ULTRA
+========================================================= */
+function buildProductIndex() {
+  logBotDebug({
+    step: "build_product_index_start",
+    data: {}
+  });
+
   const products = getProducts() || [];
 
-  return products.map(p => {
+  logBotDebug({
+    step: "build_product_index_products_loaded",
+    data: { count: products.length }
+  });
+
+  const indexed = products.map(p => {
     const titolo = (p.titolo || "").toLowerCase();
     const slug = (p.slug || "").toLowerCase();
     const synonyms = [];
 
+    // Aggiunta sinonimi (logica originale)
     if (titolo.includes("ecosistema")) {
       synonyms.push("ecosistema","ecosistema digitale","eco sistema","ecosist","ecos","guida ecosistema","ecosistema reale");
     }
@@ -153,42 +328,123 @@ function isYes(text) {
       synonyms.push("forfettario","guida fiscale","fisco","flessinance","tasse","guida forfettario");
     }
 
-    return { ...p, _index: { titolo, slug, synonyms } };
+    const out = { ...p, _index: { titolo, slug, synonyms } };
+
+    logBotDebug({
+      step: "build_product_index_item",
+      data: out._index
+    });
+
+    return out;
   });
+
+  logBotDebug({
+    step: "build_product_index_complete",
+    data: { count: indexed.length }
+  });
+
+  return indexed;
 }
 
+/* =========================================================
+   TEXT INCLUDES ANY — DEBUG
+========================================================= */
 function textIncludesAny(text, arr) {
   const t = text.toLowerCase();
-  return arr.some(k => t.includes(k.toLowerCase()));
+
+  const match = arr.some(k => t.includes(k.toLowerCase()));
+
+  logBotDebug({
+    step: "text_includes_any",
+    data: { text, arr, match }
+  });
+
+  return match;
 }
 
+/* =========================================================
+   FUZZY MATCH PRODUCT — DEBUG ULTRA
+========================================================= */
 function fuzzyMatchProduct(text) {
+  logBotDebug({
+    step: "fuzzy_match_start",
+    data: { text }
+  });
+
   const products = buildProductIndex();
   const t = (text || "").toLowerCase();
 
+  // Match diretto slug/titolo
   for (const p of products) {
-    if (t.includes(p._index.slug) || t.includes(p._index.titolo)) return p;
-  }
-
-  for (const p of products) {
-    if (textIncludesAny(t, p._index.synonyms)) return p;
-  }
-
-  const keywords = t.split(/\s+/).filter(w => w.length > 3);
-  if (keywords.length) {
-    for (const p of products) {
-      if (keywords.some(k => p._index.titolo.includes(k))) return p;
+    if (t.includes(p._index.slug) || t.includes(p._index.titolo)) {
+      logBotDebug({
+        step: "fuzzy_match_direct_hit",
+        data: { product: p.slug }
+      });
+      return p;
     }
   }
 
+  // Match sinonimi
+  for (const p of products) {
+    if (textIncludesAny(t, p._index.synonyms)) {
+      logBotDebug({
+        step: "fuzzy_match_synonym_hit",
+        data: { product: p.slug }
+      });
+      return p;
+    }
+  }
+
+  // Match parole chiave
+  const keywords = t.split(/\s+/).filter(w => w.length > 3);
+
+  logBotDebug({
+    step: "fuzzy_match_keywords",
+    data: { keywords }
+  });
+
+  if (keywords.length) {
+    for (const p of products) {
+      if (keywords.some(k => p._index.titolo.includes(k))) {
+        logBotDebug({
+          step: "fuzzy_match_keyword_hit",
+          data: { product: p.slug }
+        });
+        return p;
+      }
+    }
+  }
+
+  logBotDebug({
+    step: "fuzzy_match_no_result",
+    data: { text }
+  });
+
   return null;
-} function detectIntent(rawText) {
+                    } /* =========================================================
+   DETECT INTENT — DEBUG ULTRA
+========================================================= */
+function detectIntent(rawText) {
+  logBotDebug({
+    step: "detect_intent_start",
+    data: { rawText }
+  });
+
   const text = rawText || "";
   const t = normalize(text);
   const q = cleanSearchQuery(text);
 
+  logBotDebug({
+    step: "detect_intent_normalized",
+    data: { t, q }
+  });
+
   trackBot("intent_detect", { text: rawText });
 
+  /* ============================
+     Conversazione
+  ============================ */
   if (
     q.includes("come va") ||
     q.includes("come stai") ||
@@ -203,8 +459,14 @@ function fuzzyMatchProduct(text) {
     q.includes("hey") ||
     q.includes("buongiorno") ||
     q.includes("buonasera")
-  ) return { intent: "conversazione", sub: null };
+  ) {
+    logBotDebug({ step: "intent_match", data: { intent: "conversazione" } });
+    return { intent: "conversazione", sub: null };
+  }
 
+  /* ============================
+     Menu
+  ============================ */
   if (
     q.includes("menu") ||
     q.includes("inizio") ||
@@ -212,21 +474,36 @@ function fuzzyMatchProduct(text) {
     q.includes("opzioni") ||
     q.includes("help") ||
     q.includes("aiuto")
-  ) return { intent: "menu", sub: null };
+  ) {
+    logBotDebug({ step: "intent_match", data: { intent: "menu" } });
+    return { intent: "menu", sub: null };
+  }
 
+  /* ============================
+     Catalogo
+  ============================ */
   if (
     q.includes("catalogo") ||
     q.includes("prodotti") ||
     q.includes("store") ||
     q.includes("shop")
-  ) return { intent: "catalogo", sub: null };
+  ) {
+    logBotDebug({ step: "intent_match", data: { intent: "catalogo" } });
+    return { intent: "catalogo", sub: null };
+  }
 
+  /* ============================
+     Newsletter
+  ============================ */
   if (
     q.includes("iscrizione") ||
     q.includes("mi iscrivo") ||
     q.includes("voglio iscrivermi") ||
     q.includes("registrazione")
-  ) return { intent: "newsletter", sub: "subscribe" };
+  ) {
+    logBotDebug({ step: "intent_match", data: { intent: "newsletter", sub: "subscribe" } });
+    return { intent: "newsletter", sub: "subscribe" };
+  }
 
   if (
     q.includes("newsletter") ||
@@ -235,34 +512,62 @@ function fuzzyMatchProduct(text) {
     q.includes("disiscriv") ||
     q.includes("annulla iscrizione")
   ) {
-    if (q.includes("disiscriv") || q.includes("annulla"))
+    if (q.includes("disiscriv") || q.includes("annulla")) {
+      logBotDebug({ step: "intent_match", data: { intent: "newsletter", sub: "unsubscribe" } });
       return { intent: "newsletter", sub: "unsubscribe" };
+    }
+
+    logBotDebug({ step: "intent_match", data: { intent: "newsletter", sub: "subscribe" } });
     return { intent: "newsletter", sub: "subscribe" };
   }
 
-  if (q.includes("instagram")) return { intent: "social_specifico", sub: "instagram" };
-  if (q.includes("tiktok")) return { intent: "social_specifico", sub: "tiktok" };
-  if (q.includes("youtube")) return { intent: "social_specifico", sub: "youtube" };
-  if (q.includes("facebook")) return { intent: "social_specifico", sub: "facebook" };
-  if (q.includes("threads")) return { intent: "social_specifico", sub: "threads" };
-  if (q.includes("linkedin")) return { intent: "social_specifico", sub: "linkedin" };
-  if (q.includes("x ") || q === "x") return { intent: "social_specifico", sub: "x" };
+  /* ============================
+     Social specifici
+  ============================ */
+  const socials = ["instagram","tiktok","youtube","facebook","threads","linkedin","x "];
+  for (const s of socials) {
+    if (q.includes(s)) {
+      logBotDebug({ step: "intent_match", data: { intent: "social_specifico", sub: s.trim() } });
+      return { intent: "social_specifico", sub: s.trim() };
+    }
+  }
 
-  if (q.includes("social")) return { intent: "social", sub: null };
+  if (q.includes("social")) {
+    logBotDebug({ step: "intent_match", data: { intent: "social" } });
+    return { intent: "social", sub: null };
+  }
 
-  if (q.includes("privacy") || q.includes("dati") || q.includes("gdpr"))
+  /* ============================
+     Policy & Legal
+  ============================ */
+  if (q.includes("privacy") || q.includes("dati") || q.includes("gdpr")) {
+    logBotDebug({ step: "intent_match", data: { intent: "privacy" } });
     return { intent: "privacy", sub: null };
+  }
 
-  if (q.includes("termini") || q.includes("condizioni") || q.includes("terms"))
+  if (q.includes("termini") || q.includes("condizioni") || q.includes("terms")) {
+    logBotDebug({ step: "intent_match", data: { intent: "termini" } });
     return { intent: "termini", sub: null };
+  }
 
-  if (q.includes("cookie")) return { intent: "cookie", sub: null };
+  if (q.includes("cookie")) {
+    logBotDebug({ step: "intent_match", data: { intent: "cookie" } });
+    return { intent: "cookie", sub: null };
+  }
 
-  if (q.includes("resi") || q.includes("rimborsi") || q.includes("rimborso"))
+  if (q.includes("resi") || q.includes("rimborsi") || q.includes("rimborso")) {
+    logBotDebug({ step: "intent_match", data: { intent: "resi" } });
     return { intent: "resi", sub: null };
+  }
 
-  if (q.includes("faq")) return { intent: "faq", sub: null };
+  if (q.includes("faq")) {
+    logBotDebug({ step: "intent_match", data: { intent: "faq" } });
+    return { intent: "faq", sub: null };
+  }
 
+  /* ============================
+     Contatti
+  ============================ */
   if (
     q.includes("contatti") ||
     q.includes("contatto") ||
@@ -270,14 +575,26 @@ function fuzzyMatchProduct(text) {
     q.includes("whatsapp") ||
     q.includes("numero") ||
     q.includes("telefono")
-  ) return { intent: "contatti", sub: null };
+  ) {
+    logBotDebug({ step: "intent_match", data: { intent: "contatti" } });
+    return { intent: "contatti", sub: null };
+  }
 
+  /* ============================
+     Dove siamo
+  ============================ */
   if (
     q.includes("dove siamo") ||
     q.includes("indirizzo") ||
     q.includes("sede")
-  ) return { intent: "dovesiamo", sub: null };
+  ) {
+    logBotDebug({ step: "intent_match", data: { intent: "dovesiamo" } });
+    return { intent: "dovesiamo", sub: null };
+  }
 
+  /* ============================
+     Supporto
+  ============================ */
   if (
     q.includes("supporto") ||
     q.includes("assistenza") ||
@@ -290,107 +607,208 @@ function fuzzyMatchProduct(text) {
     q.includes("resi") ||
     q.includes("rimborsi")
   ) {
-    if (q.includes("scaricare") || q.includes("download"))
-      return { intent: "supporto", sub: "download" };
-    if (q.includes("payhip"))
-      return { intent: "supporto", sub: "payhip" };
-    if (q.includes("rimborso") || q.includes("resi"))
-      return { intent: "supporto", sub: "rimborso" };
-    if (q.includes("email") || q.includes("contatto") || q.includes("contattare"))
-      return { intent: "supporto", sub: "contatto" };
-    return { intent: "supporto", sub: null };
+    let sub = null;
+
+    if (q.includes("scaricare") || q.includes("download")) sub = "download";
+    else if (q.includes("payhip")) sub = "payhip";
+    else if (q.includes("rimborso") || q.includes("resi")) sub = "rimborso";
+    else if (q.includes("email") || q.includes("contatto") || q.includes("contattare")) sub = "contatto";
+
+    logBotDebug({ step: "intent_match", data: { intent: "supporto", sub } });
+    return { intent: "supporto", sub };
   }
 
+  /* ============================
+     Acquisto diretto
+  ============================ */
   if (
     q.includes("acquisto") ||
     q.includes("fare un acquisto") ||
     q.includes("voglio acquistare") ||
     q.includes("procedo all acquisto") ||
-    q.includes("procedo all'acquisto")
-  ) return { intent: "acquisto_diretto", sub: null };
-
-  if (
+    q.includes("procedo all'acquisto") ||
     q.includes("acquista") ||
     q.includes("compra") ||
     q.includes("prendo") ||
     q.includes("lo prendo") ||
     q.includes("lo compro")
-  ) return { intent: "acquisto_diretto", sub: null };
+  ) {
+    logBotDebug({ step: "intent_match", data: { intent: "acquisto_diretto" } });
+    return { intent: "acquisto_diretto", sub: null };
+  }
 
+  /* ============================
+     Dettagli prodotto
+  ============================ */
   if (
     q.includes("dettagli") ||
     q.includes("approfondisci") ||
     q.includes("info") ||
     q.includes("informazioni") ||
     q.includes("spiegami meglio")
-  ) return { intent: "dettagli_prodotto", sub: null };
+  ) {
+    logBotDebug({ step: "intent_match", data: { intent: "dettagli_prodotto" } });
+    return { intent: "dettagli_prodotto", sub: null };
+  }
 
+  /* ============================
+     Video prodotto
+  ============================ */
   if (
     q.includes("video") ||
     q.includes("anteprima") ||
     q.includes("presentazione")
-  ) return { intent: "video_prodotto", sub: null };
+  ) {
+    logBotDebug({ step: "intent_match", data: { intent: "video_prodotto" } });
+    return { intent: "video_prodotto", sub: null };
+  }
 
+  /* ============================
+     Prezzo prodotto
+  ============================ */
   if (
     q.includes("prezzo") ||
     q.includes("quanto costa") ||
     q.includes("costa") ||
     q.includes("costo")
-  ) return { intent: "prezzo_prodotto", sub: null };
+  ) {
+    logBotDebug({ step: "intent_match", data: { intent: "prezzo_prodotto" } });
+    return { intent: "prezzo_prodotto", sub: null };
+  }
 
+  /* ============================
+     Sconto / trattativa
+  ============================ */
   if (
     q.includes("sconto") ||
     q.includes("sconti") ||
     q.includes("offerta") ||
     q.includes("promo")
-  ) return { intent: "trattativa", sub: "sconto" };
+  ) {
+    logBotDebug({ step: "intent_match", data: { intent: "trattativa", sub: "sconto" } });
+    return { intent: "trattativa", sub: "sconto" };
+  }
 
+  /* ============================
+     Obiezione prezzo
+  ============================ */
   if (
     q.includes("è caro") ||
     q.includes("troppo caro") ||
     q.includes("non so se vale") ||
     q.includes("non so se mi serve") ||
     q.includes("caro")
-  ) return { intent: "obiezione", sub: "prezzo" };
+  ) {
+    logBotDebug({ step: "intent_match", data: { intent: "obiezione", sub: "prezzo" } });
+    return { intent: "obiezione", sub: "prezzo" };
+  }
 
-  if (q.includes("ecosistema") || q.includes("da dove inizio") || q.includes("iniziare"))
+  /* ============================
+     Ecosistema
+  ============================ */
+  if (q.includes("ecosistema") || q.includes("da dove inizio") || q.includes("iniziare")) {
+    logBotDebug({ step: "intent_match", data: { intent: "ecosistema" } });
     return { intent: "ecosistema", sub: null };
+  }
 
-  if (q.includes("mindset") || q.includes("motivazione") || q.includes("mentalità"))
+  /* ============================
+     Mindset
+  ============================ */
+  if (q.includes("mindset") || q.includes("motivazione") || q.includes("mentalità")) {
+    logBotDebug({ step: "intent_match", data: { intent: "mindset" } });
     return { intent: "mindset", sub: null };
+  }
 
-  if (q.includes("lead magnet") || q.includes("risorsa gratuita") || q.includes("freebie"))
+  /* ============================
+     Lead magnet
+  ============================ */
+  if (q.includes("lead magnet") || q.includes("risorsa gratuita") || q.includes("freebie")) {
+    logBotDebug({ step: "intent_match", data: { intent: "lead_magnet" } });
     return { intent: "lead_magnet", sub: null };
+  }
 
-  if (q.includes("faq premium") || q.includes("domande avanzate"))
+  /* ============================
+     FAQ premium
+  ============================ */
+  if (q.includes("faq premium") || q.includes("domande avanzate")) {
+    logBotDebug({ step: "intent_match", data: { intent: "faq_premium" } });
     return { intent: "faq_premium", sub: null };
+  }
 
+  /* ============================
+     Match prodotto fuzzy
+  ============================ */
   const product = fuzzyMatchProduct(text);
-  if (product) return { intent: "prodotto", sub: product.slug };
+  if (product) {
+    logBotDebug({ step: "intent_match", data: { intent: "prodotto", sub: product.slug } });
+    return { intent: "prodotto", sub: product.slug };
+  }
 
-  if (rawText.startsWith("FILE:"))
-    return { intent: "allegato", sub: rawText.replace("FILE:", "").trim() };
+  /* ============================
+     Allegato
+  ============================ */
+  if (rawText.startsWith("FILE:")) {
+    const file = rawText.replace("FILE:", "").trim();
+    logBotDebug({ step: "intent_match", data: { intent: "allegato", sub: file } });
+    return { intent: "allegato", sub: file };
+  }
 
-  if (!rawText || rawText.trim().length < 2)
+  /* ============================
+     Input troppo breve
+  ============================ */
+  if (!rawText || rawText.trim().length < 2) {
+    logBotDebug({ step: "intent_match", data: { intent: "menu" } });
     return { intent: "menu", sub: null };
+  }
 
+  /* ============================
+     Input generico
+  ============================ */
   const generic = ["ok","si","sì","eh","boh","yo","ciao","hey","hello"];
-  if (generic.includes(rawText.toLowerCase().trim()))
+  if (generic.includes(rawText.toLowerCase().trim())) {
+    logBotDebug({ step: "intent_match", data: { intent: "menu" } });
     return { intent: "menu", sub: null };
+  }
+
+  /* ============================
+     Fallback GPT
+  ============================ */
+  logBotDebug({
+    step: "intent_match",
+    data: { intent: "gpt", sub: null }
+  });
 
   return { intent: "gpt", sub: null };
-} async function handleConversation(req, res, intent, sub, rawText) {
+    } /* =========================================================
+   HANDLE CONVERSATION — DEBUG ULTRA (PARTE 1)
+========================================================= */
+async function handleConversation(req, res, intent, sub, rawText) {
   const uid = req.uid;
   const state = req.userState || {};
   const PRODUCTS = getProducts() || [];
+
+  logBotDebug({
+    step: "conversation_start",
+    data: { uid, intent, sub, rawText }
+  });
 
   state.lastIntent = intent;
   Memory.push(uid, rawText || "");
   const pageContext = Context.get(uid);
 
-  trackBot("conversation_step", { uid, intent, sub, text: rawText });
+  logBotDebug({
+    step: "conversation_context_loaded",
+    data: { pageContext }
+  });
 
   const utm = extractUTM(req);
+
+  logBotDebug({
+    step: "conversation_utm",
+    data: { utm }
+  });
+
+  trackBot("conversation_step", { uid, intent, sub, text: rawText });
 
   trackBotEvent("message", {
     uid,
@@ -401,22 +819,60 @@ function fuzzyMatchProduct(text) {
     page: pageContext?.page || null
   });
 
+  /* =========================================================
+     INTENT: GPT FALLBACK
+  ========================================================== */
   if (intent === "gpt") {
+    logBotDebug({
+      step: "conversation_branch_gpt",
+      data: {}
+    });
+
     const risposta = await callGPT(rawText, Memory.get(uid), pageContext);
-    return reply(res, risposta, { intent, sub, uid, utm, page: pageContext?.page || null });
+
+    return reply(res, risposta, {
+      intent,
+      sub,
+      uid,
+      utm,
+      page: pageContext?.page || null
+    });
   }
 
+  /* =========================================================
+     INTENT: CONVERSAZIONE
+  ========================================================== */
   if (intent === "conversazione") {
+    logBotDebug({
+      step: "conversation_branch_conversazione",
+      data: {}
+    });
+
     const risposta = await callGPT(
       rawText,
       Memory.get(uid),
       pageContext,
       "\nRispondi in modo amichevole, breve, coerente con il brand MewingMarket, e collega la conversazione ai prodotti o al valore del digitale quando ha senso."
     );
-    return reply(res, risposta, { intent, sub, uid, utm, page: pageContext?.page || null });
+
+    return reply(res, risposta, {
+      intent,
+      sub,
+      uid,
+      utm,
+      page: pageContext?.page || null
+    });
   }
 
+  /* =========================================================
+     INTENT: MENU
+  ========================================================== */
   if (intent === "menu") {
+    logBotDebug({
+      step: "conversation_branch_menu",
+      data: {}
+    });
+
     setState(req, "menu");
 
     const base = `
@@ -441,10 +897,24 @@ Scrivi una parola chiave come:
       "\nRendi il messaggio più umano e accogliente, senza cambiare la struttura."
     );
 
-    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+    return reply(res, enriched || base, {
+      intent,
+      sub,
+      uid,
+      utm,
+      page: pageContext?.page || null
+    });
   }
 
+  /* =========================================================
+     INTENT: CATALOGO
+  ========================================================== */
   if (intent === "catalogo") {
+    logBotDebug({
+      step: "conversation_branch_catalogo",
+      data: { products_count: PRODUCTS.length }
+    });
+
     setState(req, "catalogo");
 
     if (!PRODUCTS.length) {
@@ -478,9 +948,22 @@ Scrivi una parola chiave come:
       utm,
       page: pageContext?.page || null
     });
-  }  if (intent === "newsletter") {
+  }
+
+  /* =========================================================
+     INTENT: NEWSLETTER
+  ========================================================== */
+  if (intent === "newsletter") {
+    logBotDebug({
+      step: "conversation_branch_newsletter",
+      data: { sub }
+    });
+
     setState(req, "newsletter");
 
+    /* -------------------------
+       DISISCRIZIONE
+    ------------------------- */
     if (sub === "unsubscribe") {
       const base = `
 Vuoi annullare l'iscrizione alla newsletter?
@@ -501,9 +984,18 @@ Hai bisogno di altro o vuoi tornare al menu?
         "\nRendi il messaggio più empatico ma chiaro."
       );
 
-      return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+      return reply(res, enriched || base, {
+        intent,
+        sub,
+        uid,
+        utm,
+        page: pageContext?.page || null
+      });
     }
 
+    /* -------------------------
+       ISCRIZIONE
+    ------------------------- */
     const base = `
 Vuoi iscriverti alla newsletter di MewingMarket?
 
@@ -522,13 +1014,25 @@ Hai bisogno di altro o vuoi tornare al menu?
       rawText || "Iscrizione newsletter",
       Memory.get(uid),
       pageContext,
-      "\nRendi il messaggio più motivante, senza esagerare."
+      "\nRendi il messaggio più accogliente e motivante."
     );
 
-    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
-  }
-
+    return reply(res, enriched || base, {
+      intent,
+      sub,
+      uid,
+      utm,
+      page: pageContext?.page || null
+    });
+                 }  /* =========================================================
+     INTENT: SOCIAL SPECIFICO
+  ========================================================== */
   if (intent === "social_specifico") {
+    logBotDebug({
+      step: "conversation_branch_social_specifico",
+      data: { sub }
+    });
+
     const socials = {
       instagram: "https://www.instagram.com/mewingmarket",
       tiktok: "https://www.tiktok.com/@mewingmarket",
@@ -555,10 +1059,24 @@ Vuoi vedere anche gli altri social o tornare al menu?
       "\nAggiungi una frase che spieghi cosa trova l’utente su questo social."
     );
 
-    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+    return reply(res, enriched || base, {
+      intent,
+      sub,
+      uid,
+      utm,
+      page: pageContext?.page || null
+    });
   }
 
+  /* =========================================================
+     INTENT: SOCIAL GENERICO
+  ========================================================== */
   if (intent === "social") {
+    logBotDebug({
+      step: "conversation_branch_social",
+      data: {}
+    });
+
     const base = `
 Ecco i nostri social ufficiali 📲
 
@@ -580,10 +1098,24 @@ Vuoi tornare al menu o vedere il catalogo?
       "\nAggiungi una frase che inviti a seguire almeno un social."
     );
 
-    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+    return reply(res, enriched || base, {
+      intent,
+      sub,
+      uid,
+      utm,
+      page: pageContext?.page || null
+    });
   }
 
+  /* =========================================================
+     INTENT: PRIVACY
+  ========================================================== */
   if (intent === "privacy") {
+    logBotDebug({
+      step: "conversation_branch_privacy",
+      data: {}
+    });
+
     const base = `
 La Privacy Policy di MewingMarket spiega come gestiamo i tuoi dati.
 
@@ -606,10 +1138,24 @@ Hai bisogno di altro o vuoi tornare al menu?
       "\nRendi il tono più rassicurante."
     );
 
-    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+    return reply(res, enriched || base, {
+      intent,
+      sub,
+      uid,
+      utm,
+      page: pageContext?.page || null
+    });
   }
 
+  /* =========================================================
+     INTENT: TERMINI E CONDIZIONI
+  ========================================================== */
   if (intent === "termini") {
+    logBotDebug({
+      step: "conversation_branch_termini",
+      data: {}
+    });
+
     const base = `
 I Termini e Condizioni spiegano come funziona MewingMarket.
 
@@ -632,10 +1178,24 @@ Hai bisogno di altro o vuoi tornare al menu?
       "\nRendi il tono più umano."
     );
 
-    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+    return reply(res, enriched || base, {
+      intent,
+      sub,
+      uid,
+      utm,
+      page: pageContext?.page || null
+    });
   }
 
+  /* =========================================================
+     INTENT: COOKIE
+  ========================================================== */
   if (intent === "cookie") {
+    logBotDebug({
+      step: "conversation_branch_cookie",
+      data: {}
+    });
+
     const base = `
 Usiamo cookie tecnici e analytics per migliorare il sito.
 
@@ -652,10 +1212,24 @@ Hai bisogno di altro o vuoi tornare al menu?
       "\nNormalizza l'uso dei cookie senza banalizzare."
     );
 
-    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+    return reply(res, enriched || base, {
+      intent,
+      sub,
+      uid,
+      utm,
+      page: pageContext?.page || null
+    });
   }
 
+  /* =========================================================
+     INTENT: RESI E RIMBORSI
+  ========================================================== */
   if (intent === "resi") {
+    logBotDebug({
+      step: "conversation_branch_resi",
+      data: {}
+    });
+
     const base = `
 I prodotti digitali non prevedono reso automatico, ma valutiamo ogni richiesta caso per caso.
 
@@ -676,10 +1250,24 @@ Hai bisogno di altro o vuoi tornare al menu?
       "\nRendi il tono fermo ma comprensivo."
     );
 
-    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+    return reply(res, enriched || base, {
+      intent,
+      sub,
+      uid,
+      utm,
+      page: pageContext?.page || null
+    });
   }
 
+  /* =========================================================
+     INTENT: FAQ
+  ========================================================== */
   if (intent === "faq") {
+    logBotDebug({
+      step: "conversation_branch_faq",
+      data: {}
+    });
+
     const base = `
 Puoi consultare le FAQ qui:  
 <a href="FAQ.html">FAQ.html</a>
@@ -697,10 +1285,24 @@ Vuoi tornare al menu o hai bisogno di altro?
       "\nAggiungi una frase che inviti a chiedere se non trova la risposta."
     );
 
-    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+    return reply(res, enriched || base, {
+      intent,
+      sub,
+      uid,
+      utm,
+      page: pageContext?.page || null
+    });
   }
 
+  /* =========================================================
+     INTENT: CONTATTI
+  ========================================================== */
   if (intent === "contatti") {
+    logBotDebug({
+      step: "conversation_branch_contatti",
+      data: {}
+    });
+
     const base = `
 Ecco i contatti ufficiali MewingMarket:
 
@@ -722,10 +1324,24 @@ Vuoi tornare al menu o vedere il catalogo?
       "\nAggiungi una frase che spieghi quando usare vendite e quando supporto."
     );
 
-    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+    return reply(res, enriched || base, {
+      intent,
+      sub,
+      uid,
+      utm,
+      page: pageContext?.page || null
+    });
   }
 
+  /* =========================================================
+     INTENT: DOVE SIAMO
+  ========================================================== */
   if (intent === "dovesiamo") {
+    logBotDebug({
+      step: "conversation_branch_dovesiamo",
+      data: {}
+    });
+
     const base = `
 La sede di MewingMarket è:
 
@@ -745,10 +1361,27 @@ Vuoi tornare al menu o hai bisogno di altro?
       "\nNormalizza il fatto che il progetto è digitale ma ha una base reale."
     );
 
-    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
-}  if (intent === "supporto") {
+    return reply(res, enriched || base, {
+      intent,
+      sub,
+      uid,
+      utm,
+      page: pageContext?.page || null
+    });
+  }  /* =========================================================
+     INTENT: SUPPORTO
+  ========================================================== */
+  if (intent === "supporto") {
+    logBotDebug({
+      step: "conversation_branch_supporto",
+      data: { sub }
+    });
+
     setState(req, "supporto");
 
+    /* -------------------------
+       SUPPORTO: DOWNLOAD
+    ------------------------- */
     if (sub === "download") {
       const base = `
 Se non riesci a scaricare il prodotto:
@@ -771,9 +1404,18 @@ Vuoi tornare al menu o hai bisogno di altro?
         "\nRendi il messaggio più guidato e rassicurante."
       );
 
-      return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+      return reply(res, enriched || base, {
+        intent,
+        sub,
+        uid,
+        utm,
+        page: pageContext?.page || null
+      });
     }
 
+    /* -------------------------
+       SUPPORTO: PAYHIP
+    ------------------------- */
     if (sub === "payhip") {
       const base = `
 Payhip gestisce pagamenti e download.
@@ -795,9 +1437,18 @@ Vuoi tornare al menu o hai bisogno di altro?
         "\nRendi il tono rassicurante."
       );
 
-      return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+      return reply(res, enriched || base, {
+        intent,
+        sub,
+        uid,
+        utm,
+        page: pageContext?.page || null
+      });
     }
 
+    /* -------------------------
+       SUPPORTO: RIMBORSO
+    ------------------------- */
     if (sub === "rimborso") {
       const base = `
 I prodotti digitali non prevedono reso automatico, ma valutiamo ogni caso.
@@ -819,9 +1470,18 @@ Vuoi tornare al menu o hai bisogno di altro?
         "\nRendi il tono fermo ma gentile."
       );
 
-      return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+      return reply(res, enriched || base, {
+        intent,
+        sub,
+        uid,
+        utm,
+        page: pageContext?.page || null
+      });
     }
 
+    /* -------------------------
+       SUPPORTO: CONTATTO
+    ------------------------- */
     if (sub === "contatto") {
       const base = `
 Puoi contattare il supporto:
@@ -844,9 +1504,18 @@ Vuoi tornare al menu o hai bisogno di altro?
         "\nAggiungi una frase che inviti a descrivere bene il problema."
       );
 
-      return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+      return reply(res, enriched || base, {
+        intent,
+        sub,
+        uid,
+        utm,
+        page: pageContext?.page || null
+      });
     }
 
+    /* -------------------------
+       SUPPORTO GENERICO
+    ------------------------- */
     const base = `
 Sono qui per aiutarti 💬  
 Scrivi una parola chiave come:  
@@ -860,8 +1529,24 @@ Scrivi una parola chiave come:
       "\nRendi il messaggio più naturale."
     );
 
-    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
-  } if (intent === "ecosistema") {
+    return reply(res, enriched || base, {
+      intent,
+      sub,
+      uid,
+      utm,
+      page: pageContext?.page || null
+    });
+  }
+
+  /* =========================================================
+     INTENT: ECOSISTEMA
+  ========================================================== */
+  if (intent === "ecosistema") {
+    logBotDebug({
+      step: "conversation_branch_ecosistema",
+      data: {}
+    });
+
     const base = `
 L’Ecosistema Digitale è il punto di partenza ideale se vuoi:
 
@@ -880,10 +1565,24 @@ Vuoi che ti dica se è adatto alla tua situazione?
       "\nRendi il messaggio più motivante e orientato all'azione."
     );
 
-    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+    return reply(res, enriched || base, {
+      intent,
+      sub,
+      uid,
+      utm,
+      page: pageContext?.page || null
+    });
   }
 
+  /* =========================================================
+     INTENT: MINDSET
+  ========================================================== */
   if (intent === "mindset") {
+    logBotDebug({
+      step: "conversation_branch_mindset",
+      data: {}
+    });
+
     const base = `
 Il mindset è la base di tutto.
 
@@ -902,10 +1601,24 @@ Vuoi una routine veloce o un metodo completo?
       "\nRendi il messaggio più empatico e pratico."
     );
 
-    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+    return reply(res, enriched || base, {
+      intent,
+      sub,
+      uid,
+      utm,
+      page: pageContext?.page || null
+    });
   }
 
+  /* =========================================================
+     INTENT: LEAD MAGNET
+  ========================================================== */
   if (intent === "lead_magnet") {
+    logBotDebug({
+      step: "conversation_branch_lead_magnet",
+      data: {}
+    });
+
     const base = `
 Ecco la risorsa gratuita per iniziare subito 👇  
 https://mewingmarket.com/free
@@ -920,10 +1633,24 @@ Vuoi che ti dica come usarla al meglio?
       "\nAggiungi una frase che inviti a usarla subito."
     );
 
-    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+    return reply(res, enriched || base, {
+      intent,
+      sub,
+      uid,
+      utm,
+      page: pageContext?.page || null
+    });
   }
 
+  /* =========================================================
+     INTENT: FAQ PREMIUM
+  ========================================================== */
   if (intent === "faq_premium") {
+    logBotDebug({
+      step: "conversation_branch_faq_premium",
+      data: {}
+    });
+
     const base = `
 Ecco le FAQ avanzate:  
 <a href="FAQ.html">FAQ Premium</a>
@@ -938,14 +1665,24 @@ Vuoi che ti risponda direttamente a una domanda specifica?
       "\nRendi il messaggio più orientato all’aiuto diretto."
     );
 
-    return reply(
-      res,
-      enriched || base,
-      { intent, sub, uid, utm, page: pageContext?.page || null }
-    );
-  }  const lastProductSlug = state.lastProductSlug;
+    return reply(res, enriched || base, {
+      intent,
+      sub,
+      uid,
+      utm,
+      page: pageContext?.page || null
+    });
+    }  /* =========================================================
+     INTENT: PRODOTTO
+  ========================================================== */
+  const lastProductSlug = state.lastProductSlug;
 
   if (intent === "prodotto") {
+    logBotDebug({
+      step: "conversation_branch_prodotto",
+      data: { sub, lastProductSlug }
+    });
+
     let product = null;
 
     if (sub) product = findProductBySlug(sub);
@@ -955,6 +1692,11 @@ Vuoi che ti risponda direttamente a una domanda specifica?
     }
 
     if (!product) {
+      logBotDebug({
+        step: "product_not_found",
+        data: { rawText }
+      });
+
       const base = `
 Non ho capito bene quale prodotto ti interessa.
 
@@ -968,8 +1710,19 @@ Scrivi il nome del prodotto o "catalogo".
         "\nRendi il messaggio più simile a una chat reale."
       );
 
-      return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+      return reply(res, enriched || base, {
+        intent,
+        sub,
+        uid,
+        utm,
+        page: pageContext?.page || null
+      });
     }
+
+    logBotDebug({
+      step: "product_found",
+      data: { slug: product.slug, titolo: product.titolo }
+    });
 
     state.lastProductSlug = product.slug;
     setState(req, "prodotto");
@@ -1008,18 +1761,37 @@ Vuoi:
       rawText || "Prodotto " + product.titolo,
       Memory.get(uid),
       pageContext,
-      "\nAggiungi una frase finale che aiuti a fare il passo successivo.",
+      "\nAggiungi una frase finale che aiuti a decidere.",
       { product }
     );
 
-    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+    return reply(res, enriched || base, {
+      intent,
+      sub,
+      uid,
+      utm,
+      page: pageContext?.page || null
+    });
   }
 
+  /* =========================================================
+     INTENT: ACQUISTO DIRETTO
+  ========================================================== */
   if (intent === "acquisto_diretto") {
+    logBotDebug({
+      step: "conversation_branch_acquisto_diretto",
+      data: { lastProductSlug }
+    });
+
     let product = fuzzyMatchProduct(rawText);
     if (!product && lastProductSlug) product = findProductBySlug(lastProductSlug);
 
     if (!product) {
+      logBotDebug({
+        step: "acquisto_no_product",
+        data: { rawText }
+      });
+
       const base = `
 Non ho capito quale prodotto vuoi acquistare.
 
@@ -1033,8 +1805,19 @@ Scrivi il nome del prodotto o "catalogo".
         "\nRendi il messaggio più conversazionale."
       );
 
-      return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+      return reply(res, enriched || base, {
+        intent,
+        sub,
+        uid,
+        utm,
+        page: pageContext?.page || null
+      });
     }
+
+    logBotDebug({
+      step: "acquisto_product_found",
+      data: { slug: product.slug, titolo: product.titolo }
+    });
 
     state.lastProductSlug = product.slug;
     setState(req, "acquisto_diretto");
@@ -1082,12 +1865,33 @@ Vuoi un consiglio su come iniziare?
       { product }
     );
 
-    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
-  } if (intent === "dettagli_prodotto") {
+    return reply(res, enriched || base, {
+      intent,
+      sub,
+      uid,
+      utm,
+      page: pageContext?.page || null
+    });
+  }
+
+  /* =========================================================
+     INTENT: DETTAGLI PRODOTTO
+  ========================================================== */
+  if (intent === "dettagli_prodotto") {
+    logBotDebug({
+      step: "conversation_branch_dettagli_prodotto",
+      data: { lastProductSlug }
+    });
+
     let product = fuzzyMatchProduct(rawText);
     if (!product && lastProductSlug) product = findProductBySlug(lastProductSlug);
 
     if (!product) {
+      logBotDebug({
+        step: "dettagli_no_product",
+        data: { rawText }
+      });
+
       const base = `
 Dimmi il nome del prodotto di cui vuoi i dettagli  
 (es. "Ecosistema Digitale", "Business Digitale AI", "Planner Produttività AI").
@@ -1100,8 +1904,19 @@ Dimmi il nome del prodotto di cui vuoi i dettagli
         "\nRendi il messaggio più amichevole."
       );
 
-      return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+      return reply(res, enriched || base, {
+        intent,
+        sub,
+        uid,
+        utm,
+        page: pageContext?.page || null
+      });
     }
+
+    logBotDebug({
+      step: "dettagli_product_found",
+      data: { slug: product.slug, titolo: product.titolo }
+    });
 
     state.lastProductSlug = product.slug;
     setState(req, "dettagli_prodotto");
@@ -1144,14 +1959,33 @@ Vuoi:
       { product }
     );
 
-    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+    return reply(res, enriched || base, {
+      intent,
+      sub,
+      uid,
+      utm,
+      page: pageContext?.page || null
+    });
   }
 
+  /* =========================================================
+     INTENT: VIDEO PRODOTTO
+  ========================================================== */
   if (intent === "video_prodotto") {
+    logBotDebug({
+      step: "conversation_branch_video_prodotto",
+      data: { lastProductSlug }
+    });
+
     let product = fuzzyMatchProduct(rawText);
     if (!product && lastProductSlug) product = findProductBySlug(lastProductSlug);
 
     if (!product) {
+      logBotDebug({
+        step: "video_no_product",
+        data: { rawText }
+      });
+
       const base = `
 Non ho capito a quale prodotto ti riferisci per il video.
 
@@ -1168,10 +2002,21 @@ Scrivi:
         "\nRendi il messaggio più naturale."
       );
 
-      return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+      return reply(res, enriched || base, {
+        intent,
+        sub,
+        uid,
+        utm,
+        page: pageContext?.page || null
+      });
     }
 
     if (!product.youtube_url) {
+      logBotDebug({
+        step: "video_no_url",
+        data: { slug: product.slug }
+      });
+
       const base = `
 Questo prodotto non ha un video ufficiale, ma posso spiegarti in modo chiaro cosa contiene e come usarlo.
 
@@ -1188,8 +2033,19 @@ Preferisci:
         { product }
       );
 
-      return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+      return reply(res, enriched || base, {
+        intent,
+        sub,
+        uid,
+        utm,
+        page: pageContext?.page || null
+      });
     }
+
+    logBotDebug({
+      step: "video_product_found",
+      data: { slug: product.slug, url: product.youtube_url }
+    });
 
     state.lastProductSlug = product.slug;
     setState(req, "video_prodotto");
@@ -1231,12 +2087,31 @@ Vuoi un riassunto dei punti chiave?
       { product }
     );
 
-    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
-  } if (intent === "prezzo_prodotto") {
-    let product = fuzzyMatchProduct(rawText);
-    if (!product && lastProductSlug) product = findProductBySlug(lastProductSlug);
+    return reply(res, enriched || base, {
+      intent,
+      sub,
+      uid,
+      utm,
+      page: pageContext?.page || null
+    });
+  }
 
-    if (!product) {
+  /* =========================================================
+     INTENT: PREZZO PRODOTTO (INIZIO)
+  ========================================================== */
+  if (intent === "prezzo_prodotto") {
+    logBotDebug({
+      step: "conversation_branch_prezzo_prodotto",
+      data: { lastProductSlug }
+    });
+
+    let product = fuzzyMatchProduct(rawText);
+    if (!product && lastProductSlug) product = findProductBySlug(lastProductSlug);           if (!product) {
+      logBotDebug({
+        step: "prezzo_no_product",
+        data: { rawText }
+      });
+
       const base = `
 Dimmi il nome del prodotto di cui vuoi sapere il prezzo  
 (es. "Ecosistema Digitale", "Business Digitale AI", "Planner Produttività AI").
@@ -1246,44 +2121,32 @@ Dimmi il nome del prodotto di cui vuoi sapere il prezzo
         rawText || "Prezzo prodotto senza nome chiaro",
         Memory.get(uid),
         pageContext,
-        "\nRendi il messaggio più colloquiale."
+        "\nRendi il messaggio più chiaro e diretto."
       );
 
-      return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
+      return reply(res, enriched || base, {
+        intent,
+        sub,
+        uid,
+        utm,
+        page: pageContext?.page || null
+      });
     }
+
+    logBotDebug({
+      step: "prezzo_product_found",
+      data: { slug: product.slug, prezzo: product.prezzo }
+    });
 
     state.lastProductSlug = product.slug;
     setState(req, "prezzo_prodotto");
 
-    trackBotEvent("product_recommendation", {
-      uid,
-      product: product.slug,
-      titolo: product.titolo,
-      prezzo: product.prezzo,
-      intent,
-      sub,
-      utm,
-      page: pageContext?.page || null
-    });
-
-    trackBotEvent("hot_lead", {
-      uid,
-      product: product.slug,
-      titolo: product.titolo,
-      prezzo: product.prezzo,
-      intent,
-      sub,
-      utm,
-      page: pageContext?.page || null
-    });
-
     const base = `
-📘 <b>${product.titolo}</b>  
-💰 <b>Prezzo:</b> ${product.prezzo}€
+💰 <b>Prezzo di ${product.titolo}</b>: ${product.prezzo}€
 
 Vuoi:
-• capire cosa ottieni esattamente  
-• confrontarlo con altri prodotti  
+• capire se è adatto a te  
+• confrontarlo con altri  
 • andare all’acquisto  
 `;
 
@@ -1291,141 +2154,143 @@ Vuoi:
       rawText || "Prezzo prodotto " + product.titolo,
       Memory.get(uid),
       pageContext,
-      "\nAggiungi una frase che aiuti a percepire il valore.",
+      "\nAggiungi una frase che aiuti a capire il valore del prodotto.",
       { product }
     );
 
-    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
-  }
-
-  if (intent === "trattativa" && sub === "sconto") {
-    const base = `
-Capisco la domanda sullo sconto.
-
-MewingMarket non lavora a sconti continui, perché ogni prodotto è pensato per farti risparmiare:
-• tempo  
-• errori  
-• complessità  
-
-Piuttosto che abbassare il prezzo, preferiamo aumentare il valore.
-
-Se vuoi, ti spiego in modo diretto:
-• cosa risolve il prodotto che stai valutando  
-• perché può valere l’investimento per te  
-`;
-
-    const enriched = await callGPT(
-      rawText || "Richiesta sconto",
-      Memory.get(uid),
-      pageContext,
-      "\nRendi il messaggio fermo ma rispettoso, come in una trattativa seria."
-    );
-
-    return reply(res, enriched || base, { intent, sub, uid, utm, page: pageContext?.page || null });
-  }
-
-  if (intent === "obiezione" && sub === "prezzo") {
-    const base = `
-Capisco il dubbio sul prezzo, è una domanda intelligente.
-
-Il punto non è pagare per un file, ma per:
-• una struttura già pronta  
-• un metodo che ti evita errori  
-• una guida che ti fa risparmiare tempo e fatica  
-
-Se mi dici in che situazione sei (es. "sto iniziando", "sono già avviato", "sono bloccato"), posso dirti in modo onesto se il prodotto ha senso per te oppure no.
-`;
-
-    trackBotEvent("objection", {
-      uid,
-      type: "prezzo",
-      text: rawText,
+    return reply(res, enriched || base, {
       intent,
       sub,
+      uid,
       utm,
-      page: pageContext?.page || null,
-      lastProduct: state.lastProductSlug || null
+      page: pageContext?.page || null
     });
+  }
+
+  /* =========================================================
+     INTENT: OBIETTIONE PREZZO
+  ========================================================== */
+  if (intent === "obiezione" && sub === "prezzo") {
+    logBotDebug({
+      step: "conversation_branch_obiezione_prezzo",
+      data: { lastProductSlug }
+    });
+
+    let product = fuzzyMatchProduct(rawText);
+    if (!product && lastProductSlug) product = findProductBySlug(lastProductSlug);
 
     const enriched = await callGPT(
       rawText || "Obiezione prezzo",
       Memory.get(uid),
       pageContext,
-      "\nRendi il messaggio un po' più empatico, senza togliere fermezza."
+      "\nRispondi con empatia, spiegando il valore del prodotto senza forzare l'acquisto."
     );
 
-    return reply(
-      res,
-      enriched,
-      { intent, sub, uid, utm, page: pageContext?.page || null }
-    );
+    return reply(res, enriched, {
+      intent,
+      sub,
+      uid,
+      utm,
+      page: pageContext?.page || null
+    });
   }
 
+  /* =========================================================
+     INTENT: TRATTATIVA / SCONTO
+  ========================================================== */
+  if (intent === "trattativa" && sub === "sconto") {
+    logBotDebug({
+      step: "conversation_branch_sconto",
+      data: { lastProductSlug }
+    });
+
+    const enriched = await callGPT(
+      rawText || "Richiesta sconto",
+      Memory.get(uid),
+      pageContext,
+      "\nRispondi in modo elegante, spiegando che i prezzi sono già ottimizzati ma puoi aiutare a scegliere il prodotto giusto."
+    );
+
+    return reply(res, enriched, {
+      intent,
+      sub,
+      uid,
+      utm,
+      page: pageContext?.page || null
+    });
+  }
+
+  /* =========================================================
+     INTENT: ALLEGATO
+  ========================================================== */
   if (intent === "allegato") {
-    const url = sub || "";
+    logBotDebug({
+      step: "conversation_branch_allegato",
+      data: { file: sub }
+    });
 
-    if (url.endsWith(".pdf")) {
-      return reply(
-        res,
-        "Hai caricato un PDF. Vuoi che lo riassuma o che estragga i punti chiave?",
-        { intent, sub, uid, utm, page: pageContext?.page || null }
-      );
-    }
-
-    if (url.match(/\.(png|jpg|jpeg|gif|webp)$/i)) {
-      return reply(
-        res,
-        "Hai caricato un'immagine. Vuoi che la descriva o che analizzi cosa contiene?",
-        { intent, sub, uid, utm, page: pageContext?.page || null }
-      );
-    }
-
-    if (url.endsWith(".txt")) {
-      return reply(
-        res,
-        "Hai caricato un file di testo. Vuoi che lo legga e ti dica cosa contiene?",
-        { intent, sub, uid, utm, page: pageContext?.page || null }
-      );
-    }
-
-    if (url.endsWith(".zip")) {
-      return reply(
-        res,
-        "Hai caricato un file ZIP. Vuoi che ti dica come estrarlo o cosa potrebbe contenere?",
-        { intent, sub, uid, utm, page: pageContext?.page || null }
-      );
-    }
-
-    return reply(
-      res,
-      "File ricevuto. Vuoi che ti dica cosa posso farci?",
-      { intent, sub, uid, utm, page: pageContext?.page || null }
+    const enriched = await callGPT(
+      rawText || "Allegato ricevuto",
+      Memory.get(uid),
+      pageContext,
+      "\nRispondi come se avessi ricevuto un file, chiedendo cosa vuole farci."
     );
+
+    return reply(res, enriched, {
+      intent,
+      sub,
+      uid,
+      utm,
+      page: pageContext?.page || null
+    });
   }
 
-  const risposta = await callGPT(rawText, Memory.get(uid), pageContext);
+  /* =========================================================
+     FALLBACK FINALE (non dovrebbe mai attivarsi)
+  ========================================================== */
+  logBotDebug({
+    step: "conversation_fallback_final",
+    data: { rawText }
+  });
 
-  if (!risposta || typeof risposta !== "string" || risposta.trim().length < 2) {
-    return reply(
-      res,
-      "Sono qui 👋\n" +
-      "Ecco come posso aiutarti subito:\n" +
-      "• catalogo — vedere tutti i prodotti\n" +
-      "• supporto — problemi download o pagamenti\n" +
-      "• contatti — email e WhatsApp\n" +
-      "• newsletter — iscrizione o disiscrizione\n" +
-      "• consigli — ti suggerisco il prodotto giusto\n\n" +
-      "Scrivi una parola chiave e ti indirizzo.",
-      { intent, sub, uid, utm, page: pageContext?.page || null }
-    );
-  }
-
-  return reply(
-    res,
-    risposta.trim(),
-    { intent, sub, uid, utm, page: pageContext?.page || null }
+  const fallback = await callGPT(
+    rawText || "Fallback finale",
+    Memory.get(uid),
+    pageContext,
+    "\nRispondi come assistente generale, mantenendo il tono MewingMarket."
   );
-      } module.exports = {
+
+  return reply(res, fallback, {
+    intent,
+    sub,
+    uid,
+    utm,
+    page: pageContext?.page || null
+  });
+  }  /* =========================================================
+   CHIUSURA HANDLE CONVERSATION
+========================================================= */
+// (La funzione si chiude nel blocco precedente con il return finale)
+
+
+/* =========================================================
+   EXPORT FUNZIONI — DEBUG
+========================================================= */
+logBotDebug({
+  step: "bot_exports_ready",
+  data: {
+    exported: [
+      "detectIntent",
+      "handleConversation",
+      "reply",
+      "generateUID",
+      "setState",
+      "isYes"
+    ]
+  }
+});
+
+module.exports = {
   detectIntent,
   handleConversation,
   reply,
@@ -1433,3 +2298,11 @@ Se mi dici in che situazione sei (es. "sto iniziando", "sono già avviato", "son
   setState,
   isYes
 };
+
+/* =========================================================
+   FILE COMPLETATO
+========================================================= */
+logBotDebug({
+  step: "bot_file_complete",
+  data: { status: "OK" }
+}); 
