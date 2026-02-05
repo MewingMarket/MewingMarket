@@ -9,9 +9,20 @@ const cookieParser = require("cookie-parser");
 const axios = require("axios");
 require("dotenv").config();
 const multer = require("multer");
-// ======================================================
-// 🔥 DEBUG FRONTEND STORAGE
-// ======================================================
+
+/* =========================================================
+   SETUP EXPRESS
+========================================================= */
+const app = express();
+app.disable("x-powered-by");
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cors({ origin: true, credentials: true }));
+app.use(cookieParser());
+
+/* =========================================================
+   🔥 FRONTEND DEBUG STORAGE
+========================================================= */
 let FRONTEND_LOG = [];
 
 app.post("/debug/log", (req, res) => {
@@ -32,14 +43,17 @@ app.get("/debug/frontend", (req, res) => {
   res.json(FRONTEND_LOG);
 });
 
-// ======================================================
-// 🔥 DEBUG BACKEND STORAGE (usa BOT_DEBUG_LOG globale)
-// ======================================================
-app.get("/debug/backend", (req, res) => {
-  res.json(global.BOT_DEBUG_LOG || []);
-});
 /* =========================================================
-   🔥 ARCHIVIO LOG UNIVERSALE
+   🔥 BACKEND DEBUG STORAGE (BOT_DEBUG_LOG globale)
+========================================================= */
+global.BOT_DEBUG_LOG = global.BOT_DEBUG_LOG || [];
+
+app.get("/debug/backend", (req, res) => {
+  res.json(global.BOT_DEBUG_LOG);
+});
+
+/* =========================================================
+   🔥 ARCHIVIO LOG UNIVERSALE (opzionale)
 ========================================================= */
 const DEBUG_LOG = [];
 function addDebugLog(type, data) {
@@ -53,22 +67,16 @@ function addDebugLog(type, data) {
 }
 
 /* =========================================================
-   🔥 BOT DEBUG LOG (SEMPRE ATTIVO)
+   🔥 BOT DEBUG WRAPPER
 ========================================================= */
-const BOT_DEBUG_LOG = [];
-
 function logBotDebug(entry) {
-  BOT_DEBUG_LOG.push({
+  global.BOT_DEBUG_LOG.push({
     time: new Date().toISOString(),
     ...entry
   });
 
-  if (BOT_DEBUG_LOG.length > 2000) BOT_DEBUG_LOG.shift();
-} /* =========================================================
-   SETUP EXPRESS
-========================================================= */
-const app = express();
-app.disable("x-powered-by");
+  if (global.BOT_DEBUG_LOG.length > 2000) global.BOT_DEBUG_LOG.shift();
+}
 
 /* =========================================================
    MULTER — UPLOAD FILE CHAT
@@ -103,12 +111,14 @@ app.post("/chat/upload", upload.single("file"), (req, res) => {
 /* =========================================================
    STATO UTENTI GLOBALE
 ========================================================= */
-const userStates = {};  /* =========================================================
+const userStates = {};
+
+/* =========================================================
    IMPORT MODULI INTERNI
 ========================================================= */
 const { generateNewsletterHTML } = require("./modules/newsletter");
 const { syncAirtable, loadProducts, getProducts } = require("./modules/airtable");
-const { detectIntent, handleConversation, reply, generateUID } = require("./modules/bot");
+const { detectIntent, handleConversation, generateUID } = require("./modules/bot");
 const { inviaNewsletter } = require("./modules/brevo");
 const { generateImagesSitemap } = require("./modules/sitemap-images");
 const { generateStoreSitemap } = require("./modules/sitemap-store");
@@ -117,7 +127,9 @@ const { generateFooterSitemap } = require("./modules/sitemap-footer");
 const { safeText } = require("./modules/utils");
 const Context = require("./modules/context");
 
-/* Tracking GA4 server-side */
+/* =========================================================
+   GA4 TRACKING
+========================================================= */
 const GA4_ID = process.env.GA4_ID;
 const GA4_API_SECRET = process.env.GA4_API_SECRET;
 
@@ -138,14 +150,13 @@ async function trackGA4(eventName, params = {}) {
 }
 
 /* =========================================================
-   CACHE HEADERS
+   CACHE HEADERS + DEBUG REQUEST
 ========================================================= */
 app.use((req, res, next) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
 
-  // 🔥 DEBUG BOT — LOG RICHIESTE GLOBALI
   logBotDebug({
     step: "request",
     data: {
@@ -156,15 +167,10 @@ app.use((req, res, next) => {
   });
 
   next();
-}); /* =========================================================
-   MIDDLEWARE BASE
-========================================================= */
-app.use(cors({ origin: true, credentials: true }));
-app.use(express.json());
-app.use(cookieParser());
+});
 
 /* =========================================================
-   🔥 DEBUG BACKEND — LOGGA TUTTO
+   DEBUG MIDDLEWARE — LOGGA TUTTO
 ========================================================= */
 app.use((req, res, next) => {
   const start = Date.now();
@@ -209,13 +215,15 @@ app.use((req, res, next) => {
   };
 
   next();
-});  /* =========================================================
+});
+
+/* =========================================================
    STATIC FILES
 ========================================================= */
 app.use(express.static("public"));
 
 /* =========================================================
-   SITEMAP GENERATION ENDPOINTS
+   SITEMAP ENDPOINTS
 ========================================================= */
 app.get("/sitemap-images.xml", async (req, res) => {
   try {
@@ -223,19 +231,10 @@ app.get("/sitemap-images.xml", async (req, res) => {
     res.header("Content-Type", "application/xml");
     res.send(xml);
 
-    logBotDebug({
-      step: "sitemap_images",
-      data: { status: "ok" }
-    });
+    logBotDebug({ step: "sitemap_images", data: { status: "ok" } });
 
   } catch (err) {
-    console.error("Errore sitemap immagini:", err);
-
-    logBotDebug({
-      step: "sitemap_images_error",
-      data: { error: err.message }
-    });
-
+    logBotDebug({ step: "sitemap_images_error", data: { error: err.message } });
     res.status(500).send("Errore generazione sitemap immagini");
   }
 });
@@ -246,19 +245,10 @@ app.get("/sitemap-store.xml", async (req, res) => {
     res.header("Content-Type", "application/xml");
     res.send(xml);
 
-    logBotDebug({
-      step: "sitemap_store",
-      data: { status: "ok" }
-    });
+    logBotDebug({ step: "sitemap_store", data: { status: "ok" } });
 
   } catch (err) {
-    console.error("Errore sitemap store:", err);
-
-    logBotDebug({
-      step: "sitemap_store_error",
-      data: { error: err.message }
-    });
-
+    logBotDebug({ step: "sitemap_store_error", data: { error: err.message } });
     res.status(500).send("Errore generazione sitemap store");
   }
 });
@@ -269,43 +259,24 @@ app.get("/sitemap-social.xml", async (req, res) => {
     res.header("Content-Type", "application/xml");
     res.send(xml);
 
-    logBotDebug({
-      step: "sitemap_social",
-      data: { status: "ok" }
-    });
+    logBotDebug({ step: "sitemap_social", data: { status: "ok" } });
 
   } catch (err) {
-    console.error("Errore sitemap social:", err);
-
-    logBotDebug({
-      step: "sitemap_social_error",
-      data: { error: err.message }
-    });
-
+    logBotDebug({ step: "sitemap_social_error", data: { error: err.message } });
     res.status(500).send("Errore generazione sitemap social");
   }
-}); /* =========================================================
-   SITEMAP FOOTER
-========================================================= */
+});
+
 app.get("/sitemap-footer.xml", async (req, res) => {
   try {
     const xml = await generateFooterSitemap();
     res.header("Content-Type", "application/xml");
     res.send(xml);
 
-    logBotDebug({
-      step: "sitemap_footer",
-      data: { status: "ok" }
-    });
+    logBotDebug({ step: "sitemap_footer", data: { status: "ok" } });
 
   } catch (err) {
-    console.error("Errore sitemap footer:", err);
-
-    logBotDebug({
-      step: "sitemap_footer_error",
-      data: { error: err.message }
-    });
-
+    logBotDebug({ step: "sitemap_footer_error", data: { error: err.message } });
     res.status(500).send("Errore generazione sitemap footer");
   }
 });
@@ -317,22 +288,13 @@ app.post("/newsletter/genera", async (req, res) => {
   try {
     const { titolo, contenuto } = req.body;
 
-    logBotDebug({
-      step: "newsletter_generate",
-      data: { titolo }
-    });
+    logBotDebug({ step: "newsletter_generate", data: { titolo } });
 
     const html = generateNewsletterHTML(titolo, contenuto);
     res.json({ html });
 
   } catch (err) {
-    console.error("Errore generazione newsletter:", err);
-
-    logBotDebug({
-      step: "newsletter_generate_error",
-      data: { error: err.message }
-    });
-
+    logBotDebug({ step: "newsletter_generate_error", data: { error: err.message } });
     res.status(500).json({ error: "Errore generazione newsletter" });
   }
 });
@@ -344,50 +306,31 @@ app.post("/newsletter/invia", async (req, res) => {
   try {
     const { oggetto, html } = req.body;
 
-    logBotDebug({
-      step: "newsletter_send",
-      data: { oggetto }
-    });
+    logBotDebug({ step: "newsletter_send", data: { oggetto } });
 
     const result = await inviaNewsletter(oggetto, html);
     res.json({ ok: true, result });
 
   } catch (err) {
-    console.error("Errore invio newsletter:", err);
-
-    logBotDebug({
-      step: "newsletter_send_error",
-      data: { error: err.message }
-    });
-
+    logBotDebug({ step: "newsletter_send_error", data: { error: err.message } });
     res.status(500).json({ error: "Errore invio newsletter" });
   }
-}); /* =========================================================
-   AIRTABLE — SYNC MANUALE
+});
+
+/* =========================================================
+   AIRTABLE SYNC
 ========================================================= */
 app.get("/admin/sync-airtable", async (req, res) => {
   try {
-    logBotDebug({
-      step: "airtable_sync_start",
-      data: {}
-    });
+    logBotDebug({ step: "airtable_sync_start", data: {} });
 
     await syncAirtable();
     res.send("Sync completato");
 
-    logBotDebug({
-      step: "airtable_sync_ok",
-      data: {}
-    });
+    logBotDebug({ step: "airtable_sync_ok", data: {} });
 
   } catch (err) {
-    console.error("Errore sync Airtable:", err);
-
-    logBotDebug({
-      step: "airtable_sync_error",
-      data: { error: err.message }
-    });
-
+    logBotDebug({ step: "airtable_sync_error", data: { error: err.message } });
     res.status(500).send("Errore sync Airtable");
   }
 });
@@ -396,61 +339,34 @@ app.get("/admin/sync-airtable", async (req, res) => {
    PAGINE STATICHE
 ========================================================= */
 app.get("/", (req, res) => {
-  logBotDebug({
-    step: "page_home",
-    data: {}
-  });
-
+  logBotDebug({ step: "page_home", data: {} });
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 app.get("/store", (req, res) => {
-  logBotDebug({
-    step: "page_store",
-    data: {}
-  });
-
+  logBotDebug({ step: "page_store", data: {} });
   res.sendFile(path.join(__dirname, "public", "store.html"));
 });
 
 app.get("/contatti", (req, res) => {
-  logBotDebug({
-    step: "page_contatti",
-    data: {}
-  });
-
+  logBotDebug({ step: "page_contatti", data: {} });
   res.sendFile(path.join(__dirname, "public", "contatti.html"));
-}); /* =========================================================
-   PAGINE STATICHE — ALTRE
-========================================================= */
-app.get("/privacy", (req, res) => {
-  logBotDebug({
-    step: "page_privacy",
-    data: {}
-  });
+});
 
+app.get("/privacy", (req, res) => {
+  logBotDebug({ step: "page_privacy", data: {} });
   res.sendFile(path.join(__dirname, "public", "privacy.html"));
 });
 
 app.get("/termini", (req, res) => {
-  logBotDebug({
-    step: "page_termini",
-    data: {}
-  });
-
+  logBotDebug({ step: "page_termini", data: {} });
   res.sendFile(path.join(__dirname, "public", "termini.html"));
 });
 
-/* =========================================================
-   PAGINA PRODOTTO
-========================================================= */
 app.get("/prodotto/:slug", (req, res) => {
   const slug = req.params.slug;
 
-  logBotDebug({
-    step: "page_prodotto",
-    data: { slug }
-  });
+  logBotDebug({ step: "page_prodotto", data: { slug } });
 
   res.sendFile(path.join(__dirname, "public", "prodotto.html"));
 });
@@ -460,21 +376,18 @@ app.get("/prodotto/:slug", (req, res) => {
 ========================================================= */
 app.get("/:page", (req, res, next) => {
   const page = req.params.page;
-
   const filePath = path.join(__dirname, "public", `${page}.html`);
 
   if (fs.existsSync(filePath)) {
-    logBotDebug({
-      step: "page_generic",
-      data: { page }
-    });
-
+    logBotDebug({ step: "page_generic", data: { page } });
     return res.sendFile(filePath);
   }
 
   next();
-});  /* =========================================================
-   ENDPOINT CHATBOT (UFFICIALE)
+});
+
+/* =========================================================
+   ENDPOINT CHATBOT
 ========================================================= */
 app.post("/chat", async (req, res) => {
   try {
@@ -504,27 +417,22 @@ app.post("/chat", async (req, res) => {
     });
 
     // Risposta bot
-    const risposta = await handleConversation({
-      rawText: message,
+    await handleConversation(
+      { body: { message }, cookies: req.cookies, userState: userStates[uid] || {}, uid, pageContext, query: req.query },
+      res,
       intent,
       sub,
-      uid,
-      utm: req.query.utm || null,
-      pageContext,
-      req,
-      res
-    });
+      message
+    );
 
     logBotDebug({
       step: "chat_output",
-      data: { reply: risposta }
+      data: { status: "sent" }
     });
 
-    return; // handleConversation gestisce già la risposta
+    return;
 
   } catch (err) {
-    console.error("Errore /chat:", err);
-
     logBotDebug({
       step: "chat_error",
       data: { error: err.message }
@@ -538,8 +446,10 @@ app.post("/chat", async (req, res) => {
    ENDPOINT DEBUG BOT — JSON
 ========================================================= */
 app.get("/tracking/bot-debug", (req, res) => {
-  res.json(BOT_DEBUG_LOG);
-}); /* =========================================================
+  res.json(global.BOT_DEBUG_LOG);
+});
+
+/* =========================================================
    DASHBOARD DEBUG BOT — HTML
 ========================================================= */
 app.get("/tracking/bot-debug-view", (req, res) => {
