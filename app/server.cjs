@@ -683,4 +683,140 @@ app.get("/tracking/bot-messages-view", (req, res) => {
     </body>
     </html>
   `);
-});  
+});   /* =========================================================
+   ENDPOINT CHAT — INTENT, RISPOSTA, LOGGING
+========================================================= */
+app.post("/chat", async (req, res) => {
+  const { message, pageContext } = req.body || {};
+  const uid = req.uid;
+
+  try {
+    logBotDebug({
+      step: "chat_start",
+      data: { uid, message, pageContext }
+    });
+
+    // 1) Log del messaggio utente
+    logBotMessage({
+      uid,
+      type: "user",
+      user_message: message,
+      pageContext
+    });
+
+    // 2) Detect intent
+    const { intent, sub } = detectIntent(message);
+
+    logBotDebug({
+      step: "intent_detected",
+      data: { uid, intent, sub }
+    });
+
+    // 3) Intercetta res.json per catturare la risposta del bot
+    const originalJson = res.json.bind(res);
+    res.json = (data) => {
+      if (data && data.reply) {
+        res.__lastReply = data.reply;
+      }
+      return originalJson(data);
+    };
+
+    // 4) Esegui la conversazione
+    const reply = await handleConversation({
+      uid,
+      message,
+      intent,
+      sub,
+      pageContext,
+      userState: req.userState
+    });
+
+    // 5) Risposta al frontend
+    res.json({ reply });
+
+    // 6) Log della risposta del bot
+    logBotMessage({
+      uid,
+      type: "bot",
+      bot_reply: res.__lastReply || reply,
+      intent,
+      sub,
+      pageContext
+    });
+
+    logBotDebug({
+      step: "chat_output",
+      data: { status: "sent" }
+    });
+
+  } catch (err) {
+    logBotDebug({
+      step: "chat_error",
+      data: { error: err.message }
+    });
+
+    // 7) Log errore
+    logBotMessage({
+      uid,
+      type: "error",
+      error: err.message,
+      problem: detectProblemType(err)
+    });
+
+    res.status(500).json({ reply: "Errore interno. Riprova tra poco." });
+  }
+});
+
+/* =========================================================
+   PAGINE STATICHE PRINCIPALI
+========================================================= */
+app.get("/", (req, res) => {
+  logBotDebug({ step: "page_home", data: {} });
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+/* =========================================================
+   404 GENERICA
+========================================================= */
+app.use((req, res) => {
+  res.status(404).sendFile(path.join(__dirname, "public", "404.html"));
+});
+
+/* =========================================================
+   AVVIO SERVER + SYNC AIRTABLE
+========================================================= */
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log("MewingMarket server avviato su porta", PORT);
+
+  logBotDebug({
+    step: "server_start",
+    data: { port: PORT }
+  });
+
+  (async () => {
+    try {
+      console.log("⏳ Sync Airtable all'avvio...");
+      await syncAirtable();
+      loadProducts();
+      console.log("✅ Sync completata all'avvio");
+    } catch (err) {
+      console.error("❌ Errore sync all'avvio:", err);
+      logBotDebug({ step: "airtable_sync_start_error", data: { error: err.message } });
+    }
+  })();
+});
+
+// Sync programmata ogni 30 minuti
+setInterval(async () => {
+  try {
+    console.log("⏳ Sync programmata Airtable...");
+    await syncAirtable();
+    loadProducts();
+    console.log("✅ Sync programmata completata");
+  } catch (err) {
+    console.error("❌ Errore sync programmata:", err);
+    logBotDebug({ step: "airtable_sync_scheduled_error", data: { error: err.message } });
+  }
+}, 30 * 60 * 1000);
