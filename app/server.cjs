@@ -7,31 +7,32 @@ const fs = require("fs");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const axios = require("axios");
-require("dotenv").config();
 const multer = require("multer");
+require("dotenv").config();
 
 /* =========================================================
-   SETUP EXPRESS
+   APP
 ========================================================= */
 const app = express();
 app.disable("x-powered-by");
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({ origin: true, credentials: true }));
 app.use(cookieParser());
 
 /* =========================================================
-   🔥 FRONTEND DEBUG STORAGE
+   FRONTEND DEBUG STORAGE
 ========================================================= */
 let FRONTEND_LOG = [];
 
 app.post("/debug/log", (req, res) => {
-  const { type, message } = req.body;
+  const { type, message } = req.body || {};
 
   FRONTEND_LOG.push({
     time: new Date().toISOString(),
-    type,
-    message
+    type: type || "generic",
+    message: message || ""
   });
 
   if (FRONTEND_LOG.length > 2000) FRONTEND_LOG.shift();
@@ -44,7 +45,7 @@ app.get("/debug/frontend", (req, res) => {
 });
 
 /* =========================================================
-   🔥 BACKEND DEBUG STORAGE (BOT_DEBUG_LOG globale)
+   BACKEND DEBUG STORAGE
 ========================================================= */
 global.BOT_DEBUG_LOG = global.BOT_DEBUG_LOG || [];
 
@@ -52,9 +53,6 @@ app.get("/debug/backend", (req, res) => {
   res.json(global.BOT_DEBUG_LOG);
 });
 
-/* =========================================================
-   🔥 ARCHIVIO LOG UNIVERSALE (opzionale)
-========================================================= */
 const DEBUG_LOG = [];
 function addDebugLog(type, data) {
   DEBUG_LOG.push({
@@ -62,19 +60,14 @@ function addDebugLog(type, data) {
     type,
     data
   });
-
   if (DEBUG_LOG.length > 5000) DEBUG_LOG.shift();
 }
 
-/* =========================================================
-   🔥 BOT DEBUG WRAPPER
-========================================================= */
 function logBotDebug(entry) {
   global.BOT_DEBUG_LOG.push({
     time: new Date().toISOString(),
     ...entry
   });
-
   if (global.BOT_DEBUG_LOG.length > 2000) global.BOT_DEBUG_LOG.shift();
 }
 
@@ -82,7 +75,7 @@ function logBotDebug(entry) {
    MULTER — UPLOAD FILE CHAT
 ========================================================= */
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "public/uploads"),
+  destination: (req, file, cb) => cb(null, path.join(__dirname, "public", "uploads")),
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname);
     cb(null, "upload_" + Date.now() + ext);
@@ -94,9 +87,6 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }
 });
 
-/* =========================================================
-   ENDPOINT UPLOAD FILE CHAT
-========================================================= */
 app.post("/chat/upload", upload.single("file"), (req, res) => {
   if (!req.file) return res.json({ error: "Nessun file ricevuto" });
 
@@ -109,12 +99,12 @@ app.post("/chat/upload", upload.single("file"), (req, res) => {
 });
 
 /* =========================================================
-   STATO UTENTI GLOBALE
+   STATO UTENTI GLOBALE (BOT)
 ========================================================= */
 const userStates = {};
 
 /* =========================================================
-   IMPORT MODULI INTERNI
+   MODULI INTERNI
 ========================================================= */
 const { generateNewsletterHTML } = require("./modules/newsletter");
 const { syncAirtable, loadProducts, getProducts } = require("./modules/airtable");
@@ -124,6 +114,7 @@ const { generateImagesSitemap } = require("./modules/sitemap-images");
 const { generateStoreSitemap } = require("./modules/sitemap-store");
 const { generateSocialSitemap } = require("./modules/sitemap-social");
 const { generateFooterSitemap } = require("./modules/sitemap-footer");
+const { generateSitemap } = require("./modules/sitemap"); // dal server vecchio
 const { safeText } = require("./modules/utils");
 const Context = require("./modules/context");
 
@@ -170,7 +161,7 @@ app.use((req, res, next) => {
 });
 
 /* =========================================================
-   DEBUG MIDDLEWARE — LOGGA TUTTO
+   DEBUG MIDDLEWARE — REQUEST/RESPONSE
 ========================================================= */
 app.use((req, res, next) => {
   const start = Date.now();
@@ -220,19 +211,86 @@ app.use((req, res, next) => {
 /* =========================================================
    STATIC FILES
 ========================================================= */
-app.use(express.static("public"));
+app.use(express.static(path.join(__dirname, "public")));
+
+/* =========================================================
+   UID + USER STATE MIDDLEWARE (BOT + TRACKING)
+========================================================= */
+app.use((req, res, next) => {
+  let uid = req.cookies.uid;
+  let mmUid = req.cookies.mm_uid;
+
+  // unifichiamo: un solo UID usato da bot + tracking
+  if (!uid && !mmUid) {
+    const newUID = generateUID();
+    uid = newUID;
+    mmUid = newUID;
+    res.cookie("uid", newUID, {
+      httpOnly: true,
+      sameSite: "Lax",
+      maxAge: 1000 * 60 * 60 * 24 * 365
+    });
+    res.cookie("mm_uid", newUID, {
+      httpOnly: false,
+      secure: true,
+      sameSite: "None",
+      maxAge: 1000 * 60 * 60 * 24 * 365
+    });
+  } else if (uid && !mmUid) {
+    mmUid = uid;
+    res.cookie("mm_uid", uid, {
+      httpOnly: false,
+      secure: true,
+      sameSite: "None",
+      maxAge: 1000 * 60 * 60 * 24 * 365
+    });
+  } else if (!uid && mmUid) {
+    uid = mmUid;
+    res.cookie("uid", mmUid, {
+      httpOnly: true,
+      sameSite: "Lax",
+      maxAge: 1000 * 60 * 60 * 24 * 365
+    });
+  }
+
+  req.uid = uid || mmUid;
+
+  if (!userStates[req.uid]) {
+    userStates[req.uid] = { state: "menu", lastIntent: null, data: {} };
+  }
+
+  req.userState = userStates[req.uid];
+
+  next();
+});
+
+/* =========================================================
+   PRODUCTS.JSON (per frontend)
+========================================================= */
+app.get("/products.json", (req, res) => {
+  res.sendFile(path.join(__dirname, "data", "products.json"));
+});
 
 /* =========================================================
    SITEMAP ENDPOINTS
 ========================================================= */
+app.get("/sitemap.xml", (req, res) => {
+  try {
+    const xml = generateSitemap();
+    res.type("application/xml").send(xml);
+    logBotDebug({ step: "sitemap_main", data: { status: "ok" } });
+  } catch (err) {
+    logBotDebug({ step: "sitemap_main_error", data: { error: err.message } });
+    res.status(500).send("Errore generazione sitemap");
+  }
+});
+
 app.get("/sitemap-images.xml", async (req, res) => {
   try {
     const xml = await generateImagesSitemap();
     res.header("Content-Type", "application/xml");
     res.send(xml);
-
     logBotDebug({ step: "sitemap_images", data: { status: "ok" } });
-
   } catch (err) {
     logBotDebug({ step: "sitemap_images_error", data: { error: err.message } });
     res.status(500).send("Errore generazione sitemap immagini");
@@ -244,9 +302,7 @@ app.get("/sitemap-store.xml", async (req, res) => {
     const xml = await generateStoreSitemap();
     res.header("Content-Type", "application/xml");
     res.send(xml);
-
     logBotDebug({ step: "sitemap_store", data: { status: "ok" } });
-
   } catch (err) {
     logBotDebug({ step: "sitemap_store_error", data: { error: err.message } });
     res.status(500).send("Errore generazione sitemap store");
@@ -258,9 +314,7 @@ app.get("/sitemap-social.xml", async (req, res) => {
     const xml = await generateSocialSitemap();
     res.header("Content-Type", "application/xml");
     res.send(xml);
-
     logBotDebug({ step: "sitemap_social", data: { status: "ok" } });
-
   } catch (err) {
     logBotDebug({ step: "sitemap_social_error", data: { error: err.message } });
     res.status(500).send("Errore generazione sitemap social");
@@ -272,13 +326,79 @@ app.get("/sitemap-footer.xml", async (req, res) => {
     const xml = await generateFooterSitemap();
     res.header("Content-Type", "application/xml");
     res.send(xml);
-
     logBotDebug({ step: "sitemap_footer", data: { status: "ok" } });
-
   } catch (err) {
     logBotDebug({ step: "sitemap_footer_error", data: { error: err.message } });
     res.status(500).send("Errore generazione sitemap footer");
   }
+});
+
+/* =========================================================
+   FEED (dal server vecchio, aggiornato)
+========================================================= */
+app.get("/meta/feed", (req, res) => {
+  const products = getProducts();
+  let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
+  <channel>
+    <title>MewingMarket Catalog</title>
+    <link>https://www.mewingmarket.it</link>
+    <description>Catalogo prodotti MewingMarket</description>
+`;
+
+  products.forEach((p, i) => {
+    xml += `
+    <item>
+      <g:id>${p.id || i + 1}</g:id>
+      <g:title><![CDATA[${p.titoloBreve || p.titolo}]]></g:title>
+      <g:description><![CDATA[${p.descrizioneBreve || p.descrizione || ""}]]></g:description>
+      <g:link>${p.linkPayhip}</g:link>
+      <g:image_link>${p.immagine}</g:image_link>
+      <g:availability>in stock</g:availability>
+      <g:price>${p.prezzo || "0.00"} EUR</g:price>
+      <g:brand>MewingMarket</g:brand>
+      <g:condition>new</g:condition>
+    </item>`;
+  });
+
+  xml += `
+  </channel>
+</rss>`;
+
+  res.type("application/xml").send(xml);
+});
+
+app.get("/google/feed", (req, res) => {
+  const products = getProducts();
+  let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
+  <channel>
+    <title>MewingMarket Google Feed</title>
+    <link>https://www.mewingmarket.it</link>
+    <description>Feed prodotti per Google Merchant</description>
+`;
+
+  products.forEach((p, i) => {
+    xml += `
+    <item>
+      <g:id>${p.id || i + 1}</g:id>
+      <g:title><![CDATA[${p.titoloBreve || p.titolo}]]></g:title>
+      <g:description><![CDATA[${p.descrizioneBreve || p.descrizione || ""}]]></g:description>
+      <g:link>${p.linkPayhip}</g:link>
+      <g:image_link>${p.immagine}</g:image_link>
+      <g:availability>in stock</g:availability>
+      <g:price>${p.prezzo || "0.00"} EUR</g:price>
+      <g:brand>MewingMarket</g:brand>
+      <g:condition>new</g:condition>
+      <g:google_product_category>2271</g:google_product_category>
+    </item>`;
+  });
+
+  xml += `
+  </channel>
+</rss>`;
+
+  res.type("application/xml").send(xml);
 });
 
 /* =========================================================
@@ -292,7 +412,6 @@ app.post("/newsletter/genera", async (req, res) => {
 
     const html = generateNewsletterHTML(titolo, contenuto);
     res.json({ html });
-
   } catch (err) {
     logBotDebug({ step: "newsletter_generate_error", data: { error: err.message } });
     res.status(500).json({ error: "Errore generazione newsletter" });
@@ -310,7 +429,6 @@ app.post("/newsletter/invia", async (req, res) => {
 
     const result = await inviaNewsletter(oggetto, html);
     res.json({ ok: true, result });
-
   } catch (err) {
     logBotDebug({ step: "newsletter_send_error", data: { error: err.message } });
     res.status(500).json({ error: "Errore invio newsletter" });
@@ -318,17 +436,18 @@ app.post("/newsletter/invia", async (req, res) => {
 });
 
 /* =========================================================
-   AIRTABLE SYNC
+   AIRTABLE SYNC (manuale + auto)
 ========================================================= */
 app.get("/admin/sync-airtable", async (req, res) => {
   try {
     logBotDebug({ step: "airtable_sync_start", data: {} });
 
     await syncAirtable();
-    res.send("Sync completato");
+    loadProducts();
 
     logBotDebug({ step: "airtable_sync_ok", data: {} });
 
+    res.send("Sync completato");
   } catch (err) {
     logBotDebug({ step: "airtable_sync_error", data: { error: err.message } });
     res.status(500).send("Errore sync Airtable");
@@ -336,122 +455,139 @@ app.get("/admin/sync-airtable", async (req, res) => {
 });
 
 /* =========================================================
-   PAGINE STATICHE
+   TRACKING — STORAGE IN MEMORIA
 ========================================================= */
-app.get("/", (req, res) => {
-  logBotDebug({ step: "page_home", data: {} });
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+const TRACKING_EVENTS = [];
+const UTM_LOG = [];
+
+function addEvent(event) {
+  TRACKING_EVENTS.push(event);
+  if (TRACKING_EVENTS.length > 5000) TRACKING_EVENTS.shift();
+}
+
+/* =========================================================
+   ENDPOINT TRACKING FRONTEND
+========================================================= */
+app.post("/tracking/utm", (req, res) => {
+  const { utm, url } = req.body || {};
+
+  UTM_LOG.push({
+    time: new Date().toISOString(),
+    uid: req.uid,
+    utm: utm || {},
+    url: url || null
+  });
+
+  if (UTM_LOG.length > 5000) UTM_LOG.shift();
+
+  logBotDebug({ step: "tracking_utm", data: { uid: req.uid, utm } });
+
+  res.json({ ok: true });
 });
 
-app.get("/store", (req, res) => {
-  logBotDebug({ step: "page_store", data: {} });
-  res.sendFile(path.join(__dirname, "public", "store.html"));
-});
+app.post("/tracking/event", async (req, res) => {
+  const payload = req.body || {};
+  payload.serverTime = new Date().toISOString();
+  payload.uid = payload.uid || req.uid;
 
-app.get("/contatti", (req, res) => {
-  logBotDebug({ step: "page_contatti", data: {} });
-  res.sendFile(path.join(__dirname, "public", "contatti.html"));
-});
+  addEvent(payload);
 
-app.get("/privacy", (req, res) => {
-  logBotDebug({ step: "page_privacy", data: {} });
-  res.sendFile(path.join(__dirname, "public", "privacy.html"));
-});
+  logBotDebug({ step: "tracking_event", data: { event: payload.event, type: payload.type, channel: payload.channel } });
 
-app.get("/termini", (req, res) => {
-  logBotDebug({ step: "page_termini", data: {} });
-  res.sendFile(path.join(__dirname, "public", "termini.html"));
-});
+  // opzionale: GA4
+  trackGA4(payload.event || "event", {
+    uid: payload.uid,
+    channel: payload.channel,
+    type: payload.type,
+    page: payload.page
+  }).catch(() => {});
 
-app.get("/prodotto/:slug", (req, res) => {
-  const slug = req.params.slug;
-
-  logBotDebug({ step: "page_prodotto", data: { slug } });
-
-  res.sendFile(path.join(__dirname, "public", "prodotto.html"));
+  res.json({ ok: true });
 });
 
 /* =========================================================
-   PAGINA GENERICA
+   ENDPOINT TRACKING DASHBOARD (tracking-max.html)
 ========================================================= */
-app.get("/:page", (req, res, next) => {
-  const page = req.params.page;
-  const filePath = path.join(__dirname, "public", `${page}.html`);
-
-  if (fs.existsSync(filePath)) {
-    logBotDebug({ step: "page_generic", data: { page } });
-    return res.sendFile(filePath);
-  }
-
-  next();
+app.get("/tracking/events", (req, res) => {
+  res.json(TRACKING_EVENTS);
 });
 
-/* =========================================================
-   ENDPOINT CHATBOT
-========================================================= */
-app.post("/chat", async (req, res) => {
-  try {
-    const { message, page, slug } = req.body;
+app.get("/tracking/overview", (req, res) => {
+  const total = TRACKING_EVENTS.length;
+  const byType = {};
+  const byEvent = {};
 
-    logBotDebug({
-      step: "chat_input",
-      data: { message, page, slug }
-    });
+  TRACKING_EVENTS.forEach(e => {
+    byType[e.type] = (byType[e.type] || 0) + 1;
+    byEvent[e.event] = (byEvent[e.event] || 0) + 1;
+  });
 
-    // UID da cookie o generato
-    let uid = req.cookies.uid;
-    if (!uid) {
-      uid = generateUID();
-      res.cookie("uid", uid, { httpOnly: true, sameSite: "Lax", maxAge: 1000 * 60 * 60 * 24 * 365 });
+  res.json({ total, byType, byEvent });
+});
+
+app.get("/tracking/products", (req, res) => {
+  const purchases = TRACKING_EVENTS.filter(e => e.event === "purchase");
+  const byProduct = {};
+
+  purchases.forEach(e => {
+    const id = e.data?.product_id || "unknown";
+    if (!byProduct[id]) {
+      byProduct[id] = {
+        product_id: id,
+        product_name: e.data?.product_name || "",
+        revenue: 0,
+        count: 0
+      };
     }
+    const price = parseFloat(e.data?.price || 0);
+    byProduct[id].revenue += isNaN(price) ? 0 : price;
+    byProduct[id].count += 1;
+  });
 
-    // Context pagina
-    const pageContext = Context.extract(page, slug);
+  res.json(Object.values(byProduct));
+});
 
-    // Detect intent
-    const { intent, sub } = detectIntent(message);
+app.get("/tracking/social", (req, res) => {
+  const socialEvents = TRACKING_EVENTS.filter(e => e.channel === "social");
+  const byEvent = {};
 
-    logBotDebug({
-      step: "chat_intent",
-      data: { intent, sub }
-    });
+  socialEvents.forEach(e => {
+    byEvent[e.event] = (byEvent[e.event] || 0) + 1;
+  });
 
-    // Risposta bot
-    await handleConversation(
-      { body: { message }, cookies: req.cookies, userState: userStates[uid] || {}, uid, pageContext, query: req.query },
-      res,
-      intent,
-      sub,
-      message
-    );
+  res.json({ total: socialEvents.length, byEvent });
+});
 
-    logBotDebug({
-      step: "chat_output",
-      data: { status: "sent" }
-    });
+app.get("/tracking/bot", (req, res) => {
+  const botEvents = TRACKING_EVENTS.filter(e => e.type === "bot");
+  const byEvent = {};
 
-    return;
+  botEvents.forEach(e => {
+    byEvent[e.event] = (byEvent[e.event] || 0) + 1;
+  });
 
-  } catch (err) {
-    logBotDebug({
-      step: "chat_error",
-      data: { error: err.message }
-    });
+  res.json({ total: botEvents.length, byEvent });
+});
 
-    res.status(500).json({ reply: "Errore interno. Riprova tra poco." });
-  }
+app.get("/tracking/sales", (req, res) => {
+  const purchases = TRACKING_EVENTS.filter(e => e.event === "purchase");
+  let totalRevenue = 0;
+
+  purchases.forEach(e => {
+    const price = parseFloat(e.data?.price || 0);
+    if (!isNaN(price)) totalRevenue += price;
+  });
+
+  res.json({ count: purchases.length, revenue: totalRevenue });
 });
 
 /* =========================================================
-   ENDPOINT DEBUG BOT — JSON
+   ENDPOINT DEBUG BOT — JSON + VIEW
 ========================================================= */
 app.get("/tracking/bot-debug", (req, res) => {
   res.json(global.BOT_DEBUG_LOG);
 });
 
-/* =========================================================
-   DASHBOARD DEBUG BOT — HTML
-========================================================= */
 app.get("/tracking/bot-debug-view", (req, res) => {
   res.send(`
     <html>
@@ -487,15 +623,116 @@ app.get("/tracking/bot-debug-view", (req, res) => {
 });
 
 /* =========================================================
-   AVVIO SERVER
+   ENDPOINT CHATBOT
+========================================================= */
+app.post("/chat", async (req, res) => {
+  try {
+    const { message, page, slug } = req.body || {};
+
+    logBotDebug({
+      step: "chat_input",
+      data: { message, page, slug }
+    });
+
+    if (!message || !message.trim()) {
+      return res.json({ reply: "Scrivi un messaggio così posso aiutarti." });
+    }
+
+    const uid = req.uid;
+
+    const pageContext = Context.extract(page, slug);
+
+    const { intent, sub } = detectIntent(message);
+
+    logBotDebug({
+      step: "chat_intent",
+      data: { intent, sub }
+    });
+
+    if (!userStates[uid]) {
+      userStates[uid] = { state: "menu", lastIntent: null, data: {} };
+    }
+
+    await handleConversation(
+      {
+        body: { message },
+        cookies: req.cookies,
+        userState: userStates[uid],
+        uid,
+        pageContext,
+        query: req.query
+      },
+      res,
+      intent,
+      sub,
+      message
+    );
+
+    logBotDebug({
+      step: "chat_output",
+      data: { status: "sent" }
+    });
+  } catch (err) {
+    logBotDebug({
+      step: "chat_error",
+      data: { error: err.message }
+    });
+
+    res.status(500).json({ reply: "Errore interno. Riprova tra poco." });
+  }
+});
+
+/* =========================================================
+   PAGINE STATICHE PRINCIPALI
+   (il resto lo serve express.static)
+========================================================= */
+app.get("/", (req, res) => {
+  logBotDebug({ step: "page_home", data: {} });
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+/* =========================================================
+   404 GENERICA
+========================================================= */
+app.use((req, res) => {
+  res.status(404).sendFile(path.join(__dirname, "public", "404.html"));
+});
+
+/* =========================================================
+   AVVIO SERVER + SYNC AIRTABLE
 ========================================================= */
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log("Server avviato su porta", PORT);
+  console.log("MewingMarket server avviato su porta", PORT);
 
   logBotDebug({
     step: "server_start",
     data: { port: PORT }
   });
+
+  (async () => {
+    try {
+      console.log("⏳ Sync Airtable all'avvio...");
+      await syncAirtable();
+      loadProducts();
+      console.log("✅ Sync completata all'avvio");
+    } catch (err) {
+      console.error("❌ Errore sync all'avvio:", err);
+      logBotDebug({ step: "airtable_sync_start_error", data: { error: err.message } });
+    }
+  })();
 });
+
+// Sync programmata ogni 30 minuti
+setInterval(async () => {
+  try {
+    console.log("⏳ Sync programmata Airtable...");
+    await syncAirtable();
+    loadProducts();
+    console.log("✅ Sync programmata completata");
+  } catch (err) {
+    console.error("❌ Errore sync programmata:", err);
+    logBotDebug({ step: "airtable_sync_scheduled_error", data: { error: err.message } });
+  }
+}, 30 * 60 * 1000);
