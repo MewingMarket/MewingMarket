@@ -307,3 +307,176 @@ app.get("/sitemap-footer.xml", async (req, res) => {
     res.status(500).send("Errore generazione sitemap footer");
   }
 });
+/* =========================================================
+   FEED
+========================================================= */
+app.get("/meta/feed", (req, res) => {
+  const products = getProducts();
+  let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
+  <channel>
+    <title>MewingMarket Catalog</title>
+    <link>https://www.mewingmarket.it</link>
+    <description>Catalogo prodotti MewingMarket</description>
+`;
+
+  products.forEach((p, i) => {
+    xml += `
+    <item>
+      <g:id>${p.id || i + 1}</g:id>
+      <g:title><![CDATA[${p.titoloBreve || p.titolo}]]></g:title>
+      <g:description><![CDATA[${p.descrizioneBreve || p.descrizione || ""}]]></g:description>
+      <g:link>${p.linkPayhip}</g:link>
+      <g:image_link>${p.immagine}</g:image_link>
+      <g:availability>in stock</g:availability>
+      <g:price>${p.prezzo || "0.00"} EUR</g:price>
+      <g:brand>MewingMarket</g:brand>
+      <g:condition>new</g:condition>
+    </item>`;
+  });
+
+  xml += `
+  </channel>
+</rss>`;
+
+  res.type("application/xml").send(xml);
+});
+
+app.get("/google/feed", (req, res) => {
+  const products = getProducts();
+  let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
+  <channel>
+    <title>MewingMarket Google Feed</title>
+    <link>https://www.mewingmarket.it</link>
+    <description>Feed prodotti per Google Merchant</description>
+`;
+
+  products.forEach((p, i) => {
+    xml += `
+    <item>
+      <g:id>${p.id || i + 1}</g:id>
+      <g:title><![CDATA[${p.titoloBreve || p.titolo}]]></g:title>
+      <g:description><![CDATA[${p.descrizioneBreve || p.descrizione || ""}]]></g:description>
+      <g:link>${p.linkPayhip}</g:link>
+      <g:image_link>${p.immagine}</g:image_link>
+      <g:availability>in stock</g:availability>
+      <g:price>${p.prezzo || "0.00"} EUR</g:price>
+      <g:brand>MewingMarket</g:brand>
+      <g:condition>new</g:condition>
+      <g:google_product_category>2271</g:google_product_category>
+    </item>`;
+  });
+
+  xml += `
+  </channel>
+</rss>`;
+
+  res.type("application/xml").send(xml);
+});
+
+/* =========================================================
+   NEWSLETTER — GENERAZIONE HTML
+========================================================= */
+app.post("/newsletter/genera", async (req, res) => {
+  try {
+    const { titolo, contenuto } = req.body;
+
+    logBotDebug({ step: "newsletter_generate", data: { titolo } });
+
+    const html = generateNewsletterHTML(titolo, contenuto);
+    res.json({ html });
+  } catch (err) {
+    logBotDebug({ step: "newsletter_generate_error", data: { error: err.message } });
+    res.status(500).json({ error: "Errore generazione newsletter" });
+  }
+});
+
+/* =========================================================
+   NEWSLETTER — INVIO
+========================================================= */
+app.post("/newsletter/invia", async (req, res) => {
+  try {
+    const { oggetto, html } = req.body;
+
+    logBotDebug({ step: "newsletter_send", data: { oggetto } });
+
+    const result = await inviaNewsletter(oggetto, html);
+    res.json({ ok: true, result });
+  } catch (err) {
+    logBotDebug({ step: "newsletter_send_error", data: { error: err.message } });
+    res.status(500).json({ error: "Errore invio newsletter" });
+  }
+});
+
+/* =========================================================
+   AIRTABLE SYNC
+========================================================= */
+app.get("/admin/sync-airtable", async (req, res) => {
+  try {
+    logBotDebug({ step: "airtable_sync_start", data: {} });
+
+    await syncAirtable();
+    loadProducts();
+
+    logBotDebug({ step: "airtable_sync_ok", data: {} });
+
+    res.send("Sync completato");
+  } catch (err) {
+    logBotDebug({ step: "airtable_sync_error", data: { error: err.message } });
+    res.status(500).send("Errore sync Airtable");
+  }
+});
+
+/* =========================================================
+   TRACKING — STORAGE IN MEMORIA
+========================================================= */
+const TRACKING_EVENTS = [];
+const UTM_LOG = [];
+
+function addEvent(event) {
+  TRACKING_EVENTS.push(event);
+  if (TRACKING_EVENTS.length > 5000) TRACKING_EVENTS.shift();
+}
+
+/* =========================================================
+   ENDPOINT TRACKING FRONTEND
+========================================================= */
+app.post("/tracking/utm", (req, res) => {
+  const { utm, url } = req.body || {};
+
+  UTM_LOG.push({
+    time: new Date().toISOString(),
+    uid: req.uid,
+    utm: utm || {},
+    url: url || null
+  });
+
+  if (UTM_LOG.length > 5000) UTM_LOG.shift();
+
+  logBotDebug({ step: "tracking_utm", data: { uid: req.uid, utm } });
+
+  res.json({ ok: true });
+});
+
+app.post("/tracking/event", async (req, res) => {
+  const payload = req.body || {};
+  payload.serverTime = new Date().toISOString();
+  payload.uid = payload.uid || req.uid;
+
+  addEvent(payload);
+
+  logBotDebug({
+    step: "tracking_event",
+    data: { event: payload.event, type: payload.type, channel: payload.channel }
+  });
+
+  trackGA4(payload.event || "event", {
+    uid: payload.uid,
+    channel: payload.channel,
+    type: payload.type,
+    page: payload.page
+  }).catch(() => {});
+
+  res.json({ ok: true });
+}); 
