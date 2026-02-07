@@ -688,8 +688,9 @@ app.get("/tracking/bot-messages-view", (req, res) => {
    ENDPOINT CHAT — INTENT, RISPOSTA, LOGGING
 ========================================================= */
 app.post("/chat", async (req, res) => {
-  const { message, pageContext } = req.body || {};
-  const uid = req.uid;
+  const body = (req.body && typeof req.body === "object") ? req.body : {};
+const message = body.message || "";
+const pageContext = body.pageContext || null;
 
   try {
     logBotDebug({
