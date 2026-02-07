@@ -10,14 +10,23 @@
   <script src="seo.js"></script>
   <script src="structured-data.js"></script>
 </head>
+
 <body>
 
 <!-- HEADER -->
 <div id="header-placeholder"></div>
 <script>
+  // Carichiamo l'header
   fetch("header.html")
     .then(r => r.text())
-    .then(h => document.getElementById("header-placeholder").innerHTML = h);
+    .then(h => {
+      document.getElementById("header-placeholder").innerHTML = h;
+
+      // 🔥 SOLO ORA carichiamo chat.js
+      const s = document.createElement("script");
+      s.src = "chat.js";
+      document.body.appendChild(s);
+    });
 </script>
 
 <main class="pagina-standard">
@@ -68,8 +77,6 @@
   <div id="mm-chat-messages"></div>
 
   <div id="mm-chat-input">
-
-    <!-- 🔥 Aggiunti: allegati -->
     <button id="mm-attach" class="mm-attach-btn">📎</button>
     <input id="mm-file-input" type="file" style="display:none">
 
@@ -88,7 +95,6 @@
 
 <!-- JS -->
 <script src="FAQ.js"></script>
-<script src="chat.js"></script>
 
 </body>
 </html>
