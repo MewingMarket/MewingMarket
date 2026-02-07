@@ -1,10 +1,9 @@
+
+
 // ======================================================
-// 🔥 DEBUG MODE ATTIVO
+// DEBUG MODE (puoi rimuovere l’alert se ti dà fastidio)
 // ======================================================
 
-alert("🔥 chat.js VERSIONE DEBUG ATTIVA");
-
-// Log universale
 console.log("🔥 chat.js caricato");
 
 // Intercetta errori globali
@@ -81,6 +80,9 @@ document.addEventListener("DOMContentLoaded", () => {
     smoothScroll();
   }
 
+  // ======================================================
+  // FUNZIONE PRINCIPALE DI INVIO MESSAGGI
+  // ======================================================
   async function sendMessage(forceText = null) {
     if (sending) return;
     sending = true;
@@ -96,7 +98,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     showTyping();
 
-    const endpoint = "https://www.mewingmarket.it/bot";
+    // 🔥 ENDPOINT CORRETTO
+    const endpoint = "/chat";
 
     console.log("📡 FETCH →", endpoint);
     console.log("📨 BODY →", {
@@ -137,7 +140,11 @@ document.addEventListener("DOMContentLoaded", () => {
     sending = false;
   }
 
+  // ======================================================
+  // EVENTI INVIO
+  // ======================================================
   sendBtn.addEventListener("click", () => sendMessage());
+
   input.addEventListener("keypress", e => {
     if (e.key === "Enter") {
       e.preventDefault();
