@@ -630,10 +630,8 @@ function detectProblemType(err) {
 
 app.get("/tracking/bot-messages", (req, res) => {
   res.json(BOT_MESSAGES);
-});
-
-/* =========================================================
-   PAGINA HTML PER BOT MESSAGES VIEW
+}); /* =========================================================
+   PAGINA HTML PER BOT MESSAGES VIEW — VERSIONE CORRETTA
 ========================================================= */
 app.get("/tracking/bot-messages-view", (req, res) => {
   res.send(`
@@ -660,21 +658,23 @@ app.get("/tracking/bot-messages-view", (req, res) => {
           const r = await fetch("/tracking/bot-messages");
           const j = await r.json();
 
-          document.getElementById("log").innerHTML = j.map(x => \`
-            <div class="entry">
-              <div>[${'${x.time}'}] UID: ${'${x.uid || ""}'} </div>
+          document.getElementById("log").innerHTML = j.map(x => {
+            return \`
+              <div class="entry">
+                <div>[${x.time}] UID: ${x.uid || ""}</div>
 
-              ${'${x.user_message ? `<div class="user">👤 Utente: ' + x.user_message + '</div>` : ""}'}
-              ${'${x.intent ? `<div>🎯 Intent: ' + x.intent + '</div>` : ""}'}
-              ${'${x.sub ? `<div>🔎 Sub-intent: ' + x.sub + '</div>` : ""}'}
-              ${'${x.pageContext ? `<div>📄 PageContext: ` + JSON.stringify(x.pageContext) + `</div>` : ""}'}
+                ${x.user_message ? `<div class="user">👤 Utente: ${x.user_message}</div>` : ""}
+                ${x.intent ? `<div>🎯 Intent: ${x.intent}</div>` : ""}
+                ${x.sub ? `<div>🔎 Sub-intent: ${x.sub}</div>` : ""}
+                ${x.pageContext ? `<div>📄 PageContext: ${JSON.stringify(x.pageContext)}</div>` : ""}
 
-              ${'${x.bot_reply ? `<div class="bot">🤖 Bot: ' + x.bot_reply + '</div>` : ""}'}
+                ${x.bot_reply ? `<div class="bot">🤖 Bot: ${x.bot_reply}</div>` : ""}
 
-              ${'${x.error ? `<div class="error">❌ Errore: ' + x.error + '</div>` : ""}'}
-              ${'${x.problem ? `<div class="error">⚠️ Tipo problema: ' + x.problem + '</div>` : ""}'}
-            </div>
-          \`).join("");
+                ${x.error ? `<div class="error">❌ Errore: ${x.error}</div>` : ""}
+                ${x.problem ? `<div class="error">⚠️ Tipo problema: ${x.problem}</div>` : ""}
+              </div>
+            \`;
+          }).join("");
         }
 
         setInterval(load, 1500);
@@ -683,7 +683,8 @@ app.get("/tracking/bot-messages-view", (req, res) => {
     </body>
     </html>
   `);
-});   /* =========================================================
+});
+   /* =========================================================
    ENDPOINT CHAT — INTENT, RISPOSTA, LOGGING
 ========================================================= */
 app.post("/chat", async (req, res) => {
