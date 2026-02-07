@@ -479,4 +479,208 @@ app.post("/tracking/event", async (req, res) => {
   }).catch(() => {});
 
   res.json({ ok: true });
-}); 
+});    /* =========================================================
+   ENDPOINT TRACKING DASHBOARD
+========================================================= */
+app.get("/tracking/events", (req, res) => {
+  res.json(TRACKING_EVENTS);
+});
+
+app.get("/tracking/overview", (req, res) => {
+  const total = TRACKING_EVENTS.length;
+  const byType = {};
+  const byEvent = {};
+
+  TRACKING_EVENTS.forEach(e => {
+    byType[e.type] = (byType[e.type] || 0) + 1;
+    byEvent[e.event] = (byEvent[e.event] || 0) + 1;
+  });
+
+  res.json({ total, byType, byEvent });
+});
+
+app.get("/tracking/products", (req, res) => {
+  const purchases = TRACKING_EVENTS.filter(e => e.event === "purchase");
+  const byProduct = {};
+
+  purchases.forEach(e => {
+    const id = e.data?.product_id || "unknown";
+    if (!byProduct[id]) {
+      byProduct[id] = {
+        product_id: id,
+        product_name: e.data?.product_name || "",
+        revenue: 0,
+        count: 0
+      };
+    }
+    const price = parseFloat(e.data?.price || 0);
+    byProduct[id].revenue += isNaN(price) ? 0 : price;
+    byProduct[id].count += 1;
+  });
+
+  res.json(Object.values(byProduct));
+});
+
+app.get("/tracking/social", (req, res) => {
+  const socialEvents = TRACKING_EVENTS.filter(e => e.channel === "social");
+  const byEvent = {};
+
+  socialEvents.forEach(e => {
+    byEvent[e.event] = (byEvent[e.event] || 0) + 1;
+  });
+
+  res.json({ total: socialEvents.length, byEvent });
+});
+
+app.get("/tracking/bot", (req, res) => {
+  const botEvents = TRACKING_EVENTS.filter(e => e.type === "bot");
+  const byEvent = {};
+
+  botEvents.forEach(e => {
+    byEvent[e.event] = (byEvent[e.event] || 0) + 1;
+  });
+
+  res.json({ total: botEvents.length, byEvent });
+});
+
+app.get("/tracking/sales", (req, res) => {
+  const purchases = TRACKING_EVENTS.filter(e => e.event === "purchase");
+  let totalRevenue = 0;
+
+  purchases.forEach(e => {
+    const price = parseFloat(e.data?.price || 0);
+    if (!isNaN(price)) totalRevenue += price;
+  });
+
+  res.json({ count: purchases.length, revenue: totalRevenue });
+});
+
+/* =========================================================
+   ENDPOINT DEBUG BOT — JSON + VIEW
+========================================================= */
+app.get("/tracking/bot-debug", (req, res) => {
+  res.json(global.BOT_DEBUG_LOG);
+});
+
+app.get("/tracking/bot-debug-view", (req, res) => {
+  res.send(`
+    <html>
+    <head>
+      <title>BOT DEBUG</title>
+      <style>
+        body { background:#111; color:#0f0; font-family: monospace; padding:20px; }
+        h1 { color:#0f0; }
+        pre { white-space: pre-wrap; font-size:14px; }
+      </style>
+    </head>
+    <body>
+      <h1>🤖 BOT DEBUG LOG</h1>
+      <pre id="log">Caricamento...</pre>
+
+      <script>
+        async function load() {
+          const r = await fetch("/tracking/bot-debug");
+          const j = await r.json();
+
+          document.getElementById("log").textContent =
+            j.map(x =>
+              "[" + x.time + "] " + x.step + " → " + JSON.stringify(x.data)
+            ).join("\\n\\n");
+        }
+
+        setInterval(load, 1500);
+        load();
+      </script>
+    </body>
+    </html>
+  `);
+});
+
+/* =========================================================
+   TRACKING MESSAGGI BOT — USER + BOT + ERRORI
+========================================================= */
+const BOT_MESSAGES = [];
+
+function logBotMessage(entry) {
+  BOT_MESSAGES.push({
+    time: new Date().toISOString(),
+    ...entry
+  });
+
+  if (BOT_MESSAGES.length > 2000) BOT_MESSAGES.shift();
+}
+
+function detectProblemType(err) {
+  const msg = (err.message || "").toLowerCase();
+
+  if (msg.includes("syntax") || msg.includes("unexpected"))
+    return "Errore di sintassi JS";
+
+  if (msg.includes("undefined") || msg.includes("null"))
+    return "Errore logico / variabile mancante";
+
+  if (msg.includes("network") || msg.includes("fetch"))
+    return "Problema di rete / browser";
+
+  if (msg.includes("timeout"))
+    return "Timeout / lentezza server";
+
+  return "Altro / generico";
+}
+
+app.get("/tracking/bot-messages", (req, res) => {
+  res.json(BOT_MESSAGES);
+});
+
+/* =========================================================
+   PAGINA HTML PER BOT MESSAGES VIEW
+========================================================= */
+app.get("/tracking/bot-messages-view", (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="it">
+    <head>
+      <meta charset="UTF-8">
+      <title>BOT MESSAGES DEBUG</title>
+      <style>
+        body { background:#111; color:#0f0; font-family: monospace; padding:20px; }
+        h1 { color:#0f0; }
+        .entry { margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid #333; }
+        .error { color:#f33; }
+        .bot { color:#0af; }
+        .user { color:#0f0; }
+      </style>
+    </head>
+    <body>
+      <h1>🤖 BOT MESSAGES DEBUG</h1>
+      <div id="log">Caricamento...</div>
+
+      <script>
+        async function load() {
+          const r = await fetch("/tracking/bot-messages");
+          const j = await r.json();
+
+          document.getElementById("log").innerHTML = j.map(x => \`
+            <div class="entry">
+              <div>[${'${x.time}'}] UID: ${'${x.uid || ""}'} </div>
+
+              ${'${x.user_message ? `<div class="user">👤 Utente: ' + x.user_message + '</div>` : ""}'}
+              ${'${x.intent ? `<div>🎯 Intent: ' + x.intent + '</div>` : ""}'}
+              ${'${x.sub ? `<div>🔎 Sub-intent: ' + x.sub + '</div>` : ""}'}
+              ${'${x.pageContext ? `<div>📄 PageContext: ` + JSON.stringify(x.pageContext) + `</div>` : ""}'}
+
+              ${'${x.bot_reply ? `<div class="bot">🤖 Bot: ' + x.bot_reply + '</div>` : ""}'}
+
+              ${'${x.error ? `<div class="error">❌ Errore: ' + x.error + '</div>` : ""}'}
+              ${'${x.problem ? `<div class="error">⚠️ Tipo problema: ' + x.problem + '</div>` : ""}'}
+            </div>
+          \`).join("");
+        }
+
+        setInterval(load, 1500);
+        load();
+      </script>
+    </body>
+    </html>
+  `);
+});  
