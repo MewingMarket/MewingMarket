@@ -102,4 +102,208 @@ const { generateStoreSitemap } = require("./modules/sitemap-store");
 const { generateSocialSitemap } = require("./modules/sitemap-social");
 const { generateFooterSitemap } = require("./modules/sitemap-footer");
 const { generateSitemap } = require("./modules/sitemap");
-const Context = require("./modules/context");
+const Context = require("./modules/context");   /* =========================================================
+   DEBUG MIDDLEWARE — REQUEST/RESPONSE
+========================================================= */
+function addDebugLog(type, data) {
+  if (!global.DEBUG_LOG) global.DEBUG_LOG = [];
+  global.DEBUG_LOG.push({
+    time: new Date().toISOString(),
+    type,
+    data
+  });
+  if (global.DEBUG_LOG.length > 5000) global.DEBUG_LOG.shift();
+}
+
+app.use((req, res, next) => {
+  const start = Date.now();
+
+  addDebugLog("request", {
+    method: req.method,
+    url: req.url,
+    ip: req.ip,
+    body: req.body,
+    query: req.query,
+    headers: req.headers
+  });
+
+  logBotDebug({
+    step: "middleware_request",
+    data: {
+      method: req.method,
+      url: req.url,
+      ip: req.ip
+    }
+  });
+
+  const send = res.send;
+  res.send = function (body) {
+    addDebugLog("response", {
+      url: req.url,
+      status: res.statusCode,
+      duration: Date.now() - start,
+      body: typeof body === "string" ? body.substring(0, 500) : body
+    });
+
+    logBotDebug({
+      step: "middleware_response",
+      data: {
+        url: req.url,
+        status: res.statusCode,
+        duration: Date.now() - start
+      }
+    });
+
+    return send.call(this, body);
+  };
+
+  next();
+});
+
+/* =========================================================
+   STATIC FILES
+========================================================= */
+app.use(express.static(path.join(__dirname, "public")));
+
+/* =========================================================
+   UID + USER STATE MIDDLEWARE (BOT + TRACKING)
+========================================================= */
+app.use((req, res, next) => {
+  let uid = req.cookies.uid;
+  let mmUid = req.cookies.mm_uid;
+
+  if (!uid && !mmUid) {
+    const newUID = generateUID();
+    uid = newUID;
+    mmUid = newUID;
+
+    res.cookie("uid", newUID, {
+      httpOnly: true,
+      sameSite: "Lax",
+      maxAge: 1000 * 60 * 60 * 24 * 365
+    });
+
+    res.cookie("mm_uid", newUID, {
+      httpOnly: false,
+      secure: true,
+      sameSite: "None",
+      maxAge: 1000 * 60 * 60 * 24 * 365
+    });
+  } else if (uid && !mmUid) {
+    mmUid = uid;
+    res.cookie("mm_uid", uid, {
+      httpOnly: false,
+      secure: true,
+      sameSite: "None",
+      maxAge: 1000 * 60 * 60 * 24 * 365
+    });
+  } else if (!uid && mmUid) {
+    uid = mmUid;
+    res.cookie("uid", mmUid, {
+      httpOnly: true,
+      sameSite: "Lax",
+      maxAge: 1000 * 60 * 60 * 24 * 365
+    });
+  }
+
+  req.uid = uid || mmUid;
+
+  if (!userStates[req.uid]) {
+    userStates[req.uid] = { state: "menu", lastIntent: null, data: {} };
+  }
+
+  req.userState = userStates[req.uid];
+
+  next();
+});
+
+/* =========================================================
+   GA4 TRACKING
+========================================================= */
+const GA4_ID = process.env.GA4_ID;
+const GA4_API_SECRET = process.env.GA4_API_SECRET;
+
+async function trackGA4(eventName, params = {}) {
+  try {
+    if (!GA4_ID || !GA4_API_SECRET) return;
+
+    await axios.post(
+      `https://www.google-analytics.com/mp/collect?measurement_id=${GA4_ID}&api_secret=${GA4_API_SECRET}`,
+      {
+        client_id: params.uid || "unknown",
+        events: [{ name: eventName, params }]
+      }
+    );
+  } catch (err) {
+    console.error("GA4 tracking error:", err?.response?.data || err);
+  }
+}
+
+/* =========================================================
+   PRODUCTS.JSON
+========================================================= */
+app.get("/products.json", (req, res) => {
+  res.sendFile(path.join(__dirname, "data", "products.json"));
+});
+
+/* =========================================================
+   SITEMAP ENDPOINTS
+========================================================= */
+app.get("/sitemap.xml", (req, res) => {
+  try {
+    const xml = generateSitemap();
+    res.type("application/xml").send(xml);
+    logBotDebug({ step: "sitemap_main", data: { status: "ok" } });
+  } catch (err) {
+    logBotDebug({ step: "sitemap_main_error", data: { error: err.message } });
+    res.status(500).send("Errore generazione sitemap");
+  }
+});
+
+app.get("/sitemap-images.xml", async (req, res) => {
+  try {
+    const xml = await generateImagesSitemap();
+    res.header("Content-Type", "application/xml");
+    res.send(xml);
+    logBotDebug({ step: "sitemap_images", data: { status: "ok" } });
+  } catch (err) {
+    logBotDebug({ step: "sitemap_images_error", data: { error: err.message } });
+    res.status(500).send("Errore generazione sitemap immagini");
+  }
+});
+
+app.get("/sitemap-store.xml", async (req, res) => {
+  try {
+    const xml = await generateStoreSitemap();
+    res.header("Content-Type", "application/xml");
+    res.send(xml);
+    logBotDebug({ step: "sitemap_store", data: { status: "ok" } });
+  } catch (err) {
+    logBotDebug({ step: "sitemap_store_error", data: { error: err.message } });
+    res.status(500).send("Errore generazione sitemap store");
+  }
+});
+
+app.get("/sitemap-social.xml", async (req, res) => {
+  try {
+    const xml = await generateSocialSitemap();
+    res.header("Content-Type", "application/xml");
+    res.send(xml);
+    logBotDebug({ step: "sitemap_social", data: { status: "ok" } });
+  } catch (err) {
+    logBotDebug({ step: "sitemap_social_error", data: { error: err.message } });
+    res.status(500).send("Errore generazione sitemap social");
+  }
+});
+
+app.get("/sitemap-footer.xml", async (req, res) => {
+  try {
+    const xml = await generateFooterSitemap();
+    res.header("Content-Type", "application/xml");
+    res.send(xml);
+    logBotDebug({ step: "sitemap_footer", data: { status: "ok" } });
+  } catch (err) {
+    logBotDebug({ step: "sitemap_footer_error", data: { error: err.message } });
+    res.status(500).send("Errore generazione sitemap footer");
+  }
+});
