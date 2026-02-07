@@ -1,3 +1,5 @@
+
+
 /* =========================================================
    IMPORT BASE
 ========================================================= */
@@ -56,9 +58,7 @@ function logBotDebug(entry) {
   });
 
   if (global.BOT_DEBUG_LOG.length > 2000) global.BOT_DEBUG_LOG.shift();
-}
-
-/* =========================================================
+} /* =========================================================
    MULTER — UPLOAD FILE CHAT
 ========================================================= */
 const storage = multer.diskStorage({
@@ -91,7 +91,7 @@ app.post("/chat/upload", upload.single("file"), (req, res) => {
 const userStates = {};
 
 /* =========================================================
-   MODULI INTERNi
+   MODULI INTERNI
 ========================================================= */
 const { generateNewsletterHTML } = require("./modules/newsletter");
 const { syncAirtable, loadProducts, getProducts } = require("./modules/airtable");
@@ -102,7 +102,7 @@ const { generateStoreSitemap } = require("./modules/sitemap-store");
 const { generateSocialSitemap } = require("./modules/sitemap-social");
 const { generateFooterSitemap } = require("./modules/sitemap-footer");
 const { generateSitemap } = require("./modules/sitemap");
-const Context = require("./modules/context");   /* =========================================================
+const Context = require("./modules/context");  /* =========================================================
    DEBUG MIDDLEWARE — REQUEST/RESPONSE
 ========================================================= */
 function addDebugLog(type, data) {
@@ -166,7 +166,7 @@ app.use((req, res, next) => {
 app.use(express.static(path.join(__dirname, "public")));
 
 /* =========================================================
-   UID + USER STATE MIDDLEWARE (BOT + TRACKING)
+   UID + USER STATE MIDDLEWARE
 ========================================================= */
 app.use((req, res, next) => {
   let uid = req.cookies.uid;
@@ -215,9 +215,7 @@ app.use((req, res, next) => {
   req.userState = userStates[req.uid];
 
   next();
-});
-
-/* =========================================================
+});  /* =========================================================
    GA4 TRACKING
 ========================================================= */
 const GA4_ID = process.env.GA4_ID;
@@ -306,8 +304,7 @@ app.get("/sitemap-footer.xml", async (req, res) => {
     logBotDebug({ step: "sitemap_footer_error", data: { error: err.message } });
     res.status(500).send("Errore generazione sitemap footer");
   }
-});
-/* =========================================================
+});  /* =========================================================
    FEED
 ========================================================= */
 app.get("/meta/feed", (req, res) => {
@@ -332,39 +329,6 @@ app.get("/meta/feed", (req, res) => {
       <g:price>${p.prezzo || "0.00"} EUR</g:price>
       <g:brand>MewingMarket</g:brand>
       <g:condition>new</g:condition>
-    </item>`;
-  });
-
-  xml += `
-  </channel>
-</rss>`;
-
-  res.type("application/xml").send(xml);
-});
-
-app.get("/google/feed", (req, res) => {
-  const products = getProducts();
-  let xml = `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
-  <channel>
-    <title>MewingMarket Google Feed</title>
-    <link>https://www.mewingmarket.it</link>
-    <description>Feed prodotti per Google Merchant</description>
-`;
-
-  products.forEach((p, i) => {
-    xml += `
-    <item>
-      <g:id>${p.id || i + 1}</g:id>
-      <g:title><![CDATA[${p.titoloBreve || p.titolo}]]></g:title>
-      <g:description><![CDATA[${p.descrizioneBreve || p.descrizione || ""}]]></g:description>
-      <g:link>${p.linkPayhip}</g:link>
-      <g:image_link>${p.immagine}</g:image_link>
-      <g:availability>in stock</g:availability>
-      <g:price>${p.prezzo || "0.00"} EUR</g:price>
-      <g:brand>MewingMarket</g:brand>
-      <g:condition>new</g:condition>
-      <g:google_product_category>2271</g:google_product_category>
     </item>`;
   });
 
@@ -407,9 +371,7 @@ app.post("/newsletter/invia", async (req, res) => {
     logBotDebug({ step: "newsletter_send_error", data: { error: err.message } });
     res.status(500).json({ error: "Errore invio newsletter" });
   }
-});
-
-/* =========================================================
+});  /* =========================================================
    AIRTABLE SYNC
 ========================================================= */
 app.get("/admin/sync-airtable", async (req, res) => {
@@ -479,7 +441,7 @@ app.post("/tracking/event", async (req, res) => {
   }).catch(() => {});
 
   res.json({ ok: true });
-});    /* =========================================================
+}); /* =========================================================
    ENDPOINT TRACKING DASHBOARD
 ========================================================= */
 app.get("/tracking/events", (req, res) => {
@@ -553,9 +515,7 @@ app.get("/tracking/sales", (req, res) => {
   });
 
   res.json({ count: purchases.length, revenue: totalRevenue });
-});
-
-/* =========================================================
+}); /* =========================================================
    ENDPOINT DEBUG BOT — JSON + VIEW
 ========================================================= */
 app.get("/tracking/bot-debug", (req, res) => {
@@ -570,26 +530,31 @@ app.get("/tracking/bot-debug-view", (req, res) => {
       <style>
         body { background:#111; color:#0f0; font-family: monospace; padding:20px; }
         h1 { color:#0f0; }
-        pre { white-space: pre-wrap; font-size:14px; }
+        .entry { margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid #333; }
+        .time { color:#0f0; }
+        .step { color:#6cf; }
+        pre { white-space: pre-wrap; word-wrap: break-word; }
       </style>
     </head>
     <body>
-      <h1>🤖 BOT DEBUG LOG</h1>
-      <pre id="log">Caricamento...</pre>
+      <h1>BOT DEBUG LOG</h1>
+      <div id="log"></div>
 
       <script>
-        async function load() {
-          const r = await fetch("/tracking/bot-debug");
-          const j = await r.json();
-
-          document.getElementById("log").textContent =
-            j.map(x =>
-              "[" + x.time + "] " + x.step + " → " + JSON.stringify(x.data)
-            ).join("\\n\\n");
+        async function loadLog() {
+          const res = await fetch('/tracking/bot-debug');
+          const data = await res.json();
+          const container = document.getElementById('log');
+          container.innerHTML = data.map(e => \`
+            <div class="entry">
+              <div class="time">\${e.time}</div>
+              <div class="step">STEP: \${e.step}</div>
+              <pre>\${JSON.stringify(e.data, null, 2)}</pre>
+            </div>
+          \`).join('');
         }
-
-        setInterval(load, 1500);
-        load();
+        loadLog();
+        setInterval(loadLog, 2000);
       </script>
     </body>
     </html>
@@ -597,7 +562,7 @@ app.get("/tracking/bot-debug-view", (req, res) => {
 });
 
 /* =========================================================
-   TRACKING MESSAGGI BOT — USER + BOT + ERRORI
+   BOT MESSAGES STORAGE
 ========================================================= */
 const BOT_MESSAGES = [];
 
@@ -610,81 +575,55 @@ function logBotMessage(entry) {
   if (BOT_MESSAGES.length > 2000) BOT_MESSAGES.shift();
 }
 
-function detectProblemType(err) {
-  const msg = (err.message || "").toLowerCase();
-
-  if (msg.includes("syntax") || msg.includes("unexpected"))
-    return "Errore di sintassi JS";
-
-  if (msg.includes("undefined") || msg.includes("null"))
-    return "Errore logico / variabile mancante";
-
-  if (msg.includes("network") || msg.includes("fetch"))
-    return "Problema di rete / browser";
-
-  if (msg.includes("timeout"))
-    return "Timeout / lentezza server";
-
-  return "Altro / generico";
-}
-
 app.get("/tracking/bot-messages", (req, res) => {
   res.json(BOT_MESSAGES);
-}); /* =========================================================
-   PAGINA HTML PER BOT MESSAGES VIEW — VERSIONE CORRETTA
+});
+
+/* =========================================================
+   BOT MESSAGES VIEW
 ========================================================= */
 app.get("/tracking/bot-messages-view", (req, res) => {
   res.send(`
-    <!DOCTYPE html>
-    <html lang="it">
+    <html>
     <head>
-      <meta charset="UTF-8">
-      <title>BOT MESSAGES DEBUG</title>
+      <title>BOT MESSAGES</title>
       <style>
-        body { background:#111; color:#0f0; font-family: monospace; padding:20px; }
+        body { background:#111; color:#fff; font-family: monospace; padding:20px; }
         h1 { color:#0f0; }
-        .entry { margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid #333; }
+        .msg { margin-bottom:15px; padding:10px; border:1px solid #333; border-radius:5px; }
+        .user { color:#6cf; }
+        .bot { color:#0f0; }
         .error { color:#f33; }
-        .bot { color:#0af; }
-        .user { color:#0f0; }
+        pre { white-space: pre-wrap; word-wrap: break-word; }
       </style>
     </head>
     <body>
-      <h1>🤖 BOT MESSAGES DEBUG</h1>
-      <div id="log">Caricamento...</div>
+      <h1>BOT MESSAGES</h1>
+      <div id="msgs"></div>
 
       <script>
-        async function load() {
-          const r = await fetch("/tracking/bot-messages");
-          const j = await r.json();
+        async function loadMsgs() {
+          const res = await fetch('/tracking/bot-messages');
+          const data = await res.json();
+          const container = document.getElementById('msgs');
 
-          document.getElementById("log").innerHTML = j.map(x => {
-            return \`
-              <div class="entry">
-                <div>[${x.time}] UID: ${x.uid || ""}</div>
-
-                ${x.user_message ? `<div class="user">👤 Utente: ${x.user_message}</div>` : ""}
-                ${x.intent ? `<div>🎯 Intent: ${x.intent}</div>` : ""}
-                ${x.sub ? `<div>🔎 Sub-intent: ${x.sub}</div>` : ""}
-                ${x.pageContext ? `<div>📄 PageContext: ${JSON.stringify(x.pageContext)}</div>` : ""}
-
-                ${x.bot_reply ? `<div class="bot">🤖 Bot: ${x.bot_reply}</div>` : ""}
-
-                ${x.error ? `<div class="error">❌ Errore: ${x.error}</div>` : ""}
-                ${x.problem ? `<div class="error">⚠️ Tipo problema: ${x.problem}</div>` : ""}
+          container.innerHTML = data.map(m => \`
+            <div class="msg">
+              <div><strong>\${m.time}</strong></div>
+              <div class="\${m.type}">
+                TYPE: \${m.type}
               </div>
-            \`;
-          }).join("");
+              <pre>\${JSON.stringify(m, null, 2)}</pre>
+            </div>
+          \`).join('');
         }
-
-        setInterval(load, 1500);
-        load();
+        loadMsgs();
+        setInterval(loadMsgs, 2000);
       </script>
     </body>
     </html>
   `);
-});
-/* =========================================================
+});   /* =========================================================
    ENDPOINT CHAT — INTENT, RISPOSTA, LOGGING
 ========================================================= */
 app.post("/chat", async (req, res) => {
@@ -693,7 +632,7 @@ app.post("/chat", async (req, res) => {
   const message = body.message || "";
   const pageContext = body.pageContext || null;
 
-  // UID (MANCAVA!)
+  // UID (fondamentale!)
   const uid = req.uid;
 
   try {
@@ -771,86 +710,29 @@ app.post("/chat", async (req, res) => {
 
     res.status(500).json({ reply: "Errore interno. Riprova tra poco." });
   }
-});
-      bot_reply: res.__lastReply || reply,
-      intent,
-      sub,
-      pageContext
-    });
-
-    logBotDebug({
-      step: "chat_output",
-      data: { status: "sent" }
-    });
-
-  } catch (err) {
-    logBotDebug({
-      step: "chat_error",
-      data: { error: err.message }
-    });
-
-    // 7) Log errore
-    logBotMessage({
-      uid,
-      type: "error",
-      error: err.message,
-      problem: detectProblemType(err)
-    });
-
-    res.status(500).json({ reply: "Errore interno. Riprova tra poco." });
-  }
+}); /* =========================================================
+   DEBUG LOG VIEW
+========================================================= */
+app.get("/tracking/debug", (req, res) => {
+  res.json(global.DEBUG_LOG || []);
 });
 
 /* =========================================================
-   PAGINE STATICHE PRINCIPALI
+   FALLBACK HOME
 ========================================================= */
 app.get("/", (req, res) => {
-  logBotDebug({ step: "page_home", data: {} });
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+  res.send("MewingMarket Server attivo");
 });
 
 /* =========================================================
-   404 GENERICA
-========================================================= */
-app.use((req, res) => {
-  res.status(404).sendFile(path.join(__dirname, "public", "404.html"));
-});
-
-/* =========================================================
-   AVVIO SERVER + SYNC AIRTABLE
+   AVVIO SERVER
 ========================================================= */
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log("MewingMarket server avviato su porta", PORT);
-
+  console.log("Server avviato sulla porta " + PORT);
   logBotDebug({
     step: "server_start",
     data: { port: PORT }
   });
-
-  (async () => {
-    try {
-      console.log("⏳ Sync Airtable all'avvio...");
-      await syncAirtable();
-      loadProducts();
-      console.log("✅ Sync completata all'avvio");
-    } catch (err) {
-      console.error("❌ Errore sync all'avvio:", err);
-      logBotDebug({ step: "airtable_sync_start_error", data: { error: err.message } });
-    }
-  })();
 });
-
-// Sync programmata ogni 30 minuti
-setInterval(async () => {
-  try {
-    console.log("⏳ Sync programmata Airtable...");
-    await syncAirtable();
-    loadProducts();
-    console.log("✅ Sync programmata completata");
-  } catch (err) {
-    console.error("❌ Errore sync programmata:", err);
-    logBotDebug({ step: "airtable_sync_scheduled_error", data: { error: err.message } });
-  }
-}, 30 * 60 * 1000);
