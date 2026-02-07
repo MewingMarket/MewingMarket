@@ -684,13 +684,17 @@ app.get("/tracking/bot-messages-view", (req, res) => {
     </html>
   `);
 });
-   /* =========================================================
+/* =========================================================
    ENDPOINT CHAT — INTENT, RISPOSTA, LOGGING
 ========================================================= */
 app.post("/chat", async (req, res) => {
+  // Body safe
   const body = (req.body && typeof req.body === "object") ? req.body : {};
-const message = body.message || "";
-const pageContext = body.pageContext || null;
+  const message = body.message || "";
+  const pageContext = body.pageContext || null;
+
+  // UID (MANCAVA!)
+  const uid = req.uid;
 
   try {
     logBotDebug({
@@ -740,6 +744,34 @@ const pageContext = body.pageContext || null;
     logBotMessage({
       uid,
       type: "bot",
+      bot_reply: res.__lastReply || reply,
+      intent,
+      sub,
+      pageContext
+    });
+
+    logBotDebug({
+      step: "chat_output",
+      data: { status: "sent" }
+    });
+
+  } catch (err) {
+    logBotDebug({
+      step: "chat_error",
+      data: { error: err.message }
+    });
+
+    // 7) Log errore
+    logBotMessage({
+      uid,
+      type: "error",
+      error: err.message,
+      problem: detectProblemType(err)
+    });
+
+    res.status(500).json({ reply: "Errore interno. Riprova tra poco." });
+  }
+});
       bot_reply: res.__lastReply || reply,
       intent,
       sub,
