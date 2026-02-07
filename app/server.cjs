@@ -114,11 +114,9 @@ const { generateImagesSitemap } = require("./modules/sitemap-images");
 const { generateStoreSitemap } = require("./modules/sitemap-store");
 const { generateSocialSitemap } = require("./modules/sitemap-social");
 const { generateFooterSitemap } = require("./modules/sitemap-footer");
-const { generateSitemap } = require("./modules/sitemap"); // dal server vecchio
+const { generateSitemap } = require("./modules/sitemap");
 const { safeText } = require("./modules/utils");
-const Context = require("./modules/context");
-
-/* =========================================================
+const Context = require("./modules/context"); /* =========================================================
    GA4 TRACKING
 ========================================================= */
 const GA4_ID = process.env.GA4_ID;
@@ -220,7 +218,6 @@ app.use((req, res, next) => {
   let uid = req.cookies.uid;
   let mmUid = req.cookies.mm_uid;
 
-  // unifichiamo: un solo UID usato da bot + tracking
   if (!uid && !mmUid) {
     const newUID = generateUID();
     uid = newUID;
@@ -265,7 +262,7 @@ app.use((req, res, next) => {
 });
 
 /* =========================================================
-   PRODUCTS.JSON (per frontend)
+   PRODUCTS.JSON
 ========================================================= */
 app.get("/products.json", (req, res) => {
   res.sendFile(path.join(__dirname, "data", "products.json"));
@@ -334,7 +331,7 @@ app.get("/sitemap-footer.xml", async (req, res) => {
 });
 
 /* =========================================================
-   FEED (dal server vecchio, aggiornato)
+   FEED
 ========================================================= */
 app.get("/meta/feed", (req, res) => {
   const products = getProducts();
@@ -399,9 +396,7 @@ app.get("/google/feed", (req, res) => {
 </rss>`;
 
   res.type("application/xml").send(xml);
-});
-
-/* =========================================================
+}); /* =========================================================
    NEWSLETTER — GENERAZIONE HTML
 ========================================================= */
 app.post("/newsletter/genera", async (req, res) => {
@@ -436,7 +431,7 @@ app.post("/newsletter/invia", async (req, res) => {
 });
 
 /* =========================================================
-   AIRTABLE SYNC (manuale + auto)
+   AIRTABLE SYNC
 ========================================================= */
 app.get("/admin/sync-airtable", async (req, res) => {
   try {
@@ -492,9 +487,11 @@ app.post("/tracking/event", async (req, res) => {
 
   addEvent(payload);
 
-  logBotDebug({ step: "tracking_event", data: { event: payload.event, type: payload.type, channel: payload.channel } });
+  logBotDebug({
+    step: "tracking_event",
+    data: { event: payload.event, type: payload.type, channel: payload.channel }
+  });
 
-  // opzionale: GA4
   trackGA4(payload.event || "event", {
     uid: payload.uid,
     channel: payload.channel,
@@ -506,7 +503,7 @@ app.post("/tracking/event", async (req, res) => {
 });
 
 /* =========================================================
-   ENDPOINT TRACKING DASHBOARD (tracking-max.html)
+   ENDPOINT TRACKING DASHBOARD
 ========================================================= */
 app.get("/tracking/events", (req, res) => {
   res.json(TRACKING_EVENTS);
@@ -579,9 +576,7 @@ app.get("/tracking/sales", (req, res) => {
   });
 
   res.json({ count: purchases.length, revenue: totalRevenue });
-});
-
-/* =========================================================
+}); /* =========================================================
    ENDPOINT DEBUG BOT — JSON + VIEW
 ========================================================= */
 app.get("/tracking/bot-debug", (req, res) => {
@@ -623,6 +618,93 @@ app.get("/tracking/bot-debug-view", (req, res) => {
 });
 
 /* =========================================================
+   TRACKING MESSAGGI BOT — USER + BOT + ERRORI
+========================================================= */
+const BOT_MESSAGES = [];
+
+function logBotMessage(entry) {
+  BOT_MESSAGES.push({
+    time: new Date().toISOString(),
+    ...entry
+  });
+
+  if (BOT_MESSAGES.length > 2000) BOT_MESSAGES.shift();
+}
+
+function detectProblemType(err) {
+  const msg = (err.message || "").toLowerCase();
+
+  if (msg.includes("syntax") || msg.includes("unexpected"))
+    return "Errore di sintassi JS";
+
+  if (msg.includes("undefined") || msg.includes("null"))
+    return "Errore logico / variabile mancante";
+
+  if (msg.includes("network") || msg.includes("fetch"))
+    return "Problema di rete / browser";
+
+  if (msg.includes("timeout"))
+    return "Timeout / lentezza server";
+
+  return "Altro / generico";
+}
+
+app.get("/tracking/bot-messages", (req, res) => {
+  res.json(BOT_MESSAGES);
+});
+
+/* =========================================================
+   PAGINA HTML PER BOT MESSAGES VIEW
+========================================================= */
+app.get("/tracking/bot-messages-view", (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="it">
+    <head>
+      <meta charset="UTF-8">
+      <title>BOT MESSAGES DEBUG</title>
+      <style>
+        body { background:#111; color:#0f0; font-family: monospace; padding:20px; }
+        h1 { color:#0f0; }
+        .entry { margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid #333; }
+        .error { color:#f33; }
+        .bot { color:#0af; }
+        .user { color:#0f0; }
+      </style>
+    </head>
+    <body>
+      <h1>🤖 BOT MESSAGES DEBUG</h1>
+      <div id="log">Caricamento...</div>
+
+      <script>
+        async function load() {
+          const r = await fetch("/tracking/bot-messages");
+          const j = await r.json();
+
+          document.getElementById("log").innerHTML = j.map(x => \`
+            <div class="entry">
+              <div>[${'${x.time}'}] UID: ${'${x.uid || ""}'} </div>
+
+              ${'${x.user_message ? `<div class="user">👤 Utente: ' + x.user_message + '</div>` : ""}'}
+              ${'${x.intent ? `<div>🎯 Intent: ' + x.intent + '</div>` : ""}'}
+              ${'${x.sub ? `<div>🔎 Sub-intent: ' + x.sub + '</div>` : ""}'}
+              ${'${x.pageContext ? `<div>📄 PageContext: ` + JSON.stringify(x.pageContext) + `</div>` : ""}'}
+
+              ${'${x.bot_reply ? `<div class="bot">🤖 Bot: ' + x.bot_reply + '</div>` : ""}'}
+
+              ${'${x.error ? `<div class="error">❌ Errore: ' + x.error + '</div>` : ""}'}
+              ${'${x.problem ? `<div class="error">⚠️ Tipo problema: ' + x.problem + '</div>` : ""}'}
+            </div>
+          \`).join("");
+        }
+
+        setInterval(load, 1500);
+        load();
+      </script>
+    </body>
+    </html>
+  `);
+}); /* =========================================================
    ENDPOINT CHATBOT
 ========================================================= */
 app.post("/chat", async (req, res) => {
@@ -639,7 +721,6 @@ app.post("/chat", async (req, res) => {
     }
 
     const uid = req.uid;
-
     const pageContext = Context.extract(page, slug);
 
     const { intent, sub } = detectIntent(message);
@@ -652,6 +733,25 @@ app.post("/chat", async (req, res) => {
     if (!userStates[uid]) {
       userStates[uid] = { state: "menu", lastIntent: null, data: {} };
     }
+
+    // log messaggio utente
+    logBotMessage({
+      uid,
+      type: "user",
+      user_message: message,
+      intent,
+      sub,
+      pageContext
+    });
+
+    // intercetta la risposta del bot
+    const originalJson = res.json.bind(res);
+    res.json = (data) => {
+      if (data && data.reply) {
+        res.__lastReply = data.reply;
+      }
+      return originalJson(data);
+    };
 
     await handleConversation(
       {
@@ -668,6 +768,16 @@ app.post("/chat", async (req, res) => {
       message
     );
 
+    // log risposta bot
+    logBotMessage({
+      uid,
+      type: "bot",
+      bot_reply: res.__lastReply || null,
+      intent,
+      sub,
+      pageContext
+    });
+
     logBotDebug({
       step: "chat_output",
       data: { status: "sent" }
@@ -678,13 +788,19 @@ app.post("/chat", async (req, res) => {
       data: { error: err.message }
     });
 
+    logBotMessage({
+      uid: req.uid,
+      type: "error",
+      error: err.message,
+      problem: detectProblemType(err)
+    });
+
     res.status(500).json({ reply: "Errore interno. Riprova tra poco." });
   }
 });
 
 /* =========================================================
    PAGINE STATICHE PRINCIPALI
-   (il resto lo serve express.static)
 ========================================================= */
 app.get("/", (req, res) => {
   logBotDebug({ step: "page_home", data: {} });
