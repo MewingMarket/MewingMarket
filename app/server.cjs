@@ -20,13 +20,10 @@ app.disable("x-powered-by");
    MULTER — UPLOAD FILE CHAT
 ========================================================= */
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "public/uploads");
-  },
+  destination: (req, file, cb) => cb(null, "public/uploads"),
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname);
-    const safeName = "upload_" + Date.now() + ext;
-    cb(null, safeName);
+    cb(null, "upload_" + Date.now() + ext);
   }
 });
 
@@ -39,36 +36,34 @@ const upload = multer({
    ENDPOINT UPLOAD FILE CHAT
 ========================================================= */
 app.post("/chat/upload", upload.single("file"), (req, res) => {
-  if (!req.file) {
-    return res.json({ error: "Nessun file ricevuto" });
-  }
-
-  const fileUrl = "/uploads/" + req.file.filename;
-  res.json({ fileUrl });
+  if (!req.file) return res.json({ error: "Nessun file ricevuto" });
+  res.json({ fileUrl: "/uploads/" + req.file.filename });
 });
 
 /* =========================================================
    STATO UTENTI GLOBALE
 ========================================================= */
 const userStates = {};
+
 /* =========================================================
-   IMPORT MODULI INTERNI
+   IMPORT MODULI INTERNI (VERSIONE CORRETTA)
 ========================================================= */
-const { generateNewsletterHTML } = require(path.join(__dirname, "modules", "newsletter.cjs.cjs.cjs.cjs"));
-const { syncAirtable, loadProducts, getProducts } = require(path.join(__dirname, "modules", "airtable.cjs.cjs.cjs.cjs"));
-const { detectIntent, handleConversation, reply, generateUID } = require(path.join(__dirname, "modules", "bot.cjs.cjs.cjs.cjs"));
-const { inviaNewsletter } = require(path.join(__dirname, "modules", "brevo.cjs.cjs.cjs.cjs"));
+const { generateNewsletterHTML } = require(path.join(__dirname, "modules", "newsletter.cjs"));
+const { syncAirtable, loadProducts, getProducts } = require(path.join(__dirname, "modules", "airtable.cjs"));
+const { detectIntent, handleConversation, reply, generateUID } = require(path.join(__dirname, "modules", "bot.cjs"));
+const { inviaNewsletter } = require(path.join(__dirname, "modules", "brevo.cjs"));
+
 /* NUOVE SITEMAP DINAMICHE */
-const { generateImagesSitemap } = require(path.join(__dirname, "modules", "sitemap-images.cjs.cjs.cjs.cjs"));
-const { generateStoreSitemap } = require(path.join(__dirname, "modules", "sitemap-store.cjs.cjs.cjs.cjs"));
-const { generateSocialSitemap } = require(path.join(__dirname, "modules", "sitemap-social.cjs.cjs.cjs.cjs"));
-const { generateFooterSitemap } = require(path.join(__dirname, "modules", "sitemap-footer.cjs.cjs.cjs.cjs"));
+const { generateImagesSitemap } = require(path.join(__dirname, "modules", "sitemap-images.cjs"));
+const { generateStoreSitemap } = require(path.join(__dirname, "modules", "sitemap-store.cjs"));
+const { generateSocialSitemap } = require(path.join(__dirname, "modules", "sitemap-social.cjs"));
+const { generateFooterSitemap } = require(path.join(__dirname, "modules", "sitemap-footer.cjs"));
 
 /* =========================================================
    ⭐ IMPORT MAX MODE
 ========================================================= */
-const { safeText } = require(path.join(__dirname, "modules", "utils.cjs.cjs.cjs.cjs"));
-const Context = require(path.join(__dirname, "modules", "context.cjs.cjs.cjs.cjs"));
+const { safeText } = require(path.join(__dirname, "modules", "utils.cjs"));
+const Context = require(path.join(__dirname, "modules", "context.cjs"));
 
 /* Tracking GA4 server-side */
 const GA4_ID = process.env.GA4_ID;
@@ -82,19 +77,13 @@ async function trackGA4(eventName, params = {}) {
       `https://www.google-analytics.com/mp/collect?measurement_id=${GA4_ID}&api_secret=${GA4_API_SECRET}`,
       {
         client_id: params.uid || "unknown",
-        events: [
-          {
-            name: eventName,
-            params
-          }
-        ]
+        events: [{ name: eventName, params }]
       }
     );
   } catch (err) {
     console.error("GA4 tracking error:", err?.response?.data || err);
   }
 }
-
 
 /* =========================================================
    CACHE HEADERS
@@ -113,37 +102,19 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
+
 /* =========================================================
    REDIRECT HTTPS + WWW (SMART + BLINDATO)
 ========================================================= */
 app.use((req, res, next) => {
   try {
-    // Blindatura totale host + proto
-    const proto = typeof req.headers["x-forwarded-proto"] === "string"
-      ? req.headers["x-forwarded-proto"]
-      : null;
+    const proto = req.headers["x-forwarded-proto"];
+    const host = req.headers.host || "";
 
-    const host = typeof req.headers.host === "string"
-      ? req.headers.host
-      : "";
-
-    // Se host è vuoto → non fare redirect (evita crash)
     if (!host) return next();
-
-    // Se proto è definito e NON è https → redirect
-    if (proto && proto !== "https") {
-      return res.redirect(301, `https://${host}${req.url}`);
-    }
-
-    // Se host è mewingmarket.it → forza www
-    if (host === "mewingmarket.it") {
-      return res.redirect(301, `https://www.mewingmarket.it${req.url}`);
-    }
-
-    // Se manca www → aggiungilo
-    if (!host.startsWith("www.")) {
-      return res.redirect(301, `https://www.${host}${req.url}`);
-    }
+    if (proto && proto !== "https") return res.redirect(301, `https://${host}${req.url}`);
+    if (host === "mewingmarket.it") return res.redirect(301, `https://www.mewingmarket.it${req.url}`);
+    if (!host.startsWith("www.")) return res.redirect(301, `https://www.${host}${req.url}`);
 
     next();
   } catch (err) {
@@ -153,26 +124,18 @@ app.use((req, res, next) => {
 });
 
 /* =========================================================
-   USER STATE + COOKIE UID (ULTRA BLINDATO)
+   USER STATE + COOKIE UID
 ========================================================= */
 app.use((req, res, next) => {
   let uid = null;
 
-  // Blindatura totale lettura cookie
   try {
-    uid = req.cookies && typeof req.cookies.mm_uid === "string"
-      ? req.cookies.mm_uid
-      : null;
+    uid = req.cookies?.mm_uid || null;
   } catch {
     uid = null;
   }
 
-  // Cookie mancante, corrotto o non valido → rigenera
-  const invalid =
-    !uid ||
-    typeof uid !== "string" ||
-    !uid.startsWith("mm_") ||
-    uid.length < 5;
+  const invalid = !uid || typeof uid !== "string" || !uid.startsWith("mm_") || uid.length < 5;
 
   if (invalid) {
     uid = generateUID();
@@ -184,17 +147,8 @@ app.use((req, res, next) => {
     });
   }
 
-  // Blindatura totale userStates
-  if (!userStates || typeof userStates !== "object") {
-    console.error("⚠ userStates non inizializzato, ricreo struttura");
-  }
-
   if (!userStates[uid]) {
-    userStates[uid] = {
-      state: "menu",
-      lastIntent: null,
-      data: {}
-    };
+    userStates[uid] = { state: "menu", lastIntent: null, data: {} };
   }
 
   req.uid = uid;
@@ -204,49 +158,24 @@ app.use((req, res, next) => {
 });
 
 /* =========================================================
-   ⭐ MIDDLEWARE MAX: CONTESTO + SANITIZZAZIONE + TRACKING
+   ⭐ MIDDLEWARE MAX
 ========================================================= */
 app.use((req, res, next) => {
   try {
     const uid = req.uid;
+    req.body = req.body || {};
+    req.query = req.query || {};
 
-    // Blindatura totale contro req.body e req.query undefined
-    if (!req.body || typeof req.body !== "object") req.body = {};
-    if (!req.query || typeof req.query !== "object") req.query = {};
-
-    const body = req.body;
-    const query = req.query;
-
-    // Blindatura page
-    const page =
-      typeof body.page !== "undefined"
-        ? body.page
-        : typeof query.page !== "undefined"
-        ? query.page
-        : null;
-
-    // Blindatura slug
-    const slug =
-      typeof body.slug !== "undefined"
-        ? body.slug
-        : typeof query.slug !== "undefined"
-        ? query.slug
-        : null;
+    const page = req.body.page ?? req.query.page ?? null;
+    const slug = req.body.slug ?? req.query.slug ?? null;
 
     if (page || slug) {
       Context.update(uid, page, slug);
-
-      trackGA4("page_view", {
-        uid,
-        page: page || "",
-        slug: slug || ""
-      });
+      trackGA4("page_view", { uid, page: page || "", slug: slug || "" });
     }
 
-    // Blindatura message
-    if (typeof body.message === "string") {
-      body.message = safeText(body.message);
-      req.body = body;
+    if (typeof req.body.message === "string") {
+      req.body.message = safeText(req.body.message);
     }
 
     next();
@@ -262,7 +191,7 @@ app.use((req, res, next) => {
 app.get("/sitemap-images.xml", (req, res) => {
   try {
     res.type("application/xml").send(generateImagesSitemap());
-  } catch (err) {
+  } catch {
     res.status(500).send("Errore sitemap");
   }
 });
@@ -290,12 +219,12 @@ app.get("/sitemap.xml", (req, res) => {
     res.status(500).send("Errore sitemap");
   }
 });
+
 /* =========================================================
    FEED META
 ========================================================= */
 app.get("/meta/feed", (req, res) => {
   try {
-    // Blindatura prodotti
     const products = Array.isArray(getProducts()) ? getProducts() : [];
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -307,7 +236,6 @@ app.get("/meta/feed", (req, res) => {
 `;
 
     products.forEach((p, i) => {
-      // Blindatura singolo prodotto
       if (!p || typeof p !== "object") return;
 
       xml += `
@@ -334,6 +262,7 @@ app.get("/meta/feed", (req, res) => {
     res.status(500).send("Errore feed");
   }
 });
+
 /* =========================================================
    HOMEPAGE + PRODUCTS.JSON
 ========================================================= */
@@ -344,30 +273,19 @@ app.get("/", (req, res) => {
 app.get("/products.json", (req, res) => {
   res.sendFile(path.join(__dirname, "data", "products.json"));
 });
+
 /* =========================================================
    PAGINA PRODOTTO DINAMICA
 ========================================================= */
 app.get("/prodotto.html", (req, res) => {
   try {
-    // Blindatura totale query + slug
-    const slug = req.query && typeof req.query.slug === "string"
-      ? req.query.slug
-      : null;
+    const slug = req.query?.slug || null;
+    if (!slug) return res.status(400).send("Parametro slug mancante");
 
-    if (!slug) {
-      return res.status(400).send("Parametro slug mancante");
-    }
-
-    // Blindatura prodotti
     const products = Array.isArray(getProducts()) ? getProducts() : [];
+    const prodotto = products.find(p => p?.slug === slug);
 
-    const prodotto = products.find(p =>
-      p && typeof p === "object" && p.slug === slug
-    );
-
-    if (!prodotto) {
-      return res.status(404).send("Prodotto non trovato");
-    }
+    if (!prodotto) return res.status(404).send("Prodotto non trovato");
 
     res.sendFile(path.join(__dirname, "public", "prodotto.html"));
   } catch (err) {
@@ -376,9 +294,8 @@ app.get("/prodotto.html", (req, res) => {
   }
 });
 
-
 /* =========================================================
-   ⭐ CHAT BOT — VERSIONE MAX BLINDATA
+   ⭐ CHAT BOT
 ========================================================= */
 app.post("/chat", async (req, res) => {
   try {
@@ -392,7 +309,6 @@ app.post("/chat", async (req, res) => {
     trackGA4("chat_message_sent", { uid, message: rawMessage });
 
     const { intent, sub } = detectIntent(rawMessage);
-
     trackGA4("intent_detected", { uid, intent, sub: sub || "" });
 
     userStates[uid].lastIntent = intent;
@@ -402,7 +318,6 @@ app.post("/chat", async (req, res) => {
     trackGA4("chat_message_received", { uid, intent, sub: sub || "" });
 
     return response;
-
   } catch (err) {
     console.error("❌ Errore /chat MAX:", err);
     trackGA4("chat_error", { error: err?.message || "unknown" });
@@ -413,8 +328,8 @@ app.post("/chat", async (req, res) => {
 /* =========================================================
    NEWSLETTER
 ========================================================= */
-const { iscriviEmail } = require("./modules/brevoSubscribe");
-const { disiscriviEmail } = require("./modules/brevoUnsubscribe");
+const { iscriviEmail } = require("./modules/brevoSubscribe.cjs");
+const { disiscriviEmail } = require("./modules/brevoUnsubscribe.cjs");
 
 const welcomeHTML = fs.readFileSync(
   path.join(__dirname, "modules", "welcome.html"),
@@ -424,14 +339,8 @@ const welcomeHTML = fs.readFileSync(
 // ISCRIZIONE
 app.post("/newsletter/subscribe", async (req, res) => {
   try {
-    // Blindatura email
-    const email = req.body && typeof req.body.email === "string"
-      ? req.body.email.trim()
-      : null;
-
-    if (!email) {
-      return res.json({ status: "error", message: "Email mancante" });
-    }
+    const email = req.body?.email?.trim();
+    if (!email) return res.json({ status: "error", message: "Email mancante" });
 
     await iscriviEmail(email);
 
@@ -461,14 +370,8 @@ app.post("/newsletter/subscribe", async (req, res) => {
 // DISISCRIZIONE
 app.post("/newsletter/unsubscribe", async (req, res) => {
   try {
-    // Blindatura email
-    const email = req.body && typeof req.body.email === "string"
-      ? req.body.email.trim()
-      : null;
-
-    if (!email) {
-      return res.json({ status: "error", message: "Email mancante" });
-    }
+    const email = req.body?.email?.trim();
+    if (!email) return res.json({ status: "error", message: "Email mancante" });
 
     await disiscriviEmail(email);
 
@@ -478,23 +381,23 @@ app.post("/newsletter/unsubscribe", async (req, res) => {
     return res.json({ status: "error" });
   }
 });
+
 // INVIO MANUALE
 app.post("/newsletter/send", async (req, res) => {
   try {
     const { html, oggetto } = generateNewsletterHTML();
-
     if (!html || !oggetto) {
       return res.json({ status: "error", message: "Contenuto newsletter mancante" });
     }
 
     const result = await inviaNewsletter({ oggetto, html });
-
     return res.json({ status: "ok", result });
   } catch (err) {
     console.error("❌ Errore invio newsletter:", err?.response?.data || err);
     return res.json({ status: "error" });
   }
 });
+
 /* =========================================================
    AVVIO SERVER
 ========================================================= */
@@ -507,12 +410,8 @@ app.listen(PORT, () => {
     try {
       console.log("⏳ Sync automatico Airtable all'avvio...");
 
-      // Blindatura sync Airtable
-      await syncAirtable().catch(err => {
-        console.error("❌ Errore sync Airtable all'avvio:", err);
-      });
+      await syncAirtable().catch(err => console.error("❌ Errore sync Airtable all'avvio:", err));
 
-      // Blindatura loadProducts
       try {
         loadProducts();
       } catch (err) {
@@ -533,12 +432,8 @@ setInterval(async () => {
   try {
     console.log("⏳ Sync programmato Airtable...");
 
-    // Blindatura sync Airtable
-    await syncAirtable().catch(err => {
-      console.error("❌ Errore sync Airtable programmato:", err);
-    });
+    await syncAirtable().catch(err => console.error("❌ Errore sync Airtable programmato:", err));
 
-    // Blindatura loadProducts
     try {
       loadProducts();
     } catch (err) {
@@ -550,6 +445,7 @@ setInterval(async () => {
     console.error("❌ Errore nel sync programmato:", err);
   }
 }, 30 * 60 * 1000);
+
 /* =========================================================
    NEWSLETTER AUTOMATICA — NUOVO PRODOTTO
 ========================================================= */
@@ -557,38 +453,31 @@ let lastProductId = null;
 
 async function checkNewProduct() {
   try {
-    // Blindatura prodotti
     const products = Array.isArray(getProducts()) ? getProducts() : [];
     if (products.length === 0) return;
 
-    // Blindatura latest
-    const latest = products.length > 0 ? products[products.length - 1] : null;
+    const latest = products[products.length - 1];
     if (!latest || typeof latest !== "object") return;
 
-    // Blindatura ID
     const latestId = latest.id || null;
     if (!latestId) return;
 
-    // Primo avvio → memorizza ID
     if (!lastProductId) {
       lastProductId = latestId;
       console.log("🟦 Primo avvio: memorizzato ultimo prodotto:", lastProductId);
       return;
     }
 
-    // Nuovo prodotto rilevato
     if (latestId !== lastProductId) {
       console.log("🆕 Nuovo prodotto rilevato:", latest.titoloBreve || latest.titolo || latestId);
 
-      // Blindatura newsletter HTML
       const { html, oggetto } = generateNewsletterHTML() || {};
       if (!html || !oggetto) {
         console.error("❌ Newsletter non generata: contenuto mancante");
-        lastProductId = latestId; // evita loop
+        lastProductId = latestId;
         return;
       }
 
-      // Blindatura invio newsletter
       try {
         await inviaNewsletter({ oggetto, html });
         console.log("📨 Newsletter nuovo prodotto inviata");
