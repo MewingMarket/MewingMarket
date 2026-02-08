@@ -31,6 +31,11 @@ function listProductsByCategory(cat) {
   return PRODUCTS.filter(p => p.categoria === cat);
 }
 
+// ⭐ NUOVA FUNZIONE — richiesta da te
+function listAllProducts() {
+  return getProducts() || [];
+}
+
 // ---------------------------------------------
 // RISPOSTE PRODOTTO — VERSIONE MAX
 // ---------------------------------------------
@@ -134,6 +139,7 @@ module.exports = {
   findProductBySlug,
   findProductFromText,
   listProductsByCategory,
+  listAllProducts,   // ⭐ aggiunta
   productReply,
   productLongReply,
   productImageReply
