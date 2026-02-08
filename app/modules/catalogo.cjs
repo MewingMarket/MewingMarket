@@ -1,7 +1,7 @@
-// modules/catalogo.js — VERSIONE MAX (UX PREMIUM)
+// modules/catalogo.cjs — VERSIONE MAX (UX PREMIUM)
 
-const { normalize } = require("./utils.cjs");
-const { getProducts } = require("./airtable.cjs");
+const { normalize } = require("./utils");
+const { getProducts } = require("./airtable");
 
 // Costante prodotto principale
 const MAIN_PRODUCT_SLUG = "guida-ecosistema-digitale-reale";
@@ -48,7 +48,6 @@ ${p.descrizioneBreve}
 ${p.linkPayhip}
 `;
 
-  // Video principale
   if (p.youtube_url) {
     out += `
 🎥 <b>Video di presentazione</b>  
@@ -56,7 +55,6 @@ ${p.youtube_url}
 `;
   }
 
-  // Video catalogo (campo Airtable dedicato)
   if (p.catalog_video_block) {
     out += `
 
@@ -65,7 +63,6 @@ ${p.catalog_video_block}
 `;
   }
 
-  // Prodotto principale → CTA speciale
   if (p.slug === MAIN_PRODUCT_SLUG) {
     out += `
 
