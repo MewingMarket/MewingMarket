@@ -1,5 +1,3 @@
-
-
 /* =========================================================
    IMPORT BASE
 ========================================================= */
@@ -683,56 +681,4 @@ app.post("/chat", async (req, res) => {
     logBotMessage({
       uid,
       type: "bot",
-      bot_reply: res.__lastReply || reply,
-      intent,
-      sub,
-      pageContext
-    });
-
-    logBotDebug({
-      step: "chat_output",
-      data: { status: "sent" }
-    });
-
-  } catch (err) {
-    logBotDebug({
-      step: "chat_error",
-      data: { error: err.message }
-    });
-
-    // 7) Log errore
-    logBotMessage({
-      uid,
-      type: "error",
-      error: err.message,
-      problem: detectProblemType(err)
-    });
-
-    res.status(500).json({ reply: "Errore interno. Riprova tra poco." });
-  }
-}); /* =========================================================
-   DEBUG LOG VIEW
-========================================================= */
-app.get("/tracking/debug", (req, res) => {
-  res.json(global.DEBUG_LOG || []);
-});
-
-/* =========================================================
-   FALLBACK HOME
-========================================================= */
-app.get("/", (req, res) => {
-  res.send("MewingMarket Server attivo");
-});
-
-/* =========================================================
-   AVVIO SERVER
-========================================================= */
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log("Server avviato sulla porta " + PORT);
-  logBotDebug({
-    step: "server_start",
-    data: { port: PORT }
-  });
-});
+     
