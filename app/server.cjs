@@ -680,5 +680,117 @@ app.post("/chat", async (req, res) => {
     // 6) Log della risposta del bot
     logBotMessage({
       uid,
+      type: "bot", /* =========================================================
+   ENDPOINT CHAT — INTENT, RISPOSTA, LOGGING
+========================================================= */
+app.post("/chat", async (req, res) => {
+  // Body safe
+  const body = (req.body && typeof req.body === "object") ? req.body : {};
+  const message = body.message || "";
+  const pageContext = body.pageContext || null;
+
+  // UID (fondamentale!)
+  const uid = req.uid;
+
+  try {
+    logBotDebug({
+      step: "chat_start",
+      data: { uid, message, pageContext }
+    });
+
+    // 1) Log del messaggio utente
+    logBotMessage({
+      uid,
+      type: "user",
+      user_message: message,
+      pageContext
+    });
+
+    // 2) Detect intent
+    const { intent, sub } = detectIntent(message);
+
+    logBotDebug({
+      step: "intent_detected",
+      data: { uid, intent, sub }
+    });
+
+    // 3) Intercetta res.json per catturare la risposta del bot
+    const originalJson = res.json.bind(res);
+    res.json = (data) => {
+      if (data && data.reply) {
+        res.__lastReply = data.reply;
+      }
+      return originalJson(data);
+    };
+
+    // 4) Esegui la conversazione
+    const reply = await handleConversation({
+      uid,
+      message,
+      intent,
+      sub,
+      pageContext,
+      userState: req.userState
+    });
+
+    // 5) Risposta al frontend
+    res.json({ reply });
+
+    // 6) Log della risposta del bot
+    logBotMessage({
+      uid,
       type: "bot",
+      bot_reply: res.__lastReply || reply,
+      intent,
+      sub,
+      pageContext
+    });
+
+    logBotDebug({
+      step: "chat_output",
+      data: { status: "sent" }
+    });
+
+  } catch (err) {
+    logBotDebug({
+      step: "chat_error",
+      data: { error: err.message }
+    });
+
+    // 7) Log errore
+    logBotMessage({
+      uid,
+      type: "error",
+      error: err.message,
+      problem: detectProblemType(err)
+    });
+
+    res.status(500).json({ reply: "Errore interno. Riprova tra poco." });
+  }
+}); /* =========================================================
+   DEBUG LOG VIEW
+========================================================= */
+app.get("/tracking/debug", (req, res) => {
+  res.json(global.DEBUG_LOG || []);
+});
+
+/* =========================================================
+   FALLBACK HOME
+========================================================= */
+app.get("/", (req, res) => {
+  res.send("MewingMarket Server attivo");
+});
+
+/* =========================================================
+   AVVIO SERVER
+========================================================= */
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log("Server avviato sulla porta " + PORT);
+  logBotDebug({
+    step: "server_start",
+    data: { port: PORT }
+  });
+});
      
