@@ -24,7 +24,7 @@
       .then(h => {
         document.getElementById("header-placeholder").innerHTML = h;
 
-        // Quando l'header (e quindi la chat) è nel DOM, carichiamo chat.js
+        // Carichiamo chat.js SOLO in questa pagina
         requestAnimationFrame(() => {
           const s = document.createElement("script");
           s.src = "/chat.js";
@@ -73,7 +73,18 @@
     </div>
   </main>
 
-  <!-- CHATBOT (markup viene dall'header) -->
+  <!-- CHAT SOLO IN QUESTA PAGINA -->
+  <div id="mm-chat-btn" class="mm-chat-btn">💬</div>
+
+  <div id="mm-chatbox" class="mm-chatbox">
+    <div id="mm-chat-messages" class="mm-chat-messages"></div>
+
+    <div id="mm-chat-input" class="mm-chat-input">
+      <input type="text" placeholder="Scrivi un messaggio...">
+      <button id="mm-attach">📎</button>
+      <button id="mm-send">➤</button>
+    </div>
+  </div>
 
   <!-- FOOTER -->
   <div id="footer-placeholder"></div>
