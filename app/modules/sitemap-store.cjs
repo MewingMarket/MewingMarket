@@ -1,6 +1,6 @@
 // modules/sitemap-store.js
 
-const { getProducts } = require("./airtable");
+const { getProducts } = require("./airtable.cjs");
 
 function generateStoreSitemap() {
   const products = getProducts();

@@ -1,7 +1,7 @@
 // modules/catalogo.js — VERSIONE MAX (UX PREMIUM)
 
-const { normalize } = require("./utils");
-const { getProducts } = require("./airtable");
+const { normalize } = require("./utils.cjs");
+const { getProducts } = require("./airtable.cjs");
 
 // Costante prodotto principale
 const MAIN_PRODUCT_SLUG = "guida-ecosistema-digitale-reale";

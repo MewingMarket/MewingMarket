@@ -7,12 +7,12 @@ const {
   findProductBySlug,
   productReply,
   productLongReply
-} = require("./catalogo");
+} = require("./catalogo.cjs");
 
-const { normalize, cleanSearchQuery } = require("./utils");
-const { getProducts } = require("./airtable");
-const Context = require("./context");
-const Memory = require("./memory");
+const { normalize, cleanSearchQuery } = require("./utils.cjs");
+const { getProducts } = require("./airtable.cjs");
+const Context = require("./context.cjs");
+const Memory = require("./memory.cjs");
 
 // ------------------------------
 // TRACKING

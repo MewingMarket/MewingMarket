@@ -9,7 +9,7 @@ const {
   cleanText,
   cleanNumber,
   cleanURL
-} = require("./utils");
+} = require("./utils.cjs");
 
 // Variabili ambiente (✔ CORRETTE)
 const AIRTABLE_PAT = process.env.AIRTABLE_PAT;

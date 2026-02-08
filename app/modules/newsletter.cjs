@@ -1,6 +1,6 @@
 // modules/newsletter.js
 
-const { getProducts } = require("./airtable");
+const { getProducts } = require("./airtable.cjs");
 
 function generateNewsletterHTML() {
   const products = getProducts();

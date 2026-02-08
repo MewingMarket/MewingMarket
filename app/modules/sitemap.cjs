@@ -1,6 +1,6 @@
 // modules/sitemap.js
 
-const { listAllProducts } = require("./catalogo");
+const { listAllProducts } = require("./catalogo.cjs");
 
 function generateSitemap() {
   const base = "https://www.mewingmarket.it";
