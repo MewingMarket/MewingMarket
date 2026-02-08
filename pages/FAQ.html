@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <div id="head-placeholder"></div>
+  <script>
+    fetch("head.html")
+      .then(r => r.text())
+      .then(h => document.getElementById("head-placeholder").innerHTML = h);
+  </script>
+  <script src="seo.js"></script>
+  <script src="structured-data.js"></script>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header-placeholder"></div>
+<script>
+  fetch("header.html")
+    .then(r => r.text())
+    .then(h => document.getElementById("header-placeholder").innerHTML = h);
+</script>
+
+<main class="pagina-standard">
+  <h1>FAQ – Domande Frequenti</h1>
+
+  <div class="faq-item">
+    <div class="faq-question">Come funziona l’acquisto?</div>
+    <div class="faq-answer">
+      <p>Tutti i prodotti vengono venduti tramite Payhip, che gestisce pagamento e download.</p>
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-question">Posso chiedere un rimborso?</div>
+    <div class="faq-answer">
+      <p>Sì, valutiamo ogni richiesta caso per caso. Consulta la pagina “Resi e Rimborsi”.</p>
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-question">Come ricevo il prodotto?</div>
+    <div class="faq-answer">
+      <p>Dopo il pagamento ricevi subito il link per scaricare il file digitale.</p>
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-question">Posso usare i prodotti commercialmente?</div>
+    <div class="faq-answer">
+      <p>No, tutti i prodotti sono ad uso personale salvo diversa indicazione.</p>
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-question">Non riesco a scaricare il file</div>
+    <div class="faq-answer">
+      <p>Scrivici a supporto@mewingmarket.it e risolviamo subito.</p>
+    </div>
+  </div>
+
+</main>
+
+<!-- CHATBOT -->
+<div id="mm-chat-btn"></div>
+
+<div id="mm-chatbox">
+  <div id="mm-chat-header">Supporto MewingMarket</div>
+  <div id="mm-chat-messages"></div>
+
+  <div id="mm-chat-input">
+    <input type="text" placeholder="Scrivi un messaggio...">
+    <button>Invia</button>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div id="footer-placeholder"></div>
+<script>
+  fetch("footer.html")
+    .then(r => r.text())
+    .then(h => document.getElementById("footer-placeholder").innerHTML = h);
+</script>
+
+<!-- JS -->
+<script src="FAQ.js"></script>
+<script src="chat.js"></script>
+
+</body>
+</html>

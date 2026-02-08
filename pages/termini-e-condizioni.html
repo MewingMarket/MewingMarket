@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <div id="head-placeholder"></div>
+  <script>
+    fetch("head.html")
+      .then(r => r.text())
+      .then(h => document.getElementById("head-placeholder").innerHTML = h);
+  </script>
+  <script src="seo.js"></script>
+  <script src="structured-data.js"></script>
+</head>
+<body>
+
+<div id="header-placeholder"></div>
+<script>
+  fetch("header.html")
+    .then(r => r.text())
+    .then(h => document.getElementById("header-placeholder").innerHTML = h);
+</script>
+
+<main class="pagina-standard">
+  <h1>Termini e Condizioni</h1>
+
+  <p>Benvenuto su MewingMarket. Utilizzando questo sito accetti i presenti Termini e Condizioni.</p>
+
+  <h2>1. Oggetto del servizio</h2>
+  <p>MewingMarket vende prodotti digitali tramite Payhip, che gestisce pagamento, consegna e download.</p>
+
+  <h2>2. Uso personale</h2>
+  <p>Tutti i prodotti sono destinati a uso personale salvo diversa indicazione.</p>
+
+  <h2>3. Download dei prodotti</h2>
+  <p>Dopo il pagamento riceverai immediatamente il link per scaricare il file digitale.</p>
+
+  <h2>4. Rimborsi</h2>
+  <p>I rimborsi vengono valutati caso per caso. Consulta la pagina “Resi e Rimborsi”.</p>
+
+  <h2>5. Proprietà intellettuale</h2>
+  <p>Tutti i contenuti sono protetti da copyright. È vietata la distribuzione non autorizzata.</p>
+<h2>6. Contatti</h2>
+<p><strong>Supporto:</strong> <a href="mailto:supporto@mewingmarket.it">supporto@mewingmarket.it</a></p>
+<p><strong>Email alternative supporto:</strong>
+  <a href="mailto:MewingMarket@outlook.it">MewingMarket@outlook.it</a> ·
+  <a href="mailto:mewingmarket2@gmail.com">mewingmarket2@gmail.com</a>
+</p>
+<p><strong>WhatsApp Business:</strong>
+  <a href="https://wa.me/393520266660">352 026 6660</a>
+</p>
+
+<h2>7. Sede</h2>
+<p>Strada Ciousse 35, 18038 Sanremo (IM), Italia</p></main>
+
+<div id="footer-placeholder"></div>
+<script>
+  fetch("footer.html")
+    .then(r => r.text())
+    .then(h => document.getElementById("footer-placeholder").innerHTML = h);
+</script>
+
+</body>
+</html>

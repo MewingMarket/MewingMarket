@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <div id="head-placeholder"></div>
+  <script>
+    fetch("head.html")
+      .then(r => r.text())
+      .then(h => document.getElementById("head-placeholder").innerHTML = h);
+  </script><script src="seo.js"></script>
+<script src="structured-data.js"></script>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header-placeholder"></div>
+<script>
+  fetch("header.html")
+    .then(r => r.text())
+    .then(h => document.getElementById("header-placeholder").innerHTML = h);
+</script>
+
+<main class="pagina-standard">
+  <h1>Privacy Policy</h1>
+
+  <p>La presente Privacy Policy descrive come MewingMarket raccoglie, utilizza, conserva e protegge i dati personali degli utenti.</p>
+
+  <h2>1. Titolare del trattamento</h2>
+  <p>MewingMarket – Sanremo (IM), Italia<br>Email: supporto@mewingmarket.it</p>
+
+  <h2>2. Dati raccolti</h2>
+  <ul>
+    <li>Nome e indirizzo email (newsletter)</li>
+    <li>Dati di pagamento gestiti da Payhip (non accessibili a noi)</li>
+    <li>Dati tecnici anonimi (cookie, analytics)</li>
+  </ul>
+
+  <h2>3. Finalità del trattamento</h2>
+  <ul>
+    <li>Invio newsletter</li>
+    <li>Assistenza clienti</li>
+    <li>Gestione ordini tramite Payhip</li>
+    <li>Miglioramento del sito</li>
+  </ul>
+
+  <h2>4. Conservazione dei dati</h2>
+  <p>I dati vengono conservati per il tempo necessario a fornire i servizi richiesti.</p>
+
+  <h2>5. Condivisione dei dati</h2>
+  <p>I dati non vengono venduti né ceduti. Vengono condivisi solo con:</p>
+  <ul>
+    <li>Payhip (pagamenti)</li>
+    <li>Brevo (newsletter)</li>
+  </ul>
+
+  <h2>6. Diritti dell’utente</h2>
+  <p>Puoi richiedere in qualsiasi momento accesso, modifica, cancellazione o portabilità dei tuoi dati.</p>
+
+<h2>7. Contatti</h2>
+<p><strong>Email vendite:</strong> <a href="mailto:vendite@mewingmarket.it">vendite@mewingmarket.it</a></p>
+<p><strong>Supporto:</strong> <a href="mailto:supporto@mewingmarket.it">supporto@mewingmarket.it</a></p>
+<p><strong>Email alternative supporto:</strong>
+  <a href="mailto:MewingMarket@outlook.it">MewingMarket@outlook.it</a> ·
+  <a href="mailto:mewingmarket2@gmail.com">mewingmarket2@gmail.com</a>
+</p>
+<p><strong>WhatsApp Business:</strong>
+  <a href="https://wa.me/393520266660">352 026 6660</a>
+</p>
+</main>
+
+<!-- FOOTER -->
+<div id="footer-placeholder"></div>
+<script>
+  fetch("footer.html")
+    .then(r => r.text())
+    .then(h => document.getElementById("footer-placeholder").innerHTML = h);
+</script>
+
+</body>
+</html>

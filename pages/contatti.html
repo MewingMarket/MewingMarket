@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <div id="head-placeholder"></div>
+  <script>
+    fetch("head.html")
+      .then(r => r.text())
+      .then(h => document.getElementById("head-placeholder").innerHTML = h);
+  </script>
+  <script src="seo.js"></script>
+  <script src="structured-data.js"></script>
+</head>
+<body>
+
+<div id="header-placeholder"></div>
+<script>
+  fetch("header.html")
+    .then(r => r.text())
+    .then(h => document.getElementById("header-placeholder").innerHTML = h);
+</script>
+
+<main class="pagina-standard">
+  <h1>Contatti</h1>
+
+  <h2>Email ufficiali</h2>
+  <p><strong>Vendite:</strong> <a href="mailto:vendite@mewingmarket.it">vendite@mewingmarket.it</a></p>
+  <p><strong>Supporto principale:</strong> <a href="mailto:supporto@mewingmarket.it">supporto@mewingmarket.it</a></p>
+
+  <h2>Email alternative supporto</h2>
+  <p><a href="mailto:MewingMarket@outlook.it">MewingMarket@outlook.it</a></p>
+  <p><a href="mailto:mewingmarket2@gmail.com">mewingmarket2@gmail.com</a></p>
+
+  <h2>WhatsApp Business</h2>
+  <p>
+    <a href="https://wa.me/393520266660" class="footer-icon-link whatsapp">
+      <i class="fab fa-whatsapp"></i> 352 026 6660
+    </a>
+  </p>
+
+  <h2>Sede</h2>
+  <p>Strada Ciousse 35, 18038 Sanremo (IM), Italia</p>
+</main>
+
+<div id="footer-placeholder"></div>
+<script>
+  fetch("footer.html")
+    .then(r => r.text())
+    .then(h => document.getElementById("footer-placeholder").innerHTML = h);
+</script>
+
+</body>
+</html>

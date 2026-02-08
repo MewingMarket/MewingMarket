@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <div id="head-placeholder"></div>
+  <script>
+    fetch("head.html")
+      .then(r => r.text())
+      .then(h => document.getElementById("head-placeholder").innerHTML = h);
+  </script>
+  <script src="seo.js"></script>
+  <script src="structured-data.js"></script>
+</head>
+<body>
+
+<div id="header-placeholder"></div>
+<script>
+  fetch("header.html")
+    .then(r => r.text())
+    .then(h => document.getElementById("header-placeholder").innerHTML = h);
+</script>
+
+<main class="pagina-standard">
+  <h1>Resi e Rimborsi</h1>
+
+  <p>I prodotti digitali non prevedono reso automatico, ma valutiamo ogni richiesta caso per caso.</p>
+
+  <h2>1. Quando è possibile richiedere un rimborso</h2>
+  <ul>
+    <li>File non scaricabile</li>
+    <li>Errore tecnico imputabile a noi</li>
+    <li>Acquisto duplicato</li>
+  </ul>
+
+  <h2>2. Quando non è previsto</h2>
+  <ul>
+    <li>Prodotto già scaricato</li>
+    <li>Uso improprio</li>
+    <li>Richieste non motivate</li>
+  </ul>
+
+  <h2>3. Come richiedere assistenza</h2>
+  <p>
+    <strong>Email supporto:</strong><br>
+    <a href="mailto:supporto@mewingmarket.it">supporto@mewingmarket.it</a><br><br>
+
+    <strong>Email alternative supporto:</strong><br>
+    <a href="mailto:MewingMarket@outlook.it">MewingMarket@outlook.it</a><br>
+    <a href="mailto:mewingmarket2@gmail.com">mewingmarket2@gmail.com</a><br><br>
+
+    <strong>WhatsApp Business:</strong><br>
+    <a href="https://wa.me/393520266660">352 026 6660</a>
+  </p>
+</main>
+
+<div id="footer-placeholder"></div>
+<script>
+  fetch("footer.html")
+    .then(r => r.text())
+    .then(h => document.getElementById("footer-placeholder").innerHTML = h);
+</script>
+
+</body>
+</html>
