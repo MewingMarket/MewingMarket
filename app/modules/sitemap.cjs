@@ -1,6 +1,6 @@
 // modules/sitemap.js
 
-const { listAllProducts } = require("./catalogo.cjs");
+const { getProducts } = require("./airtable");
 
 function generateSitemap() {
   const base = "https://www.mewingmarket.it";
@@ -12,7 +12,7 @@ function generateSitemap() {
     "/termini"
   ];
 
-  const products = listAllProducts();
+  const products = getProducts();
 
   const productUrls = products.map(p => `/prodotto/${p.slug}`);
 
