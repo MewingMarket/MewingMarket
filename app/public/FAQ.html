@@ -7,8 +7,7 @@
       .then(r => r.text())
       .then(h => {
         document.getElementById("head-placeholder").innerHTML = h;
-      })
-      .catch(() => {});
+      });
   </script>
 
   <script src="/seo.js" defer></script>
@@ -26,13 +25,10 @@
         document.getElementById("header-placeholder").innerHTML = h;
 
         // Carichiamo chat.js SOLO in questa pagina
-        requestAnimationFrame(() => {
-          const s = document.createElement("script");
-          s.src = "/chat.js";
-          document.body.appendChild(s);
-        });
-      })
-      .catch(() => {});
+        const s = document.createElement("script");
+        s.src = "/chat.js";
+        document.body.appendChild(s);
+      });
   </script>
 
   <main class="pagina-standard">
@@ -79,13 +75,10 @@
 
   <div id="mm-chatbox" class="mm-chatbox">
 
-    <!-- HEADER CHAT (richiesto dal tuo CSS) -->
     <div id="mm-chat-header">Supporto MewingMarket</div>
 
-    <!-- MESSAGGI -->
     <div id="mm-chat-messages" class="mm-chat-messages"></div>
 
-    <!-- INPUT -->
     <div id="mm-chat-input" class="mm-chat-input">
       <input type="text" placeholder="Scrivi un messaggio...">
       <button id="mm-attach">📎</button>
@@ -100,11 +93,9 @@
       .then(r => r.text())
       .then(h => {
         document.getElementById("footer-placeholder").innerHTML = h;
-      })
-      .catch(() => {});
+      });
   </script>
 
-  <!-- JS pagina FAQ -->
   <script src="/FAQ.js"></script>
 
 </body>
