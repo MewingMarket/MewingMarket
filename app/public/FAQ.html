@@ -10,6 +10,7 @@
       })
       .catch(() => {});
   </script>
+
   <script src="/seo.js" defer></script>
   <script src="/structured-data.js" defer></script>
 </head>
@@ -77,8 +78,14 @@
   <div id="mm-chat-btn" class="mm-chat-btn">💬</div>
 
   <div id="mm-chatbox" class="mm-chatbox">
+
+    <!-- HEADER CHAT (richiesto dal tuo CSS) -->
+    <div id="mm-chat-header">Supporto MewingMarket</div>
+
+    <!-- MESSAGGI -->
     <div id="mm-chat-messages" class="mm-chat-messages"></div>
 
+    <!-- INPUT -->
     <div id="mm-chat-input" class="mm-chat-input">
       <input type="text" placeholder="Scrivi un messaggio...">
       <button id="mm-attach">📎</button>
