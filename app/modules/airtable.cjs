@@ -1,4 +1,4 @@
-// modules/airtable.js
+// modules/airtable.cjs
 
 const fs = require("fs");
 const path = require("path");
@@ -9,12 +9,12 @@ const {
   cleanText,
   cleanNumber,
   cleanURL
-} = require("./utils.cjs");
+} = require("./utils");
 
-// Variabili ambiente (✔ CORRETTE)
+// Variabili ambiente
 const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
-const BASE_ID = process.env.AIRTABLE_BASE;      // ✔ ID base
-const TABLE_NAME = process.env.AIRTABLE_TABLE;  // ✔ ID tabella
+const BASE_ID = process.env.AIRTABLE_BASE;
+const TABLE_NAME = process.env.AIRTABLE_TABLE;
 
 // Catalogo in memoria
 let PRODUCTS = [];
@@ -42,41 +42,33 @@ async function syncAirtable() {
       return {
         id: record.id,
 
-        // CAMPI BASE
         titolo: cleanText(f.Titolo, "Titolo mancante"),
         titoloBreve: cleanText(f.TitoloBreve, ""),
         slug: safeSlug(f.Slug),
         prezzo: cleanNumber(f.Prezzo),
         categoria: cleanText(f.Categoria, "Generico"),
 
-        // CAMPO ATTIVO
         attivo: Boolean(f.Attivo),
 
-        // IMMAGINE E LINK
         immagine: cleanURL(f.Immagine?.[0]?.url),
         linkPayhip: cleanURL(f.LinkPayhip),
 
-        // DESCRIZIONI
         descrizioneBreve: cleanText(f.DescrizioneBreve, ""),
         descrizioneLunga: cleanText(f.DescrizioneLunga, ""),
 
-        // YOUTUBE
         youtube_url: cleanURL(f.youtube_url),
         youtube_title: cleanText(f.youtube_title, ""),
         youtube_description: cleanText(f.youtube_description, ""),
         youtube_thumbnail: cleanURL(f.youtube_thumbnail),
         catalog_video_block: cleanText(f.catalog_video_block, ""),
 
-        // SEO / SOCIAL
         meta_description: cleanText(f.meta_description, ""),
         social_caption_full: cleanText(f.social_caption_full, "")
       };
     });
 
-    // FILTRO SOLO PRODOTTI ATTIVI
     const activeProducts = products.filter(p => p.attivo);
 
-    // SALVA SU FILE
     fs.writeFileSync(
       path.join(__dirname, "..", "data", "products.json"),
       JSON.stringify(activeProducts, null, 2)
