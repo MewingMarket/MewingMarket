@@ -1,4 +1,4 @@
-// modules/bot.js — COPILOT VERSIONE MASSIMA (GPT-FIRST)
+// modules/bot.js — VERSIONE BLINDATA, OTTIMIZZATA, AUTO-AGGIORNANTE
 
 const fetch = require("node-fetch");
 
@@ -7,12 +7,12 @@ const {
   findProductBySlug,
   productReply,
   productLongReply
-} = require("./catalogo.cjs");
+} = require("./catalogo");
 
-const { normalize, cleanSearchQuery } = require("./utils.cjs");
-const { getProducts } = require("./airtable.cjs");
-const Context = require("./context.cjs");
-const Memory = require("./memory.cjs");
+const { normalize, cleanSearchQuery } = require("./utils");
+const { getProducts } = require("./airtable");
+const Context = require("./context");
+const Memory = require("./memory");
 
 // ------------------------------
 // TRACKING
@@ -28,7 +28,7 @@ function trackBot(event, data = {}) {
 }
 
 // ------------------------------
-// GPT CORE
+// GPT CORE — BLINDATO
 // ------------------------------
 const BASE_SYSTEM_PROMPT = `
 Sei il Copilot ufficiale di MewingMarket, integrato nel sito.
@@ -39,60 +39,27 @@ Tono:
 - professionale
 - amichevole
 - commerciale quando serve
-- mai aggressivo, ma deciso
 
-Regole generali:
-- Non inventare prodotti, prezzi, link o contatti.
-- Usa solo prodotti MewingMarket se sono nel contesto.
-- Se l'utente chiede consigli: consiglia il prodotto migliore in base al suo obiettivo.
-- Se l'utente ha dubbi: chiarisci, rassicura, spiega il valore.
-- Se l'utente tratta: mantieni il valore, non inventare sconti, ma spiega perché il prezzo è giustificato.
-- Se l'utente è pronto: porta alla chiusura con link Payhip (se fornito nel contesto).
-- Se l'utente chiede cose generiche (anche fuori tema): rispondi comunque in modo coerente, ma senza uscire dal ruolo di assistente MewingMarket.
-
-Social:
-- Se l'utente chiede di un social specifico, spiega cosa trova lì:
-  - Instagram: contenuti visivi, aggiornamenti veloci, dietro le quinte.
-  - TikTok: clip brevi, spiegazioni rapide, pillole pratiche.
-  - YouTube: contenuti più lunghi, spiegazioni approfondite, walkthrough.
-  - Facebook: aggiornamenti, post informativi, link alle risorse.
-  - X: pensieri brevi, aggiornamenti rapidi, note veloci.
-  - Threads: conversazioni più discorsive, riflessioni.
-  - LinkedIn: contenuti più professionali, business, posizionamento.
-
-Contatto umano:
-- Se l'utente chiede aiuto su qualcosa di molto personale, privato, o che richiede accesso a dati sensibili (es. problemi fiscali specifici, dati personali, casi particolari di pagamento, situazioni delicate):
-  - Suggerisci SEMPRE come opzione finale:
-    - Email supporto: supporto@mewingmarket.it
-    - Email vendite: vendite@mewingmarket.it
-    - WhatsApp Business: 352 026 6660
-  - Spiega che per casi specifici è meglio un contatto diretto.
-
-Stile:
-- Risposte brevi ma dense, niente muri di testo inutili.
-- Usa elenchi solo quando servono davvero.
-- Mantieni sempre il ruolo di Copilot MewingMarket.
+Regole:
+- Non inventare prodotti, prezzi o link.
+- Usa solo i prodotti presenti nel catalogo.
+- Se l'utente chiede consigli: proponi il prodotto più adatto.
+- Se l'utente ha dubbi: chiarisci e rassicura.
+- Se l'utente è pronto: porta alla chiusura con link Payhip.
+- Risposte brevi ma dense.
 `;
 
 async function callGPT(userPrompt, memory = [], context = {}, extraSystem = "", extraData = {}) {
   try {
     const system = BASE_SYSTEM_PROMPT + (extraSystem || "");
+
     const payload = {
       model: "meta-llama/llama-3.1-70b-instruct",
       messages: [
         { role: "system", content: system },
-        {
-          role: "assistant",
-          content: "Memoria conversazione (estratto): " + JSON.stringify(memory || [])
-        },
-        {
-          role: "assistant",
-          content: "Contesto pagina: " + JSON.stringify(context || {})
-        },
-        {
-          role: "assistant",
-          content: "Dati strutturati disponibili: " + JSON.stringify(extraData || {})
-        },
+        { role: "assistant", content: "Memoria: " + JSON.stringify(memory || []) },
+        { role: "assistant", content: "Contesto pagina: " + JSON.stringify(context || {}) },
+        { role: "assistant", content: "Dati: " + JSON.stringify(extraData || {}) },
         { role: "user", content: userPrompt }
       ]
     };
@@ -107,15 +74,13 @@ async function callGPT(userPrompt, memory = [], context = {}, extraSystem = "", 
     });
 
     const json = await res.json();
-    return json.choices?.[0]?.message?.content || "In questo momento non riesco a formulare una risposta utile.";
+    return json?.choices?.[0]?.message?.content || "In questo momento non riesco a rispondere.";
   } catch (err) {
     console.error("GPT error:", err);
     return "Sto avendo un problema temporaneo. Riprova tra poco.";
   }
-}
-
-// ------------------------------
-// UTILS STATO
+} // ------------------------------
+// UTILS DI STATO
 // ------------------------------
 function generateUID() {
   return "mm_" + Math.random().toString(36).substring(2, 12);
@@ -142,7 +107,7 @@ function isYes(text) {
     t.includes("certo") ||
     t.includes("yes")
   );
-}// ------------------------------
+} // ------------------------------
 // MATCH PRODOTTI — FUZZY + SINONIMI + PAROLE CHIAVE
 // ------------------------------
 
@@ -291,7 +256,7 @@ function fuzzyMatchProduct(text) {
   }
 
   return null;
-        }// ------------------------------
+} // ------------------------------
 // DETECT INTENT V5 — GPT-FIRST, COMMERCIALE, CONVERSAZIONALE
 // ------------------------------
 
@@ -562,14 +527,19 @@ function detectIntent(rawText) {
   if (product) {
     return { intent: "prodotto", sub: product.slug };
   }
-if (rawText.startsWith("FILE:")) {
-  return { intent: "allegato", sub: rawText.replace("FILE:", "").trim() };
-}
+
+  // ------------------------------
+  // ALLEGATO
+  // ------------------------------
+  if (rawText.startsWith("FILE:")) {
+    return { intent: "allegato", sub: rawText.replace("FILE:", "").trim() };
+  }
+
   // ------------------------------
   // FALLBACK GPT
   // ------------------------------
   return { intent: "gpt", sub: null };
-               }// ------------------------------
+} // ------------------------------
 // HANDLE CONVERSATION — GPT-FIRST, COMMERCIALE, COMPLETO
 // ------------------------------
 
@@ -634,7 +604,9 @@ Scrivi una parola chiave come:
     );
 
     return reply(res, enriched || base);
-      }// ------------------------------
+  }
+
+  // ------------------------------
   // CATALOGO
   // ------------------------------
   if (intent === "catalogo") {
@@ -716,7 +688,9 @@ Hai bisogno di altro o vuoi tornare al menu?
     );
 
     return reply(res, enriched || base);
-  }// ------------------------------
+  }
+
+  // ------------------------------
   // SOCIAL SPECIFICI
   // ------------------------------
   if (intent === "social_specifico") {
@@ -775,9 +749,7 @@ Vuoi tornare al menu o vedere il catalogo?
     );
 
     return reply(res, enriched || base);
-  }
-
-  // ------------------------------
+  }  // ------------------------------
   // PRIVACY
   // ------------------------------
   if (intent === "privacy") {
@@ -883,8 +855,10 @@ Hai bisogno di altro o vuoi tornare al menu?
     );
 
     return reply(res, enriched || base);
-  }// ------------------------------
-  // FAQ
+  }
+
+  // ------------------------------
+  // FAQ (POTENZIATO)
   // ------------------------------
   if (intent === "faq") {
     const base = `
@@ -976,6 +950,9 @@ Se non riesci a scaricare il prodotto:
 2. Recupera il link da Payhip con la stessa email dell'acquisto.  
 3. Prova un altro browser o dispositivo.  
 
+FAQ utili:  
+<a href="FAQ.html">FAQ.html</a>
+
 Se non funziona:  
 supporto@mewingmarket.it  
 WhatsApp: 352 026 6660
@@ -1001,6 +978,9 @@ Payhip gestisce pagamenti e download.
 Dopo il pagamento ricevi subito un’email con il link.  
 Puoi accedere anche dalla tua area Payhip.
 
+FAQ utili:  
+<a href="FAQ.html">FAQ.html</a>
+
 Se hai problemi:  
 supporto@mewingmarket.it  
 WhatsApp: 352 026 6660
@@ -1022,6 +1002,9 @@ Vuoi tornare al menu o hai bisogno di altro?
     if (sub === "rimborso") {
       const base = `
 I prodotti digitali non prevedono reso automatico, ma valutiamo ogni caso.
+
+FAQ utili:  
+<a href="FAQ.html">FAQ.html</a>
 
 Scrivici:  
 supporto@mewingmarket.it  
@@ -1051,6 +1034,9 @@ Puoi contattare il supporto:
 supporto@mewingmarket.it  
 WhatsApp: 352 026 6660  
 
+FAQ utili:  
+<a href="FAQ.html">FAQ.html</a>
+
 Siamo disponibili per:  
 • problemi di download  
 • informazioni sui prodotti  
@@ -1074,6 +1060,9 @@ Vuoi tornare al menu o hai bisogno di altro?
 Sono qui per aiutarti 💬  
 Scrivi una parola chiave come:  
 "download", "payhip", "rimborso", "contatto".
+
+FAQ utili:  
+<a href="FAQ.html">FAQ.html</a>
 `;
 
     const enriched = await callGPT(
@@ -1084,7 +1073,7 @@ Scrivi una parola chiave come:
     );
 
     return reply(res, enriched || base);
-        }// ------------------------------
+} // ------------------------------
   // PRODOTTI
   // ------------------------------
   const lastProductSlug = state.lastProductSlug;
@@ -1135,7 +1124,9 @@ Vuoi:
     );
 
     return reply(res, enriched || base);
-  }// ------------------------------
+  }
+
+  // ------------------------------
   // ACQUISTO DIRETTO
   // ------------------------------
   if (intent === "acquisto_diretto") {
@@ -1184,7 +1175,9 @@ Vuoi un consiglio su come iniziare?
     );
 
     return reply(res, enriched || base);
-  }// ------------------------------
+  }
+
+  // ------------------------------
   // DETTAGLI PRODOTTO
   // ------------------------------
   if (intent === "dettagli_prodotto") {
@@ -1227,7 +1220,9 @@ Vuoi:
     );
 
     return reply(res, enriched || base);
-  }// ------------------------------
+  }
+
+  // ------------------------------
   // VIDEO PRODOTTO
   // ------------------------------
   if (intent === "video_prodotto") {
@@ -1293,7 +1288,9 @@ Vuoi un riassunto dei punti chiave?
     );
 
     return reply(res, enriched || base);
-  }// ------------------------------
+  }
+
+  // ------------------------------
   // PREZZO PRODOTTO
   // ------------------------------
   if (intent === "prezzo_prodotto") {
@@ -1338,7 +1335,9 @@ Vuoi:
     );
 
     return reply(res, enriched || base);
-  }// ------------------------------
+  }
+
+  // ------------------------------
   // TRATTATIVA / SCONTO
   // ------------------------------
   if (intent === "trattativa" && sub === "sconto") {
@@ -1365,7 +1364,9 @@ Se vuoi, ti spiego in modo diretto:
     );
 
     return reply(res, enriched || base);
-  }// ------------------------------
+  }
+
+  // ------------------------------
   // OBIETTA PREZZO
   // ------------------------------
   if (intent === "obiezione" && sub === "prezzo") {
@@ -1388,32 +1389,39 @@ Se mi dici in che situazione sei (es. "sto iniziando", "sono già avviato", "son
     );
 
     return reply(res, enriched || base);
-  } if (intent === "allegato") {
-  const url = sub || "";
-
-  if (url.endsWith(".pdf")) {
-    return reply(res, "Hai caricato un PDF. Vuoi che lo riassuma o che estragga i punti chiave?");
   }
 
-  if (url.match(/\.(png|jpg|jpeg|gif|webp)$/i)) {
-    return reply(res, "Hai caricato un'immagine. Vuoi che la descriva o che analizzi cosa contiene?");
+  // ------------------------------
+  // ALLEGATO
+  // ------------------------------
+  if (intent === "allegato") {
+    const url = sub || "";
+
+    if (url.endsWith(".pdf")) {
+      return reply(res, "Hai caricato un PDF. Vuoi che lo riassuma o che estragga i punti chiave?");
+    }
+
+    if (url.match(/\.(png|jpg|jpeg|gif|webp)$/i)) {
+      return reply(res, "Hai caricato un'immagine. Vuoi che la descriva o che analizzi cosa contiene?");
+    }
+
+    if (url.endsWith(".txt")) {
+      return reply(res, "Hai caricato un file di testo. Vuoi che lo legga e ti dica cosa contiene?");
+    }
+
+    if (url.endsWith(".zip")) {
+      return reply(res, "Hai caricato un file ZIP. Vuoi che ti dica come estrarlo o cosa potrebbe contenere?");
+    }
+
+    return reply(res, "File ricevuto. Vuoi che ti dica cosa posso farci?");
   }
 
-  if (url.endsWith(".txt")) {
-    return reply(res, "Hai caricato un file di testo. Vuoi che lo legga e ti dica cosa contiene?");
-  }
-
-  if (url.endsWith(".zip")) {
-    return reply(res, "Hai caricato un file ZIP. Vuoi che ti dica come estrarlo o cosa potrebbe contenere?");
-  }
-
-  return reply(res, "File ricevuto. Vuoi che ti dica cosa posso farci?");
-  }// ------------------------------
+  // ------------------------------
   // FALLBACK INTELLIGENTE FINALE
   // ------------------------------
   const risposta = await callGPT(rawText, Memory.get(uid), pageContext);
   return reply(res, risposta);
-}// ------------------------------
+  } // ------------------------------
 // EXPORT
 // ------------------------------
 module.exports = {
@@ -1423,4 +1431,4 @@ module.exports = {
   generateUID,
   setState,
   isYes
-};
+}; 
