@@ -237,42 +237,46 @@ document.addEventListener("DOMContentLoaded", () => {
 
     sending = false;
   }
-// --- Upload allegati ---
-const attachBtn = document.getElementById("mm-attach");
-const fileInput = document.getElementById("mm-file-input");
 
-attachBtn.addEventListener("click", () => fileInput.click());
+  // ---------------------------------------------
+  // UPLOAD ALLEGATI — CORRETTO
+  // ---------------------------------------------
+  const attachBtn = document.getElementById("mm-attach");
+  const fileInput = document.getElementById("mm-file-input");
 
-fileInput.addEventListener("change", async () => {
-  const file = fileInput.files[0];
-  if (!file) return;
+  attachBtn.addEventListener("click", () => fileInput.click());
 
-  const formData = new FormData();
-  formData.append("file", file);
+  fileInput.addEventListener("change", async () => {
+    const file = fileInput.files[0];
+    if (!file) return;
 
-  // Mostra subito la bubble "file inviato"
-  addMessage("Hai inviato un file: " + file.name, "user");
+    const formData = new FormData();
+    formData.append("file", file);
 
-  try {
-    const res = await fetch("/chat/upload", {
-      method: "POST",
-      body: formData
-    });
+    // Bubble corretta
+    addUser("Hai inviato un file: " + file.name);
 
-    const data = await res.json();
+    try {
+      const res = await fetch("/chat/upload", {
+        method: "POST",
+        body: formData
+      });
 
-    if (data.fileUrl) {
-      // Invia al bot il link del file
-      sendMessageToBot("FILE:" + data.fileUrl);
-    } else {
-      addMessage("Errore durante l'upload del file.", "bot");
+      const data = await res.json();
+
+      if (data.fileUrl) {
+        // Invia al bot il link del file
+        sendMessage("FILE:" + data.fileUrl);
+      } else {
+        addBot("Errore durante l'upload del file.");
+      }
+    } catch (err) {
+      addBot("Errore di connessione durante l'upload.");
     }
-  } catch (err) {
-    addMessage("Errore di connessione durante l'upload.", "bot");
-  }
 
-  fileInput.value = "";
-});
+    fileInput.value = "";
+  });
+
   // ---------------------------------------------
   // EVENTI INPUT
   // ---------------------------------------------
