@@ -54,21 +54,21 @@ const userStates = {};
 /* =========================================================
    IMPORT MODULI INTERNI
 ========================================================= */
-const { generateNewsletterHTML } = require(path.join(__dirname, "modules", "newsletter.cjs.cjs.cjs"));
-const { syncAirtable, loadProducts, getProducts } = require(path.join(__dirname, "modules", "airtable.cjs.cjs.cjs"));
-const { detectIntent, handleConversation, reply, generateUID } = require(path.join(__dirname, "modules", "bot.cjs.cjs.cjs"));
-const { inviaNewsletter } = require(path.join(__dirname, "modules", "brevo.cjs.cjs.cjs"));
+const { generateNewsletterHTML } = require(path.join(__dirname, "modules", "newsletter.cjs.cjs.cjs.cjs"));
+const { syncAirtable, loadProducts, getProducts } = require(path.join(__dirname, "modules", "airtable.cjs.cjs.cjs.cjs"));
+const { detectIntent, handleConversation, reply, generateUID } = require(path.join(__dirname, "modules", "bot.cjs.cjs.cjs.cjs"));
+const { inviaNewsletter } = require(path.join(__dirname, "modules", "brevo.cjs.cjs.cjs.cjs"));
 /* NUOVE SITEMAP DINAMICHE */
-const { generateImagesSitemap } = require(path.join(__dirname, "modules", "sitemap-images.cjs.cjs.cjs"));
-const { generateStoreSitemap } = require(path.join(__dirname, "modules", "sitemap-store.cjs.cjs.cjs"));
-const { generateSocialSitemap } = require(path.join(__dirname, "modules", "sitemap-social.cjs.cjs.cjs"));
-const { generateFooterSitemap } = require(path.join(__dirname, "modules", "sitemap-footer.cjs.cjs.cjs"));
+const { generateImagesSitemap } = require(path.join(__dirname, "modules", "sitemap-images.cjs.cjs.cjs.cjs"));
+const { generateStoreSitemap } = require(path.join(__dirname, "modules", "sitemap-store.cjs.cjs.cjs.cjs"));
+const { generateSocialSitemap } = require(path.join(__dirname, "modules", "sitemap-social.cjs.cjs.cjs.cjs"));
+const { generateFooterSitemap } = require(path.join(__dirname, "modules", "sitemap-footer.cjs.cjs.cjs.cjs"));
 
 /* =========================================================
    ⭐ IMPORT MAX MODE
 ========================================================= */
-const { safeText } = require(path.join(__dirname, "modules", "utils.cjs.cjs.cjs"));
-const Context = require(path.join(__dirname, "modules", "context.cjs.cjs.cjs"));
+const { safeText } = require(path.join(__dirname, "modules", "utils.cjs.cjs.cjs.cjs"));
+const Context = require(path.join(__dirname, "modules", "context.cjs.cjs.cjs.cjs"));
 
 /* Tracking GA4 server-side */
 const GA4_ID = process.env.GA4_ID;
