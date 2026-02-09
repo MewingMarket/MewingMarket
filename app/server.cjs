@@ -11,6 +11,11 @@ require("dotenv").config();
 const multer = require("multer");
 
 /* =========================================================
+   ROOT ASSOLUTA DEL PROGETTO
+========================================================= */
+const ROOT = path.resolve(__dirname, "..");
+
+/* =========================================================
    SETUP EXPRESS
 ========================================================= */
 const app = express();
@@ -20,7 +25,7 @@ app.disable("x-powered-by");
    MULTER — UPLOAD FILE CHAT
 ========================================================= */
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "public/uploads"),
+  destination: (req, file, cb) => cb(null, path.join(ROOT, "app", "public", "uploads")),
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname);
     cb(null, "upload_" + Date.now() + ext);
@@ -46,24 +51,28 @@ app.post("/chat/upload", upload.single("file"), (req, res) => {
 const userStates = {};
 
 /* =========================================================
-   IMPORT MODULI INTERNI (VERSIONE CORRETTA)
+   IMPORT MODULI INTERNI (PERCORSI ASSOLUTI)
 ========================================================= */
-const { generateNewsletterHTML } = require(path.join(__dirname, "modules", "newsletter.cjs"));
-const { syncAirtable, loadProducts, getProducts } = require(path.join(__dirname, "modules", "airtable.cjs"));
-const { detectIntent, handleConversation, reply, generateUID } = require(path.join(__dirname, "modules", "bot.cjs"));
-const { inviaNewsletter } = require(path.join(__dirname, "modules", "brevo.cjs"));
+const { generateNewsletterHTML } = require(path.join(ROOT, "app", "modules", "newsletter.cjs"));
+const { syncAirtable, loadProducts, getProducts } = require(path.join(ROOT, "app", "modules", "airtable.cjs"));
+const { detectIntent, handleConversation, reply, generateUID } = require(path.join(ROOT, "app", "modules", "bot.cjs"));
+const { inviaNewsletter } = require(path.join(ROOT, "app", "modules", "brevo.cjs"));
 
-/* NUOVE SITEMAP DINAMICHE */
-const { generateImagesSitemap } = require(path.join(__dirname, "modules", "sitemap-images.cjs"));
-const { generateStoreSitemap } = require(path.join(__dirname, "modules", "sitemap-store.cjs"));
-const { generateSocialSitemap } = require(path.join(__dirname, "modules", "sitemap-social.cjs"));
-const { generateFooterSitemap } = require(path.join(__dirname, "modules", "sitemap-footer.cjs"));
+const { generateImagesSitemap } = require(path.join(ROOT, "app", "modules", "sitemap-images.cjs"));
+const { generateStoreSitemap } = require(path.join(ROOT, "app", "modules", "sitemap-store.cjs"));
+const { generateSocialSitemap } = require(path.join(ROOT, "app", "modules", "sitemap-social.cjs"));
+const { generateFooterSitemap } = require(path.join(ROOT, "app", "modules", "sitemap-footer.cjs"));
 
-/* =========================================================
-   ⭐ IMPORT MAX MODE
-========================================================= */
-const { safeText } = require(path.join(__dirname, "modules", "utils.cjs"));
-const Context = require(path.join(__dirname, "modules", "context.cjs"));
+const { safeText } = require(path.join(ROOT, "app", "modules", "utils.cjs"));
+const Context = require(path.join(ROOT, "app", "modules", "context.cjs"));
+
+const { iscriviEmail } = require(path.join(ROOT, "app", "modules", "brevoSubscribe.cjs"));
+const { disiscriviEmail } = require(path.join(ROOT, "app", "modules", "brevoUnsubscribe.cjs"));
+
+const welcomeHTML = fs.readFileSync(
+  path.join(ROOT, "app", "modules", "welcome.html"),
+  "utf8"
+);
 
 /* Tracking GA4 server-side */
 const GA4_ID = process.env.GA4_ID;
@@ -98,13 +107,13 @@ app.use((req, res, next) => {
 /* =========================================================
    STATICI + MIDDLEWARE
 ========================================================= */
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(path.join(ROOT, "app", "public")));
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
 /* =========================================================
-   REDIRECT HTTPS + WWW (SMART + BLINDATO)
+   REDIRECT HTTPS + WWW
 ========================================================= */
 app.use((req, res, next) => {
   try {
@@ -267,11 +276,11 @@ app.get("/meta/feed", (req, res) => {
    HOMEPAGE + PRODUCTS.JSON
 ========================================================= */
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+  res.sendFile(path.join(ROOT, "app", "public", "index.html"));
 });
 
 app.get("/products.json", (req, res) => {
-  res.sendFile(path.join(__dirname, "data", "products.json"));
+  res.sendFile(path.join(ROOT, "app", "data", "products.json"));
 });
 
 /* =========================================================
@@ -287,7 +296,7 @@ app.get("/prodotto.html", (req, res) => {
 
     if (!prodotto) return res.status(404).send("Prodotto non trovato");
 
-    res.sendFile(path.join(__dirname, "public", "prodotto.html"));
+    res.sendFile(path.join(ROOT, "app", "public", "prodotto.html"));
   } catch (err) {
     console.error("Errore pagina prodotto:", err);
     res.status(500).send("Errore pagina prodotto");
@@ -328,15 +337,6 @@ app.post("/chat", async (req, res) => {
 /* =========================================================
    NEWSLETTER
 ========================================================= */
-const { iscriviEmail } = require("./modules/brevoSubscribe.cjs");
-const { disiscriviEmail } = require("./modules/brevoUnsubscribe.cjs");
-
-const welcomeHTML = fs.readFileSync(
-  path.join(__dirname, "modules", "welcome.html"),
-  "utf8"
-);
-
-// ISCRIZIONE
 app.post("/newsletter/subscribe", async (req, res) => {
   try {
     const email = req.body?.email?.trim();
@@ -367,7 +367,6 @@ app.post("/newsletter/subscribe", async (req, res) => {
   }
 });
 
-// DISISCRIZIONE
 app.post("/newsletter/unsubscribe", async (req, res) => {
   try {
     const email = req.body?.email?.trim();
@@ -382,7 +381,6 @@ app.post("/newsletter/unsubscribe", async (req, res) => {
   }
 });
 
-// INVIO MANUALE
 app.post("/newsletter/send", async (req, res) => {
   try {
     const { html, oggetto } = generateNewsletterHTML();
