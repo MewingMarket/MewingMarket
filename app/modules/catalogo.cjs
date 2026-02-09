@@ -1,7 +1,10 @@
 // modules/catalogo.cjs — VERSIONE MAX (UX PREMIUM)
 
-const { normalize } = require("./utils");
-const { getProducts } = require("./airtable");
+const path = require("path");
+
+// IMPORT CORRETTI (blindati)
+const { normalize } = require(path.join(__dirname, "utils.cjs"));
+const { getProducts } = require(path.join(__dirname, "airtable.cjs"));
 
 // Costante prodotto principale
 const MAIN_PRODUCT_SLUG = "guida-ecosistema-digitale-reale";
@@ -139,7 +142,7 @@ module.exports = {
   findProductBySlug,
   findProductFromText,
   listProductsByCategory,
-  listAllProducts,   // ⭐ aggiunta
+  listAllProducts,
   productReply,
   productLongReply,
   productImageReply
