@@ -1,6 +1,7 @@
-// modules/sitemap-store.js
+// modules/sitemap-store.cjs — VERSIONE CORRETTA
 
-const { getProducts } = require("./airtable");
+const path = require("path");
+const { getProducts } = require(path.join(__dirname, "airtable.cjs"));
 
 function generateStoreSitemap() {
   const products = getProducts();
