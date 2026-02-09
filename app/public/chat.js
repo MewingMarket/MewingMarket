@@ -173,7 +173,7 @@ document.addEventListener("DOMContentLoaded", () => {
     showTyping();
 
     try {
-      const res = await fetch("/chat", {
+      const res = await fetch("https://www.mewingmarket.it/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -253,11 +253,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const formData = new FormData();
     formData.append("file", file);
 
-    // Bubble corretta
     addUser("Hai inviato un file: " + file.name);
 
     try {
-      const res = await fetch("/chat/upload", {
+      const res = await fetch("https://www.mewingmarket.it/chat/upload", {
         method: "POST",
         body: formData
       });
@@ -265,7 +264,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await res.json();
 
       if (data.fileUrl) {
-        // Invia al bot il link del file
         sendMessage("FILE:" + data.fileUrl);
       } else {
         addBot("Errore durante l'upload del file.");
