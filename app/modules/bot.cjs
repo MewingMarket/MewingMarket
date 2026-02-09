@@ -1,22 +1,24 @@
-// modules/bot.js — VERSIONE BLINDATA, OTTIMIZZATA, AUTO-AGGIORNANTE
+/**
+ * modules/bot.js — VERSIONE BLINDATA, OTTIMIZZATA, AUTO-AGGIORNANTE
+ */
 
 const fetch = require("node-fetch");
+const path = require("path");
 
+// IMPORT BLINDATI
 const {
   MAIN_PRODUCT_SLUG,
   findProductBySlug,
   productReply,
   productLongReply
-} = require("./catalogo");
+} = require(path.join(__dirname, "catalogo.cjs"));
 
-const { normalize, cleanSearchQuery } = require("./utils");
-const { getProducts } = require("./airtable");
-const Context = require("./context");
-const Memory = require("./memory");
-
-// ------------------------------
-// TRACKING
-// ------------------------------
+const { normalize, cleanSearchQuery } = require(path.join(__dirname, "utils.cjs"));
+const { getProducts } = require(path.join(__dirname, "airtable.cjs"));
+const Context = require(path.join(__dirname, "context.cjs"));
+const Memory = require(path.join(__dirname, "memory.cjs")); /* ------------------------------
+   TRACKING
+------------------------------ */
 function trackBot(event, data = {}) {
   try {
     if (global.trackEvent) {
@@ -27,9 +29,9 @@ function trackBot(event, data = {}) {
   }
 }
 
-// ------------------------------
-// GPT CORE — BLINDATO
-// ------------------------------
+/* ------------------------------
+   GPT CORE — BLINDATO
+------------------------------ */
 const BASE_SYSTEM_PROMPT = `
 Sei il Copilot ufficiale di MewingMarket, integrato nel sito.
 
@@ -79,9 +81,9 @@ async function callGPT(userPrompt, memory = [], context = {}, extraSystem = "", 
     console.error("GPT error:", err);
     return "Sto avendo un problema temporaneo. Riprova tra poco.";
   }
-} // ------------------------------
-// UTILS DI STATO
-// ------------------------------
+} /* ------------------------------
+   UTILS DI STATO
+------------------------------ */
 function generateUID() {
   return "mm_" + Math.random().toString(36).substring(2, 12);
 }
@@ -107,9 +109,11 @@ function isYes(text) {
     t.includes("certo") ||
     t.includes("yes")
   );
-} // ------------------------------
-// MATCH PRODOTTI — FUZZY + SINONIMI + PAROLE CHIAVE
-// ------------------------------
+}
+
+/* ------------------------------
+   MATCH PRODOTTI — FUZZY + SINONIMI + PAROLE CHIAVE
+------------------------------ */
 
 function buildProductIndex() {
   const products = getProducts() || [];
@@ -256,9 +260,9 @@ function fuzzyMatchProduct(text) {
   }
 
   return null;
-} // ------------------------------
-// DETECT INTENT V5 — GPT-FIRST, COMMERCIALE, CONVERSAZIONALE
-// ------------------------------
+} /* ------------------------------
+   DETECT INTENT V5 — GPT-FIRST, COMMERCIALE, CONVERSAZIONALE
+------------------------------ */
 
 function detectIntent(rawText) {
   const text = rawText || "";
@@ -366,7 +370,7 @@ function detectIntent(rawText) {
   }
 
   if (q.includes("termini") || q.includes("condizioni") || q.includes("terms")) {
-    return { intent: "termini", sub: null };
+    return { intent: "terminini", sub: null };
   }
 
   if (q.includes("cookie")) {
@@ -401,9 +405,7 @@ function detectIntent(rawText) {
     q.includes("sede")
   ) {
     return { intent: "dovesiamo", sub: null };
-  }
-
-  // ------------------------------
+      } // ------------------------------
   // SUPPORTO / HELP DESK
   // ------------------------------
   if (
@@ -539,9 +541,11 @@ function detectIntent(rawText) {
   // FALLBACK GPT
   // ------------------------------
   return { intent: "gpt", sub: null };
-} // ------------------------------
-// HANDLE CONVERSATION — GPT-FIRST, COMMERCIALE, COMPLETO
-// ------------------------------
+}
+
+/* ------------------------------
+   HANDLE CONVERSATION — GPT-FIRST, COMMERCIALE, COMPLETO
+------------------------------ */
 
 async function handleConversation(req, res, intent, sub, rawText) {
   const uid = req.uid;
@@ -560,9 +564,7 @@ async function handleConversation(req, res, intent, sub, rawText) {
   if (intent === "gpt") {
     const risposta = await callGPT(rawText, Memory.get(uid), pageContext);
     return reply(res, risposta);
-  }
-
-  // ------------------------------
+    } // ------------------------------
   // CONVERSAZIONE GENERALE
   // ------------------------------
   if (intent === "conversazione") {
@@ -749,7 +751,7 @@ Vuoi tornare al menu o vedere il catalogo?
     );
 
     return reply(res, enriched || base);
-  }  // ------------------------------
+  } // ------------------------------
   // PRIVACY
   // ------------------------------
   if (intent === "privacy") {
@@ -968,9 +970,7 @@ Vuoi tornare al menu o hai bisogno di altro?
       );
 
       return reply(res, enriched || base);
-    }
-
-    // PAYHIP
+    } // PAYHIP
     if (sub === "payhip") {
       const base = `
 Payhip gestisce pagamenti e download.
@@ -1073,7 +1073,9 @@ FAQ utili:
     );
 
     return reply(res, enriched || base);
-} // ------------------------------
+  }
+
+  // ------------------------------
   // PRODOTTI
   // ------------------------------
   const lastProductSlug = state.lastProductSlug;
@@ -1335,9 +1337,7 @@ Vuoi:
     );
 
     return reply(res, enriched || base);
-  }
-
-  // ------------------------------
+  } // ------------------------------
   // TRATTATIVA / SCONTO
   // ------------------------------
   if (intent === "trattativa" && sub === "sconto") {
@@ -1421,9 +1421,11 @@ Se mi dici in che situazione sei (es. "sto iniziando", "sono già avviato", "son
   // ------------------------------
   const risposta = await callGPT(rawText, Memory.get(uid), pageContext);
   return reply(res, risposta);
-  } // ------------------------------
-// EXPORT
-// ------------------------------
+}
+
+/* ------------------------------
+   EXPORT
+------------------------------ */
 module.exports = {
   detectIntent,
   handleConversation,
@@ -1431,4 +1433,4 @@ module.exports = {
   generateUID,
   setState,
   isYes
-}; 
+};
