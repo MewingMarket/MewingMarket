@@ -4,12 +4,13 @@ const fs = require("fs");
 const path = require("path");
 const fetch = require("node-fetch");
 
+// IMPORT CORRETTI (blindati)
 const {
   safeSlug,
   cleanText,
   cleanNumber,
   cleanURL
-} = require("./utils");
+} = require(path.join(__dirname, "utils.cjs"));
 
 // Variabili ambiente
 const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
