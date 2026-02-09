@@ -1,6 +1,7 @@
 // modules/newsletter-mindset.cjs
 
-const { getProducts } = require("./airtable");
+const path = require("path");
+const { getProducts } = require(path.join(__dirname, "airtable.cjs"));
 
 function generateMindsetNewsletter() {
   const products = getProducts();
@@ -67,7 +68,7 @@ function generateMindsetNewsletter() {
 
   <hr style="margin:30px 0;">
 
-  <!-- BLOCCO MENTALE (senza dire “mindset”) -->
+  <!-- BLOCCO MENTALE -->
   <h3 style="color:#333;">🎯 Perché questo contenuto può fare la differenza</h3>
 
   <p style="font-size:16px; color:#444;">
