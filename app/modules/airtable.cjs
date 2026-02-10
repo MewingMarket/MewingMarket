@@ -1,10 +1,9 @@
-// modules/airtable.cjs
+// modules/airtable.cjs — VERSIONE BLINDATA + MERGE PAYHIP
 
 const fs = require("fs");
 const path = require("path");
 const fetch = require("node-fetch");
 
-// IMPORT CORRETTI (blindati)
 const {
   safeSlug,
   cleanText,
@@ -12,17 +11,49 @@ const {
   cleanURL
 } = require(path.join(__dirname, "utils.cjs"));
 
-// Variabili ambiente
 const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
 const BASE_ID = process.env.AIRTABLE_BASE;
 const TABLE_NAME = process.env.AIRTABLE_TABLE;
 
-// Catalogo in memoria
 let PRODUCTS = [];
+let PAYHIP_CACHE = {}; // fallback commerciale
 
-// ---------------------------------------------
-// SYNC AIRTABLE
-// ---------------------------------------------
+const PRODUCTS_PATH = path.join(__dirname, "..", "data", "products.json");
+
+/* =========================================================
+   LETTURA SICURA DEL FILE
+========================================================= */
+function safeReadJSON(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) return [];
+    const raw = fs.readFileSync(filePath, "utf8");
+    if (!raw.trim()) return [];
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+/* =========================================================
+   MERGE PAYHIP + AIRTABLE
+========================================================= */
+function mergeProduct(airtable, payhip) {
+  if (!payhip) return airtable;
+
+  return {
+    ...airtable,
+
+    // CAMPI COMMERCIALI DA PAYHIP
+    prezzo: payhip.price ?? airtable.prezzo,
+    titolo: payhip.title ?? airtable.titolo,
+    immagine: payhip.image ?? airtable.immagine,
+    linkPayhip: payhip.url ?? airtable.linkPayhip
+  };
+}
+
+/* =========================================================
+   SYNC AIRTABLE (editoriale)
+========================================================= */
 async function syncAirtable() {
   try {
     const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}`;
@@ -68,51 +99,57 @@ async function syncAirtable() {
       };
     });
 
-    const activeProducts = products.filter(p => p.attivo);
+    const active = products.filter(p => p.attivo);
 
-    fs.writeFileSync(
-      path.join(__dirname, "..", "data", "products.json"),
-      JSON.stringify(activeProducts, null, 2)
-    );
+    // MERGE PAYHIP + AIRTABLE
+    const merged = active.map(p => mergeProduct(p, PAYHIP_CACHE[p.slug]));
 
-    console.log(`products.json aggiornato da Airtable (${activeProducts.length} prodotti attivi)`);
+    fs.writeFileSync(PRODUCTS_PATH, JSON.stringify(merged, null, 2));
 
-    return activeProducts;
+    console.log(`products.json aggiornato da Airtable (${merged.length} prodotti)`);
+
+    return merged;
 
   } catch (err) {
     console.error("Errore sync Airtable:", err);
-    return [];
+    return safeReadJSON(PRODUCTS_PATH);
   }
 }
 
-// ---------------------------------------------
-// CARICAMENTO PRODOTTI
-// ---------------------------------------------
-function loadProducts() {
+/* =========================================================
+   AGGIORNA DATI PAYHIP (webhook)
+========================================================= */
+function updateFromPayhip(data) {
   try {
-    const filePath = path.join(__dirname, "..", "data", "products.json");
+    const slug = safeSlug(data.slug);
+    PAYHIP_CACHE[slug] = {
+      price: data.price,
+      title: data.title,
+      image: data.image,
+      url: data.url
+    };
 
-    if (!fs.existsSync(filePath)) {
-      fs.writeFileSync(filePath, "[]");
-    }
+    // Ricarica Airtable + merge
+    const current = safeReadJSON(PRODUCTS_PATH);
+    const updated = current.map(p =>
+      p.slug === slug ? mergeProduct(p, PAYHIP_CACHE[slug]) : p
+    );
 
-    const raw = fs.readFileSync(filePath, "utf8");
+    fs.writeFileSync(PRODUCTS_PATH, JSON.stringify(updated, null, 2));
 
-    if (!raw.trim()) {
-      fs.writeFileSync(filePath, "[]");
-      PRODUCTS = [];
-      return;
-    }
-
-    const all = JSON.parse(raw);
-    PRODUCTS = all.filter(p => p.attivo === true);
-
-    console.log("Catalogo aggiornato:", PRODUCTS.length, "prodotti attivi");
+    console.log("Catalogo aggiornato da Payhip:", slug);
 
   } catch (err) {
-    console.error("Errore caricamento products.json", err);
-    PRODUCTS = [];
+    console.error("Errore updateFromPayhip:", err);
   }
+}
+
+/* =========================================================
+   CARICAMENTO PRODOTTI (blindato)
+========================================================= */
+function loadProducts() {
+  PRODUCTS = safeReadJSON(PRODUCTS_PATH);
+  console.log("Catalogo caricato:", PRODUCTS.length, "prodotti");
 }
 
 function getProducts() {
@@ -122,5 +159,6 @@ function getProducts() {
 module.exports = {
   syncAirtable,
   loadProducts,
-  getProducts
+  getProducts,
+  updateFromPayhip
 };
