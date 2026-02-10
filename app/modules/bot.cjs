@@ -16,7 +16,9 @@ const {
 const { normalize, cleanSearchQuery } = require(path.join(__dirname, "utils.cjs"));
 const { getProducts } = require(path.join(__dirname, "airtable.cjs"));
 const Context = require(path.join(__dirname, "context.cjs"));
-const Memory = require(path.join(__dirname, "memory.cjs")); /* ------------------------------
+const Memory = require(path.join(__dirname, "memory.cjs"));
+
+/* ------------------------------
    TRACKING
 ------------------------------ */
 function trackBot(event, data = {}) {
@@ -81,7 +83,9 @@ async function callGPT(userPrompt, memory = [], context = {}, extraSystem = "", 
     console.error("GPT error:", err);
     return "Sto avendo un problema temporaneo. Riprova tra poco.";
   }
-} /* ------------------------------
+}
+
+/* ------------------------------
    UTILS DI STATO
 ------------------------------ */
 function generateUID() {
@@ -109,9 +113,7 @@ function isYes(text) {
     t.includes("certo") ||
     t.includes("yes")
   );
-}
-
-/* ------------------------------
+} /* ------------------------------
    MATCH PRODOTTI — FUZZY + SINONIMI + PAROLE CHIAVE
 ------------------------------ */
 
@@ -260,7 +262,9 @@ function fuzzyMatchProduct(text) {
   }
 
   return null;
-} /* ------------------------------
+}
+
+/* ------------------------------
    DETECT INTENT V5 — GPT-FIRST, COMMERCIALE, CONVERSAZIONALE
 ------------------------------ */
 
@@ -271,9 +275,7 @@ function detectIntent(rawText) {
 
   trackBot("intent_detect", { text: rawText });
 
-  // ------------------------------
   // CONVERSAZIONE GENERALE
-  // ------------------------------
   if (
     q.includes("come va") ||
     q.includes("come stai") ||
@@ -292,9 +294,7 @@ function detectIntent(rawText) {
     return { intent: "conversazione", sub: null };
   }
 
-  // ------------------------------
-  // MENU / BENVENUTO
-  // ------------------------------
+  // MENU
   if (
     q.includes("menu") ||
     q.includes("inizio") ||
@@ -306,9 +306,7 @@ function detectIntent(rawText) {
     return { intent: "menu", sub: null };
   }
 
-  // ------------------------------
   // CATALOGO
-  // ------------------------------
   if (
     q.includes("catalogo") ||
     q.includes("prodotti") ||
@@ -318,9 +316,7 @@ function detectIntent(rawText) {
     return { intent: "catalogo", sub: null };
   }
 
-  // ------------------------------
   // ISCRIZIONE GENERICA
-  // ------------------------------
   if (
     q.includes("iscrizione") ||
     q.includes("mi iscrivo") ||
@@ -330,9 +326,7 @@ function detectIntent(rawText) {
     return { intent: "newsletter", sub: "subscribe" };
   }
 
-  // ------------------------------
   // NEWSLETTER
-  // ------------------------------
   if (
     q.includes("newsletter") ||
     q.includes("iscrivermi") ||
@@ -346,9 +340,7 @@ function detectIntent(rawText) {
     return { intent: "newsletter", sub: "subscribe" };
   }
 
-  // ------------------------------
-  // SOCIAL — DISTINGUI UNO PER UNO
-  // ------------------------------
+  // SOCIAL SPECIFICI
   if (q.includes("instagram")) return { intent: "social_specifico", sub: "instagram" };
   if (q.includes("tiktok")) return { intent: "social_specifico", sub: "tiktok" };
   if (q.includes("youtube")) return { intent: "social_specifico", sub: "youtube" };
@@ -357,20 +349,19 @@ function detectIntent(rawText) {
   if (q.includes("linkedin")) return { intent: "social_specifico", sub: "linkedin" };
   if (q.includes("x ") || q === "x") return { intent: "social_specifico", sub: "x" };
 
-  // Social generico
+  // SOCIAL GENERICO
   if (q.includes("social")) {
     return { intent: "social", sub: null };
   }
 
-  // ------------------------------
   // LEGALI / POLICY
-  // ------------------------------
   if (q.includes("privacy") || q.includes("dati") || q.includes("gdpr")) {
     return { intent: "privacy", sub: null };
   }
 
+  // **CORRETTO QUI**
   if (q.includes("termini") || q.includes("condizioni") || q.includes("terms")) {
-    return { intent: "terminini", sub: null };
+    return { intent: "termini", sub: null };
   }
 
   if (q.includes("cookie")) {
@@ -381,9 +372,7 @@ function detectIntent(rawText) {
     return { intent: "resi", sub: null };
   }
 
-  // ------------------------------
   // FAQ / CONTATTI / DOVE SIAMO
-  // ------------------------------
   if (q.includes("faq")) {
     return { intent: "faq", sub: null };
   }
@@ -405,9 +394,9 @@ function detectIntent(rawText) {
     q.includes("sede")
   ) {
     return { intent: "dovesiamo", sub: null };
-      } // ------------------------------
-  // SUPPORTO / HELP DESK
-  // ------------------------------
+  }
+
+  // SUPPORTO
   if (
     q.includes("supporto") ||
     q.includes("assistenza") ||
@@ -435,9 +424,7 @@ function detectIntent(rawText) {
     return { intent: "supporto", sub: null };
   }
 
-  // ------------------------------
   // ACQUISTO GENERICO
-  // ------------------------------
   if (
     q.includes("acquisto") ||
     q.includes("fare un acquisto") ||
@@ -448,9 +435,7 @@ function detectIntent(rawText) {
     return { intent: "acquisto_diretto", sub: null };
   }
 
-  // ------------------------------
   // ACQUISTO DIRETTO
-  // ------------------------------
   if (
     q.includes("acquista") ||
     q.includes("compra") ||
@@ -461,9 +446,7 @@ function detectIntent(rawText) {
     return { intent: "acquisto_diretto", sub: null };
   }
 
-  // ------------------------------
   // DETTAGLI PRODOTTO
-  // ------------------------------
   if (
     q.includes("dettagli") ||
     q.includes("approfondisci") ||
@@ -474,9 +457,7 @@ function detectIntent(rawText) {
     return { intent: "dettagli_prodotto", sub: null };
   }
 
-  // ------------------------------
   // VIDEO PRODOTTO
-  // ------------------------------
   if (
     q.includes("video") ||
     q.includes("anteprima") ||
@@ -485,9 +466,7 @@ function detectIntent(rawText) {
     return { intent: "video_prodotto", sub: null };
   }
 
-  // ------------------------------
   // PREZZO PRODOTTO
-  // ------------------------------
   if (
     q.includes("prezzo") ||
     q.includes("quanto costa") ||
@@ -497,9 +476,7 @@ function detectIntent(rawText) {
     return { intent: "prezzo_prodotto", sub: null };
   }
 
-  // ------------------------------
   // TRATTATIVA
-  // ------------------------------
   if (
     q.includes("sconto") ||
     q.includes("sconti") ||
@@ -509,9 +486,7 @@ function detectIntent(rawText) {
     return { intent: "trattativa", sub: "sconto" };
   }
 
-  // ------------------------------
   // OBIETTA PREZZO
-  // ------------------------------
   if (
     q.includes("è caro") ||
     q.includes("troppo caro") ||
@@ -522,28 +497,20 @@ function detectIntent(rawText) {
     return { intent: "obiezione", sub: "prezzo" };
   }
 
-  // ------------------------------
   // MATCH PRODOTTO FUZZY
-  // ------------------------------
   const product = fuzzyMatchProduct(text);
   if (product) {
     return { intent: "prodotto", sub: product.slug };
   }
 
-  // ------------------------------
   // ALLEGATO
-  // ------------------------------
   if (rawText.startsWith("FILE:")) {
     return { intent: "allegato", sub: rawText.replace("FILE:", "").trim() };
   }
 
-  // ------------------------------
   // FALLBACK GPT
-  // ------------------------------
   return { intent: "gpt", sub: null };
-}
-
-/* ------------------------------
+      } /* ------------------------------
    HANDLE CONVERSATION — GPT-FIRST, COMMERCIALE, COMPLETO
 ------------------------------ */
 
@@ -564,7 +531,9 @@ async function handleConversation(req, res, intent, sub, rawText) {
   if (intent === "gpt") {
     const risposta = await callGPT(rawText, Memory.get(uid), pageContext);
     return reply(res, risposta);
-    } // ------------------------------
+  }
+
+  // ------------------------------
   // CONVERSAZIONE GENERALE
   // ------------------------------
   if (intent === "conversazione") {
@@ -751,7 +720,9 @@ Vuoi tornare al menu o vedere il catalogo?
     );
 
     return reply(res, enriched || base);
-  } // ------------------------------
+  }
+
+  // ------------------------------
   // PRIVACY
   // ------------------------------
   if (intent === "privacy") {
@@ -830,9 +801,7 @@ Hai bisogno di altro o vuoi tornare al menu?
     );
 
     return reply(res, enriched || base);
-  }
-
-  // ------------------------------
+  } // ------------------------------
   // RESI E RIMBORSI
   // ------------------------------
   if (intent === "resi") {
@@ -970,7 +939,9 @@ Vuoi tornare al menu o hai bisogno di altro?
       );
 
       return reply(res, enriched || base);
-    } // PAYHIP
+    }
+
+    // PAYHIP
     if (sub === "payhip") {
       const base = `
 Payhip gestisce pagamenti e download.
@@ -1337,7 +1308,9 @@ Vuoi:
     );
 
     return reply(res, enriched || base);
-  } // ------------------------------
+  }
+
+  // ------------------------------
   // TRATTATIVA / SCONTO
   // ------------------------------
   if (intent === "trattativa" && sub === "sconto") {
@@ -1414,9 +1387,7 @@ Se mi dici in che situazione sei (es. "sto iniziando", "sono già avviato", "son
     }
 
     return reply(res, "File ricevuto. Vuoi che ti dica cosa posso farci?");
-  }
-
-  // ------------------------------
+      } // ------------------------------
   // FALLBACK INTELLIGENTE FINALE
   // ------------------------------
   const risposta = await callGPT(rawText, Memory.get(uid), pageContext);
