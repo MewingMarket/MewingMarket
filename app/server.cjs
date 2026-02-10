@@ -22,6 +22,21 @@ const app = express();
 app.disable("x-powered-by");
 
 /* =========================================================
+   LOG SERVER-SIDE (per dashboard interna)
+========================================================= */
+const SERVER_LOGS = [];
+function logEvent(event, data = {}) {
+  SERVER_LOGS.push({
+    time: new Date().toISOString(),
+    event,
+    data
+  });
+
+  // Mantieni massimo 500 eventi
+  if (SERVER_LOGS.length > 500) SERVER_LOGS.shift();
+}
+
+/* =========================================================
    MULTER — UPLOAD FILE CHAT
 ========================================================= */
 const storage = multer.diskStorage({
@@ -54,7 +69,14 @@ const userStates = {};
    IMPORT MODULI INTERNI (PERCORSI ASSOLUTI)
 ========================================================= */
 const { generateNewsletterHTML } = require(path.join(ROOT, "app", "modules", "newsletter.cjs"));
-const { syncAirtable, loadProducts, getProducts } = require(path.join(ROOT, "app", "modules", "airtable.cjs"));
+
+const {
+  syncAirtable,
+  loadProducts,
+  getProducts,
+  updateFromPayhip   // AGGIUNTO
+} = require(path.join(ROOT, "app", "modules", "airtable.cjs"));
+
 const { detectIntent, handleConversation, reply, generateUID } = require(path.join(ROOT, "app", "modules", "bot.cjs"));
 const { inviaNewsletter } = require(path.join(ROOT, "app", "modules", "brevo.cjs"));
 
@@ -89,8 +111,11 @@ async function trackGA4(eventName, params = {}) {
         events: [{ name: eventName, params }]
       }
     );
+
+    logEvent("ga4_event", { eventName, params });
   } catch (err) {
     console.error("GA4 tracking error:", err?.response?.data || err);
+    logEvent("ga4_error", { error: err?.message || "unknown" });
   }
 }
 
@@ -227,6 +252,106 @@ app.get("/sitemap.xml", (req, res) => {
   } catch {
     res.status(500).send("Errore sitemap");
   }
+});
+
+/* =========================================================
+   ⭐ WEBHOOK PAYHIP — BLINDATO
+========================================================= */
+app.post("/webhook/payhip", express.json(), (req, res) => {
+  try {
+    const secret = req.query?.secret || null;
+    const expected = process.env.PAYHIP_WEBHOOK_SECRET;
+
+    if (!secret || !expected || secret !== expected) {
+      logEvent("payhip_unauthorized", { ip: req.ip });
+      return res.status(401).send("Unauthorized");
+    }
+
+    const body = req.body || {};
+    const event = body.event || "unknown";
+    const data = body.data || {};
+
+    logEvent("payhip_webhook", { event, slug: data.slug });
+
+    trackGA4("payhip_webhook", {
+      event,
+      slug: data.slug || "",
+      price: data.price || "",
+      uid: "server"
+    });
+
+    if (data.slug) {
+      updateFromPayhip({
+        slug: data.slug,
+        price: data.price,
+        title: data.title,
+        image: data.image,
+        url: data.url
+      });
+    }
+
+    return res.json({ status: "ok" });
+
+  } catch (err) {
+    console.error("❌ Errore webhook Payhip:", err);
+    logEvent("payhip_error", { error: err?.message || "unknown" });
+    return res.status(500).send("Errore webhook");
+  }
+});
+
+/* =========================================================
+   ⭐ API DASHBOARD INTERNA
+========================================================= */
+app.get("/api/logs", (req, res) => {
+  try {
+    res.json({
+      status: "ok",
+      logs: SERVER_LOGS
+    });
+  } catch (err) {
+    console.error("Errore /api/logs:", err);
+    res.status(500).json({ status: "error" });
+  }
+});
+
+app.get("/api/catalog", (req, res) => {
+  try {
+    const products = Array.isArray(getProducts()) ? getProducts() : [];
+    res.json({
+      status: "ok",
+      count: products.length,
+      products
+    });
+  } catch (err) {
+    console.error("Errore /api/catalog:", err);
+    res.status(500).json({ status: "error" });
+  }
+});
+
+app.get("/api/system-status", (req, res) => {
+  try {
+    res.json({
+      status: "ok",
+      time: new Date().toISOString(),
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      env: {
+        airtable: Boolean(process.env.AIRTABLE_PAT),
+        payhip_secret: Boolean(process.env.PAYHIP_WEBHOOK_SECRET),
+        ga4: Boolean(process.env.GA4_ID && process.env.GA4_API_SECRET)
+      }
+    });
+  } catch (err) {
+    console.error("Errore /api/system-status:", err);
+    res.status(500).json({ status: "error" });
+  }
+});
+
+app.get("/api/sales", (req, res) => {
+  res.json({
+    status: "ok",
+    message: "Endpoint pronto per integrazione vendite Payhip"
+  });
 });
 
 /* =========================================================
