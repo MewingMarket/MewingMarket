@@ -136,7 +136,6 @@ app.use(express.static(path.join(ROOT, "app", "public")));
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
-
 /* =========================================================
    REDIRECT HTTPS + WWW
 ========================================================= */
@@ -146,9 +145,16 @@ app.use((req, res, next) => {
     const host = req.headers.host || "";
 
     if (!host) return next();
-    if (proto && proto !== "https") return res.redirect(301, `https://${host}${req.url}`);
-    if (host === "mewingmarket.it") return res.redirect(301, `https://www.mewingmarket.it${req.url}`);
-    if (!host.startsWith("www.")) return res.redirect(301, `https://www.${host}${req.url}`);
+
+    // 1) Forza solo HTTPS
+    if (proto && proto !== "https") {
+      return res.redirect(301, `https://${host}${req.url}`);
+    }
+
+    // 2) Allinea tutto a Render: dominio principale = www.mewingmarket.it
+    if (host !== "www.mewingmarket.it") {
+      return res.redirect(301, `https://www.mewingmarket.it${req.url}`);
+    }
 
     next();
   } catch (err) {
