@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Grazie per il tuo acquisto — MewingMarket</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #fafafa;
+      color: #222;
+    }
+    .container {
+      max-width: 650px;
+      margin: 40px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    }
+    h1 {
+      font-size: 26px;
+      margin-bottom: 10px;
+    }
+    .product {
+      font-size: 20px;
+      font-weight: 600;
+      margin-top: 10px;
+      color: #333;
+    }
+    .section {
+      margin-top: 25px;
+      line-height: 1.6;
+    }
+    a {
+      color: #0077ff;
+      text-decoration: none;
+    }
+    .cta {
+      margin-top: 25px;
+      display: inline-block;
+      background: #0077ff;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+    .footer {
+      margin-top: 40px;
+      font-size: 14px;
+      color: #777;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+  <h1>Grazie per il tuo acquisto! 🎉</h1>
+
+  <div id="productName" class="product"></div>
+
+  <div class="section">
+    Il tuo ordine è stato completato correttamente.  
+    <br>Controlla la tua email: Payhip ti ha già inviato il link per scaricare il file.
+  </div>
+
+  <div class="section">
+    Se non trovi l’email:
+    <ul>
+      <li>controlla la cartella spam</li>
+      <li>cerca “Payhip” nella posta</li>
+      <li>oppure recupera il file dalla tua area Payhip</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    Hai bisogno di aiuto?
+    <br><a href="https://www.mewingmarket.it">Torna al sito</a> oppure scrivici:
+    <br><b>supporto@mewingmarket.it</b>
+  </div>
+
+  <a class="cta" href="https://www.mewingmarket.it">Torna al sito</a>
+
+  <div class="footer">
+    MewingMarket — Prodotti digitali per crescere davvero
+  </div>
+</div>
+
+<script>
+  // --- LETTURA PARAMETRI URL ---
+  const params = new URLSearchParams(window.location.search);
+  const product = params.get("product") || "";
+  const source = params.get("source") || "";
+
+  // Mostra nome prodotto se presente
+  if (product) {
+    document.getElementById("productName").textContent =
+      "Hai acquistato: " + product;
+  }
+
+  // --- TRACKING GA4 (client-side) ---
+  if (window.gtag) {
+    gtag('event', 'purchase_complete', {
+      event_category: 'ecommerce',
+      event_label: product || 'unknown',
+      source: source || 'unknown'
+    });
+  }
+
+  // --- TRACKING SERVER-SIDE (il tuo middleware MAX lo intercetta) ---
+  fetch("/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: "THANKYOU_PAGE_VIEW",
+      page: "thankyou",
+      slug: product || ""
+    })
+  }).catch(() => {});
+</script>
+
+</body>
+</html>
