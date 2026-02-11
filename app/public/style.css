@@ -854,4 +854,61 @@ footer {
 
 #mm-file-input {
   display: none;
+} 
+/* =========================================================
+   TRACKING + DASHBOARD (LIGHT MODE)
+========================================================= */
+
+.tracking-container,
+.dashboard-container {
+  max-width: 1200px;
+  margin: 40px auto;
+  padding: 20px;
+}
+
+.dashboard-header {
+  background: #000;
+  color: #fff;
+  padding: 16px 20px;
+  font-size: 20px;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.dashboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  margin-top: 20px;
+}
+
+.dashboard-table th,
+.dashboard-table td {
+  border: 1px solid #ccc;
+  padding: 10px;
+}
+
+.dashboard-table th {
+  background: #f3f3f3;
+  font-weight: 600;
+}
+
+.score.green {
+  background: #c8f7c5;
+  color: #0a6b0a;
+  font-weight: bold;
+}
+
+.score.orange {
+  background: #ffe7b3;
+  color: #a66b00;
+  font-weight: bold;
+}
+
+.score.red {
+  background: #ffb3b3;
+  color: #8a0000;
+  font-weight: bold;
 }
