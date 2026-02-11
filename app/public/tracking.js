@@ -1,65 +1,28 @@
-// tracking.js — VERSIONE MAX UNIFICATA
-// Tracking locale + pannello HTML + event map + scroll + click + pageview
+// tracking.js — versione definitiva integrata con server MAX
 
 (function () {
 
-  /* =========================================================
-     CONFIG
-  ========================================================= */
   const TRACKING_ENABLED = true;
 
   /* =========================================================
-     EVENT MAP — tutti gli eventi supportati
+     EVENT MAP
   ========================================================= */
   const eventMap = {
-    page_view: {
-      description: "Visualizzazione pagina",
-      params: ["path", "title"]
-    },
-    scroll_50: {
-      description: "Scroll al 50%",
-      params: []
-    },
-    scroll_90: {
-      description: "Scroll al 90%",
-      params: []
-    },
-    chat_opened: {
-      description: "Apertura chat",
-      params: ["page", "slug"]
-    },
-    chat_message_sent: {
-      description: "Messaggio inviato dall’utente",
-      params: ["message", "type"]
-    },
-    chat_message_received: {
-      description: "Risposta generata dal bot",
-      params: ["reply"]
-    },
-    product_view: {
-      description: "Product card mostrata",
-      params: ["product"]
-    },
-    product_buy_click: {
-      description: "Click su Acquista",
-      params: ["url"]
-    },
-    quick_reply_click: {
-      description: "Quick reply cliccata",
-      params: ["label"]
-    },
-    click_generic: {
-      description: "Click generico data-track",
-      params: ["name", "extra"]
-    },
-    chat_error: {
-      description: "Errore locale",
-      params: ["error"]
-    }
+    page_view: { description: "Visualizzazione pagina", params: ["path", "title"] },
+    scroll_50: { description: "Scroll al 50%", params: [] },
+    scroll_90: { description: "Scroll al 90%", params: [] },
+    chat_opened: { description: "Apertura chat", params: ["page", "slug"] },
+    chat_message_sent: { description: "Messaggio inviato", params: ["message"] },
+    chat_message_received: { description: "Risposta bot", params: ["reply"] },
+    product_view: { description: "Product card mostrata", params: ["product"] },
+    product_buy_click: { description: "Click su Acquista", params: ["url"] },
+    quick_reply_click: { description: "Quick reply cliccata", params: ["label"] },
+    click_generic: { description: "Click generico", params: ["name", "extra"] },
+    chat_error: { description: "Errore locale", params: ["error"] }
   };
 
   /* =========================================================
-     STORAGE EVENTI (solo sessione)
+     STORAGE EVENTI
   ========================================================= */
   const logs = [];
 
@@ -71,13 +34,9 @@
 
     logs.push(payload);
 
-    console.log(
-      "%c[TRACKING]",
-      "color:#00eaff;font-weight:bold;",
-      payload
-    );
+    console.log("%c[TRACKING]", "color:#0077ff;font-weight:bold;", payload);
 
-    // GA4 se presente
+    // GA4 client-side (se presente)
     if (typeof gtag === "function") {
       gtag("event", eventName, params);
     }
@@ -88,7 +47,7 @@
   }
 
   /* =========================================================
-     RENDER HTML — stampa tabella nel pannello
+     RENDER HTML
   ========================================================= */
   function render(containerId) {
     const el = document.getElementById(containerId);
@@ -97,22 +56,11 @@
     const data = getLogs();
 
     if (!data.length) {
-      el.innerHTML = "<p>Nessun evento registrato.</p>";
+      el.innerHTML = "<tr><td colspan='4'>Nessun evento registrato.</td></tr>";
       return;
     }
 
-    let html = `
-      <table border="1" cellspacing="0" cellpadding="6" style="width:100%; font-family:system-ui; font-size:14px;">
-        <thead>
-          <tr>
-            <th>Data</th>
-            <th>Evento</th>
-            <th>Descrizione</th>
-            <th>Parametri</th>
-          </tr>
-        </thead>
-        <tbody>
-    `;
+    let html = "";
 
     data.forEach(row => {
       const meta = eventMap[row.eventName] || {};
@@ -121,26 +69,27 @@
           <td>${row.time}</td>
           <td>${row.eventName}</td>
           <td>${meta.description || ""}</td>
-          <td><pre style="margin:0; white-space:pre-wrap;">${JSON.stringify(row.params, null, 2)}</pre></td>
+          <td><pre>${JSON.stringify(row.params, null, 2)}</pre></td>
         </tr>
       `;
     });
-
-    html += `
-        </tbody>
-      </table>
-    `;
 
     el.innerHTML = html;
   }
 
   /* =========================================================
-     PAGE VIEW
+     PAGE VIEW → server
   ========================================================= */
   document.addEventListener("DOMContentLoaded", () => {
-    log("page_view", {
-      path: window.location.pathname,
-      title: document.title
+    const path = window.location.pathname;
+    const slug = new URLSearchParams(location.search).get("slug") || null;
+
+    log("page_view", { path, title: document.title });
+
+    // invio al server → Context.update
+    fetch("/?page=" + encodeURIComponent(path) + (slug ? "&slug=" + slug : ""), {
+      method: "GET",
+      credentials: "include"
     });
   });
 
@@ -184,13 +133,8 @@
   });
 
   /* =========================================================
-     API PUBBLICA PER chat.js e altri script
+     API PUBBLICA
   ========================================================= */
-  window.TRACKING = {
-    log,
-    getLogs,
-    render,
-    eventMap
-  };
+  window.TRACKING = { log, getLogs, render, eventMap };
 
 })();
