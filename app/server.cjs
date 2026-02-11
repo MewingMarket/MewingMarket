@@ -304,7 +304,40 @@ app.post("/webhook/payhip", express.json(), (req, res) => {
     return res.status(500).send("Errore webhook");
   }
 });
+/* =========================================================
+   ⭐ WEBHOOK YOUTUBE — METODO A
+========================================================= */
+const { updateFromYouTube } = require(path.join(ROOT, "app", "modules", "youtube.cjs"));
 
+app.post("/webhook/youtube", express.json(), async (req, res) => {
+  try {
+    const secret = req.query?.secret || null;
+    const expected = process.env.YOUTUBE_WEBHOOK_SECRET;
+
+    if (!secret || !expected || secret !== expected) {
+      logEvent("youtube_unauthorized", { ip: req.ip });
+      return res.status(401).send("Unauthorized");
+    }
+
+    const body = req.body || {};
+    const video = {
+      title: body.title,
+      description: body.description,
+      thumbnail: body.thumbnail,
+      url: body.url
+    };
+
+    logEvent("youtube_webhook", { title: video.title });
+
+    await updateFromYouTube(video);
+
+    return res.json({ status: "ok" });
+  } catch (err) {
+    console.error("❌ Errore webhook YouTube:", err);
+    logEvent("youtube_error", { error: err?.message || "unknown" });
+    return res.status(500).send("Errore webhook");
+  }
+});
 /* =========================================================
    ⭐ API DASHBOARD INTERNA
 ========================================================= */
