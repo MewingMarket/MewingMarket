@@ -4,76 +4,81 @@
 <meta charset="UTF-8">
 <title>Tracking – MewingMarket MAX</title>
 
-<style>
-body { 
-  font-family: Arial, sans-serif; 
-  padding: 20px; 
-  background: #0b0c10; 
-  color: #f5f5f5;
-}
-h1 { margin-bottom: 10px; }
-p { color: #cbd5e1; }
+<link rel="stylesheet" href="/style.css">
 
-table { 
-  width: 100%; 
-  border-collapse: collapse; 
-  margin-top: 20px; 
-  background: #111827;
+<style>
+/* Stile locale del pannello tracking (light mode) */
+.tracking-container {
+  max-width: 1100px;
+  margin: 40px auto;
+  padding: 20px;
 }
-th, td { 
-  border: 1px solid #374151; 
-  padding: 8px; 
+
+.tracking-toolbar {
+  margin-bottom: 20px;
+  display: flex;
+  gap: 12px;
+}
+
+.tracking-btn {
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  background: #000;
+  color: #fff;
+  font-weight: 600;
+}
+
+.tracking-btn.secondary {
+  background: #ddd;
+  color: #000;
+}
+
+.tracking-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.tracking-table th,
+.tracking-table td {
+  border: 1px solid #ccc;
+  padding: 10px;
   vertical-align: top;
 }
-th { background: #1f2937; }
-pre { 
-  color: #d1d5db; 
-  margin: 0; 
-  white-space: pre-wrap; 
-  font-size: 13px;
-}
 
-button {
-  padding: 6px 12px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  background: #1f6feb;
-  color: #fff;
-  margin-right: 10px;
-}
-button.secondary {
-  background: #30363d;
-}
-
-.toolbar {
-  margin-top: 10px;
-  margin-bottom: 10px;
+.tracking-table th {
+  background: #f3f3f3;
+  font-weight: 600;
 }
 </style>
 
 </head>
 <body>
 
-<h1>MewingMarket – Tracking MAX</h1>
-<p>Eventi raccolti dal bot e dal sito (solo sessione corrente).</p>
+<div class="tracking-container">
+  <h1>Tracking – MewingMarket MAX</h1>
+  <p>Eventi raccolti dal bot e dal sito (solo sessione corrente).</p>
 
-<div class="toolbar">
-  <button onclick="TRACKING.render('logTable')">🔄 Aggiorna</button>
-  <button class="secondary" onclick="location.reload()">♻️ Reload</button>
+  <div class="tracking-toolbar">
+    <button class="tracking-btn" onclick="TRACKING.render('logTable')">Aggiorna</button>
+    <button class="tracking-btn secondary" onclick="location.reload()">Reload</button>
+    <button class="tracking-btn" onclick="location.href='/dashboard.html?secret=TUO_SECRET'">Vai alla Dashboard</button>
+  </div>
+
+  <table class="tracking-table">
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Evento</th>
+        <th>Descrizione</th>
+        <th>Parametri</th>
+      </tr>
+    </thead>
+    <tbody id="logTable"></tbody>
+  </table>
 </div>
-
-<table>
-<thead>
-<tr>
-  <th>Data</th>
-  <th>Evento</th>
-  <th>Descrizione</th>
-  <th>Parametri</th>
-</tr>
-</thead>
-<tbody id="logTable"></tbody>
-</table>
 
 <script src="/tracking.js"></script>
 <script>
