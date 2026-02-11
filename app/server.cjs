@@ -9,6 +9,7 @@ const cookieParser = require("cookie-parser");
 const axios = require("axios");
 require("dotenv").config();
 const multer = require("multer");
+const FormData = require("form-data"); // 👈 AGGIUNTO PER WHISPER OPENROUTER
 
 /* =========================================================
    ROOT ASSOLUTA DEL PROGETTO
@@ -32,7 +33,6 @@ function logEvent(event, data = {}) {
     data
   });
 
-  // Mantieni massimo 500 eventi
   if (SERVER_LOGS.length > 500) SERVER_LOGS.shift();
 }
 
@@ -66,7 +66,7 @@ app.post("/chat/upload", upload.single("file"), (req, res) => {
 const userStates = {};
 
 /* =========================================================
-   IMPORT MODULI INTERNI (PERCORSI ASSOLUTI)
+   IMPORT MODULI INTERNI
 ========================================================= */
 const { generateNewsletterHTML } = require(path.join(ROOT, "app", "modules", "newsletter.cjs"));
 
@@ -98,7 +98,9 @@ const welcomeHTML = fs.readFileSync(
   "utf8"
 );
 
-/* Tracking GA4 server-side */
+/* =========================================================
+   TRACKING GA4 SERVER-SIDE
+========================================================= */
 const GA4_ID = process.env.GA4_ID;
 const GA4_API_SECRET = process.env.GA4_API_SECRET;
 
@@ -138,6 +140,7 @@ app.use(express.static(path.join(ROOT, "app", "public")));
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
+
 /* =========================================================
    REDIRECT HTTPS + WWW
 ========================================================= */
@@ -148,12 +151,10 @@ app.use((req, res, next) => {
 
     if (!host) return next();
 
-    // 1) Forza solo HTTPS
     if (proto && proto !== "https") {
       return res.redirect(301, `https://${host}${req.url}`);
     }
 
-    // 2) Allinea tutto a Render: dominio principale = www.mewingmarket.it
     if (host !== "www.mewingmarket.it") {
       return res.redirect(301, `https://www.mewingmarket.it${req.url}`);
     }
@@ -225,157 +226,7 @@ app.use((req, res, next) => {
     console.error("Middleware MAX error:", err);
     next();
   }
-});
-
-/* =========================================================
-   SITEMAP DINAMICHE
-========================================================= */
-app.get("/sitemap-images.xml", (req, res) => {
-  try {
-    res.type("application/xml").send(generateImagesSitemap());
-  } catch {
-    res.status(500).send("Errore sitemap");
-  }
-});
-
-app.get("/sitemap-store.xml", (req, res) => {
-  try {
-    res.type("application/xml").send(generateStoreSitemap());
-  } catch {
-    res.status(500).send("Errore sitemap");
-  }
-});
-
-app.get("/sitemap-social.xml", (req, res) => {
-  try {
-    res.type("application/xml").send(generateSocialSitemap());
-  } catch {
-    res.status(500).send("Errore sitemap");
-  }
-});
-
-app.get("/sitemap.xml", (req, res) => {
-  try {
-    res.type("application/xml").send(generateFooterSitemap());
-  } catch {
-    res.status(500).send("Errore sitemap");
-  }
-});
-
-/* =========================================================
-   ⭐ WEBHOOK PAYHIP — BLINDATO
-========================================================= */
-app.post("/webhook/payhip", express.json(), async (req, res) => {
-  try {
-    const secret = req.query?.secret || null;
-    const expected = process.env.PAYHIP_WEBHOOK_SECRET;
-
-    if (!secret || !expected || secret !== expected) {
-      logEvent("payhip_unauthorized", { ip: req.ip });
-      return res.status(401).send("Unauthorized");
-    }
-
-    const body = req.body || {};
-    const event = body.event || "unknown";
-    const data = body.data || {};
-
-    logEvent("payhip_webhook", { event, slug: data.slug });
-
-    trackGA4("payhip_webhook", {
-      event,
-      slug: data.slug || "",
-      price: data.price || "",
-      uid: "server"
-    });
-
-    if (data.slug) {
-      await updateFromPayhip({
-        slug: data.slug,
-        price: data.price,
-        title: data.title,
-        image: data.image,
-        url: data.url
-      });
-
-      await updateSalesFromPayhip(req, data, saveSaleToAirtable);
-    }
-
-    return res.json({ status: "ok" });
-
-  } catch (err) {
-    console.error("❌ Errore webhook Payhip:", err);
-    logEvent("payhip_error", { error: err?.message || "unknown" });
-    return res.status(500).send("Errore webhook");
-  }
-});
-
-/* =========================================================
-   ⭐ WEBHOOK YOUTUBE — METODO A
-========================================================= */
-app.post("/webhook/youtube", express.json(), async (req, res) => {
-  try {
-    const secret = req.query?.secret || null;
-    const expected = process.env.YOUTUBE_WEBHOOK_SECRET;
-
-    if (!secret || !expected || secret !== expected) {
-      logEvent("youtube_unauthorized", { ip: req.ip });
-      return res.status(401).send("Unauthorized");
-    }
-
-    const body = req.body || {};
-    const video = {
-      title: body.title,
-      description: body.description,
-      thumbnail: body.thumbnail,
-      url: body.url
-    };
-
-    logEvent("youtube_webhook", { title: video.title });
-
-    await updateFromYouTube(video);
-
-    return res.json({ status: "ok" });
-  } catch (err) {
-    console.error("❌ Errore webhook YouTube:", err);
-    logEvent("youtube_error", { error: err?.message || "unknown" });
-    return res.status(500).send("Errore webhook");
-  }
-});
-
-/* =========================================================
-   ⭐ REGISTRAZIONE VENDITE PAYHIP → AIRTABLE "Vendite"
-========================================================= */
-async function updateSalesFromPayhip(req, data, saveSaleToAirtableFn) {
-  try {
-    const uid = req.uid || "unknown";
-
-    const sale = {
-      UID: uid,
-      Prodotto: data.slug || "",
-      Prezzo: data.price || 0,
-      Origine: req.userState?.origin || "sito",
-      UTMSource: req.userState?.utm_source || "",
-      UTMCampaign: req.userState?.utm_campaign || "",
-      UTMMedium: req.userState?.utm_medium || "",
-      Referrer: req.userState?.referrer || "",
-      PaginaIngresso: req.userState?.firstPage || "",
-      PaginaUscita: req.userState?.lastPage || "",
-      UltimoIntent: req.userState?.lastIntent || "",
-      UltimoMessaggio: req.userState?.lastMessage || "",
-      Device: req.userState?.device || "",
-      Lingua: req.userState?.language || "",
-      Timestamp: new Date().toISOString()
-    };
-
-    await saveSaleToAirtableFn(sale);
-    console.log("Vendita registrata:", sale);
-
-  } catch (err) {
-    console.error("Errore updateSalesFromPayhip:", err);
-  }
-}
-
-/* =========================================================
+}); /* =========================================================
    ⭐ API DASHBOARD INTERNA
 ========================================================= */
 app.get("/api/logs", (req, res) => {
@@ -602,6 +453,47 @@ app.post("/chat", async (req, res) => {
 });
 
 /* =========================================================
+   ⭐ CHAT BOT — VOCALE (NUOVO)
+========================================================= */
+app.post("/chat/voice", upload.single("audio"), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.json({ reply: "Non ho ricevuto alcun vocale 😅" });
+    }
+
+    const filePath = req.file.path;
+
+    // PREPARA FORM-DATA PER OPENROUTER WHISPER
+    const form = new FormData();
+    form.append("file", fs.createReadStream(filePath));
+    form.append("model", "openai/whisper-1");
+
+    const whisperRes = await axios.post(
+      "https://openrouter.ai/api/v1/audio/transcriptions",
+      form,
+      {
+        headers: {
+          ...form.getHeaders(),
+          "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`
+        }
+      }
+    );
+
+    const transcript = whisperRes.data?.text || "Non riesco a capire il vocale 😅";
+
+    // PASSA IL TESTO AL BOT
+    const uid = req.uid;
+    const { intent, sub } = detectIntent(transcript);
+
+    userStates[uid].lastIntent = intent;
+
+    return handleConversation(req, res, intent, sub, transcript);
+
+  } catch (err) {
+    console.error("❌ Errore vocale:", err);
+    return res.json({ reply: "Non riesco a leggere il vocale 😅" });
+  }
+}); /* =========================================================
    NEWSLETTER
 ========================================================= */
 app.post("/newsletter/subscribe", async (req, res) => {
@@ -647,6 +539,7 @@ app.post("/newsletter/unsubscribe", async (req, res) => {
     return res.json({ status: "error" });
   }
 });
+
 app.post("/newsletter/send", async (req, res) => {
   try {
     const { html, oggetto } = generateNewsletterHTML();
