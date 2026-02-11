@@ -74,7 +74,9 @@ const {
   syncAirtable,
   loadProducts,
   getProducts,
-  updateFromPayhip   // AGGIUNTO
+  updateFromPayhip,
+  updateFromYouTube,
+  saveSaleToAirtable
 } = require(path.join(ROOT, "app", "modules", "airtable.cjs"));
 
 const { detectIntent, handleConversation, reply, generateUID } = require(path.join(ROOT, "app", "modules", "bot.cjs"));
@@ -263,7 +265,7 @@ app.get("/sitemap.xml", (req, res) => {
 /* =========================================================
    ⭐ WEBHOOK PAYHIP — BLINDATO
 ========================================================= */
-app.post("/webhook/payhip", express.json(), (req, res) => {
+app.post("/webhook/payhip", express.json(), async (req, res) => {
   try {
     const secret = req.query?.secret || null;
     const expected = process.env.PAYHIP_WEBHOOK_SECRET;
@@ -287,13 +289,15 @@ app.post("/webhook/payhip", express.json(), (req, res) => {
     });
 
     if (data.slug) {
-      updateFromPayhip({
+      await updateFromPayhip({
         slug: data.slug,
         price: data.price,
         title: data.title,
         image: data.image,
         url: data.url
       });
+
+      await updateSalesFromPayhip(req, data, saveSaleToAirtable);
     }
 
     return res.json({ status: "ok" });
@@ -304,11 +308,10 @@ app.post("/webhook/payhip", express.json(), (req, res) => {
     return res.status(500).send("Errore webhook");
   }
 });
+
 /* =========================================================
    ⭐ WEBHOOK YOUTUBE — METODO A
 ========================================================= */
-const { updateFromYouTube } = require(path.join(ROOT, "app", "modules", "youtube.cjs"));
-
 app.post("/webhook/youtube", express.json(), async (req, res) => {
   try {
     const secret = req.query?.secret || null;
@@ -337,9 +340,14 @@ app.post("/webhook/youtube", express.json(), async (req, res) => {
     logEvent("youtube_error", { error: err?.message || "unknown" });
     return res.status(500).send("Errore webhook");
   }
-}); async function updateSalesFromPayhip(req, data, saveSaleToAirtable) {
+});
+
+/* =========================================================
+   ⭐ REGISTRAZIONE VENDITE PAYHIP → AIRTABLE "Vendite"
+========================================================= */
+async function updateSalesFromPayhip(req, data, saveSaleToAirtableFn) {
   try {
-    const uid = req.userState?.uid || "unknown";
+    const uid = req.uid || "unknown";
 
     const sale = {
       UID: uid,
@@ -359,13 +367,14 @@ app.post("/webhook/youtube", express.json(), async (req, res) => {
       Timestamp: new Date().toISOString()
     };
 
-    await saveSaleToAirtable(sale);
+    await saveSaleToAirtableFn(sale);
     console.log("Vendita registrata:", sale);
 
   } catch (err) {
     console.error("Errore updateSalesFromPayhip:", err);
   }
-} 
+}
+
 /* =========================================================
    ⭐ API DASHBOARD INTERNA
 ========================================================= */
@@ -414,11 +423,77 @@ app.get("/api/system-status", (req, res) => {
   }
 });
 
-app.get("/api/sales", (req, res) => {
-  res.json({
-    status: "ok",
-    message: "Endpoint pronto per integrazione vendite Payhip"
-  });
+/* =========================================================
+   ⭐ API VENDITE PAYHIP → AIRTABLE "Vendite"
+========================================================= */
+app.get("/api/sales", async (req, res) => {
+  try {
+    if (req.query.secret !== process.env.DASHBOARD_SECRET) {
+      return res.status(401).json({ status: "error", message: "Unauthorized" });
+    }
+
+    const url = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE}/Vendite`;
+
+    const response = await axios.get(url, {
+      headers: {
+        Authorization: `Bearer ${process.env.AIRTABLE_PAT}`,
+        "Content-Type": "application/json"
+      }
+    });
+
+    const records = response.data?.records || [];
+
+    return res.json(records);
+  } catch (err) {
+    console.error("Errore /api/sales:", err?.response?.data || err);
+    return res.status(500).json({ status: "error" });
+  }
+});
+
+app.get("/api/sales/summary", async (req, res) => {
+  try {
+    if (req.query.secret !== process.env.DASHBOARD_SECRET) {
+      return res.status(401).json({ status: "error", message: "Unauthorized" });
+    }
+
+    const url = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE}/Vendite`;
+
+    const response = await axios.get(url, {
+      headers: {
+        Authorization: `Bearer ${process.env.AIRTABLE_PAT}`,
+        "Content-Type": "application/json"
+      }
+    });
+
+    const sales = response.data?.records || [];
+    const products = Array.isArray(getProducts()) ? getProducts() : [];
+
+    const summary = {};
+
+    for (const p of products) {
+      const vendite = sales.filter(s => s.fields?.Prodotto === p.slug);
+      const count = vendite.length;
+
+      let score = "red";
+      if (count >= 10) score = "green";
+      else if (count >= 1) score = "orange";
+
+      summary[p.slug] = {
+        titolo: p.titolo,
+        vendite: count,
+        prezzo: p.prezzo,
+        categoria: p.categoria,
+        video: Boolean(p.youtube_url),
+        descrizioneBreve: Boolean(p.descrizioneBreve),
+        score
+      };
+    }
+
+    return res.json(summary);
+  } catch (err) {
+    console.error("Errore /api/sales/summary:", err?.response?.data || err);
+    return res.status(500).json({ status: "error" });
+  }
 });
 
 /* =========================================================
@@ -572,7 +647,6 @@ app.post("/newsletter/unsubscribe", async (req, res) => {
     return res.json({ status: "error" });
   }
 });
-
 app.post("/newsletter/send", async (req, res) => {
   try {
     const { html, oggetto } = generateNewsletterHTML();
@@ -654,31 +728,17 @@ async function checkNewProduct() {
 
     if (!lastProductId) {
       lastProductId = latestId;
-      console.log("🟦 Primo avvio: memorizzato ultimo prodotto:", lastProductId);
+      console.log("🟦 Primo sync prodotti completato");
       return;
     }
 
     if (latestId !== lastProductId) {
-      console.log("🆕 Nuovo prodotto rilevato:", latest.titoloBreve || latest.titolo || latestId);
-
-      const { html, oggetto } = generateNewsletterHTML() || {};
-      if (!html || !oggetto) {
-        console.error("❌ Newsletter non generata: contenuto mancante");
-        lastProductId = latestId;
-        return;
-      }
-
-      try {
-        await inviaNewsletter({ oggetto, html });
-        console.log("📨 Newsletter nuovo prodotto inviata");
-      } catch (err) {
-        console.error("❌ Errore invio newsletter nuovo prodotto:", err?.response?.data || err);
-      }
-
       lastProductId = latestId;
+      console.log("🟩 Nuovo prodotto rilevato:", latest.titolo || latest.slug || latestId);
+      // Qui puoi agganciare invio newsletter automatica
     }
   } catch (err) {
-    console.error("❌ Errore controllo nuovo prodotto:", err?.response?.data || err);
+    console.error("❌ Errore checkNewProduct:", err);
   }
 }
 
