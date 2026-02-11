@@ -337,7 +337,35 @@ app.post("/webhook/youtube", express.json(), async (req, res) => {
     logEvent("youtube_error", { error: err?.message || "unknown" });
     return res.status(500).send("Errore webhook");
   }
-});
+}); async function updateSalesFromPayhip(req, data, saveSaleToAirtable) {
+  try {
+    const uid = req.userState?.uid || "unknown";
+
+    const sale = {
+      UID: uid,
+      Prodotto: data.slug || "",
+      Prezzo: data.price || 0,
+      Origine: req.userState?.origin || "sito",
+      UTMSource: req.userState?.utm_source || "",
+      UTMCampaign: req.userState?.utm_campaign || "",
+      UTMMedium: req.userState?.utm_medium || "",
+      Referrer: req.userState?.referrer || "",
+      PaginaIngresso: req.userState?.firstPage || "",
+      PaginaUscita: req.userState?.lastPage || "",
+      UltimoIntent: req.userState?.lastIntent || "",
+      UltimoMessaggio: req.userState?.lastMessage || "",
+      Device: req.userState?.device || "",
+      Lingua: req.userState?.language || "",
+      Timestamp: new Date().toISOString()
+    };
+
+    await saveSaleToAirtable(sale);
+    console.log("Vendita registrata:", sale);
+
+  } catch (err) {
+    console.error("Errore updateSalesFromPayhip:", err);
+  }
+} 
 /* =========================================================
    ⭐ API DASHBOARD INTERNA
 ========================================================= */
