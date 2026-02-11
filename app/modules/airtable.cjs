@@ -111,6 +111,23 @@ async function updateAirtableRecord(id, fields) {
   }
 }
 
+async function saveSaleToAirtable(fields) {
+  try {
+    const url = `https://api.airtable.com/v0/${BASE_ID}/Vendite`;
+    await fetch(url, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${AIRTABLE_PAT}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ fields })
+    });
+    console.log("Vendita salvata su Airtable:", fields);
+  } catch (err) {
+    console.error("Errore saveSaleToAirtable:", err);
+  }
+}
+
 async function callAI(prompt) {
   try {
     const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -211,6 +228,46 @@ async function updateFromPayhip(data) {
   }
 }
 
+function extractSlugFromTitle(title) {
+  if (!title) return null;
+  const match = title.match(/\[([^\]]+)\]/);
+  return match ? match[1].trim().toLowerCase() : null;
+}
+
+async function updateFromYouTube(video) {
+  try {
+    const slug = extractSlugFromTitle(video.title);
+    if (!slug) {
+      console.log("YouTube: nessuno slug trovato nel titolo:", video.title);
+      return;
+    }
+
+    const products = safeReadJSON(PRODUCTS_PATH);
+    const record = products.find(p => p.slug === slug);
+
+    if (!record || !record.id) {
+      console.log("YouTube: prodotto non trovato per slug:", slug);
+      return;
+    }
+
+    const fields = {
+      youtube_url: video.url,
+      youtube_title: safeText(video.title),
+      youtube_description: safeText(stripHTML(video.description || "")),
+      youtube_thumbnail: video.thumbnail
+    };
+
+    await updateAirtableRecord(record.id, fields);
+
+    await syncAirtable();
+    loadProducts();
+
+    console.log("YouTube aggiornato:", slug);
+  } catch (err) {
+    console.error("Errore updateFromYouTube:", err);
+  }
+}
+
 function loadProducts() {
   PRODUCTS = safeReadJSON(PRODUCTS_PATH);
   console.log("Catalogo caricato:", PRODUCTS.length, "prodotti");
@@ -225,5 +282,7 @@ module.exports = {
   loadProducts,
   getProducts,
   updateFromPayhip,
-  updateAirtableRecord
+  updateFromYouTube,
+  updateAirtableRecord,
+  saveSaleToAirtable
 };
