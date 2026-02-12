@@ -1,16 +1,37 @@
-// SEO DINAMICO COMPLETO – MEWINGMARKET
+// SEO DINAMICO COMPLETO – MEWINGMARKET (versione blindata)
 
 (async function () {
+  /* =========================================================
+     SANITIZZAZIONE
+  ========================================================== */
+  const clean = (t) =>
+    typeof t === "string"
+      ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
+      : "";
+
+  const safeURL = (url) =>
+    typeof url === "string" && url.startsWith("http")
+      ? url
+      : "";
+
+  /* =========================================================
+     LETTURA PATH E PARAMETRI
+  ========================================================== */
   const path = window.location.pathname.toLowerCase();
   const params = new URLSearchParams(window.location.search);
-  const slug = params.get("slug");
+  const slug = clean(params.get("slug") || "");
 
-  // Titolo e descrizione di default (homepage)
+  /* =========================================================
+     META DI DEFAULT
+  ========================================================== */
   let title = "MewingMarket – Prodotti digitali";
-  let description = "Prodotti digitali chiari, utili e immediati. Guide, planner e strumenti per lavorare meglio ogni giorno.";
+  let description =
+    "Prodotti digitali chiari, utili e immediati. Guide, planner e strumenti per lavorare meglio ogni giorno.";
   let canonical = "https://www.mewingmarket.it/";
 
-  // Mappa titoli per pagine statiche
+  /* =========================================================
+     PAGINE STATICHE
+  ========================================================== */
   const pages = {
     "/catalogo.html": {
       title: "Catalogo – MewingMarket",
@@ -42,39 +63,73 @@
     }
   };
 
-  // Se è una pagina statica → aggiorna meta
   if (pages[path]) {
     title = pages[path].title;
     description = pages[path].description;
     canonical = "https://www.mewingmarket.it" + path;
   }
 
-  // Se è una pagina prodotto → SEO dinamico
+  /* =========================================================
+     PAGINA PRODOTTO (blindata)
+  ========================================================== */
+  let productData = null;
+
   if (slug) {
-    const res = await fetch("products.json", { cache: "no-store" });
-    const products = await res.json();
-    const p = products.find(pr => pr.slug === slug);
+    try {
+      const res = await fetch("products.json", { cache: "no-store" });
+      if (res.ok) {
+        const products = await res.json();
+        if (Array.isArray(products)) {
+          productData = products.find((pr) => pr.slug === slug);
+        }
+      }
+    } catch (err) {
+      console.error("Errore caricamento products.json:", err);
+    }
 
-    if (p) {
-      title = p.titolo;
-      description = p.descrizioneBreve || p.descrizioneLunga || "";
-      canonical = `https://www.mewingmarket.it/prodotto.html?slug=${p.slug}`;
+    if (productData) {
+      const p = productData;
 
-      // OpenGraph dinamici
-      document.getElementById("og-title").setAttribute("content", title);
-      document.getElementById("og-description").setAttribute("content", description);
-      document.getElementById("og-url").setAttribute("content", canonical);
-      document.getElementById("og-image").setAttribute("content", p.immagine);
+      title = clean(p.titolo);
+      description = clean(p.descrizioneBreve || p.descrizioneLunga || "");
+      canonical = `https://www.mewingmarket.it/prodotto.html?slug=${clean(p.slug)}`;
 
-      // Twitter dinamici
-      document.getElementById("twitter-title").setAttribute("content", title);
-      document.getElementById("twitter-description").setAttribute("content", description);
-      document.getElementById("twitter-image").setAttribute("content", p.immagine);
+      const img = safeURL(p.immagine);
+
+      /* ----------------------------
+         OPEN GRAPH (blindato)
+      ----------------------------- */
+      const ogTitle = document.getElementById("og-title");
+      const ogDesc = document.getElementById("og-description");
+      const ogUrl = document.getElementById("og-url");
+      const ogImg = document.getElementById("og-image");
+
+      if (ogTitle) ogTitle.setAttribute("content", title);
+      if (ogDesc) ogDesc.setAttribute("content", description);
+      if (ogUrl) ogUrl.setAttribute("content", canonical);
+      if (ogImg && img) ogImg.setAttribute("content", img);
+
+      /* ----------------------------
+         TWITTER (blindato)
+      ----------------------------- */
+      const twTitle = document.getElementById("twitter-title");
+      const twDesc = document.getElementById("twitter-description");
+      const twImg = document.getElementById("twitter-image");
+
+      if (twTitle) twTitle.setAttribute("content", title);
+      if (twDesc) twDesc.setAttribute("content", description);
+      if (twImg && img) twImg.setAttribute("content", img);
     }
   }
 
-  // Aggiorna meta comuni
-  document.getElementById("dynamic-title").textContent = title;
-  document.getElementById("dynamic-description").setAttribute("content", description);
-  document.getElementById("dynamic-canonical").setAttribute("href", canonical);
+  /* =========================================================
+     META COMUNI (blindato)
+  ========================================================== */
+  const elTitle = document.getElementById("dynamic-title");
+  const elDesc = document.getElementById("dynamic-description");
+  const elCanonical = document.getElementById("dynamic-canonical");
+
+  if (elTitle) elTitle.textContent = title;
+  if (elDesc) elDesc.setAttribute("content", description);
+  if (elCanonical) elCanonical.setAttribute("href", canonical);
 })();
