@@ -1,24 +1,43 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <div id="head-placeholder"></div>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- HEAD DINAMICO (blindato) -->
   <script>
-    fetch("head.html")
-      .then(r => r.text())
-      .then(h => document.getElementById("head-placeholder").innerHTML = h);
-  </script> <script src="seo.js"></script>
-<script src="structured-data.js"></script>
+    document.addEventListener("DOMContentLoaded", () => {
+      fetch("head.html")
+        .then(r => r.text())
+        .then(html => {
+          const temp = document.createElement("div");
+          temp.innerHTML = html;
+          [...temp.children].forEach(node => document.head.appendChild(node));
+        })
+        .catch(err => console.error("Errore caricamento head:", err));
+    });
+  </script>
+
+  <script src="seo.js" defer></script>
+  <script src="structured-data.js" defer></script>
 </head>
+
 <body>
 
+<!-- HEADER DINAMICO (blindato) -->
 <div id="header-placeholder"></div>
 <script>
-  fetch("header.html")
-    .then(r => r.text())
-    .then(h => document.getElementById("header-placeholder").innerHTML = h);
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("header.html")
+      .then(r => r.text())
+      .then(h => {
+        document.getElementById("header-placeholder").innerHTML = h;
+      })
+      .catch(err => console.error("Errore caricamento header:", err));
+  });
 </script>
 
-<<main class="pagina-standard">
+<main class="pagina-standard">
   <h1>Chi siamo</h1>
 
   <p>MewingMarket è un progetto dedicato alla creazione di prodotti digitali, guide e risorse sviluppate con l'Intelligenza Artificiale. La nostra missione è trasformare idee semplici in strumenti utili, veloci e accessibili a tutti.</p>
@@ -40,15 +59,22 @@
 
   <h2>La nostra visione</h2>
   <p>Crediamo che l'Intelligenza Artificiale sia un'opportunità concreta per migliorare la vita quotidiana. Per questo sviluppiamo risorse digitali che uniscono creatività, tecnologia e semplicità, mantenendo sempre un approccio pratico e orientato ai risultati.</p>
-<h2>Dove siamo</h2>
-<p>Strada Ciousse 35, 18038 Sanremo (IM), Italia</p>
+
+  <h2>Dove siamo</h2>
+  <p>Strada Ciousse 35, 18038 Sanremo (IM), Italia</p>
 </main>
 
+<!-- FOOTER DINAMICO (blindato) -->
 <div id="footer-placeholder"></div>
 <script>
-  fetch("footer.html")
-    .then(r => r.text())
-    .then(h => document.getElementById("footer-placeholder").innerHTML = h);
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("footer.html")
+      .then(r => r.text())
+      .then(h => {
+        document.getElementById("footer-placeholder").innerHTML = h;
+      })
+      .catch(err => console.error("Errore caricamento footer:", err));
+  });
 </script>
 
 </body>
