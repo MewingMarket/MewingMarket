@@ -9,57 +9,83 @@ const { getProducts } = require(path.join(__dirname, "airtable.cjs"));
 // Costante prodotto principale
 const MAIN_PRODUCT_SLUG = "guida-ecosistema-digitale-reale";
 
-// ---------------------------------------------
-// FUNZIONI DI RICERCA
-// ---------------------------------------------
+/* =========================================================
+   FUNZIONI DI SICUREZZA
+========================================================= */
+function safeProducts() {
+  try {
+    const p = getProducts();
+    return Array.isArray(p) ? p : [];
+  } catch (err) {
+    console.error("catalogo: errore getProducts:", err);
+    return [];
+  }
+}
 
+function safeString(v) {
+  return typeof v === "string" ? v : "";
+}
+
+/* =========================================================
+   FUNZIONI DI RICERCA
+========================================================= */
 function findProductBySlug(slug) {
-  const PRODUCTS = getProducts();
-  return PRODUCTS.find(p => p.slug === slug);
+  if (!slug) return null;
+  const PRODUCTS = safeProducts();
+  return PRODUCTS.find(p => p.slug === slug) || null;
 }
 
 function findProductFromText(text) {
-  const PRODUCTS = getProducts();
+  if (!text) return null;
+
+  const PRODUCTS = safeProducts();
   const t = normalize(text);
-  return PRODUCTS.find(p =>
-    normalize(p.titolo).includes(t) ||
-    normalize(p.titoloBreve).includes(t) ||
-    normalize(p.slug).includes(t) ||
-    normalize(p.id).includes(t)
+
+  return (
+    PRODUCTS.find(p =>
+      normalize(safeString(p.titolo)).includes(t) ||
+      normalize(safeString(p.titoloBreve)).includes(t) ||
+      normalize(safeString(p.slug)).includes(t) ||
+      normalize(safeString(p.id)).includes(t)
+    ) || null
   );
 }
 
 function listProductsByCategory(cat) {
-  const PRODUCTS = getProducts();
+  if (!cat) return [];
+  const PRODUCTS = safeProducts();
   return PRODUCTS.filter(p => p.categoria === cat);
 }
 
-// ⭐ NUOVA FUNZIONE — richiesta da te
 function listAllProducts() {
-  return getProducts() || [];
+  return safeProducts();
 }
 
-// ---------------------------------------------
-// RISPOSTE PRODOTTO — VERSIONE MAX
-// ---------------------------------------------
-
+/* =========================================================
+   RISPOSTE PRODOTTO — VERSIONE MAX (blindata)
+========================================================= */
 function productReply(p) {
   if (!p) return "Non ho trovato questo prodotto nel catalogo.";
 
+  const titolo = safeString(p.titolo);
+  const breve = safeString(p.descrizioneBreve);
+  const prezzo = p.prezzo ?? "";
+  const link = safeString(p.linkPayhip);
+
   let out = `
-📘 <b>${p.titolo}</b>
+📘 <b>${titolo}</b>
 
-${p.descrizioneBreve}
+${breve}
 
-💰 <b>Prezzo:</b> ${p.prezzo}
+💰 <b>Prezzo:</b> ${prezzo}
 👉 <b>Acquista ora</b>  
-${p.linkPayhip}
+${link}
 `;
 
   if (p.youtube_url) {
     out += `
 🎥 <b>Video di presentazione</b>  
-${p.youtube_url}
+${safeString(p.youtube_url)}
 `;
   }
 
@@ -67,7 +93,7 @@ ${p.youtube_url}
     out += `
 
 🎬 <b>Anteprima</b>  
-${p.catalog_video_block}
+${safeString(p.catalog_video_block)}
 `;
   }
 
@@ -89,21 +115,26 @@ Se vuoi un altro prodotto, scrivi il nome o "catalogo".`;
 function productLongReply(p) {
   if (!p) return "Non ho trovato questo prodotto nel catalogo.";
 
+  const titolo = safeString(p.titolo);
+  const lunga = safeString(p.descrizioneLunga);
+  const prezzo = p.prezzo ?? "";
+  const link = safeString(p.linkPayhip);
+
   let out = `
-📘 <b>${p.titolo}</b> — <b>Dettagli completi</b>
+📘 <b>${titolo}</b> — <b>Dettagli completi</b>
 
-${p.descrizioneLunga}
+${lunga}
 
-💰 <b>Prezzo:</b> ${p.prezzo}
+💰 <b>Prezzo:</b> ${prezzo}
 👉 <b>Acquista ora</b>  
-${p.linkPayhip}
+${link}
 `;
 
   if (p.youtube_url) {
     out += `
 
 🎥 <b>Video</b>  
-${p.youtube_url}
+${safeString(p.youtube_url)}
 `;
   }
 
@@ -111,7 +142,7 @@ ${p.youtube_url}
     out += `
 
 📝 <b>Descrizione video</b>  
-${p.youtube_description}
+${safeString(p.youtube_description)}
 `;
   }
 
@@ -126,17 +157,20 @@ function productImageReply(p) {
   if (!p) return "Non ho trovato questo prodotto nel catalogo.";
 
   return `
-🖼 <b>Copertina di ${p.titoloBreve}</b>
+🖼 <b>Copertina di ${safeString(p.titoloBreve)}</b>
 
-${p.immagine}
+${safeString(p.immagine)}
 
 👉 <b>Acquista qui:</b>  
-${p.linkPayhip}
+${safeString(p.linkPayhip)}
 
 Vuoi altre info su questo prodotto o tornare al menu?
 `;
 }
 
+/* =========================================================
+   EXPORT
+========================================================= */
 module.exports = {
   MAIN_PRODUCT_SLUG,
   findProductBySlug,
