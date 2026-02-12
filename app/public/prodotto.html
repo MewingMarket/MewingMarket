@@ -1,31 +1,42 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- IMPORTA HEAD.HTML PRIMA DEL PARSING -->
+  <!-- HEAD DINAMICO (blindato, senza document.write) -->
   <script>
-    document.write('<link rel="import" href="head.html" id="head-import">');
-  </script>
-  <script>
-    const link = document.getElementById("head-import");
-    fetch(link.getAttribute("href"))
-      .then(r => r.text())
-      .then(html => link.insertAdjacentHTML("afterend", html));
+    document.addEventListener("DOMContentLoaded", () => {
+      fetch("head.html")
+        .then(r => r.text())
+        .then(html => {
+          const temp = document.createElement("div");
+          temp.innerHTML = html;
+
+          // Inserisce TUTTI i nodi dentro <head>
+          [...temp.children].forEach(node => document.head.appendChild(node));
+        })
+        .catch(err => console.error("Errore caricamento head:", err));
+    });
   </script>
 
   <script src="seo.js" defer></script>
   <script src="structured-data.js" defer></script>
-
 </head>
 
 <body>
 
-<!-- HEADER -->
+<!-- HEADER DINAMICO (blindato) -->
 <div id="header-placeholder"></div>
 <script>
-  fetch("header.html")
-    .then(r => r.text())
-    .then(h => document.getElementById("header-placeholder").innerHTML = h);
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("header.html")
+      .then(r => r.text())
+      .then(h => {
+        document.getElementById("header-placeholder").innerHTML = h;
+      })
+      .catch(err => console.error("Errore caricamento header:", err));
+  });
 </script>
 
 <main>
@@ -37,27 +48,36 @@
   </section>
 </main>
 
-<!-- FOOTER -->
+<!-- FOOTER DINAMICO (blindato) -->
 <div id="footer-placeholder"></div>
 <script>
-  fetch("footer.html")
-    .then(r => r.text())
-    .then(h => document.getElementById("footer-placeholder").innerHTML = h);
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("footer.html")
+      .then(r => r.text())
+      .then(h => {
+        document.getElementById("footer-placeholder").innerHTML = h;
+      })
+      .catch(err => console.error("Errore caricamento footer:", err));
+  });
 </script>
 
-<!-- TRACKING VIEW PRODOTTO -->
+<!-- TRACKING VIEW PRODOTTO (blindato) -->
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   const params = new URLSearchParams(window.location.search);
   const slug = params.get("slug");
 
   if (window.trackEvent && slug) {
-    trackEvent("product_view", { slug });
+    try {
+      trackEvent("product_view", { slug });
+    } catch (err) {
+      console.warn("Tracking error:", err);
+    }
   }
 });
 </script>
 
-<script src="prodotto.js"></script>
+<script src="prodotto.js" defer></script>
 
 </body>
 </html>
