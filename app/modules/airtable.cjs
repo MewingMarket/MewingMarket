@@ -485,7 +485,81 @@ function loadProducts() {
     PRODUCTS = [];
   }
 }
+/* =========================================================
+   ⭐ MERGE PAYHIP + YOUTUBE → AIRTABLE
+========================================================= */
 
+// Aggiorna Airtable da Payhip
+async function updateFromPayhip(item) {
+  try {
+    if (!item || !item.slug) return;
+
+    const url = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE}/Prodotti`;
+    const headers = {
+      Authorization: `Bearer ${process.env.AIRTABLE_PAT}`,
+      "Content-Type": "application/json"
+    };
+
+    // Cerca record esistente
+    const existing = await axios.get(`${url}?filterByFormula={slug}="${item.slug}"`, { headers });
+    const record = existing.data?.records?.[0];
+
+    const fields = {
+      titolo: item.titolo,
+      prezzo: item.prezzo,
+      descrizione: item.descrizione,
+      immagine: item.immagine,
+      linkPayhip: item.linkPayhip,
+      slug: item.slug
+    };
+
+    if (record) {
+      await axios.patch(`${url}/${record.id}`, { fields }, { headers });
+      console.log("🔄 Airtable aggiornato da Payhip:", item.slug);
+    } else {
+      await axios.post(url, { fields }, { headers });
+      console.log("🆕 Prodotto creato da Payhip:", item.slug);
+    }
+
+  } catch (err) {
+    console.error("❌ Errore updateFromPayhip:", err?.response?.data || err);
+  }
+}
+
+// Aggiorna Airtable da YouTube
+async function updateFromYouTube(video) {
+  try {
+    if (!video || !video.slug) return;
+
+    const url = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE}/Prodotti`;
+    const headers = {
+      Authorization: `Bearer ${process.env.AIRTABLE_PAT}`,
+      "Content-Type": "application/json"
+    };
+
+    // Cerca record esistente
+    const existing = await axios.get(`${url}?filterByFormula={slug}="${video.slug}"`, { headers });
+    const record = existing.data?.records?.[0];
+
+    const fields = {
+      youtube_url: `https://www.youtube.com/watch?v=${video.id}`,
+      youtube_title: video.titolo,
+      youtube_published: video.published,
+      slug: video.slug
+    };
+
+    if (record) {
+      await axios.patch(`${url}/${record.id}`, { fields }, { headers });
+      console.log("🎥 Airtable aggiornato da YouTube:", video.slug);
+    } else {
+      await axios.post(url, { fields }, { headers });
+      console.log("🆕 Prodotto creato da YouTube:", video.slug);
+    }
+
+  } catch (err) {
+    console.error("❌ Errore updateFromYouTube:", err?.response?.data || err);
+  }
+}
 /* =========================================================
    GET PRODOTTI
 ========================================================= */
