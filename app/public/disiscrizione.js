@@ -9,21 +9,58 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  // Tracking page view
-  if (window.trackEvent) {
-    trackEvent("newsletter_unsubscribe_page_view");
+  /* =========================================================
+     SANITIZZAZIONE
+  ========================================================== */
+  const clean = (t) =>
+    typeof t === "string"
+      ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
+      : "";
+
+  /* =========================================================
+     VALIDAZIONE EMAIL (blindata)
+  ========================================================== */
+  function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   }
+
+  /* =========================================================
+     TRACKING SICURO
+  ========================================================== */
+  function safeTrack(event, data = {}) {
+    try {
+      if (window.trackEvent) {
+        window.trackEvent(event, data);
+      }
+    } catch (err) {
+      console.warn("Tracking error:", err);
+    }
+  }
+
+  // Tracking page view
+  safeTrack("newsletter_unsubscribe_page_view");
+
+  /* =========================================================
+     SUBMIT (blindato)
+  ========================================================== */
+  let sending = false;
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const email = emailInput.value.trim();
+    if (sending) return; // evita doppio invio
+    sending = true;
+
+    const email = clean(emailInput.value.trim());
     console.log("📭 Tentativo disiscrizione:", email);
 
-    // Tracking tentativo
-    if (window.trackEvent) {
-      trackEvent("newsletter_unsubscribe_attempt", { email });
+    if (!isValidEmail(email)) {
+      alert("Inserisci un'email valida.");
+      sending = false;
+      return;
     }
+
+    safeTrack("newsletter_unsubscribe_attempt", { email });
 
     try {
       const res = await fetch("/newsletter/unsubscribe", {
@@ -32,40 +69,37 @@ document.addEventListener("DOMContentLoaded", () => {
         body: JSON.stringify({ email })
       });
 
-      const data = await res.json();
+      let data = {};
+      try {
+        data = await res.json();
+      } catch {
+        data = { status: "error", message: "Invalid JSON" };
+      }
+
       console.log("📬 Risposta server:", data);
 
       if (data.status === "ok") {
-        // Tracking successo
-        if (window.trackEvent) {
-          trackEvent("newsletter_unsubscribe_success", { email });
-        }
-
+        safeTrack("newsletter_unsubscribe_success", { email });
         alert("Disiscrizione completata.");
       } else {
-        // Tracking errore
-        if (window.trackEvent) {
-          trackEvent("newsletter_unsubscribe_error", {
-            email,
-            reason: data.message || "generic"
-          });
-        }
-
+        safeTrack("newsletter_unsubscribe_error", {
+          email,
+          reason: data.message || "generic"
+        });
         alert("Errore durante la disiscrizione.");
       }
 
     } catch (err) {
       console.error("❌ Errore fetch:", err);
 
-      // Tracking errore connessione
-      if (window.trackEvent) {
-        trackEvent("newsletter_unsubscribe_error", {
-          email,
-          error: err.message
-        });
-      }
+      safeTrack("newsletter_unsubscribe_error", {
+        email,
+        error: err.message
+      });
 
       alert("Errore di connessione.");
     }
+
+    sending = false;
   });
 });
