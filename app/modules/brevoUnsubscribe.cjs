@@ -1,90 +1,126 @@
 const axios = require("axios");
 
+/* =========================================================
+   DISISCRIZIONE EMAIL DA BREVO (blindato)
+========================================================= */
 async function disiscriviEmail(email) {
-  const headers = {
-    "api-key": process.env.BREVO_API_KEY,
-    "Content-Type": "application/json"
-  };
-
-  // 1) GET diretto
   try {
-    await axios.get(
-      `https://api.brevo.com/v3/contacts/${encodeURIComponent(email)}`,
-      { headers }
-    );
+    const apiKey = process.env.BREVO_API_KEY;
 
-    await axios.patch(
-      `https://api.brevo.com/v3/contacts/${encodeURIComponent(email)}`,
-      { emailBlacklisted: true },
-      { headers }
-    );
-
-    console.log("📭 Disiscrizione via GET:", email);
-    return;
-  } catch (_) {}
-
-  // 2) POST → crea contatto
-  try {
-    await axios.post(
-      "https://api.brevo.com/v3/contacts",
-      { email, emailBlacklisted: true },
-      { headers }
-    );
-
-    console.log("📭 Contatto creato e disiscritto:", email);
-    return;
-  } catch (err) {
-    if (err.response?.data?.code !== "duplicate_parameter") {
-      console.error("❌ POST errore:", err.response?.data || err);
-      throw err;
+    if (!apiKey) {
+      console.error("❌ disiscriviEmail: BREVO_API_KEY mancante");
+      return { status: "error", message: "API key mancante" };
     }
-  }
 
-  // 3) SEARCH avanzata
-  try {
-    const search = await axios.post(
-      "https://api.brevo.com/v3/contacts/search",
-      {
-        filter: {
-          email: {
-            $contains: email
-          }
-        }
-      },
-      { headers }
-    );
+    if (!email || typeof email !== "string") {
+      console.error("❌ disiscriviEmail: email non valida:", email);
+      return { status: "error", message: "Email non valida" };
+    }
 
-    const id = search.data?.contacts?.[0]?.id;
+    const headers = {
+      "api-key": apiKey,
+      "Content-Type": "application/json"
+    };
 
-    if (id) {
+    const encoded = encodeURIComponent(email);
+
+    /* =====================================================
+       1️⃣ TENTATIVO DIRETTO: GET → PATCH
+    ====================================================== */
+    try {
+      await axios.get(
+        `https://api.brevo.com/v3/contacts/${encoded}`,
+        { headers }
+      );
+
       await axios.patch(
-        `https://api.brevo.com/v3/contacts/${id}`,
+        `https://api.brevo.com/v3/contacts/${encoded}`,
         { emailBlacklisted: true },
         { headers }
       );
 
-      console.log("📭 Disiscrizione via SEARCH avanzata:", email);
-      return;
+      console.log("📭 Disiscrizione via GET:", email);
+      return { status: "ok" };
+    } catch (err) {
+      // silenzioso: passiamo allo step successivo
     }
-  } catch (_) {}
 
-  // 4) FALLBACK FINALE → crea contatto forzato
-  try {
-    await axios.post(
-      "https://api.brevo.com/v3/contacts",
-      {
-        email,
-        emailBlacklisted: true,
-        updateEnabled: true
-      },
-      { headers }
-    );
+    /* =====================================================
+       2️⃣ TENTATIVO: POST → crea contatto già disiscritto
+    ====================================================== */
+    try {
+      await axios.post(
+        "https://api.brevo.com/v3/contacts",
+        { email, emailBlacklisted: true },
+        { headers }
+      );
 
-    console.log("📭 Disiscrizione forzata:", email);
-    return;
+      console.log("📭 Contatto creato e disiscritto:", email);
+      return { status: "ok" };
+    } catch (err) {
+      const code = err.response?.data?.code;
+
+      if (code !== "duplicate_parameter") {
+        console.error("❌ POST errore:", err.response?.data || err.message);
+        return { status: "error", message: "Errore disiscrizione Brevo" };
+      }
+      // se è duplicate_parameter → passiamo allo step successivo
+    }
+
+    /* =====================================================
+       3️⃣ SEARCH AVANZATA → trova ID → PATCH
+    ====================================================== */
+    try {
+      const search = await axios.post(
+        "https://api.brevo.com/v3/contacts/search",
+        {
+          filter: {
+            email: { $contains: email }
+          }
+        },
+        { headers }
+      );
+
+      const id = search.data?.contacts?.[0]?.id;
+
+      if (id) {
+        await axios.patch(
+          `https://api.brevo.com/v3/contacts/${id}`,
+          { emailBlacklisted: true },
+          { headers }
+        );
+
+        console.log("📭 Disiscrizione via SEARCH avanzata:", email);
+        return { status: "ok" };
+      }
+    } catch (err) {
+      // silenzioso: passiamo allo step finale
+    }
+
+    /* =====================================================
+       4️⃣ FALLBACK FINALE → crea contatto forzato
+    ====================================================== */
+    try {
+      await axios.post(
+        "https://api.brevo.com/v3/contacts",
+        {
+          email,
+          emailBlacklisted: true,
+          updateEnabled: true
+        },
+        { headers }
+      );
+
+      console.log("📭 Disiscrizione forzata:", email);
+      return { status: "ok" };
+    } catch (err) {
+      console.error("❌ Errore finale disiscrizione:", err.response?.data || err.message);
+      return { status: "error", message: "Errore finale disiscrizione" };
+    }
+
   } catch (err) {
-    console.error("❌ Errore finale disiscrizione:", err.response?.data || err);
-    throw err;
+    console.error("❌ Errore disiscriviEmail (catch globale):", err.message);
+    return { status: "error", message: "Errore interno disiscrizione" };
   }
 }
 
