@@ -192,36 +192,6 @@ app.use((req, res, next) => {
 
 
 /* =========================================================
-   REDIRECT HTTPS + WWW
-========================================================= */
-app.use((req, res, next) => {
-  try {
-    const proto = req.headers["x-forwarded-proto"];
-    const host = req.headers.host || "";
-
-    if (!host) return next();
-
-    if (proto && proto !== "https") {
-      const url = `https://${host}${req.url}`;
-      logEvent("redirect_https", { from: req.url, to: url });
-      return res.redirect(301, url);
-    }
-
-    if (host !== "www.mewingmarket.it") {
-      const url = `https://www.mewingmarket.it${req.url}`;
-      logEvent("redirect_www", { fromHost: host, to: "www.mewingmarket.it", url });
-      return res.redirect(301, url);
-    }
-
-    next();
-  } catch (err) {
-    console.error("Redirect error:", err);
-    logEvent("redirect_error", { error: err?.message || "unknown" });
-    next();
-  }
-});
-
-/* =========================================================
    STATICI + MIDDLEWARE
 ========================================================= */
 app.use(express.static(path.join(ROOT, "app", "public")));
