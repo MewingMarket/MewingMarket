@@ -1,60 +1,76 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="UTF-8">
-<title>Tracking – MewingMarket MAX</title>
+  <meta charset="UTF-8">
+  <title>Tracking – MewingMarket MAX</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link rel="stylesheet" href="/style.css">
+  <!-- HEAD DINAMICO (blindato) -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      fetch("head.html")
+        .then(r => r.text())
+        .then(html => {
+          const temp = document.createElement("div");
+          temp.innerHTML = html;
+          [...temp.children].forEach(node => document.head.appendChild(node));
+        })
+        .catch(err => console.error("Errore caricamento head:", err));
+    });
+  </script>
 
-<style>
-/* Stile locale del pannello tracking (light mode) */
-.tracking-container {
-  max-width: 1100px;
-  margin: 40px auto;
-  padding: 20px;
-}
+  <link rel="stylesheet" href="/style.css">
 
-.tracking-toolbar {
-  margin-bottom: 20px;
-  display: flex;
-  gap: 12px;
-}
+  <style>
+    /* Stile locale del pannello tracking (light mode) */
+    .tracking-container {
+      max-width: 1100px;
+      margin: 40px auto;
+      padding: 20px;
+    }
 
-.tracking-btn {
-  padding: 8px 14px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  background: #000;
-  color: #fff;
-  font-weight: 600;
-}
+    .tracking-toolbar {
+      margin-bottom: 20px;
+      display: flex;
+      gap: 12px;
+    }
 
-.tracking-btn.secondary {
-  background: #ddd;
-  color: #000;
-}
+    .tracking-btn {
+      padding: 8px 14px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      background: #000;
+      color: #fff;
+      font-weight: 600;
+    }
 
-.tracking-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: #fff;
-}
+    .tracking-btn.secondary {
+      background: #ddd;
+      color: #000;
+    }
 
-.tracking-table th,
-.tracking-table td {
-  border: 1px solid #ccc;
-  padding: 10px;
-  vertical-align: top;
-}
+    .tracking-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+    }
 
-.tracking-table th {
-  background: #f3f3f3;
-  font-weight: 600;
-}
-</style>
+    .tracking-table th,
+    .tracking-table td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      vertical-align: top;
+    }
+
+    .tracking-table th {
+      background: #f3f3f3;
+      font-weight: 600;
+    }
+  </style>
 
 </head>
+
 <body>
 
 <div class="tracking-container">
@@ -62,7 +78,7 @@
   <p>Eventi raccolti dal bot e dal sito (solo sessione corrente).</p>
 
   <div class="tracking-toolbar">
-    <button class="tracking-btn" onclick="TRACKING.render('logTable')">Aggiorna</button>
+    <button class="tracking-btn" onclick="safeRender()">Aggiorna</button>
     <button class="tracking-btn secondary" onclick="location.reload()">Reload</button>
     <button class="tracking-btn" onclick="location.href='/dashboard.html?secret=TUO_SECRET'">Vai alla Dashboard</button>
   </div>
@@ -81,10 +97,24 @@
 </div>
 
 <script src="/tracking.js"></script>
+
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-  TRACKING.render("logTable");
-});
+  /* =========================================================
+     RENDER TRACKING BLINDATO
+  ========================================================== */
+  function safeRender() {
+    try {
+      if (window.TRACKING && typeof TRACKING.render === "function") {
+        TRACKING.render("logTable");
+      } else {
+        console.warn("TRACKING non disponibile");
+      }
+    } catch (err) {
+      console.error("Errore TRACKING.render:", err);
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", safeRender);
 </script>
 
 </body>
