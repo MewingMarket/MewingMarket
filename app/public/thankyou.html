@@ -3,7 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <title>Grazie per il tuo acquisto — MewingMarket</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- HEAD DINAMICO (blindato) -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      fetch("head.html")
+        .then(r => r.text())
+        .then(html => {
+          const temp = document.createElement("div");
+          temp.innerHTML = html;
+          [...temp.children].forEach(node => document.head.appendChild(node));
+        })
+        .catch(err => console.error("Errore caricamento head:", err));
+    });
+  </script>
 
   <style>
     body {
@@ -80,11 +94,11 @@
 
   <div class="section">
     Hai bisogno di aiuto?
-    <br><a href="https://www.mewingmarket.it">Torna al sito</a> oppure scrivici:
+    <br><a href="https://www.mewingmarket.it" rel="noopener noreferrer">Torna al sito</a> oppure scrivici:
     <br><b>supporto@mewingmarket.it</b>
   </div>
 
-  <a class="cta" href="https://www.mewingmarket.it">Torna al sito</a>
+  <a class="cta" href="https://www.mewingmarket.it" rel="noopener noreferrer">Torna al sito</a>
 
   <div class="footer">
     MewingMarket — Prodotti digitali per crescere davvero
@@ -92,36 +106,57 @@
 </div>
 
 <script>
-  // --- LETTURA PARAMETRI URL ---
+  /* =========================================================
+     SANITIZZAZIONE
+  ========================================================== */
+  const clean = (t) =>
+    typeof t === "string"
+      ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
+      : "";
+
+  /* =========================================================
+     LETTURA PARAMETRI URL (blindata)
+  ========================================================== */
   const params = new URLSearchParams(window.location.search);
-  const product = params.get("product") || "";
-  const source = params.get("source") || "";
+  const product = clean(params.get("product") || "");
+  const source = clean(params.get("source") || "");
 
-  // Mostra nome prodotto se presente
-  if (product) {
-    document.getElementById("productName").textContent =
-      "Hai acquistato: " + product;
+  const productBox = document.getElementById("productName");
+  if (product && productBox) {
+    productBox.textContent = "Hai acquistato: " + product;
   }
 
-  // --- TRACKING GA4 (client-side) ---
-  if (window.gtag) {
-    gtag('event', 'purchase_complete', {
-      event_category: 'ecommerce',
-      event_label: product || 'unknown',
-      source: source || 'unknown'
-    });
+  /* =========================================================
+     TRACKING GA4 (blindato)
+  ========================================================== */
+  if (window.gtag && product) {
+    try {
+      gtag("event", "purchase_complete", {
+        event_category: "ecommerce",
+        event_label: product || "unknown",
+        source: source || "unknown"
+      });
+    } catch (err) {
+      console.warn("GA4 tracking error:", err);
+    }
   }
 
-  // --- TRACKING SERVER-SIDE (il tuo middleware MAX lo intercetta) ---
-  fetch("/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      message: "THANKYOU_PAGE_VIEW",
-      page: "thankyou",
-      slug: product || ""
-    })
-  }).catch(() => {});
+  /* =========================================================
+     TRACKING SERVER-SIDE (blindato)
+  ========================================================== */
+  try {
+    fetch("/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: "THANKYOU_PAGE_VIEW",
+        page: "thankyou",
+        slug: product || ""
+      })
+    }).catch(() => {});
+  } catch (err) {
+    console.warn("Errore tracking server:", err);
+  }
 </script>
 
 </body>
