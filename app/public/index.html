@@ -1,50 +1,59 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- HEAD IMPORTATA (corretto: niente <div> dentro <head>) -->
+  <!-- HEAD DINAMICO (blindato) -->
   <script>
-    fetch("head.html")
-      .then(r => r.text())
-      .then(h => {
-        const temp = document.createElement("div");
-        temp.innerHTML = h;
-        document.head.append(...temp.children);
-      });
+    document.addEventListener("DOMContentLoaded", () => {
+      fetch("head.html")
+        .then(r => r.text())
+        .then(h => {
+          const temp = document.createElement("div");
+          temp.innerHTML = h;
+          document.head.append(...temp.children);
+        })
+        .catch(err => console.error("Errore caricamento head:", err));
+    });
   </script>
 
   <script src="seo.js" defer></script>
   <script src="structured-data.js" defer></script>
   <script src="tracking.js" defer></script>
   <script src="index.js" defer></script>
-
 </head>
 
 <body>
 
-<!-- HEADER -->
+<!-- HEADER DINAMICO (blindato) -->
 <div id="header-placeholder"></div>
 <script>
-  fetch("header.html")
-    .then(r => r.text())
-    .then(h => document.getElementById("header-placeholder").innerHTML = h);
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("header.html")
+      .then(r => r.text())
+      .then(h => {
+        document.getElementById("header-placeholder").innerHTML = h;
+      })
+      .catch(err => console.error("Errore caricamento header:", err));
+  });
 </script>
 
 <main class="home">
 
-<section class="hero-premium">
-  <div class="hero-left">
-    <h1>Soluzioni digitali per crescere</h1>
-    <p>Prodotti creati con Intelligenza Artificiale, chiari, moderni e subito utili.</p>
-    <a href="catalogo.html" class="btn-hero">Esplora il catalogo</a>
-  </div>
+  <section class="hero-premium">
+    <div class="hero-left">
+      <h1>Soluzioni digitali per crescere</h1>
+      <p>Prodotti creati con Intelligenza Artificiale, chiari, moderni e subito utili.</p>
+      <a href="catalogo.html" class="btn-hero">Esplora il catalogo</a>
+    </div>
 
-  <div class="hero-right">
-    <img id="hero-slider" src="" alt="Anteprima prodotto">
-  </div>
-</section>
+    <div class="hero-right">
+      <img id="hero-slider" src="" alt="Anteprima prodotto">
+    </div>
+  </section>
 
-  <!-- TESTO BENVENUTO (il tuo testo, intatto) -->
+  <!-- TESTO BENVENUTO -->
   <section class="home-section">
     <h2>Benvenuto su MewingMarket</h2>
     <p>
@@ -58,7 +67,7 @@
     <a href="chisiamo.html" class="btn">Scopri chi siamo</a>
   </section>
 
-  <!-- SEZIONE PREMIUM: PERCHÉ MEWINGMARKET -->
+  <!-- PERCHÉ MEWINGMARKET -->
   <section class="home-section why-mm">
     <h2>Perché scegliere MewingMarket</h2>
 
@@ -85,7 +94,7 @@
     </div>
   </section>
 
-  <!-- SEZIONE PREMIUM: COME FUNZIONA -->
+  <!-- COME FUNZIONA -->
   <section class="home-section how-it-works">
     <h2>Come funziona</h2>
 
@@ -116,7 +125,7 @@
     </div>
   </section>
 
-  <!-- NOVITÀ DAL CATALOGO (il tuo blocco, intatto) -->
+  <!-- NOVITÀ DAL CATALOGO -->
   <section class="home-section" id="catalogo">
     <h2>Novità dal catalogo</h2>
     <div id="products-grid" class="products-grid"></div>
@@ -124,15 +133,18 @@
 
 </main>
 
-<!-- FOOTER -->
+<!-- FOOTER DINAMICO (blindato) -->
 <div id="footer-placeholder"></div>
 <script>
-  fetch("footer.html")
-    .then(r => r.text())
-    .then(h => document.getElementById("footer-placeholder").innerHTML = h);
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("footer.html")
+      .then(r => r.text())
+      .then(h => {
+        document.getElementById("footer-placeholder").innerHTML = h;
+      })
+      .catch(err => console.error("Errore caricamento footer:", err));
+  });
 </script>
-
-
 
 </body>
 </html>
