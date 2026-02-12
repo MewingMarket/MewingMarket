@@ -1,27 +1,49 @@
-// modules/newsletter-mindset.cjs
+// modules/newsletter-mindset.cjs — VERSIONE MAX (blindata)
 
 const path = require("path");
 const { getProducts } = require(path.join(__dirname, "airtable.cjs"));
+const { safeText, cleanURL, safeSlug } = require(path.join(__dirname, "utils.cjs"));
 
-function generateMindsetNewsletter() {
-  const products = getProducts();
-  const latest = products.at(-1);
-
-  if (!latest) {
-    return {
-      oggetto: "Novità dal mondo digitale",
-      html: "<p>Nessun prodotto disponibile.</p>"
-    };
+/* =========================================================
+   FUNZIONI DI SICUREZZA
+========================================================= */
+function safeProducts() {
+  try {
+    const p = getProducts();
+    return Array.isArray(p) ? p : [];
+  } catch (err) {
+    console.error("newsletter-mindset: errore getProducts:", err);
+    return [];
   }
+}
 
-  const titolo = latest.titoloBreve || latest.titolo;
-  const descrizione = latest.descrizioneBreve || latest.descrizione || "";
-  const immagine = latest.immagine;
-  const link = latest.linkPayhip;
+function safeString(v) {
+  return typeof v === "string" ? v : (v == null ? "" : String(v));
+}
 
-  const oggetto = `✨ Novità: è arrivato “${titolo}”`;
+/* =========================================================
+   GENERAZIONE NEWSLETTER MINDSET (blindata)
+========================================================= */
+function generateMindsetNewsletter() {
+  try {
+    const products = safeProducts();
+    const latest = products.length ? products[products.length - 1] : null;
 
-  const html = `
+    if (!latest) {
+      return {
+        oggetto: "Novità dal mondo digitale",
+        html: "<p>Nessun prodotto disponibile.</p>"
+      };
+    }
+
+    const titolo = safeString(latest.titoloBreve || latest.titolo);
+    const descrizione = safeString(latest.descrizioneBreve || latest.descrizione || "");
+    const immagine = cleanURL(latest.immagine);
+    const link = cleanURL(latest.linkPayhip);
+
+    const oggetto = `✨ Novità: è arrivato “${titolo}”`;
+
+    const html = `
 <html lang="it">
 <body>
 <div style="font-family:Arial, sans-serif; max-width:600px; margin:0 auto; padding:20px; line-height:1.6;">
@@ -46,15 +68,15 @@ function generateMindsetNewsletter() {
   </p>
 
   <!-- BLOCCO NOVITÀ -->
-  <h2 style="text-align:center; color:#333; margin-top:35px;">🔥 È arrivato “${titolo}”</h2>
+  <h2 style="text-align:center; color:#333; margin-top:35px;">🔥 È arrivato “${safeText(titolo)}”</h2>
 
   <p style="font-size:16px; color:#444;">
-    ${descrizione}
+    ${safeText(descrizione)}
   </p>
 
   <div style="text-align:center; margin:25px 0;">
     <img src="${immagine}" 
-         alt="${titolo}" 
+         alt="${safeText(titolo)}" 
          style="max-width:100%; border-radius:6px;">
   </div>
 
@@ -77,7 +99,7 @@ function generateMindsetNewsletter() {
   </p>
 
   <p style="font-size:16px; color:#444;">
-    “${titolo}” è stato creato proprio per questo:  
+    “${safeText(titolo)}” è stato creato proprio per questo:  
     darti un vantaggio reale, immediato e applicabile.  
     Senza confusione. Senza perdere tempo. Senza complicazioni inutili.
   </p>
@@ -113,22 +135,41 @@ function generateMindsetNewsletter() {
 </html>
 `;
 
-  return { html, oggetto };
+    return { html, oggetto };
+
+  } catch (err) {
+    console.error("newsletter-mindset: errore generazione:", err);
+    return {
+      oggetto: "Novità dal mondo digitale",
+      html: "<p>Errore generazione newsletter.</p>"
+    };
+  }
 }
 
+/* =========================================================
+   SOCIAL ICONS (blindato)
+========================================================= */
 function generateSocialIcons() {
-  const socials = [
-    ["Instagram", "https://www.instagram.com/mewingmarket", "https://cdn-icons-png.flaticon.com/512/2111/2111463.png"],
-    ["TikTok", "https://www.tiktok.com/@mewingmarket", "https://cdn-icons-png.flaticon.com/512/3046/3046121.png"],
-    ["YouTube", "https://www.youtube.com/@mewingmarket2", "https://cdn-icons-png.flaticon.com/512/1384/1384060.png"],
-    ["X", "https://x.com/mewingm8", "https://cdn-icons-png.flaticon.com/512/5968/5968958.png"]
-  ];
+  try {
+    const socials = [
+      ["Instagram", "https://www.instagram.com/mewingmarket", "https://cdn-icons-png.flaticon.com/512/2111/2111463.png"],
+      ["TikTok", "https://www.tiktok.com/@mewingmarket", "https://cdn-icons-png.flaticon.com/512/3046/3046121.png"],
+      ["YouTube", "https://www.youtube.com/@mewingmarket2", "https://cdn-icons-png.flaticon.com/512/1384/1384060.png"],
+      ["X", "https://x.com/mewingm8", "https://cdn-icons-png.flaticon.com/512/5968/5968958.png"]
+    ];
 
-  return socials.map(([name, url, icon]) =>
-    `<a href="${url}" target="_blank" style="margin-right:10px;">
-      <img src="${icon}" width="32" style="vertical-align:middle;" alt="${name}">
-    </a>`
-  ).join("\n");
+    return socials
+      .map(([name, url, icon]) =>
+        `<a href="${cleanURL(url)}" target="_blank" style="margin-right:10px;">
+          <img src="${cleanURL(icon)}" width="32" style="vertical-align:middle;" alt="${safeText(name)}">
+        </a>`
+      )
+      .join("\n");
+
+  } catch (err) {
+    console.error("newsletter-mindset: errore social icons:", err);
+    return "";
+  }
 }
 
 module.exports = { generateMindsetNewsletter };
