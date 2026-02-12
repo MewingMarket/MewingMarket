@@ -1,4 +1,4 @@
-// modules/context.js — VERSIONE MAX
+// modules/context.js — VERSIONE MAX (blindata)
 
 // Contesto pagina (MAX MODE)
 const contextStore = {};
@@ -12,21 +12,43 @@ const contextStore = {};
   }
 */
 
+/* =========================================================
+   FUNZIONI DI SICUREZZA
+========================================================= */
+function safeUID(uid) {
+  return typeof uid === "string" || typeof uid === "number" ? String(uid) : null;
+}
+
+function safeContext(uid) {
+  const id = safeUID(uid);
+  if (!id) return null;
+
+  if (!contextStore[id] || typeof contextStore[id] !== "object") {
+    contextStore[id] = {};
+  }
+
+  return contextStore[id];
+}
+
+/* =========================================================
+   EXPORT
+========================================================= */
 module.exports = {
   // Aggiorna contesto utente
   update(uid, page, slug) {
-    if (!contextStore[uid]) contextStore[uid] = {};
+    const ctx = safeContext(uid);
+    if (!ctx) return;
 
-    if (page) contextStore[uid].page = page;
-    if (slug) contextStore[uid].slug = slug;
+    if (page && typeof page === "string") ctx.page = page;
+    if (slug && typeof slug === "string") ctx.slug = slug;
 
-    // timestamp ultimo aggiornamento
-    contextStore[uid].ts = Date.now();
+    ctx.ts = Date.now();
   },
 
   // Recupera contesto utente
   get(uid) {
-    const ctx = contextStore[uid] || {};
+    const ctx = safeContext(uid);
+    if (!ctx) return {};
 
     // Se il contesto è troppo vecchio (> 30 minuti), reset
     if (ctx.ts && Date.now() - ctx.ts > 30 * 60 * 1000) {
@@ -39,6 +61,8 @@ module.exports = {
 
   // Reset manuale (se mai servisse)
   reset(uid) {
-    contextStore[uid] = {};
+    const id = safeUID(uid);
+    if (!id) return;
+    contextStore[id] = {};
   }
 };
