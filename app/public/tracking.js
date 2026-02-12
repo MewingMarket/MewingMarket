@@ -1,12 +1,29 @@
-// tracking.js — versione definitiva integrata con server MAX
+// tracking.js — versione definitiva blindata + compatibile con server MAX
 
 (function () {
 
   const TRACKING_ENABLED = true;
 
   /* =========================================================
-     EVENT MAP
-  ========================================================= */
+     SANITIZZAZIONE
+  ========================================================== */
+  const clean = (t) =>
+    typeof t === "string"
+      ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
+      : "";
+
+  const cleanObj = (obj) => {
+    if (!obj || typeof obj !== "object") return {};
+    const out = {};
+    for (const k in obj) {
+      out[clean(k)] = clean(String(obj[k]));
+    }
+    return out;
+  };
+
+  /* =========================================================
+     EVENT MAP (blindato)
+  ========================================================== */
   const eventMap = {
     page_view: { description: "Visualizzazione pagina", params: ["path", "title"] },
     scroll_50: { description: "Scroll al 50%", params: [] },
@@ -22,23 +39,30 @@
   };
 
   /* =========================================================
-     STORAGE EVENTI
-  ========================================================= */
+     STORAGE EVENTI (blindato)
+  ========================================================== */
   const logs = [];
 
   function log(eventName, params = {}) {
     if (!TRACKING_ENABLED) return;
 
+    const safeEvent = clean(eventName);
+    const safeParams = cleanObj(params);
+
     const time = new Date().toISOString();
-    const payload = { time, eventName, params };
+    const payload = { time, eventName: safeEvent, params: safeParams };
 
     logs.push(payload);
 
     console.log("%c[TRACKING]", "color:#0077ff;font-weight:bold;", payload);
 
-    // GA4 client-side (se presente)
-    if (typeof gtag === "function") {
-      gtag("event", eventName, params);
+    // GA4 client-side (blindato)
+    try {
+      if (typeof gtag === "function") {
+        gtag("event", safeEvent, safeParams);
+      }
+    } catch (err) {
+      console.warn("GA4 tracking error:", err);
     }
   }
 
@@ -47,8 +71,8 @@
   }
 
   /* =========================================================
-     RENDER HTML
-  ========================================================= */
+     RENDER HTML (blindato)
+  ========================================================== */
   function render(containerId) {
     const el = document.getElementById(containerId);
     if (!el) return;
@@ -66,10 +90,10 @@
       const meta = eventMap[row.eventName] || {};
       html += `
         <tr>
-          <td>${row.time}</td>
-          <td>${row.eventName}</td>
-          <td>${meta.description || ""}</td>
-          <td><pre>${JSON.stringify(row.params, null, 2)}</pre></td>
+          <td>${clean(row.time)}</td>
+          <td>${clean(row.eventName)}</td>
+          <td>${clean(meta.description || "")}</td>
+          <td><pre>${clean(JSON.stringify(row.params, null, 2))}</pre></td>
         </tr>
       `;
     });
@@ -78,63 +102,77 @@
   }
 
   /* =========================================================
-     PAGE VIEW → server
-  ========================================================= */
+     PAGE VIEW → server (blindato)
+  ========================================================== */
   document.addEventListener("DOMContentLoaded", () => {
-    const path = window.location.pathname;
-    const slug = new URLSearchParams(location.search).get("slug") || null;
+    const path = clean(window.location.pathname);
+    const slug = clean(new URLSearchParams(location.search).get("slug") || "");
 
-    log("page_view", { path, title: document.title });
+    log("page_view", { path, title: clean(document.title) });
 
-    // invio al server → Context.update
-    fetch("/?page=" + encodeURIComponent(path) + (slug ? "&slug=" + slug : ""), {
-      method: "GET",
-      credentials: "include"
-    });
+    try {
+      const url = "/?page=" + encodeURIComponent(path) + (slug ? "&slug=" + encodeURIComponent(slug) : "");
+      fetch(url, { method: "GET", credentials: "include" }).catch(() => {});
+    } catch (err) {
+      console.warn("Errore tracking server:", err);
+    }
   });
 
   /* =========================================================
-     SCROLL TRACKING
-  ========================================================= */
+     SCROLL TRACKING (blindato)
+  ========================================================== */
   let scroll50 = false;
   let scroll90 = false;
 
   window.addEventListener("scroll", () => {
-    const h = document.documentElement;
-    const scrolled = (h.scrollTop || document.body.scrollTop) / (h.scrollHeight - h.clientHeight);
+    try {
+      const h = document.documentElement;
+      const scrolled = (h.scrollTop || document.body.scrollTop) / (h.scrollHeight - h.clientHeight);
 
-    if (!scroll50 && scrolled >= 0.5) {
-      scroll50 = true;
-      log("scroll_50");
-    }
+      if (!scroll50 && scrolled >= 0.5) {
+        scroll50 = true;
+        log("scroll_50");
+      }
 
-    if (!scroll90 && scrolled >= 0.9) {
-      scroll90 = true;
-      log("scroll_90");
+      if (!scroll90 && scrolled >= 0.9) {
+        scroll90 = true;
+        log("scroll_90");
+      }
+    } catch (err) {
+      log("chat_error", { error: "scroll_tracking_failed" });
     }
   });
 
   /* =========================================================
-     CLICK GENERICO data-track
-  ========================================================= */
+     CLICK GENERICO data-track (blindato)
+  ========================================================== */
   document.addEventListener("click", (e) => {
     const el = e.target.closest("[data-track]");
     if (!el) return;
 
-    const name = el.getAttribute("data-track");
-    const extra = el.getAttribute("data-track-extra");
+    const name = clean(el.getAttribute("data-track"));
+    const extraRaw = el.getAttribute("data-track-extra");
 
-    let data = {};
-    if (extra) {
-      try { data = JSON.parse(extra); } catch {}
+    let extra = {};
+    if (extraRaw) {
+      try {
+        extra = cleanObj(JSON.parse(extraRaw));
+      } catch {
+        extra = { raw: clean(extraRaw) };
+      }
     }
 
-    log("click_generic", { name, extra: data });
+    log("click_generic", { name, extra });
   });
 
   /* =========================================================
-     API PUBBLICA
-  ========================================================= */
-  window.TRACKING = { log, getLogs, render, eventMap };
+     API PUBBLICA (blindata)
+  ========================================================== */
+  window.TRACKING = Object.freeze({
+    log,
+    getLogs,
+    render,
+    eventMap
+  });
 
 })();
