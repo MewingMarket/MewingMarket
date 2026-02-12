@@ -321,6 +321,24 @@ app.post("/webhook/payhip", express.json(), async (req, res) => {
     console.error("❌ Errore webhook Payhip:", err);
     return res.status(500).json({ status: "error" });
   }
+});/* =========================================================
+   ⭐ WEBHOOK YOUTUBE — AGGIORNA PRODOTTO DA VIDEO
+========================================================= */
+app.post("/webhook/youtube", express.json(), async (req, res) => {
+  try {
+    const video = req.body;
+
+    if (!video || !video.title) {
+      return res.status(400).json({ status: "error", message: "Video non valido" });
+    }
+
+    await updateFromYouTube(video);
+
+    return res.json({ status: "ok" });
+  } catch (err) {
+    console.error("❌ Errore webhook YouTube:", err);
+    return res.status(500).json({ status: "error" });
+  }
 });
  /* =========================================================
    ⭐ API DASHBOARD INTERNA
