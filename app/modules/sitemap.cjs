@@ -1,39 +1,70 @@
-// modules/sitemap.cjs — VERSIONE CORRETTA
+// modules/sitemap.cjs — VERSIONE BLINDATA
 
 const path = require("path");
 const { getProducts } = require(path.join(__dirname, "airtable.cjs"));
+const { safeText, cleanURL, safeSlug } = require("./utils.cjs");
 
+/* =========================================================
+   GENERA SITEMAP COMPLETA (blindata)
+========================================================= */
 function generateSitemap() {
-  const base = "https://www.mewingmarket.it";
+  try {
+    const base = "https://www.mewingmarket.it";
 
-  const staticPages = [
-    "",
-    "/catalogo",
-    "/privacy",
-    "/termini"
-  ];
+    const staticPages = [
+      "",
+      "/catalogo",
+      "/privacy",
+      "/termini"
+    ];
 
-  const products = getProducts();
+    /* =====================================================
+       CARICAMENTO PRODOTTI SICURO
+    ====================================================== */
+    let products = [];
+    try {
+      const p = getProducts();
+      products = Array.isArray(p) ? p : [];
+    } catch (err) {
+      console.error("sitemap: errore getProducts:", err);
+      products = [];
+    }
 
-  const productUrls = products.map(p => `/prodotto/${p.slug}`);
+    /* =====================================================
+       GENERAZIONE URL PRODOTTI (blindata)
+    ====================================================== */
+    const productUrls = products
+      .map(p => safeSlug(p?.slug))
+      .filter(slug => slug && typeof slug === "string")
+      .map(slug => `/prodotto/${slug}`);
 
-  const urls = [...staticPages, ...productUrls];
+    const urls = [...staticPages, ...productUrls];
 
-  const xml = `
+    /* =====================================================
+       COSTRUZIONE XML (blindata)
+    ====================================================== */
+    const xml = `
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls
-  .map(
-    u => `
+  .map(u => {
+    const loc = cleanURL(`${base}${safeText(u)}`);
+    if (!loc) return "";
+    return `
   <url>
-    <loc>${base}${u}</loc>
+    <loc>${loc}</loc>
     <changefreq>weekly</changefreq>
-  </url>`
-  )
+  </url>`;
+  })
   .join("")}
 </urlset>
 `.trim();
 
-  return xml;
+    return xml;
+
+  } catch (err) {
+    console.error("Errore generateSitemap:", err);
+    return `<?xml version="1.0" encoding="UTF-8"?><urlset></urlset>`;
+  }
 }
 
 module.exports = {
