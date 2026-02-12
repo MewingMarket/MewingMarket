@@ -1,125 +1,183 @@
-// modules/utils.js — VERSIONE MAX
+// modules/utils.js — VERSIONE MAX (blindata)
 
-// ---------------------------------------------
-// SLUG SICURO
-// ---------------------------------------------
+/* =========================================================
+   FUNZIONI DI SICUREZZA BASE
+========================================================= */
+function safeString(v) {
+  return typeof v === "string" ? v : (v == null ? "" : String(v));
+}
+
+/* =========================================================
+   SLUG SICURO
+========================================================= */
 function safeSlug(text) {
-  return (text || "")
-    .toString()
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^\w\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    || "prodotto-" + Date.now();
+  try {
+    const t = safeString(text)
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^\w\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+    return t || "prodotto-" + Date.now();
+  } catch (err) {
+    console.error("safeSlug error:", err);
+    return "prodotto-" + Date.now();
+  }
 }
 
-// ---------------------------------------------
-// TESTO PULITO
-// ---------------------------------------------
+/* =========================================================
+   TESTO PULITO
+========================================================= */
 function cleanText(value, fallback = "") {
-  return (value || "")
-    .toString()
-    .trim()
-    .replace(/\s+/g, " ")
-    .replace(/[^\p{L}\p{N}\p{P}\p{Z}]/gu, "")
-    || fallback;
+  try {
+    const out = safeString(value)
+      .trim()
+      .replace(/\s+/g, " ")
+      .replace(/[^\p{L}\p{N}\p{P}\p{Z}]/gu, "");
+
+    return out || fallback;
+  } catch (err) {
+    console.error("cleanText error:", err);
+    return fallback;
+  }
 }
 
-// ---------------------------------------------
-// NUMERO PULITO
-// ---------------------------------------------
+/* =========================================================
+   NUMERO PULITO
+========================================================= */
 function cleanNumber(value) {
-  const n = parseFloat(value);
-  return isNaN(n) ? 0 : n;
+  try {
+    const n = parseFloat(value);
+    return isNaN(n) ? 0 : n;
+  } catch {
+    return 0;
+  }
 }
 
-// ---------------------------------------------
-// URL VALIDO
-// ---------------------------------------------
+/* =========================================================
+   URL VALIDO
+========================================================= */
 function cleanURL(value) {
-  const url = (value || "").toString().trim();
-  return url.startsWith("http") ? url : "";
+  try {
+    const url = safeString(value).trim();
+    return url.startsWith("http") ? url : "";
+  } catch {
+    return "";
+  }
 }
 
-// ---------------------------------------------
-// NORMALIZZAZIONE TESTO
-// ---------------------------------------------
+/* =========================================================
+   NORMALIZZAZIONE TESTO
+========================================================= */
 function normalize(text) {
-  return (text || "")
-    .toString()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+  try {
+    return safeString(text)
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  } catch (err) {
+    console.error("normalize error:", err);
+    return "";
+  }
 }
 
-// ---------------------------------------------
-// ⭐ NUOVE FUNZIONI MAX MODE
-// ---------------------------------------------
-
-// Rimuove HTML indesiderato
+/* =========================================================
+   MAX MODE — FUNZIONI AVANZATE
+========================================================= */
 function stripHTML(text) {
-  return (text || "").replace(/<[^>]*>/g, "").trim();
+  try {
+    return safeString(text).replace(/<[^>]*>/g, "").trim();
+  } catch {
+    return "";
+  }
 }
 
-// Sanitizzazione avanzata per GPT
 function safeText(text) {
-  return stripHTML(text)
-    .replace(/[\u0000-\u001F\u007F]/g, "")
-    .trim();
+  try {
+    return stripHTML(text)
+      .replace(/[\u0000-\u001F\u007F]/g, "")
+      .trim();
+  } catch {
+    return "";
+  }
 }
 
-// Accorcia testo lungo mantenendo senso
 function shorten(text, max = 200) {
-  if (!text) return "";
-  if (text.length <= max) return text;
-  return text.substring(0, max - 3) + "...";
+  try {
+    const t = safeString(text);
+    if (t.length <= max) return t;
+    return t.substring(0, max - 3) + "...";
+  } catch {
+    return "";
+  }
 }
 
-// Estrae link da un testo
 function extractLinks(text) {
-  const regex = /(https?:\/\/[^\s]+)/gi;
-  return (text.match(regex) || []);
+  try {
+    const regex = /(https?:\/\/[^\s]+)/gi;
+    return safeString(text).match(regex) || [];
+  } catch {
+    return [];
+  }
 }
 
-// Estrae slug da URL o testo
 function extractSlug(text) {
-  if (!text) return "";
-  const parts = text.split("/");
-  return safeSlug(parts.pop());
+  try {
+    if (!text) return "";
+    const parts = safeString(text).split("/");
+    return safeSlug(parts.pop());
+  } catch {
+    return "";
+  }
 }
 
-// Riconosce link Payhip
 function isPayhipLink(url) {
-  return typeof url === "string" && url.includes("payhip.com");
+  try {
+    return typeof url === "string" && url.includes("payhip.com");
+  } catch {
+    return false;
+  }
 }
 
-// Riconosce link YouTube
 function isYouTubeLink(url) {
-  return typeof url === "string" && (
-    url.includes("youtube.com") ||
-    url.includes("youtu.be")
-  );
+  try {
+    return typeof url === "string" && (
+      url.includes("youtube.com") ||
+      url.includes("youtu.be")
+    );
+  } catch {
+    return false;
+  }
 }
 
-// Formatta prezzo
 function formatPrice(value) {
-  const n = cleanNumber(value);
-  return n ? `${n}€` : "—";
+  try {
+    const n = cleanNumber(value);
+    return n ? `${n}€` : "—";
+  } catch {
+    return "—";
+  }
 }
 
-// Pulisce query di ricerca
 function cleanSearchQuery(text) {
-  return normalize(stripHTML(text))
-    .replace(/-/g, " ")
-    .trim();
+  try {
+    return normalize(stripHTML(text))
+      .replace(/-/g, " ")
+      .trim();
+  } catch {
+    return "";
+  }
 }
 
+/* =========================================================
+   EXPORT
+========================================================= */
 module.exports = {
   safeSlug,
   cleanText,
