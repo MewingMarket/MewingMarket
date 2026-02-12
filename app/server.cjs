@@ -190,13 +190,6 @@ app.use((req, res, next) => {
   }
 });
 
-/* =========================================================
-   STATICI + MIDDLEWARE
-========================================================= */
-app.use(express.static(path.join(ROOT, "app", "public")));
-app.use(cors({ origin: true, credentials: true }));
-app.use(express.json());
-app.use(cookieParser());
 
 /* =========================================================
    REDIRECT HTTPS + WWW
@@ -228,6 +221,13 @@ app.use((req, res, next) => {
   }
 });
 
+/* =========================================================
+   STATICI + MIDDLEWARE
+========================================================= */
+app.use(express.static(path.join(ROOT, "app", "public")));
+app.use(cors({ origin: true, credentials: true }));
+app.use(express.json());
+app.use(cookieParser());
 /* =========================================================
    USER STATE + COOKIE UID
 ========================================================= */
