@@ -285,16 +285,20 @@ app.use((req, res, next) => {
     logEvent("middleware_max_error", { error: err?.message || "unknown" });
     next();
   }
-});
-/* =========================================================
-   ⭐ WEBHOOK PAYHIP — AGGIORNA CATALOGO + SALVA VENDITA
+}); /* =========================================================
+   ⭐ WEBHOOK PAYHIP — ENDPOINT CORTO + HEADER
+   Accetta:
+   - /webhook/payhip-SEGRETO
+   - Header: x-payhip-secret
 ========================================================= */
-app.post("/webhook/payhip", express.json(), async (req, res) => {
+app.post(`/webhook/payhip-${process.env.PAYHIP_WEBHOOK_SECRET}`, express.json(), async (req, res) => {
   try {
-    const secret = req.query.secret;
+    const headerSecret = req.headers["x-payhip-secret"];
+    const urlSecret = process.env.PAYHIP_WEBHOOK_SECRET;
 
-    if (secret !== process.env.PAYHIP_WEBHOOK_SECRET) {
-      console.log("❌ Webhook Payhip: secret errato:", secret);
+    // Validazione doppia: header O URL
+    if (headerSecret && headerSecret !== urlSecret) {
+      console.log("❌ Webhook Payhip: header secret errato:", headerSecret);
       return res.status(401).json({ status: "error", message: "Unauthorized" });
     }
 
@@ -317,11 +321,13 @@ app.post("/webhook/payhip", express.json(), async (req, res) => {
     }
 
     return res.json({ status: "ok" });
+
   } catch (err) {
     console.error("❌ Errore webhook Payhip:", err);
     return res.status(500).json({ status: "error" });
   }
-});/* =========================================================
+});
+/* =========================================================
    ⭐ WEBHOOK YOUTUBE — AGGIORNA PRODOTTO DA VIDEO
 ========================================================= */
 app.post("/webhook/youtube", express.json(), async (req, res) => {
@@ -735,7 +741,142 @@ app.post("/newsletter/subscribe", async (req, res) => {
     return res.json({ status: "error" });
   }
 });
+/* =========================================================
+   ⭐ PAYHIP — API CATALOGO AUTOMATICO
+========================================================= */
 
+// Scarica catalogo da Payhip
+async function fetchPayhipCatalog() {
+  try {
+    const res = await axios.get("https://payhip.com/api/v1/products", {
+      headers: {
+        Authorization: `Bearer ${process.env.PAYHIP_API_KEY}`
+      }
+    });
+
+    const items = res.data?.products || [];
+    logEvent("payhip_catalog_fetched", { count: items.length });
+
+    return items.map(p => ({
+      id: p.id,
+      titolo: p.name,
+      prezzo: p.price,
+      descrizione: p.description || "",
+      immagine: p.thumbnail || "",
+      linkPayhip: p.url || "",
+      slug: p.slug || p.id
+    }));
+  } catch (err) {
+    console.error("❌ Errore fetchPayhipCatalog:", err?.response?.data || err);
+    logEvent("payhip_catalog_error", { error: err?.message || "unknown" });
+    return [];
+  }
+}
+
+// Merge Payhip → Airtable → products.json
+async function syncPayhipCatalog() {
+  try {
+    const payhip = await fetchPayhipCatalog();
+    if (!Array.isArray(payhip) || payhip.length === 0) {
+      logEvent("payhip_sync_empty", {});
+      return;
+    }
+
+    // Aggiorna Airtable
+    for (const item of payhip) {
+      try {
+        await updateFromPayhip(item);
+      } catch (err) {
+        console.error("Errore updateFromPayhip:", err);
+      }
+    }
+
+    // Ricarica prodotti aggiornati
+    try {
+      loadProducts();
+      logEvent("payhip_sync_ok", { count: payhip.length });
+    } catch (err) {
+      console.error("Errore loadProducts dopo sync:", err);
+      logEvent("payhip_sync_load_error", { error: err?.message || "unknown" });
+    }
+
+  } catch (err) {
+    console.error("❌ Errore syncPayhipCatalog:", err);
+    logEvent("payhip_sync_global_error", { error: err?.message || "unknown" });
+  }
+} /* =========================================================
+   ⭐ YOUTUBE — FEED + SYNC AUTOMATICO
+========================================================= */
+
+// Scarica feed YouTube (RSS → JSON)
+async function fetchYouTubeFeed() {
+  try {
+    const url = `https://www.youtube.com/feeds/videos.xml?channel_id=${process.env.YOUTUBE_CHANNEL_ID}`;
+    const res = await axios.get(url);
+
+    const xml = res.data;
+    const entries = [...xml.matchAll(/<entry>([\s\S]*?)<\/entry>/g)];
+
+    const videos = entries.map(e => {
+      const block = e[1];
+
+      const get = tag => {
+        const m = block.match(new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`));
+        return m ? m[1].trim() : "";
+      };
+
+      return {
+        id: get("yt:videoId"),
+        titolo: get("title"),
+        link: get("link") || "",
+        published: get("published"),
+        slug: get("title")
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "")
+      };
+    });
+
+    logEvent("youtube_feed_fetched", { count: videos.length });
+    return videos;
+
+  } catch (err) {
+    console.error("❌ Errore fetchYouTubeFeed:", err);
+    logEvent("youtube_feed_error", { error: err?.message || "unknown" });
+    return [];
+  }
+}
+
+// Merge YouTube → Airtable → products.json
+async function syncYouTube() {
+  try {
+    const videos = await fetchYouTubeFeed();
+    if (!Array.isArray(videos) || videos.length === 0) {
+      logEvent("youtube_sync_empty", {});
+      return;
+    }
+
+    for (const v of videos) {
+      try {
+        await updateFromYouTube(v);
+      } catch (err) {
+        console.error("Errore updateFromYouTube:", err);
+      }
+    }
+
+    try {
+      loadProducts();
+      logEvent("youtube_sync_ok", { count: videos.length });
+    } catch (err) {
+      console.error("Errore loadProducts dopo sync YouTube:", err);
+      logEvent("youtube_sync_load_error", { error: err?.message || "unknown" });
+    }
+
+  } catch (err) {
+    console.error("❌ Errore syncYouTube:", err);
+    logEvent("youtube_sync_global_error", { error: err?.message || "unknown" });
+  }
+} 
 /* =========================================================
    NEWSLETTER — DISISCRIZIONE
 ========================================================= */
@@ -815,7 +956,35 @@ app.listen(PORT, () => {
     }
   })();
 });
+/* =========================================================
+   ⭐ CRON JOB — PAYHIP + YOUTUBE
+========================================================= */
 
+// Sync Payhip ogni 10 minuti
+setInterval(async () => {
+  try {
+    console.log("⏳ Sync Payhip programmato...");
+    await syncPayhipCatalog();
+    console.log("✅ Sync Payhip completato");
+    logEvent("cron_payhip_ok", {});
+  } catch (err) {
+    console.error("❌ Errore cron Payhip:", err);
+    logEvent("cron_payhip_error", { error: err?.message || "unknown" });
+  }
+}, 10 * 60 * 1000);
+
+// Sync YouTube ogni 10 minuti
+setInterval(async () => {
+  try {
+    console.log("⏳ Sync YouTube programmato...");
+    await syncYouTube();
+    console.log("🎥 Sync YouTube completato");
+    logEvent("cron_youtube_ok", {});
+  } catch (err) {
+    console.error("❌ Errore cron YouTube:", err);
+    logEvent("cron_youtube_error", { error: err?.message || "unknown" });
+  }
+}, 10 * 60 * 1000);
 /* =========================================================
    SYNC PROGRAMMATA
 ========================================================= */
