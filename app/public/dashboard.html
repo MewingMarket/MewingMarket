@@ -1,9 +1,25 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="UTF-8">
-<title>Dashboard Vendite – MewingMarket</title>
-<link rel="stylesheet" href="/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- HEAD DINAMICO (blindato) -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      fetch("head.html")
+        .then(r => r.text())
+        .then(html => {
+          const temp = document.createElement("div");
+          temp.innerHTML = html;
+          [...temp.children].forEach(node => document.head.appendChild(node));
+        })
+        .catch(err => console.error("Errore caricamento head:", err));
+    });
+  </script>
+
+  <title>Dashboard Vendite – MewingMarket</title>
+  <link rel="stylesheet" href="/style.css">
 </head>
 
 <body>
@@ -53,57 +69,92 @@
 </div>
 
 <script>
-const secret = new URLSearchParams(location.search).get("secret");
+/* =========================================================
+   SANITIZZAZIONE
+========================================================= */
+const clean = (t) =>
+  typeof t === "string"
+    ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
+    : "";
 
+/* =========================================================
+   SECRET (blindato)
+========================================================= */
+const secret = clean(new URLSearchParams(location.search).get("secret") || "");
+
+/* =========================================================
+   FETCH BLINDATI
+========================================================= */
 async function loadSales() {
-  const res = await fetch(`/api/sales?secret=${secret}`);
-  return await res.json();
+  try {
+    const res = await fetch(`/api/sales?secret=${secret}`);
+    if (!res.ok) throw new Error("Errore fetch vendite");
+    return await res.json();
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
 }
 
 async function loadSummary() {
-  const res = await fetch(`/api/sales/summary?secret=${secret}`);
-  return await res.json();
+  try {
+    const res = await fetch(`/api/sales/summary?secret=${secret}`);
+    if (!res.ok) throw new Error("Errore fetch summary");
+    return await res.json();
+  } catch (err) {
+    console.error(err);
+    return {};
+  }
 }
 
+/* =========================================================
+   RENDER PRODOTTI (blindato)
+========================================================= */
 function renderProducts(summary) {
   const tbody = document.querySelector("#productsTable tbody");
   tbody.innerHTML = "";
 
-  Object.values(summary).forEach(p => {
+  Object.values(summary || {}).forEach(p => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${p.titolo}</td>
-      <td>${p.vendite}</td>
-      <td>${p.categoria}</td>
+      <td>${clean(p.titolo)}</td>
+      <td>${clean(String(p.vendite))}</td>
+      <td>${clean(p.categoria)}</td>
       <td>${p.video ? "✔" : "—"}</td>
       <td>${p.descrizioneBreve ? "✔" : "—"}</td>
-      <td class="score ${p.score}">${p.score.toUpperCase()}</td>
+      <td class="score ${clean(p.score)}">${clean(p.score).toUpperCase()}</td>
     `;
     tbody.appendChild(tr);
   });
 }
 
+/* =========================================================
+   RENDER VENDITE (blindato)
+========================================================= */
 function renderSales(sales) {
   const tbody = document.querySelector("#salesTable tbody");
   tbody.innerHTML = "";
 
-  sales.forEach(s => {
-    const f = s.fields;
+  (sales || []).forEach(s => {
+    const f = s.fields || {};
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${f.Prodotto}</td>
-      <td>${f.Prezzo}</td>
-      <td>${f.Origine}</td>
-      <td>${f.UTMSource || ""}</td>
-      <td>${f.Referrer || ""}</td>
-      <td>${f.Device || ""}</td>
-      <td>${f.Lingua || ""}</td>
-      <td>${f.Timestamp}</td>
+      <td>${clean(f.Prodotto)}</td>
+      <td>${clean(String(f.Prezzo))}</td>
+      <td>${clean(f.Origine)}</td>
+      <td>${clean(f.UTMSource || "")}</td>
+      <td>${clean(f.Referrer || "")}</td>
+      <td>${clean(f.Device || "")}</td>
+      <td>${clean(f.Lingua || "")}</td>
+      <td>${clean(f.Timestamp)}</td>
     `;
     tbody.appendChild(tr);
   });
 }
 
+/* =========================================================
+   INIT (blindato)
+========================================================= */
 (async () => {
   const sales = await loadSales();
   const summary = await loadSummary();
