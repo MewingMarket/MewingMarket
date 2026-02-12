@@ -287,7 +287,7 @@ app.use((req, res, next) => {
   }
 });
 /* =========================================================
-   ⭐ WEBHOOK PAYHIP
+   ⭐ WEBHOOK PAYHIP — AGGIORNA CATALOGO + SALVA VENDITA
 ========================================================= */
 app.post("/webhook/payhip", express.json(), async (req, res) => {
   try {
@@ -300,6 +300,15 @@ app.post("/webhook/payhip", express.json(), async (req, res) => {
 
     console.log("📦 Webhook Payhip ricevuto:", req.body);
 
+    // 1️⃣ Aggiorna catalogo da Payhip
+    try {
+      await updateFromPayhip();
+      console.log("🔄 Catalogo aggiornato da Payhip");
+    } catch (err) {
+      console.error("❌ Errore aggiornamento catalogo:", err);
+    }
+
+    // 2️⃣ Salva vendita in Airtable
     try {
       await saveSaleToAirtable(req.body);
       console.log("✅ Vendita salvata in Airtable");
