@@ -1,36 +1,49 @@
 /* =========================================================
-   CHATBOX — VERSIONE COMPLETA CON VOCALE
+   CHATBOX — VERSIONE COMPLETA + BLINDATA
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
   const chatBox = document.getElementById("chat-box");
   const chatInput = document.getElementById("chat-input");
   const chatSend = document.getElementById("chat-send");
-  const chatVoice = document.getElementById("chat-voice"); // 🎤 pulsante vocale
+  const chatVoice = document.getElementById("chat-voice");
   const chatContainer = document.getElementById("chat-container");
 
-  let isRecording = false;
-  let mediaRecorder = null;
-  let audioChunks = [];
+  if (!chatBox || !chatInput || !chatSend || !chatContainer) {
+    console.error("Chat: elementi mancanti");
+    return;
+  }
 
   /* =========================================================
-     FUNZIONE: AGGIUNGI MESSAGGIO IN CHAT
+     SANITIZZAZIONE TESTO
+  ========================================================== */
+  const clean = (t) =>
+    typeof t === "string"
+      ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
+      : "";
+
+  /* =========================================================
+     AGGIUNGI MESSAGGIO
   ========================================================== */
   function addMessage(text, sender = "bot") {
     const bubble = document.createElement("div");
     bubble.className = sender === "user" ? "chat-bubble user" : "chat-bubble bot";
-    bubble.innerHTML = text;
+    bubble.innerHTML = clean(text);
     chatBox.appendChild(bubble);
     chatBox.scrollTop = chatBox.scrollHeight;
   }
 
   /* =========================================================
-     INVIO TESTO NORMALE
+     INVIO TESTO (blindato)
   ========================================================== */
+  let sending = false;
+
   async function sendTextMessage() {
-    const message = chatInput.value.trim();
+    if (sending) return;
+    const message = clean(chatInput.value);
     if (!message) return;
 
+    sending = true;
     addMessage(message, "user");
     chatInput.value = "";
 
@@ -46,28 +59,48 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) {
       addMessage("Errore di connessione.", "bot");
     }
+
+    sending = false;
   }
 
   chatSend.addEventListener("click", sendTextMessage);
-  chatInput.addEventListener("keydown", e => {
-    if (e.key === "Enter") sendTextMessage();
+
+  chatInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      sendTextMessage();
+    }
   });
 
   /* =========================================================
-     🎤 REGISTRAZIONE VOCALE
+     🎤 REGISTRAZIONE VOCALE (blindata)
   ========================================================== */
+  let isRecording = false;
+  let mediaRecorder = null;
+  let audioChunks = [];
+
   async function startRecording() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      addMessage("Il tuo dispositivo non supporta la registrazione vocale.", "bot");
+      return;
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
       audioChunks = [];
       mediaRecorder = new MediaRecorder(stream);
 
-      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunks.push(e.data);
+      };
 
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
         await sendVoiceMessage(audioBlob);
+
+        // Rilascia risorse
+        stream.getTracks().forEach((t) => t.stop());
       };
 
       mediaRecorder.start();
@@ -87,13 +120,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  chatVoice.addEventListener("click", () => {
-    if (!isRecording) startRecording();
-    else stopRecording();
-  });
+  if (chatVoice) {
+    chatVoice.addEventListener("click", () => {
+      if (!isRecording) startRecording();
+      else stopRecording();
+    });
+  }
 
   /* =========================================================
-     INVIO VOCALE AL SERVER
+     INVIO VOCALE (blindato)
   ========================================================== */
   async function sendVoiceMessage(blob) {
     addMessage("🎤 Sto elaborando il vocale...", "bot");
@@ -115,7 +150,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* =========================================================
-     AUTO-SCROLL E APERTURA CHAT
+     APERTURA CHAT (blindata)
   ========================================================== */
   const chatToggle = document.getElementById("chat-toggle");
   if (chatToggle) {
