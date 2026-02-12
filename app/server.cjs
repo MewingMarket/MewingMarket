@@ -286,7 +286,33 @@ app.use((req, res, next) => {
     next();
   }
 });
+/* =========================================================
+   ⭐ WEBHOOK PAYHIP
+========================================================= */
+app.post("/webhook/payhip", express.json(), async (req, res) => {
+  try {
+    const secret = req.query.secret;
 
+    if (secret !== process.env.PAYHIP_WEBHOOK_SECRET) {
+      console.log("❌ Webhook Payhip: secret errato:", secret);
+      return res.status(401).json({ status: "error", message: "Unauthorized" });
+    }
+
+    console.log("📦 Webhook Payhip ricevuto:", req.body);
+
+    try {
+      await saveSaleToAirtable(req.body);
+      console.log("✅ Vendita salvata in Airtable");
+    } catch (err) {
+      console.error("❌ Errore salvataggio vendita:", err);
+    }
+
+    return res.json({ status: "ok" });
+  } catch (err) {
+    console.error("❌ Errore webhook Payhip:", err);
+    return res.status(500).json({ status: "error" });
+  }
+});
  /* =========================================================
    ⭐ API DASHBOARD INTERNA
 ========================================================= */
