@@ -192,12 +192,19 @@ app.use((req, res, next) => {
 
 
 /* =========================================================
-   STATICI + MIDDLEWARE
+   STATICI — DEVONO ESSERE SERVITI PRIMA DI TUTTO
 ========================================================= */
 app.use(express.static(path.join(ROOT, "app", "public")));
+
+
+/* =========================================================
+   MIDDLEWARE GLOBALI (DOPO GLI STATICI)
+========================================================= */
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
+
+
 /* =========================================================
    USER STATE + COOKIE UID
 ========================================================= */
@@ -244,6 +251,7 @@ app.use((req, res, next) => {
   }
 });
 
+
 /* =========================================================
    ⭐ MIDDLEWARE MAX
 ========================================================= */
@@ -277,7 +285,9 @@ app.use((req, res, next) => {
     logEvent("middleware_max_error", { error: err?.message || "unknown" });
     next();
   }
-}); /* =========================================================
+});
+
+ /* =========================================================
    ⭐ API DASHBOARD INTERNA
 ========================================================= */
 app.get("/api/logs", (req, res) => {
