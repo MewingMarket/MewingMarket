@@ -98,9 +98,7 @@ app.post("/chat/upload", upload.single("file"), (req, res) => {
     logEvent("chat_file_upload_error", { error: err?.message || "unknown" });
     return res.json({ error: "Errore durante il caricamento del file" });
   }
-});
-
-/* =========================================================
+});  /* =========================================================
    STATO UTENTI GLOBALE
 ========================================================= */
 const userStates = {};
@@ -139,6 +137,9 @@ const Context = require(path.join(ROOT, "app", "modules", "context.cjs"));
 const { iscriviEmail } = require(path.join(ROOT, "app", "modules", "brevoSubscribe.cjs"));
 const { disiscriviEmail } = require(path.join(ROOT, "app", "modules", "brevoUnsubscribe.cjs"));
 
+/* ⭐ NUOVO: servizio Payhip esterno */
+const { syncPayhip } = require(path.join(ROOT, "app", "services", "payhip.cjs"));
+
 let welcomeHTML = "";
 try {
   welcomeHTML = fs.readFileSync(
@@ -148,9 +149,7 @@ try {
 } catch (err) {
   console.error("Errore lettura welcome.html:", err);
   welcomeHTML = "<p>Benvenuto in MewingMarket</p>";
-}
-
-/* =========================================================
+} /* =========================================================
    TRACKING GA4 SERVER-SIDE
 ========================================================= */
 const GA4_ID = process.env.GA4_ID;
@@ -190,12 +189,10 @@ app.use((req, res, next) => {
   }
 });
 
-
 /* =========================================================
    STATICI — DEVONO ESSERE SERVITI PRIMA DI TUTTO
 ========================================================= */
 app.use(express.static(path.join(ROOT, "app", "public")));
-
 
 /* =========================================================
    MIDDLEWARE GLOBALI (DOPO GLI STATICI)
@@ -203,7 +200,8 @@ app.use(express.static(path.join(ROOT, "app", "public")));
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
-app.use('/api/payhip', require('./route/payhip.cjs'));
+app.use("/api/payhip", require("./route/payhip.cjs"));
+
 /* =========================================================
    USER STATE + COOKIE UID
 ========================================================= */
@@ -250,7 +248,6 @@ app.use((req, res, next) => {
   }
 });
 
-
 /* =========================================================
    ⭐ MIDDLEWARE MAX
 ========================================================= */
@@ -284,107 +281,51 @@ app.use((req, res, next) => {
     logEvent("middleware_max_error", { error: err?.message || "unknown" });
     next();
   }
-}); /* =========================================================
-   ⭐ WEBHOOK PAYHIP — ENDPOINT CORTO + HEADER
-   Accetta:
-   - /webhook/payhip-SEGRETO
-   - Header: x-payhip-secret
-========================================================= */
-app.post(`/webhook/payhip-${process.env.PAYHIP_WEBHOOK_SECRET}`, express.json(), async (req, res) => {
-  try {
-    const headerSecret = req.headers["x-payhip-secret"];
-    const urlSecret = process.env.PAYHIP_WEBHOOK_SECRET;
-
-    // Validazione doppia: header O URL
-    if (headerSecret && headerSecret !== urlSecret) {
-      console.log("❌ Webhook Payhip: header secret errato:", headerSecret);
-      return res.status(401).json({ status: "error", message: "Unauthorized" });
-    }
-
-    console.log("📦 Webhook Payhip ricevuto:", req.body);
-
-    // 1️⃣ Aggiorna catalogo da Payhip
-    try {
-      await updateFromPayhip();
-      console.log("🔄 Catalogo aggiornato da Payhip");
-    } catch (err) {
-      console.error("❌ Errore aggiornamento catalogo:", err);
-    }
-
-    // 2️⃣ Salva vendita in Airtable
-    try {
-      await saveSaleToAirtable(req.body);
-      console.log("✅ Vendita salvata in Airtable");
-    } catch (err) {
-      console.error("❌ Errore salvataggio vendita:", err);
-    }
-
-    return res.json({ status: "ok" });
-
-  } catch (err) {
-    console.error("❌ Errore webhook Payhip:", err);
-    return res.status(500).json({ status: "error" });
-  }
 });
+
 /* =========================================================
-   ⭐ WEBHOOK YOUTUBE — AGGIORNA PRODOTTO DA VIDEO
+   ⭐ WEBHOOK PAYHIP — SOLO VENDITE
 ========================================================= */
-app.post("/webhook/youtube", express.json(), async (req, res) => {
-  try {
-    const video = req.body;
+app.post(
+  `/webhook/payhip-${process.env.PAYHIP_WEBHOOK_SECRET}`,
+  express.json(),
+  async (req, res) => {
+    try {
+      const headerSecret = req.headers["x-payhip-secret"];
+      const urlSecret = process.env.PAYHIP_WEBHOOK_SECRET;
 
-    if (!video || !video.title) {
-      return res.status(400).json({ status: "error", message: "Video non valido" });
+      if (headerSecret && headerSecret !== urlSecret) {
+        console.log("❌ Webhook Payhip: header secret errato:", headerSecret);
+        return res.status(401).json({ status: "error", message: "Unauthorized" });
+      }
+
+      console.log("📦 Webhook Payhip ha registrato una vendita:", req.body);
+      logEvent("payhip_webhook_sale_received", { body: req.body });
+
+      try {
+        await saveSaleToAirtable(req.body);
+        console.log("✅ La vendita è stata salvata correttamente su Airtable.");
+        logEvent("payhip_sale_saved_airtable_ok", {});
+      } catch (err) {
+        console.error("❌ Errore durante il salvataggio della vendita su Airtable:", err);
+        logEvent("payhip_sale_saved_airtable_error", { error: err?.message || "unknown" });
+      }
+
+      return res.json({ status: "ok" });
+    } catch (err) {
+      console.error("❌ Errore generale nel webhook Payhip:", err);
+      logEvent("payhip_webhook_global_error", { error: err?.message || "unknown" });
+      return res.status(500).json({ status: "error" });
     }
-
-    await updateFromYouTube(video);
-
-    return res.json({ status: "ok" });
-  } catch (err) {
-    console.error("❌ Errore webhook YouTube:", err);
-    return res.status(500).json({ status: "error" });
   }
-});
- /* =========================================================
-   ⭐ API DASHBOARD INTERNA
+);  /* =========================================================
+   ⭐ API SYSTEM STATUS
 ========================================================= */
-app.get("/api/logs", (req, res) => {
-  try {
-    res.json({
-      status: "ok",
-      logs: SERVER_LOGS
-    });
-  } catch (err) {
-    console.error("Errore /api/logs:", err);
-    logEvent("api_logs_error", { error: err?.message || "unknown" });
-    res.status(500).json({ status: "error" });
-  }
-});
-
-app.get("/api/catalog", (req, res) => {
-  try {
-    const products = Array.isArray(getProducts()) ? getProducts() : [];
-
-    res.json({
-      status: "ok",
-      count: products.length,
-      products
-    });
-  } catch (err) {
-    console.error("Errore /api/catalog:", err);
-    logEvent("api_catalog_error", { error: err?.message || "unknown" });
-    res.status(500).json({ status: "error" });
-  }
-});
-
 app.get("/api/system-status", (req, res) => {
   try {
-    res.json({
+    return res.json({
       status: "ok",
-      time: new Date().toISOString(),
-      uptime: process.uptime(),
-      memory: process.memoryUsage(),
-      env: {
+      services: {
         airtable: Boolean(process.env.AIRTABLE_PAT),
         payhip_secret: Boolean(process.env.PAYHIP_WEBHOOK_SECRET),
         ga4: Boolean(process.env.GA4_ID && process.env.GA4_API_SECRET)
@@ -417,8 +358,8 @@ app.get("/api/sales", async (req, res) => {
     });
 
     const records = response.data?.records || [];
-
     return res.json(records);
+
   } catch (err) {
     console.error("Errore /api/sales:", err?.response?.data || err);
     logEvent("api_sales_error", { error: err?.message || "unknown" });
@@ -426,6 +367,9 @@ app.get("/api/sales", async (req, res) => {
   }
 });
 
+/* =========================================================
+   ⭐ API SALES SUMMARY
+========================================================= */
 app.get("/api/sales/summary", async (req, res) => {
   try {
     if (req.query.secret !== process.env.DASHBOARD_SECRET) {
@@ -465,6 +409,7 @@ app.get("/api/sales/summary", async (req, res) => {
           descrizioneBreve: Boolean(p.descrizioneBreve),
           score
         };
+
       } catch (err) {
         console.error("Errore generazione summary prodotto:", err);
         logEvent("api_sales_summary_item_error", {
@@ -475,13 +420,16 @@ app.get("/api/sales/summary", async (req, res) => {
     }
 
     return res.json(summary);
+
   } catch (err) {
     console.error("Errore /api/sales/summary:", err?.response?.data || err);
     logEvent("api_sales_summary_error", { error: err?.message || "unknown" });
     return res.status(500).json({ status: "error" });
   }
-});  /* =========================================================
-   FEED META
+});
+
+/* =========================================================
+   ⭐ FEED META
 ========================================================= */
 app.get("/meta/feed", (req, res) => {
   try {
@@ -522,6 +470,7 @@ app.get("/meta/feed", (req, res) => {
 </rss>`;
 
     res.type("application/xml").send(xml);
+
   } catch (err) {
     console.error("Errore feed META:", err);
     logEvent("meta_feed_error", { error: err?.message || "unknown" });
@@ -530,7 +479,7 @@ app.get("/meta/feed", (req, res) => {
 });
 
 /* =========================================================
-   HOMEPAGE + PRODUCTS.JSON
+   ⭐ HOMEPAGE
 ========================================================= */
 app.get("/", (req, res) => {
   try {
@@ -542,6 +491,9 @@ app.get("/", (req, res) => {
   }
 });
 
+/* =========================================================
+   ⭐ PRODUCTS.JSON
+========================================================= */
 app.get("/products.json", (req, res) => {
   try {
     res.sendFile(path.join(ROOT, "app", "data", "products.json"));
@@ -553,7 +505,7 @@ app.get("/products.json", (req, res) => {
 });
 
 /* =========================================================
-   PAGINA PRODOTTO DINAMICA
+   ⭐ PAGINA PRODOTTO DINAMICA
 ========================================================= */
 app.get("/prodotto.html", (req, res) => {
   try {
@@ -573,13 +525,14 @@ app.get("/prodotto.html", (req, res) => {
     }
 
     res.sendFile(path.join(ROOT, "app", "public", "prodotto.html"));
+
   } catch (err) {
     console.error("Errore pagina prodotto:", err);
     logEvent("product_page_error", { error: err?.message || "unknown" });
     res.status(500).send("Errore pagina prodotto");
   }
-}); /* =========================================================
-   ⭐ CHAT BOT — TESTO
+});  /* =========================================================
+   ⭐ CHAT BOT — TESTO (PATCH COMPLETA)
 ========================================================= */
 app.post("/chat", async (req, res) => {
   try {
@@ -587,9 +540,13 @@ app.post("/chat", async (req, res) => {
     const rawMessage = req.body?.message;
 
     if (!rawMessage || rawMessage.trim() === "") {
+      console.log("L’utente ha inviato un messaggio vuoto.");
       logEvent("chat_empty_message", { uid });
       return reply(res, "Scrivi un messaggio così posso aiutarti.");
     }
+
+    console.log(`👤 L’utente ha scritto: "${rawMessage}"`);
+    logEvent("chat_user_message", { uid, message: rawMessage });
 
     trackGA4("chat_message_sent", { uid, message: rawMessage });
 
@@ -600,27 +557,33 @@ app.post("/chat", async (req, res) => {
       const detected = detectIntent(rawMessage);
       intent = detected.intent;
       sub = detected.sub;
+
+      console.log(`🧭 Intent rilevato: ${intent} (sub: ${sub || "nessuno"})`);
+      logEvent("intent_detected_ok", { uid, intent, sub: sub || "" });
+
     } catch (err) {
-      console.error("Errore detectIntent:", err);
+      console.error("❌ Errore detectIntent:", err);
       logEvent("detect_intent_error", { uid, error: err?.message || "unknown" });
     }
-
-    trackGA4("intent_detected", { uid, intent, sub: sub || "" });
 
     try {
       userStates[uid].lastIntent = intent;
     } catch (err) {
-      console.error("Errore set lastIntent:", err);
+      console.error("❌ Errore set lastIntent:", err);
       logEvent("set_last_intent_error", { uid, error: err?.message || "unknown" });
     }
 
     const response = await handleConversation(req, res, intent, sub, rawMessage);
 
+    console.log("🤖 Il bot ha generato una risposta per l’utente.");
+    logEvent("chat_bot_replied", { uid, intent, sub: sub || "" });
+
     trackGA4("chat_message_received", { uid, intent, sub: sub || "" });
 
     return response;
+
   } catch (err) {
-    console.error("❌ Errore /chat MAX:", err);
+    console.error("❌ Errore /chat:", err);
     logEvent("chat_global_error", { error: err?.message || "unknown" });
     trackGA4("chat_error", { error: err?.message || "unknown" });
 
@@ -634,13 +597,14 @@ app.post("/chat", async (req, res) => {
 app.post("/chat/voice", upload.single("audio"), async (req, res) => {
   try {
     if (!req.file) {
+      console.log("Richiesta vocale senza file.");
       logEvent("voice_no_file", {});
       return res.json({ reply: "Non ho ricevuto alcun vocale 😅" });
     }
 
     const filePath = req.file.path;
+    console.log("🎤 File vocale ricevuto:", filePath);
 
-    // PREPARA FORM-DATA PER OPENROUTER WHISPER
     const form = new FormData();
     form.append("file", fs.createReadStream(filePath));
     form.append("model", "openai/whisper-1");
@@ -660,13 +624,15 @@ app.post("/chat/voice", upload.single("audio"), async (req, res) => {
       );
 
       transcript = whisperRes.data?.text || transcript;
+
+      console.log(`🎧 Trascrizione vocale: "${transcript}"`);
       logEvent("voice_transcribed", { transcript });
+
     } catch (err) {
-      console.error("Errore Whisper:", err);
+      console.error("❌ Errore Whisper:", err);
       logEvent("voice_whisper_error", { error: err?.message || "unknown" });
     }
 
-    // PASSA IL TESTO AL BOT
     const uid = req.uid;
 
     let intent = "gpt";
@@ -676,17 +642,24 @@ app.post("/chat/voice", upload.single("audio"), async (req, res) => {
       const detected = detectIntent(transcript);
       intent = detected.intent;
       sub = detected.sub;
+
+      console.log(`🧭 Intent vocale rilevato: ${intent}`);
+      logEvent("voice_detect_intent_ok", { uid, intent, sub: sub || "" });
+
     } catch (err) {
-      console.error("Errore detectIntent vocale:", err);
+      console.error("❌ Errore detectIntent vocale:", err);
       logEvent("voice_detect_intent_error", { error: err?.message || "unknown" });
     }
 
     try {
       userStates[uid].lastIntent = intent;
     } catch (err) {
-      console.error("Errore set lastIntent vocale:", err);
+      console.error("❌ Errore set lastIntent vocale:", err);
       logEvent("voice_set_last_intent_error", { error: err?.message || "unknown" });
     }
+
+    console.log("🤖 Il bot sta generando una risposta al vocale...");
+    logEvent("voice_bot_processing", { uid, transcript, intent, sub: sub || "" });
 
     return handleConversation(req, res, intent, sub, transcript);
 
@@ -696,8 +669,10 @@ app.post("/chat/voice", upload.single("audio"), async (req, res) => {
 
     return res.json({ reply: "Non riesco a leggere il vocale 😅" });
   }
-}); /* =========================================================
-   NEWSLETTER — ISCRIZIONE
+});
+
+/* =========================================================
+   ⭐ NEWSLETTER — ISCRIZIONE
 ========================================================= */
 app.post("/newsletter/subscribe", async (req, res) => {
   try {
@@ -740,144 +715,9 @@ app.post("/newsletter/subscribe", async (req, res) => {
     return res.json({ status: "error" });
   }
 });
+
 /* =========================================================
-   ⭐ PAYHIP — API CATALOGO AUTOMATICO
-========================================================= */
-
-// Scarica catalogo da Payhip
-async function fetchPayhipCatalog() {
-  try {
-    const res = await axios.get("https://payhip.com/api/v1/products", {
-      headers: {
-        Authorization: `Bearer ${process.env.PAYHIP_API_KEY}`
-      }
-    });
-
-    const items = res.data?.products || [];
-    logEvent("payhip_catalog_fetched", { count: items.length });
-
-    return items.map(p => ({
-      id: p.id,
-      titolo: p.name,
-      prezzo: p.price,
-      descrizione: p.description || "",
-      immagine: p.thumbnail || "",
-      linkPayhip: p.url || "",
-      slug: p.slug || p.id
-    }));
-  } catch (err) {
-    console.error("❌ Errore fetchPayhipCatalog:", err?.response?.data || err);
-    logEvent("payhip_catalog_error", { error: err?.message || "unknown" });
-    return [];
-  }
-}
-
-// Merge Payhip → Airtable → products.json
-async function syncPayhipCatalog() {
-  try {
-    const payhip = await fetchPayhipCatalog();
-    if (!Array.isArray(payhip) || payhip.length === 0) {
-      logEvent("payhip_sync_empty", {});
-      return;
-    }
-
-    // Aggiorna Airtable
-    for (const item of payhip) {
-      try {
-        await updateFromPayhip(item);
-      } catch (err) {
-        console.error("Errore updateFromPayhip:", err);
-      }
-    }
-
-    // Ricarica prodotti aggiornati
-    try {
-      loadProducts();
-      logEvent("payhip_sync_ok", { count: payhip.length });
-    } catch (err) {
-      console.error("Errore loadProducts dopo sync:", err);
-      logEvent("payhip_sync_load_error", { error: err?.message || "unknown" });
-    }
-
-  } catch (err) {
-    console.error("❌ Errore syncPayhipCatalog:", err);
-    logEvent("payhip_sync_global_error", { error: err?.message || "unknown" });
-  }
-} /* =========================================================
-   ⭐ YOUTUBE — FEED + SYNC AUTOMATICO
-========================================================= */
-
-// Scarica feed YouTube (RSS → JSON)
-async function fetchYouTubeFeed() {
-  try {
-    const url = `https://www.youtube.com/feeds/videos.xml?channel_id=${process.env.YOUTUBE_CHANNEL_ID}`;
-    const res = await axios.get(url);
-
-    const xml = res.data;
-    const entries = [...xml.matchAll(/<entry>([\s\S]*?)<\/entry>/g)];
-
-    const videos = entries.map(e => {
-      const block = e[1];
-
-      const get = tag => {
-        const m = block.match(new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`));
-        return m ? m[1].trim() : "";
-      };
-
-      return {
-        id: get("yt:videoId"),
-        titolo: get("title"),
-        link: get("link") || "",
-        published: get("published"),
-        slug: get("title")
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-+|-+$/g, "")
-      };
-    });
-
-    logEvent("youtube_feed_fetched", { count: videos.length });
-    return videos;
-
-  } catch (err) {
-    console.error("❌ Errore fetchYouTubeFeed:", err);
-    logEvent("youtube_feed_error", { error: err?.message || "unknown" });
-    return [];
-  }
-}
-
-// Merge YouTube → Airtable → products.json
-async function syncYouTube() {
-  try {
-    const videos = await fetchYouTubeFeed();
-    if (!Array.isArray(videos) || videos.length === 0) {
-      logEvent("youtube_sync_empty", {});
-      return;
-    }
-
-    for (const v of videos) {
-      try {
-        await updateFromYouTube(v);
-      } catch (err) {
-        console.error("Errore updateFromYouTube:", err);
-      }
-    }
-
-    try {
-      loadProducts();
-      logEvent("youtube_sync_ok", { count: videos.length });
-    } catch (err) {
-      console.error("Errore loadProducts dopo sync YouTube:", err);
-      logEvent("youtube_sync_load_error", { error: err?.message || "unknown" });
-    }
-
-  } catch (err) {
-    console.error("❌ Errore syncYouTube:", err);
-    logEvent("youtube_sync_global_error", { error: err?.message || "unknown" });
-  }
-} 
-/* =========================================================
-   NEWSLETTER — DISISCRIZIONE
+   ⭐ NEWSLETTER — DISISCRIZIONE
 ========================================================= */
 app.post("/newsletter/unsubscribe", async (req, res) => {
   try {
@@ -901,7 +741,7 @@ app.post("/newsletter/unsubscribe", async (req, res) => {
 });
 
 /* =========================================================
-   NEWSLETTER — INVIO MASSIVO
+   ⭐ NEWSLETTER — INVIO MASSIVO
 ========================================================= */
 app.post("/newsletter/send", async (req, res) => {
   try {
@@ -922,17 +762,21 @@ app.post("/newsletter/send", async (req, res) => {
     logEvent("newsletter_send_error", { error: err?.message || "unknown" });
     return res.json({ status: "error" });
   }
-}); /* =========================================================
-   AVVIO SERVER
+});
+
+/* =========================================================
+   ⭐ AVVIO SERVER + SYNC AUTOMATICO (Airtable + Payhip)
 ========================================================= */
 const PORT = process.env.PORT || 10000;
 
 app.listen(PORT, () => {
   console.log(`🚀 MewingMarket attivo sulla porta ${PORT}`);
+  logEvent("server_started", { port: PORT });
 
   (async () => {
     try {
       console.log("⏳ Sync automatico Airtable all'avvio...");
+      logEvent("startup_sync_airtable_start", {});
 
       await syncAirtable().catch(err => {
         console.error("❌ Errore sync Airtable all'avvio:", err);
@@ -946,7 +790,19 @@ app.listen(PORT, () => {
         logEvent("load_products_start_error", { error: err?.message || "unknown" });
       }
 
-      console.log("✅ Sync completato all'avvio");
+      console.log("⏳ Sync automatico Payhip all'avvio...");
+      logEvent("startup_sync_payhip_start", {});
+
+      try {
+        const result = await syncPayhip();
+        console.log("📦 Sync Payhip completato all'avvio:", result);
+        logEvent("startup_sync_payhip_ok", result);
+      } catch (err) {
+        console.error("❌ Errore sync Payhip all'avvio:", err);
+        logEvent("startup_sync_payhip_error", { error: err?.message || "unknown" });
+      }
+
+      console.log("✅ Tutte le sincronizzazioni all'avvio sono state completate.");
       logEvent("startup_sync_ok", {});
 
     } catch (err) {
@@ -955,17 +811,22 @@ app.listen(PORT, () => {
     }
   })();
 });
+
 /* =========================================================
-   ⭐ CRON JOB — PAYHIP + YOUTUBE
+   ⭐ CRON JOB — PAYHIP + YOUTUBE + AIRTABLE
 ========================================================= */
 
 // Sync Payhip ogni 10 minuti
 setInterval(async () => {
   try {
     console.log("⏳ Sync Payhip programmato...");
-    await syncPayhipCatalog();
-    console.log("✅ Sync Payhip completato");
-    logEvent("cron_payhip_ok", {});
+    logEvent("cron_payhip_start", {});
+
+    const result = await syncPayhip();
+
+    console.log("📦 Sync Payhip completato:", result);
+    logEvent("cron_payhip_ok", result);
+
   } catch (err) {
     console.error("❌ Errore cron Payhip:", err);
     logEvent("cron_payhip_error", { error: err?.message || "unknown" });
@@ -984,12 +845,12 @@ setInterval(async () => {
     logEvent("cron_youtube_error", { error: err?.message || "unknown" });
   }
 }, 10 * 60 * 1000);
-/* =========================================================
-   SYNC PROGRAMMATA
-========================================================= */
+
+// Sync Airtable ogni 30 minuti
 setInterval(async () => {
   try {
     console.log("⏳ Sync programmato Airtable...");
+    logEvent("cron_airtable_start", {});
 
     await syncAirtable().catch(err => {
       console.error("❌ Errore sync Airtable programmato:", err);
@@ -1003,8 +864,8 @@ setInterval(async () => {
       logEvent("load_products_interval_error", { error: err?.message || "unknown" });
     }
 
-    console.log("✅ Sync programmato completato");
-    logEvent("interval_sync_ok", {});
+    console.log("📚 Sync Airtable completato");
+    logEvent("cron_airtable_ok", {});
 
   } catch (err) {
     console.error("❌ Errore nel sync programmato:", err);
@@ -1013,7 +874,7 @@ setInterval(async () => {
 }, 30 * 60 * 1000);
 
 /* =========================================================
-   NEWSLETTER AUTOMATICA — NUOVO PRODOTTO
+   ⭐ NEWSLETTER AUTOMATICA — NUOVO PRODOTTO
 ========================================================= */
 let lastProductId = null;
 
@@ -1028,7 +889,6 @@ async function checkNewProduct() {
     const latestId = latest.id || null;
     if (!latestId) return;
 
-    // Primo avvio → inizializza
     if (!lastProductId) {
       lastProductId = latestId;
       console.log("🟦 Primo sync prodotti completato");
@@ -1036,7 +896,6 @@ async function checkNewProduct() {
       return;
     }
 
-    // Nuovo prodotto rilevato
     if (latestId !== lastProductId) {
       lastProductId = latestId;
 
