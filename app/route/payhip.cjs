@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { fetchPayhipCatalog } = require('../services/payhip');
+const { fetchPayhipCatalog } = require('../services/payhip.cjs');
 
 router.get('/sync', async (req, res) => {
   try {
