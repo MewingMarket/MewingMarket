@@ -10,7 +10,7 @@ const axios = require("axios");
 require("dotenv").config();
 const multer = require("multer");
 const FormData = require("form-data");
-
+const { syncYouTube } = require(path.join(ROOT, "app", "services", "youtube.cjs"));
 /* =========================================================
    ROOT ASSOLUTA DEL PROGETTO
 ========================================================= */
@@ -816,8 +816,6 @@ app.listen(PORT, () => {
    ⭐ CRON JOB — PAYHIP + YOUTUBE + AIRTABLE
 ========================================================= */
 
-
-const { syncYouTube } = require("./services/youtube.cjs");
 
 /* =========================================================
    SYNC PAYHIP — ogni 10 minuti
