@@ -1,16 +1,41 @@
+// route/payhip.cjs — VERSIONE DEFINITIVA
+
 const express = require("express");
 const router = express.Router();
 const { syncPayhip } = require("../services/payhip.cjs");
 
+/* =========================================================
+   SYNC MANUALE PAYHIP → AIRTABLE → products.json
+========================================================= */
 router.get("/sync", async (req, res) => {
+  console.log("⏳ Richiesta sincronizzazione manuale del catalogo Payhip...");
+
   try {
-    console.log("⏳ È stata richiesta una sincronizzazione manuale del catalogo Payhip tramite API.");
     const result = await syncPayhip();
-    console.log("✅ La sincronizzazione manuale del catalogo Payhip è terminata.");
-    return res.json(result);
+
+    if (!result || !result.success) {
+      console.error("❌ Sync Payhip fallita:", result?.reason || "Errore sconosciuto");
+      return res.status(500).json({
+        success: false,
+        error: result?.reason || "Errore durante la sincronizzazione Payhip"
+      });
+    }
+
+    console.log(`✅ Sync Payhip completata: ${result.ok}/${result.count} prodotti aggiornati.`);
+
+    return res.json({
+      success: true,
+      updated: result.ok,
+      failed: result.fail,
+      total: result.count
+    });
+
   } catch (err) {
-    console.error("❌ Errore durante la sincronizzazione manuale del catalogo Payhip:", err?.message || err);
-    return res.status(500).json({ success: false, error: "Errore durante la sincronizzazione Payhip" });
+    console.error("❌ Errore generale durante la sincronizzazione Payhip:", err?.message || err);
+    return res.status(500).json({
+      success: false,
+      error: "Errore interno durante la sincronizzazione Payhip"
+    });
   }
 });
 
