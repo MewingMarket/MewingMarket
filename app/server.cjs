@@ -10,12 +10,12 @@ const axios = require("axios");
 require("dotenv").config();
 const multer = require("multer");
 const FormData = require("form-data");
-const { syncYouTube } = require(path.join(ROOT, "app", "services", "youtube.cjs"));
+
 /* =========================================================
    ROOT ASSOLUTA DEL PROGETTO
 ========================================================= */
 const ROOT = path.resolve(__dirname, "..");
-
+const { syncYouTube } = require(path.join(ROOT, "app", "services", "youtube.cjs"));
 /* =========================================================
    SETUP EXPRESS
 ========================================================= */
