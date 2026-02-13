@@ -23,7 +23,7 @@ const BASE_ID = process.env.AIRTABLE_BASE;
 const TABLE_NAME = process.env.AIRTABLE_TABLE;
 
 if (!AIRTABLE_PAT || !BASE_ID || !TABLE_NAME) {
-  console.error("❌ Variabili Airtable mancanti. Controlla .env");
+  console.error("❌ Airtable non è configurato correttamente: variabili ambiente mancanti.");
 }
 
 /* =========================================================
@@ -40,27 +40,27 @@ const PRODUCTS_PATH = path.join(__dirname, "..", "data", "products.json");
 function safeReadJSON(filePath) {
   try {
     if (!fs.existsSync(filePath)) {
-      console.warn("safeReadJSON: file non trovato:", filePath);
+      console.warn("safeReadJSON: il file non esiste, verrà restituito un array vuoto:", filePath);
       return [];
     }
 
     const raw = fs.readFileSync(filePath, "utf8");
 
     if (!raw.trim()) {
-      console.warn("safeReadJSON: file vuoto:", filePath);
+      console.warn("safeReadJSON: il file è vuoto, verrà restituito un array vuoto:", filePath);
       return [];
     }
 
     const parsed = JSON.parse(raw);
 
     if (!Array.isArray(parsed)) {
-      console.warn("safeReadJSON: JSON non è un array:", filePath);
+      console.warn("safeReadJSON: il contenuto JSON non è un array, verrà restituito un array vuoto:", filePath);
       return [];
     }
 
     return parsed;
   } catch (err) {
-    console.error("safeReadJSON error:", err?.message || err);
+    console.error("❌ safeReadJSON ha riscontrato un errore:", err?.message || err);
     return [];
   }
 }
@@ -71,7 +71,6 @@ function safeReadJSON(filePath) {
 function mergeProduct(airtable, payhip) {
   try {
     if (!airtable) return null;
-
     if (!payhip) return airtable;
 
     return {
@@ -82,17 +81,21 @@ function mergeProduct(airtable, payhip) {
       linkPayhip: payhip.url ?? airtable.linkPayhip
     };
   } catch (err) {
-    console.error("Errore mergeProduct:", err);
+    console.error("❌ Errore durante il merge del prodotto Airtable + Payhip:", err);
     return airtable;
   }
-} /* =========================================================
+}
+
+/* =========================================================
    SYNC AIRTABLE → products.json (blindato)
 ========================================================= */
 async function syncAirtable() {
   try {
     if (!AIRTABLE_PAT || !BASE_ID || !TABLE_NAME) {
-      console.error("❌ syncAirtable: variabili ambiente mancanti");
-      return safeReadJSON(PRODUCTS_PATH);
+      console.error("❌ syncAirtable: variabili ambiente mancanti. Verrà usata la cache locale.");
+      const cached = safeReadJSON(PRODUCTS_PATH);
+      console.log(`Airtable non è configurato. Sono stati caricati ${cached.length} prodotti dalla cache locale.`);
+      return cached;
     }
 
     const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}`;
@@ -103,28 +106,29 @@ async function syncAirtable() {
         "Content-Type": "application/json"
       }
     }).catch(err => {
-      console.error("❌ syncAirtable: errore fetch:", err);
+      console.error("❌ syncAirtable: errore durante la richiesta ad Airtable:", err);
       return null;
     });
 
     if (!response) {
-      console.error("❌ syncAirtable: nessuna risposta da Airtable");
-      return safeReadJSON(PRODUCTS_PATH);
+      console.error("❌ syncAirtable: nessuna risposta da Airtable. Verrà usata la cache locale.");
+      const cached = safeReadJSON(PRODUCTS_PATH);
+      console.log(`Sono stati caricati ${cached.length} prodotti dalla cache locale.`);
+      return cached;
     }
 
     const data = await response.json().catch(err => {
-      console.error("❌ syncAirtable: errore parse JSON:", err);
+      console.error("❌ syncAirtable: errore durante il parsing della risposta JSON:", err);
       return null;
     });
 
     if (!data || !Array.isArray(data.records)) {
-      console.error("❌ syncAirtable: records mancanti o invalidi");
-      return safeReadJSON(PRODUCTS_PATH);
+      console.error("❌ syncAirtable: records mancanti o non validi. Verrà usata la cache locale.");
+      const cached = safeReadJSON(PRODUCTS_PATH);
+      console.log(`Sono stati caricati ${cached.length} prodotti dalla cache locale.`);
+      return cached;
     }
 
-    /* =====================================================
-       VALIDAZIONE RECORD
-    ====================================================== */
     const products = data.records
       .map(record => {
         try {
@@ -151,49 +155,44 @@ async function syncAirtable() {
             social_caption_full: cleanText(f.social_caption_full, "")
           };
         } catch (err) {
-          console.error("Errore parsing record Airtable:", err);
+          console.error("❌ Errore durante il parsing di un record Airtable:", err);
           return null;
         }
       })
       .filter(Boolean);
 
-    /* =====================================================
-       FILTRA SOLO PRODOTTI ATTIVI
-    ====================================================== */
     const active = products.filter(p => p.attivo && p.slug);
 
-    /* =====================================================
-       MERGE CON PAYHIP CACHE
-    ====================================================== */
     const merged = active.map(p => mergeProduct(p, PAYHIP_CACHE[p.slug]));
 
-    /* =====================================================
-       SCRITTURA products.json (blindata)
-    ====================================================== */
     try {
       fs.writeFileSync(PRODUCTS_PATH, JSON.stringify(merged, null, 2));
-      console.log(`products.json aggiornato da Airtable (${merged.length} prodotti)`);
+      console.log(`Airtable è stato sincronizzato correttamente: ${merged.length} prodotti attivi salvati in products.json.`);
     } catch (err) {
-      console.error("❌ Errore scrittura products.json:", err);
+      console.error("❌ Errore durante la scrittura di products.json:", err);
     }
 
     return merged;
   } catch (err) {
-    console.error("❌ Errore syncAirtable:", err);
-    return safeReadJSON(PRODUCTS_PATH);
+    console.error("❌ Errore generale in syncAirtable:", err);
+    const cached = safeReadJSON(PRODUCTS_PATH);
+    console.log(`Airtable ha avuto un errore. Sono stati caricati ${cached.length} prodotti dalla cache locale.`);
+    return cached;
   }
-} /* =========================================================
+}
+
+/* =========================================================
    UPDATE RECORD AIRTABLE (blindato)
 ========================================================= */
 async function updateAirtableRecord(id, fields) {
   try {
     if (!id || typeof id !== "string") {
-      console.error("updateAirtableRecord: ID non valido:", id);
+      console.error("❌ updateAirtableRecord: ID non valido:", id);
       return;
     }
 
     if (!fields || typeof fields !== "object") {
-      console.error("updateAirtableRecord: fields non validi:", fields);
+      console.error("❌ updateAirtableRecord: fields non validi:", fields);
       return;
     }
 
@@ -207,7 +206,7 @@ async function updateAirtableRecord(id, fields) {
       },
       body: JSON.stringify({ fields })
     }).catch(err => {
-      console.error("❌ updateAirtableRecord: errore fetch:", err);
+      console.error("❌ updateAirtableRecord: errore durante la richiesta PATCH:", err);
       return null;
     });
 
@@ -215,13 +214,13 @@ async function updateAirtableRecord(id, fields) {
 
     if (!res.ok) {
       const text = await res.text().catch(() => "");
-      console.error("❌ updateAirtableRecord: risposta non OK:", text);
+      console.error("❌ updateAirtableRecord: risposta non OK da Airtable:", text);
       return;
     }
 
-    console.log("Airtable aggiornato:", id, Object.keys(fields));
+    console.log("Airtable è stato aggiornato per il record:", id, "con i campi:", Object.keys(fields));
   } catch (err) {
-    console.error("❌ Errore updateAirtableRecord:", err);
+    console.error("❌ Errore generale in updateAirtableRecord:", err);
   }
 }
 
@@ -231,7 +230,7 @@ async function updateAirtableRecord(id, fields) {
 async function saveSaleToAirtable(fields) {
   try {
     if (!fields || typeof fields !== "object") {
-      console.error("saveSaleToAirtable: fields non validi:", fields);
+      console.error("❌ saveSaleToAirtable: fields non validi:", fields);
       return;
     }
 
@@ -245,7 +244,7 @@ async function saveSaleToAirtable(fields) {
       },
       body: JSON.stringify({ fields })
     }).catch(err => {
-      console.error("❌ saveSaleToAirtable: errore fetch:", err);
+      console.error("❌ saveSaleToAirtable: errore durante la richiesta POST:", err);
       return null;
     });
 
@@ -253,18 +252,18 @@ async function saveSaleToAirtable(fields) {
 
     if (!res.ok) {
       const text = await res.text().catch(() => "");
-      console.error("❌ saveSaleToAirtable: risposta non OK:", text);
+      console.error("❌ saveSaleToAirtable: risposta non OK da Airtable:", text);
       return;
     }
 
-    console.log("Vendita salvata su Airtable:", fields);
+    console.log("La vendita è stata salvata correttamente su Airtable:", fields);
   } catch (err) {
-    console.error("❌ Errore saveSaleToAirtable:", err);
+    console.error("❌ Errore generale in saveSaleToAirtable:", err);
   }
 }
 
 /* =========================================================
-   CHIAMATA AI (blindata)
+   CHIAMATA AI (blindato)
 ========================================================= */
 async function callAI(prompt) {
   try {
@@ -284,27 +283,27 @@ async function callAI(prompt) {
         ]
       })
     }).catch(err => {
-      console.error("❌ callAI: errore fetch:", err);
+      console.error("❌ callAI: errore durante la richiesta al modello AI:", err);
       return null;
     });
 
     if (!res) return "";
 
     const json = await res.json().catch(err => {
-      console.error("❌ callAI: errore parse JSON:", err);
+      console.error("❌ callAI: errore durante il parsing della risposta JSON:", err);
       return null;
     });
 
     const output = json?.choices?.[0]?.message?.content || "";
     return safeText(output);
   } catch (err) {
-    console.error("❌ Errore callAI:", err);
+    console.error("❌ Errore generale in callAI:", err);
     return "";
   }
 }
 
 /* =========================================================
-   GENERAZIONE TESTI PRODOTTO (blindata)
+   GENERAZIONE TESTI PRODOTTO (blindato)
 ========================================================= */
 async function generateProductAI({ title, description }) {
   try {
@@ -335,26 +334,28 @@ Descrizione: "${descr}"
       descrizioneBreve: shorten(descrizioneBreve, 160)
     };
   } catch (err) {
-    console.error("❌ Errore generateProductAI:", err);
+    console.error("❌ Errore generale in generateProductAI:", err);
     return {
       titoloBreve: "",
       categoria: "",
       descrizioneBreve: ""
     };
   }
-} /* =========================================================
-   UPDATE DA PAYHIP (blindato)
+}
+
+/* =========================================================
+   UPDATE DA PAYHIP (blindato, versione corretta)
 ========================================================= */
 async function updateFromPayhip(data) {
   try {
     if (!data || typeof data !== "object") {
-      console.error("updateFromPayhip: dati non validi:", data);
+      console.error("❌ updateFromPayhip: dati non validi:", data);
       return;
     }
 
     const slug = safeSlug(data.slug);
     if (!slug) {
-      console.error("updateFromPayhip: slug non valido:", data.slug);
+      console.error("❌ updateFromPayhip: slug non valido:", data.slug);
       return;
     }
 
@@ -363,9 +364,6 @@ async function updateFromPayhip(data) {
 
     const descrPulita = safeText(stripHTML(data.description || ""));
 
-    /* =====================================================
-       GENERAZIONE TESTI AI (solo se serve)
-    ====================================================== */
     let ai = { titoloBreve: "", categoria: "", descrizioneBreve: "" };
 
     try {
@@ -376,12 +374,9 @@ async function updateFromPayhip(data) {
         });
       }
     } catch (err) {
-      console.error("Errore AI in updateFromPayhip:", err);
+      console.error("❌ Errore durante la generazione AI in updateFromPayhip:", err);
     }
 
-    /* =====================================================
-       UPDATE SU AIRTABLE (solo se record esiste)
-    ====================================================== */
     if (record && record.id) {
       const fields = {};
 
@@ -395,11 +390,11 @@ async function updateFromPayhip(data) {
       if (data.image) fields.Immagine = [{ url: data.image }];
 
       await updateAirtableRecord(record.id, fields);
+      console.log(`Airtable è stato aggiornato a partire da Payhip per lo slug "${slug}".`);
+    } else {
+      console.log(`Nessun record Airtable trovato per lo slug "${slug}". Verrà aggiornata solo la cache Payhip.`);
     }
 
-    /* =====================================================
-       AGGIORNA CACHE PAYHIP
-    ====================================================== */
     PAYHIP_CACHE[slug] = {
       price: data.price,
       title: data.title,
@@ -407,15 +402,12 @@ async function updateFromPayhip(data) {
       url: data.url
     };
 
-    /* =====================================================
-       SYNC + RICARICA CATALOGO
-    ====================================================== */
     await syncAirtable();
     loadProducts();
 
-    console.log("Catalogo aggiornato da Payhip + AI:", slug);
+    console.log(`Il catalogo è stato aggiornato da Payhip con AI per lo slug "${slug}".`);
   } catch (err) {
-    console.error("❌ Errore updateFromPayhip:", err);
+    console.error("❌ Errore generale in updateFromPayhip:", err);
   }
 }
 
@@ -431,13 +423,13 @@ function extractSlugFromTitle(title) {
 async function updateFromYouTube(video) {
   try {
     if (!video || typeof video !== "object") {
-      console.error("updateFromYouTube: video non valido:", video);
+      console.error("❌ updateFromYouTube: video non valido:", video);
       return;
     }
 
     const slug = extractSlugFromTitle(video.title);
     if (!slug) {
-      console.log("YouTube: nessuno slug trovato nel titolo:", video.title);
+      console.log("YouTube non ha trovato alcuno slug nel titolo:", video.title);
       return;
     }
 
@@ -445,7 +437,7 @@ async function updateFromYouTube(video) {
     const record = products.find(p => p.slug === slug);
 
     if (!record || !record.id) {
-      console.log("YouTube: prodotto non trovato per slug:", slug);
+      console.log(`YouTube non ha trovato alcun prodotto associato allo slug "${slug}".`);
       return;
     }
 
@@ -461,9 +453,9 @@ async function updateFromYouTube(video) {
     await syncAirtable();
     loadProducts();
 
-    console.log("YouTube aggiornato:", slug);
+    console.log(`YouTube ha aggiornato correttamente il prodotto con slug "${slug}".`);
   } catch (err) {
-    console.error("❌ Errore updateFromYouTube:", err);
+    console.error("❌ Errore generale in updateFromYouTube:", err);
   }
 }
 
@@ -475,91 +467,17 @@ function loadProducts() {
     PRODUCTS = safeReadJSON(PRODUCTS_PATH);
 
     if (!Array.isArray(PRODUCTS)) {
-      console.error("loadProducts: dati non validi, resetto array");
+      console.error("❌ loadProducts: i dati caricati non sono un array. Verrà resettato l'array prodotti.");
       PRODUCTS = [];
     }
 
-    console.log("Catalogo caricato:", PRODUCTS.length, "prodotti");
+    console.log(`Il catalogo è stato caricato correttamente: ${PRODUCTS.length} prodotti.`);
   } catch (err) {
-    console.error("❌ Errore loadProducts:", err);
+    console.error("❌ Errore generale in loadProducts:", err);
     PRODUCTS = [];
   }
 }
-/* =========================================================
-   ⭐ MERGE PAYHIP + YOUTUBE → AIRTABLE
-========================================================= */
 
-// Aggiorna Airtable da Payhip
-async function updateFromPayhip(item) {
-  try {
-    if (!item || !item.slug) return;
-
-    const url = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE}/Prodotti`;
-    const headers = {
-      Authorization: `Bearer ${process.env.AIRTABLE_PAT}`,
-      "Content-Type": "application/json"
-    };
-
-    // Cerca record esistente
-    const existing = await axios.get(`${url}?filterByFormula={slug}="${item.slug}"`, { headers });
-    const record = existing.data?.records?.[0];
-
-    const fields = {
-      titolo: item.titolo,
-      prezzo: item.prezzo,
-      descrizione: item.descrizione,
-      immagine: item.immagine,
-      linkPayhip: item.linkPayhip,
-      slug: item.slug
-    };
-
-    if (record) {
-      await axios.patch(`${url}/${record.id}`, { fields }, { headers });
-      console.log("🔄 Airtable aggiornato da Payhip:", item.slug);
-    } else {
-      await axios.post(url, { fields }, { headers });
-      console.log("🆕 Prodotto creato da Payhip:", item.slug);
-    }
-
-  } catch (err) {
-    console.error("❌ Errore updateFromPayhip:", err?.response?.data || err);
-  }
-}
-
-// Aggiorna Airtable da YouTube
-async function updateFromYouTube(video) {
-  try {
-    if (!video || !video.slug) return;
-
-    const url = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE}/Prodotti`;
-    const headers = {
-      Authorization: `Bearer ${process.env.AIRTABLE_PAT}`,
-      "Content-Type": "application/json"
-    };
-
-    // Cerca record esistente
-    const existing = await axios.get(`${url}?filterByFormula={slug}="${video.slug}"`, { headers });
-    const record = existing.data?.records?.[0];
-
-    const fields = {
-      youtube_url: `https://www.youtube.com/watch?v=${video.id}`,
-      youtube_title: video.titolo,
-      youtube_published: video.published,
-      slug: video.slug
-    };
-
-    if (record) {
-      await axios.patch(`${url}/${record.id}`, { fields }, { headers });
-      console.log("🎥 Airtable aggiornato da YouTube:", video.slug);
-    } else {
-      await axios.post(url, { fields }, { headers });
-      console.log("🆕 Prodotto creato da YouTube:", video.slug);
-    }
-
-  } catch (err) {
-    console.error("❌ Errore updateFromYouTube:", err?.response?.data || err);
-  }
-}
 /* =========================================================
    GET PRODOTTI
 ========================================================= */
