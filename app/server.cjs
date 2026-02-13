@@ -203,8 +203,7 @@ app.use(express.static(path.join(ROOT, "app", "public")));
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
-app.use('/api/payhip', require('./routes/payhip'));
-
+app.use('/api/payhip', require('./routes/payhip.cjs'));
 /* =========================================================
    USER STATE + COOKIE UID
 ========================================================= */
