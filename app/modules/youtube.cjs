@@ -1,9 +1,8 @@
-// modules/youtube.cjs — YouTube metodo A (slug nel titolo) — VERSIONE BLINDATA
+// modules/youtube.cjs — VERSIONE DEFINITIVA (allineata all’ecosistema)
 
 const path = require("path");
-const fetch = require("node-fetch");
 const { stripHTML, safeText, cleanURL } = require("./utils.cjs");
-const { updateAirtableRecord, syncAirtable, loadProducts } = require("./airtable.cjs");
+const { updateAirtableRecord, safeReadJSON } = require("./airtable.cjs");
 
 /* =========================================================
    SLUG DAL TITOLO (blindato)
@@ -20,7 +19,7 @@ function extractSlugFromTitle(title) {
 }
 
 /* =========================================================
-   UPDATE DA YOUTUBE (blindato)
+   UPDATE DA YOUTUBE (versione stabile, senza sync interno)
 ========================================================= */
 async function updateFromYouTube(video) {
   try {
@@ -36,17 +35,9 @@ async function updateFromYouTube(video) {
     }
 
     /* =====================================================
-       CARICAMENTO CATALOGO SICURO
+       CARICAMENTO CATALOGO SICURO (senza require cache)
     ====================================================== */
-    let products = [];
-    try {
-      products = require(path.join(__dirname, "..", "data", "products.json"));
-      if (!Array.isArray(products)) products = [];
-    } catch (err) {
-      console.error("YouTube: errore lettura products.json:", err);
-      products = [];
-    }
-
+    const products = safeReadJSON(path.join(__dirname, "..", "data", "products.json"));
     const record = products.find(p => p.slug === slug);
 
     if (!record || !record.id) {
@@ -55,7 +46,7 @@ async function updateFromYouTube(video) {
     }
 
     /* =====================================================
-       PREPARAZIONE CAMPI (blindata)
+       PREPARAZIONE CAMPI
     ====================================================== */
     const fields = {
       youtube_url: cleanURL(video.url),
@@ -65,15 +56,9 @@ async function updateFromYouTube(video) {
     };
 
     /* =====================================================
-       UPDATE SU AIRTABLE
+       UPDATE SU AIRTABLE (senza syncAirtable interno)
     ====================================================== */
     await updateAirtableRecord(record.id, fields);
-
-    /* =====================================================
-       SYNC + RICARICA CATALOGO
-    ====================================================== */
-    await syncAirtable();
-    loadProducts();
 
     console.log("YouTube aggiornato:", slug);
 
