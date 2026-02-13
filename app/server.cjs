@@ -816,7 +816,13 @@ app.listen(PORT, () => {
    ⭐ CRON JOB — PAYHIP + YOUTUBE + AIRTABLE
 ========================================================= */
 
-// Sync Payhip ogni 10 minuti
+const { syncPayhip } = require("./services/payhip.cjs");
+const { syncYouTube } = require("./services/youtube.cjs");
+const { syncAirtable, loadProducts } = require("./modules/airtable.cjs");
+
+/* =========================================================
+   SYNC PAYHIP — ogni 10 minuti
+========================================================= */
 setInterval(async () => {
   try {
     console.log("⏳ Sync Payhip programmato...");
@@ -833,43 +839,39 @@ setInterval(async () => {
   }
 }, 10 * 60 * 1000);
 
-// Sync YouTube ogni 10 minuti
+/* =========================================================
+   SYNC YOUTUBE — ogni 10 minuti
+========================================================= */
 setInterval(async () => {
   try {
     console.log("⏳ Sync YouTube programmato...");
-    await syncYouTube();
-    console.log("🎥 Sync YouTube completato");
-    logEvent("cron_youtube_ok", {});
+    const result = await syncYouTube();
+    console.log("🎥 Sync YouTube completato:", result);
+    logEvent("cron_youtube_ok", result);
+
   } catch (err) {
     console.error("❌ Errore cron YouTube:", err);
     logEvent("cron_youtube_error", { error: err?.message || "unknown" });
   }
 }, 10 * 60 * 1000);
 
-// Sync Airtable ogni 30 minuti
+/* =========================================================
+   SYNC AIRTABLE — ogni 30 minuti
+========================================================= */
 setInterval(async () => {
   try {
     console.log("⏳ Sync programmato Airtable...");
     logEvent("cron_airtable_start", {});
 
-    await syncAirtable().catch(err => {
-      console.error("❌ Errore sync Airtable programmato:", err);
-      logEvent("sync_airtable_interval_error", { error: err?.message || "unknown" });
-    });
-
-    try {
-      loadProducts();
-    } catch (err) {
-      console.error("❌ Errore loadProducts programmato:", err);
-      logEvent("load_products_interval_error", { error: err?.message || "unknown" });
-    }
+    await syncAirtable();
+    loadProducts();
 
     console.log("📚 Sync Airtable completato");
     logEvent("cron_airtable_ok", {});
 
   } catch (err) {
-    console.error("❌ Errore nel sync programmato:", err);
-    logEvent("interval_global_error", { error: err?.message || "unknown" });
+    console.error("❌ Errore nel sync programmato Airtable:", err);
+    logEvent("cron_airtable_error", { error: err?.message || "unknown" });
   }
 }, 30 * 60 * 1000);
 
