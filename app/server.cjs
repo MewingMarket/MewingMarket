@@ -818,7 +818,6 @@ app.listen(PORT, () => {
 
 
 const { syncYouTube } = require("./services/youtube.cjs");
-const { syncAirtable, loadProducts } = require("./modules/airtable.cjs");
 
 /* =========================================================
    SYNC PAYHIP — ogni 10 minuti
