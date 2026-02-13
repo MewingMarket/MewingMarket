@@ -816,7 +816,7 @@ app.listen(PORT, () => {
    ⭐ CRON JOB — PAYHIP + YOUTUBE + AIRTABLE
 ========================================================= */
 
-const { syncPayhip } = require("./services/payhip.cjs");
+
 const { syncYouTube } = require("./services/youtube.cjs");
 const { syncAirtable, loadProducts } = require("./modules/airtable.cjs");
 
