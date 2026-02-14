@@ -1,61 +1,131 @@
 // app/modules/payhip.cjs
-// Gestione prodotti Payhip → Airtable
+// Gestione prodotti Payhip → Airtable (API REST)
 
-const { AirtableBase, AirtableTable } = require("./airtable.cjs");
+const fetch = require("node-fetch");
+const {
+  safeText,
+  stripHTML,
+  safeSlug
+} = require("./utils.cjs");
+
+const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
+const BASE_ID = process.env.AIRTABLE_BASE;
+const TABLE_NAME = process.env.AIRTABLE_TABLE;
 
 /* =========================================================
-   1) Crea o aggiorna un prodotto Payhip in Airtable
+   Trova record per slug
 ========================================================= */
-async function updateFromPayhip(product) {
-  const { slug, title, price, image, description, url } = product;
+async function findRecordBySlug(slug) {
+  const formula = encodeURIComponent(`{slug} = "${slug}"`);
+  const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}?filterByFormula=${formula}`;
 
-  // Cerca se esiste già un record con questo slug
-  const existing = await AirtableTable
-    .select({ filterByFormula: `{slug} = "${slug}"` })
-    .firstPage();
-
-  if (existing.length > 0) {
-    const id = existing[0].id;
-
-    await AirtableTable.update(id, {
-      title,
-      price,
-      image,
-      description,
-      url,
-      slug
-    });
-
-    console.log("[PAYHIP] updated", slug);
-    return;
-  }
-
-  // Se non esiste → crealo
-  await AirtableTable.create({
-    title,
-    price,
-    image,
-    description,
-    url,
-    slug
+  const res = await fetch(url, {
+    headers: {
+      "Authorization": `Bearer ${AIRTABLE_PAT}`,
+      "Content-Type": "application/json"
+    }
   });
 
-  console.log("[PAYHIP] created", slug);
+  const data = await res.json();
+  return Array.isArray(data.records) && data.records.length > 0
+    ? data.records[0]
+    : null;
 }
 
 /* =========================================================
-   2) Rimuovi prodotti non più presenti su Payhip
+   Crea record
+========================================================= */
+async function createRecord(fields) {
+  const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}`;
+
+  await fetch(url, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${AIRTABLE_PAT}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ fields })
+  });
+}
+
+/* =========================================================
+   Aggiorna record
+========================================================= */
+async function updateRecord(id, fields) {
+  const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}/${id}`;
+
+  await fetch(url, {
+    method: "PATCH",
+    headers: {
+      "Authorization": `Bearer ${AIRTABLE_PAT}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ fields })
+  });
+}
+
+/* =========================================================
+   Update da Payhip
+========================================================= */
+async function updateFromPayhip(data) {
+  try {
+    const slug = safeSlug(data.slug);
+    if (!slug) return;
+
+    const descrPulita = safeText(stripHTML(data.description || ""));
+
+    const fields = {
+      slug,
+      Titolo: data.title,
+      Prezzo: data.price,
+      LinkPayhip: data.url,
+      DescrizioneLunga: descrPulita,
+      Immagine: data.image ? [{ url: data.image }] : undefined
+    };
+
+    const record = await findRecordBySlug(slug);
+
+    if (record) {
+      await updateRecord(record.id, fields);
+      console.log("[PAYHIP] updated", slug);
+    } else {
+      await createRecord(fields);
+      console.log("[PAYHIP] created", slug);
+    }
+
+  } catch (err) {
+    console.error("Errore updateFromPayhip:", err);
+  }
+}
+
+/* =========================================================
+   Rimuovi prodotti non più presenti
 ========================================================= */
 async function removeMissingPayhipProducts(currentSlugs) {
-  const all = await AirtableTable.select().all();
+  const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}`;
 
-  for (const record of all) {
-    const slug = record.get("slug");
+  const res = await fetch(url, {
+    headers: {
+      "Authorization": `Bearer ${AIRTABLE_PAT}`,
+      "Content-Type": "application/json"
+    }
+  });
 
+  const data = await res.json();
+  if (!Array.isArray(data.records)) return;
+
+  for (const record of data.records) {
+    const slug = record.fields.slug;
     if (!slug) continue;
 
     if (!currentSlugs.includes(slug)) {
-      await AirtableTable.destroy(record.id);
+      const delUrl = `${url}/${record.id}`;
+      await fetch(delUrl, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${AIRTABLE_PAT}`
+        }
+      });
       console.log("[PAYHIP] removed_missing", slug);
     }
   }
