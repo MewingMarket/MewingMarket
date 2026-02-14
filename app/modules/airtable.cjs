@@ -3,21 +3,6 @@ const fs = require("fs");
 const path = require("path");
 const fetch = require("node-fetch");
 
-const {
-  safeSlug,
-  cleanText,
-  cleanNumber,
-  cleanURL,
-  stripHTML,
-  safeText,
-  shorten,
-  normalize
-} = require(path.join(__dirname, "utils.cjs"));
-
-/* Moduli Payhip + YouTube */
-const { updateFromPayhip: updatePayhipModule } = require("./payhip.cjs");
-const { updateFromYouTube: updateYouTubeModule } = require("./youtube.cjs");
-
 /* ============================== VARIABILI AMBIENTE ============================== */
 const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
 const BASE_ID = process.env.AIRTABLE_BASE;
@@ -33,7 +18,7 @@ function safeReadJSON(filePath) {
     if (!raw.trim()) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
-  } catch (_) {
+  } catch {
     return [];
   }
 }
@@ -94,18 +79,6 @@ function getProducts() {
   return loadProducts();
 }
 
-/* Proxy verso il modulo Payhip */
-async function updateFromPayhip(data) {
-  await updatePayhipModule(data);
-  await syncAirtable();
-}
-
-/* Proxy verso il modulo YouTube */
-async function updateFromYouTube(video) {
-  await updateYouTubeModule(video);
-  await syncAirtable();
-}
-
 /* Salva vendita */
 async function saveSaleToAirtable(fields) {
   const url = `https://api.airtable.com/v0/${BASE_ID}/Vendite`;
@@ -125,8 +98,6 @@ module.exports = {
   syncAirtable,
   loadProducts,
   getProducts,
-  updateFromPayhip,
-  updateFromYouTube,
   updateAirtableRecord,
   saveSaleToAirtable
 };
