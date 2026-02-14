@@ -26,6 +26,7 @@ function safeReadJSON(filePath) {
 /* ============================== SYNC AIRTABLE → products.json ============================== */
 async function syncAirtable() {
   try {
+    // 🔥 PATCH: leggiamo la view corretta "Grid view"
     const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}?view=Grid%20view`;
 
     const response = await fetch(url, {
