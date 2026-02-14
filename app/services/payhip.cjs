@@ -2,7 +2,10 @@
 // Sync Payhip via scraping HTML (nessuna API)
 
 const axios = require("axios");
-const { updateFromPayhip, removeMissingPayhipProducts } = require("../modules/payhip.cjs");
+
+// 🔥 PATCH: ora importiamo updateFromPayhip e removeMissingPayhipProducts
+// dal modulo CORRETTO: airtable.cjs
+const { updateFromPayhip, removeMissingPayhipProducts } = require("../modules/airtable.cjs");
 
 // URL del tuo store Payhip
 const PAYHIP_STORE_URL = "https://payhip.com/MewingMarket";
@@ -162,7 +165,7 @@ async function syncPayhip() {
 
   for (const p of products) {
     try {
-      await updateFromPayhip(p);
+      await updateFromPayhip(p); // 🔥 PATCH: ora usa la versione giusta
       ok++;
     } catch (err) {
       console.error("[PAYHIP] error_update_product", p.slug, err.message);
