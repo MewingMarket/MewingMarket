@@ -5,7 +5,7 @@ const axios = require("axios");
 
 // 🔥 PATCH: ora importiamo updateFromPayhip e removeMissingPayhipProducts
 // dal modulo CORRETTO: airtable.cjs
-const { updateFromPayhip, removeMissingPayhipProducts } = require("../modules/airtable.cjs");
+const { updateFromPayhip, removeMissingPayhipProducts } = require("../modules/payhip.cjs");
 
 // URL del tuo store Payhip
 const PAYHIP_STORE_URL = "https://payhip.com/MewingMarket";
