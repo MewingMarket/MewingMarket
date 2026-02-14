@@ -1,8 +1,8 @@
 // app/services/youtube.cjs — SERVIZIO COMPLETO CON FALLBACK RSS ROBUSTO
 
 const axios = require("axios");
-const { updateFromYouTube } = require("../modules/youtube.cjs");
 const xml2js = require("xml2js");
+const { updateFromYouTube } = require("../modules/youtube.cjs");
 
 /* =========================================================
    1) FETCH ULTIMI VIDEO VIA API (può fallire)
@@ -22,12 +22,14 @@ async function fetchChannelVideosAPI() {
     const res = await axios.get(url);
     const items = res.data?.items || [];
 
-    const videos = items.map(v => ({
-      url: `https://www.youtube.com/watch?v=${v.id.videoId}`,
-      title: v.snippet.title,
-      description: v.snippet.description,
-      thumbnail: v.snippet.thumbnails?.high?.url || ""
-    }));
+    const videos = items
+      .filter(v => v.id?.videoId) // evita risultati non-video
+      .map(v => ({
+        url: `https://www.youtube.com/watch?v=${v.id.videoId}`,
+        title: v.snippet.title || "",
+        description: v.snippet.description || "",
+        thumbnail: v.snippet.thumbnails?.high?.url || ""
+      }));
 
     return { success: true, videos };
 
@@ -49,19 +51,19 @@ async function fetchChannelVideosRSS() {
     const res = await axios.get(url);
 
     const xml = res.data;
-
     const parsed = await xml2js.parseStringPromise(xml, { explicitArray: false });
 
     const entries = parsed.feed.entry || [];
-
     const list = Array.isArray(entries) ? entries : [entries];
 
-    const videos = list.map(e => ({
-      url: e.link?.$.href || "",
-      title: e.title || "",
-      description: e["media:group"]?.["media:description"] || "",
-      thumbnail: e["media:group"]?.["media:thumbnail"]?.$.url || ""
-    }));
+    const videos = list
+      .filter(e => e?.title) // evita entry vuote
+      .map(e => ({
+        url: e.link?.$.href || "",
+        title: e.title || "",
+        description: e["media:group"]?.["media:description"] || "",
+        thumbnail: e["media:group"]?.["media:thumbnail"]?.$.url || ""
+      }));
 
     return { success: true, videos };
 
