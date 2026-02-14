@@ -69,19 +69,33 @@ async function updateRecord(id, fields) {
 ========================================================= */
 async function updateFromPayhip(data) {
   try {
-    const slug = safeSlug(data.slug);
+    // Slug sicuro
+    const slug = safeSlug(data.slug || data.title || data.url);
     if (!slug) return;
 
+    // Descrizione pulita
     const descrPulita = safeText(stripHTML(data.description || ""));
+
+    // Prezzo numerico
+    const prezzo = Number(
+      String(data.price || "")
+        .replace("€", "")
+        .replace(",", ".")
+        .trim()
+    ) || 0;
 
     const fields = {
       slug,
-      Titolo: data.title,
-      Prezzo: data.price,
-      LinkPayhip: data.url,
-      DescrizioneLunga: descrPulita,
-      Immagine: data.image ? [{ url: data.image }] : undefined
+      Titolo: data.title || "",
+      Prezzo: prezzo,
+      LinkPayhip: data.url || "",
+      DescrizioneLunga: descrPulita
     };
+
+    // Immagine solo se esiste
+    if (data.image) {
+      fields.Immagine = [{ url: data.image }];
+    }
 
     const record = await findRecordBySlug(slug);
 
