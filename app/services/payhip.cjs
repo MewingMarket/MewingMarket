@@ -1,129 +1,166 @@
-// app/services/payhip.cjs — VERSIONE DEFINITIVA (NO ROUTER, NO CIRCULAR)
+// app/services/payhip.cjs
+// Sync Payhip via scraping HTML (nessuna API, nessuna chiave)
 
-const path = require("path");
 const axios = require("axios");
-const fs = require("fs");
+const { updateFromPayhip, removeMissingPayhipProducts } = require("../modules/payhip.cjs");
 
-// Import moduli interni SENZA richiedere server.cjs
-const {
-  updateFromPayhip,
-  loadProducts
-} = require(path.join(__dirname, "..", "modules", "airtable.cjs"));
+// URL del tuo store Payhip
+const PAYHIP_STORE_URL = "https://payhip.com/MewingMarket";
 
 /* =========================================================
-   LOG LOCALE (non dipende dal server)
+   1) Scarica HTML dello store
 ========================================================= */
-function logLocal(event, data = {}) {
-  try {
-    console.log(`[PAYHIP] ${event}`, data);
-  } catch {
-    // ignora
-  }
+async function fetchStoreHtml() {
+  const res = await axios.get(PAYHIP_STORE_URL, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (MewingMarket Catalog Bot)"
+    }
+  });
+  return res.data || "";
 }
 
 /* =========================================================
-   FETCH CATALOGO PAYHIP
+   2) Estrai tutti i link dei prodotti /b/XXXXX
 ========================================================= */
-async function fetchPayhipCatalog() {
-  try {
-    const API_KEY = process.env.PAYHIP_API_KEY;
-
-    if (!API_KEY) {
-      logLocal("missing_api_key", {});
-      return { success: false, products: [], reason: "PAYHIP_API_KEY mancante" };
-    }
-
-    const res = await axios.get("https://payhip.com/api/v1/products", {
-      headers: {
-        Authorization: `Bearer ${API_KEY}`
-      }
-    });
-
-    const items = res.data?.products || [];
-
-    logLocal("catalog_fetched", { count: items.length });
-
-    const mapped = items.map(p => ({
-      id: p.id,
-      title: p.name,
-      price: p.price,
-      description: p.description || "",
-      image: p.thumbnail || "",
-      url: p.url || "",
-      slug: p.slug || p.id
-    }));
-
-    return { success: true, products: mapped };
-
-  } catch (err) {
-    console.error("❌ Errore fetchPayhipCatalog:", err?.response?.data || err);
-    return {
-      success: false,
-      products: [],
-      reason: err?.response?.data?.message || err?.message || "unknown"
-    };
+function extractProductSlugs(html) {
+  const slugs = new Set();
+  const regex = /href="\/b\/([A-Za-z0-9]+)"/g;
+  let match;
+  while ((match = regex.exec(html)) !== null) {
+    slugs.add(match[1]);
   }
+  return Array.from(slugs);
 }
 
 /* =========================================================
-   SYNC PAYHIP → AIRTABLE → products.json
+   3) Scarica pagina singolo prodotto
 ========================================================= */
-async function syncPayhip() {
-  logLocal("sync_start", {});
-
-  const result = await fetchPayhipCatalog();
-
-  if (!result.success || result.products.length === 0) {
-    logLocal("sync_failed", {
-      success: result.success,
-      reason: result.reason
-    });
-
-    return {
-      success: false,
-      count: 0,
-      reason: result.reason || "Nessun prodotto da sincronizzare"
-    };
-  }
-
-  const products = result.products;
-  let ok = 0;
-  let fail = 0;
-
-  for (const item of products) {
-    try {
-      await updateFromPayhip(item);
-      ok++;
-    } catch (err) {
-      fail++;
-      console.error("Errore updateFromPayhip:", err);
-      logLocal("update_item_error", {
-        slug: item.slug,
-        error: err?.message || "unknown"
-      });
+async function fetchProductPage(slug) {
+  const url = `https://payhip.com/b/${slug}`;
+  const res = await axios.get(url, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (MewingMarket Catalog Bot)"
     }
-  }
+  });
+  return { url, html: res.data || "" };
+}
 
-  try {
-    loadProducts();
-  } catch (err) {
-    console.error("Errore loadProducts dopo sync Payhip:", err);
-    logLocal("load_products_error", { error: err?.message || "unknown" });
-  }
+/* =========================================================
+   4) Parsing HTML prodotto (titolo, prezzo, immagine, descrizione)
+========================================================= */
+function parseProduct(html, slug, url) {
+  const getText = (regex) => {
+    const m = regex.exec(html);
+    return m ? m[1].trim() : "";
+  };
 
-  logLocal("sync_complete", { ok, fail, total: products.length });
+  const title = getText(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+  const price = getText(/class="product-price"[^>]*>([\s\S]*?)<\/[^>]+>/i);
+  const img = getText(/<img[^>]*class="[^"]*product-image[^"]*"[^>]*src="([^"]+)"/i);
+  const desc = getText(/class="product-description"[^>]*>([\s\S]*?)<\/div>/i);
+
+  // Pulizia base HTML → testo
+  const clean = (s) =>
+    s
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<\/p>/gi, "\n")
+      .replace(/<[^>]+>/g, "")
+      .replace(/&quot;/g, '"')
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/\s+\n/g, "\n")
+      .trim();
 
   return {
-    success: true,
-    ok,
-    fail,
-    count: products.length
+    slug,
+    url,
+    title: clean(title),
+    price: clean(price),
+    image: img || "",
+    description: clean(desc)
   };
 }
 
 /* =========================================================
-   EXPORT
+   5) Costruisci catalogo completo Payhip
 ========================================================= */
+async function fetchPayhipCatalog() {
+  try {
+    console.log("[PAYHIP] fetch_store_html", PAYHIP_STORE_URL);
+    const html = await fetchStoreHtml();
+
+    const slugs = extractProductSlugs(html);
+    console.log("[PAYHIP] found_slugs", slugs);
+
+    const products = [];
+
+    for (const slug of slugs) {
+      try {
+        const { url, html: productHtml } = await fetchProductPage(slug);
+        const product = parseProduct(productHtml, slug, url);
+        products.push(product);
+      } catch (err) {
+        console.error("[PAYHIP] error_fetch_product", slug, err.message);
+      }
+    }
+
+    return {
+      success: true,
+      products
+    };
+  } catch (err) {
+    console.error("[PAYHIP] fetchPayhipCatalog error:", err.message);
+    return {
+      success: false,
+      products: [],
+      reason: err.message
+    };
+  }
+}
+
+/* =========================================================
+   6) Sync completo con Airtable
+========================================================= */
+async function syncPayhip() {
+  console.log("[PAYHIP] sync_start {}");
+
+  const result = await fetchPayhipCatalog();
+
+  if (!result.success || !result.products.length) {
+    console.log("[PAYHIP] sync_failed", {
+      success: false,
+      reason: result.reason || "no_products"
+    });
+    return { success: false, count: 0, reason: result.reason || "no_products" };
+  }
+
+  const products = result.products;
+  let ok = 0;
+
+  for (const p of products) {
+    try {
+      await updateFromPayhip(p); // deve già esistere in ../modules/payhip.cjs
+      ok++;
+    } catch (err) {
+      console.error("[PAYHIP] error_update_product", p.slug, err.message);
+    }
+  }
+
+  // opzionale: rimuovere prodotti non più presenti
+  if (typeof removeMissingPayhipProducts === "function") {
+    try {
+      await removeMissingPayhipProducts(products.map(p => p.slug));
+    } catch (err) {
+      console.error("[PAYHIP] error_remove_missing", err.message);
+    }
+  }
+
+  console.log("[PAYHIP] sync_success", { success: true, count: ok });
+  return { success: true, count: ok };
+}
+
 module.exports = {
-  syncPayhip
+  syncPayhip,
+  fetchPayhipCatalog
 };
