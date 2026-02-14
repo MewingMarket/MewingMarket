@@ -1,4 +1,4 @@
-// public/index.js — versione blindata
+// public/index.js — versione corretta e allineata ad Airtable
 
 document.addEventListener("DOMContentLoaded", async () => {
 
@@ -16,7 +16,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       : "";
 
   /* =========================================================
-     HERO SLIDER (blindato)
+     HERO SLIDER
   ========================================================== */
   try {
     const resHero = await fetch("/products.json", { cache: "no-store" });
@@ -25,8 +25,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     const productsHero = await resHero.json();
     if (!Array.isArray(productsHero)) throw new Error("Formato JSON non valido");
 
+    // Usa il campo corretto: Immagine[0].url
     const images = productsHero
-      .map(p => safeURL(p.immagine))
+      .map(p => p.Immagine?.[0]?.url)
       .filter(Boolean);
 
     const slider = document.getElementById("hero-slider");
@@ -58,7 +59,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /* =========================================================
-     SEZIONE 3 PRODOTTI (blindata)
+     SEZIONE 3 PRODOTTI
   ========================================================== */
   const grid = document.getElementById("products-grid");
   if (!grid) return;
@@ -79,10 +80,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     grid.innerHTML = "";
 
     products.slice(0, 3).forEach((p) => {
-      const img = safeURL(p.immagine) || "/placeholder.webp";
-      const titolo = clean(p.titoloBreve || p.titolo);
-      const descrizione = clean(p.descrizioneBreve || "");
-      const prezzo = p.prezzo ? clean(String(p.prezzo)) + " €" : "";
+      const img = p.Immagine?.[0]?.url || "/placeholder.webp";
+      const titolo = clean(p.Titolo || "");
+      const descrizione = clean(p.DescrizioneLunga || "");
+      const prezzo = p.Prezzo ? clean(String(p.Prezzo)) + " €" : "";
       const slug = clean(p.slug);
 
       const card = document.createElement("article");
