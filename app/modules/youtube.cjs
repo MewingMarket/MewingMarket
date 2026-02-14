@@ -2,7 +2,7 @@
 
 const path = require("path");
 const { stripHTML, safeText, cleanURL } = require("./utils.cjs");
-const { updateAirtableRecord, safeReadJSON } = require("./airtable.cjs");
+const { updateAirtableRecord, loadProducts } = require("./airtable.cjs");
 
 /* =========================================================
    SLUG DAL TITOLO (blindato)
@@ -35,9 +35,9 @@ async function updateFromYouTube(video) {
     }
 
     /* =====================================================
-       CARICAMENTO CATALOGO SICURO (senza require cache)
+       CARICAMENTO CATALOGO SICURO
     ====================================================== */
-    const products = safeReadJSON(path.join(__dirname, "..", "data", "products.json"));
+    const products = loadProducts();
     const record = products.find(p => p.slug === slug);
 
     if (!record || !record.id) {
@@ -56,7 +56,7 @@ async function updateFromYouTube(video) {
     };
 
     /* =====================================================
-       UPDATE SU AIRTABLE (senza syncAirtable interno)
+       UPDATE SU AIRTABLE
     ====================================================== */
     await updateAirtableRecord(record.id, fields);
 
