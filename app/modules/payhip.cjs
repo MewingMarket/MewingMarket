@@ -1,7 +1,7 @@
 // app/modules/payhip.cjs
 // Gestione prodotti Payhip → Airtable
 
-const { AirtableBase, AirtableTable } = require("../utils/airtable.cjs");
+const { AirtableBase, AirtableTable } = require("./airtable.cjs");
 
 /* =========================================================
    1) Crea o aggiorna un prodotto Payhip in Airtable
