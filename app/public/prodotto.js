@@ -1,4 +1,4 @@
-// prodotto.js — versione blindata + YouTube fix totale
+// prodotto.js — versione corretta e allineata ad Airtable
 
 /* =========================================================
    SANITIZZAZIONE
@@ -16,23 +16,18 @@ function safeURL(url) {
 }
 
 /* =========================================================
-   YOUTUBE ID EXTRACTOR (blindato)
+   YOUTUBE ID EXTRACTOR
 ========================================================= */
 function extractYouTubeID(url) {
   if (!url || typeof url !== "string") return null;
 
   try {
-    // youtu.be
     if (url.includes("youtu.be/")) {
       return clean(url.split("youtu.be/")[1].split("?")[0]);
     }
-
-    // watch?v=
     if (url.includes("watch?v=")) {
       return clean(url.split("watch?v=")[1].split("&")[0]);
     }
-
-    // embed
     if (url.includes("embed/")) {
       return clean(url.split("embed/")[1].split("?")[0]);
     }
@@ -44,7 +39,7 @@ function extractYouTubeID(url) {
 }
 
 /* =========================================================
-   YOUTUBE EMBED (blindato)
+   YOUTUBE EMBED
 ========================================================= */
 function renderYouTubeEmbed(p) {
   const id = extractYouTubeID(p.youtube_url);
@@ -64,7 +59,7 @@ function renderYouTubeEmbed(p) {
 }
 
 /* =========================================================
-   INIT PRODOTTO (blindato)
+   INIT PRODOTTO
 ========================================================= */
 (async function () {
   const params = new URLSearchParams(window.location.search);
@@ -76,7 +71,7 @@ function renderYouTubeEmbed(p) {
   }
 
   /* ----------------------------
-     FETCH PRODOTTI (blindato)
+     FETCH PRODOTTI
   ----------------------------- */
   let products = [];
   try {
@@ -99,7 +94,7 @@ function renderYouTubeEmbed(p) {
   }
 
   /* ----------------------------
-     ELEMENTI DOM (blindati)
+     ELEMENTI DOM
   ----------------------------- */
   const container = document.getElementById("prodotto");
   if (!container) {
@@ -108,13 +103,13 @@ function renderYouTubeEmbed(p) {
   }
 
   /* ----------------------------
-     RENDER PRODOTTO (blindato)
+     RENDER PRODOTTO
   ----------------------------- */
-  const img = safeURL(p.immagine) || "img/placeholder.webp";
-  const titolo = clean(p.titolo);
-  const descrizione = clean(p.descrizioneLunga || p.descrizioneBreve || "");
-  const prezzo = clean(String(p.prezzo));
-  const linkPayhip = safeURL(p.linkPayhip);
+  const img = p.Immagine?.[0]?.url || "img/placeholder.webp";
+  const titolo = clean(p.Titolo || "");
+  const descrizione = clean(p.DescrizioneLunga || "");
+  const prezzo = Number(p.Prezzo) || 0;
+  const linkPayhip = safeURL(p.LinkPayhip);
 
   container.innerHTML = `
     <div class="hero-wrapper">
@@ -133,21 +128,21 @@ function renderYouTubeEmbed(p) {
   `;
 
   /* =========================================================
-     PRODOTTI CORRELATI (blindato)
+     PRODOTTI CORRELATI
   ========================================================== */
   const relatedBox = document.getElementById("related");
   if (!relatedBox) return;
 
   const correlati = products
-    .filter(pr => pr.categoria === p.categoria && pr.slug !== slug)
+    .filter(pr => pr.Categoria === p.Categoria && pr.slug !== slug)
     .slice(0, 4);
 
   let html = "";
   correlati.forEach(pr => {
-    const imgR = safeURL(pr.immagine) || "img/placeholder.webp";
-    const titoloR = clean(pr.titoloBreve || pr.titolo);
-    const descrizioneR = clean(pr.descrizioneBreve || "");
-    const prezzoR = clean(String(pr.prezzo));
+    const imgR = pr.Immagine?.[0]?.url || "img/placeholder.webp";
+    const titoloR = clean(pr.Titolo || "");
+    const descrizioneR = clean(pr.DescrizioneLunga || "");
+    const prezzoR = Number(pr.Prezzo) || 0;
     const slugR = clean(pr.slug);
 
     html += `
