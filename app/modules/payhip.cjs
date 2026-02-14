@@ -10,7 +10,49 @@ const {
 
 const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
 const BASE_ID = process.env.AIRTABLE_BASE;
-const TABLE_NAME = process.env.AIRTABLE_TABLE;
+
+// ⭐ Nuove variabili
+const TABLE_NAME = process.env.AIRTABLE_TABLE_NAME;   // Nome tabella (REST API)
+const TABLE_ID = process.env.AIRTABLE_TABLE_ID;       // ID tabella (metadata)
+
+/* =========================================================
+   Verifica tabella corretta tramite ID (metadata API)
+========================================================= */
+async function verifyTable() {
+  try {
+    const url = `https://api.airtable.com/v0/meta/bases/${BASE_ID}/tables`;
+
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${AIRTABLE_PAT}`
+      }
+    });
+
+    const data = await res.json();
+    if (!Array.isArray(data.tables)) return false;
+
+    const found = data.tables.find(t => t.id === TABLE_ID);
+
+    if (!found) {
+      console.error("❌ ATTENZIONE: TABLE_ID non corrisponde a nessuna tabella.");
+      return false;
+    }
+
+    if (found.name !== TABLE_NAME) {
+      console.error("❌ ATTENZIONE: TABLE_NAME non corrisponde al nome reale della tabella.");
+      console.error("   Nome reale:", found.name);
+      console.error("   Nome configurato:", TABLE_NAME);
+      return false;
+    }
+
+    console.log("✅ Tabella verificata:", found.name, "(", found.id, ")");
+    return true;
+
+  } catch (err) {
+    console.error("Errore verifyTable:", err);
+    return false;
+  }
+}
 
 /* =========================================================
    UTILS: Generazione TitoloBreve (max 48 caratteri)
@@ -21,7 +63,6 @@ function generaTitoloBreve(titolo) {
 
   if (titolo.length <= max) return titolo.trim();
 
-  // taglio elegante senza spezzare parole
   let breve = titolo.slice(0, max);
   breve = breve.slice(0, breve.lastIndexOf(" "));
   return breve.trim() + "...";
@@ -75,7 +116,7 @@ async function createRecord(fields) {
 }
 
 /* =========================================================
-   Aggiorna record (forzato)
+   Aggiorna record
 ========================================================= */
 async function updateRecord(id, fields) {
   const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}/${id}`;
@@ -95,14 +136,13 @@ async function updateRecord(id, fields) {
 ========================================================= */
 async function updateFromPayhip(data) {
   try {
-    // Slug sicuro
+    await verifyTable(); // ⭐ Verifica tabella prima di scrivere
+
     const slug = safeSlug(data.slug || data.title || data.url);
     if (!slug) return;
 
-    // Descrizione pulita
     const descrPulita = safeText(stripHTML(data.description || ""));
 
-    // Prezzo numerico
     const prezzo = Number(
       String(data.price || "")
         .replace("€", "")
@@ -110,11 +150,9 @@ async function updateFromPayhip(data) {
         .trim()
     ) || 0;
 
-    // Generazione automatica
     const titoloBreve = generaTitoloBreve(data.title || "");
     const descrBreve = generaDescrizioneBreve(descrPulita);
 
-    // Campi da salvare SEMPRE
     const fields = {
       slug,
       Titolo: data.title || "",
@@ -122,19 +160,15 @@ async function updateFromPayhip(data) {
       Prezzo: prezzo,
       LinkPayhip: data.url || "",
       DescrizioneLunga: descrPulita,
-      DescrizioneBreve: descrBreve
+      DescrizioneBreve: descrBreve,
+      Immagine: data.image ? [{ url: data.image }] : []
     };
-
-    // Immagine sempre aggiornata
-    fields.Immagine = data.image
-      ? [{ url: data.image }]
-      : [];
 
     const record = await findRecordBySlug(slug);
 
     if (record) {
       await updateRecord(record.id, fields);
-      console.log("[PAYHIP] updated (forced)", slug);
+      console.log("[PAYHIP] updated", slug);
     } else {
       await createRecord(fields);
       console.log("[PAYHIP] created", slug);
