@@ -1,10 +1,7 @@
-// public/index.js — versione corretta e allineata ad Airtable
+// index.js — versione definitiva con TitoloBreve + DescrizioneBreve
 
 document.addEventListener("DOMContentLoaded", async () => {
 
-  /* =========================================================
-     SANITIZZAZIONE
-  ========================================================== */
   const clean = (t) =>
     typeof t === "string"
       ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
@@ -15,17 +12,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       ? url
       : "";
 
-  /* =========================================================
-     HERO SLIDER
-  ========================================================== */
   try {
     const resHero = await fetch("/products.json", { cache: "no-store" });
     if (!resHero.ok) throw new Error("products.json non disponibile");
 
     const productsHero = await resHero.json();
-    if (!Array.isArray(productsHero)) throw new Error("Formato JSON non valido");
-
-    // Usa il campo corretto: Immagine[0].url
     const images = productsHero
       .map(p => p.Immagine?.[0]?.url)
       .filter(Boolean);
@@ -58,9 +49,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("Errore slider hero:", err);
   }
 
-  /* =========================================================
-     SEZIONE 3 PRODOTTI
-  ========================================================== */
   const grid = document.getElementById("products-grid");
   if (!grid) return;
 
@@ -81,8 +69,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     products.slice(0, 3).forEach((p) => {
       const img = p.Immagine?.[0]?.url || "/placeholder.webp";
-      const titolo = clean(p.Titolo || "");
-      const descrizione = clean(p.DescrizioneLunga || "");
+      const titolo = clean(p.TitoloBreve || p.Titolo || "");
+      const descrizione = clean(p.DescrizioneBreve || "");
       const prezzo = p.Prezzo ? clean(String(p.Prezzo)) + " €" : "";
       const slug = clean(p.slug);
 
@@ -90,14 +78,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       card.className = "product-card";
 
       card.innerHTML = `
-        <img src="${img}" 
-             alt="${titolo}" 
-             loading="lazy">
-
+        <img src="${img}" alt="${titolo}" loading="lazy">
         <h3>${titolo}</h3>
         <p>${descrizione}</p>
         <p class="price">${prezzo}</p>
-
         <a href="/prodotto.html?slug=${encodeURIComponent(slug)}" class="btn">
           Scopri
         </a>
