@@ -1,5 +1,5 @@
 // app/services/payhip.cjs
-// Sync Payhip via scraping HTML (nessuna API, nessuna chiave)
+// Sync Payhip via scraping HTML (nessuna API)
 
 const axios = require("axios");
 const { updateFromPayhip, removeMissingPayhipProducts } = require("../modules/payhip.cjs");
@@ -13,22 +13,28 @@ const PAYHIP_STORE_URL = "https://payhip.com/MewingMarket";
 async function fetchStoreHtml() {
   const res = await axios.get(PAYHIP_STORE_URL, {
     headers: {
-      "User-Agent": "Mozilla/5.0 (MewingMarket Catalog Bot)"
+      // User-Agent realistico → Payhip serve la versione corretta
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0 Safari/537.36"
     }
   });
   return res.data || "";
 }
 
 /* =========================================================
-   2) Estrai tutti i link dei prodotti /b/XXXXX
+   2) Estrai TUTTI i link dei prodotti /b/XXXXX
+      (regex universale, cattura ogni variante Payhip)
 ========================================================= */
 function extractProductSlugs(html) {
   const slugs = new Set();
-  const regex = /href="\/b\/([A-Za-z0-9]+)"/g;
+
+  // Cattura TUTTE le forme: /b/XXXXX, /b/XXXXX/, /b/XXXXX?ref=...
+  const regex = /\/b\/([A-Za-z0-9]+)/g;
+
   let match;
   while ((match = regex.exec(html)) !== null) {
     slugs.add(match[1]);
   }
+
   return Array.from(slugs);
 }
 
@@ -39,7 +45,7 @@ async function fetchProductPage(slug) {
   const url = `https://payhip.com/b/${slug}`;
   const res = await axios.get(url, {
     headers: {
-      "User-Agent": "Mozilla/5.0 (MewingMarket Catalog Bot)"
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0 Safari/537.36"
     }
   });
   return { url, html: res.data || "" };
@@ -59,7 +65,6 @@ function parseProduct(html, slug, url) {
   const img = getText(/<img[^>]*class="[^"]*product-image[^"]*"[^>]*src="([^"]+)"/i);
   const desc = getText(/class="product-description"[^>]*>([\s\S]*?)<\/div>/i);
 
-  // Pulizia base HTML → testo
   const clean = (s) =>
     s
       .replace(/<br\s*\/?>/gi, "\n")
@@ -140,14 +145,13 @@ async function syncPayhip() {
 
   for (const p of products) {
     try {
-      await updateFromPayhip(p); // deve già esistere in ../modules/payhip.cjs
+      await updateFromPayhip(p);
       ok++;
     } catch (err) {
       console.error("[PAYHIP] error_update_product", p.slug, err.message);
     }
   }
 
-  // opzionale: rimuovere prodotti non più presenti
   if (typeof removeMissingPayhipProducts === "function") {
     try {
       await removeMissingPayhipProducts(products.map(p => p.slug));
