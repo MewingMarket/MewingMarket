@@ -1,7 +1,7 @@
-// catalogo.js — versione blindata + video YouTube
+// catalogo.js — versione corretta e allineata ad Airtable
 
 /* =========================================================
-   CARICAMENTO PRODOTTI (blindato)
+   CARICAMENTO PRODOTTI
 ========================================================= */
 async function loadProducts() {
   try {
@@ -16,7 +16,7 @@ async function loadProducts() {
 }
 
 /* =========================================================
-   SANITIZZAZIONE BASE
+   SANITIZZAZIONE
 ========================================================= */
 function clean(t) {
   return typeof t === "string"
@@ -29,7 +29,7 @@ function safeURL(u) {
 }
 
 /* =========================================================
-   VIDEO YOUTUBE (blindato)
+   VIDEO YOUTUBE
 ========================================================= */
 function renderYouTubeLink(p) {
   const url = safeURL(p.youtube_url);
@@ -44,17 +44,17 @@ function renderYouTubeLink(p) {
 }
 
 /* =========================================================
-   CARD PRODOTTO (blindata)
+   CARD PRODOTTO
 ========================================================= */
 function cardHTML(p) {
-  const img = safeURL(p.immagine) || "img/placeholder.webp";
-  const titolo = clean(p.titoloBreve || p.titolo);
-  const descrizione = clean(p.descrizioneBreve || "");
-  const prezzo = parseFloat(p.prezzo) || 0;
-  const slug = clean(p.slug);
+  const img = p.Immagine?.[0]?.url || "img/placeholder.webp";
+  const titolo = clean(p.Titolo || "");
+  const descrizione = clean(p.DescrizioneLunga || "");
+  const prezzo = Number(p.Prezzo) || 0;
+  const slug = clean(p.slug || "");
 
   return `
-    <div class="product-card" data-cat="${clean(p.categoria)}" data-prezzo="${prezzo}">
+    <div class="product-card" data-cat="${clean(p.Categoria || "")}" data-prezzo="${prezzo}">
       <img src="${img}" alt="${titolo}" loading="lazy">
       <h2>${titolo}</h2>
       <p>${descrizione}</p>
@@ -66,7 +66,7 @@ function cardHTML(p) {
 }
 
 /* =========================================================
-   INIZIALIZZAZIONE CATALOGO (blindata)
+   INIZIALIZZAZIONE CATALOGO
 ========================================================= */
 (async function initCatalogo() {
   const products = await loadProducts();
@@ -79,9 +79,9 @@ function cardHTML(p) {
   }
 
   /* ----------------------------
-     CATEGORIE DINAMICHE (blindate)
+     CATEGORIE DINAMICHE
   ----------------------------- */
-  const categorie = [...new Set(products.map(p => p.categoria))].filter(Boolean);
+  const categorie = [...new Set(products.map(p => p.Categoria))].filter(Boolean);
 
   categorieBox.innerHTML = categorie.length
     ? categorie.map(cat => `<button class="btn" data-cat="${clean(cat)}">${clean(cat)}</button>`).join("")
@@ -95,7 +95,7 @@ function cardHTML(p) {
     : "<p>Nessun prodotto disponibile.</p>";
 
   /* ----------------------------
-     FILTRO CATEGORIA (blindato)
+     FILTRO CATEGORIA
   ----------------------------- */
   categorieBox.addEventListener("click", e => {
     const cat = e.target.dataset.cat;
@@ -107,7 +107,7 @@ function cardHTML(p) {
   });
 
   /* ----------------------------
-     FILTRO PREZZO (blindato)
+     FILTRO PREZZO
   ----------------------------- */
   document.querySelectorAll("[data-prezzo]").forEach(btn => {
     btn.addEventListener("click", () => {
