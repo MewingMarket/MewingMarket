@@ -11,23 +11,28 @@ const PAYHIP_STORE_URL = "https://payhip.com/MewingMarket";
    1) Scarica HTML dello store
 ========================================================= */
 async function fetchStoreHtml() {
-  const res = await axios.get(PAYHIP_STORE_URL, {
-    headers: {
-      // User-Agent realistico → Payhip serve la versione corretta
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0 Safari/537.36"
-    }
-  });
-  return res.data || "";
+  try {
+    const res = await axios.get(PAYHIP_STORE_URL, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0 Safari/537.36"
+      }
+    });
+
+    return res.data || "";
+  } catch (err) {
+    console.error("[PAYHIP] errore fetchStoreHtml:", err.message);
+    return "";
+  }
 }
 
 /* =========================================================
    2) Estrai TUTTI i link dei prodotti /b/XXXXX
-      (regex universale, cattura ogni variante Payhip)
 ========================================================= */
 function extractProductSlugs(html) {
-  const slugs = new Set();
+  if (!html) return [];
 
-  // Cattura TUTTE le forme: /b/XXXXX, /b/XXXXX/, /b/XXXXX?ref=...
+  const slugs = new Set();
   const regex = /\/b\/([A-Za-z0-9]+)/g;
 
   let match;
@@ -42,19 +47,37 @@ function extractProductSlugs(html) {
    3) Scarica pagina singolo prodotto
 ========================================================= */
 async function fetchProductPage(slug) {
-  const url = `https://payhip.com/b/${slug}`;
-  const res = await axios.get(url, {
-    headers: {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0 Safari/537.36"
-    }
-  });
-  return { url, html: res.data || "" };
+  try {
+    const url = `https://payhip.com/b/${slug}`;
+    const res = await axios.get(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0 Safari/537.36"
+      }
+    });
+
+    return { url, html: res.data || "" };
+  } catch (err) {
+    console.error("[PAYHIP] errore fetchProductPage:", slug, err.message);
+    return { url: "", html: "" };
+  }
 }
 
 /* =========================================================
-   4) Parsing HTML prodotto (titolo, prezzo, immagine, descrizione)
+   4) Parsing HTML prodotto
 ========================================================= */
 function parseProduct(html, slug, url) {
+  if (!html) {
+    return {
+      slug,
+      url,
+      title: "",
+      price: "",
+      image: "",
+      description: ""
+    };
+  }
+
   const getText = (regex) => {
     const m = regex.exec(html);
     return m ? m[1].trim() : "";
@@ -93,7 +116,11 @@ function parseProduct(html, slug, url) {
 async function fetchPayhipCatalog() {
   try {
     console.log("[PAYHIP] fetch_store_html", PAYHIP_STORE_URL);
+
     const html = await fetchStoreHtml();
+    if (!html) {
+      return { success: false, products: [], reason: "empty_html" };
+    }
 
     const slugs = extractProductSlugs(html);
     console.log("[PAYHIP] found_slugs", slugs);
@@ -101,26 +128,16 @@ async function fetchPayhipCatalog() {
     const products = [];
 
     for (const slug of slugs) {
-      try {
-        const { url, html: productHtml } = await fetchProductPage(slug);
-        const product = parseProduct(productHtml, slug, url);
-        products.push(product);
-      } catch (err) {
-        console.error("[PAYHIP] error_fetch_product", slug, err.message);
-      }
+      const { url, html: productHtml } = await fetchProductPage(slug);
+      const product = parseProduct(productHtml, slug, url);
+      products.push(product);
     }
 
-    return {
-      success: true,
-      products
-    };
+    return { success: true, products };
+
   } catch (err) {
     console.error("[PAYHIP] fetchPayhipCatalog error:", err.message);
-    return {
-      success: false,
-      products: [],
-      reason: err.message
-    };
+    return { success: false, products: [], reason: err.message };
   }
 }
 
@@ -152,12 +169,10 @@ async function syncPayhip() {
     }
   }
 
-  if (typeof removeMissingPayhipProducts === "function") {
-    try {
-      await removeMissingPayhipProducts(products.map(p => p.slug));
-    } catch (err) {
-      console.error("[PAYHIP] error_remove_missing", err.message);
-    }
+  try {
+    await removeMissingPayhipProducts(products.map(p => p.slug));
+  } catch (err) {
+    console.error("[PAYHIP] error_remove_missing", err.message);
   }
 
   console.log("[PAYHIP] sync_success", { success: true, count: ok });
