@@ -1,5 +1,5 @@
 // app/modules/payhip.cjs
-// Gestione prodotti Payhip → Airtable (API REST)
+// Gestione prodotti Payhip → Airtable (API REST) + DEBUG AVANZATO
 
 const fetch = require("node-fetch");
 const {
@@ -17,9 +17,15 @@ const TABLE_ID = process.env.AIRTABLE_TABLE_ID;       // ID tabella (metadata)
 
 /* =========================================================
    Verifica tabella corretta tramite ID (metadata API)
+   + LOG DI DEBUG POTENTI
 ========================================================= */
 async function verifyTable() {
   try {
+    console.log("🔍 [DEBUG] Verifica tabella Airtable...");
+    console.log("🔧 BASE_ID:", BASE_ID);
+    console.log("🔧 TABLE_NAME:", TABLE_NAME);
+    console.log("🔧 TABLE_ID:", TABLE_ID);
+
     const url = `https://api.airtable.com/v0/meta/bases/${BASE_ID}/tables`;
 
     const res = await fetch(url, {
@@ -29,27 +35,41 @@ async function verifyTable() {
     });
 
     const data = await res.json();
-    if (!Array.isArray(data.tables)) return false;
 
-    const found = data.tables.find(t => t.id === TABLE_ID);
-
-    if (!found) {
-      console.error("❌ ATTENZIONE: TABLE_ID non corrisponde a nessuna tabella.");
+    if (!Array.isArray(data.tables)) {
+      console.error("❌ [DEBUG] Nessuna tabella trovata nella base.");
       return false;
     }
 
-    if (found.name !== TABLE_NAME) {
-      console.error("❌ ATTENZIONE: TABLE_NAME non corrisponde al nome reale della tabella.");
-      console.error("   Nome reale:", found.name);
+    // Cerca la tabella per ID
+    const byId = data.tables.find(t => t.id === TABLE_ID);
+
+    if (!byId) {
+      console.error("❌ [DEBUG] TABLE_ID NON corrisponde a nessuna tabella.");
+      console.error("   → Airtable NON riconosce questo ID.");
+      console.error("   → Probabile tabella fantasma o ID errato.");
+      return false;
+    }
+
+    console.log("✅ [DEBUG] Trovata tabella tramite ID:", byId.name);
+
+    // Controlla se il nome corrisponde
+    if (byId.name !== TABLE_NAME) {
+      console.error("⚠️ [DEBUG] MISMATCH tra TABLE_NAME e nome reale della tabella!");
+      console.error("   Nome reale Airtable:", byId.name);
       console.error("   Nome configurato:", TABLE_NAME);
+      console.error("   → Airtable userà il NOME, non l'ID.");
+      console.error("   → Se TABLE_NAME è sbagliato, creerà una tabella fantasma.");
       return false;
     }
 
-    console.log("✅ Tabella verificata:", found.name, "(", found.id, ")");
+    console.log("🎯 [DEBUG] Nome tabella corretto:", TABLE_NAME);
+    console.log("🟢 [DEBUG] Tabella Airtable verificata con successo.");
+
     return true;
 
   } catch (err) {
-    console.error("Errore verifyTable:", err);
+    console.error("❌ [DEBUG] Errore verifyTable:", err);
     return false;
   }
 }
@@ -132,7 +152,7 @@ async function updateRecord(id, fields) {
 }
 
 /* =========================================================
-   Update da Payhip (versione definitiva)
+   Update da Payhip (versione definitiva + DEBUG)
 ========================================================= */
 async function updateFromPayhip(data) {
   try {
@@ -153,6 +173,14 @@ async function updateFromPayhip(data) {
     const titoloBreve = generaTitoloBreve(data.title || "");
     const descrBreve = generaDescrizioneBreve(descrPulita);
 
+    console.log("📝 [DEBUG] Scrittura prodotto:", {
+      slug,
+      titolo: data.title,
+      prezzo,
+      url: data.url,
+      image: data.image
+    });
+
     const fields = {
       slug,
       Titolo: data.title || "",
@@ -167,15 +195,17 @@ async function updateFromPayhip(data) {
     const record = await findRecordBySlug(slug);
 
     if (record) {
+      console.log("🔄 [DEBUG] Aggiornamento record esistente:", record.id);
       await updateRecord(record.id, fields);
-      console.log("[PAYHIP] updated", slug);
+      console.log("🟢 [PAYHIP] updated", slug);
     } else {
+      console.log("🆕 [DEBUG] Creazione nuovo record...");
       await createRecord(fields);
-      console.log("[PAYHIP] created", slug);
+      console.log("🟢 [PAYHIP] created", slug);
     }
 
   } catch (err) {
-    console.error("Errore updateFromPayhip:", err);
+    console.error("❌ Errore updateFromPayhip:", err);
   }
 }
 
@@ -200,6 +230,8 @@ async function removeMissingPayhipProducts(currentSlugs) {
     if (!slug) continue;
 
     if (!currentSlugs.includes(slug)) {
+      console.log("🗑️ [DEBUG] Rimozione prodotto non più presente:", slug);
+
       const delUrl = `${url}/${record.id}`;
       await fetch(delUrl, {
         method: "DELETE",
@@ -207,7 +239,6 @@ async function removeMissingPayhipProducts(currentSlugs) {
           "Authorization": `Bearer ${AIRTABLE_PAT}`
         }
       });
-      console.log("[PAYHIP] removed_missing", slug);
     }
   }
 }
