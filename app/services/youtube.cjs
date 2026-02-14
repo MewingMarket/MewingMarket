@@ -1,14 +1,15 @@
-// app/services/youtube.cjs — SERVIZIO COMPLETO CON FALLBACK RSS
+// app/services/youtube.cjs — SERVIZIO COMPLETO CON FALLBACK RSS ROBUSTO
 
 const axios = require("axios");
 const { updateFromYouTube } = require("../modules/youtube.cjs");
+const xml2js = require("xml2js");
 
 /* =========================================================
    1) FETCH ULTIMI VIDEO VIA API (può fallire)
 ========================================================= */
 async function fetchChannelVideosAPI() {
   try {
-    const channelId = process.env.YOUTUBE_CHANNEL;
+    const channelId = process.env.YOUTUBE_CHANNEL_ID;
     const apiKey = process.env.YOUTUBE_API_KEY;
 
     if (!channelId || !apiKey) {
@@ -37,29 +38,30 @@ async function fetchChannelVideosAPI() {
 }
 
 /* =========================================================
-   2) FALLBACK RSS (sempre funzionante)
+   2) FALLBACK RSS (parser XML robusto)
 ========================================================= */
 async function fetchChannelVideosRSS() {
   try {
-    const channelId = process.env.YOUTUBE_CHANNEL;
+    const channelId = process.env.YOUTUBE_CHANNEL_ID;
     if (!channelId) return { success: false, videos: [] };
 
     const url = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
     const res = await axios.get(url);
 
     const xml = res.data;
-    const entries = [...xml.matchAll(/<entry>([\s\S]*?)<\/entry>/g)];
 
-    const videos = entries.map(entry => {
-      const block = entry[1];
+    const parsed = await xml2js.parseStringPromise(xml, { explicitArray: false });
 
-      return {
-        url: block.match(/<link rel="alternate" href="(.*?)"/)?.[1],
-        title: block.match(/<title>(.*?)<\/title>/)?.[1],
-        description: block.match(/<media:description>([\s\S]*?)<\/media:description>/)?.[1] || "",
-        thumbnail: block.match(/<media:thumbnail url="(.*?)"/)?.[1] || ""
-      };
-    });
+    const entries = parsed.feed.entry || [];
+
+    const list = Array.isArray(entries) ? entries : [entries];
+
+    const videos = list.map(e => ({
+      url: e.link?.$.href || "",
+      title: e.title || "",
+      description: e["media:group"]?.["media:description"] || "",
+      thumbnail: e["media:group"]?.["media:thumbnail"]?.$.url || ""
+    }));
 
     return { success: true, videos };
 
