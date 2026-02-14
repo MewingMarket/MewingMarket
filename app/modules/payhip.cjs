@@ -1,5 +1,5 @@
 // app/modules/payhip.cjs
-// Gestione prodotti Payhip → Airtable (API REST) + DEBUG AVANZATO
+// Gestione prodotti Payhip → Airtable (API REST) + DEBUG
 
 const fetch = require("node-fetch");
 const {
@@ -11,67 +11,18 @@ const {
 const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
 const BASE_ID = process.env.AIRTABLE_BASE;
 
-// ⭐ Nuove variabili
+// ⭐ Variabili corrette
 const TABLE_NAME = process.env.AIRTABLE_TABLE_NAME;   // Nome tabella (REST API)
-const TABLE_ID = process.env.AIRTABLE_TABLE_ID;       // ID tabella (metadata)
+const TABLE_ID = process.env.AIRTABLE_TABLE_ID;       // Solo informativo (non verificabile via API)
 
 /* =========================================================
-   Verifica tabella corretta tramite ID (metadata API)
-   + LOG DI DEBUG POTENTI
+   DEBUG: Mostra configurazione Airtable
 ========================================================= */
-async function verifyTable() {
-  try {
-    console.log("🔍 [DEBUG] Verifica tabella Airtable...");
-    console.log("🔧 BASE_ID:", BASE_ID);
-    console.log("🔧 TABLE_NAME:", TABLE_NAME);
-    console.log("🔧 TABLE_ID:", TABLE_ID);
-
-    const url = `https://api.airtable.com/v0/meta/bases/${BASE_ID}/tables`;
-
-    const res = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${AIRTABLE_PAT}`
-      }
-    });
-
-    const data = await res.json();
-
-    if (!Array.isArray(data.tables)) {
-      console.error("❌ [DEBUG] Nessuna tabella trovata nella base.");
-      return false;
-    }
-
-    // Cerca la tabella per ID
-    const byId = data.tables.find(t => t.id === TABLE_ID);
-
-    if (!byId) {
-      console.error("❌ [DEBUG] TABLE_ID NON corrisponde a nessuna tabella.");
-      console.error("   → Airtable NON riconosce questo ID.");
-      console.error("   → Probabile tabella fantasma o ID errato.");
-      return false;
-    }
-
-    console.log("✅ [DEBUG] Trovata tabella tramite ID:", byId.name);
-
-    // Controlla se il nome corrisponde
-    if (byId.name !== TABLE_NAME) {
-      console.error("⚠️ [DEBUG] MISMATCH tra TABLE_NAME e nome reale della tabella!");
-      console.error("   Nome reale Airtable:", byId.name);
-      console.error("   Nome configurato:", TABLE_NAME);
-      console.error("   → Airtable userà il NOME, non l'ID.");
-      console.error("   → Se TABLE_NAME è sbagliato, creerà una tabella fantasma.");
-      return false;
-    }
-
-    console.log("🎯 [DEBUG] Nome tabella corretto:", TABLE_NAME);
-    console.log("🟢 [DEBUG] Tabella Airtable verificata con successo.");
-
-    return true;
-
-  } catch (err) {
-    console.error("❌ [DEBUG] Errore verifyTable:", err);
-    return false;
-  }
+function debugConfig() {
+  console.log("🔧 [DEBUG] Airtable Config:");
+  console.log("   BASE_ID:", BASE_ID);
+  console.log("   TABLE_NAME:", TABLE_NAME);
+  console.log("   TABLE_ID (informativo):", TABLE_ID);
 }
 
 /* =========================================================
@@ -114,9 +65,13 @@ async function findRecordBySlug(slug) {
   });
 
   const data = await res.json();
-  return Array.isArray(data.records) && data.records.length > 0
-    ? data.records[0]
-    : null;
+
+  if (!data.records) {
+    console.error("❌ [DEBUG] Errore findRecordBySlug:", data);
+    return null;
+  }
+
+  return data.records.length > 0 ? data.records[0] : null;
 }
 
 /* =========================================================
@@ -125,7 +80,7 @@ async function findRecordBySlug(slug) {
 async function createRecord(fields) {
   const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}`;
 
-  await fetch(url, {
+  const res = await fetch(url, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${AIRTABLE_PAT}`,
@@ -133,6 +88,12 @@ async function createRecord(fields) {
     },
     body: JSON.stringify({ fields })
   });
+
+  const data = await res.json();
+
+  if (data.error) {
+    console.error("❌ [DEBUG] Errore createRecord:", data.error);
+  }
 }
 
 /* =========================================================
@@ -141,7 +102,7 @@ async function createRecord(fields) {
 async function updateRecord(id, fields) {
   const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}/${id}`;
 
-  await fetch(url, {
+  const res = await fetch(url, {
     method: "PATCH",
     headers: {
       "Authorization": `Bearer ${AIRTABLE_PAT}`,
@@ -149,6 +110,12 @@ async function updateRecord(id, fields) {
     },
     body: JSON.stringify({ fields })
   });
+
+  const data = await res.json();
+
+  if (data.error) {
+    console.error("❌ [DEBUG] Errore updateRecord:", data.error);
+  }
 }
 
 /* =========================================================
@@ -156,7 +123,7 @@ async function updateRecord(id, fields) {
 ========================================================= */
 async function updateFromPayhip(data) {
   try {
-    await verifyTable(); // ⭐ Verifica tabella prima di scrivere
+    debugConfig();
 
     const slug = safeSlug(data.slug || data.title || data.url);
     if (!slug) return;
