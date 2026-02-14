@@ -13,6 +13,32 @@ const BASE_ID = process.env.AIRTABLE_BASE;
 const TABLE_NAME = process.env.AIRTABLE_TABLE;
 
 /* =========================================================
+   UTILS: Generazione TitoloBreve (max 48 caratteri)
+========================================================= */
+function generaTitoloBreve(titolo) {
+  if (!titolo) return "";
+  const max = 48;
+
+  if (titolo.length <= max) return titolo.trim();
+
+  // taglio elegante senza spezzare parole
+  let breve = titolo.slice(0, max);
+  breve = breve.slice(0, breve.lastIndexOf(" "));
+  return breve.trim() + "...";
+}
+
+/* =========================================================
+   UTILS: Generazione DescrizioneBreve (prime 26 parole)
+========================================================= */
+function generaDescrizioneBreve(descr) {
+  if (!descr) return "";
+  const parole = descr.split(/\s+/);
+  if (parole.length <= 26) return descr.trim();
+
+  return parole.slice(0, 26).join(" ").trim() + "...";
+}
+
+/* =========================================================
    Trova record per slug
 ========================================================= */
 async function findRecordBySlug(slug) {
@@ -49,7 +75,7 @@ async function createRecord(fields) {
 }
 
 /* =========================================================
-   Aggiorna record
+   Aggiorna record (forzato)
 ========================================================= */
 async function updateRecord(id, fields) {
   const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}/${id}`;
@@ -65,7 +91,7 @@ async function updateRecord(id, fields) {
 }
 
 /* =========================================================
-   Update da Payhip
+   Update da Payhip (versione definitiva)
 ========================================================= */
 async function updateFromPayhip(data) {
   try {
@@ -84,24 +110,31 @@ async function updateFromPayhip(data) {
         .trim()
     ) || 0;
 
+    // Generazione automatica
+    const titoloBreve = generaTitoloBreve(data.title || "");
+    const descrBreve = generaDescrizioneBreve(descrPulita);
+
+    // Campi da salvare SEMPRE
     const fields = {
       slug,
       Titolo: data.title || "",
+      TitoloBreve: titoloBreve,
       Prezzo: prezzo,
       LinkPayhip: data.url || "",
-      DescrizioneLunga: descrPulita
+      DescrizioneLunga: descrPulita,
+      DescrizioneBreve: descrBreve
     };
 
-    // Immagine solo se esiste
-    if (data.image) {
-      fields.Immagine = [{ url: data.image }];
-    }
+    // Immagine sempre aggiornata
+    fields.Immagine = data.image
+      ? [{ url: data.image }]
+      : [];
 
     const record = await findRecordBySlug(slug);
 
     if (record) {
       await updateRecord(record.id, fields);
-      console.log("[PAYHIP] updated", slug);
+      console.log("[PAYHIP] updated (forced)", slug);
     } else {
       await createRecord(fields);
       console.log("[PAYHIP] created", slug);
