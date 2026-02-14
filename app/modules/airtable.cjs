@@ -6,9 +6,20 @@ const fetch = require("node-fetch");
 /* ============================== VARIABILI AMBIENTE ============================== */
 const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
 const BASE_ID = process.env.AIRTABLE_BASE;
-const TABLE_NAME = process.env.AIRTABLE_TABLE;
+
+// ⭐ Nuove variabili
+const TABLE_NAME = process.env.AIRTABLE_TABLE_NAME;   // Nome tabella (REST API)
+const TABLE_ID = process.env.AIRTABLE_TABLE_ID;       // Solo informativo
 
 const PRODUCTS_PATH = path.join(__dirname, "..", "data", "products.json");
+
+/* ============================== DEBUG CONFIG ============================== */
+function debugConfig() {
+  console.log("🔧 [DEBUG] Airtable Config (airtable.cjs):");
+  console.log("   BASE_ID:", BASE_ID);
+  console.log("   TABLE_NAME:", TABLE_NAME);
+  console.log("   TABLE_ID (informativo):", TABLE_ID);
+}
 
 /* ============================== LETTURA JSON ============================== */
 function safeReadJSON(filePath) {
@@ -26,8 +37,12 @@ function safeReadJSON(filePath) {
 /* ============================== SYNC AIRTABLE → products.json ============================== */
 async function syncAirtable() {
   try {
-    // 🔥 PATCH: leggiamo la view corretta "Grid view"
+    debugConfig();
+
+    // 🔥 Usiamo SEMPRE il nome tabella
     const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}?view=Grid%20view`;
+
+    console.log("📡 [DEBUG] syncAirtable → GET:", url);
 
     const response = await fetch(url, {
       headers: {
@@ -37,7 +52,16 @@ async function syncAirtable() {
     });
 
     const data = await response.json();
-    if (!Array.isArray(data.records)) return safeReadJSON(PRODUCTS_PATH);
+
+    if (data.error) {
+      console.error("❌ [DEBUG] Errore syncAirtable:", data.error);
+      return safeReadJSON(PRODUCTS_PATH);
+    }
+
+    if (!Array.isArray(data.records)) {
+      console.error("❌ [DEBUG] Nessun record trovato in Airtable.");
+      return safeReadJSON(PRODUCTS_PATH);
+    }
 
     const records = data.records.map(r => ({
       id: r.id,
@@ -45,9 +69,13 @@ async function syncAirtable() {
     }));
 
     fs.writeFileSync(PRODUCTS_PATH, JSON.stringify(records, null, 2));
+
+    console.log("🟢 [DEBUG] syncAirtable completato. Prodotti salvati:", records.length);
+
     return records;
 
-  } catch {
+  } catch (err) {
+    console.error("❌ [DEBUG] Errore syncAirtable:", err);
     return safeReadJSON(PRODUCTS_PATH);
   }
 }
@@ -58,7 +86,9 @@ async function updateAirtableRecord(id, fields) {
 
   const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}/${id}`;
 
-  await fetch(url, {
+  console.log("✏️ [DEBUG] updateAirtableRecord → PATCH:", id);
+
+  const res = await fetch(url, {
     method: "PATCH",
     headers: {
       "Authorization": `Bearer ${AIRTABLE_PAT}`,
@@ -66,6 +96,12 @@ async function updateAirtableRecord(id, fields) {
     },
     body: JSON.stringify({ fields })
   });
+
+  const data = await res.json();
+
+  if (data.error) {
+    console.error("❌ [DEBUG] Errore updateAirtableRecord:", data.error);
+  }
 }
 
 /* ============================== FUNZIONI CHE IL SERVER SI ASPETTA ============================== */
@@ -84,7 +120,9 @@ function getProducts() {
 async function saveSaleToAirtable(fields) {
   const url = `https://api.airtable.com/v0/${BASE_ID}/Vendite`;
 
-  await fetch(url, {
+  console.log("💰 [DEBUG] saveSaleToAirtable → POST");
+
+  const res = await fetch(url, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${AIRTABLE_PAT}`,
@@ -92,6 +130,12 @@ async function saveSaleToAirtable(fields) {
     },
     body: JSON.stringify({ fields })
   });
+
+  const data = await res.json();
+
+  if (data.error) {
+    console.error("❌ [DEBUG] Errore saveSaleToAirtable:", data.error);
+  }
 }
 
 /* ============================== EXPORT ============================== */
