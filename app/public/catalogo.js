@@ -1,8 +1,5 @@
-// catalogo.js — versione corretta e allineata ad Airtable
+// catalogo.js — versione definitiva con TitoloBreve + DescrizioneBreve
 
-/* =========================================================
-   CARICAMENTO PRODOTTI
-========================================================= */
 async function loadProducts() {
   try {
     const res = await fetch("products.json", { cache: "no-store" });
@@ -15,9 +12,6 @@ async function loadProducts() {
   }
 }
 
-/* =========================================================
-   SANITIZZAZIONE
-========================================================= */
 function clean(t) {
   return typeof t === "string"
     ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
@@ -28,9 +22,6 @@ function safeURL(u) {
   return typeof u === "string" && u.startsWith("http") ? u : "";
 }
 
-/* =========================================================
-   VIDEO YOUTUBE
-========================================================= */
 function renderYouTubeLink(p) {
   const url = safeURL(p.youtube_url);
   if (!url) return "";
@@ -43,15 +34,12 @@ function renderYouTubeLink(p) {
   `;
 }
 
-/* =========================================================
-   CARD PRODOTTO
-========================================================= */
 function cardHTML(p) {
   const img = p.Immagine?.[0]?.url || "img/placeholder.webp";
-  const titolo = clean(p.Titolo || "");
-  const descrizione = clean(p.DescrizioneLunga || "");
+  const titolo = clean(p.TitoloBreve || p.Titolo || "");
+  const descrizione = clean(p.DescrizioneBreve || "");
   const prezzo = Number(p.Prezzo) || 0;
-  const slug = clean(p.slug || "");
+  const slug = clean(p.slug);
 
   return `
     <div class="product-card" data-cat="${clean(p.Categoria || "")}" data-prezzo="${prezzo}">
@@ -65,38 +53,23 @@ function cardHTML(p) {
   `;
 }
 
-/* =========================================================
-   INIZIALIZZAZIONE CATALOGO
-========================================================= */
 (async function initCatalogo() {
   const products = await loadProducts();
   const container = document.getElementById("catalogo");
   const categorieBox = document.getElementById("categorie");
 
-  if (!container || !categorieBox) {
-    console.error("catalogo.js: elementi mancanti");
-    return;
-  }
+  if (!container || !categorieBox) return;
 
-  /* ----------------------------
-     CATEGORIE DINAMICHE
-  ----------------------------- */
   const categorie = [...new Set(products.map(p => p.Categoria))].filter(Boolean);
 
   categorieBox.innerHTML = categorie.length
     ? categorie.map(cat => `<button class="btn" data-cat="${clean(cat)}">${clean(cat)}</button>`).join("")
     : "<p>Nessuna categoria disponibile</p>";
 
-  /* ----------------------------
-     POPOLA CATALOGO
-  ----------------------------- */
   container.innerHTML = products.length
     ? products.map(cardHTML).join("")
     : "<p>Nessun prodotto disponibile.</p>";
 
-  /* ----------------------------
-     FILTRO CATEGORIA
-  ----------------------------- */
   categorieBox.addEventListener("click", e => {
     const cat = e.target.dataset.cat;
     if (!cat) return;
@@ -106,9 +79,6 @@ function cardHTML(p) {
     });
   });
 
-  /* ----------------------------
-     FILTRO PREZZO
-  ----------------------------- */
   document.querySelectorAll("[data-prezzo]").forEach(btn => {
     btn.addEventListener("click", () => {
       const max = parseFloat(btn.dataset.prezzo);
@@ -121,9 +91,6 @@ function cardHTML(p) {
     });
   });
 
-  /* ----------------------------
-     RESET FILTRI
-  ----------------------------- */
   const resetBtn = document.getElementById("reset");
   if (resetBtn) {
     resetBtn.addEventListener("click", () => {
