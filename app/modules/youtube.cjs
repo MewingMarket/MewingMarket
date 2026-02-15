@@ -1,4 +1,4 @@
-// modules/youtube.cjs — VERSIONE DEFINITIVA E COMPATIBILE
+// modules/youtube.cjs — VERSIONE DEFINITIVA, PATCHATA E FUNZIONANTE
 
 const fetch = require("node-fetch");
 
@@ -19,10 +19,10 @@ const YT_FIELDS = [
 ];
 
 /* =========================================================
-   Trova record per slug
+   Trova record per YouTubeVideoID
 ========================================================= */
-async function findRecordBySlug(slug) {
-  const formula = encodeURIComponent(`{Slug} = "${slug}"`);
+async function findRecordByVideoId(videoId) {
+  const formula = encodeURIComponent(`{YouTubeVideoID} = "${videoId}"`);
   const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}?filterByFormula=${formula}`;
 
   const res = await fetch(url, {
@@ -67,24 +67,22 @@ async function updateFromYouTube(video) {
       return;
     }
 
-    // 🔍 Estrai slug dal video URL
-    // Esempio: https://www.youtube.com/watch?v=ABC123
+    // 🔍 Estrai videoId
     const videoId = video.url.split("v=")[1]?.split("&")[0];
     if (!videoId) {
       console.log("⏭️ Video senza ID valido:", video.url);
       return;
     }
 
-    // 🔥 Cerchiamo il prodotto corrispondente
-    const slug = videoId; // mapping diretto YouTube → slug prodotto
-    const record = await findRecordBySlug(slug);
+    // 🔥 Cerchiamo il prodotto corrispondente tramite YouTubeVideoID
+    const record = await findRecordByVideoId(videoId);
 
     if (!record) {
-      console.log(`⏭️ Nessun prodotto con slug "${slug}" trovato in Airtable.`);
+      console.log(`⏭️ Nessun prodotto con YouTubeVideoID "${videoId}" trovato in Airtable.`);
       return;
     }
 
-    console.log(`🎥 Aggiorno campi YouTube per prodotto: ${slug}`);
+    console.log(`🎥 Aggiorno campi YouTube per prodotto: ${record.id}`);
 
     // Campi YouTube da aggiornare
     const fields = {
