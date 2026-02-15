@@ -1,4 +1,4 @@
-// index.js — versione definitiva con TitoloBreve + DescrizioneBreve
+// index.js — versione migliorata con fallback descrizione breve
 
 document.addEventListener("DOMContentLoaded", async () => {
 
@@ -12,6 +12,23 @@ document.addEventListener("DOMContentLoaded", async () => {
       ? url
       : "";
 
+  /* =========================================================
+     FUNZIONE FALLBACK DESCRIZIONE BREVE
+  ========================================================= */
+  function getShortDescription(p) {
+    if (p.DescrizioneBreve && p.DescrizioneBreve.trim() !== "") {
+      return clean(p.DescrizioneBreve);
+    }
+
+    const full = p.Descrizione || "";
+    const short = full.length > 120 ? full.slice(0, 120) + "…" : full;
+
+    return clean(short);
+  }
+
+  /* =========================================================
+     SLIDER HERO
+  ========================================================= */
   try {
     const resHero = await fetch("/products.json", { cache: "no-store" });
     if (!resHero.ok) throw new Error("products.json non disponibile");
@@ -49,6 +66,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("Errore slider hero:", err);
   }
 
+  /* =========================================================
+     GRID HOMEPAGE
+  ========================================================= */
   const grid = document.getElementById("products-grid");
   if (!grid) return;
 
@@ -70,7 +90,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     products.slice(0, 3).forEach((p) => {
       const img = p.Immagine?.[0]?.url || "/placeholder.webp";
       const titolo = clean(p.TitoloBreve || p.Titolo || "");
-      const descrizione = clean(p.DescrizioneBreve || "");
+      const descrizione = getShortDescription(p);
       const prezzo = p.Prezzo ? clean(String(p.Prezzo)) + " €" : "";
       const slug = clean(p.slug);
 
