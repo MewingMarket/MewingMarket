@@ -131,7 +131,7 @@ async function updateFromPayhip(data) {
     // 2) ESTRAGGO BLOCCO JSON-LD (schema.org/Product)
     // ============================================================
     const jsonLdMatch = html.match(
-      /<script type="application\/ld\+json">([\s\S]*?)<\/script>/
+      /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/i
     );
 
     if (!jsonLdMatch) {
