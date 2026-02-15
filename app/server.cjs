@@ -835,14 +835,21 @@ setInterval(async () => {
     logEvent("cron_payhip_error", { error: err?.message || "unknown" });
   }
 }, 10 * 60 * 1000);
-
 /* =========================================================
-   SYNC YOUTUBE — ogni 10 minuti
+   SYNC YOUTUBE — ogni 10 minuti (versione patchata)
 ========================================================= */
 setInterval(async () => {
+  console.log("⏳ Sync YouTube programmato...");
+
   try {
-    console.log("⏳ Sync YouTube programmato...");
+    // Verifica che la funzione esista davvero
+    if (typeof syncYouTube !== "function") {
+      console.error("❌ syncYouTube non è definita. Controlla import/export.");
+      return;
+    }
+
     const result = await syncYouTube();
+
     console.log("🎥 Sync YouTube completato:", result);
     logEvent("cron_youtube_ok", result);
 
