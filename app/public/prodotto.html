@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- HEAD DINAMICO (blindato, senza document.write) -->
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       fetch("head.html")
@@ -12,8 +11,6 @@
         .then(html => {
           const temp = document.createElement("div");
           temp.innerHTML = html;
-
-          // Inserisce TUTTI i nodi dentro <head>
           [...temp.children].forEach(node => document.head.appendChild(node));
         })
         .catch(err => console.error("Errore caricamento head:", err));
@@ -26,7 +23,6 @@
 
 <body>
 
-<!-- HEADER DINAMICO (blindato) -->
 <div id="header-placeholder"></div>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
@@ -48,7 +44,6 @@
   </section>
 </main>
 
-<!-- FOOTER DINAMICO (blindato) -->
 <div id="footer-placeholder"></div>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
@@ -61,7 +56,6 @@
   });
 </script>
 
-<!-- TRACKING VIEW PRODOTTO (blindato) -->
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   const params = new URLSearchParams(window.location.search);
