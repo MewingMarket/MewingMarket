@@ -249,7 +249,7 @@ async function updateFromPayhip(data) {
 }
 
 /* =========================================================
-   Rimuovi prodotti non più presenti
+   Rimuovi prodotti non più presenti (PATCH: non cancellare manuali)
 ========================================================= */
 async function removeMissingPayhipProducts(currentSlugs) {
   const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}`;
@@ -282,15 +282,16 @@ async function removeMissingPayhipProducts(currentSlugs) {
 
     const exists = normalizedPayhip.includes(slug);
 
+    // ============================================================
+    // PATCH: NON cancellare record manuali
+    // Se Payhip non conosce questo slug → NON eliminarlo
+    // ============================================================
     if (!exists) {
-      console.log("🗑️ Rimuovo:", slug);
-
-      const delUrl = `${url}/${record.id}`;
-      await fetch(delUrl, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${AIRTABLE_PAT}` }
-      });
+      console.log(`⏭️ Skip delete: ${slug} non esiste su Payhip → record manuale preservato.`);
+      continue;
     }
+
+    // Se esiste su Payhip → non fare nulla
   }
 }
 
