@@ -63,8 +63,7 @@ async function syncAirtable() {
     }
 
     /* ============================================================
-       PATCH SLUG — VERSIONE DEFINITIVA
-       Garantisce che ogni prodotto abbia SEMPRE uno slug valido
+       PATCH SLUG — Garantisce che ogni prodotto abbia SEMPRE uno slug valido
     ============================================================ */
     const records = data.records.map(r => {
       const f = r.fields;
