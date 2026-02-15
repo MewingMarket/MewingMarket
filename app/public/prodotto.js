@@ -92,27 +92,32 @@ document.addEventListener("DOMContentLoaded", async () => {
     `;
   }
 
+  /* ============================================================
+     PATCH GRAFICA — SOLO QUESTO BLOCCO È STATO MODIFICATO
+  ============================================================ */
   document.getElementById("prodotto").innerHTML = `
-    <div class="product-hero">
-      <img src="${p.Immagine?.[0]?.url || "/placeholder.webp"}"
-           alt="${clean(p.Titolo)}"
-           class="product-image">
+    <div class="product-layout">
 
-      <div class="product-info">
-        <h1>${clean(p.Titolo)}</h1>
-        <p class="price">€${p.Prezzo}</p>
+      <div class="product-video">
+        ${youtubeEmbed}
+      </div>
 
-        <a href="${linkPayhip}" class="btn btn-primary" target="_blank">
+      <div class="product-main">
+        <h1 class="product-title">${clean(p.Titolo)}</h1>
+
+        <img src="${p.Immagine?.[0]?.url || "/placeholder.webp"}"
+             alt="${clean(p.Titolo)}"
+             class="product-image">
+
+        <div class="product-description">
+          <p>${descrizione}</p>
+        </div>
+
+        <a href="${linkPayhip}" class="btn btn-primary buy-btn" target="_blank">
           Acquista su Payhip
         </a>
       </div>
-    </div>
 
-    ${youtubeEmbed}
-
-    <div class="product-description">
-      <h2>Descrizione</h2>
-      <p>${descrizione}</p>
     </div>
   `;
 });
