@@ -98,16 +98,22 @@ const oldSlugs = getExistingSlugs();
       // 4) Se ancora vuoto → fallback ID Airtable
       if (!slug) slug = r.id.toLowerCase();
 
-      return {
+      // ⭐ QUI CREIAMO IL PRODUCT (identico al tuo codice)
+      const product = {
         id: r.id,
         slug,   // <-- SEMPRE presente, SEMPRE minuscolo
         ...f
       };
-    });
-if (!oldSlugs.includes(product.slug)) {
-  console.log(`🟢 [UPDATE] Nuovo prodotto aggiunto al sito:
+
+      // ⭐ PATCH: LOG NUOVO PRODOTTO (UNICA AGGIUNTA)
+      if (!oldSlugs.includes(product.slug)) {
+        console.log(`🟢 [UPDATE] Nuovo prodotto aggiunto al sito:
      • Nome prodotto: ${product.Titolo}`);
-}
+      }
+
+      return product;
+    });
+
     fs.writeFileSync(PRODUCTS_PATH, JSON.stringify(records, null, 2));
 
     console.log("🟢 [DEBUG] syncAirtable completato. Prodotti salvati:", records.length);
