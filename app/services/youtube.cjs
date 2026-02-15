@@ -1,9 +1,7 @@
-// app/services/youtube.cjs — VERSIONE DEFINITIVA, PATCHATA E ROBUSTA
+// app/services/youtube.cjs — VERSIONE DEFINITIVA, CON API + RSS + HTML FALLBACK
 
 const axios = require("axios");
 const xml2js = require("xml2js");
-
-// Percorsi corretti
 const { updateFromYouTube } = require("../modules/youtube.cjs");
 const { syncAirtable } = require("../modules/airtable.cjs");
 
@@ -17,10 +15,6 @@ async function fetchChannelVideosAPI() {
 
     if (!channelId || !apiKey) {
       console.error("YouTube: variabili ambiente mancanti.");
-      console.error("DEBUG:", {
-        channelId,
-        apiKey: apiKey ? "***" : undefined
-      });
       return { success: false, videos: [] };
     }
 
@@ -56,7 +50,12 @@ async function fetchChannelVideosRSS() {
     if (!channelId) return { success: false, videos: [] };
 
     const url = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
-    const res = await axios.get(url);
+
+    const res = await axios.get(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      }
+    });
 
     const xml = res.data;
     const parsed = await xml2js.parseStringPromise(xml, { explicitArray: false });
@@ -88,18 +87,84 @@ async function fetchChannelVideosRSS() {
 }
 
 /* =========================================================
+   FALLBACK HTML SCRAPING
+========================================================= */
+async function fetchChannelVideosHTML() {
+  try {
+    const channelId = process.env.YOUTUBE_CHANNEL_ID;
+    if (!channelId) return { success: false, videos: [] };
+
+    const url = `https://www.youtube.com/channel/${channelId}/videos`;
+
+    const res = await axios.get(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      }
+    });
+
+    const html = res.data;
+
+    const match = html.match(/ytInitialData"\]\s*=\s*(\{.*?\});/s);
+    if (!match) {
+      console.log("❌ Nessun ytInitialData trovato nel fallback HTML.");
+      return { success: false, videos: [] };
+    }
+
+    const json = JSON.parse(match[1]);
+
+    const tabs = json.contents?.twoColumnBrowseResultsRenderer?.tabs;
+    if (!tabs) return { success: false, videos: [] };
+
+    const videoTab = tabs.find(t => t.tabRenderer?.title === "Videos");
+    if (!videoTab) return { success: false, videos: [] };
+
+    const items =
+      videoTab.tabRenderer?.content?.richGridRenderer?.contents || [];
+
+    const videos = [];
+
+    for (const item of items) {
+      const video = item.richItemRenderer?.content?.videoRenderer;
+      if (!video) continue;
+
+      const videoId = video.videoId;
+      const title = video.title?.runs?.[0]?.text || "";
+      const thumbnail =
+        video.thumbnail?.thumbnails?.[video.thumbnail.thumbnails.length - 1]?.url;
+
+      videos.push({
+        videoId,
+        url: `https://www.youtube.com/watch?v=${videoId}`,
+        title,
+        description: "",
+        thumbnail
+      });
+    }
+
+    return { success: true, videos };
+
+  } catch (err) {
+    console.error("❌ Fallback HTML YouTube fallito:", err?.message);
+    return { success: false, videos: [] };
+  }
+}
+
+/* =========================================================
    SYNC COMPLETO YOUTUBE
 ========================================================= */
 async function syncYouTube() {
   console.log("⏳ Sync YouTube avviato...");
 
-  // 1) API YouTube
   let result = await fetchChannelVideosAPI();
 
-  // 2) Fallback RSS
   if (!result.success || !result.videos.length) {
     console.log("⚠️ API YouTube fallita → uso RSS…");
     result = await fetchChannelVideosRSS();
+  }
+
+  if (!result.success || !result.videos.length) {
+    console.log("⚠️ RSS fallito → uso fallback HTML…");
+    result = await fetchChannelVideosHTML();
   }
 
   const videos = result.videos || [];
@@ -120,7 +185,6 @@ async function syncYouTube() {
     }
   }
 
-  // 3) Aggiorna products.json dopo Airtable
   await syncAirtable();
 
   console.log(`🎥 Sync YouTube completato: ${ok}/${videos.length} video aggiornati.`);
