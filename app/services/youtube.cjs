@@ -5,7 +5,7 @@ const xml2js = require("xml2js");
 const { updateFromYouTube } = require("../modules/youtube.cjs");
 
 /* =========================================================
-   1) FETCH ULTIMI VIDEO VIA API (può fallire)
+   1) FETCH ULTIMI VIDEO VIA API
 ========================================================= */
 async function fetchChannelVideosAPI() {
   try {
@@ -40,7 +40,7 @@ async function fetchChannelVideosAPI() {
 }
 
 /* =========================================================
-   2) FALLBACK RSS (parser XML robusto)
+   2) FALLBACK RSS
 ========================================================= */
 async function fetchChannelVideosRSS() {
   try {
@@ -79,10 +79,8 @@ async function fetchChannelVideosRSS() {
 async function syncYouTube() {
   console.log("⏳ Sync YouTube avviato...");
 
-  // 1) Tentativo API
   let result = await fetchChannelVideosAPI();
 
-  // 2) Se API fallisce → fallback RSS
   if (!result.success || !result.videos.length) {
     console.log("⚠️ API YouTube fallita → uso RSS…");
     result = await fetchChannelVideosRSS();
