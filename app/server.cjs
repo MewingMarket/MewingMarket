@@ -764,7 +764,20 @@ app.post("/newsletter/send", async (req, res) => {
   }
 });
 
+/* =========================================================
+   ⭐ SITEMAP XML — COMPLETA
+========================================================= */
+const { generateFullSitemap } = require(path.join(ROOT, "app", "modules", "sitemap-full.cjs"));
 
+app.get("/sitemap.xml", (req, res) => {
+  try {
+    const xml = generateFullSitemap();
+    res.type("application/xml").send(xml);
+  } catch (err) {
+    console.error("Errore sitemap.xml:", err);
+    res.type("application/xml").send(`<?xml version="1.0" encoding="UTF-8"?><urlset></urlset>`);
+  }
+});
 
 /* =========================================================
    ⭐ AVVIO SERVER + SYNC AUTOMATICO (Airtable + Payhip + YouTube)
