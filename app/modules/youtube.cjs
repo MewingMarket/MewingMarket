@@ -1,4 +1,4 @@
-// app/modules/youtube.cjs — VERSIONE DEFINITIVA, CON MATCH AUTOMATICO TRAMITE TITOLO
+// app/modules/youtube.cjs — VERSIONE DEFINITIVA, MATCH AUTOMATICO + LOG AVANZATI
 
 const fetch = require("node-fetch");
 
@@ -30,7 +30,7 @@ function normalize(str) {
 }
 
 /* =========================================================
-   SIMILARITÀ TRA TITOLI (fuzzy match semplice)
+   SIMILARITÀ TRA TITOLI
 ========================================================= */
 function similarity(a, b) {
   a = normalize(a);
@@ -84,7 +84,7 @@ async function findRecordByTitle(videoTitle) {
     return null;
   }
 
-  console.log(`🔍 Match trovato: "${videoTitle}" → "${best.fields.Titolo}" (score: ${bestScore})`);
+  console.log(`🔍 MATCH: "${videoTitle}" → "${best.fields.Titolo}" (score: ${bestScore})`);
   return best;
 }
 
@@ -110,7 +110,7 @@ async function updateRecord(id, fields) {
 }
 
 /* =========================================================
-   UPDATE DA YOUTUBE — VERSIONE AUTOMATICA
+   UPDATE DA YOUTUBE — LOG COMPLETI
 ========================================================= */
 async function updateFromYouTube(video) {
   try {
@@ -119,6 +119,14 @@ async function updateFromYouTube(video) {
       return;
     }
 
+    console.log("\n===============================");
+    console.log("🎥 VIDEO TROVATO");
+    console.log("URL:", video.url);
+    console.log("ID:", video.videoId);
+    console.log("Titolo:", video.title);
+    console.log("Descrizione:", video.description?.slice(0, 120) || "(vuota)");
+    console.log("===============================\n");
+
     const record = await findRecordByTitle(video.title);
 
     if (!record) {
@@ -126,7 +134,7 @@ async function updateFromYouTube(video) {
       return;
     }
 
-    console.log(`🎥 Aggiorno campi YouTube per prodotto: ${record.id}`);
+    console.log(`🎯 Aggiorno prodotto Airtable: ${record.id} (${record.fields.Titolo})`);
 
     const fields = {
       youtube_url: video.url,
