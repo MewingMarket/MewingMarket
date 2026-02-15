@@ -1,11 +1,10 @@
-// modules/youtube.cjs — VERSIONE DEFINITIVA (allineata all’ecosistema)
+// modules/youtube.cjs — VERSIONE DEFINITIVA
 
-const path = require("path");
 const { stripHTML, safeText, cleanURL } = require("./utils.cjs");
 const { updateAirtableRecord, loadProducts } = require("./airtable.cjs");
 
 /* =========================================================
-   SLUG DAL TITOLO (blindato)
+   SLUG DAL TITOLO (es: "Come fare X [houek]")
 ========================================================= */
 function extractSlugFromTitle(title) {
   try {
@@ -19,7 +18,7 @@ function extractSlugFromTitle(title) {
 }
 
 /* =========================================================
-   UPDATE DA YOUTUBE (versione stabile, senza sync interno)
+   UPDATE DA YOUTUBE
 ========================================================= */
 async function updateFromYouTube(video) {
   try {
@@ -28,26 +27,22 @@ async function updateFromYouTube(video) {
       return;
     }
 
+    console.log("🎬 [YouTube] Ricevuto video:", video.title);
+
     const slug = extractSlugFromTitle(video.title);
     if (!slug) {
-      console.log("YouTube: nessuno slug trovato nel titolo:", video.title);
+      console.log("⚠️ [YouTube] Nessuno slug trovato nel titolo:", video.title);
       return;
     }
 
-    /* =====================================================
-       CARICAMENTO CATALOGO SICURO
-    ====================================================== */
     const products = loadProducts();
-    const record = products.find(p => p.slug === slug);
+    const record = products.find(p => p.Slug?.toLowerCase() === slug);
 
     if (!record || !record.id) {
-      console.log("YouTube: prodotto non trovato per slug:", slug);
+      console.log("⚠️ [YouTube] Prodotto non trovato per slug:", slug);
       return;
     }
 
-    /* =====================================================
-       PREPARAZIONE CAMPI
-    ====================================================== */
     const fields = {
       youtube_url: cleanURL(video.url),
       youtube_title: safeText(video.title),
@@ -55,21 +50,17 @@ async function updateFromYouTube(video) {
       youtube_thumbnail: cleanURL(video.thumbnail)
     };
 
-    /* =====================================================
-       UPDATE SU AIRTABLE
-    ====================================================== */
+    console.log("📡 [YouTube] Aggiorno Airtable per:", slug);
+
     await updateAirtableRecord(record.id, fields);
 
-    console.log("YouTube aggiornato:", slug);
+    console.log("✅ [YouTube] Aggiornato:", slug);
 
   } catch (err) {
     console.error("❌ Errore updateFromYouTube:", err);
   }
 }
 
-/* =========================================================
-   EXPORT
-========================================================= */
 module.exports = {
   updateFromYouTube,
   extractSlugFromTitle
