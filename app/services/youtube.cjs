@@ -23,7 +23,7 @@ async function fetchChannelVideosAPI() {
     const items = res.data?.items || [];
 
     const videos = items
-      .filter(v => v.id?.videoId) // evita risultati non-video
+      .filter(v => v.id?.videoId)
       .map(v => ({
         url: `https://www.youtube.com/watch?v=${v.id.videoId}`,
         title: v.snippet.title || "",
@@ -57,7 +57,7 @@ async function fetchChannelVideosRSS() {
     const list = Array.isArray(entries) ? entries : [entries];
 
     const videos = list
-      .filter(e => e?.title) // evita entry vuote
+      .filter(e => e?.title)
       .map(e => ({
         url: e.link?.$.href || "",
         title: e.title || "",
