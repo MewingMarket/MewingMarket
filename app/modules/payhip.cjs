@@ -1,4 +1,4 @@
-// modules/payhip.cjs — VERSIONE DEFINITIVA
+// modules/payhip.cjs — VERSIONE DEFINITIVA BASATA SU RAW PAYHIP
 
 const fetch = require("node-fetch");
 const { safeText, stripHTML, safeSlug } = require("./utils.cjs");
@@ -8,7 +8,7 @@ const BASE_ID = process.env.AIRTABLE_BASE;
 const TABLE_NAME = process.env.AIRTABLE_TABLE_NAME;
 
 /* =========================================================
-   Campi realmente esistenti nella tua tabella (13 campi)
+   Campi realmente esistenti nella tua tabella
 ========================================================= */
 const FIELDS_ALLOWED = [
   "Titolo",
@@ -23,6 +23,8 @@ const FIELDS_ALLOWED = [
   "youtube_title",
   "youtube_description",
   "youtube_thumbnail",
+  "youtube_last_video_url",
+  "youtube_last_video_title",
   "Validazione Prodotti"
 ];
 
@@ -40,7 +42,7 @@ function filterFields(fields) {
 }
 
 /* =========================================================
-   Normalizzazione slug (case-insensitive, accent-insensitive)
+   Normalizzazione slug
 ========================================================= */
 function normalizeSlug(s) {
   return String(s || "")
@@ -107,46 +109,65 @@ async function updateRecord(id, fields) {
 }
 
 /* =========================================================
-   Update da Payhip (versione definitiva)
+   UPDATE DA PAYHIP (VERSIONE DEFINITIVA)
 ========================================================= */
-async function updateFromPayhip(data) { console.log("📦 [PAYHIP RAW]", JSON.stringify(data, null, 2));
+async function updateFromPayhip(data) {
   try {
     const slug = safeSlug(data.slug || data.title || data.url);
     if (!slug) return;
 
-    // --- DESCRIZIONE ---
-    const descrPulita = safeText(stripHTML(data.description || ""));
+    console.log("📦 [PAYHIP RAW]", JSON.stringify(data, null, 2));
 
-    // --- PREZZO ---
+    // ============================================================
+    // 1) FETCH HTML DEL PRODOTTO (per estrarre dati REALI)
+    // ============================================================
+    const html = await fetch(data.url).then(r => r.text());
+
+    // --- PREZZO REALE ---
     let prezzo = 0;
-    if (data.price) {
+    const priceMatch = html.match(/"price":\s*"([^"]+)"/);
+    if (priceMatch) {
       prezzo = Number(
-        String(data.price)
+        priceMatch[1]
           .replace(/[^\d.,]/g, "")
           .replace(",", ".")
       );
       if (isNaN(prezzo)) prezzo = 0;
     }
 
-    // --- IMMAGINE ---
+    // --- IMMAGINE REALE ---
     let immagine = [];
-    if (data.image && typeof data.image === "string" && data.image.startsWith("http")) {
-      immagine = [{ url: data.image }];
+    const imgMatch = html.match(/"recommended":\s*{\s*"src":\s*"([^"]+)"/);
+    if (imgMatch && imgMatch[1].startsWith("http")) {
+      immagine = [{ url: imgMatch[1] }];
     }
 
+    // --- DESCRIZIONE REALE ---
+    let descrizione = "";
+    const descMatch = html.match(/<div class="product-description">([\s\S]*?)<\/div>/);
+    if (descMatch) {
+      descrizione = safeText(stripHTML(descMatch[1]));
+    }
+
+    // ============================================================
+    // 2) COSTRUZIONE CAMPI PER AIRTABLE
+    // ============================================================
     const fields = {
       Slug: slug,
       Titolo: data.title || "",
       TitoloBreve: (data.title || "").slice(0, 48),
       Prezzo: prezzo,
       LinkPayhip: data.url || "",
-      DescrizioneLunga: descrPulita,
-      DescrizioneBreve: descrPulita.split(/\s+/).slice(0, 26).join(" "),
+      DescrizioneLunga: descrizione,
+      DescrizioneBreve: descrizione.split(/\s+/).slice(0, 26).join(" "),
       Immagine: immagine
     };
 
     const safeFields = filterFields(fields);
 
+    // ============================================================
+    // 3) UPDATE O CREATE
+    // ============================================================
     const record = await findRecordBySlug(slug);
 
     if (record) {
@@ -163,7 +184,7 @@ async function updateFromPayhip(data) { console.log("📦 [PAYHIP RAW]", JSON.st
 }
 
 /* =========================================================
-   Rimuovi prodotti non più presenti (case-insensitive + safety net)
+   Rimuovi prodotti non più presenti
 ========================================================= */
 async function removeMissingPayhipProducts(currentSlugs) {
   const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}`;
