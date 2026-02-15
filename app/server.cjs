@@ -834,7 +834,8 @@ setInterval(async () => {
     console.error("❌ Errore cron Payhip:", err);
     logEvent("cron_payhip_error", { error: err?.message || "unknown" });
   }
-}, 10 * 60 * 1000);
+}, 10 * 60 * 1000);        
+const { syncYouTube } = require("./app/services/youtube.cjs");
 /* =========================================================
    SYNC YOUTUBE — ogni 10 minuti (versione patchata)
 ========================================================= */
