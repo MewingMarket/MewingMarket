@@ -1,9 +1,13 @@
-// app/services/youtube.cjs — SERVIZIO COMPLETO
+// app/services/youtube.cjs — VERSIONE DEFINITIVA, PATCHATA E ROBUSTA
 
 const axios = require("axios");
 const xml2js = require("xml2js");
 const { updateFromYouTube } = require("../modules/youtube.cjs");
+const { syncAirtable } = require("../airtable.cjs");
 
+/* =========================================================
+   API YouTube
+========================================================= */
 async function fetchChannelVideosAPI() {
   try {
     const channelId = process.env.YOUTUBE_CHANNEL_ID;
@@ -22,6 +26,7 @@ async function fetchChannelVideosAPI() {
     const videos = items
       .filter(v => v.id?.videoId)
       .map(v => ({
+        videoId: v.id.videoId,
         url: `https://www.youtube.com/watch?v=${v.id.videoId}`,
         title: v.snippet.title || "",
         description: v.snippet.description || "",
@@ -36,6 +41,9 @@ async function fetchChannelVideosAPI() {
   }
 }
 
+/* =========================================================
+   RSS YouTube
+========================================================= */
 async function fetchChannelVideosRSS() {
   try {
     const channelId = process.env.YOUTUBE_CHANNEL_ID;
@@ -52,12 +60,18 @@ async function fetchChannelVideosRSS() {
 
     const videos = list
       .filter(e => e?.title)
-      .map(e => ({
-        url: e.link?.$.href || "",
-        title: e.title || "",
-        description: e["media:group"]?.["media:description"] || "",
-        thumbnail: e["media:group"]?.["media:thumbnail"]?.$.url || ""
-      }));
+      .map(e => {
+        const href = e.link?.$.href || "";
+        const videoId = href.split("v=")[1]?.split("&")[0] || "";
+
+        return {
+          videoId,
+          url: href,
+          title: e.title || "",
+          description: e["media:group"]?.["media:description"] || "",
+          thumbnail: e["media:group"]?.["media:thumbnail"]?.$.url || ""
+        };
+      });
 
     return { success: true, videos };
 
@@ -67,11 +81,16 @@ async function fetchChannelVideosRSS() {
   }
 }
 
+/* =========================================================
+   SYNC COMPLETO YOUTUBE
+========================================================= */
 async function syncYouTube() {
   console.log("⏳ Sync YouTube avviato...");
 
+  // 1) API YouTube
   let result = await fetchChannelVideosAPI();
 
+  // 2) Fallback RSS
   if (!result.success || !result.videos.length) {
     console.log("⚠️ API YouTube fallita → uso RSS…");
     result = await fetchChannelVideosRSS();
@@ -94,6 +113,9 @@ async function syncYouTube() {
       console.error("Errore updateFromYouTube:", err);
     }
   }
+
+  // 3) Aggiorna products.json dopo Airtable
+  await syncAirtable();
 
   console.log(`🎥 Sync YouTube completato: ${ok}/${videos.length} video aggiornati.`);
 
