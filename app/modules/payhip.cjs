@@ -1,5 +1,5 @@
 // app/modules/payhip.cjs
-// Payhip → Airtable (solo campi essenziali, nessun errore)
+// Payhip → Airtable (versione definitiva, sicura, pulita)
 
 const fetch = require("node-fetch");
 const { safeText, stripHTML, safeSlug } = require("./utils.cjs");
@@ -38,6 +38,17 @@ function filterFields(fields) {
     }
   }
   return clean;
+}
+
+/* =========================================================
+   Normalizzazione slug (case-insensitive, accent-insensitive)
+========================================================= */
+function normalizeSlug(s) {
+  return String(s || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, ""); // rimuove accenti
 }
 
 /* =========================================================
@@ -122,7 +133,6 @@ async function updateFromPayhip(data) {
       "Da Payhip?": true
     };
 
-    // 🔥 Filtra solo i campi che Airtable accetta
     const safeFields = filterFields(fields);
 
     const record = await findRecordBySlug(slug);
@@ -141,10 +151,13 @@ async function updateFromPayhip(data) {
 }
 
 /* =========================================================
-   Rimuovi prodotti non più presenti
+   Rimuovi prodotti non più presenti (case-insensitive + safety net)
 ========================================================= */
 async function removeMissingPayhipProducts(currentSlugs) {
   const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}`;
+
+  // Normalizziamo gli slug Payhip
+  const normalizedPayhip = currentSlugs.map(normalizeSlug);
 
   const res = await fetch(url, {
     headers: {
@@ -156,11 +169,25 @@ async function removeMissingPayhipProducts(currentSlugs) {
   const data = await res.json();
   if (!Array.isArray(data.records)) return;
 
+  // SAFETY NET: se Airtable ha 0 record → non cancellare nulla
+  if (data.records.length === 0) {
+    console.log("🛑 Safety net: Airtable vuoto → nessuna cancellazione.");
+    return;
+  }
+
+  // SAFETY NET: se Payhip ha 0 prodotti → non cancellare nulla
+  if (normalizedPayhip.length === 0) {
+    console.log("🛑 Safety net: Payhip ha 0 prodotti → nessuna cancellazione.");
+    return;
+  }
+
   for (const record of data.records) {
-    const slug = record.fields.Slug;
+    const slug = normalizeSlug(record.fields.Slug);
     if (!slug) continue;
 
-    if (!currentSlugs.includes(slug)) {
+    const exists = normalizedPayhip.includes(slug);
+
+    if (!exists) {
       console.log("🗑️ Rimuovo:", slug);
 
       const delUrl = `${url}/${record.id}`;
