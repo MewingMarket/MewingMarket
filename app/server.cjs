@@ -764,8 +764,10 @@ app.post("/newsletter/send", async (req, res) => {
   }
 });
 
+
+
 /* =========================================================
-   ⭐ AVVIO SERVER + SYNC AUTOMATICO (Airtable + Payhip)
+   ⭐ AVVIO SERVER + SYNC AUTOMATICO (Airtable + Payhip + YouTube)
 ========================================================= */
 const PORT = process.env.PORT || 10000;
 
@@ -775,32 +777,42 @@ app.listen(PORT, () => {
 
   (async () => {
     try {
+      /* ============================
+         1) SYNC AIRTABLE ALL'AVVIO
+      ============================ */
       console.log("⏳ Sync automatico Airtable all'avvio...");
       logEvent("startup_sync_airtable_start", {});
 
-      await syncAirtable().catch(err => {
-        console.error("❌ Errore sync Airtable all'avvio:", err);
-        logEvent("sync_airtable_start_error", { error: err?.message || "unknown" });
-      });
+      await syncAirtable();
+      loadProducts();
 
-      try {
-        loadProducts();
-      } catch (err) {
-        console.error("❌ Errore loadProducts all'avvio:", err);
-        logEvent("load_products_start_error", { error: err?.message || "unknown" });
-      }
-
+      /* ============================
+         2) SYNC PAYHIP ALL'AVVIO
+      ============================ */
       console.log("⏳ Sync automatico Payhip all'avvio...");
       logEvent("startup_sync_payhip_start", {});
 
-      try {
-        const result = await syncPayhip();
-        console.log("📦 Sync Payhip completato all'avvio:", result);
-        logEvent("startup_sync_payhip_ok", result);
-      } catch (err) {
-        console.error("❌ Errore sync Payhip all'avvio:", err);
-        logEvent("startup_sync_payhip_error", { error: err?.message || "unknown" });
-      }
+      const payhipResult = await syncPayhip();
+      console.log("📦 Sync Payhip completato all'avvio:", payhipResult);
+      logEvent("startup_sync_payhip_ok", payhipResult);
+
+      // ⭐ PATCH: Payhip → Airtable → products.json
+      await syncAirtable();
+      loadProducts();
+
+      /* ============================
+         3) SYNC YOUTUBE ALL'AVVIO
+      ============================ */
+      console.log("⏳ Sync automatico YouTube all'avvio...");
+      logEvent("startup_sync_youtube_start", {});
+
+      const ytResult = await syncYouTube();
+      console.log("🎥 Sync YouTube completato all'avvio:", ytResult);
+      logEvent("startup_sync_youtube_ok", ytResult);
+
+      // ⭐ PATCH: YouTube → Airtable → products.json
+      await syncAirtable();
+      loadProducts();
 
       console.log("✅ Tutte le sincronizzazioni all'avvio sono state completate.");
       logEvent("startup_sync_ok", {});
@@ -812,10 +824,10 @@ app.listen(PORT, () => {
   })();
 });
 
-/* =========================================================
-   ⭐ CRON JOB — PAYHIP + YOUTUBE + AIRTABLE
-========================================================= */
 
+/* =========================================================
+   ⭐ CRON JOB — PAYHIP + YOUTUBE + AIRTABLE (PATCHATO)
+========================================================= */
 
 /* =========================================================
    SYNC PAYHIP — ogni 10 minuti
@@ -827,6 +839,10 @@ setInterval(async () => {
 
     const result = await syncPayhip();
 
+    // ⭐ PATCH: Payhip → Airtable → products.json
+    await syncAirtable();
+    loadProducts();
+
     console.log("📦 Sync Payhip completato:", result);
     logEvent("cron_payhip_ok", result);
 
@@ -834,22 +850,26 @@ setInterval(async () => {
     console.error("❌ Errore cron Payhip:", err);
     logEvent("cron_payhip_error", { error: err?.message || "unknown" });
   }
-}, 10 * 60 * 1000);        
+}, 10 * 60 * 1000);
+
 
 /* =========================================================
-   SYNC YOUTUBE — ogni 10 minuti (versione patchata)
+   SYNC YOUTUBE — ogni 10 minuti
 ========================================================= */
 setInterval(async () => {
   console.log("⏳ Sync YouTube programmato...");
 
   try {
-    // Verifica che la funzione esista davvero
     if (typeof syncYouTube !== "function") {
       console.error("❌ syncYouTube non è definita. Controlla import/export.");
       return;
     }
 
     const result = await syncYouTube();
+
+    // ⭐ PATCH: YouTube → Airtable → products.json
+    await syncAirtable();
+    loadProducts();
 
     console.log("🎥 Sync YouTube completato:", result);
     logEvent("cron_youtube_ok", result);
@@ -859,6 +879,7 @@ setInterval(async () => {
     logEvent("cron_youtube_error", { error: err?.message || "unknown" });
   }
 }, 10 * 60 * 1000);
+
 
 /* =========================================================
    SYNC AIRTABLE — ogni 30 minuti
