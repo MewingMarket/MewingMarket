@@ -111,7 +111,7 @@ async function updateRecord(id, fields) {
 }
 
 /* =========================================================
-   UPDATE DA PAYHIP (VERSIONE FUTURE-PROOF)
+   UPDATE DA PAYHIP (VERSIONE FUTURE-PROOF + PATCH TITOLI)
 ========================================================= */
 async function updateFromPayhip(data) {
   try {
@@ -148,13 +148,11 @@ async function updateFromPayhip(data) {
       try {
         const parsed = JSON.parse(m[1]);
 
-        // Caso 1: JSON-LD singolo
         if (parsed["@type"] === "Product") {
           productJson = parsed;
           break;
         }
 
-        // Caso 2: JSON-LD multiplo in array
         if (Array.isArray(parsed)) {
           const found = parsed.find(x => x["@type"] === "Product");
           if (found) {
@@ -202,53 +200,53 @@ async function updateFromPayhip(data) {
     };
 
     const safeFields = filterFields(fields);
-// ============================================================
-// 6) UPDATE O CREATE (PATCH: evita aggiornamenti indesiderati)
-// ============================================================
 
-// Cerca record con lo stesso titolo
-async function findRecordByTitle(title) {
-  if (!title) return null;
+    // ============================================================
+    // 6) UPDATE O CREATE (PATCH TITOLI)
+    // ============================================================
 
-  const formula = encodeURIComponent(`{Titolo} = "${title}"`);
-  const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}?filterByFormula=${formula}`;
+    // Cerca record con lo stesso titolo
+    async function findRecordByTitle(title) {
+      if (!title) return null;
 
-  const res = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${AIRTABLE_PAT}`,
-      "Content-Type": "application/json"
+      const formula = encodeURIComponent(`{Titolo} = "${title}"`);
+      const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}?filterByFormula=${formula}`;
+
+      const res = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${AIRTABLE_PAT}`,
+          "Content-Type": "application/json"
+        }
+      });
+
+      const data = await res.json();
+      return data.records?.[0] || null;
     }
-  });
 
-  const data = await res.json();
-  return data.records?.[0] || null;
+    const recordBySlug = await findRecordBySlug(slug);
+    const recordByTitle = await findRecordByTitle(titolo);
+
+    // 1) Se NON esiste lo slug ma esiste un record con lo stesso titolo → SKIP
+    if (!recordBySlug && recordByTitle) {
+      console.log(`⏭️ Skip: titolo già presente → ${titolo}`);
+      return;
+    }
+
+    // 2) Se esiste lo slug → aggiorna
+    if (recordBySlug) {
+      console.log("🔄 Aggiorno:", slug);
+      await updateRecord(recordBySlug.id, safeFields);
+      return;
+    }
+
+    // 3) Altrimenti crea nuovo record
+    console.log("🆕 Creo:", slug);
+    await createRecord(safeFields);
+
+  } catch (err) {
+    console.error("❌ updateFromPayhip:", err);
+  }
 }
-
-const recordBySlug = await findRecordBySlug(slug);
-const recordByTitle = await findRecordByTitle(titolo);
-
-/* ============================================================
-   1) Se NON esiste lo slug ma esiste un record con lo stesso titolo → SKIP
-=========================================================== */
-if (!recordBySlug && recordByTitle) {
-  console.log(`⏭️ Skip: titolo già presente → ${titolo}`);
-  return;
-}
-
-/* ============================================================
-   2) Se esiste lo slug → aggiorna
-=========================================================== */
-if (recordBySlug) {
-  console.log("🔄 Aggiorno:", slug);
-  await updateRecord(recordBySlug.id, safeFields);
-  return;
-}
-
-/* ============================================================
-   3) Altrimenti crea nuovo record
-=========================================================== */
-console.log("🆕 Creo:", slug);
-await createRecord(safeFields);
 
 /* =========================================================
    Rimuovi prodotti non più presenti
