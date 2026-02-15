@@ -20,6 +20,7 @@ const YT_FIELDS = [
 
 /* =========================================================
    Trova record per YouTubeVideoID
+   (campo da creare in Airtable)
 ========================================================= */
 async function findRecordByVideoId(videoId) {
   const formula = encodeURIComponent(`{YouTubeVideoID} = "${videoId}"`);
@@ -67,8 +68,12 @@ async function updateFromYouTube(video) {
       return;
     }
 
-    // 🔍 Estrai videoId
-    const videoId = video.url.split("v=")[1]?.split("&")[0];
+    // 🔍 Estrai videoId (se non già presente)
+    let videoId = video.videoId;
+    if (!videoId) {
+      videoId = video.url.split("v=")[1]?.split("&")[0] || "";
+    }
+
     if (!videoId) {
       console.log("⏭️ Video senza ID valido:", video.url);
       return;
@@ -97,7 +102,7 @@ async function updateFromYouTube(video) {
     // 🔒 Non sovrascrivere con valori vuoti
     const safeFields = {};
     for (const key of YT_FIELDS) {
-      if (fields[key] && fields[key].trim() !== "") {
+      if (fields[key] && fields[key].toString().trim() !== "") {
         safeFields[key] = fields[key];
       }
     }
