@@ -2,7 +2,15 @@
 const fs = require("fs");
 const path = require("path");
 const fetch = require("node-fetch");
-
+function getExistingSlugs() {
+  try {
+    const file = fs.readFileSync(path.join(__dirname, "../../public/products.json"), "utf8");
+    const data = JSON.parse(file);
+    return data.map(p => p.slug);
+  } catch {
+    return [];
+  }
+}
 /* ============================== VARIABILI AMBIENTE ============================== */
 const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
 const BASE_ID = process.env.AIRTABLE_BASE;
@@ -42,7 +50,7 @@ async function syncAirtable() {
     const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}?view=Grid%20view`;
 
     console.log("📡 [DEBUG] syncAirtable → GET:", url);
-
+const oldSlugs = getExistingSlugs();
     const response = await fetch(url, {
       headers: {
         "Authorization": `Bearer ${AIRTABLE_PAT}`,
