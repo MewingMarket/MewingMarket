@@ -202,24 +202,53 @@ async function updateFromPayhip(data) {
     };
 
     const safeFields = filterFields(fields);
+// ============================================================
+// 6) UPDATE O CREATE (PATCH: evita aggiornamenti indesiderati)
+// ============================================================
 
-    // ============================================================
-    // 6) UPDATE O CREATE
-    // ============================================================
-    const record = await findRecordBySlug(slug);
+// Cerca record con lo stesso titolo
+async function findRecordByTitle(title) {
+  if (!title) return null;
 
-    if (record) {
-      console.log("🔄 Aggiorno:", slug);
-      await updateRecord(record.id, safeFields);
-    } else {
-      console.log("🆕 Creo:", slug);
-      await createRecord(safeFields);
+  const formula = encodeURIComponent(`{Titolo} = "${title}"`);
+  const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}?filterByFormula=${formula}`;
+
+  const res = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${AIRTABLE_PAT}`,
+      "Content-Type": "application/json"
     }
+  });
 
-  } catch (err) {
-    console.error("❌ updateFromPayhip:", err);
-  }
+  const data = await res.json();
+  return data.records?.[0] || null;
 }
+
+const recordBySlug = await findRecordBySlug(slug);
+const recordByTitle = await findRecordByTitle(titolo);
+
+/* ============================================================
+   1) Se NON esiste lo slug ma esiste un record con lo stesso titolo → SKIP
+=========================================================== */
+if (!recordBySlug && recordByTitle) {
+  console.log(`⏭️ Skip: titolo già presente → ${titolo}`);
+  return;
+}
+
+/* ============================================================
+   2) Se esiste lo slug → aggiorna
+=========================================================== */
+if (recordBySlug) {
+  console.log("🔄 Aggiorno:", slug);
+  await updateRecord(recordBySlug.id, safeFields);
+  return;
+}
+
+/* ============================================================
+   3) Altrimenti crea nuovo record
+=========================================================== */
+console.log("🆕 Creo:", slug);
+await createRecord(safeFields);
 
 /* =========================================================
    Rimuovi prodotti non più presenti
