@@ -1,4 +1,4 @@
-// prodotto.js — versione definitiva corretta
+// prodotto.js — versione definitiva corretta + embed YouTube robusto
 
 document.addEventListener("DOMContentLoaded", async () => {
 
@@ -9,6 +9,25 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const safeURL = (u) =>
     typeof u === "string" && u.startsWith("http") ? u : "";
+
+  // Estrazione videoId da TUTTI i formati YouTube
+  const extractYouTubeId = (url) => {
+    if (!url) return null;
+
+    // Formato classico
+    const classic = url.match(/v=([^&]+)/);
+    if (classic) return classic[1];
+
+    // Shorts
+    const shorts = url.match(/shorts\/([^?]+)/);
+    if (shorts) return shorts[1];
+
+    // Embed
+    const embed = url.match(/embed\/([^?]+)/);
+    if (embed) return embed[1];
+
+    return null;
+  };
 
   const params = new URLSearchParams(window.location.search);
   const slug = params.get("slug");
@@ -37,14 +56,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  // Descrizione lunga corretta
   const descrizione = clean(
     p.DescrizioneLunga ||
     p.Descrizione ||
     ""
   );
 
-  // Link Payhip corretto
   const linkPayhip = safeURL(
     p.LinkPayhip ||
     p.linkPayhip ||
@@ -59,20 +76,20 @@ document.addEventListener("DOMContentLoaded", async () => {
   );
 
   let youtubeEmbed = "";
-  if (ytURL.includes("youtube.com")) {
-    const videoId = ytURL.split("v=")[1]?.split("&")[0];
-    if (videoId) {
-      youtubeEmbed = `
-        <div class="video-wrapper">
-          <iframe
-            src="https://www.youtube.com/embed/${videoId}"
-            frameborder="0"
-            allowfullscreen
-            loading="lazy">
-          </iframe>
-        </div>
-      `;
-    }
+  const videoId = extractYouTubeId(ytURL);
+
+  if (videoId) {
+    youtubeEmbed = `
+      <div class="video-wrapper">
+        <iframe
+          src="https://www.youtube.com/embed/${videoId}"
+          frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen
+          loading="lazy">
+        </iframe>
+      </div>
+    `;
   }
 
   document.getElementById("prodotto").innerHTML = `
