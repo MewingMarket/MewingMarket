@@ -1,6 +1,6 @@
-// modules/payhip.cjs — VERSIONE DEFINITIVA BASATA SU RAW PAYHIP
+// modules/payhip.cjs — VERSIONE DEFINITIVA (JSON-LD Payhip)
 
-console.log("🔥 PAYHIP MODULE LOADED (PATCH VERSION)");
+console.log("🔥 PAYHIP MODULE LOADED (PATCH JSON-LD)");
 
 const fetch = require("node-fetch");
 const { safeText, stripHTML, safeSlug } = require("./utils.cjs");
@@ -111,7 +111,7 @@ async function updateRecord(id, fields) {
 }
 
 /* =========================================================
-   UPDATE DA PAYHIP (VERSIONE DEFINITIVA)
+   UPDATE DA PAYHIP (VERSIONE JSON-LD)
 ========================================================= */
 async function updateFromPayhip(data) {
   try {
@@ -123,47 +123,45 @@ async function updateFromPayhip(data) {
     console.log("📦 [PAYHIP RAW]", JSON.stringify(data, null, 2));
 
     // ============================================================
-    // 1) FETCH HTML DEL PRODOTTO (per estrarre dati REALI)
+    // 1) SCARICO HTML
     // ============================================================
-    console.log("🌐 [PAYHIP] Scarico HTML reale:", data.url);
-
     const html = await fetch(data.url).then(r => r.text());
 
-    // --- PREZZO REALE ---
-    let prezzo = 0;
-    const priceMatch = html.match(/"price":\s*"([^"]+)"/);
-    if (priceMatch) {
-      prezzo = Number(
-        priceMatch[1]
-          .replace(/[^\d.,]/g, "")
-          .replace(",", ".")
-      );
-      if (isNaN(prezzo)) prezzo = 0;
+    // ============================================================
+    // 2) ESTRAGGO BLOCCO JSON-LD (schema.org/Product)
+    // ============================================================
+    const jsonLdMatch = html.match(
+      /<script type="application\/ld\+json">([\s\S]*?)<\/script>/
+    );
+
+    if (!jsonLdMatch) {
+      console.error("❌ Nessun JSON-LD trovato");
+      return;
     }
 
-    // --- IMMAGINE REALE ---
-    let immagine = [];
-    const imgMatch = html.match(/"recommended":\s*{\s*"src":\s*"([^"]+)"/);
-    if (imgMatch && imgMatch[1].startsWith("http")) {
-      immagine = [{ url: imgMatch[1] }];
-    }
-
-    // --- DESCRIZIONE REALE ---
-    let descrizione = "";
-    const descMatch = html.match(/<div class="product-description">([\s\S]*?)<\/div>/);
-    if (descMatch) {
-      descrizione = safeText(stripHTML(descMatch[1]));
-    }
+    const jsonLd = JSON.parse(jsonLdMatch[1]);
 
     // ============================================================
-    // 2) COSTRUZIONE CAMPI PER AIRTABLE
+    // 3) DATI REALI DA JSON-LD
+    // ============================================================
+    const titolo = jsonLd.name || data.title || "";
+    const descrizione = jsonLd.description || "";
+    const prezzo = Number(jsonLd.offers?.price || 0);
+    const immagineUrl = jsonLd.image?.[0] || "";
+
+    const immagine = immagineUrl
+      ? [{ url: immagineUrl }]
+      : [];
+
+    // ============================================================
+    // 4) COSTRUZIONE CAMPI PER AIRTABLE
     // ============================================================
     const fields = {
       Slug: slug,
-      Titolo: data.title || "",
-      TitoloBreve: (data.title || "").slice(0, 48),
+      Titolo: titolo,
+      TitoloBreve: titolo.slice(0, 48),
       Prezzo: prezzo,
-      LinkPayhip: data.url || "",
+      LinkPayhip: data.url,
       DescrizioneLunga: descrizione,
       DescrizioneBreve: descrizione.split(/\s+/).slice(0, 26).join(" "),
       Immagine: immagine
@@ -172,7 +170,7 @@ async function updateFromPayhip(data) {
     const safeFields = filterFields(fields);
 
     // ============================================================
-    // 3) UPDATE O CREATE
+    // 5) UPDATE O CREATE
     // ============================================================
     const record = await findRecordBySlug(slug);
 
