@@ -39,7 +39,6 @@ async function syncAirtable() {
   try {
     debugConfig();
 
-    // 🔥 Usiamo SEMPRE il nome tabella
     const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}?view=Grid%20view`;
 
     console.log("📡 [DEBUG] syncAirtable → GET:", url);
@@ -63,10 +62,41 @@ async function syncAirtable() {
       return safeReadJSON(PRODUCTS_PATH);
     }
 
-    const records = data.records.map(r => ({
-      id: r.id,
-      ...r.fields
-    }));
+    /* ============================================================
+       PATCH SLUG — VERSIONE DEFINITIVA
+       Garantisce che ogni prodotto abbia SEMPRE uno slug valido
+    ============================================================ */
+    const records = data.records.map(r => {
+      const f = r.fields;
+
+      // 1) Normalizza slug da Airtable (Slug o slug)
+      let slug = (f.Slug || f.slug || "").toString().trim().toLowerCase();
+
+      // 2) Se slug è vuoto → prova a generarlo dal titolo
+      if (!slug && f.Titolo) {
+        slug = f.Titolo
+          .toString()
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "");
+      }
+
+      // 3) Se ancora vuoto → prova dal link Payhip
+      if (!slug && f.LinkPayhip) {
+        const match = f.LinkPayhip.match(/\/b\/([A-Za-z0-9]+)/);
+        if (match) slug = match[1].toLowerCase();
+      }
+
+      // 4) Se ancora vuoto → fallback ID Airtable
+      if (!slug) slug = r.id.toLowerCase();
+
+      return {
+        id: r.id,
+        slug,   // <-- SEMPRE presente, SEMPRE minuscolo
+        ...f
+      };
+    });
 
     fs.writeFileSync(PRODUCTS_PATH, JSON.stringify(records, null, 2));
 
