@@ -1,5 +1,4 @@
-// app/modules/payhip.cjs
-// Payhip → Airtable (versione definitiva, sicura, pulita)
+// modules/payhip.cjs — VERSIONE DEFINITIVA
 
 const fetch = require("node-fetch");
 const { safeText, stripHTML, safeSlug } = require("./utils.cjs");
@@ -9,7 +8,7 @@ const BASE_ID = process.env.AIRTABLE_BASE;
 const TABLE_NAME = process.env.AIRTABLE_TABLE_NAME;
 
 /* =========================================================
-   Campi realmente esistenti nella tua tabella
+   Campi realmente esistenti nella tua tabella (13 campi)
 ========================================================= */
 const FIELDS_ALLOWED = [
   "Titolo",
@@ -24,7 +23,7 @@ const FIELDS_ALLOWED = [
   "youtube_title",
   "youtube_description",
   "youtube_thumbnail",
-  "Da Payhip?"
+  "Validazione Prodotti"
 ];
 
 /* =========================================================
@@ -48,7 +47,7 @@ function normalizeSlug(s) {
     .trim()
     .toLowerCase()
     .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, ""); // rimuove accenti
+    .replace(/[\u0300-\u036f]/g, "");
 }
 
 /* =========================================================
@@ -108,7 +107,7 @@ async function updateRecord(id, fields) {
 }
 
 /* =========================================================
-   Update da Payhip (versione pulita e sicura)
+   Update da Payhip
 ========================================================= */
 async function updateFromPayhip(data) {
   try {
@@ -129,8 +128,7 @@ async function updateFromPayhip(data) {
       LinkPayhip: data.url || "",
       DescrizioneLunga: descrPulita,
       DescrizioneBreve: descrPulita.split(/\s+/).slice(0, 26).join(" "),
-      Immagine: data.image ? [{ url: data.image }] : [],
-      "Da Payhip?": true
+      Immagine: data.image ? [{ url: data.image }] : []
     };
 
     const safeFields = filterFields(fields);
@@ -156,7 +154,6 @@ async function updateFromPayhip(data) {
 async function removeMissingPayhipProducts(currentSlugs) {
   const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}`;
 
-  // Normalizziamo gli slug Payhip
   const normalizedPayhip = currentSlugs.map(normalizeSlug);
 
   const res = await fetch(url, {
@@ -169,13 +166,11 @@ async function removeMissingPayhipProducts(currentSlugs) {
   const data = await res.json();
   if (!Array.isArray(data.records)) return;
 
-  // SAFETY NET: se Airtable ha 0 record → non cancellare nulla
   if (data.records.length === 0) {
     console.log("🛑 Safety net: Airtable vuoto → nessuna cancellazione.");
     return;
   }
 
-  // SAFETY NET: se Payhip ha 0 prodotti → non cancellare nulla
   if (normalizedPayhip.length === 0) {
     console.log("🛑 Safety net: Payhip ha 0 prodotti → nessuna cancellazione.");
     return;
