@@ -1,8 +1,9 @@
-// route/payhip.cjs — VERSIONE DEFINITIVA
+// route/payhip.cjs — VERSIONE DEFINITIVA PATCHATA
 
 const express = require("express");
 const router = express.Router();
 const { syncPayhip } = require("../services/payhip.cjs");
+const { syncAirtable, loadProducts } = require("../modules/airtable.cjs");
 
 /* =========================================================
    SYNC MANUALE PAYHIP → AIRTABLE → products.json
@@ -21,7 +22,11 @@ router.get("/sync", async (req, res) => {
       });
     }
 
-    console.log(`✅ Sync Payhip completata: ${result.ok}/${result.count} prodotti aggiornati.`);
+    console.log(`📦 Sync Payhip completata: ${result.ok}/${result.count} prodotti aggiornati.`);
+
+    // ⭐ PATCH: aggiorna Airtable e products.json
+    await syncAirtable();
+    loadProducts();
 
     return res.json({
       success: true,
