@@ -109,7 +109,7 @@ async function updateRecord(id, fields) {
 /* =========================================================
    Update da Payhip (versione definitiva)
 ========================================================= */
-async function updateFromPayhip(data) {
+async function updateFromPayhip(data) { console.log("📦 [PAYHIP RAW]", JSON.stringify(data, null, 2));
   try {
     const slug = safeSlug(data.slug || data.title || data.url);
     if (!slug) return;
