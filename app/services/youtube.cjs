@@ -2,8 +2,10 @@
 
 const axios = require("axios");
 const xml2js = require("xml2js");
+
+// Percorsi corretti
 const { updateFromYouTube } = require("../modules/youtube.cjs");
-const { syncAirtable } = require("../airtable.cjs");
+const { syncAirtable } = require("../modules/airtable.cjs");
 
 /* =========================================================
    API YouTube
