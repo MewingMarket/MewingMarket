@@ -1,6 +1,6 @@
-// modules/payhip.cjs — VERSIONE DEFINITIVA (JSON-LD Payhip)
+// modules/payhip.cjs — VERSIONE FUTURE-PROOF (JSON-LD multiplo)
 
-console.log("🔥 PAYHIP MODULE LOADED (PATCH JSON-LD)");
+console.log("🔥 PAYHIP MODULE LOADED (FUTURE-PROOF EDITION)");
 
 const fetch = require("node-fetch");
 const { safeText, stripHTML, safeSlug } = require("./utils.cjs");
@@ -111,11 +111,11 @@ async function updateRecord(id, fields) {
 }
 
 /* =========================================================
-   UPDATE DA PAYHIP (VERSIONE JSON-LD)
+   UPDATE DA PAYHIP (VERSIONE FUTURE-PROOF)
 ========================================================= */
 async function updateFromPayhip(data) {
   try {
-    console.log("🔥 PATCH PAYHIP ATTIVA");
+    console.log("🔥 PATCH PAYHIP FUTURE-PROOF ATTIVA");
 
     const slug = safeSlug(data.slug || data.title || data.url);
     if (!slug) return;
@@ -128,33 +128,67 @@ async function updateFromPayhip(data) {
     const html = await fetch(data.url).then(r => r.text());
 
     // ============================================================
-    // 2) ESTRAGGO BLOCCO JSON-LD (schema.org/Product)
+    // 2) ESTRAGGO TUTTI I BLOCCHI JSON-LD
     // ============================================================
-    const jsonLdMatch = html.match(
-      /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/i
-    );
+    const matches = [...html.matchAll(
+      /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi
+    )];
 
-    if (!jsonLdMatch) {
+    if (!matches.length) {
       console.error("❌ Nessun JSON-LD trovato");
       return;
     }
 
-    const jsonLd = JSON.parse(jsonLdMatch[1]);
+    // ============================================================
+    // 3) PARSO TUTTI I BLOCCHI E CERCO @type: Product
+    // ============================================================
+    let productJson = null;
+
+    for (const m of matches) {
+      try {
+        const parsed = JSON.parse(m[1]);
+
+        // Caso 1: JSON-LD singolo
+        if (parsed["@type"] === "Product") {
+          productJson = parsed;
+          break;
+        }
+
+        // Caso 2: JSON-LD multiplo in array
+        if (Array.isArray(parsed)) {
+          const found = parsed.find(x => x["@type"] === "Product");
+          if (found) {
+            productJson = found;
+            break;
+          }
+        }
+
+      } catch (err) {
+        continue;
+      }
+    }
+
+    if (!productJson) {
+      console.error("❌ Nessun JSON-LD Product trovato");
+      return;
+    }
 
     // ============================================================
-    // 3) DATI REALI DA JSON-LD
+    // 4) DATI REALI DA JSON-LD
     // ============================================================
-    const titolo = jsonLd.name || data.title || "";
-    const descrizione = jsonLd.description || "";
-    const prezzo = Number(jsonLd.offers?.price || 0);
-    const immagineUrl = jsonLd.image?.[0] || "";
+    const titolo = productJson.name || data.title || "";
+    const descrizione = productJson.description || "";
+    const prezzo = Number(productJson.offers?.price || 0);
+    const immagineUrl = Array.isArray(productJson.image)
+      ? productJson.image[0]
+      : productJson.image || "";
 
     const immagine = immagineUrl
       ? [{ url: immagineUrl }]
       : [];
 
     // ============================================================
-    // 4) COSTRUZIONE CAMPI PER AIRTABLE
+    // 5) COSTRUZIONE CAMPI PER AIRTABLE
     // ============================================================
     const fields = {
       Slug: slug,
@@ -170,7 +204,7 @@ async function updateFromPayhip(data) {
     const safeFields = filterFields(fields);
 
     // ============================================================
-    // 5) UPDATE O CREATE
+    // 6) UPDATE O CREATE
     // ============================================================
     const record = await findRecordBySlug(slug);
 
