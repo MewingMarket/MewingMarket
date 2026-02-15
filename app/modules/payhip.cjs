@@ -1,77 +1,61 @@
 // app/modules/payhip.cjs
-// Gestione prodotti Payhip → Airtable (API REST) + DEBUG
+// Payhip → Airtable (solo campi essenziali, nessun errore)
 
 const fetch = require("node-fetch");
-const {
-  safeText,
-  stripHTML,
-  safeSlug
-} = require("./utils.cjs");
+const { safeText, stripHTML, safeSlug } = require("./utils.cjs");
 
 const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
 const BASE_ID = process.env.AIRTABLE_BASE;
-
-// ⭐ Variabili corrette
-const TABLE_NAME = process.env.AIRTABLE_TABLE_NAME;   // Nome tabella (REST API)
-const TABLE_ID = process.env.AIRTABLE_TABLE_ID;       // Solo informativo (non verificabile via API)
+const TABLE_NAME = process.env.AIRTABLE_TABLE_NAME;
 
 /* =========================================================
-   DEBUG: Mostra configurazione Airtable
+   Campi realmente esistenti nella tua tabella
 ========================================================= */
-function debugConfig() {
-  console.log("🔧 [DEBUG] Airtable Config:");
-  console.log("   BASE_ID:", BASE_ID);
-  console.log("   TABLE_NAME:", TABLE_NAME);
-  console.log("   TABLE_ID (informativo):", TABLE_ID);
-}
+const FIELDS_ALLOWED = [
+  "Titolo",
+  "TitoloBreve",
+  "Slug",
+  "Prezzo",
+  "LinkPayhip",
+  "Immagine",
+  "DescrizioneBreve",
+  "DescrizioneLunga",
+  "youtube_url",
+  "youtube_title",
+  "youtube_description",
+  "youtube_thumbnail",
+  "Da Payhip?"
+];
 
 /* =========================================================
-   UTILS: Generazione TitoloBreve (max 48 caratteri)
+   Filtra solo i campi che Airtable accetta
 ========================================================= */
-function generaTitoloBreve(titolo) {
-  if (!titolo) return "";
-  const max = 48;
-
-  if (titolo.length <= max) return titolo.trim();
-
-  let breve = titolo.slice(0, max);
-  breve = breve.slice(0, breve.lastIndexOf(" "));
-  return breve.trim() + "...";
-}
-
-/* =========================================================
-   UTILS: Generazione DescrizioneBreve (prime 26 parole)
-========================================================= */
-function generaDescrizioneBreve(descr) {
-  if (!descr) return "";
-  const parole = descr.split(/\s+/);
-  if (parole.length <= 26) return descr.trim();
-
-  return parole.slice(0, 26).join(" ").trim() + "...";
+function filterFields(fields) {
+  const clean = {};
+  for (const key of Object.keys(fields)) {
+    if (FIELDS_ALLOWED.includes(key)) {
+      clean[key] = fields[key];
+    }
+  }
+  return clean;
 }
 
 /* =========================================================
    Trova record per slug
 ========================================================= */
 async function findRecordBySlug(slug) {
-  const formula = encodeURIComponent(`{slug} = "${slug}"`);
+  const formula = encodeURIComponent(`{Slug} = "${slug}"`);
   const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}?filterByFormula=${formula}`;
 
   const res = await fetch(url, {
     headers: {
-      "Authorization": `Bearer ${AIRTABLE_PAT}`,
+      Authorization: `Bearer ${AIRTABLE_PAT}`,
       "Content-Type": "application/json"
     }
   });
 
   const data = await res.json();
-
-  if (!data.records) {
-    console.error("❌ [DEBUG] Errore findRecordBySlug:", data);
-    return null;
-  }
-
-  return data.records.length > 0 ? data.records[0] : null;
+  return data.records?.[0] || null;
 }
 
 /* =========================================================
@@ -83,17 +67,14 @@ async function createRecord(fields) {
   const res = await fetch(url, {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${AIRTABLE_PAT}`,
+      Authorization: `Bearer ${AIRTABLE_PAT}`,
       "Content-Type": "application/json"
     },
     body: JSON.stringify({ fields })
   });
 
   const data = await res.json();
-
-  if (data.error) {
-    console.error("❌ [DEBUG] Errore createRecord:", data.error);
-  }
+  if (data.error) console.error("❌ createRecord:", data.error);
 }
 
 /* =========================================================
@@ -105,74 +86,57 @@ async function updateRecord(id, fields) {
   const res = await fetch(url, {
     method: "PATCH",
     headers: {
-      "Authorization": `Bearer ${AIRTABLE_PAT}`,
+      Authorization: `Bearer ${AIRTABLE_PAT}`,
       "Content-Type": "application/json"
     },
     body: JSON.stringify({ fields })
   });
 
   const data = await res.json();
-
-  if (data.error) {
-    console.error("❌ [DEBUG] Errore updateRecord:", data.error);
-  }
+  if (data.error) console.error("❌ updateRecord:", data.error);
 }
 
 /* =========================================================
-   Update da Payhip (versione definitiva + DEBUG)
+   Update da Payhip (versione pulita e sicura)
 ========================================================= */
 async function updateFromPayhip(data) {
   try {
-    debugConfig();
-
     const slug = safeSlug(data.slug || data.title || data.url);
     if (!slug) return;
 
     const descrPulita = safeText(stripHTML(data.description || ""));
 
     const prezzo = Number(
-      String(data.price || "")
-        .replace("€", "")
-        .replace(",", ".")
-        .trim()
+      String(data.price || "").replace("€", "").replace(",", ".").trim()
     ) || 0;
 
-    const titoloBreve = generaTitoloBreve(data.title || "");
-    const descrBreve = generaDescrizioneBreve(descrPulita);
-
-    console.log("📝 [DEBUG] Scrittura prodotto:", {
-      slug,
-      titolo: data.title,
-      prezzo,
-      url: data.url,
-      image: data.image
-    });
-
     const fields = {
-      slug,
+      Slug: slug,
       Titolo: data.title || "",
-      TitoloBreve: titoloBreve,
+      TitoloBreve: (data.title || "").slice(0, 48),
       Prezzo: prezzo,
       LinkPayhip: data.url || "",
       DescrizioneLunga: descrPulita,
-      DescrizioneBreve: descrBreve,
-      Immagine: data.image ? [{ url: data.image }] : []
+      DescrizioneBreve: descrPulita.split(/\s+/).slice(0, 26).join(" "),
+      Immagine: data.image ? [{ url: data.image }] : [],
+      "Da Payhip?": true
     };
+
+    // 🔥 Filtra solo i campi che Airtable accetta
+    const safeFields = filterFields(fields);
 
     const record = await findRecordBySlug(slug);
 
     if (record) {
-      console.log("🔄 [DEBUG] Aggiornamento record esistente:", record.id);
-      await updateRecord(record.id, fields);
-      console.log("🟢 [PAYHIP] updated", slug);
+      console.log("🔄 Aggiorno:", slug);
+      await updateRecord(record.id, safeFields);
     } else {
-      console.log("🆕 [DEBUG] Creazione nuovo record...");
-      await createRecord(fields);
-      console.log("🟢 [PAYHIP] created", slug);
+      console.log("🆕 Creo:", slug);
+      await createRecord(safeFields);
     }
 
   } catch (err) {
-    console.error("❌ Errore updateFromPayhip:", err);
+    console.error("❌ updateFromPayhip:", err);
   }
 }
 
@@ -184,7 +148,7 @@ async function removeMissingPayhipProducts(currentSlugs) {
 
   const res = await fetch(url, {
     headers: {
-      "Authorization": `Bearer ${AIRTABLE_PAT}`,
+      Authorization: `Bearer ${AIRTABLE_PAT}`,
       "Content-Type": "application/json"
     }
   });
@@ -193,18 +157,16 @@ async function removeMissingPayhipProducts(currentSlugs) {
   if (!Array.isArray(data.records)) return;
 
   for (const record of data.records) {
-    const slug = record.fields.slug;
+    const slug = record.fields.Slug;
     if (!slug) continue;
 
     if (!currentSlugs.includes(slug)) {
-      console.log("🗑️ [DEBUG] Rimozione prodotto non più presente:", slug);
+      console.log("🗑️ Rimuovo:", slug);
 
       const delUrl = `${url}/${record.id}`;
       await fetch(delUrl, {
         method: "DELETE",
-        headers: {
-          "Authorization": `Bearer ${AIRTABLE_PAT}`
-        }
+        headers: { Authorization: `Bearer ${AIRTABLE_PAT}` }
       });
     }
   }
