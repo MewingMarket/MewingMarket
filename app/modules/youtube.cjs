@@ -18,7 +18,7 @@ function extractSlugFromTitle(title) {
 }
 
 /* =========================================================
-   UPDATE DA YOUTUBE
+   UPDATE DA YOUTUBE (match multiplo + fallback)
 ========================================================= */
 async function updateFromYouTube(video) {
   try {
@@ -36,10 +36,14 @@ async function updateFromYouTube(video) {
     }
 
     const products = loadProducts();
-    const record = products.find(p => p.Slug?.toLowerCase() === slug);
 
-    if (!record || !record.id) {
-      console.log("⚠️ [YouTube] Prodotto non trovato per slug:", slug);
+    // --- MATCH MULTIPLO ---
+    const matches = products.filter(
+      p => p.Slug?.toLowerCase() === slug
+    );
+
+    if (!matches.length) {
+      console.log("⚠️ [YouTube] Nessun prodotto trovato per slug:", slug);
       return;
     }
 
@@ -47,14 +51,15 @@ async function updateFromYouTube(video) {
       youtube_url: cleanURL(video.url),
       youtube_title: safeText(video.title),
       youtube_description: safeText(stripHTML(video.description || "")),
-      youtube_thumbnail: cleanURL(video.thumbnail)
+      youtube_thumbnail: cleanURL(video.thumbnail || "")
     };
 
-    console.log("📡 [YouTube] Aggiorno Airtable per:", slug);
+    for (const record of matches) {
+      console.log("📡 [YouTube] Aggiorno Airtable per:", record.Slug);
+      await updateAirtableRecord(record.id, fields);
+    }
 
-    await updateAirtableRecord(record.id, fields);
-
-    console.log("✅ [YouTube] Aggiornato:", slug);
+    console.log(`✅ [YouTube] Aggiornati ${matches.length} prodotti per slug:`, slug);
 
   } catch (err) {
     console.error("❌ Errore updateFromYouTube:", err);
