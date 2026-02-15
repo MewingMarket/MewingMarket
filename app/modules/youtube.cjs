@@ -1,4 +1,4 @@
-// modules/youtube.cjs — VERSIONE DEFINITIVA, PATCHATA E FUNZIONANTE
+// app/modules/youtube.cjs — VERSIONE DEFINITIVA, CON MATCH AUTOMATICO TRAMITE TITOLO
 
 const fetch = require("node-fetch");
 
@@ -19,12 +19,40 @@ const YT_FIELDS = [
 ];
 
 /* =========================================================
-   Trova record per YouTubeVideoID
-   (campo da creare in Airtable)
+   NORMALIZZAZIONE TESTO
 ========================================================= */
-async function findRecordByVideoId(videoId) {
-  const formula = encodeURIComponent(`{YouTubeVideoID} = "${videoId}"`);
-  const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}?filterByFormula=${formula}`;
+function normalize(str) {
+  return str
+    .toLowerCase()
+    .replace(/[^\w\s]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/* =========================================================
+   SIMILARITÀ TRA TITOLI (fuzzy match semplice)
+========================================================= */
+function similarity(a, b) {
+  a = normalize(a);
+  b = normalize(b);
+  if (!a || !b) return 0;
+
+  const wordsA = a.split(" ");
+  const wordsB = b.split(" ");
+
+  let matches = 0;
+  for (const w of wordsA) {
+    if (wordsB.includes(w)) matches++;
+  }
+
+  return matches / Math.max(wordsA.length, wordsB.length);
+}
+
+/* =========================================================
+   TROVA RECORD IN AIRTABLE TRAMITE TITOLO VIDEO
+========================================================= */
+async function findRecordByTitle(videoTitle) {
+  const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}`;
 
   const res = await fetch(url, {
     headers: {
@@ -34,11 +62,34 @@ async function findRecordByVideoId(videoId) {
   });
 
   const data = await res.json();
-  return data.records?.[0] || null;
+  if (!data.records) return null;
+
+  let best = null;
+  let bestScore = 0;
+
+  for (const r of data.records) {
+    const productTitle = r.fields.Titolo || r.fields.titolo;
+    if (!productTitle) continue;
+
+    const score = similarity(videoTitle, productTitle);
+
+    if (score > bestScore) {
+      bestScore = score;
+      best = r;
+    }
+  }
+
+  if (bestScore < 0.45) {
+    console.log(`⏭️ Nessun match affidabile per video: "${videoTitle}" (score: ${bestScore})`);
+    return null;
+  }
+
+  console.log(`🔍 Match trovato: "${videoTitle}" → "${best.fields.Titolo}" (score: ${bestScore})`);
+  return best;
 }
 
 /* =========================================================
-   Aggiorna record Airtable
+   AGGIORNA RECORD AIRTABLE
 ========================================================= */
 async function updateRecord(id, fields) {
   const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}/${id}`;
@@ -59,7 +110,7 @@ async function updateRecord(id, fields) {
 }
 
 /* =========================================================
-   UPDATE DA YOUTUBE — VERSIONE DEFINITIVA
+   UPDATE DA YOUTUBE — VERSIONE AUTOMATICA
 ========================================================= */
 async function updateFromYouTube(video) {
   try {
@@ -68,28 +119,15 @@ async function updateFromYouTube(video) {
       return;
     }
 
-    // 🔍 Estrai videoId (se non già presente)
-    let videoId = video.videoId;
-    if (!videoId) {
-      videoId = video.url.split("v=")[1]?.split("&")[0] || "";
-    }
-
-    if (!videoId) {
-      console.log("⏭️ Video senza ID valido:", video.url);
-      return;
-    }
-
-    // 🔥 Cerchiamo il prodotto corrispondente tramite YouTubeVideoID
-    const record = await findRecordByVideoId(videoId);
+    const record = await findRecordByTitle(video.title);
 
     if (!record) {
-      console.log(`⏭️ Nessun prodotto con YouTubeVideoID "${videoId}" trovato in Airtable.`);
+      console.log(`⏭️ Nessun prodotto trovato per video: "${video.title}"`);
       return;
     }
 
     console.log(`🎥 Aggiorno campi YouTube per prodotto: ${record.id}`);
 
-    // Campi YouTube da aggiornare
     const fields = {
       youtube_url: video.url,
       youtube_title: video.title || "",
@@ -99,7 +137,6 @@ async function updateFromYouTube(video) {
       youtube_last_video_title: video.title || ""
     };
 
-    // 🔒 Non sovrascrivere con valori vuoti
     const safeFields = {};
     for (const key of YT_FIELDS) {
       if (fields[key] && fields[key].toString().trim() !== "") {
