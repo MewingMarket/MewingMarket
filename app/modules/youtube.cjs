@@ -152,7 +152,9 @@ async function updateFromYouTube(video) {
       }
     }
 
-    await updateRecord(record.id, safeFields);
+    await updateRecord(record.id, safeFields); console.log(`🟢 [UPDATE] YouTube ha aggiunto un video al sito:
+   • Titolo video: ${video.title}
+   • Prodotto associato: ${record.fields.Titolo}`);
 
   } catch (err) {
     console.error("❌ updateFromYouTube:", err);
