@@ -1,5 +1,7 @@
 // modules/payhip.cjs — VERSIONE DEFINITIVA BASATA SU RAW PAYHIP
 
+console.log("🔥 PAYHIP MODULE LOADED (PATCH VERSION)");
+
 const fetch = require("node-fetch");
 const { safeText, stripHTML, safeSlug } = require("./utils.cjs");
 
@@ -113,6 +115,8 @@ async function updateRecord(id, fields) {
 ========================================================= */
 async function updateFromPayhip(data) {
   try {
+    console.log("🔥 PATCH PAYHIP ATTIVA");
+
     const slug = safeSlug(data.slug || data.title || data.url);
     if (!slug) return;
 
@@ -121,6 +125,8 @@ async function updateFromPayhip(data) {
     // ============================================================
     // 1) FETCH HTML DEL PRODOTTO (per estrarre dati REALI)
     // ============================================================
+    console.log("🌐 [PAYHIP] Scarico HTML reale:", data.url);
+
     const html = await fetch(data.url).then(r => r.text());
 
     // --- PREZZO REALE ---
