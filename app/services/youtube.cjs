@@ -1,9 +1,11 @@
-// app/services/youtube.cjs — VERSIONE DEFINITIVA, CON API + RSS + HTML FALLBACK
+// app/services/youtube.cjs — API + RSS + HTML FALLBACK + PROXY + LOG AVANZATI
 
 const axios = require("axios");
 const xml2js = require("xml2js");
 const { updateFromYouTube } = require("../modules/youtube.cjs");
 const { syncAirtable } = require("../modules/airtable.cjs");
+
+const PROXY = "https://corsproxy.io/?";
 
 /* =========================================================
    API YouTube
@@ -14,11 +16,13 @@ async function fetchChannelVideosAPI() {
     const apiKey = process.env.YOUTUBE_API_KEY;
 
     if (!channelId || !apiKey) {
-      console.error("YouTube: variabili ambiente mancanti.");
+      console.error("❌ API YouTube: variabili ambiente mancanti.");
       return { success: false, videos: [] };
     }
 
     const url = `https://www.googleapis.com/youtube/v3/search?key=${apiKey}&channelId=${channelId}&part=snippet&order=date&maxResults=10`;
+
+    console.log("🌐 API YouTube →", url);
 
     const res = await axios.get(url);
     const items = res.data?.items || [];
@@ -32,6 +36,8 @@ async function fetchChannelVideosAPI() {
         description: v.snippet.description || "",
         thumbnail: v.snippet.thumbnails?.high?.url || ""
       }));
+
+    console.log("📥 API YouTube ha trovato:", videos.length, "video");
 
     return { success: true, videos };
 
@@ -51,10 +57,10 @@ async function fetchChannelVideosRSS() {
 
     const url = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
 
-    const res = await axios.get(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-      }
+    console.log("🌐 RSS YouTube →", url);
+
+    const res = await axios.get(PROXY + encodeURIComponent(url), {
+      headers: { "User-Agent": "Mozilla/5.0" }
     });
 
     const xml = res.data;
@@ -78,6 +84,8 @@ async function fetchChannelVideosRSS() {
         };
       });
 
+    console.log("📥 RSS ha trovato:", videos.length, "video");
+
     return { success: true, videos };
 
   } catch (err) {
@@ -96,17 +104,17 @@ async function fetchChannelVideosHTML() {
 
     const url = `https://www.youtube.com/channel/${channelId}/videos`;
 
-    const res = await axios.get(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-      }
+    console.log("🌐 HTML Fallback →", url);
+
+    const res = await axios.get(PROXY + encodeURIComponent(url), {
+      headers: { "User-Agent": "Mozilla/5.0" }
     });
 
     const html = res.data;
 
     const match = html.match(/ytInitialData"\]\s*=\s*(\{.*?\});/s);
     if (!match) {
-      console.log("❌ Nessun ytInitialData trovato nel fallback HTML.");
+      console.log("❌ Nessun ytInitialData trovato.");
       return { success: false, videos: [] };
     }
 
@@ -141,10 +149,12 @@ async function fetchChannelVideosHTML() {
       });
     }
 
+    console.log("📥 HTML fallback ha trovato:", videos.length, "video");
+
     return { success: true, videos };
 
   } catch (err) {
-    console.error("❌ Fallback HTML YouTube fallito:", err?.message);
+    console.error("❌ Fallback HTML fallito:", err?.message);
     return { success: false, videos: [] };
   }
 }
@@ -158,19 +168,19 @@ async function syncYouTube() {
   let result = await fetchChannelVideosAPI();
 
   if (!result.success || !result.videos.length) {
-    console.log("⚠️ API YouTube fallita → uso RSS…");
+    console.log("⚠️ API fallita → uso RSS…");
     result = await fetchChannelVideosRSS();
   }
 
   if (!result.success || !result.videos.length) {
-    console.log("⚠️ RSS fallito → uso fallback HTML…");
+    console.log("⚠️ RSS fallito → uso HTML fallback…");
     result = await fetchChannelVideosHTML();
   }
 
   const videos = result.videos || [];
 
   if (!videos.length) {
-    console.log("YouTube: nessun video trovato.");
+    console.log("❌ Nessun video trovato da nessuna fonte.");
     return { success: false, count: 0 };
   }
 
