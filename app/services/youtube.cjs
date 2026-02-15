@@ -17,6 +17,10 @@ async function fetchChannelVideosAPI() {
 
     if (!channelId || !apiKey) {
       console.error("YouTube: variabili ambiente mancanti.");
+      console.error("DEBUG:", {
+        channelId,
+        apiKey: apiKey ? "***" : undefined
+      });
       return { success: false, videos: [] };
     }
 
