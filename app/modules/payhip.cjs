@@ -107,18 +107,32 @@ async function updateRecord(id, fields) {
 }
 
 /* =========================================================
-   Update da Payhip
+   Update da Payhip (versione definitiva)
 ========================================================= */
 async function updateFromPayhip(data) {
   try {
     const slug = safeSlug(data.slug || data.title || data.url);
     if (!slug) return;
 
+    // --- DESCRIZIONE ---
     const descrPulita = safeText(stripHTML(data.description || ""));
 
-    const prezzo = Number(
-      String(data.price || "").replace("€", "").replace(",", ".").trim()
-    ) || 0;
+    // --- PREZZO ---
+    let prezzo = 0;
+    if (data.price) {
+      prezzo = Number(
+        String(data.price)
+          .replace(/[^\d.,]/g, "")
+          .replace(",", ".")
+      );
+      if (isNaN(prezzo)) prezzo = 0;
+    }
+
+    // --- IMMAGINE ---
+    let immagine = [];
+    if (data.image && typeof data.image === "string" && data.image.startsWith("http")) {
+      immagine = [{ url: data.image }];
+    }
 
     const fields = {
       Slug: slug,
@@ -128,7 +142,7 @@ async function updateFromPayhip(data) {
       LinkPayhip: data.url || "",
       DescrizioneLunga: descrPulita,
       DescrizioneBreve: descrPulita.split(/\s+/).slice(0, 26).join(" "),
-      Immagine: data.image ? [{ url: data.image }] : []
+      Immagine: immagine
     };
 
     const safeFields = filterFields(fields);
