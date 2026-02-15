@@ -104,7 +104,10 @@ const oldSlugs = getExistingSlugs();
         ...f
       };
     });
-
+if (!oldSlugs.includes(product.slug)) {
+  console.log(`🟢 [UPDATE] Nuovo prodotto aggiunto al sito:
+     • Nome prodotto: ${product.Titolo}`);
+}
     fs.writeFileSync(PRODUCTS_PATH, JSON.stringify(records, null, 2));
 
     console.log("🟢 [DEBUG] syncAirtable completato. Prodotti salvati:", records.length);
