@@ -1,105 +1,116 @@
-// app/services/youtube.cjs — SERVIZIO COMPLETO
+// modules/youtube.cjs — VERSIONE DEFINITIVA E COMPATIBILE
 
-const axios = require("axios");
-const xml2js = require("xml2js");
-const { updateFromYouTube } = require("../modules/youtube.cjs");
+const fetch = require("node-fetch");
 
-async function fetchChannelVideosAPI() {
-  try {
-    const channelId = process.env.YOUTUBE_CHANNEL_ID;
-    const apiKey = process.env.YOUTUBE_API_KEY;
+const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
+const BASE_ID = process.env.AIRTABLE_BASE;
+const TABLE_NAME = process.env.AIRTABLE_TABLE_NAME;
 
-    if (!channelId || !apiKey) {
-      console.error("YouTube: variabili ambiente mancanti.");
-      return { success: false, videos: [] };
+/* =========================================================
+   Campi YouTube ammessi in Airtable
+========================================================= */
+const YT_FIELDS = [
+  "youtube_url",
+  "youtube_title",
+  "youtube_description",
+  "youtube_thumbnail",
+  "youtube_last_video_url",
+  "youtube_last_video_title"
+];
+
+/* =========================================================
+   Trova record per slug
+========================================================= */
+async function findRecordBySlug(slug) {
+  const formula = encodeURIComponent(`{Slug} = "${slug}"`);
+  const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}?filterByFormula=${formula}`;
+
+  const res = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${AIRTABLE_PAT}`,
+      "Content-Type": "application/json"
     }
+  });
 
-    const url = `https://www.googleapis.com/youtube/v3/search?key=${apiKey}&channelId=${channelId}&part=snippet&order=date&maxResults=10`;
+  const data = await res.json();
+  return data.records?.[0] || null;
+}
 
-    const res = await axios.get(url);
-    const items = res.data?.items || [];
+/* =========================================================
+   Aggiorna record Airtable
+========================================================= */
+async function updateRecord(id, fields) {
+  const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}/${id}`;
 
-    const videos = items
-      .filter(v => v.id?.videoId)
-      .map(v => ({
-        url: `https://www.youtube.com/watch?v=${v.id.videoId}`,
-        title: v.snippet.title || "",
-        description: v.snippet.description || "",
-        thumbnail: v.snippet.thumbnails?.high?.url || ""
-      }));
+  const res = await fetch(url, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${AIRTABLE_PAT}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ fields })
+  });
 
-    return { success: true, videos };
-
-  } catch (err) {
-    console.error("❌ API YouTube fallita:", err?.response?.data || err?.message);
-    return { success: false, videos: [] };
+  const data = await res.json();
+  if (data.error) {
+    console.error("❌ Errore updateRecord YouTube:", data.error);
   }
 }
 
-async function fetchChannelVideosRSS() {
+/* =========================================================
+   UPDATE DA YOUTUBE — VERSIONE DEFINITIVA
+========================================================= */
+async function updateFromYouTube(video) {
   try {
-    const channelId = process.env.YOUTUBE_CHANNEL_ID;
-    if (!channelId) return { success: false, videos: [] };
+    if (!video || !video.url) {
+      console.log("⏭️ Nessun video valido ricevuto da YouTube.");
+      return;
+    }
 
-    const url = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
-    const res = await axios.get(url);
+    // 🔍 Estrai slug dal video URL
+    // Esempio: https://www.youtube.com/watch?v=ABC123
+    const videoId = video.url.split("v=")[1]?.split("&")[0];
+    if (!videoId) {
+      console.log("⏭️ Video senza ID valido:", video.url);
+      return;
+    }
 
-    const xml = res.data;
-    const parsed = await xml2js.parseStringPromise(xml, { explicitArray: false });
+    // 🔥 Cerchiamo il prodotto corrispondente
+    const slug = videoId; // mapping diretto YouTube → slug prodotto
+    const record = await findRecordBySlug(slug);
 
-    const entries = parsed.feed.entry || [];
-    const list = Array.isArray(entries) ? entries : [entries];
+    if (!record) {
+      console.log(`⏭️ Nessun prodotto con slug "${slug}" trovato in Airtable.`);
+      return;
+    }
 
-    const videos = list
-      .filter(e => e?.title)
-      .map(e => ({
-        url: e.link?.$.href || "",
-        title: e.title || "",
-        description: e["media:group"]?.["media:description"] || "",
-        thumbnail: e["media:group"]?.["media:thumbnail"]?.$.url || ""
-      }));
+    console.log(`🎥 Aggiorno campi YouTube per prodotto: ${slug}`);
 
-    return { success: true, videos };
+    // Campi YouTube da aggiornare
+    const fields = {
+      youtube_url: video.url,
+      youtube_title: video.title || "",
+      youtube_description: video.description || "",
+      youtube_thumbnail: video.thumbnail || "",
+      youtube_last_video_url: video.url,
+      youtube_last_video_title: video.title || ""
+    };
+
+    // 🔒 Non sovrascrivere con valori vuoti
+    const safeFields = {};
+    for (const key of YT_FIELDS) {
+      if (fields[key] && fields[key].trim() !== "") {
+        safeFields[key] = fields[key];
+      }
+    }
+
+    await updateRecord(record.id, safeFields);
 
   } catch (err) {
-    console.error("❌ RSS YouTube fallito:", err?.message);
-    return { success: false, videos: [] };
+    console.error("❌ updateFromYouTube:", err);
   }
-}
-
-async function syncYouTube() {
-  console.log("⏳ Sync YouTube avviato...");
-
-  let result = await fetchChannelVideosAPI();
-
-  if (!result.success || !result.videos.length) {
-    console.log("⚠️ API YouTube fallita → uso RSS…");
-    result = await fetchChannelVideosRSS();
-  }
-
-  const videos = result.videos || [];
-
-  if (!videos.length) {
-    console.log("YouTube: nessun video trovato.");
-    return { success: false, count: 0 };
-  }
-
-  let ok = 0;
-
-  for (const video of videos) {
-    try {
-      await updateFromYouTube(video);
-      ok++;
-    } catch (err) {
-      console.error("Errore updateFromYouTube:", err);
-    }
-  }
-
-  console.log(`🎥 Sync YouTube completato: ${ok}/${videos.length} video aggiornati.`);
-
-  return { success: true, count: ok };
 }
 
 module.exports = {
-  syncYouTube
+  updateFromYouTube
 };
