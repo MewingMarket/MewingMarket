@@ -1,12 +1,9 @@
-// app/services/youtube.cjs — SERVIZIO COMPLETO CON FALLBACK RSS ROBUSTO
+// app/services/youtube.cjs — SERVIZIO COMPLETO
 
 const axios = require("axios");
 const xml2js = require("xml2js");
 const { updateFromYouTube } = require("../modules/youtube.cjs");
 
-/* =========================================================
-   1) FETCH ULTIMI VIDEO VIA API
-========================================================= */
 async function fetchChannelVideosAPI() {
   try {
     const channelId = process.env.YOUTUBE_CHANNEL_ID;
@@ -39,9 +36,6 @@ async function fetchChannelVideosAPI() {
   }
 }
 
-/* =========================================================
-   2) FALLBACK RSS
-========================================================= */
 async function fetchChannelVideosRSS() {
   try {
     const channelId = process.env.YOUTUBE_CHANNEL_ID;
@@ -73,9 +67,6 @@ async function fetchChannelVideosRSS() {
   }
 }
 
-/* =========================================================
-   3) SYNC COMPLETO (API → RSS)
-========================================================= */
 async function syncYouTube() {
   console.log("⏳ Sync YouTube avviato...");
 
