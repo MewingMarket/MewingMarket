@@ -33,9 +33,6 @@ function quickReplies(options = []) {
   return html;
 }
 
-module.exports = {
-  quickReplies
-};
 /* ------------------------------------------
    QUICK REPLIES — per prodotto
 ------------------------------------------ */
@@ -75,9 +72,12 @@ function supportQuickReplies() {
   ]);
 }
 
+/* ------------------------------------------
+   EXPORT UNICO
+------------------------------------------ */
 module.exports = {
   quickReplies,
   productQuickReplies,
   catalogQuickReplies,
   supportQuickReplies
-}; 
+};
