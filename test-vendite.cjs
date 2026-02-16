@@ -1,113 +1,83 @@
-// test-vendite.js
-const axios = require("axios");
+import axios from "axios";
 
-// Funzione per stampare header leggibili
-function logHeader(title, icon) {
-  console.log("\n====================================");
-  console.log(`${icon}  ${title}`);
-  console.log("====================================\n");
-}
+const WEBHOOK_URL = "https://www.mewingmarket.it/webhook/payhip-mewingmarket/webhook_2025_4f9c2e7b1e";
 
-// Funzione generica per inviare il webhook
-async function sendWebhook(payload, secret) {
+async function inviaVendita(tipo, prodotto) {
+  const timestamp = new Date().toISOString();
+  const base = {
+    product_id: prodotto.slug,
+    product_name: prodotto.Titolo,
+    price: String(prodotto.Prezzo),
+    timestamp,
+    log_type: tipo.toUpperCase() + "_SALE"
+  };
+
+  let payload = {};
+
+  if (tipo === "payhip") {
+    payload = {
+      ...base,
+      email: `test-payhip-${prodotto.slug}@mewingmarket.it`,
+      source: "payhip_direct",
+      referrer: "direct",
+      utm_source: null,
+      utm_medium: null,
+      utm_campaign: null
+    };
+  }
+
+  if (tipo === "site") {
+    payload = {
+      ...base,
+      email: `test-site-${prodotto.slug}@mewingmarket.it`,
+      source: "site",
+      referrer: `https://www.mewingmarket.it/prodotto.html?slug=${prodotto.slug}`,
+      utm_source: "site",
+      utm_medium: "product_page",
+      utm_campaign: "test_vendite"
+    };
+  }
+
+  if (tipo === "social") {
+    payload = {
+      ...base,
+      email: `test-social-${prodotto.slug}@mewingmarket.it`,
+      source: "social",
+      referrer: "https://instagram.com",
+      utm_source: "instagram",
+      utm_medium: "bio_link",
+      utm_campaign: "social_test"
+    };
+  }
+
+  console.log(`\n===============================`);
+  console.log(`🟣 TEST VENDITA: ${tipo.toUpperCase()} — ${prodotto.slug}`);
+  console.log(`===============================`);
+  console.log(`📦 Payload inviato:\n`, payload);
+
   try {
-    const url = `https://www.mewingmarket.it/webhook/payhip-${secret}`;
-
-    console.log("📤 Invio webhook a:", url);
-    console.log("📦 Payload inviato:");
-    console.log(payload);
-
-    const res = await axios.post(url, payload, {
+    const res = await axios.post(WEBHOOK_URL, payload, {
       headers: { "Content-Type": "application/json" }
     });
-
-    console.log("\n✅ Risposta server:");
-    console.log(res.data);
-
-    console.log("\n🔍 Controlla Airtable + Dashboard per verificare la vendita.\n");
-
+    console.log(`✅ Risposta server:\n`, res.data);
   } catch (err) {
-    console.error("\n❌ Errore durante il test:");
-    console.error(err?.response?.data || err);
+    console.error(`❌ Errore invio webhook:\n`, err?.response?.data || err?.message || err);
   }
 }
 
-/* ---------------------------------------------------------
-   1) TEST VENDITA PAYHIP DIRETTA
---------------------------------------------------------- */
-async function testPayhipDirect() {
-  logHeader("TEST VENDITA DIRETTA PAYHIP", "🔵");
+(async () => {
+  try {
+    const res = await axios.get("https://www.mewingmarket.it/products.json");
+    const prodotti = res.data;
 
-  const payload = {
-    product_id: "TEST_PAYHIP_001",
-    product_name: "Vendita Diretta Payhip",
-    price: "14.99",
-    email: "cliente-payhip@mewingmarket.it",
-    timestamp: new Date().toISOString(),
-    source: "payhip_direct",
-    referrer: "direct",
-    utm_source: null,
-    utm_medium: null,
-    utm_campaign: null,
-    log_type: "PAYHIP_DIRECT"
-  };
+    for (const prodotto of prodotti) {
+      await inviaVendita("payhip", prodotto);
+      await inviaVendita("site", prodotto);
+      await inviaVendita("social", prodotto);
+    }
 
-  await sendWebhook(payload, process.env.PAYHIP_WEBHOOK_SECRET);
-}
-
-/* ---------------------------------------------------------
-   2) TEST VENDITA DAL SITO
---------------------------------------------------------- */
-async function testFromSite() {
-  logHeader("TEST VENDITA DAL SITO", "🟢");
-
-  const payload = {
-    product_id: "TEST_SITE_001",
-    product_name: "Vendita dal Sito",
-    price: "19.99",
-    email: "cliente-sito@mewingmarket.it",
-    timestamp: new Date().toISOString(),
-    source: "site",
-    referrer: "https://www.mewingmarket.it/prodotto/test",
-    utm_source: "site",
-    utm_medium: "product_page",
-    utm_campaign: "test_vendite",
-    log_type: "SITE_SALE"
-  };
-
-  await sendWebhook(payload, process.env.PAYHIP_WEBHOOK_SECRET);
-}
-
-/* ---------------------------------------------------------
-   3) TEST VENDITA DA SOCIAL
---------------------------------------------------------- */
-async function testFromSocial() {
-  logHeader("TEST VENDITA DA SOCIAL", "🟣");
-
-  const payload = {
-    product_id: "TEST_SOCIAL_001",
-    product_name: "Vendita da Social",
-    price: "24.99",
-    email: "cliente-social@mewingmarket.it",
-    timestamp: new Date().toISOString(),
-    source: "social",
-    referrer: "https://instagram.com",
-    utm_source: "instagram",
-    utm_medium: "bio_link",
-    utm_campaign: "social_test",
-    log_type: "SOCIAL_SALE"
-  };
-
-  await sendWebhook(payload, process.env.PAYHIP_WEBHOOK_SECRET);
-}
-
-/* ---------------------------------------------------------
-   ESECUZIONE AUTOMATICA DI TUTTI I TEST
---------------------------------------------------------- */
-async function runAllTests() {
-  await testPayhipDirect();
-  await testFromSite();
-  await testFromSocial();
-}
-
-runAllTests();
+    console.log("\n✅ Test completato.");
+  } catch (err) {
+    console.error("❌ Errore caricamento prodotti:", err?.message || err);
+  }
+})();
