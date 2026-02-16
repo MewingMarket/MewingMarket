@@ -1157,3 +1157,164 @@ footer {
   font-weight: 600;
   margin-bottom: 8px;
 } 
+/* RICH MESSAGE WRAPPER */
+.mm-rich {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 12px 0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  font-family: system-ui, sans-serif;
+}
+
+.mm-rich-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #222;
+}
+
+.mm-rich-section {
+  margin-bottom: 14px;
+}
+
+.mm-rich-section-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #333;
+}
+
+.mm-rich-section-body {
+  font-size: 14px;
+  color: #555;
+  line-height: 1.4;
+}
+
+/* INFO */
+.mm-info {
+  background: #e8f1ff;
+  border-left: 4px solid #2f80ed;
+  padding: 12px 14px;
+  border-radius: 8px;
+  margin: 12px 0;
+}
+
+.mm-info-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.mm-info-body {
+  font-size: 14px;
+}
+
+/* WARNING */
+.mm-warning {
+  background: #fff4e5;
+  border-left: 4px solid #f2994a;
+  padding: 12px 14px;
+  border-radius: 8px;
+  margin: 12px 0;
+}
+
+.mm-warning-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.mm-warning-body {
+  font-size: 14px;
+}
+
+/* SUCCESS */
+.mm-success {
+  background: #e9f9ee;
+  border-left: 4px solid #27ae60;
+  padding: 12px 14px;
+  border-radius: 8px;
+  margin: 12px 0;
+}
+
+.mm-success-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.mm-success-body {
+  font-size: 14px;
+}
+
+/* HERO */
+.mm-hero {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 20px;
+  margin: 14px 0;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+  text-align: center;
+}
+
+.mm-hero-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.mm-hero-subtitle {
+  font-size: 16px;
+  color: #555;
+  margin-bottom: 10px;
+}
+
+.mm-hero-body {
+  font-size: 14px;
+  color: #444;
+}
+
+/* BULLET LIST */
+.mm-bullet {
+  margin: 14px 0;
+}
+
+.mm-bullet-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.mm-bullet-list {
+  padding-left: 20px;
+  color: #444;
+}
+
+.mm-bullet-list li {
+  margin-bottom: 6px;
+}
+
+/* FEATURE LIST */
+.mm-features {
+  margin: 14px 0;
+}
+
+.mm-features-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.mm-feature-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.mm-feature-icon {
+  font-size: 18px;
+  margin-right: 8px;
+}
+
+.mm-feature-text {
+  font-size: 14px;
+  color: #444;
+} 
