@@ -26,9 +26,6 @@ function crossSellGeneric(product) {
 `;
 }
 
-module.exports = {
-  crossSellGeneric
-};
 /* ------------------------------------------
    CROSS-SELL PER CATEGORIA
 ------------------------------------------ */
@@ -78,7 +75,6 @@ function crossSellByProduct(product, allProducts = []) {
 
   const titolo = product.titoloBreve || product.titolo || "";
 
-  // Logica semplice: match per parole chiave
   const keywords = titolo.toLowerCase().split(" ");
 
   const correlati = allProducts.filter(p => {
@@ -123,7 +119,6 @@ function crossSellUpgrade(product, allProducts = []) {
 
   const titolo = product.titoloBreve || product.titolo || "";
 
-  // Cerca prodotti più costosi della stessa categoria
   const upgrade = allProducts.filter(
     p =>
       p.id !== product.id &&
@@ -155,6 +150,7 @@ function crossSellUpgrade(product, allProducts = []) {
 `;
 }
 
+/* EXPORT UNICO */
 module.exports = {
   crossSellGeneric,
   crossSellByCategory,
