@@ -1,15 +1,41 @@
 import axios from "axios";
 
-const WEBHOOK_URL = "https://www.mewingmarket.it/webhook/payhip-mewingmarket/webhook_2025_4f9c2e7b1e";
+const WEBHOOK_URL = "https://www.mewingmarket.it/webhook/payhip-mewingmarket_webhook_2025_4f9c2e7b1e";
+
+const random = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+const DEVICES = ["mobile", "desktop", "tablet"];
+const LANGS = ["it", "en", "es", "fr"];
+const INTENTS = ["acquisto", "info_prodotto", "dubbi", "prezzo", "carrello"];
+const EXIT_PAGES = [
+  "/",
+  "/index.html",
+  "/blog.html",
+  "/prodotti.html",
+  "/checkout.html"
+];
+const MESSAGES = [
+  "Sto valutando questo prodotto",
+  "Mi interessa capire come funziona",
+  "Ok, lo compro",
+  "Vorrei più informazioni",
+  "Sembra interessante"
+];
 
 async function inviaVendita(tipo, prodotto) {
   const timestamp = new Date().toISOString();
+
   const base = {
     product_id: prodotto.slug,
     product_name: prodotto.Titolo,
     price: String(prodotto.Prezzo),
     timestamp,
-    log_type: tipo.toUpperCase() + "_SALE"
+    UID: "test_" + prodotto.slug + "_" + tipo + "_" + Date.now(),
+    Device: random(DEVICES),
+    Lingua: random(LANGS),
+    UltimoIntent: random(INTENTS),
+    UltimoMessaggio: random(MESSAGES),
+    PaginaUscita: random(EXIT_PAGES)
   };
 
   let payload = {};
@@ -19,10 +45,12 @@ async function inviaVendita(tipo, prodotto) {
       ...base,
       email: `test-payhip-${prodotto.slug}@mewingmarket.it`,
       source: "payhip_direct",
-      referrer: "direct",
-      utm_source: null,
-      utm_medium: null,
-      utm_campaign: null
+      Origine: "Payhip",
+      Referrer: "direct",
+      UTMSource: null,
+      UTMMedium: null,
+      UTMCampaign: null,
+      PaginaIngresso: "direct"
     };
   }
 
@@ -31,10 +59,12 @@ async function inviaVendita(tipo, prodotto) {
       ...base,
       email: `test-site-${prodotto.slug}@mewingmarket.it`,
       source: "site",
-      referrer: `https://www.mewingmarket.it/prodotto.html?slug=${prodotto.slug}`,
-      utm_source: "site",
-      utm_medium: "product_page",
-      utm_campaign: "test_vendite"
+      Origine: "Sito",
+      Referrer: `https://www.mewingmarket.it/prodotto.html?slug=${prodotto.slug}`,
+      UTMSource: "site",
+      UTMMedium: "product_page",
+      UTMCampaign: "test_vendite",
+      PaginaIngresso: `/prodotto.html?slug=${prodotto.slug}`
     };
   }
 
@@ -43,15 +73,17 @@ async function inviaVendita(tipo, prodotto) {
       ...base,
       email: `test-social-${prodotto.slug}@mewingmarket.it`,
       source: "social",
-      referrer: "https://instagram.com",
-      utm_source: "instagram",
-      utm_medium: "bio_link",
-      utm_campaign: "social_test"
+      Origine: "Social",
+      Referrer: "https://instagram.com",
+      UTMSource: "instagram",
+      UTMMedium: "bio_link",
+      UTMCampaign: "social_test",
+      PaginaIngresso: "https://instagram.com"
     };
   }
 
   console.log(`\n===============================`);
-  console.log(`🟣 TEST VENDITA: ${tipo.toUpperCase()} — ${prodotto.slug}`);
+  console.log(`🔥 TEST VENDITA REALISTICA: ${tipo.toUpperCase()} — ${prodotto.slug}`);
   console.log(`===============================`);
   console.log(`📦 Payload inviato:\n`, payload);
 
@@ -72,11 +104,16 @@ async function inviaVendita(tipo, prodotto) {
 
     for (const prodotto of prodotti) {
       await inviaVendita("payhip", prodotto);
+      await new Promise(r => setTimeout(r, 1500));
+
       await inviaVendita("site", prodotto);
+      await new Promise(r => setTimeout(r, 1500));
+
       await inviaVendita("social", prodotto);
+      await new Promise(r => setTimeout(r, 1500));
     }
 
-    console.log("\n✅ Test completato.");
+    console.log("\n🎉 Test iper‑realistico completato.");
   } catch (err) {
     console.error("❌ Errore caricamento prodotti:", err?.message || err);
   }
