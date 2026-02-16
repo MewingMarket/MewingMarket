@@ -1,6 +1,6 @@
 /**
  * premium.js
- * Gestione frontend per moduli premium (quick replies, cards, rich messages).
+ * Compatibile con chat.js (WhatsApp-style)
  */
 
 document.addEventListener("click", function (e) {
@@ -10,21 +10,20 @@ document.addEventListener("click", function (e) {
   const value = btn.dataset.value;
   if (!value) return;
 
-  btn.disabled = true;
+  const input = document.getElementById("chat-input");
+  const sendBtn = document.getElementById("chat-send");
 
-  const input = document.querySelector("#message-input");
-  const form = document.querySelector("#chat-form");
-
-  if (!input || !form) return;
+  if (!input || !sendBtn) return;
 
   input.value = value;
-  form.dispatchEvent(new Event("submit"));
+  sendBtn.click();
 });
 
-function scrollChatToBottom() {
-  const chat = document.querySelector("#chat-container");
-  if (chat) chat.scrollTop = chat.scrollHeight;
+/* Scroll automatico */
+const chatBox = document.getElementById("chat-box");
+if (chatBox) {
+  const observer = new MutationObserver(() => {
+    chatBox.scrollTop = chatBox.scrollHeight;
+  });
+  observer.observe(chatBox, { childList: true });
 }
-
-const observer = new MutationObserver(scrollChatToBottom);
-observer.observe(document.body, { childList: true, subtree: true });
