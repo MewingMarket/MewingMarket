@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- HEAD DINAMICO (blindato) -->
+  <!-- HEAD DINAMICO -->
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       fetch("head.html")
@@ -24,7 +24,7 @@
 
 <body>
 
-<!-- HEADER DINAMICO (blindato) -->
+<!-- HEADER DINAMICO -->
 <div id="header-placeholder"></div>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
@@ -77,20 +77,42 @@
 
 </main>
 
-<!-- CHATBOT (versione mm-chat, coerente con il tuo CSS attuale) -->
-<div id="mm-chat-btn"></div>
+<!-- CHATBOT WHATSAPP-STYLE -->
+<button id="chat-toggle" style="
+  position: fixed;
+  bottom: 25px;
+  right: 25px;
+  width: 62px;
+  height: 62px;
+  background: #ffcc00;
+  border-radius: 50%;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  cursor: pointer;
+  z-index: 9999;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+">
+  <img src="chat-icon.svg" alt="Chat" style="width: 34px; height: 34px;">
+</button>
 
-<div id="mm-chatbox">
-  <div id="mm-chat-header">Supporto MewingMarket</div>
-  <div id="mm-chat-messages"></div>
+<div id="chat-container">
+  <div id="chat-header">
+    <img src="chat-icon.svg" alt="">
+    Supporto MewingMarket
+  </div>
 
-  <div id="mm-chat-input">
-    <input id="mm-chat-text" type="text" placeholder="Scrivi un messaggio..." autocomplete="off">
-    <button id="mm-chat-send">Invia</button>
+  <div id="chat-box"></div>
+
+  <div id="chat-input-area">
+    <input id="chat-input" type="text" placeholder="Scrivi un messaggio...">
+    <button id="chat-send">➤</button>
+    <button id="chat-voice">🎤</button>
   </div>
 </div>
 
-<!-- FOOTER DINAMICO (blindato) -->
+<!-- FOOTER DINAMICO -->
 <div id="footer-placeholder"></div>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
@@ -105,7 +127,7 @@
 
 <!-- JS -->
 <script src="FAQ.js" defer></script>
-<script src="chat.js?v=2" defer></script>
+<script src="chat.js" defer></script>
 <script src="premium.js" defer></script>
 
 </body>
