@@ -1,7 +1,7 @@
 /**
  * premium/cards.cjs
- * Modulo per card prodotto, card catalogo, card video, card prezzo.
- * Compatibile con la UI WhatsApp-style del tuo front-end.
+ * Modulo completo per card prodotto, catalogo, video, prezzo e confronto.
+ * Compatibile con la UI WhatsApp-style.
  */
 
 function escapeHTML(str = "") {
@@ -12,7 +12,7 @@ function escapeHTML(str = "") {
 }
 
 /* ------------------------------------------
-   CARD PRODOTTO — versione elegante
+   CARD PRODOTTO
 ------------------------------------------ */
 function productCard(product) {
   if (!product) return "";
@@ -41,11 +41,8 @@ function productCard(product) {
 `;
 }
 
-module.exports = {
-  productCard
-};
 /* ------------------------------------------
-   CARD CATALOGO — lista prodotti elegante
+   CARD CATALOGO
 ------------------------------------------ */
 function catalogCard(products = []) {
   if (!Array.isArray(products) || !products.length) {
@@ -85,7 +82,7 @@ function catalogCard(products = []) {
 }
 
 /* ------------------------------------------
-   CARD VIDEO PRODOTTO
+   CARD VIDEO
 ------------------------------------------ */
 function videoCard(url) {
   if (!url) {
@@ -117,12 +114,8 @@ function videoCard(url) {
 `;
 }
 
-module.exports = {
-  productCard,
-  catalogCard,
-  videoCard
-}; /* ------------------------------------------
-   CARD PREZZO — elegante e chiara
+/* ------------------------------------------
+   CARD PREZZO
 ------------------------------------------ */
 function priceCard(product) {
   if (!product) return "";
@@ -149,7 +142,7 @@ function priceCard(product) {
 }
 
 /* ------------------------------------------
-   CARD CONFRONTO — due prodotti affiancati
+   CARD CONFRONTO
 ------------------------------------------ */
 function compareCard(a, b) {
   if (!a || !b) {
@@ -192,10 +185,13 @@ function compareCard(a, b) {
 `;
 }
 
+/* ------------------------------------------
+   EXPORT UNICO E CORRETTO
+------------------------------------------ */
 module.exports = {
   productCard,
   catalogCard,
   videoCard,
   priceCard,
   compareCard
-}; 
+};
