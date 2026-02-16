@@ -1,6 +1,6 @@
 const axios = require("axios");
 
-const WEBHOOK_URL = "https://www.mewingmarket.it/webhook/payhip-mewingmarket_webhook_2025_4f9c2e7b1a";
+const WEBHOOK_URL = https://www.mewingmarket.it/webhook/payhip-mewingmarket_webhook_2025_4f9c2e7b1a
 
 const random = arr => arr[Math.floor(Math.random() * arr.length)];
 
