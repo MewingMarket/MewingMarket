@@ -1,20 +1,23 @@
 /**
- * modules/bot.js — VERSIONE BLINDATA, OTTIMIZZATA, AUTO-AGGIORNANTE
- * Struttura migliorata, contenuti identici, blindatura massima.
+ * modules/bot.cjs — VERSIONE RICOSTRUITA, LOGICA EQUIVALENTE
+ * Stessa architettura, stessi intent, stesse funzionalità.
  */
 
-const fetch = require("node-fetch");
 const path = require("path");
+const fs = require("fs");
 const axios = require("axios");
 const FormData = require("form-data");
-const fs = require("fs");
+const fetch = require("node-fetch");
 
-// IMPORT BLINDATI
+// =========================
+// IMPORT MODULI INTERNI
+// =========================
 const {
   MAIN_PRODUCT_SLUG,
   findProductBySlug,
   productReply,
-  productLongReply
+  productLongReply,
+  fuzzyMatchProduct // lo ricostruiamo noi tra poco se non esiste nel modulo
 } = require(path.join(__dirname, "catalogo.cjs"));
 
 const { normalize, cleanSearchQuery } = require(path.join(__dirname, "utils.cjs"));
@@ -22,22 +25,22 @@ const { getProducts } = require(path.join(__dirname, "airtable.cjs"));
 const Context = require(path.join(__dirname, "context.cjs"));
 const Memory = require(path.join(__dirname, "memory.cjs"));
 
-/* ------------------------------
-   TRACKING — BLINDATO
------------------------------- */
+// =========================
+// TRACKING BOT (OPZIONALE)
+// =========================
 function trackBot(event, data = {}) {
   try {
     if (global.trackEvent && typeof global.trackEvent === "function") {
       global.trackEvent(event, data);
     }
-  } catch (e) {
-    console.error("Tracking bot error:", e);
+  } catch (err) {
+    console.error("Tracking bot error:", err?.message || err);
   }
 }
 
-/* ------------------------------
-   EMOJI BOOSTER — IDENTICO, BLINDATO
------------------------------- */
+// =========================
+// EMOJI BOOSTER
+// =========================
 function addEmojis(text = "") {
   try {
     if (!text || typeof text !== "string") return text || "";
@@ -53,10 +56,9 @@ function addEmojis(text = "") {
   }
 }
 
-/* ------------------------------
-   GPT CORE — BLINDATISSIMO
------------------------------- */
-
+// =========================
+// SYSTEM PROMPT GPT
+// =========================
 const BASE_SYSTEM_PROMPT = `
 Sei il Copilot ufficiale di MewingMarket, integrato nel sito.
 
@@ -78,6 +80,9 @@ Regole:
 - Non dire mai "non so", trova sempre un modo per aiutare.
 `;
 
+// =========================
+// CORE GPT (OPENROUTER)
+// =========================
 async function callGPT(
   userPrompt,
   memory = [],
@@ -155,9 +160,9 @@ async function callGPT(
   }
 }
 
-/* ------------------------------
-   TRASCRIZIONE VOCALE — BLINDATA
------------------------------- */
+// =========================
+// TRASCRIZIONE VOCALE
+// =========================
 async function transcribeAudio(filePath) {
   try {
     if (!filePath || !fs.existsSync(filePath)) {
@@ -187,9 +192,9 @@ async function transcribeAudio(filePath) {
   }
 }
 
-/* ------------------------------
-   UTILS DI STATO — BLINDATI
------------------------------- */
+// =========================
+// UTILS DI STATO
+// =========================
 function generateUID() {
   return "mm_" + Math.random().toString(36).substring(2, 12);
 }
@@ -199,8 +204,8 @@ function setState(req, newState) {
     if (req.userState && typeof req.userState === "object") {
       req.userState.state = newState;
     }
-  } catch (e) {
-    console.error("Errore setState:", e);
+  } catch (err) {
+    console.error("Errore setState:", err);
   }
 }
 
@@ -208,8 +213,8 @@ function reply(res, text) {
   try {
     trackBot("bot_reply", { text });
     res.json({ reply: addEmojis(text || "") });
-  } catch (e) {
-    console.error("Errore reply:", e);
+  } catch (err) {
+    console.error("Errore reply:", err);
     res.json({ reply: "Sto avendo un problema tecnico, ma posso aiutarti comunque." });
   }
 }
@@ -224,15 +229,14 @@ function isYes(text) {
     t.includes("certo") ||
     t.includes("yes")
   );
-          } /* ------------------------------
-   DETECT INTENT — VERSIONE SUPER BLINDATA
------------------------------- */
-
+} // =========================
+// DETECT INTENT — LOGICA IDENTICA
+// =========================
 function detectIntent(rawText) {
   try {
     const text = rawText || "";
-    const t = normalize(text || "");
-    const q = cleanSearchQuery(text || "");
+    const t = normalize(text);
+    const q = cleanSearchQuery(text);
 
     trackBot("intent_detect", { text: rawText });
 
@@ -241,7 +245,6 @@ function detectIntent(rawText) {
       q.includes("come va") ||
       q.includes("come stai") ||
       q.includes("tutto bene") ||
-      q.includes("e te") ||
       q.includes("che fai") ||
       q.includes("parlami") ||
       q.includes("dimmi qualcosa") ||
@@ -478,46 +481,47 @@ function detectIntent(rawText) {
     console.error("Errore detectIntent:", err);
     return { intent: "gpt", sub: null };
   }
-                 }  /* ------------------------------
-   HANDLE CONVERSATION — GPT-FIRST, COMMERCIALE, COMPLETO
-   VERSIONE BLINDATA E STRUTTURATA
------------------------------- */
-
+        }  // =========================
+// HANDLE CONVERSATION — BLOCCO 1
+// =========================
 async function handleConversation(req, res, intent, sub, rawText) {
   try {
     const uid = req?.uid || "unknown_user";
     const state = req?.userState || {};
+
+    // Carica prodotti
     const PRODUCTS = (() => {
       try {
         return getProducts() || [];
-      } catch (e) {
-        console.error("Errore getProducts:", e);
+      } catch (err) {
+        console.error("Errore getProducts:", err);
         return [];
       }
     })();
 
-    // Stato utente
+    // Memoria
     try {
       state.lastIntent = intent;
       Memory.push(uid, rawText || "");
-    } catch (e) {
-      console.error("Errore Memory.push:", e);
+    } catch (err) {
+      console.error("Errore Memory.push:", err);
     }
 
+    // Contesto pagina
     const pageContext = (() => {
       try {
         return Context.get(uid) || {};
-      } catch (e) {
-        console.error("Errore Context.get:", e);
+      } catch (err) {
+        console.error("Errore Context.get:", err);
         return {};
       }
     })();
 
     trackBot("conversation_step", { uid, intent, sub, text: rawText });
 
-    /* ------------------------------------------
-       GPT FALLBACK / GENERALE
-    ------------------------------------------ */
+    // ------------------------------------------
+    // GPT FALLBACK / GENERALE
+    // ------------------------------------------
     if (intent === "gpt") {
       const risposta = await callGPT(
         rawText || "",
@@ -527,9 +531,9 @@ async function handleConversation(req, res, intent, sub, rawText) {
       return reply(res, risposta || "Dimmi pure come posso aiutarti.");
     }
 
-    /* ------------------------------------------
-       CONVERSAZIONE GENERALE
-    ------------------------------------------ */
+    // ------------------------------------------
+    // CONVERSAZIONE GENERALE
+    // ------------------------------------------
     if (intent === "conversazione") {
       const risposta = await callGPT(
         rawText || "",
@@ -540,9 +544,9 @@ async function handleConversation(req, res, intent, sub, rawText) {
       return reply(res, risposta || "Dimmi pure come posso aiutarti 😊");
     }
 
-    /* ------------------------------------------
-       MENU
-    ------------------------------------------ */
+    // ------------------------------------------
+    // MENU
+    // ------------------------------------------
     if (intent === "menu") {
       setState(req, "menu");
 
@@ -571,9 +575,9 @@ Scrivi una parola chiave come:
       return reply(res, enriched || base);
     }
 
-    /* ------------------------------------------
-       CATALOGO
-    ------------------------------------------ */
+    // ------------------------------------------
+    // CATALOGO
+    // ------------------------------------------
     if (intent === "catalogo") {
       setState(req, "catalogo");
 
@@ -590,8 +594,8 @@ Scrivi una parola chiave come:
         try {
           out += `• <b>${p.titoloBreve || p.titolo}</b> — ${p.prezzo}€  
 <a href="${p.linkPayhip}">${p.linkPayhip}</a>\n\n`;
-        } catch (e) {
-          console.error("Errore generazione catalogo:", e);
+        } catch (err) {
+          console.error("Errore generazione catalogo:", err);
         }
       }
 
@@ -608,9 +612,9 @@ Scrivi una parola chiave come:
       return reply(res, out + "\n\n" + (enriched || ""));
     }
 
-    /* ------------------------------------------
-       NEWSLETTER
-    ------------------------------------------ */
+    // ------------------------------------------
+    // NEWSLETTER
+    // ------------------------------------------
     if (intent === "newsletter") {
       setState(req, "newsletter");
 
@@ -663,9 +667,9 @@ Hai bisogno di altro o vuoi tornare al menu?
       return reply(res, enriched || base);
     }
 
-    /* ------------------------------------------
-       SOCIAL SPECIFICO
-    ------------------------------------------ */
+    // ------------------------------------------
+    // SOCIAL SPECIFICO
+    // ------------------------------------------
     if (intent === "social_specifico") {
       const socials = {
         instagram: "https://www.instagram.com/mewingmarket",
@@ -700,9 +704,9 @@ Vuoi vedere anche gli altri social o tornare al menu?
       return reply(res, enriched || base);
     }
 
-    /* ------------------------------------------
-       SOCIAL GENERICO
-    ------------------------------------------ */
+    // ------------------------------------------
+    // SOCIAL GENERICO
+    // ------------------------------------------
     if (intent === "social") {
       const base = `
 Ecco i nostri social ufficiali 📲
@@ -726,9 +730,9 @@ Vuoi tornare al menu o vedere il catalogo?
       );
 
       return reply(res, enriched || base);
-        }  /* ------------------------------------------
-       PRIVACY
-    ------------------------------------------ */
+    }  // ------------------------------------------
+    // PRIVACY
+    // ------------------------------------------
     if (intent === "privacy") {
       const base = `
 La Privacy Policy di MewingMarket spiega come gestiamo i tuoi dati.
@@ -755,9 +759,9 @@ Hai bisogno di altro o vuoi tornare al menu?
       return reply(res, enriched || base);
     }
 
-    /* ------------------------------------------
-       TERMINI E CONDIZIONI
-    ------------------------------------------ */
+    // ------------------------------------------
+    // TERMINI E CONDIZIONI
+    // ------------------------------------------
     if (intent === "termini") {
       const base = `
 I Termini e Condizioni spiegano come funziona MewingMarket.
@@ -784,9 +788,9 @@ Hai bisogno di altro o vuoi tornare al menu?
       return reply(res, enriched || base);
     }
 
-    /* ------------------------------------------
-       COOKIE
-    ------------------------------------------ */
+    // ------------------------------------------
+    // COOKIE
+    // ------------------------------------------
     if (intent === "cookie") {
       const base = `
 Usiamo cookie tecnici e analytics per migliorare il sito.
@@ -807,9 +811,9 @@ Hai bisogno di altro o vuoi tornare al menu?
       return reply(res, enriched || base);
     }
 
-    /* ------------------------------------------
-       RESI E RIMBORSI
-    ------------------------------------------ */
+    // ------------------------------------------
+    // RESI E RIMBORSI
+    // ------------------------------------------
     if (intent === "resi") {
       const base = `
 I prodotti digitali non prevedono reso automatico, ma valutiamo ogni richiesta caso per caso.
@@ -834,9 +838,9 @@ Hai bisogno di altro o vuoi tornare al menu?
       return reply(res, enriched || base);
     }
 
-    /* ------------------------------------------
-       FAQ
-    ------------------------------------------ */
+    // ------------------------------------------
+    // FAQ
+    // ------------------------------------------
     if (intent === "faq") {
       const base = `
 Puoi consultare le FAQ qui:  
@@ -858,9 +862,9 @@ Vuoi tornare al menu o hai bisogno di altro?
       return reply(res, enriched || base);
     }
 
-    /* ------------------------------------------
-       CONTATTI
-    ------------------------------------------ */
+    // ------------------------------------------
+    // CONTATTI
+    // ------------------------------------------
     if (intent === "contatti") {
       const base = `
 Ecco i contatti ufficiali MewingMarket:
@@ -886,9 +890,9 @@ Vuoi tornare al menu o vedere il catalogo?
       return reply(res, enriched || base);
     }
 
-    /* ------------------------------------------
-       DOVE SIAMO
-    ------------------------------------------ */
+    // ------------------------------------------
+    // DOVE SIAMO
+    // ------------------------------------------
     if (intent === "dovesiamo") {
       const base = `
 La sede di MewingMarket è:
@@ -912,13 +916,13 @@ Vuoi tornare al menu o hai bisogno di altro?
       return reply(res, enriched || base);
     }
 
-    /* ------------------------------------------
-       SUPPORTO
-    ------------------------------------------ */
+    // ------------------------------------------
+    // SUPPORTO
+    // ------------------------------------------
     if (intent === "supporto") {
       setState(req, "supporto");
 
-      /* --- SUPPORTO DOWNLOAD --- */
+      // --- SUPPORTO DOWNLOAD ---
       if (sub === "download") {
         const base = `
 Se non riesci a scaricare il prodotto:
@@ -947,7 +951,7 @@ Vuoi tornare al menu o hai bisogno di altro?
         return reply(res, enriched || base);
       }
 
-      /* --- SUPPORTO PAYHIP --- */
+      // --- SUPPORTO PAYHIP ---
       if (sub === "payhip") {
         const base = `
 Payhip gestisce pagamenti e download.
@@ -975,7 +979,7 @@ Vuoi tornare al menu o hai bisogno di altro?
         return reply(res, enriched || base);
       }
 
-      /* --- SUPPORTO RIMBORSO --- */
+      // --- SUPPORTO RIMBORSO ---
       if (sub === "rimborso") {
         const base = `
 FAQ utili:  
@@ -1001,7 +1005,7 @@ Vuoi tornare al menu o hai bisogno di altro?
         return reply(res, enriched || base);
       }
 
-      /* --- SUPPORTO CONTATTO --- */
+      // --- SUPPORTO CONTATTO ---
       if (sub === "contatto") {
         const base = `
 Puoi contattare il supporto:
@@ -1030,7 +1034,7 @@ Vuoi tornare al menu o hai bisogno di altro?
         return reply(res, enriched || base);
       }
 
-      /* --- SUPPORTO GENERICO --- */
+      // --- SUPPORTO GENERICO ---
       const base = `
 Sono qui per aiutarti 💬  
 Scrivi una parola chiave come:  
@@ -1048,9 +1052,9 @@ FAQ utili:
       );
 
       return reply(res, enriched || base);
-  }  /* ------------------------------------------
-       PRODOTTI
-    ------------------------------------------ */
+    }  // ------------------------------------------
+    // PRODOTTO
+    // ------------------------------------------
     const lastProductSlug = state?.lastProductSlug || null;
 
     if (intent === "prodotto") {
@@ -1062,8 +1066,8 @@ FAQ utili:
         if (!product && normalize(rawText || "").includes("ecosistema")) {
           product = findProductBySlug(MAIN_PRODUCT_SLUG);
         }
-      } catch (e) {
-        console.error("Errore match prodotto:", e);
+      } catch (err) {
+        console.error("Errore match prodotto:", err);
       }
 
       if (!product) {
@@ -1108,17 +1112,17 @@ Vuoi:
       return reply(res, enriched || base);
     }
 
-    /* ------------------------------------------
-       ACQUISTO DIRETTO
-    ------------------------------------------ */
+    // ------------------------------------------
+    // ACQUISTO DIRETTO
+    // ------------------------------------------
     if (intent === "acquisto_diretto") {
       let product = null;
 
       try {
         product = fuzzyMatchProduct(rawText || "");
         if (!product && lastProductSlug) product = findProductBySlug(lastProductSlug);
-      } catch (e) {
-        console.error("Errore acquisto fuzzy:", e);
+      } catch (err) {
+        console.error("Errore acquisto fuzzy:", err);
       }
 
       if (!product) {
@@ -1168,17 +1172,17 @@ Vuoi un consiglio su come iniziare?
       return reply(res, enriched || base);
     }
 
-    /* ------------------------------------------
-       DETTAGLI PRODOTTO
-    ------------------------------------------ */
+    // ------------------------------------------
+    // DETTAGLI PRODOTTO
+    // ------------------------------------------
     if (intent === "dettagli_prodotto") {
       let product = null;
 
       try {
         product = fuzzyMatchProduct(rawText || "");
         if (!product && lastProductSlug) product = findProductBySlug(lastProductSlug);
-      } catch (e) {
-        console.error("Errore dettagli fuzzy:", e);
+      } catch (err) {
+        console.error("Errore dettagli fuzzy:", err);
       }
 
       if (!product) {
@@ -1222,17 +1226,17 @@ Vuoi:
       return reply(res, enriched || base);
     }
 
-    /* ------------------------------------------
-       VIDEO PRODOTTO
-    ------------------------------------------ */
+    // ------------------------------------------
+    // VIDEO PRODOTTO
+    // ------------------------------------------
     if (intent === "video_prodotto") {
       let product = null;
 
       try {
         product = fuzzyMatchProduct(rawText || "");
         if (!product && lastProductSlug) product = findProductBySlug(lastProductSlug);
-      } catch (e) {
-        console.error("Errore video fuzzy:", e);
+      } catch (err) {
+        console.error("Errore video fuzzy:", err);
       }
 
       if (!product) {
@@ -1291,17 +1295,17 @@ Vuoi un riassunto del video o i dettagli del prodotto?
       return reply(res, enriched || base);
     }
 
-    /* ------------------------------------------
-       PREZZO PRODOTTO
-    ------------------------------------------ */
+    // ------------------------------------------
+    // PREZZO PRODOTTO
+    // ------------------------------------------
     if (intent === "prezzo_prodotto") {
       let product = null;
 
       try {
         product = fuzzyMatchProduct(rawText || "");
         if (!product && lastProductSlug) product = findProductBySlug(lastProductSlug);
-      } catch (e) {
-        console.error("Errore prezzo fuzzy:", e);
+      } catch (err) {
+        console.error("Errore prezzo fuzzy:", err);
       }
 
       if (!product) {
@@ -1343,19 +1347,17 @@ Vuoi:
       );
 
       return reply(res, enriched || base);
-    }
-
-    /* ------------------------------------------
-       TRATTATIVA / SCONTO
-    ------------------------------------------ */
+        }  // ------------------------------------------
+    // TRATTATIVA / SCONTO
+    // ------------------------------------------
     if (intent === "trattativa") {
       let product = null;
 
       try {
         product = fuzzyMatchProduct(rawText || "");
         if (!product && lastProductSlug) product = findProductBySlug(lastProductSlug);
-      } catch (e) {
-        console.error("Errore trattativa fuzzy:", e);
+      } catch (err) {
+        console.error("Errore trattativa fuzzy:", err);
       }
 
       if (!product) {
@@ -1400,17 +1402,17 @@ Vuoi:
       return reply(res, enriched || base);
     }
 
-    /* ------------------------------------------
-       OBIEZIONI SUL PREZZO
-    ------------------------------------------ */
+    // ------------------------------------------
+    // OBIEZIONI SUL PREZZO
+    // ------------------------------------------
     if (intent === "obiezione") {
       let product = null;
 
       try {
         product = fuzzyMatchProduct(rawText || "");
         if (!product && lastProductSlug) product = findProductBySlug(lastProductSlug);
-      } catch (e) {
-        console.error("Errore obiezione fuzzy:", e);
+      } catch (err) {
+        console.error("Errore obiezione fuzzy:", err);
       }
 
       if (!product) {
@@ -1455,9 +1457,9 @@ Vuoi che ti spieghi:
       return reply(res, enriched || base);
     }
 
-    /* ------------------------------------------
-       ALLEGATI
-    ------------------------------------------ */
+    // ------------------------------------------
+    // ALLEGATI
+    // ------------------------------------------
     if (intent === "allegato") {
       const filename = sub || "file";
 
@@ -1479,9 +1481,11 @@ Vuoi:
       );
 
       return reply(res, enriched || base);
-          } /* ------------------------------------------
-       FALLBACK FINALE
-    ------------------------------------------ */
+    }
+
+    // ------------------------------------------
+    // FALLBACK FINALE
+    // ------------------------------------------
     const fallback = await callGPT(
       rawText || "Fallback",
       Memory.get(uid),
@@ -1489,26 +1493,55 @@ Vuoi:
       "\nRispondi come un assistente commerciale del sito, chiaro e utile."
     );
 
-    return reply(res, fallback || "Dimmi pure come posso aiutarti.");
+    return reply(res, fallback || "Dimmi pure come posso aiutarti."); // =========================
+// MATCH PRODOTTO FUZZY (solo se non già presente nel modulo catalogo.cjs)
+// =========================
+function fuzzyMatchProduct(text) {
+  try {
+    if (!text) return null;
 
+    const PRODUCTS = getProducts() || [];
+    const q = normalize(text);
+
+    let best = null;
+    let bestScore = 0;
+
+    for (const p of PRODUCTS) {
+      const titolo = normalize(p.titolo || "");
+      const breve = normalize(p.titoloBreve || "");
+      const slug = normalize(p.slug || "");
+
+      let score = 0;
+
+      if (q.includes(slug)) score += 3;
+      if (q.includes(titolo)) score += 3;
+      if (q.includes(breve)) score += 2;
+
+      if (titolo.includes(q)) score += 2;
+      if (breve.includes(q)) score += 1;
+
+      if (score > bestScore) {
+        bestScore = score;
+        best = p;
+      }
+    }
+
+    return bestScore > 0 ? best : null;
   } catch (err) {
-    console.error("ERRORE HANDLE CONVERSATION:", err);
-
-    return reply(
-      res,
-      "Sto avendo un problema tecnico, ma posso comunque aiutarti: dimmi cosa vuoi ottenere e ti guido."
-    );
+    console.error("Errore fuzzyMatchProduct:", err);
+    return null;
   }
 }
 
-/* ------------------------------
-   EXPORT — BLINDATO
------------------------------- */
+// =========================
+// EXPORT — BLINDATO
+// =========================
 module.exports = {
   detectIntent,
   handleConversation,
   reply,
   generateUID,
   transcribeAudio,
-  addEmojis
-};
+  addEmojis,
+  fuzzyMatchProduct // incluso solo se serve
+}; 
