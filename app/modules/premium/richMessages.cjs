@@ -32,9 +32,6 @@ function sectionedMessage({ title = "", sections = [] }) {
   return html;
 }
 
-module.exports = {
-  sectionedMessage
-};
 /* ------------------------------------------
    INFO CARD — messaggio informativo elegante
 ------------------------------------------ */
@@ -71,12 +68,7 @@ function successMessage({ title = "", body = "" }) {
 `;
 }
 
-module.exports = {
-  sectionedMessage,
-  infoMessage,
-  warningMessage,
-  successMessage
-}; /* ------------------------------------------
+/* ------------------------------------------
    HERO MESSAGE — titolo grande + descrizione
 ------------------------------------------ */
 function heroMessage({ title = "", subtitle = "", body = "" }) {
@@ -133,6 +125,9 @@ function featureList({ title = "", features = [] }) {
   return html;
 }
 
+/* ------------------------------------------
+   EXPORT UNICO
+------------------------------------------ */
 module.exports = {
   sectionedMessage,
   infoMessage,
