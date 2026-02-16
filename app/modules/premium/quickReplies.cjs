@@ -80,15 +80,4 @@ module.exports = {
   productQuickReplies,
   catalogQuickReplies,
   supportQuickReplies
-}; const Quick = require("./premium/quickReplies.cjs");
-
-return reply(res,
-  Cards.productCard(product) +
-  Quick.productQuickReplies(product)
-); return reply(res,
-  Cards.catalogCard(PRODUCTS) +
-  Quick.catalogQuickReplies()
-);return reply(res,
-  "Come posso aiutarti?" +
-  Quick.supportQuickReplies()
-);
+}; 
