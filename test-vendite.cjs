@@ -1,7 +1,8 @@
 const axios = require("axios");
 
+// ⭐ URL CORRETTO — usa PAYHIP_WEBHOOK_SECRET (…b1e)
+const WEBHOOK_URL = "https://www.mewingmarket.it/webhook/payhip-mewingmarket_webhook_2025_4f9c2e7b1e";
 
-const WEBHOOK_URL = "https://www.mewingmarket.it/webhook/payhip-mewingmarket_webhook_2025_4f9c2e7b1a";
 const random = arr => arr[Math.floor(Math.random() * arr.length)];
 
 const DEVICES = ["mobile", "desktop", "tablet"];
@@ -22,7 +23,7 @@ async function inviaVendita(tipo, prodotto) {
   const base = {
     UID: "test_" + prodotto.slug + "_" + tipo + "_" + Date.now(),
     Prodotto: prodotto.slug,
-    Prezzo: prodotto.Prezzo,
+    Prezzo: prodotto.Prezzo || prodotto.prezzo || 0,
     Device: random(DEVICES),
     Lingua: random(LANGS),
     UltimoIntent: random(INTENTS),
@@ -37,9 +38,9 @@ async function inviaVendita(tipo, prodotto) {
     fields = {
       ...base,
       Origine: "Payhip",
-      UTMSource: null,
-      UTMMedium: null,
-      UTMCampaign: null,
+      UTMSource: "",
+      UTMMedium: "",
+      UTMCampaign: "",
       Referrer: "direct",
       PaginaIngresso: "direct"
     };
