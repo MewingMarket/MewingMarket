@@ -41,3 +41,80 @@ function postPurchaseMessage(product) {
 module.exports = {
   postPurchaseMessage
 };
+/* ------------------------------------------
+   COME INIZIARE — guida rapida post-acquisto
+------------------------------------------ */
+function gettingStartedMessage(product) {
+  const titolo = escapeHTML(product?.titoloBreve || product?.titolo || "");
+
+  return `
+<div class="mm-rich">
+  <div class="mm-rich-title">🚀 Come iniziare con ${titolo}</div>
+
+  <div class="mm-rich-section">
+    <div class="mm-rich-section-title">1. Scarica il materiale</div>
+    <div class="mm-rich-section-body">
+      Trovi tutto nel link Payhip che hai ricevuto via email.
+    </div>
+  </div>
+
+  <div class="mm-rich-section">
+    <div class="mm-rich-section-title">2. Apri la cartella principale</div>
+    <div class="mm-rich-section-body">
+      Dentro trovi la struttura completa del prodotto, già organizzata.
+    </div>
+  </div>
+
+  <div class="mm-rich-section">
+    <div class="mm-rich-section-title">3. Segui l’ordine consigliato</div>
+    <div class="mm-rich-section-body">
+      Parti dal file “LEGGIMI” o dalla guida introduttiva.
+    </div>
+  </div>
+</div>
+`;
+}
+
+/* ------------------------------------------
+   RISORSE UTILI — link e materiali extra
+------------------------------------------ */
+function usefulResourcesMessage(product) {
+  const titolo = escapeHTML(product?.titoloBreve || product?.titolo || "");
+
+  return `
+<div class="mm-info">
+  <div class="mm-info-title">📚 Risorse utili per ${titolo}</div>
+  <div class="mm-info-body">
+    • Video introduttivo (se disponibile)<br>
+    • Guida rapida PDF<br>
+    • Template e file inclusi<br>
+    • Accesso immediato al materiale
+  </div>
+</div>
+`;
+}
+
+/* ------------------------------------------
+   SERVE AIUTO? — supporto post-acquisto
+------------------------------------------ */
+function needHelpMessage() {
+  return `
+<div class="mm-warning">
+  <div class="mm-warning-title">❓ Serve aiuto?</div>
+  <div class="mm-warning-body">
+    Posso aiutarti con:<br>
+    • Download<br>
+    • Accesso Payhip<br>
+    • Problemi con i file<br>
+    • Domande sul prodotto
+  </div>
+</div>
+`;
+}
+
+module.exports = {
+  postPurchaseMessage,
+  gettingStartedMessage,
+  usefulResourcesMessage,
+  needHelpMessage
+}; 
