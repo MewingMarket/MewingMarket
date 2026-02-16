@@ -38,9 +38,6 @@ function postPurchaseMessage(product) {
 `;
 }
 
-module.exports = {
-  postPurchaseMessage
-};
 /* ------------------------------------------
    COME INIZIARE — guida rapida post-acquisto
 ------------------------------------------ */
@@ -112,9 +109,12 @@ function needHelpMessage() {
 `;
 }
 
+/* ------------------------------------------
+   EXPORT UNICO
+------------------------------------------ */
 module.exports = {
   postPurchaseMessage,
   gettingStartedMessage,
   usefulResourcesMessage,
   needHelpMessage
-}; 
+};
