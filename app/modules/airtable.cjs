@@ -162,11 +162,46 @@ function getProducts() {
   return loadProducts();
 }
 
-/* Salva vendita */
+/* Salva vendita (versione normalizzata) */
 async function saveSaleToAirtable(fields) {
-  const url = `https://api.airtable.com/v0/${BASE_ID}/Vendite`;
+  console.log("💰 [DEBUG] saveSaleToAirtable → POST (normalizzato)");
 
-  console.log("💰 [DEBUG] saveSaleToAirtable → POST");
+  // Normalizzazione totale
+  const normalized = {
+    UID: fields.UID || "auto_" + Date.now(),
+
+    // Prodotto
+    Prodotto: fields.Prodotto || fields.slug || fields.product_id || "sconosciuto",
+
+    // Prezzo
+    Prezzo: Number(fields.Prezzo || fields.price || 0),
+
+    // Origine
+    Origine: fields.Origine || fields.source || "Sconosciuta",
+
+    // UTM
+    UTMSource: fields.UTMSource || fields.utm_source || "",
+    UTMMedium: fields.UTMMedium || fields.utm_medium || "",
+    UTMCampaign: fields.UTMCampaign || fields.utm_campaign || "",
+
+    // Referrer e pagine
+    Referrer: fields.Referrer || fields.referrer || "",
+    PaginaIngresso: fields.PaginaIngresso || fields.entry_page || "",
+    PaginaUscita: fields.PaginaUscita || fields.exit_page || "",
+
+    // Bot
+    UltimoIntent: fields.UltimoIntent || fields.intent || "",
+    UltimoMessaggio: fields.UltimoMessaggio || fields.message || "",
+
+    // Device e lingua
+    Device: fields.Device || fields.device || "unknown",
+    Lingua: fields.Lingua || fields.lang || "unknown",
+
+    // Timestamp
+    Timestamp: fields.Timestamp || fields.timestamp || new Date().toISOString()
+  };
+
+  const url = `https://api.airtable.com/v0/${BASE_ID}/Vendite`;
 
   const res = await fetch(url, {
     method: "POST",
@@ -174,13 +209,15 @@ async function saveSaleToAirtable(fields) {
       "Authorization": `Bearer ${AIRTABLE_PAT}`,
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ fields })
+    body: JSON.stringify({ fields: normalized })
   });
 
   const data = await res.json();
 
   if (data.error) {
     console.error("❌ [DEBUG] Errore saveSaleToAirtable:", data.error);
+  } else {
+    console.log("🟢 [DEBUG] Vendita salvata su Airtable:", normalized);
   }
 }
 
