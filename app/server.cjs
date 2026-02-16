@@ -16,6 +16,7 @@ const FormData = require("form-data");
 ========================================================= */
 const ROOT = path.resolve(__dirname, "..");
 const { syncYouTube } = require(path.join(ROOT, "app", "services", "youtube.cjs"));
+
 /* =========================================================
    SETUP EXPRESS
 ========================================================= */
@@ -38,6 +39,18 @@ function logEvent(event, data = {}) {
     if (SERVER_LOGS.length > 500) SERVER_LOGS.shift();
   } catch (err) {
     console.error("LogEvent error:", err?.message || err);
+  }
+}
+
+/* =========================================================
+   ⭐ LOGGING PREMIUM — BRIDGE BOT ↔ SERVER
+========================================================= */
+function logBot(event, data = {}) {
+  try {
+    console.log(`[MM-BOT-SERVER][${event}]`, typeof data === "object" ? JSON.stringify(data) : data);
+    logEvent(event, data);
+  } catch (err) {
+    console.error("logBot error:", err?.message || err);
   }
 }
 
@@ -98,7 +111,7 @@ app.post("/chat/upload", upload.single("file"), (req, res) => {
     logEvent("chat_file_upload_error", { error: err?.message || "unknown" });
     return res.json({ error: "Errore durante il caricamento del file" });
   }
-});  /* =========================================================
+}); /* =========================================================
    STATO UTENTI GLOBALE
 ========================================================= */
 const userStates = {};
@@ -149,7 +162,9 @@ try {
 } catch (err) {
   console.error("Errore lettura welcome.html:", err);
   welcomeHTML = "<p>Benvenuto in MewingMarket</p>";
-} /* =========================================================
+}
+
+/* =========================================================
    TRACKING GA4 SERVER-SIDE
 ========================================================= */
 const GA4_ID = process.env.GA4_ID;
@@ -246,9 +261,7 @@ app.use((req, res, next) => {
     logEvent("user_state_error", { error: err?.message || "unknown" });
     next();
   }
-});
-
-/* =========================================================
+}); /* =========================================================
    ⭐ MIDDLEWARE MAX
 ========================================================= */
 app.use((req, res, next) => {
@@ -318,7 +331,9 @@ app.post(
       return res.status(500).json({ status: "error" });
     }
   }
-);  /* =========================================================
+);
+
+/* =========================================================
    ⭐ API SYSTEM STATUS
 ========================================================= */
 app.get("/api/system-status", (req, res) => {
@@ -426,9 +441,7 @@ app.get("/api/sales/summary", async (req, res) => {
     logEvent("api_sales_summary_error", { error: err?.message || "unknown" });
     return res.status(500).json({ status: "error" });
   }
-});
-
-/* =========================================================
+}); /* =========================================================
    ⭐ FEED META
 ========================================================= */
 app.get("/meta/feed", (req, res) => {
@@ -531,22 +544,24 @@ app.get("/prodotto.html", (req, res) => {
     logEvent("product_page_error", { error: err?.message || "unknown" });
     res.status(500).send("Errore pagina prodotto");
   }
-});  /* =========================================================
-   ⭐ CHAT BOT — TESTO (PATCH COMPLETA)
+});
+
+/* =========================================================
+   ⭐ CHAT BOT — TESTO (PATCH PREMIUM)
 ========================================================= */
 app.post("/chat", async (req, res) => {
+  const start = Date.now();
+
   try {
     const uid = req.uid;
     const rawMessage = req.body?.message;
 
     if (!rawMessage || rawMessage.trim() === "") {
-      console.log("L’utente ha inviato un messaggio vuoto.");
-      logEvent("chat_empty_message", { uid });
+      logBot("chat_empty_message", { uid });
       return reply(res, "Scrivi un messaggio così posso aiutarti.");
     }
 
-    console.log(`👤 L’utente ha scritto: "${rawMessage}"`);
-    logEvent("chat_user_message", { uid, message: rawMessage });
+    logBot("chat_user_message", { uid, message: rawMessage });
 
     trackGA4("chat_message_sent", { uid, message: rawMessage });
 
@@ -558,58 +573,56 @@ app.post("/chat", async (req, res) => {
       intent = detected.intent;
       sub = detected.sub;
 
-      console.log(`🧭 Intent rilevato: ${intent} (sub: ${sub || "nessuno"})`);
-      logEvent("intent_detected_ok", { uid, intent, sub: sub || "" });
-
+      logBot("intent_detected", { uid, intent, sub });
     } catch (err) {
-      console.error("❌ Errore detectIntent:", err);
-      logEvent("detect_intent_error", { uid, error: err?.message || "unknown" });
+      logBot("intent_detect_error", { uid, error: err?.message || "unknown" });
     }
 
     try {
       userStates[uid].lastIntent = intent;
     } catch (err) {
-      console.error("❌ Errore set lastIntent:", err);
-      logEvent("set_last_intent_error", { uid, error: err?.message || "unknown" });
+      logBot("set_last_intent_error", { uid, error: err?.message || "unknown" });
     }
 
     const response = await handleConversation(req, res, intent, sub, rawMessage);
 
-    console.log("🤖 Il bot ha generato una risposta per l’utente.");
-    logEvent("chat_bot_replied", { uid, intent, sub: sub || "" });
+    logBot("chat_bot_replied", {
+      uid,
+      intent,
+      sub,
+      duration_ms: Date.now() - start
+    });
 
-    trackGA4("chat_message_received", { uid, intent, sub: sub || "" });
+    trackGA4("chat_message_received", { uid, intent, sub });
 
     return response;
 
   } catch (err) {
-    console.error("❌ Errore /chat:", err);
-    logEvent("chat_global_error", { error: err?.message || "unknown" });
+    logBot("chat_global_error", { error: err?.message || "unknown" });
     trackGA4("chat_error", { error: err?.message || "unknown" });
 
     return reply(res, "Sto avendo un problema temporaneo. Riprova tra poco.");
   }
-});
-
-/* =========================================================
+}); /* =========================================================
    ⭐ CHAT BOT — VOCALE (WHISPER OPENROUTER)
 ========================================================= */
 app.post("/chat/voice", upload.single("audio"), async (req, res) => {
+  const start = Date.now();
+
   try {
     if (!req.file) {
-      console.log("Richiesta vocale senza file.");
-      logEvent("voice_no_file", {});
+      logBot("voice_no_file", {});
       return res.json({ reply: "Non ho ricevuto alcun vocale 😅" });
     }
 
     const filePath = req.file.path;
-    console.log("🎤 File vocale ricevuto:", filePath);
+    logBot("voice_file_received", { filePath });
 
     const form = new FormData();
     form.append("file", fs.createReadStream(filePath));
     form.append("model", "openai/whisper-1");
 
-    let transcript = "Non riesco a capire il vocale 😅";
+    let transcript = null;
 
     try {
       const whisperRes = await axios.post(
@@ -623,15 +636,25 @@ app.post("/chat/voice", upload.single("audio"), async (req, res) => {
         }
       );
 
-      transcript = whisperRes.data?.text || transcript;
-
-      console.log(`🎧 Trascrizione vocale: "${transcript}"`);
-      logEvent("voice_transcribed", { transcript });
+      transcript = whisperRes.data?.text || null;
+      logBot("voice_transcribed", { transcript });
 
     } catch (err) {
-      console.error("❌ Errore Whisper:", err);
-      logEvent("voice_whisper_error", { error: err?.message || "unknown" });
+      logBot("voice_whisper_error", { error: err?.message || "unknown" });
+      transcript = null;
     }
+
+    // Cancella file vocale dopo uso
+    try {
+      fs.unlinkSync(filePath);
+      logBot("voice_file_deleted", { filePath });
+    } catch {}
+
+    if (!transcript) {
+      return res.json({ reply: "Il vocale non è chiarissimo 😅 Puoi ripetere?" });
+    }
+
+    req.body.message = transcript;
 
     const uid = req.uid;
 
@@ -643,35 +666,32 @@ app.post("/chat/voice", upload.single("audio"), async (req, res) => {
       intent = detected.intent;
       sub = detected.sub;
 
-      console.log(`🧭 Intent vocale rilevato: ${intent}`);
-      logEvent("voice_detect_intent_ok", { uid, intent, sub: sub || "" });
-
+      logBot("voice_intent_detected", { uid, intent, sub });
     } catch (err) {
-      console.error("❌ Errore detectIntent vocale:", err);
-      logEvent("voice_detect_intent_error", { error: err?.message || "unknown" });
+      logBot("voice_detect_intent_error", { uid, error: err?.message || "unknown" });
     }
 
     try {
       userStates[uid].lastIntent = intent;
     } catch (err) {
-      console.error("❌ Errore set lastIntent vocale:", err);
-      logEvent("voice_set_last_intent_error", { error: err?.message || "unknown" });
+      logBot("voice_set_last_intent_error", { uid, error: err?.message || "unknown" });
     }
 
-    console.log("🤖 Il bot sta generando una risposta al vocale...");
-    logEvent("voice_bot_processing", { uid, transcript, intent, sub: sub || "" });
+    logBot("voice_bot_processing", {
+      uid,
+      transcript,
+      intent,
+      sub,
+      duration_ms: Date.now() - start
+    });
 
     return handleConversation(req, res, intent, sub, transcript);
 
   } catch (err) {
-    console.error("❌ Errore vocale:", err);
-    logEvent("voice_global_error", { error: err?.message || "unknown" });
-
-    return res.json({ reply: "Non riesco a leggere il vocale 😅" });
+    logBot("voice_global_error", { error: err?.message || "unknown" });
+    return res.json({ reply: "C’è stato un problema con il vocale 😅" });
   }
-});
-
-/* =========================================================
+}); /* =========================================================
    ⭐ NEWSLETTER — ISCRIZIONE
 ========================================================= */
 app.post("/newsletter/subscribe", async (req, res) => {
@@ -835,10 +855,7 @@ app.listen(PORT, () => {
       logEvent("startup_global_error", { error: err?.message || "unknown" });
     }
   })();
-});
-
-
-/* =========================================================
+}); /* =========================================================
    ⭐ CRON JOB — PAYHIP + YOUTUBE + AIRTABLE (PATCHATO)
 ========================================================= */
 
@@ -912,9 +929,7 @@ setInterval(async () => {
     console.error("❌ Errore nel sync programmato Airtable:", err);
     logEvent("cron_airtable_error", { error: err?.message || "unknown" });
   }
-}, 30 * 60 * 1000);
-
-/* =========================================================
+}, 30 * 60 * 1000); /* =========================================================
    ⭐ NEWSLETTER AUTOMATICA — NUOVO PRODOTTO
 ========================================================= */
 let lastProductId = null;
