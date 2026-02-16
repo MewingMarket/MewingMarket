@@ -1,19 +1,13 @@
 import axios from "axios";
 
-const WEBHOOK_URL = "https://www.mewingmarket.it/webhook/payhip-mewingmarket_webhook_2025_4f9c2e7b1e";
+const WEBHOOK_URL = "https://www.mewingmarket.it/webhook/payhip-mewingmarket_webhook_2025_4f9c2e7b1a";
 
-const random = (arr) => arr[Math.floor(Math.random() * arr.length)];
+const random = arr => arr[Math.floor(Math.random() * arr.length)];
 
 const DEVICES = ["mobile", "desktop", "tablet"];
 const LANGS = ["it", "en", "es", "fr"];
 const INTENTS = ["acquisto", "info_prodotto", "dubbi", "prezzo", "carrello"];
-const EXIT_PAGES = [
-  "/",
-  "/index.html",
-  "/blog.html",
-  "/prodotti.html",
-  "/checkout.html"
-];
+const EXIT_PAGES = ["/", "/index.html", "/blog.html", "/prodotti.html", "/checkout.html"];
 const MESSAGES = [
   "Sto valutando questo prodotto",
   "Mi interessa capire come funziona",
@@ -26,74 +20,65 @@ async function inviaVendita(tipo, prodotto) {
   const timestamp = new Date().toISOString();
 
   const base = {
-    product_id: prodotto.slug,
-    product_name: prodotto.Titolo,
-    price: String(prodotto.Prezzo),
-    timestamp,
     UID: "test_" + prodotto.slug + "_" + tipo + "_" + Date.now(),
+    Prodotto: prodotto.slug,
+    Prezzo: prodotto.Prezzo,
     Device: random(DEVICES),
     Lingua: random(LANGS),
     UltimoIntent: random(INTENTS),
     UltimoMessaggio: random(MESSAGES),
-    PaginaUscita: random(EXIT_PAGES)
+    PaginaUscita: random(EXIT_PAGES),
+    Timestamp: timestamp
   };
 
-  let payload = {};
+  let fields = {};
 
   if (tipo === "payhip") {
-    payload = {
+    fields = {
       ...base,
-      email: `test-payhip-${prodotto.slug}@mewingmarket.it`,
-      source: "payhip_direct",
       Origine: "Payhip",
-      Referrer: "direct",
       UTMSource: null,
       UTMMedium: null,
       UTMCampaign: null,
+      Referrer: "direct",
       PaginaIngresso: "direct"
     };
   }
 
   if (tipo === "site") {
-    payload = {
+    fields = {
       ...base,
-      email: `test-site-${prodotto.slug}@mewingmarket.it`,
-      source: "site",
       Origine: "Sito",
-      Referrer: `https://www.mewingmarket.it/prodotto.html?slug=${prodotto.slug}`,
       UTMSource: "site",
       UTMMedium: "product_page",
       UTMCampaign: "test_vendite",
+      Referrer: `https://www.mewingmarket.it/prodotto.html?slug=${prodotto.slug}`,
       PaginaIngresso: `/prodotto.html?slug=${prodotto.slug}`
     };
   }
 
   if (tipo === "social") {
-    payload = {
+    fields = {
       ...base,
-      email: `test-social-${prodotto.slug}@mewingmarket.it`,
-      source: "social",
       Origine: "Social",
-      Referrer: "https://instagram.com",
       UTMSource: "instagram",
       UTMMedium: "bio_link",
       UTMCampaign: "social_test",
+      Referrer: "https://instagram.com",
       PaginaIngresso: "https://instagram.com"
     };
   }
 
-  console.log(`\n===============================`);
-  console.log(`🔥 TEST VENDITA REALISTICA: ${tipo.toUpperCase()} — ${prodotto.slug}`);
-  console.log(`===============================`);
-  console.log(`📦 Payload inviato:\n`, payload);
+  console.log(`\n🔥 Invio vendita ${tipo.toUpperCase()} per ${prodotto.slug}`);
+  console.log(fields);
 
   try {
-    const res = await axios.post(WEBHOOK_URL, payload, {
+    const res = await axios.post(WEBHOOK_URL, fields, {
       headers: { "Content-Type": "application/json" }
     });
-    console.log(`✅ Risposta server:\n`, res.data);
+    console.log("✅ Risposta server:", res.data);
   } catch (err) {
-    console.error(`❌ Errore invio webhook:\n`, err?.response?.data || err?.message || err);
+    console.error("❌ Errore invio webhook:", err?.response?.data || err?.message);
   }
 }
 
@@ -115,6 +100,6 @@ async function inviaVendita(tipo, prodotto) {
 
     console.log("\n🎉 Test iper‑realistico completato.");
   } catch (err) {
-    console.error("❌ Errore caricamento prodotti:", err?.message || err);
+    console.error("❌ Errore caricamento prodotti:", err?.message);
   }
 })();
