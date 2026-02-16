@@ -1409,3 +1409,76 @@ footer {
   color: #555;
   line-height: 1.4;
 }
+/* INFO BLOCK */
+.mm-info {
+  background: #e8f1ff;
+  border-left: 4px solid #2f80ed;
+  padding: 14px 16px;
+  border-radius: 10px;
+  margin: 14px 0;
+}
+
+.mm-info-title {
+  font-weight: 700;
+  margin-bottom: 6px;
+  font-size: 16px;
+}
+
+.mm-info-body {
+  font-size: 14px;
+  color: #444;
+}
+
+/* SUCCESS BLOCK (upgrade) */
+.mm-success {
+  background: #e9f9ee;
+  border-left: 4px solid #27ae60;
+  padding: 14px 16px;
+  border-radius: 10px;
+  margin: 14px 0;
+}
+
+.mm-success-title {
+  font-weight: 700;
+  margin-bottom: 6px;
+  font-size: 16px;
+}
+
+.mm-success-body {
+  font-size: 14px;
+  color: #444;
+}
+
+/* CARD (riuso da cards.cjs) */
+.mm-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 12px 0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+.mm-card-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.mm-card-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.mm-card-price {
+  font-size: 15px;
+  color: #007bff;
+}
+
+.mm-btn-small {
+  background: #007bff;
+  color: #fff !important;
+  padding: 6px 10px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 13px;
+}
