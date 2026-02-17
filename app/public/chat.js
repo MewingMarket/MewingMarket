@@ -1,5 +1,5 @@
 /* =========================================================
-   CHATBOX — VERSIONE COMPLETA + BLINDATA
+   CHATBOX — VERSIONE COMPLETA + PATCH
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -8,8 +8,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const chatSend = document.getElementById("chat-send");
   const chatVoice = document.getElementById("chat-voice");
   const chatContainer = document.getElementById("chat-container");
+  const chatToggle = document.getElementById("chat-toggle");
 
-  if (!chatBox || !chatInput || !chatSend || !chatContainer) {
+  if (!chatBox || !chatInput || !chatSend || !chatContainer || !chatToggle) {
     console.error("Chat: elementi mancanti");
     return;
   }
@@ -34,7 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* =========================================================
-     INVIO TESTO (blindato)
+     INVIO TESTO
   ========================================================== */
   let sending = false;
 
@@ -73,7 +74,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* =========================================================
-     🎤 REGISTRAZIONE VOCALE (blindata)
+     🎤 REGISTRAZIONE VOCALE
   ========================================================== */
   let isRecording = false;
   let mediaRecorder = null;
@@ -98,8 +99,6 @@ document.addEventListener("DOMContentLoaded", () => {
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
         await sendVoiceMessage(audioBlob);
-
-        // Rilascia risorse
         stream.getTracks().forEach((t) => t.stop());
       };
 
@@ -120,15 +119,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  if (chatVoice) {
-    chatVoice.addEventListener("click", () => {
-      if (!isRecording) startRecording();
-      else stopRecording();
-    });
-  }
+  chatVoice.addEventListener("click", () => {
+    if (!isRecording) startRecording();
+    else stopRecording();
+  });
 
   /* =========================================================
-     INVIO VOCALE (blindato)
+     INVIO VOCALE
   ========================================================== */
   async function sendVoiceMessage(blob) {
     addMessage("🎤 Sto elaborando il vocale...", "bot");
@@ -150,13 +147,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* =========================================================
-     APERTURA CHAT (blindata)
+     APERTURA CHAT — PATCH
   ========================================================== */
-  const chatToggle = document.getElementById("chat-toggle");
-  if (chatToggle) {
-    chatToggle.addEventListener("click", () => {
-      chatContainer.classList.toggle("open");
-      chatBox.scrollTop = chatBox.scrollHeight;
-    });
-  }
+  chatToggle.addEventListener("click", () => {
+    chatContainer.classList.toggle("open");
+    chatToggle.classList.toggle("hide");
+    chatBox.scrollTop = chatBox.scrollHeight;
+  });
 });
