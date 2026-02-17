@@ -1,23 +1,40 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <div id="head-placeholder"></div>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- HEAD DINAMICO -->
   <script>
-    fetch("head.html")
-      .then(r => r.text())
-      .then(h => document.getElementById("head-placeholder").innerHTML = h);
+    document.addEventListener("DOMContentLoaded", () => {
+      fetch("head.html")
+        .then(r => r.text())
+        .then(h => {
+          const placeholder = document.createElement("div");
+          placeholder.innerHTML = h;
+          document.head.append(...placeholder.children);
+        })
+        .catch(err => console.error("Errore caricamento head:", err));
+    });
   </script>
-  <script src="seo.js"></script>
-  <script src="structured-data.js"></script>
+
+  <script src="seo.js" defer></script>
+  <script src="structured-data.js" defer></script>
 </head>
+
 <body>
 
-<!-- HEADER -->
+<!-- HEADER DINAMICO -->
 <div id="header-placeholder"></div>
 <script>
-  fetch("header.html")
-    .then(r => r.text())
-    .then(h => document.getElementById("header-placeholder").innerHTML = h);
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("header.html")
+      .then(r => r.text())
+      .then(h => {
+        document.getElementById("header-placeholder").innerHTML = h;
+      })
+      .catch(err => console.error("Errore caricamento header:", err));
+  });
 </script>
 
 <main class="pagina-standard">
@@ -60,30 +77,43 @@
 
 </main>
 
-<!-- CHATBOT -->
-<div id="mm-chat-btn"></div>
+<!-- CHATBOT WHATSAPP-STYLE -->
+<button id="chat-toggle">
+  <img src="chat-icon.svg" alt="Chat">
+</button>
 
-<div id="mm-chatbox">
-  <div id="mm-chat-header">Supporto MewingMarket</div>
-  <div id="mm-chat-messages"></div>
+<div id="chat-container">
+  <div id="chat-header">
+    <img src="chat-icon.svg" alt="">
+    Supporto MewingMarket
+  </div>
 
-  <div id="mm-chat-input">
-    <input type="text" placeholder="Scrivi un messaggio...">
-    <button>Invia</button>
+  <div id="chat-box"></div>
+
+  <div id="chat-input-area">
+    <input id="chat-input" type="text" placeholder="Scrivi un messaggio...">
+    <button id="chat-send">➤</button>
+    <button id="chat-voice">🎤</button>
   </div>
 </div>
 
-<!-- FOOTER -->
+<!-- FOOTER DINAMICO -->
 <div id="footer-placeholder"></div>
 <script>
-  fetch("footer.html")
-    .then(r => r.text())
-    .then(h => document.getElementById("footer-placeholder").innerHTML = h);
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("footer.html")
+      .then(r => r.text())
+      .then(h => {
+        document.getElementById("footer-placeholder").innerHTML = h;
+      })
+      .catch(err => console.error("Errore caricamento footer:", err));
+  });
 </script>
 
 <!-- JS -->
-<script src="FAQ.js"></script>
-<script src="chat.js"></script>
+<script src="FAQ.js" defer></script>
+<script src="chat.js" defer></script>
+<script src="premium.js" defer></script>
 
 </body>
 </html>
