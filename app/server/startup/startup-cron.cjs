@@ -4,10 +4,13 @@
  */
 
 const cron = require("node-cron");
-const { syncPayhip } = require("../../modules/payhip.cjs");
-const { syncAirtable } = require("../../modules/airtable.cjs");
-const { syncYouTube } = require("../../modules/youtube.cjs");
-const { loadProducts } = require("../../modules/products.cjs");
+
+// PATCH: i servizi Payhip e YouTube stanno in app/services/
+const { syncPayhip } = require("../../services/payhip.cjs");
+const { syncYouTube } = require("../../services/youtube.cjs");
+
+// PATCH: Airtable e loadProducts stanno in app/modules/
+const { syncAirtable, loadProducts } = require("../../../modules/airtable.cjs");
 
 module.exports = function startCronJobs() {
   try {
