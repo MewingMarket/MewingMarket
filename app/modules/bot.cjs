@@ -1,11 +1,11 @@
 /**
- * modules/bot.cjs — VERSIONE FULL PREMIUM + LOGGING TOTALE
+ * modules/bot.cjs — VERSIONE FULL PREMIUM + LOGGING TOTALE + PATCH GPT
  * Include:
  * - Tutto il codice originale
  * - Cards, Quick, Rich, Post, Cross
  * - WhatsApp-style premium
  * - Logging completo per ogni funzione
- * - GPT fallback migliorato
+ * - GPT fallback migliorato + modello più stabile
  */
 
 const path = require("path");
@@ -35,7 +35,7 @@ const {
   findProductBySlug,
   productReply,
   productLongReply,
-  fuzzyMatchProduct // verrà patchato più avanti
+  fuzzyMatchProduct
 } = require(path.join(__dirname, "catalogo.cjs"));
 
 const { normalize, cleanSearchQuery } = require(path.join(__dirname, "utils.cjs"));
@@ -84,9 +84,7 @@ function addEmojis(text = "") {
     log("EMOJI_ERROR", err);
     return text;
   }
-}
-
-/* ============================================================
+} /* ============================================================
    SYSTEM PROMPT GPT — VERSIONE PREMIUM
    ============================================================ */
 const BASE_SYSTEM_PROMPT = `
@@ -116,7 +114,7 @@ Stile Premium:
 `;
 
 /* ============================================================
-   CORE GPT (OPENROUTER) — VERSIONE PREMIUM + LOGGING
+   CORE GPT (OPENROUTER) — VERSIONE PREMIUM + PATCH
    ============================================================ */
 async function callGPT(
   userPrompt,
@@ -130,11 +128,15 @@ async function callGPT(
   try {
     const system = BASE_SYSTEM_PROMPT + (extraSystem || "");
 
+    // 🔥 MEMORIA RIDOTTA (evita payload enormi)
+    const safeMemory = Array.isArray(memory) ? memory.slice(-6) : [];
+
     const payload = {
-      model: "meta-llama/llama-3.1-70b-instruct",
+      // 🔥 MODELLO PIÙ STABILE
+      model: "meta-llama/llama-3.1-8b-instruct",
       messages: [
         { role: "system", content: system },
-        { role: "assistant", content: "Memoria: " + JSON.stringify(memory || []) },
+        { role: "assistant", content: "Memoria recente: " + JSON.stringify(safeMemory || []) },
         { role: "assistant", content: "Contesto pagina: " + JSON.stringify(context || {}) },
         { role: "assistant", content: "Dati: " + JSON.stringify(extraData || {}) },
         { role: "user", content: userPrompt || "" }
@@ -195,25 +197,37 @@ async function callGPT(
     }
 
     /* -------------------------
-       FALLBACK 2 — RISPOSTA BASE
+       FALLBACK 2 — RISPOSTA PREMIUM LOCALE
        ------------------------- */
     log("GPT_FALLBACK_2", "Both models failed");
 
-    return addEmojis(
-      "Sto avendo un problema tecnico, ma non ti lascio fermo: dimmi cosa vuoi ottenere e ti do subito una mano."
-    );
+    return addEmojis(`
+<div class="mm-card">
+  <div class="mm-card-title">Tutto ok 😊</div>
+  <div class="mm-card-body">
+    Sto avendo un piccolo rallentamento tecnico, ma posso comunque aiutarti.<br><br>
+    Dimmi pure cosa vuoi ottenere e ti guido passo passo.
+  </div>
+</div>
+`.trim());
 
   } catch (err) {
     log("GPT_ERROR", err);
 
     /* -------------------------
-       FALLBACK 3 — ERRORE TOTALE
+       FALLBACK 3 — ERRORE TOTALE, MA ELEGANTE
        ------------------------- */
-    return addEmojis(
-      "C’è un problema temporaneo, ma posso comunque aiutarti: dimmi cosa vuoi fare e ti guido."
-    );
+    return addEmojis(`
+<div class="mm-card">
+  <div class="mm-card-title">Ci sono 👋</div>
+  <div class="mm-card-body">
+    C’è un piccolo problema temporaneo, ma non ti lascio fermo.<br><br>
+    Dimmi cosa vuoi fare e ti aiuto subito.
+  </div>
+</div>
+`.trim());
   }
-} /* ============================================================
+        } /* ============================================================
    TRASCRIZIONE VOCALE — WHISPER + LOGGING
    ============================================================ */
 async function transcribeAudio(filePath) {
@@ -301,9 +315,7 @@ function isYes(text) {
 
   log("YES_DETECT", { text, result: out });
   return out;
-}
-
-/* ============================================================
+} /* ============================================================
    DETECT INTENT — LOGGING TOTALE
    ============================================================ */
 function detectIntent(rawText) {
@@ -385,7 +397,9 @@ function detectIntent(rawText) {
       }
       log("INTENT_MATCH", { intent: "newsletter", sub: "subscribe" });
       return { intent: "newsletter", sub: "subscribe" };
-    }  // Social specifici
+    }
+
+    // Social specifici
     if (q.includes("instagram")) {
       log("INTENT_MATCH", { intent: "social_specifico", sub: "instagram" });
       return { intent: "social_specifico", sub: "instagram" };
@@ -505,9 +519,7 @@ function detectIntent(rawText) {
       }
       log("INTENT_MATCH", { intent: "supporto", sub: null });
       return { intent: "supporto", sub: null };
-    }
-
-    // Acquisto diretto
+       } // Acquisto diretto
     if (
       q.includes("acquisto") ||
       q.includes("fare un acquisto") ||
@@ -550,7 +562,9 @@ function detectIntent(rawText) {
     ) {
       log("INTENT_MATCH", { intent: "video_prodotto" });
       return { intent: "video_prodotto", sub: null };
-    } // Prezzo prodotto
+    }
+
+    // Prezzo prodotto
     if (
       q.includes("prezzo") ||
       q.includes("quanto costa") ||
@@ -606,11 +620,8 @@ function detectIntent(rawText) {
     log("INTENT_FATAL_ERROR", err);
     return { intent: "gpt", sub: null };
   }
-}
-
-/* ============================================================
-   HANDLE CONVERSATION — BLOCCO 1 (inizio)
-   Logging totale + Premium
+    } /* ============================================================
+   HANDLE CONVERSATION — BLOCCO UNICO (DIVISO IN PARTI)
    ============================================================ */
 async function handleConversation(req, res, intent, sub, rawText) {
   log("HANDLE_START", { intent, sub, rawText });
@@ -720,7 +731,9 @@ async function handleConversation(req, res, intent, sub, rawText) {
       const final = enriched || base;
       log("HANDLE_MENU_REPLY", final);
       return reply(res, final);
-    }  /* ------------------------------------------
+    }
+
+    /* ------------------------------------------
        CATALOGO
        ------------------------------------------ */
     if (intent === "catalogo") {
@@ -829,9 +842,7 @@ Puoi scrivere il nome di un prodotto o il tuo obiettivo, e ti consiglio cosa sce
       const final = enriched || base;
       log("HANDLE_NEWSLETTER_SUB", final);
       return reply(res, final);
-    }
-
-    /* ------------------------------------------
+  }  /* ------------------------------------------
        SOCIAL SPECIFICO
        ------------------------------------------ */
     if (intent === "social_specifico") {
@@ -876,7 +887,9 @@ Puoi scrivere il nome di un prodotto o il tuo obiettivo, e ti consiglio cosa sce
       const final = enriched || base;
       log("HANDLE_SOCIAL_SPECIFIC_REPLY", final);
       return reply(res, final);
-    }  /* ------------------------------------------
+    }
+
+    /* ------------------------------------------
        SOCIAL GENERICO
        ------------------------------------------ */
     if (intent === "social") {
@@ -1066,7 +1079,9 @@ Puoi scrivere il nome di un prodotto o il tuo obiettivo, e ti consiglio cosa sce
       const final = enriched || base;
       log("HANDLE_FAQ_REPLY", final);
       return reply(res, final);
-    }  /* ------------------------------------------
+    }
+
+    /* ------------------------------------------
        CONTATTI
        ------------------------------------------ */
     if (intent === "contatti") {
@@ -1127,9 +1142,7 @@ Puoi scrivere il nome di un prodotto o il tuo obiettivo, e ti consiglio cosa sce
       const final = enriched || base;
       log("HANDLE_DOVESIAMO_REPLY", final);
       return reply(res, final);
-    }
-
-    /* ------------------------------------------
+    }  /* ------------------------------------------
        SUPPORTO
        ------------------------------------------ */
     if (intent === "supporto") {
@@ -1288,7 +1301,9 @@ Puoi scrivere il nome di un prodotto o il tuo obiettivo, e ti consiglio cosa sce
       const final = enriched || base;
       log("HANDLE_SUPPORTO_GENERIC_REPLY", final);
       return reply(res, final);
-  } /* ------------------------------------------
+    }
+
+    /* ------------------------------------------
        PRODOTTO
        ------------------------------------------ */
     const lastProductSlug = state?.lastProductSlug || null;
@@ -1501,7 +1516,9 @@ ${Premium.Rich.productDetails(product)}
       const final = enriched || base;
       log("HANDLE_DETTAGLI_REPLY", final);
       return reply(res, final);
-    }  /* ------------------------------------------
+    }
+
+    /* ------------------------------------------
        VIDEO PRODOTTO
        ------------------------------------------ */
     if (intent === "video_prodotto") {
@@ -1712,6 +1729,9 @@ ${Premium.Cards.priceCard(product)}
 <div class="mm-card">
   <div class="mm-card-title">Nessuno sconto attivo 😄</div>
   <div class="mm-card-body">
+    Al momento non ci sono sconti <div class="mm-card">
+  <div class="mm-card-title">Nessuno sconto attivo 😄</div>
+  <div class="mm-card-body">
     Al momento non ci sono sconti su <b>${product.titolo}</b>,<br>
     ma posso aiutarti a capire se è davvero quello che ti serve.<br><br>
     Vuoi:<br>
@@ -1773,9 +1793,7 @@ ${Premium.Cards.priceCard(product)}
         const final = enriched || base;
         log("HANDLE_OBIEZIONE_NOT_FOUND_REPLY", final);
         return reply(res, final);
-      }
-
-      try {
+  }  try {
         state.lastProductSlug = product.slug;
       } catch {}
 
@@ -1806,7 +1824,9 @@ ${Premium.Cards.priceCard(product)}
       const final = enriched || base;
       log("HANDLE_OBIEZIONE_REPLY", final);
       return reply(res, final);
-          } /* ------------------------------------------
+    }
+
+    /* ------------------------------------------
        ALLEGATI
        ------------------------------------------ */
     if (intent === "allegato") {
@@ -1837,6 +1857,9 @@ ${Premium.Cards.priceCard(product)}
 
       const final = enriched || base;
       log("HANDLE_ALLEGATO_REPLY", final);
+      return reply(res, final);
+    }  const final = enriched || base;
+      log("HANDLE_TRATTATIVA_REPLY", final);
       return reply(res, final);
     }
 
@@ -1876,4 +1899,4 @@ module.exports = {
   fuzzyMatchProduct
 };
 
-log("EXPORT_READY", "bot.cjs FULL PREMIUM + LOGGING TOTALE pronto");
+log("EXPORT_READY", "bot.cjs FULL PREMIUM + LOGGING TOTALE PATCHATO pronto");
