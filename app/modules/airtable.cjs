@@ -2,6 +2,7 @@
 const fs = require("fs");
 const path = require("path");
 const fetch = require("node-fetch");
+
 function getExistingSlugs() {
   try {
     const file = fs.readFileSync(path.join(__dirname, "../../public/products.json"), "utf8");
@@ -11,6 +12,7 @@ function getExistingSlugs() {
     return [];
   }
 }
+
 /* ============================== VARIABILI AMBIENTE ============================== */
 const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
 const BASE_ID = process.env.AIRTABLE_BASE;
@@ -50,7 +52,8 @@ async function syncAirtable() {
     const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}?view=Grid%20view`;
 
     console.log("📡 [DEBUG] syncAirtable → GET:", url);
-const oldSlugs = getExistingSlugs();
+    const oldSlugs = getExistingSlugs();
+
     const response = await fetch(url, {
       headers: {
         "Authorization": `Bearer ${AIRTABLE_PAT}`,
@@ -98,14 +101,12 @@ const oldSlugs = getExistingSlugs();
       // 4) Se ancora vuoto → fallback ID Airtable
       if (!slug) slug = r.id.toLowerCase();
 
-      // ⭐ QUI CREIAMO IL PRODUCT (identico al tuo codice)
       const product = {
         id: r.id,
-        slug,   // <-- SEMPRE presente, SEMPRE minuscolo
+        slug,
         ...f
       };
 
-      // ⭐ PATCH: LOG NUOVO PRODOTTO (UNICA AGGIUNTA)
       if (!oldSlugs.includes(product.slug)) {
         console.log(`🟢 [UPDATE] Nuovo prodotto aggiunto al sito:
      • Nome prodotto: ${product.Titolo}`);
@@ -152,52 +153,33 @@ async function updateAirtableRecord(id, fields) {
 
 /* ============================== FUNZIONI CHE IL SERVER SI ASPETTA ============================== */
 
-/* Carica products.json */
 function loadProducts() {
   return safeReadJSON(PRODUCTS_PATH);
 }
 
-/* Alias richiesto dal server */
 function getProducts() {
   return loadProducts();
 }
 
-/* Salva vendita (versione normalizzata) */
+/* ============================== SALVATAGGIO VENDITA ============================== */
 async function saveSaleToAirtable(fields) {
   console.log("💰 [DEBUG] saveSaleToAirtable → POST (normalizzato)");
 
-  // Normalizzazione totale
   const normalized = {
     UID: fields.UID || "auto_" + Date.now(),
-
-    // Prodotto
     Prodotto: fields.Prodotto || fields.slug || fields.product_id || "sconosciuto",
-
-    // Prezzo
     Prezzo: Number(fields.Prezzo || fields.price || 0),
-
-    // Origine
     Origine: fields.Origine || fields.source || "Sconosciuta",
-
-    // UTM
     UTMSource: fields.UTMSource || fields.utm_source || "",
     UTMMedium: fields.UTMMedium || fields.utm_medium || "",
     UTMCampaign: fields.UTMCampaign || fields.utm_campaign || "",
-
-    // Referrer e pagine
     Referrer: fields.Referrer || fields.referrer || "",
     PaginaIngresso: fields.PaginaIngresso || fields.entry_page || "",
     PaginaUscita: fields.PaginaUscita || fields.exit_page || "",
-
-    // Bot
     UltimoIntent: fields.UltimoIntent || fields.intent || "",
     UltimoMessaggio: fields.UltimoMessaggio || fields.message || "",
-
-    // Device e lingua
     Device: fields.Device || fields.device || "unknown",
     Lingua: fields.Lingua || fields.lang || "unknown",
-
-    // Timestamp
     Timestamp: fields.Timestamp || fields.timestamp || new Date().toISOString()
   };
 
@@ -221,11 +203,39 @@ async function saveSaleToAirtable(fields) {
   }
 }
 
+/* ============================== RECUPERO VENDITE PER UID ============================== */
+async function getSalesByUID(uid) {
+  if (!uid) return [];
+
+  const formula = encodeURIComponent(`{UID} = "${uid}"`);
+  const url = `https://api.airtable.com/v0/${BASE_ID}/Vendite?filterByFormula=${formula}`;
+
+  const res = await fetch(url, {
+    headers: {
+      "Authorization": `Bearer ${AIRTABLE_PAT}`,
+      "Content-Type": "application/json"
+    }
+  });
+
+  const data = await res.json();
+
+  if (data.error) {
+    console.error("❌ [DEBUG] Errore getSalesByUID:", data.error);
+    return [];
+  }
+
+  return (data.records || []).map(r => ({
+    id: r.id,
+    ...r.fields
+  }));
+}
+
 /* ============================== EXPORT ============================== */
 module.exports = {
   syncAirtable,
   loadProducts,
   getProducts,
   updateAirtableRecord,
-  saveSaleToAirtable
+  saveSaleToAirtable,
+  getSalesByUID
 };
