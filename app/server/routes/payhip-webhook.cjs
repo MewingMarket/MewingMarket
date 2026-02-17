@@ -4,7 +4,9 @@
  */
 
 const crypto = require("crypto");
-const { updateSales } = require("../../modules/sales.cjs");
+
+// Usa la funzione reale che esiste davvero
+const { saveSaleToAirtable } = require("../../../modules/airtable.cjs");
 
 module.exports = function (app) {
   app.post("/payhip/webhook", async (req, res) => {
@@ -37,13 +39,13 @@ module.exports = function (app) {
         global.logEvent("payhip_webhook_received", req.body);
       }
 
-      // Aggiornamento vendite
+      // 🔥 Salva la vendita in Airtable usando la funzione reale
       try {
-        await updateSales(req.body);
+        await saveSaleToAirtable(req.body);
       } catch (err) {
-        console.error("Errore updateSales:", err);
+        console.error("Errore saveSaleToAirtable:", err);
         if (typeof global.logEvent === "function") {
-          global.logEvent("payhip_update_sales_error", {
+          global.logEvent("payhip_save_sale_error", {
             error: err?.message || "unknown"
           });
         }
