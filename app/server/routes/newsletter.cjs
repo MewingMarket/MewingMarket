@@ -4,6 +4,8 @@
  */
 
 const axios = require("axios");
+
+// GA4 → dal nuovo server
 const { trackGA4 } = require("../services/ga4.cjs");
 
 module.exports = function (app) {
