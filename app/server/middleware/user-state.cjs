@@ -3,7 +3,8 @@
  * Gestione UID + stato utente globale
  */
 
-const { generateUID } = require("../../modules/bot/index.cjs");
+// PATCH: percorso corretto verso il modulo bot
+const { generateUID } = require("../../../modules/bot/index.cjs");
 
 // Stato utenti globale (come nel file originale)
 const userStates = {};
