@@ -6,11 +6,13 @@
 const fs = require("fs");
 const axios = require("axios");
 const FormData = require("form-data");
-const { log } = require("./utils.cjs");
+
+// PATCH: usa il logger globale del bot, fallback console
+const log = global.logBot || console.log;
 
 /* ============================================================
    TRANSCRIBE AUDIO — versione blindata
-   ============================================================ */
+============================================================ */
 async function transcribeAudio(filePath) {
   log("AUDIO_TRANSCRIBE_START", filePath);
 
@@ -58,5 +60,5 @@ async function transcribeAudio(filePath) {
 
 /* ============================================================
    EXPORT
-   ============================================================ */
+============================================================ */
 module.exports = transcribeAudio;
