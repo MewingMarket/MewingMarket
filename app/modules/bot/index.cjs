@@ -4,8 +4,12 @@
  */
 
 const path = require("path");
-const log = require("./utils.cjs").log;
-const { reply, setState, generateUID, addEmojis, isYes } = require("./utils.cjs");
+
+// PATCH: utils NON esporta log → uso logger globale
+const utils = require("./utils.cjs");
+const { reply, setState, generateUID, addEmojis, isYes } = utils;
+const log = global.logBot || console.log;
+
 const detectIntent = require("./intent.cjs");
 const callGPT = require("./gpt.cjs");
 const transcribeAudio = require("./whisper.cjs");
@@ -27,7 +31,7 @@ const { getProducts } = require(path.join(__dirname, "..", "airtable.cjs"));
 
 /* ============================================================
    HANDLE CONVERSATION — ENTRY POINT
-   ============================================================ */
+============================================================ */
 async function handleConversation(req, res) {
   try {
     const rawText = req?.body?.text || "";
@@ -102,7 +106,7 @@ async function handleConversation(req, res) {
 
 /* ============================================================
    EXPORT
-   ============================================================ */
+============================================================ */
 module.exports = {
   handleConversation,
   detectIntent,
