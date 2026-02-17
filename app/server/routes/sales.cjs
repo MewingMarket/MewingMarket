@@ -3,7 +3,8 @@
  * Recupero vendite utente
  */
 
-const { getSalesByUID } = require("../../modules/sales.cjs");
+// Usa la funzione reale che andremo ad aggiungere in airtable.cjs
+const { getSalesByUID } = require("../../../modules/airtable.cjs");
 
 module.exports = function (app) {
   app.get("/sales/:uid", async (req, res) => {
