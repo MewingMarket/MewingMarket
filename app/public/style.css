@@ -972,3 +972,30 @@ footer {
     height: 28px;
   }
 } 
+#chat-toggle {
+  position: fixed;
+  bottom: 25px;
+  right: 25px;
+  width: 62px;
+  height: 62px;
+  background: #ffcc00;
+  border-radius: 50%;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  cursor: pointer;
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  transition: transform 0.2s ease;
+}
+
+#chat-toggle:hover {
+  transform: scale(1.08);
+}
+
+#chat-toggle img {
+  width: 34px;
+  height: 34px;
+  pointer-events: none;
+}
