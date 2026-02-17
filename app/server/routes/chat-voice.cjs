@@ -6,9 +6,15 @@
 const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
-const { detectIntent, handleConversation, reply } = require("../../modules/bot/index.cjs");
+
+// BOT → dalla vecchia architettura
+const { detectIntent, handleConversation, reply } = require("../../../modules/bot/index.cjs");
+
+// GA4 → dal nuovo server
 const { trackGA4 } = require("../services/ga4.cjs");
-const { transcribeAudio } = require("../../modules/audio.cjs");
+
+// AUDIO → unico modulo nuovo
+const { transcribeAudio } = require("../modules/audio.cjs");
 
 module.exports = function (app) {
   const ROOT = path.resolve(__dirname, "..", "..");
