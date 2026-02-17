@@ -4,8 +4,12 @@
  */
 
 const path = require("path");
-const { safeText } = require("../../modules/utils.cjs");
-const Context = require("../../modules/context.cjs");
+
+// PATCH: utils e context stanno in app/modules/
+const { safeText } = require("../../../modules/utils.cjs");
+const Context = require("../../../modules/context.cjs");
+
+// GA4 è già nel percorso corretto
 const { trackGA4 } = require("../services/ga4.cjs");
 
 module.exports = function (app) {
