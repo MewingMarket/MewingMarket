@@ -3,10 +3,12 @@
  * Sincronizzazioni iniziali all'avvio del server
  */
 
-const { syncPayhip } = require("../../modules/payhip.cjs");
-const { syncAirtable } = require("../../modules/airtable.cjs");
-const { syncYouTube } = require("../../modules/youtube.cjs");
-const { loadProducts } = require("../../modules/products.cjs");
+// PATCH: Payhip e YouTube stanno nei servizi
+const { syncPayhip } = require("../../services/payhip.cjs");
+const { syncYouTube } = require("../../services/youtube.cjs");
+
+// PATCH: Airtable e loadProducts stanno nei moduli
+const { syncAirtable, loadProducts } = require("../../../modules/airtable.cjs");
 
 module.exports = async function startupSync() {
   try {
