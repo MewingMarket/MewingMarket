@@ -6,8 +6,6 @@
   "scripts": {
     "start": "node app/server.cjs",
     "build": "node scripts/build.js",
-    "migrate": "node scripts/migrate-pages.js",
-
     "test-vendite": "node test-vendite.cjs"
   },
   "dependencies": {
