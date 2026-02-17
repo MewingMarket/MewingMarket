@@ -1,10 +1,10 @@
 {
   "name": "mewingmarket",
   "version": "1.0.0",
-  "main": "app/server.cjs",
+  "main": "app/server/server.cjs",
   "type": "module",
   "scripts": {
-    "start": "node app/server.cjs",
+    "start": "node app/server/server.cjs",
     "build": "node scripts/build.js",
     "test-vendite": "node test-vendite.cjs"
   },
