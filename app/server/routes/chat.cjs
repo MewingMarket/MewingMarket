@@ -3,8 +3,8 @@
  * Endpoint principale /chat
  */
 
-// BOT → dalla vecchia architettura
-const { detectIntent, handleConversation, reply } = require("../../../modules/bot/index.cjs");
+// BOT → percorso corretto
+const { detectIntent, handleConversation, reply } = require("../../modules/bot/index.cjs");
 
 // GA4 → dal nuovo server
 const { trackGA4 } = require("../services/ga4.cjs");
