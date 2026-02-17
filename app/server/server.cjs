@@ -17,12 +17,9 @@ app.disable("x-powered-by");
 const ROOT = path.resolve(__dirname, "..");
 
 /* ============================================================
-   MIDDLEWARE GLOBALI
+   LOGGING (DEVE ESSERE CARICATO PRIMA DI TUTTO)
 ============================================================ */
-require("./middleware/cache.cjs")(app);
-require("./middleware/uploads.cjs")(app);
-require("./middleware/user-state.cjs")(app);
-require("./middleware/context.cjs")(app);
+require("./services/logging.cjs");
 
 /* ============================================================
    PARSER
@@ -30,6 +27,14 @@ require("./middleware/context.cjs")(app);
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
+
+/* ============================================================
+   MIDDLEWARE GLOBALI
+============================================================ */
+require("./middleware/cache.cjs")(app);
+require("./middleware/uploads.cjs")(app);
+require("./middleware/user-state.cjs")(app);
+require("./middleware/context.cjs")(app);
 
 /* ============================================================
    STATICI
@@ -50,17 +55,14 @@ require("./routes/product-page.cjs")(app);
 require("./routes/system-status.cjs")(app);
 
 /* ============================================================
-   STARTUP SYNC (Airtable + Payhip + YouTube)
+   STARTUP SYNC (Airtable + Payhip + YouTube + Products)
 ============================================================ */
 require("./startup/startup-sync.cjs")();
 
 /* ============================================================
-   CRON JOBS
+   CRON JOBS (VERSIONE MODULARE)
 ============================================================ */
-require("./cron/cron-payhip.cjs")();
-require("./cron/cron-youtube.cjs")();
-require("./cron/cron-airtable.cjs")();
-require("./cron/cron-new-product.cjs")();
+require("./startup/startup-cron.cjs")();
 
 /* ============================================================
    AVVIO SERVER
