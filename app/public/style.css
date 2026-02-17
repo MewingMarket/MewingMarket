@@ -998,4 +998,14 @@ footer {
   width: 34px;
   height: 34px;
   pointer-events: none;
+} 
+/* Nascondi il bottone quando la chat è aperta */
+#chat-container.open + #chat-toggle,
+#chat-container.open ~ #chat-toggle {
+  display: none !important;
 }
+
+/* Alternativa JS (se usi la classe .hide) */
+#chat-toggle.hide {
+  display: none !important;
+} 
