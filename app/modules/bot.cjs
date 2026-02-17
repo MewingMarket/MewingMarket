@@ -1814,7 +1814,14 @@ ${Premium.Cards.priceCard(product)}
 `;
 
       const enriched = await callGPT(
-        rawText || "Obiezione prezzo prodotto " + (product.titolo || ""),
+  rawText || "Obiezione prezzo prodotto " + (product.titolo || "")
+);
+
+const final = enriched || base;
+log("HANDLE_OBIEZIONE_REPLY", final);
+return reply(res, final);
+}
+
 /* ------------------------------------------
    TRATTATIVA / SCONTO
 ------------------------------------------ */
