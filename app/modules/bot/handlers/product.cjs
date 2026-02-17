@@ -4,7 +4,11 @@
  */
 
 const callGPT = require("../gpt.cjs");
-const { reply, log } = require("../utils.cjs");
+
+// PATCH: utils NON esporta log → lo prendiamo dal logger globale
+const { reply } = require("../utils.cjs");
+const log = global.logBot || console.log;
+
 const Memory = require("../../memory.cjs");
 const Context = require("../../context.cjs");
 
@@ -19,7 +23,7 @@ const {
 
 /* ============================================================
    TROVA PRODOTTO DA INTENT
-   ============================================================ */
+============================================================ */
 function resolveProduct(intent, sub, rawText, PRODUCTS) {
   if (intent === "prodotto" && sub) {
     return findProductBySlug(sub);
@@ -30,7 +34,7 @@ function resolveProduct(intent, sub, rawText, PRODUCTS) {
 
 /* ============================================================
    HANDLER RISPOSTA BREVE PRODOTTO
-   ============================================================ */
+============================================================ */
 async function handleProductBasic(req, res, product, rawText) {
   const uid = req?.uid || "unknown_user";
   const pageContext = Context.get(req) || {};
@@ -50,7 +54,7 @@ async function handleProductBasic(req, res, product, rawText) {
 
 /* ============================================================
    HANDLER DETTAGLI PRODOTTO
-   ============================================================ */
+============================================================ */
 async function handleProductDetails(req, res, product, rawText) {
   const uid = req?.uid || "unknown_user";
   const pageContext = Context.get(req) || {};
@@ -70,7 +74,7 @@ async function handleProductDetails(req, res, product, rawText) {
 
 /* ============================================================
    HANDLER PREZZO PRODOTTO
-   ============================================================ */
+============================================================ */
 async function handleProductPrice(req, res, product, rawText) {
   const uid = req?.uid || "unknown_user";
   const pageContext = Context.get(req) || {};
@@ -96,7 +100,7 @@ Vuoi vedere i dettagli completi?
 
 /* ============================================================
    HANDLER VIDEO PRODOTTO
-   ============================================================ */
+============================================================ */
 async function handleProductVideo(req, res, product, rawText) {
   const uid = req?.uid || "unknown_user";
   const pageContext = Context.get(req) || {};
@@ -125,7 +129,7 @@ Vuoi altre informazioni?
 
 /* ============================================================
    HANDLER OBIEZIONE
-   ============================================================ */
+============================================================ */
 async function handleObjection(req, res, product, rawText) {
   const uid = req?.uid || "unknown_user";
   const pageContext = Context.get(req) || {};
@@ -143,7 +147,7 @@ async function handleObjection(req, res, product, rawText) {
 
 /* ============================================================
    HANDLER TRATTATIVA
-   ============================================================ */
+============================================================ */
 async function handleNegotiation(req, res, product, rawText) {
   const uid = req?.uid || "unknown_user";
   const pageContext = Context.get(req) || {};
@@ -161,7 +165,7 @@ async function handleNegotiation(req, res, product, rawText) {
 
 /* ============================================================
    HANDLER ACQUISTO DIRETTO
-   ============================================================ */
+============================================================ */
 async function handleDirectPurchase(req, res, product) {
   const base = `
 Perfetto 😎  
@@ -176,14 +180,14 @@ Vuoi vedere anche i dettagli?
 
 /* ============================================================
    HANDLER ALLEGATO
-   ============================================================ */
+============================================================ */
 async function handleAttachment(req, res, fileName) {
   return reply(res, `Hai inviato un file: <b>${fileName}</b>`);
 }
 
 /* ============================================================
    ROUTER INTERNO
-   ============================================================ */
+============================================================ */
 module.exports = async function productHandler(req, res, intent, sub, rawText, PRODUCTS) {
   log("HANDLER_PRODUCT", { intent, sub, rawText });
 
