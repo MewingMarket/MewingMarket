@@ -4,7 +4,7 @@
  */
 
 // PATCH: percorso corretto verso il modulo bot
-const { generateUID } = require("../../../modules/bot/index.cjs");
+const { generateUID } = require("../../modules/bot/index.cjs");
 
 // Stato utenti globale (come nel file originale)
 const userStates = {};
