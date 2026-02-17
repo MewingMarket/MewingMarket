@@ -1815,78 +1815,97 @@ ${Premium.Cards.priceCard(product)}
 
       const enriched = await callGPT(
         rawText || "Obiezione prezzo prodotto " + (product.titolo || ""),
-        Memory.get(uid),
-        pageContext,
-        "\nRendi il messaggio più rassicurante e orientato al valore.",
-        { product }
-      );
+/* ------------------------------------------
+   TRATTATIVA / SCONTO
+------------------------------------------ */
+if (intent === "trattativa") {
+  log("HANDLE_BRANCH", "trattativa");
 
-      const final = enriched || base;
-      log("HANDLE_OBIEZIONE_REPLY", final);
-      return reply(res, final);
-    }
+  let product = null;
 
-    /* ------------------------------------------
-       ALLEGATI
-       ------------------------------------------ */
-    if (intent === "allegato") {
-      log("HANDLE_BRANCH", "allegato");
+  try {
+    product = fuzzyMatchProduct(rawText || "");
+    if (!product && lastProductSlug) product = findProductBySlug(lastProductSlug);
+  } catch (err) {
+    log("TRATTATIVA_MATCH_ERROR", err);
+  }
 
-      const filename = sub || "file";
+  log("TRATTATIVA_MATCH_RESULT", product);
 
-      const base = `
+  if (!product) {
+    const base = `
 <div class="mm-card">
-  <div class="mm-card-title">📎 File ricevuto</div>
+  <div class="mm-card-title">Vuoi uno sconto?</div>
   <div class="mm-card-body">
-    Ho ricevuto il tuo file: <b>${filename}</b><br><br>
-    Vuoi:<br>
-    • che lo analizzi<br>
-    • che estragga informazioni<br>
-    • che ti dica cosa contiene<br>
-    • che lo riassuma
+    Dimmi il nome del prodotto.
   </div>
 </div>
 `;
 
-      const enriched = await callGPT(
-        rawText || "Allegato ricevuto",
-        Memory.get(uid),
-        pageContext,
-        "\nAggiungi una frase che inviti a spiegare cosa vuole fare con il file."
-      );
-
-      const final = enriched || base;
-      log("HANDLE_ALLEGATO_REPLY", final);
-      return reply(res, final);
-    }  const final = enriched || base;
-      log("HANDLE_TRATTATIVA_REPLY", final);
-      return reply(res, final);
-    }
-
-    /* ------------------------------------------
-       FALLBACK FINALE
-       ------------------------------------------ */
-    log("HANDLE_BRANCH", "fallback_finale");
-
-    const fallback = await callGPT(
-      rawText || "Fallback",
+    const enriched = await callGPT(
+      rawText || "Sconto senza prodotto chiaro",
       Memory.get(uid),
       pageContext,
-      "\nRispondi come un assistente commerciale del sito, chiaro e utile."
+      "\nRendi il messaggio più simpatico."
     );
 
-    log("HANDLE_FALLBACK_FINAL_REPLY", fallback);
-    return reply(res, fallback || "Dimmi pure come posso aiutarti.");
-
-  } catch (err) {
-    log("HANDLE_FATAL_ERROR", err);
-    return reply(res, "Sto avendo un problema tecnico, ma posso comunque aiutarti.");
+    const final = enriched || base;
+    log("HANDLE_TRATTATIVA_NOT_FOUND_REPLY", final);
+    return reply(res, final);
   }
+
+  try {
+    state.lastProductSlug = product.slug;
+  } catch {}
+
+  setState(req, "trattativa");
+
+  const base = `
+<div class="mm-card">
+  <div class="mm-card-title">Nessuno sconto attivo 😄</div>
+  <div class="mm-card-body">
+    Al momento non ci sono sconti su <b>${product.titolo}</b>,<br>
+    ma posso aiutarti a capire se è davvero quello che ti serve.<br><br>
+    Vuoi:<br>
+    • una valutazione personalizzata<br>
+    • un confronto con altri prodotti<br>
+    • capire se è adatto al tuo caso
+  </div>
+</div>
+`;
+
+  const enriched = await callGPT(
+    rawText || "Richiesta sconto prodotto " + (product.titolo || ""),
+    Memory.get(uid),
+    pageContext,
+    "\nRendi il messaggio più empatico e orientato al valore.",
+    { product }
+  );
+
+  const final = enriched || base;
+  log("HANDLE_TRATTATIVA_REPLY", final);
+  return reply(res, final);
+}
+
+/* ------------------------------------------
+   FALLBACK FINALE
+------------------------------------------ */
+log("HANDLE_BRANCH", "fallback_finale");
+
+const fallback = await callGPT(
+  rawText || "Fallback",
+  Memory.get(uid),
+  pageContext,
+  "\nRispondi come un assistente commerciale del sito, chiaro e utile."
+);
+
+log("HANDLE_FALLBACK_FINAL_REPLY", fallback);
+return reply(res, fallback || "Dimmi pure come posso aiutarti.");
 }
 
 /* ============================================================
    EXPORT — BLINDATO + LOGGING
-   ============================================================ */
+============================================================ */
 log("EXPORT_INIT", "Preparing module.exports");
 
 module.exports = {
