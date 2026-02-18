@@ -17,7 +17,7 @@ module.exports = function (app) {
       }
 
       // ⭐ Passiamo req e res direttamente al bot
-      const finalReply = await handleConversation(req, res);
+      await handleConversation(req, res);
 
       // GA4 tracking
       trackGA4("chat_message", {
@@ -26,11 +26,11 @@ module.exports = function (app) {
         intent: req?.userState?.lastIntent || "unknown"
       });
 
+      // ⭐ NON loggare finalReply → causa circular JSON
       if (typeof global.logBot === "function") {
-        global.logBot("chat_response", { uid, finalReply });
+        global.logBot("chat_response", { uid });
       }
 
-      // ⭐ handleConversation ha già risposto con res.json()
       return;
 
     } catch (err) {
