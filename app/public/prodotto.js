@@ -1,4 +1,4 @@
-// prodotto.js — versione definitiva corretta + embed YouTube robusto
+// prodotto.js — versione definitiva blindata + correlati + YouTube robusto
 
 document.addEventListener("DOMContentLoaded", async () => {
 
@@ -14,15 +14,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   const extractYouTubeId = (url) => {
     if (!url) return null;
 
-    // Formato classico
     const classic = url.match(/v=([^&]+)/);
     if (classic) return classic[1];
 
-    // Shorts
     const shorts = url.match(/shorts\/([^?]+)/);
     if (shorts) return shorts[1];
 
-    // Embed
     const embed = url.match(/embed\/([^?]+)/);
     if (embed) return embed[1];
 
@@ -32,28 +29,27 @@ document.addEventListener("DOMContentLoaded", async () => {
   const params = new URLSearchParams(window.location.search);
   const slug = params.get("slug");
 
+  const prodottoBox = document.getElementById("prodotto");
+  const relatedBox = document.getElementById("related");
+
   if (!slug) {
-    document.getElementById("prodotto").innerHTML =
-      "<p>Parametro slug mancante.</p>";
+    prodottoBox.innerHTML = "<p>Parametro slug mancante.</p>";
     return;
   }
 
   let products = [];
   try {
-    // ⭐ PATCH: percorso corretto
     const res = await fetch("/data/products.json", { cache: "no-store" });
     products = await res.json();
   } catch {
-    document.getElementById("prodotto").innerHTML =
-      "<p>Errore caricamento prodotto.</p>";
+    prodottoBox.innerHTML = "<p>Errore caricamento prodotto.</p>";
     return;
   }
 
   const p = products.find((x) => x.slug === slug);
 
   if (!p) {
-    document.getElementById("prodotto").innerHTML =
-      "<p>Prodotto non trovato.</p>";
+    prodottoBox.innerHTML = "<p>Prodotto non trovato.</p>";
     return;
   }
 
@@ -93,10 +89,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     `;
   }
 
+  const img =
+    (Array.isArray(p.Immagine) && p.Immagine[0]?.url) ||
+    (typeof p.Immagine === "string" && p.Immagine.startsWith("http") && p.Immagine) ||
+    "/placeholder.webp";
+
   /* ============================================================
-     PATCH GRAFICA — BLOCCO COMPLETO
+     BLOCCO PRODOTTO
   ============================================================ */
-  document.getElementById("prodotto").innerHTML = `
+  prodottoBox.innerHTML = `
     <div class="product-layout">
 
       <div class="product-video">
@@ -106,7 +107,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       <div class="product-main">
         <h1 class="product-title">${clean(p.Titolo)}</h1>
 
-        <img src="${p.Immagine?.[0]?.url || "/placeholder.webp"}"
+        <img src="${img}"
              alt="${clean(p.Titolo)}"
              class="product-image">
 
@@ -114,11 +115,41 @@ document.addEventListener("DOMContentLoaded", async () => {
           <p>${descrizione}</p>
         </div>
 
-        <a href="${linkPayhip}" class="btn btn-primary buy-btn" target="_blank">
-          Acquista su Payhip
-        </a>
+        ${
+          linkPayhip
+            ? `<a href="${linkPayhip}" class="btn btn-primary buy-btn" target="_blank">
+                 Acquista su Payhip
+               </a>`
+            : `<p><strong>Link Payhip mancante.</strong></p>`
+        }
       </div>
 
     </div>
   `;
+
+  /* ============================================================
+     CORRELATI (stessa categoria)
+  ============================================================ */
+  if (relatedBox && p.Categoria) {
+    const correlati = products
+      .filter((x) => x.Categoria === p.Categoria && x.slug !== p.slug)
+      .slice(0, 4);
+
+    relatedBox.innerHTML = correlati.length
+      ? correlati
+          .map(
+            (c) => `
+          <div class="product-card">
+            <img src="${
+              (Array.isArray(c.Immagine) && c.Immagine[0]?.url) ||
+              "/placeholder.webp"
+            }" alt="${clean(c.Titolo)}">
+            <h3>${clean(c.TitoloBreve || c.Titolo)}</h3>
+            <a href="prodotto.html?slug=${clean(c.slug)}" class="btn">Scopri</a>
+          </div>
+        `
+          )
+          .join("")
+      : "<p>Nessun prodotto correlato.</p>";
+  }
 });
