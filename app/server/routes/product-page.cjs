@@ -3,8 +3,8 @@
  * Endpoint pagina prodotto
  */
 
-// PRODUCTS → dalla vecchia architettura (airtable.cjs)
-const { getProducts } = require("../../../modules/airtable.cjs");
+// PRODUCTS → percorso corretto (airtable.cjs)
+const { getProducts } = require("../../modules/airtable.cjs");
 
 module.exports = function (app) {
   app.get("/prodotto/:slug", async (req, res) => {
