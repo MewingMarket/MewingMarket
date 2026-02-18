@@ -3,8 +3,8 @@
  * Sitemap dinamica basata sui prodotti
  */
 
-// PRODUCTS → dalla vecchia architettura (airtable.cjs)
-const { getProducts } = require("../../../modules/airtable.cjs");
+// PRODUCTS → percorso corretto (airtable.cjs)
+const { getProducts } = require("../../modules/airtable.cjs");
 
 module.exports = function (app) {
   app.get("/sitemap.xml", async (req, res) => {
