@@ -37,7 +37,10 @@ function resolveProduct(intent, sub, rawText, PRODUCTS) {
 ============================================================ */
 async function handleProductBasic(req, res, product, rawText) {
   const uid = req?.uid || "unknown_user";
-  const pageContext = Context.get(req) || {};
+  const pageContext = Context.get(uid) || {};
+
+  // ⭐ PATCH: aggiorna contesto automaticamente
+  Context.update(uid, "prodotto", product.slug);
 
   const base = productReply(product);
 
@@ -57,7 +60,10 @@ async function handleProductBasic(req, res, product, rawText) {
 ============================================================ */
 async function handleProductDetails(req, res, product, rawText) {
   const uid = req?.uid || "unknown_user";
-  const pageContext = Context.get(req) || {};
+  const pageContext = Context.get(uid) || {};
+
+  // ⭐ PATCH
+  Context.update(uid, "prodotto", product.slug);
 
   const base = productLongReply(product);
 
@@ -77,7 +83,10 @@ async function handleProductDetails(req, res, product, rawText) {
 ============================================================ */
 async function handleProductPrice(req, res, product, rawText) {
   const uid = req?.uid || "unknown_user";
-  const pageContext = Context.get(req) || {};
+  const pageContext = Context.get(uid) || {};
+
+  // ⭐ PATCH
+  Context.update(uid, "prodotto", product.slug);
 
   const base = `
 💰 <b>Prezzo:</b> ${product.prezzo}€
@@ -103,7 +112,10 @@ Vuoi vedere i dettagli completi?
 ============================================================ */
 async function handleProductVideo(req, res, product, rawText) {
   const uid = req?.uid || "unknown_user";
-  const pageContext = Context.get(req) || {};
+  const pageContext = Context.get(uid) || {};
+
+  // ⭐ PATCH
+  Context.update(uid, "prodotto", product.slug);
 
   const video = product.youtube_url || product.catalog_video_block;
 
@@ -132,7 +144,10 @@ Vuoi altre informazioni?
 ============================================================ */
 async function handleObjection(req, res, product, rawText) {
   const uid = req?.uid || "unknown_user";
-  const pageContext = Context.get(req) || {};
+  const pageContext = Context.get(uid) || {};
+
+  // ⭐ PATCH
+  Context.update(uid, "prodotto", product.slug);
 
   const enriched = await callGPT(
     rawText || "Obiezione prodotto",
@@ -150,7 +165,10 @@ async function handleObjection(req, res, product, rawText) {
 ============================================================ */
 async function handleNegotiation(req, res, product, rawText) {
   const uid = req?.uid || "unknown_user";
-  const pageContext = Context.get(req) || {};
+  const pageContext = Context.get(uid) || {};
+
+  // ⭐ PATCH
+  Context.update(uid, "prodotto", product.slug);
 
   const enriched = await callGPT(
     rawText || "Trattativa prezzo",
@@ -167,6 +185,9 @@ async function handleNegotiation(req, res, product, rawText) {
    HANDLER ACQUISTO DIRETTO
 ============================================================ */
 async function handleDirectPurchase(req, res, product) {
+  // ⭐ PATCH
+  Context.update(req.uid || "unknown_user", "prodotto", product.slug);
+
   const base = `
 Perfetto 😎  
 👉 Puoi acquistarlo qui:  
