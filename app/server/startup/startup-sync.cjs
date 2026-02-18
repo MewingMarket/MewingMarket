@@ -7,8 +7,8 @@
 const { syncPayhip } = require("../../services/payhip.cjs");
 const { syncYouTube } = require("../../services/youtube.cjs");
 
-// PATCH: Airtable e loadProducts stanno nei moduli
-const { syncAirtable, loadProducts } = require("../../../modules/airtable.cjs");
+// PATCH: Airtable e loadProducts stanno nei moduli (2 livelli, non 3)
+const { syncAirtable, loadProducts } = require("../../modules/airtable.cjs");
 
 module.exports = async function startupSync() {
   try {
