@@ -12,6 +12,20 @@ const { syncYouTube } = require("../../services/youtube.cjs");
 // PATCH: Airtable e loadProducts stanno in app/modules/
 const { syncAirtable, loadProducts } = require("../../modules/airtable.cjs");
 
+// PATCH: usa le tue variabili reali
+const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
+const AIRTABLE_BASE = process.env.AIRTABLE_BASE;
+const AIRTABLE_TABLE_NAME = process.env.AIRTABLE_TABLE_NAME;
+
+// Guard di sicurezza
+function canUseAirtable() {
+  if (!AIRTABLE_PAT || !AIRTABLE_BASE || !AIRTABLE_TABLE_NAME) {
+    console.log("⏭️ Cron Airtable skipped: missing PAT / BASE / TABLE_NAME");
+    return false;
+  }
+  return true;
+}
+
 module.exports = function startCronJobs() {
   try {
     global.logEvent?.("cron_init", { time: new Date().toISOString() });
@@ -34,9 +48,8 @@ module.exports = function startCronJobs() {
     ========================================================== */
     cron.schedule("*/15 * * * *", async () => {
       try {
-        if (!process.env.AIRTABLE_API_KEY) {
-          console.log("⏭️ Cron Airtable skipped: missing API key");
-          global.logEvent?.("cron_airtable_skipped", { reason: "missing_api_key" });
+        if (!canUseAirtable()) {
+          global.logEvent?.("cron_airtable_skipped", { reason: "missing_credentials" });
           return;
         }
 
@@ -50,12 +63,20 @@ module.exports = function startCronJobs() {
     });
 
     /* =========================================================
-       CRON YOUTUBE — ogni 30 minuti
+       CRON YOUTUBE — ogni 30 minuti (RESILIENTE)
     ========================================================== */
     cron.schedule("*/30 * * * *", async () => {
       try {
+        // YouTube aggiorna Airtable → deve essere resiliente
+        if (!canUseAirtable()) {
+          console.log("⏭️ Cron YouTube skipped: Airtable non configurato");
+          global.logEvent?.("cron_youtube_skipped", { reason: "missing_credentials" });
+          return;
+        }
+
         await syncYouTube();
         global.logEvent?.("cron_youtube_ok", {});
+
       } catch (err) {
         console.error("Cron YouTube error:", err);
         global.logEvent?.("cron_youtube_error", { error: err?.message || "unknown" });
