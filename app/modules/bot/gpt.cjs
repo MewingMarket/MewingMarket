@@ -9,7 +9,7 @@ const { addEmojis, log } = require("./utils.cjs");
 
 /* ============================================================
    SYSTEM PROMPT BASE
-   ============================================================ */
+============================================================ */
 const BASE_SYSTEM_PROMPT = `
 Sei il Copilot ufficiale di MewingMarket.
 Tono: chiaro, diretto, professionale, amichevole.
@@ -19,7 +19,7 @@ Usa markup WhatsApp-style.
 
 /* ============================================================
    HTTPS AGENT — evita blocchi su Render
-   ============================================================ */
+============================================================ */
 const agent = new https.Agent({
   keepAlive: true,
   maxSockets: 10,
@@ -28,7 +28,7 @@ const agent = new https.Agent({
 
 /* ============================================================
    CALL GPT — versione blindata
-   ============================================================ */
+============================================================ */
 async function callGPT(
   userPrompt,
   memory = [],
@@ -44,25 +44,41 @@ async function callGPT(
       return addEmojis("Sto avendo un problema tecnico, ma posso aiutarti.");
     }
 
-    const system = BASE_SYSTEM_PROMPT + (extraSystem || "");
     const safeMemory = Array.isArray(memory) ? memory.slice(-6) : [];
+    const ctx = context && typeof context === "object" ? context : {};
+    const data = extraData && typeof extraData === "object" ? extraData : {};
+
+    // Costruisco un unico system prompt pulito
+    let system = BASE_SYSTEM_PROMPT + (extraSystem || "");
+
+    const extraBlocks = [];
+
+    if (safeMemory.length > 0) {
+      extraBlocks.push(`Memoria conversazione: ${JSON.stringify(safeMemory)}`);
+    }
+
+    if (Object.keys(ctx).length > 0) {
+      extraBlocks.push(`Contesto pagina: ${JSON.stringify(ctx)}`);
+    }
+
+    if (Object.keys(data).length > 0) {
+      extraBlocks.push(`Dati aggiuntivi: ${JSON.stringify(data)}`);
+    }
+
+    if (extraBlocks.length > 0) {
+      system += "\n\n" + extraBlocks.join("\n");
+    }
 
     const payload = {
       model: "meta-llama/llama-3.1-8b-instruct",
       messages: [
-        { role: "system", content: system },
-        { role: "assistant", content: "Memoria: " + JSON.stringify(safeMemory) },
-        { role: "assistant", content: "Contesto: " + JSON.stringify(context) },
-        { role: "assistant", content: "Dati: " + JSON.stringify(extraData) },
+        { role: "system", content: system.trim() },
         { role: "user", content: userPrompt || "" }
       ]
     };
 
     log("GPT_PAYLOAD", payload);
 
-    /* ============================================================
-       TIMEOUT MANUALE — evita fetch infinite
-       ============================================================ */
     const controller = new AbortController();
     const timeout = setTimeout(() => {
       controller.abort();
@@ -108,5 +124,5 @@ async function callGPT(
 
 /* ============================================================
    EXPORT
-   ============================================================ */
+============================================================ */
 module.exports = callGPT;
