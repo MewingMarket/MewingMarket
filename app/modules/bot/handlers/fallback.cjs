@@ -1,6 +1,6 @@
 /**
  * modules/bot/handlers/fallback.cjs
- * Gestione intent GPT (fallback conversazionale)
+ * Gestione intent GPT (fallback conversazionale) — versione resiliente
  */
 
 const callGPT = require("../gpt.cjs");
@@ -8,30 +8,43 @@ const { reply, log } = require("../utils.cjs");
 const Memory = require("../../memory.cjs");
 const Context = require("../../context.cjs");
 
-/* ============================================================
-   FALLBACK GPT (VERSIONE RESILIENTE)
-============================================================ */
 module.exports = async function fallbackHandler(req, res, rawText) {
   log("HANDLER_FALLBACK", { rawText });
 
   const uid = req?.uid || "unknown_user";
+
+  // Recupero memoria e contesto
+  const memory = Memory.get(uid) || [];
   const pageContext = Context.get(req) || {};
 
-  const enriched = await callGPT(
-    rawText || "Fallback",
-    Memory.get(uid),
-    pageContext,
-    `
+  // Costruzione prompt dinamico e pulito
+  let systemPrompt = `
 Rispondi in modo naturale, utile e amichevole.
 Se possibile, proponi una delle seguenti opzioni:
 - vedere il catalogo
 - chiedere supporto
 - vedere i social
 - tornare al menu
-`,
+`;
+
+  // Aggiungi memoria solo se esiste
+  if (memory.length > 0) {
+    systemPrompt += `\nMemoria conversazione: ${JSON.stringify(memory)}\n`;
+  }
+
+  // Aggiungi contesto solo se esiste
+  if (pageContext && Object.keys(pageContext).length > 0) {
+    systemPrompt += `\nContesto pagina: ${JSON.stringify(pageContext)}\n`;
+  }
+
+  // Chiamata GPT
+  const enriched = await callGPT(
+    rawText || "Fallback",
+    memory,
+    pageContext,
+    systemPrompt.trim(),
     {}
   );
 
-  // ⭐ PATCH: reply ora gestisce sia Express che modalità interna
   return reply(res, enriched || "Non ho capito bene, vuoi vedere il menu?");
 };
