@@ -10,7 +10,7 @@ const Context = require("../../context.cjs");
 
 /* ============================================================
    LINK SOCIAL
-   ============================================================ */
+============================================================ */
 const SOCIAL_LINKS = {
   instagram: "https://www.instagram.com/mewingmarket",
   tiktok: "https://www.tiktok.com/@mewingmarket",
@@ -23,10 +23,13 @@ const SOCIAL_LINKS = {
 
 /* ============================================================
    SOCIAL SPECIFICO
-   ============================================================ */
+============================================================ */
 async function handleSpecificSocial(req, res, sub, rawText) {
   const uid = req?.uid || "unknown_user";
-  const pageContext = Context.get(req) || {};
+  const pageContext = Context.get(uid) || {};
+
+  // ⭐ PATCH: aggiorna contesto automaticamente
+  Context.update(uid, "social", sub);
 
   const link = SOCIAL_LINKS[sub];
 
@@ -56,10 +59,13 @@ async function handleSpecificSocial(req, res, sub, rawText) {
 
 /* ============================================================
    SOCIAL GENERICO
-   ============================================================ */
+============================================================ */
 async function handleGenericSocial(req, res, rawText) {
   const uid = req?.uid || "unknown_user";
-  const pageContext = Context.get(req) || {};
+  const pageContext = Context.get(uid) || {};
+
+  // ⭐ PATCH: aggiorna contesto automaticamente
+  Context.update(uid, "social", null);
 
   const base = `
 <div class="mm-card">
@@ -89,7 +95,7 @@ async function handleGenericSocial(req, res, rawText) {
 
 /* ============================================================
    ROUTER INTERNO
-   ============================================================ */
+============================================================ */
 module.exports = function socialHandler(req, res, intent, sub, rawText) {
   log("HANDLER_SOCIAL", { intent, sub, rawText });
 
