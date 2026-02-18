@@ -3,8 +3,8 @@
  * Feed prodotti per Meta / Facebook / Instagram
  */
 
-// PRODUCTS → percorso corretto
-const { getProducts } = require("../../modules/products.cjs");
+// PRODUCTS → ora arriva da airtable.cjs
+const { getProducts } = require("../../modules/airtable.cjs");
 
 module.exports = function (app) {
   app.get("/meta/feed", async (req, res) => {
