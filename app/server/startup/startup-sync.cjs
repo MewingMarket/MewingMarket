@@ -1,13 +1,13 @@
 /**
  * app/server/startup/startup-sync.cjs
- * Sincronizzazioni iniziali all'avvio del server (versione resiliente)
+ * Sincronizzazioni iniziali all'avvio del server (versione resiliente + READY SYSTEM)
  */
 
 const { syncPayhip } = require("../../services/payhip.cjs");
 const { syncYouTube } = require("../../services/youtube.cjs");
 const { syncAirtable, loadProducts } = require("../../modules/airtable.cjs");
 
-// Usa le tue variabili REALI
+// Variabili reali
 const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
 const AIRTABLE_BASE = process.env.AIRTABLE_BASE;
 const AIRTABLE_TABLE_NAME = process.env.AIRTABLE_TABLE_NAME;
@@ -26,7 +26,20 @@ module.exports = async function startupSync() {
     global.logEvent?.("startup_begin", { time: new Date().toISOString() });
 
     /* =========================================================
-       SYNC PAYHIP
+       1) CARICAMENTO PRODOTTI DA FILE (SUBITO)
+       - Garantisce che il bot abbia almeno l’ultimo catalogo salvato
+       - Se ci sono prodotti → catalogReady = true
+    ========================================================== */
+    try {
+      await loadProducts();
+      global.logEvent?.("startup_products_loaded", {});
+    } catch (err) {
+      console.error("Errore loadProducts:", err);
+      global.logEvent?.("startup_products_error", { error: err?.message || "unknown" });
+    }
+
+    /* =========================================================
+       2) SYNC PAYHIP
     ========================================================== */
     try {
       await syncPayhip();
@@ -37,14 +50,15 @@ module.exports = async function startupSync() {
     }
 
     /* =========================================================
-       SYNC AIRTABLE (RESILIENTE)
+       3) SYNC AIRTABLE (RESILIENTE)
+       - Quando finisce → catalogReady = true
     ========================================================== */
     try {
       if (!canUseAirtable()) {
         console.log("⏭️ Airtable sync skipped: missing credentials (retry in 5s)");
         global.logEvent?.("startup_sync_airtable_skipped", { reason: "missing_credentials" });
 
-        // Ritenta dopo 5 secondi
+        // Retry dopo 5 secondi
         setTimeout(async () => {
           try {
             if (!canUseAirtable()) return;
@@ -69,7 +83,7 @@ module.exports = async function startupSync() {
     }
 
     /* =========================================================
-       SYNC YOUTUBE (RESILIENTE)
+       4) SYNC YOUTUBE (RESILIENTE)
     ========================================================== */
     try {
       if (!canUseAirtable()) {
@@ -82,17 +96,6 @@ module.exports = async function startupSync() {
     } catch (err) {
       console.error("Errore syncYouTube:", err);
       global.logEvent?.("startup_sync_youtube_error", { error: err?.message || "unknown" });
-    }
-
-    /* =========================================================
-       CARICAMENTO PRODOTTI
-    ========================================================== */
-    try {
-      await loadProducts();
-      global.logEvent?.("startup_products_loaded", {});
-    } catch (err) {
-      console.error("Errore loadProducts:", err);
-      global.logEvent?.("startup_products_error", { error: err?.message || "unknown" });
     }
 
     global.logEvent?.("startup_complete", { time: new Date().toISOString() });
