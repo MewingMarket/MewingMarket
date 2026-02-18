@@ -1,6 +1,6 @@
 /**
  * app/modules/airtable.cjs
- * Gestione catalogo prodotti + vendite
+ * Gestione catalogo prodotti + vendite (versione resiliente)
  */
 
 const fs = require("fs");
@@ -13,6 +13,9 @@ const DATA_PATH = path.join(ROOT, "data", "products.json");
 let PRODUCTS_CACHE = [];
 let SALES_CACHE = {};
 
+/* =========================================================
+   SALVATAGGIO SU FILE
+========================================================= */
 function saveProductsToFile(products) {
   try {
     fs.writeFileSync(DATA_PATH, JSON.stringify(products, null, 2));
@@ -21,6 +24,9 @@ function saveProductsToFile(products) {
   }
 }
 
+/* =========================================================
+   CARICAMENTO DA FILE
+========================================================= */
 function loadProducts() {
   try {
     if (fs.existsSync(DATA_PATH)) {
@@ -37,9 +43,20 @@ function getProducts() {
   return PRODUCTS_CACHE;
 }
 
+/* =========================================================
+   SYNC AIRTABLE (RESILIENTE)
+========================================================= */
 async function syncAirtable() {
   try {
-    const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(process.env.AIRTABLE_BASE);
+    // PATCH: Airtable non deve partire senza API key
+    if (!process.env.AIRTABLE_API_KEY || !process.env.AIRTABLE_BASE) {
+      console.log("⏭️ Airtable sync skipped: missing API key or base");
+      return false;
+    }
+
+    const base = new Airtable({
+      apiKey: process.env.AIRTABLE_API_KEY
+    }).base(process.env.AIRTABLE_BASE);
 
     const records = await base("Products").select({}).all();
 
@@ -63,9 +80,19 @@ async function syncAirtable() {
   }
 }
 
+/* =========================================================
+   SALVATAGGIO VENDITE
+========================================================= */
 async function saveSaleToAirtable(data) {
   try {
-    const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(process.env.AIRTABLE_BASE);
+    if (!process.env.AIRTABLE_API_KEY || !process.env.AIRTABLE_BASE) {
+      console.log("⏭️ saveSaleToAirtable skipped: missing API key");
+      return;
+    }
+
+    const base = new Airtable({
+      apiKey: process.env.AIRTABLE_API_KEY
+    }).base(process.env.AIRTABLE_BASE);
 
     await base("Sales").create([
       {
@@ -83,9 +110,19 @@ async function saveSaleToAirtable(data) {
   }
 }
 
+/* =========================================================
+   GET SALES
+========================================================= */
 async function getSalesByUID(uid) {
   try {
-    const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(process.env.AIRTABLE_BASE);
+    if (!process.env.AIRTABLE_API_KEY || !process.env.AIRTABLE_BASE) {
+      console.log("⏭️ getSalesByUID skipped: missing API key");
+      return [];
+    }
+
+    const base = new Airtable({
+      apiKey: process.env.AIRTABLE_API_KEY
+    }).base(process.env.AIRTABLE_BASE);
 
     const records = await base("Sales").select({
       filterByFormula: `{uid} = "${uid}"`
