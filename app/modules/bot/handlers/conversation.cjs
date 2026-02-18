@@ -10,10 +10,13 @@ const Context = require("../../context.cjs");
 
 /* ============================================================
    HANDLER CONVERSAZIONE GENERICA
-   ============================================================ */
+============================================================ */
 async function handleConversationGeneric(req, res, rawText) {
   const uid = req?.uid || "unknown_user";
-  const pageContext = Context.get(req) || {};
+  const pageContext = Context.get(uid) || {};
+
+  // ⭐ PATCH: aggiorna contesto automaticamente
+  Context.update(uid, "conversazione", null);
 
   const base = `
 <div class="mm-card">
@@ -37,10 +40,13 @@ async function handleConversationGeneric(req, res, rawText) {
 
 /* ============================================================
    HANDLER MENU
-   ============================================================ */
+============================================================ */
 async function handleMenu(req, res, rawText) {
   const uid = req?.uid || "unknown_user";
-  const pageContext = Context.get(req) || {};
+  const pageContext = Context.get(uid) || {};
+
+  // ⭐ PATCH: aggiorna contesto automaticamente
+  Context.update(uid, "menu", null);
 
   const base = `
 <div class="mm-card">
@@ -68,7 +74,7 @@ async function handleMenu(req, res, rawText) {
 
 /* ============================================================
    ROUTER INTERNO
-   ============================================================ */
+============================================================ */
 module.exports = function conversationHandler(req, res, intent, sub, rawText) {
   log("HANDLER_CONVERSATION", { intent, sub, rawText });
 
