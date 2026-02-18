@@ -10,6 +10,20 @@ const { updateFromPayhip, removeMissingPayhipProducts } = require("../modules/pa
 // URL del tuo store Payhip
 const PAYHIP_STORE_URL = "https://payhip.com/MewingMarket";
 
+// Credenziali Airtable (coerenti con tutto il backend)
+const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
+const AIRTABLE_BASE = process.env.AIRTABLE_BASE;
+const AIRTABLE_TABLE_NAME = process.env.AIRTABLE_TABLE_NAME;
+
+// Guard di sicurezza
+function canUseAirtable() {
+  if (!AIRTABLE_PAT || !AIRTABLE_BASE || !AIRTABLE_TABLE_NAME) {
+    console.log("⏭️ Payhip → Airtable skipped: missing PAT / BASE / TABLE_NAME");
+    return false;
+  }
+  return true;
+}
+
 /* =========================================================
    1) Scarica HTML dello store
 ========================================================= */
@@ -165,7 +179,11 @@ async function syncPayhip() {
 
   for (const p of products) {
     try {
-      await updateFromPayhip(p); // 🔥 PATCH: ora usa la versione giusta
+      if (canUseAirtable()) {
+        await updateFromPayhip(p);
+      } else {
+        console.log("⏭️ Skip updateFromPayhip: Airtable non configurato");
+      }
       ok++;
     } catch (err) {
       console.error("[PAYHIP] error_update_product", p.slug, err.message);
@@ -173,7 +191,11 @@ async function syncPayhip() {
   }
 
   try {
-    await removeMissingPayhipProducts(products.map(p => p.slug));
+    if (canUseAirtable()) {
+      await removeMissingPayhipProducts(products.map(p => p.slug));
+    } else {
+      console.log("⏭️ Skip removeMissingPayhipProducts: Airtable non configurato");
+    }
   } catch (err) {
     console.error("[PAYHIP] error_remove_missing", err.message);
   }
