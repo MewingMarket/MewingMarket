@@ -16,6 +16,17 @@ module.exports = function (app) {
         global.logBot("chat_request", { uid, message });
       }
 
+      /* ⭐ PATCH READY SYSTEM:
+         Se il catalogo non è ancora pronto, non chiamiamo il bot.
+         Evitiamo undefined, fatal error e timeout GPT.
+      */
+      if (!global.catalogReady) {
+        return res.json({
+          reply: "Sto pensando… un attimo 😄",
+          delay: true
+        });
+      }
+
       // ⭐ Passiamo req e res direttamente al bot
       await handleConversation(req, res);
 
@@ -26,7 +37,6 @@ module.exports = function (app) {
         intent: req?.userState?.lastIntent || "unknown"
       });
 
-      // ⭐ NON loggare finalReply → causa circular JSON
       if (typeof global.logBot === "function") {
         global.logBot("chat_response", { uid });
       }
