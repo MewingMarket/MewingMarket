@@ -1,6 +1,6 @@
 /**
  * app/server/server.cjs
- * Entry point del server — versione modulare
+ * Entry point del server — versione modulare + BOOTSTRAP ORDINATO
  */
 
 const express = require("express");
@@ -58,20 +58,33 @@ require("./routes/product-page.cjs")(app);
 require("./routes/system-status.cjs")(app);
 
 /* ============================================================
-   STARTUP SYNC (Airtable + Payhip + YouTube + Products)
+   BOOTSTRAP ORDINATO (Payhip → YouTube → Airtable → Products)
 ============================================================ */
-require("./startup/startup-sync.cjs")();
+async function startServer() {
+  console.log("\n====================================");
+  console.log("🚀 Avvio MewingMarket — BOOTSTRAP");
+  console.log("====================================\n");
 
-/* ============================================================
-   CRON JOBS (VERSIONE MODULARE)
-============================================================ */
-require("./startup/startup-cron.cjs")();
+  // ⭐ Carica bootstrap orchestrato
+  await require("./startup/bootstrap.cjs")();
 
-/* ============================================================
-   AVVIO SERVER
-============================================================ */
-const PORT = process.env.PORT || 10000;
+  /* ============================================================
+     CRON JOBS (VERSIONE MODULARE)
+  ============================================================= */
+  require("./startup/startup-cron.cjs")();
 
-app.listen(PORT, () => {
-  console.log(`🚀 MewingMarket attivo sulla porta ${PORT}`);
-});
+  /* ============================================================
+     AVVIO SERVER SOLO DOPO BOOTSTRAP
+  ============================================================= */
+  const PORT = process.env.PORT || 10000;
+
+  app.listen(PORT, () => {
+    console.log(`\n🎉 Server pronto! MewingMarket attivo sulla porta ${PORT}`);
+    console.log("📦 Catalogo caricato e sincronizzato");
+    console.log("🤖 Bot operativo");
+    console.log("====================================\n");
+  });
+}
+
+// ⭐ Avvio effettivo
+startServer();
