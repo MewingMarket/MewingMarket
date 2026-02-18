@@ -1,4 +1,4 @@
-// modules/payhip.cjs — VERSIONE FUTURE-PROOF (JSON-LD multiplo)
+// modules/payhip.cjs — VERSIONE FUTURE-PROOF (JSON-LD multiplo + RESILIENTE)
 
 console.log("🔥 PAYHIP MODULE LOADED (FUTURE-PROOF EDITION)");
 
@@ -55,9 +55,22 @@ function normalizeSlug(s) {
 }
 
 /* =========================================================
+   Guard di sicurezza su credenziali Airtable
+========================================================= */
+function canUseAirtable() {
+  if (!AIRTABLE_PAT || !BASE_ID || !TABLE_NAME) {
+    console.log("⏭️ Airtable (Payhip) skipped: missing AIRTABLE_PAT / BASE / TABLE_NAME");
+    return false;
+  }
+  return true;
+}
+
+/* =========================================================
    Trova record per slug
 ========================================================= */
 async function findRecordBySlug(slug) {
+  if (!canUseAirtable()) return null;
+
   const formula = encodeURIComponent(`{Slug} = "${slug}"`);
   const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}?filterByFormula=${formula}`;
 
@@ -76,6 +89,8 @@ async function findRecordBySlug(slug) {
    Crea record
 ========================================================= */
 async function createRecord(fields) {
+  if (!canUseAirtable()) return;
+
   const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}`;
 
   const res = await fetch(url, {
@@ -95,6 +110,8 @@ async function createRecord(fields) {
    Aggiorna record
 ========================================================= */
 async function updateRecord(id, fields) {
+  if (!canUseAirtable()) return;
+
   const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}/${id}`;
 
   const res = await fetch(url, {
@@ -117,19 +134,20 @@ async function updateFromPayhip(data) {
   try {
     console.log("🔥 PATCH PAYHIP FUTURE-PROOF ATTIVA");
 
+    if (!canUseAirtable()) {
+      console.log("⏭️ updateFromPayhip skipped: Airtable non configurato");
+      return;
+    }
+
     const slug = safeSlug(data.slug || data.title || data.url);
     if (!slug) return;
 
     console.log("📦 [PAYHIP RAW]", JSON.stringify(data, null, 2));
 
-    // ============================================================
     // 1) SCARICO HTML
-    // ============================================================
     const html = await fetch(data.url).then(r => r.text());
 
-    // ============================================================
     // 2) ESTRAGGO TUTTI I BLOCCHI JSON-LD
-    // ============================================================
     const matches = [...html.matchAll(
       /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi
     )];
@@ -139,9 +157,7 @@ async function updateFromPayhip(data) {
       return;
     }
 
-    // ============================================================
     // 3) PARSO TUTTI I BLOCCHI E CERCO @type: Product
-    // ============================================================
     let productJson = null;
 
     for (const m of matches) {
@@ -171,9 +187,7 @@ async function updateFromPayhip(data) {
       return;
     }
 
-    // ============================================================
     // 4) DATI REALI DA JSON-LD
-    // ============================================================
     const titolo = productJson.name || data.title || "";
     const descrizione = productJson.description || "";
     const prezzo = Number(productJson.offers?.price || 0);
@@ -185,9 +199,7 @@ async function updateFromPayhip(data) {
       ? [{ url: immagineUrl }]
       : [];
 
-    // ============================================================
     // 5) COSTRUZIONE CAMPI PER AIRTABLE
-    // ============================================================
     const fields = {
       Slug: slug,
       Titolo: titolo,
@@ -201,13 +213,9 @@ async function updateFromPayhip(data) {
 
     const safeFields = filterFields(fields);
 
-    // ============================================================
     // 6) UPDATE O CREATE (PATCH TITOLI)
-    // ============================================================
-
-    // Cerca record con lo stesso titolo
     async function findRecordByTitle(title) {
-      if (!title) return null;
+      if (!title || !canUseAirtable()) return null;
 
       const formula = encodeURIComponent(`{Titolo} = "${title}"`);
       const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}?filterByFormula=${formula}`;
@@ -252,6 +260,11 @@ async function updateFromPayhip(data) {
    Rimuovi prodotti non più presenti (PATCH: non cancellare manuali)
 ========================================================= */
 async function removeMissingPayhipProducts(currentSlugs) {
+  if (!canUseAirtable()) {
+    console.log("⏭️ removeMissingPayhipProducts skipped: Airtable non configurato");
+    return;
+  }
+
   const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}`;
 
   const normalizedPayhip = currentSlugs.map(normalizeSlug);
@@ -282,10 +295,7 @@ async function removeMissingPayhipProducts(currentSlugs) {
 
     const exists = normalizedPayhip.includes(slug);
 
-    // ============================================================
     // PATCH: NON cancellare record manuali
-    // Se Payhip non conosce questo slug → NON eliminarlo
-    // ============================================================
     if (!exists) {
       console.log(`⏭️ Skip delete: ${slug} non esiste su Payhip → record manuale preservato.`);
       continue;
