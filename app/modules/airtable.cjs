@@ -1,6 +1,6 @@
 /**
  * app/modules/airtable.cjs
- * Gestione catalogo prodotti + vendite (versione resiliente)
+ * Gestione catalogo prodotti + vendite (versione definitiva con PAT)
  */
 
 const fs = require("fs");
@@ -44,38 +44,56 @@ function getProducts() {
 }
 
 /* =========================================================
-   SYNC AIRTABLE (RESILIENTE)
+   SYNC AIRTABLE (VERSIONE DEFINITIVA)
 ========================================================= */
 async function syncAirtable() {
   try {
-    // PATCH: Airtable non deve partire senza API key
-    if (!process.env.AIRTABLE_API_KEY || !process.env.AIRTABLE_BASE) {
-      console.log("⏭️ Airtable sync skipped: missing API key or base");
+    const PAT = process.env.AIRTABLE_PAT;
+    const BASE = process.env.AIRTABLE_BASE;
+    const TABLE = process.env.AIRTABLE_TABLE_NAME;
+
+    if (!PAT || !BASE || !TABLE) {
+      console.log("⏭️ Airtable sync skipped: missing PAT / BASE / TABLE_NAME");
       return false;
     }
 
-    const base = new Airtable({
-      apiKey: process.env.AIRTABLE_API_KEY
-    }).base(process.env.AIRTABLE_BASE);
+    const base = new Airtable({ apiKey: PAT }).base(BASE);
 
-    const records = await base("Products").select({}).all();
+    // IMPORTANTE: encoding del nome tabella con spazi
+    const tableName = decodeURIComponent(TABLE);
 
-    const products = records.map((r) => ({
-      id: r.id,
-      slug: r.get("slug"),
-      title: r.get("title"),
-      description: r.get("description"),
-      price: r.get("price"),
-      image: r.get("image"),
-    }));
+    const records = await base(tableName).select({}).all();
+
+    const products = records.map((r) => {
+      const f = r.fields;
+      return {
+        id: r.id,
+        Slug: f.Slug || f.slug || "",
+        Titolo: f.Titolo || f.title || "",
+        TitoloBreve: f.TitoloBreve || "",
+        Descrizione: f.Descrizione || f.description || "",
+        DescrizioneBreve: f.DescrizioneBreve || "",
+        Prezzo: f.Prezzo || f.price || 0,
+        Immagine: f.Immagine || f.image || [],
+        LinkPayhip: f.LinkPayhip || "",
+        youtube_url: f.youtube_url || "",
+        youtube_title: f.youtube_title || "",
+        youtube_description: f.youtube_description || "",
+        youtube_thumbnail: f.youtube_thumbnail || "",
+        youtube_last_video_url: f.youtube_last_video_url || "",
+        youtube_last_video_title: f.youtube_last_video_title || "",
+        Categoria: f.Categoria || ""
+      };
+    });
 
     PRODUCTS_CACHE = products;
     saveProductsToFile(products);
 
+    console.log("🟢 Airtable sync OK:", products.length, "prodotti");
     return true;
 
   } catch (err) {
-    console.error("Errore syncAirtable:", err);
+    console.error("❌ Errore syncAirtable:", err);
     return false;
   }
 }
@@ -85,14 +103,15 @@ async function syncAirtable() {
 ========================================================= */
 async function saveSaleToAirtable(data) {
   try {
-    if (!process.env.AIRTABLE_API_KEY || !process.env.AIRTABLE_BASE) {
-      console.log("⏭️ saveSaleToAirtable skipped: missing API key");
+    const PAT = process.env.AIRTABLE_PAT;
+    const BASE = process.env.AIRTABLE_BASE;
+
+    if (!PAT || !BASE) {
+      console.log("⏭️ saveSaleToAirtable skipped: missing PAT / BASE");
       return;
     }
 
-    const base = new Airtable({
-      apiKey: process.env.AIRTABLE_API_KEY
-    }).base(process.env.AIRTABLE_BASE);
+    const base = new Airtable({ apiKey: PAT }).base(BASE);
 
     await base("Sales").create([
       {
@@ -115,14 +134,15 @@ async function saveSaleToAirtable(data) {
 ========================================================= */
 async function getSalesByUID(uid) {
   try {
-    if (!process.env.AIRTABLE_API_KEY || !process.env.AIRTABLE_BASE) {
-      console.log("⏭️ getSalesByUID skipped: missing API key");
+    const PAT = process.env.AIRTABLE_PAT;
+    const BASE = process.env.AIRTABLE_BASE;
+
+    if (!PAT || !BASE) {
+      console.log("⏭️ getSalesByUID skipped: missing PAT / BASE");
       return [];
     }
 
-    const base = new Airtable({
-      apiKey: process.env.AIRTABLE_API_KEY
-    }).base(process.env.AIRTABLE_BASE);
+    const base = new Airtable({ apiKey: PAT }).base(BASE);
 
     const records = await base("Sales").select({
       filterByFormula: `{uid} = "${uid}"`
