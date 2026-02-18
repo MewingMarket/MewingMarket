@@ -7,11 +7,23 @@ const { syncPayhip } = require("../../services/payhip.cjs");
 const { syncYouTube } = require("../../services/youtube.cjs");
 const { syncAirtable, loadProducts } = require("../../modules/airtable.cjs");
 
+// Usa le tue variabili REALI
+const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
+const AIRTABLE_BASE = process.env.AIRTABLE_BASE;
+const AIRTABLE_TABLE_NAME = process.env.AIRTABLE_TABLE_NAME;
+
+// Guard di sicurezza
+function canUseAirtable() {
+  if (!AIRTABLE_PAT || !AIRTABLE_BASE || !AIRTABLE_TABLE_NAME) {
+    console.log("⏭️ Airtable sync skipped: missing PAT / BASE / TABLE_NAME");
+    return false;
+  }
+  return true;
+}
+
 module.exports = async function startupSync() {
   try {
-    if (typeof global.logEvent === "function") {
-      global.logEvent("startup_begin", { time: new Date().toISOString() });
-    }
+    global.logEvent?.("startup_begin", { time: new Date().toISOString() });
 
     /* =========================================================
        SYNC PAYHIP
@@ -28,13 +40,14 @@ module.exports = async function startupSync() {
        SYNC AIRTABLE (RESILIENTE)
     ========================================================== */
     try {
-      if (!process.env.AIRTABLE_API_KEY) {
-        console.log("⏭️ Airtable sync skipped: missing API key (retry in 5s)");
-        global.logEvent?.("startup_sync_airtable_skipped", { reason: "missing_api_key" });
+      if (!canUseAirtable()) {
+        console.log("⏭️ Airtable sync skipped: missing credentials (retry in 5s)");
+        global.logEvent?.("startup_sync_airtable_skipped", { reason: "missing_credentials" });
 
         // Ritenta dopo 5 secondi
         setTimeout(async () => {
           try {
+            if (!canUseAirtable()) return;
             await syncAirtable();
             global.logEvent?.("startup_sync_airtable_ok_after_retry", {});
           } catch (err2) {
@@ -44,21 +57,28 @@ module.exports = async function startupSync() {
             });
           }
         }, 5000);
+
       } else {
         await syncAirtable();
         global.logEvent?.("startup_sync_airtable_ok", {});
       }
+
     } catch (err) {
       console.error("Errore syncAirtable:", err);
       global.logEvent?.("startup_sync_airtable_error", { error: err?.message || "unknown" });
     }
 
     /* =========================================================
-       SYNC YOUTUBE
+       SYNC YOUTUBE (RESILIENTE)
     ========================================================== */
     try {
-      await syncYouTube();
-      global.logEvent?.("startup_sync_youtube_ok", {});
+      if (!canUseAirtable()) {
+        console.log("⏭️ YouTube sync skipped: Airtable non configurato");
+        global.logEvent?.("startup_sync_youtube_skipped", { reason: "missing_credentials" });
+      } else {
+        await syncYouTube();
+        global.logEvent?.("startup_sync_youtube_ok", {});
+      }
     } catch (err) {
       console.error("Errore syncYouTube:", err);
       global.logEvent?.("startup_sync_youtube_error", { error: err?.message || "unknown" });
