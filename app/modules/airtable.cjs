@@ -10,6 +10,9 @@ const Airtable = require("airtable");
 const ROOT = path.resolve(__dirname, "..");
 const DATA_PATH = path.join(ROOT, "data", "products.json");
 
+// ⭐ READY FLAG — il bot risponde solo quando è true
+global.catalogReady = false;
+
 let PRODUCTS_CACHE = [];
 let SALES_CACHE = {};
 
@@ -32,6 +35,12 @@ function loadProducts() {
     if (fs.existsSync(DATA_PATH)) {
       const raw = fs.readFileSync(DATA_PATH, "utf8");
       PRODUCTS_CACHE = JSON.parse(raw);
+
+      // Se abbiamo prodotti da file → catalogo pronto
+      if (Array.isArray(PRODUCTS_CACHE) && PRODUCTS_CACHE.length > 0) {
+        global.catalogReady = true;
+        console.log("📦 Catalogo caricato da file (catalogReady = true)");
+      }
     }
   } catch (err) {
     console.error("Errore loadProducts:", err);
@@ -39,8 +48,11 @@ function loadProducts() {
   return PRODUCTS_CACHE;
 }
 
+/* =========================================================
+   GET PRODUCTS — blindato
+========================================================= */
 function getProducts() {
-  return PRODUCTS_CACHE;
+  return Array.isArray(PRODUCTS_CACHE) ? PRODUCTS_CACHE : [];
 }
 
 /* =========================================================
@@ -58,8 +70,6 @@ async function syncAirtable() {
     }
 
     const base = new Airtable({ apiKey: PAT }).base(BASE);
-
-    // IMPORTANTE: encoding del nome tabella con spazi
     const tableName = decodeURIComponent(TABLE);
 
     const records = await base(tableName).select({}).all();
@@ -68,28 +78,31 @@ async function syncAirtable() {
       const f = r.fields;
       return {
         id: r.id,
-        Slug: f.Slug || f.slug || "",
-        Titolo: f.Titolo || f.title || "",
-        TitoloBreve: f.TitoloBreve || "",
-        Descrizione: f.Descrizione || f.description || "",
-        DescrizioneBreve: f.DescrizioneBreve || "",
-        Prezzo: f.Prezzo || f.price || 0,
-        Immagine: f.Immagine || f.image || [],
-        LinkPayhip: f.LinkPayhip || "",
+        slug: f.Slug || f.slug || "",
+        titolo: f.Titolo || f.title || "",
+        titoloBreve: f.TitoloBreve || "",
+        descrizione: f.Descrizione || f.description || "",
+        descrizioneBreve: f.DescrizioneBreve || "",
+        prezzo: f.Prezzo || f.price || 0,
+        immagine: f.Immagine || f.image || [],
+        linkPayhip: f.LinkPayhip || "",
         youtube_url: f.youtube_url || "",
         youtube_title: f.youtube_title || "",
         youtube_description: f.youtube_description || "",
         youtube_thumbnail: f.youtube_thumbnail || "",
         youtube_last_video_url: f.youtube_last_video_url || "",
         youtube_last_video_title: f.youtube_last_video_title || "",
-        Categoria: f.Categoria || ""
+        categoria: f.Categoria || ""
       };
     });
 
     PRODUCTS_CACHE = products;
     saveProductsToFile(products);
 
-    console.log("🟢 Airtable sync OK:", products.length, "prodotti");
+    // ⭐ READY FLAG → ora il bot può rispondere
+    global.catalogReady = true;
+    console.log("🟢 Airtable sync OK:", products.length, "prodotti (catalogReady = true)");
+
     return true;
 
   } catch (err) {
