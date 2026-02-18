@@ -7,11 +7,10 @@ const { log } = require("./utils.cjs");
 const path = require("path");
 const { normalize, cleanSearchQuery } = require(path.join(__dirname, "..", "utils.cjs"));
 const { fuzzyMatchProduct } = require(path.join(__dirname, "..", "catalogo.cjs"));
-const trackBot = require("./utils.cjs").trackBot;
 
 /* ============================================================
    DETECT INTENT — funzione principale
-   ============================================================ */
+============================================================ */
 function detectIntent(rawText) {
   log("INTENT_RAW_TEXT", rawText);
 
@@ -21,7 +20,6 @@ function detectIntent(rawText) {
     const q = cleanSearchQuery(text);
 
     log("INTENT_NORMALIZED", { t, q });
-    trackBot("intent_detect", { text: rawText });
 
     // Conversazione generale
     if (
@@ -170,5 +168,5 @@ function detectIntent(rawText) {
 
 /* ============================================================
    EXPORT
-   ============================================================ */
+============================================================ */
 module.exports = detectIntent;
