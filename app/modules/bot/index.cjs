@@ -35,10 +35,9 @@ const { getProducts } = require(path.join(__dirname, "..", "airtable.cjs"));
 ============================================================ */
 async function handleConversation(req, res) {
   try {
-    // PATCH: il frontend invia "message", non "text"
     const rawText = req?.body?.message || req?.body?.text || "";
-    
-    // PATCH: UID persistente
+
+    // UID persistente
     const uid = req?.uid || generateUID();
     req.uid = uid;
 
@@ -48,7 +47,15 @@ async function handleConversation(req, res) {
 
     log("HANDLE_START", { uid, intent, sub, rawText });
 
-    // Load products
+    /* ⭐ READY SYSTEM — blocca risposte premature
+       Se il catalogo non è pronto → NON rispondiamo.
+       Evita undefined, fatal error e timeout GPT.
+    */
+    if (!global.catalogReady) {
+      return reply(res, "Sto pensando… un attimo 😄");
+    }
+
+    // Carichiamo i prodotti (blindato)
     let PRODUCTS = [];
     try {
       PRODUCTS = getProducts() || [];
@@ -105,6 +112,7 @@ async function handleConversation(req, res) {
       default:
         return fallbackHandler(req, res, rawText);
     }
+
   } catch (err) {
     log("HANDLE_FATAL", err);
     return reply(res, "C’è stato un piccolo problema tecnico, ma sono qui.");
