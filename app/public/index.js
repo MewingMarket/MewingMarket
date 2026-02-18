@@ -1,4 +1,4 @@
-// index.js — versione migliorata con fallback descrizione breve
+// index.js — versione definitiva blindata + fallback immagini + slider robusto
 
 document.addEventListener("DOMContentLoaded", async () => {
 
@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       : "";
 
   /* =========================================================
-     FUNZIONE FALLBACK DESCRIZIONE BREVE
+     FALLBACK DESCRIZIONE BREVE
   ========================================================= */
   function getShortDescription(p) {
     if (p.DescrizioneBreve && p.DescrizioneBreve.trim() !== "") {
@@ -27,16 +27,28 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /* =========================================================
+     FALLBACK IMMAGINE
+  ========================================================= */
+  function getImage(p) {
+    if (Array.isArray(p.Immagine) && p.Immagine[0]?.url) {
+      return p.Immagine[0].url;
+    }
+    if (typeof p.Immagine === "string" && p.Immagine.startsWith("http")) {
+      return p.Immagine;
+    }
+    return "/placeholder.webp";
+  }
+
+  /* =========================================================
      SLIDER HERO
   ========================================================= */
   try {
-    // ⭐ PATCH: percorso corretto
     const resHero = await fetch("/data/products.json", { cache: "no-store" });
     if (!resHero.ok) throw new Error("products.json non disponibile");
 
     const productsHero = await resHero.json();
     const images = productsHero
-      .map(p => p.Immagine?.[0]?.url)
+      .map(getImage)
       .filter(Boolean);
 
     const slider = document.getElementById("hero-slider");
@@ -74,7 +86,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (!grid) return;
 
   try {
-    // ⭐ PATCH: percorso corretto
     const res = await fetch("/data/products.json", { cache: "no-store" });
     if (!res.ok) {
       grid.innerHTML = `<p>Il catalogo sarà presto disponibile.</p>`;
@@ -90,11 +101,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     grid.innerHTML = "";
 
     products.slice(0, 3).forEach((p) => {
-      const img = p.Immagine?.[0]?.url || "/placeholder.webp";
-      const titolo = clean(p.TitoloBreve || p.Titolo || "");
+      const img = getImage(p);
+      const titolo = clean(p.TitoloBreve || p.Titolo || "Prodotto");
       const descrizione = getShortDescription(p);
       const prezzo = p.Prezzo ? clean(String(p.Prezzo)) + " €" : "";
-      const slug = clean(p.slug);
+      const slug = clean(p.slug || "");
 
       const card = document.createElement("article");
       card.className = "product-card";
