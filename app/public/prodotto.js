@@ -40,7 +40,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   let products = [];
   try {
-    const res = await fetch("/products.json", { cache: "no-store" });
+    // ⭐ PATCH: percorso corretto
+    const res = await fetch("/data/products.json", { cache: "no-store" });
     products = await res.json();
   } catch {
     document.getElementById("prodotto").innerHTML =
@@ -93,7 +94,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /* ============================================================
-     PATCH GRAFICA — SOLO QUESTO BLOCCO È STATO MODIFICATO
+     PATCH GRAFICA — BLOCCO COMPLETO
   ============================================================ */
   document.getElementById("prodotto").innerHTML = `
     <div class="product-layout">
