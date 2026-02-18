@@ -30,7 +30,8 @@ document.addEventListener("DOMContentLoaded", async () => {
      SLIDER HERO
   ========================================================= */
   try {
-    const resHero = await fetch("/products.json", { cache: "no-store" });
+    // ⭐ PATCH: percorso corretto
+    const resHero = await fetch("/data/products.json", { cache: "no-store" });
     if (!resHero.ok) throw new Error("products.json non disponibile");
 
     const productsHero = await resHero.json();
@@ -73,7 +74,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (!grid) return;
 
   try {
-    const res = await fetch("/products.json", { cache: "no-store" });
+    // ⭐ PATCH: percorso corretto
+    const res = await fetch("/data/products.json", { cache: "no-store" });
     if (!res.ok) {
       grid.innerHTML = `<p>Il catalogo sarà presto disponibile.</p>`;
       return;
