@@ -2,7 +2,7 @@
 
 async function loadProducts() {
   try {
-    const res = await fetch("products.json", { cache: "no-store" });
+    const res = await fetch("data/products.json", { cache: "no-store" });
     if (!res.ok) throw new Error("Errore fetch products.json");
     const data = await res.json();
     return Array.isArray(data) ? data : [];
@@ -22,9 +22,6 @@ function safeURL(u) {
   return typeof u === "string" && u.startsWith("http") ? u : "";
 }
 
-/* =========================================================
-   LINK YOUTUBE (con fallback)
-========================================================= */
 function renderYouTubeLink(p) {
   const url =
     safeURL(p.youtube_url) ||
@@ -42,24 +39,17 @@ function renderYouTubeLink(p) {
   `;
 }
 
-/* =========================================================
-   DESCRIZIONE BREVE (con fallback elegante)
-========================================================= */
 function getShortDescription(p) {
   if (p.DescrizioneBreve && p.DescrizioneBreve.trim() !== "") {
     return clean(p.DescrizioneBreve);
   }
 
-  // fallback: accorcia la descrizione lunga
   const full = p.Descrizione || "";
   const short = full.length > 120 ? full.slice(0, 120) + "…" : full;
 
   return clean(short);
 }
 
-/* =========================================================
-   CARD PRODOTTO
-========================================================= */
 function cardHTML(p) {
   const img = p.Immagine?.[0]?.url || "img/placeholder.webp";
   const titolo = clean(p.TitoloBreve || p.Titolo || "");
@@ -79,9 +69,6 @@ function cardHTML(p) {
   `;
 }
 
-/* =========================================================
-   INIZIALIZZAZIONE CATALOGO
-========================================================= */
 (async function initCatalogo() {
   const products = await loadProducts();
   const container = document.getElementById("catalogo");
@@ -99,7 +86,6 @@ function cardHTML(p) {
     ? products.map(cardHTML).join("")
     : "<p>Nessun prodotto disponibile.</p>";
 
-  // FILTRO CATEGORIE
   categorieBox.addEventListener("click", e => {
     const cat = e.target.dataset.cat;
     if (!cat) return;
@@ -109,7 +95,6 @@ function cardHTML(p) {
     });
   });
 
-  // FILTRO PREZZO
   document.querySelectorAll("[data-prezzo]").forEach(btn => {
     btn.addEventListener("click", () => {
       const max = parseFloat(btn.dataset.prezzo);
@@ -122,7 +107,6 @@ function cardHTML(p) {
     });
   });
 
-  // RESET FILTRI
   const resetBtn = document.getElementById("reset");
   if (resetBtn) {
     resetBtn.addEventListener("click", () => {
