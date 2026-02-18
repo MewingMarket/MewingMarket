@@ -9,14 +9,12 @@ const cron = require("node-cron");
 const { syncPayhip } = require("../../services/payhip.cjs");
 const { syncYouTube } = require("../../services/youtube.cjs");
 
-// PATCH: Airtable e loadProducts stanno in app/modules/ (2 livelli, non 3)
+// PATCH: Airtable e loadProducts stanno in app/modules/
 const { syncAirtable, loadProducts } = require("../../modules/airtable.cjs");
 
 module.exports = function startCronJobs() {
   try {
-    if (typeof global.logEvent === "function") {
-      global.logEvent("cron_init", { time: new Date().toISOString() });
-    }
+    global.logEvent?.("cron_init", { time: new Date().toISOString() });
 
     /* =========================================================
        CRON PAYHIP — ogni 10 minuti
@@ -24,35 +22,30 @@ module.exports = function startCronJobs() {
     cron.schedule("*/10 * * * *", async () => {
       try {
         await syncPayhip();
-        if (typeof global.logEvent === "function") {
-          global.logEvent("cron_payhip_ok", {});
-        }
+        global.logEvent?.("cron_payhip_ok", {});
       } catch (err) {
         console.error("Cron Payhip error:", err);
-        if (typeof global.logEvent === "function") {
-          global.logEvent("cron_payhip_error", {
-            error: err?.message || "unknown"
-          });
-        }
+        global.logEvent?.("cron_payhip_error", { error: err?.message || "unknown" });
       }
     });
 
     /* =========================================================
-       CRON AIRTABLE — ogni 15 minuti
+       CRON AIRTABLE — ogni 15 minuti (RESILIENTE)
     ========================================================== */
     cron.schedule("*/15 * * * *", async () => {
       try {
-        await syncAirtable();
-        if (typeof global.logEvent === "function") {
-          global.logEvent("cron_airtable_ok", {});
+        if (!process.env.AIRTABLE_API_KEY) {
+          console.log("⏭️ Cron Airtable skipped: missing API key");
+          global.logEvent?.("cron_airtable_skipped", { reason: "missing_api_key" });
+          return;
         }
+
+        await syncAirtable();
+        global.logEvent?.("cron_airtable_ok", {});
+
       } catch (err) {
         console.error("Cron Airtable error:", err);
-        if (typeof global.logEvent === "function") {
-          global.logEvent("cron_airtable_error", {
-            error: err?.message || "unknown"
-          });
-        }
+        global.logEvent?.("cron_airtable_error", { error: err?.message || "unknown" });
       }
     });
 
@@ -62,16 +55,10 @@ module.exports = function startCronJobs() {
     cron.schedule("*/30 * * * *", async () => {
       try {
         await syncYouTube();
-        if (typeof global.logEvent === "function") {
-          global.logEvent("cron_youtube_ok", {});
-        }
+        global.logEvent?.("cron_youtube_ok", {});
       } catch (err) {
         console.error("Cron YouTube error:", err);
-        if (typeof global.logEvent === "function") {
-          global.logEvent("cron_youtube_error", {
-            error: err?.message || "unknown"
-          });
-        }
+        global.logEvent?.("cron_youtube_error", { error: err?.message || "unknown" });
       }
     });
 
@@ -81,29 +68,17 @@ module.exports = function startCronJobs() {
     cron.schedule("*/5 * * * *", async () => {
       try {
         await loadProducts();
-        if (typeof global.logEvent === "function") {
-          global.logEvent("cron_products_ok", {});
-        }
+        global.logEvent?.("cron_products_ok", {});
       } catch (err) {
         console.error("Cron Products error:", err);
-        if (typeof global.logEvent === "function") {
-          global.logEvent("cron_products_error", {
-            error: err?.message || "unknown"
-          });
-        }
+        global.logEvent?.("cron_products_error", { error: err?.message || "unknown" });
       }
     });
 
-    if (typeof global.logEvent === "function") {
-      global.logEvent("cron_ready", { time: new Date().toISOString() });
-    }
+    global.logEvent?.("cron_ready", { time: new Date().toISOString() });
 
   } catch (err) {
     console.error("❌ Errore startCronJobs:", err);
-    if (typeof global.logEvent === "function") {
-      global.logEvent("cron_fatal_error", {
-        error: err?.message || "unknown"
-      });
-    }
+    global.logEvent?.("cron_fatal_error", { error: err?.message || "unknown" });
   }
 };
