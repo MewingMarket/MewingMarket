@@ -4,7 +4,7 @@
  */
 
 // BOT → percorso corretto
-const { detectIntent, handleConversation, reply } = require("../../modules/bot/index.cjs");
+const { detectIntent, handleConversation, reply: buildReply } = require("../../modules/bot/index.cjs");
 
 // GA4 → dal nuovo server
 const { trackGA4 } = require("../services/ga4.cjs");
@@ -26,8 +26,8 @@ module.exports = function (app) {
       // 2) Conversation handler
       const response = await handleConversation(intent, message, uid, userState);
 
-      // 3) Reply builder
-      const finalReply = await reply(response, uid);
+      // 3) Reply builder (NON invia nulla)
+      const finalReply = await buildReply(response, uid);
 
       // GA4 tracking
       trackGA4("chat_message", {
@@ -40,6 +40,7 @@ module.exports = function (app) {
         global.logBot("chat_response", { uid, finalReply });
       }
 
+      // ⭐ Risposta Express sicura
       return res.json(finalReply);
 
     } catch (err) {
