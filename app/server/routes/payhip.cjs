@@ -4,7 +4,9 @@
  */
 
 const { syncPayhip } = require("../services/payhip.cjs");
-const { syncAirtable, loadProducts } = require("../../../modules/airtable.cjs");
+
+// PATCH: percorso corretto verso airtable.cjs
+const { syncAirtable, loadProducts } = require("../../modules/airtable.cjs");
 
 module.exports = function (app) {
 
