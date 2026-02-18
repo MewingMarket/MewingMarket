@@ -13,9 +13,12 @@ module.exports = async function fallbackHandler(req, res, rawText) {
 
   const uid = req?.uid || "unknown_user";
 
+  // ⭐ PATCH: aggiorna contesto automaticamente
+  Context.update(uid, "fallback", null);
+
   // Recupero memoria e contesto
   const memory = Memory.get(uid) || [];
-  const pageContext = Context.get(req) || {};
+  const pageContext = Context.get(uid) || {};
 
   // Costruzione prompt dinamico e pulito
   let systemPrompt = `
