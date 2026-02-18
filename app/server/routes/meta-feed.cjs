@@ -3,8 +3,8 @@
  * Feed prodotti per Meta / Facebook / Instagram
  */
 
-// PRODUCTS → dalla vecchia architettura
-const { getProducts } = require("../../../modules/products.cjs");
+// PRODUCTS → percorso corretto
+const { getProducts } = require("../../modules/products.cjs");
 
 module.exports = function (app) {
   app.get("/meta/feed", async (req, res) => {
