@@ -3,9 +3,24 @@
 const axios = require("axios");
 const xml2js = require("xml2js");
 const { updateFromYouTube } = require("../modules/youtube.cjs");
-const { syncAirtable } = require("../modules/airtable.cjs");
+
+// ❌ RIMOSSO: syncAirtable non deve essere chiamato da YouTube
+// const { syncAirtable } = require("../modules/airtable.cjs");
 
 const PROXY = "https://corsproxy.io/?";
+
+// Credenziali Airtable (per sicurezza)
+const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
+const AIRTABLE_BASE = process.env.AIRTABLE_BASE;
+const AIRTABLE_TABLE_NAME = process.env.AIRTABLE_TABLE_NAME;
+
+function canUseAirtable() {
+  if (!AIRTABLE_PAT || !AIRTABLE_BASE || !AIRTABLE_TABLE_NAME) {
+    console.log("⏭️ YouTube → Airtable skipped: missing PAT / BASE / TABLE_NAME");
+    return false;
+  }
+  return true;
+}
 
 /* =========================================================
    API YouTube
@@ -160,7 +175,7 @@ async function fetchChannelVideosHTML() {
 }
 
 /* =========================================================
-   SYNC COMPLETO YOUTUBE
+   SYNC COMPLETO YOUTUBE (RESILIENTE)
 ========================================================= */
 async function syncYouTube() {
   console.log("⏳ Sync YouTube avviato...");
@@ -188,14 +203,19 @@ async function syncYouTube() {
 
   for (const video of videos) {
     try {
-      await updateFromYouTube(video);
+      if (canUseAirtable()) {
+        await updateFromYouTube(video);
+      } else {
+        console.log("⏭️ Skip updateFromYouTube: Airtable non configurato");
+      }
       ok++;
     } catch (err) {
       console.error("Errore updateFromYouTube:", err);
     }
   }
 
-  await syncAirtable();
+  // ❌ RIMOSSO: YouTube NON deve fare sync globale Airtable
+  // await syncAirtable();
 
   console.log(`🎥 Sync YouTube completato: ${ok}/${videos.length} video aggiornati.`);
 
