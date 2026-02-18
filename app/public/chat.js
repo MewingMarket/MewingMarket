@@ -1,5 +1,5 @@
 /* =========================================================
-   CHATBOX — VERSIONE COMPLETA + PATCH
+   CHATBOX — VERSIONE COMPLETA + PATCH + ALLEGATI
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -7,6 +7,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const chatInput = document.getElementById("chat-input");
   const chatSend = document.getElementById("chat-send");
   const chatVoice = document.getElementById("chat-voice");
+  const chatAttach = document.getElementById("chat-attach");
+  const chatFile = document.getElementById("chat-file");
   const chatContainer = document.getElementById("chat-container");
   const chatToggle = document.getElementById("chat-toggle");
 
@@ -147,7 +149,39 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* =========================================================
-     APERTURA CHAT — PATCH
+     📎 ALLEGATI — PATCH COMPLETA
+  ========================================================== */
+
+  if (chatAttach && chatFile) {
+    chatAttach.addEventListener("click", () => {
+      chatFile.click();
+    });
+
+    chatFile.addEventListener("change", async () => {
+      const file = chatFile.files[0];
+      if (!file) return;
+
+      addMessage("📎 Allegato caricato: " + file.name, "user");
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const res = await fetch("/chat/attachment", {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await res.json();
+        addMessage(data.reply || "Allegato ricevuto.");
+      } catch (err) {
+        addMessage("Errore durante l'invio dell'allegato.", "bot");
+      }
+    });
+  }
+
+  /* =========================================================
+     APERTURA CHAT
   ========================================================== */
   chatToggle.addEventListener("click", () => {
     chatContainer.classList.toggle("open");
