@@ -1,129 +1,115 @@
-/* ============================== IMPORT ============================== */
+/**
+ * app/modules/airtable.cjs
+ * Gestione catalogo prodotti + vendite
+ */
+
 const fs = require("fs");
 const path = require("path");
-const fetch = require("node-fetch");
+const Airtable = require("airtable");
 
-function getExistingSlugs() {
+const ROOT = path.resolve(__dirname, "..");
+const DATA_PATH = path.join(ROOT, "data", "products.json");
+
+let PRODUCTS_CACHE = [];
+let SALES_CACHE = {};
+
+function saveProductsToFile(products) {
   try {
-    const file = fs.readFileSync(path.join(__dirname, "../../data/products.json"), "utf8");
-    const data = JSON.parse(file);
-    return data.map(p => p.slug);
-  } catch {
-    return [];
+    fs.writeFileSync(DATA_PATH, JSON.stringify(products, null, 2));
+  } catch (err) {
+    console.error("Errore salvataggio products.json:", err);
   }
 }
 
-/* ============================== VARIABILI AMBIENTE ============================== */
-const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
-const BASE_ID = process.env.AIRTABLE_BASE;
-
-// ⭐ Nuove variabili
-const TABLE_NAME = process.env.AIRTABLE_TABLE_NAME;
-const TABLE_ID = process.env.AIRTABLE_TABLE_ID;
-
-// ⭐ PATCH: percorso corretto
-const PRODUCTS_PATH = path.join(__dirname, "../../data/products.json");
-
-/* ============================== DEBUG CONFIG ============================== */
-function debugConfig() {
-  console.log("🔧 [DEBUG] Airtable Config (airtable.cjs):");
-  console.log("   BASE_ID:", BASE_ID);
-  console.log("   TABLE_NAME:", TABLE_NAME);
-  console.log("   TABLE_ID (informativo):", TABLE_ID);
-}
-
-/* ============================== LETTURA JSON ============================== */
-function safeReadJSON(filePath) {
+function loadProducts() {
   try {
-    if (!fs.existsSync(filePath)) return [];
-    const raw = fs.readFileSync(filePath, "utf8");
-    if (!raw.trim()) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
+    if (fs.existsSync(DATA_PATH)) {
+      const raw = fs.readFileSync(DATA_PATH, "utf8");
+      PRODUCTS_CACHE = JSON.parse(raw);
+    }
+  } catch (err) {
+    console.error("Errore loadProducts:", err);
   }
+  return PRODUCTS_CACHE;
 }
 
-/* ============================== SYNC AIRTABLE → products.json ============================== */
+function getProducts() {
+  return PRODUCTS_CACHE;
+}
+
 async function syncAirtable() {
   try {
-    debugConfig();
+    const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(process.env.AIRTABLE_BASE);
 
-    const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}?view=Grid%20view`;
+    const records = await base("Products").select({}).all();
 
-    console.log("📡 [DEBUG] syncAirtable → GET:", url);
-    const oldSlugs = getExistingSlugs();
+    const products = records.map((r) => ({
+      id: r.id,
+      slug: r.get("slug"),
+      title: r.get("title"),
+      description: r.get("description"),
+      price: r.get("price"),
+      image: r.get("image"),
+    }));
 
-    const response = await fetch(url, {
-      headers: {
-        "Authorization": `Bearer ${AIRTABLE_PAT}`,
-        "Content-Type": "application/json"
-      }
-    });
+    PRODUCTS_CACHE = products;
+    saveProductsToFile(products);
 
-    const data = await response.json();
-
-    if (data.error) {
-      console.error("❌ [DEBUG] Errore syncAirtable:", data.error);
-      return safeReadJSON(PRODUCTS_PATH);
-    }
-
-    if (!Array.isArray(data.records)) {
-      console.error("❌ [DEBUG] Nessun record trovato in Airtable.");
-      return safeReadJSON(PRODUCTS_PATH);
-    }
-
-    const records = data.records.map(r => {
-      const f = r.fields;
-
-      let slug = (f.Slug || f.slug || "").toString().trim().toLowerCase();
-
-      if (!slug && f.Titolo) {
-        slug = f.Titolo
-          .toString()
-          .trim()
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-+|-+$/g, "");
-      }
-
-      if (!slug && f.LinkPayhip) {
-        const match = f.LinkPayhip.match(/\/b\/([A-Za-z0-9]+)/);
-        if (match) slug = match[1].toLowerCase();
-      }
-
-      if (!slug) slug = r.id.toLowerCase();
-
-      const product = {
-        id: r.id,
-        slug,
-        ...f
-      };
-
-      if (!oldSlugs.includes(product.slug)) {
-        console.log(`🟢 [UPDATE] Nuovo prodotto aggiunto al sito:
-     • Nome prodotto: ${product.Titolo}`);
-      }
-
-      return product;
-    });
-
-    fs.writeFileSync(PRODUCTS_PATH, JSON.stringify(records, null, 2));
-
-    console.log("🟢 [DEBUG] syncAirtable completato. Prodotti salvati:", records.length);
-
-    return records;
+    return true;
 
   } catch (err) {
-    console.error("❌ [DEBUG] Errore syncAirtable:", err);
-    return safeReadJSON(PRODUCTS_PATH);
+    console.error("Errore syncAirtable:", err);
+    return false;
   }
 }
 
-/* ============================== EXPORT ============================== */
+async function saveSaleToAirtable(data) {
+  try {
+    const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(process.env.AIRTABLE_BASE);
+
+    await base("Sales").create([
+      {
+        fields: {
+          uid: data.uid,
+          product: data.product,
+          price: data.price,
+          email: data.email,
+        }
+      }
+    ]);
+
+  } catch (err) {
+    console.error("Errore saveSaleToAirtable:", err);
+  }
+}
+
+async function getSalesByUID(uid) {
+  try {
+    const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(process.env.AIRTABLE_BASE);
+
+    const records = await base("Sales").select({
+      filterByFormula: `{uid} = "${uid}"`
+    }).all();
+
+    return records.map((r) => ({
+      id: r.id,
+      uid: r.get("uid"),
+      product: r.get("product"),
+      price: r.get("price"),
+      email: r.get("email"),
+      created: r.get("created"),
+    }));
+
+  } catch (err) {
+    console.error("Errore getSalesByUID:", err);
+    return [];
+  }
+}
+
 module.exports = {
+  loadProducts,
+  getProducts,
   syncAirtable,
-  loadProducts: () => safeReadJSON(PRODUCTS_PATH),
-  getProducts: () => safeReadJSON(PRODUCTS_PATH)
+  saveSaleToAirtable,
+  getSalesByUID
 };
