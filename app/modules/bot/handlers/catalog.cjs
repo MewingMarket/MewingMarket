@@ -10,7 +10,7 @@ const Context = require("../../context.cjs");
 
 /* ============================================================
    HANDLER CATALOGO
-   ============================================================ */
+============================================================ */
 module.exports = async function catalogHandler(req, res, rawText, PRODUCTS) {
   log("HANDLER_CATALOG", { rawText });
 
@@ -19,7 +19,10 @@ module.exports = async function catalogHandler(req, res, rawText, PRODUCTS) {
   }
 
   const uid = req?.uid || "unknown_user";
-  const pageContext = Context.get(req) || {};
+  const pageContext = Context.get(uid) || {};
+
+  // ⭐ PATCH: aggiorna contesto automaticamente
+  Context.update(uid, "catalogo", null);
 
   let out = `
 <div class="mm-card">
