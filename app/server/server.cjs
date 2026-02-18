@@ -41,6 +41,9 @@ require("./middleware/context.cjs")(app);
 ============================================================ */
 app.use(express.static(path.join(ROOT, "public")));
 
+/* ⭐ PATCH: esponi anche /data per products.json */
+app.use("/data", express.static(path.join(ROOT, "data")));
+
 /* ============================================================
    ROUTES
 ============================================================ */
