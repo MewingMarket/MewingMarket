@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <!-- HEAD DINAMICO -->
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       fetch("head.html")
@@ -23,6 +24,7 @@
 
 <body>
 
+<!-- HEADER DINAMICO -->
 <div id="header-placeholder"></div>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
@@ -36,14 +38,21 @@
 </script>
 
 <main>
-  <section class="hero-wrapper" id="prodotto"></section>
 
+  <!-- SEZIONE PRODOTTO -->
+  <section class="hero-wrapper" id="prodotto">
+    <p>Caricamento prodotto…</p>
+  </section>
+
+  <!-- CORRELATI -->
   <section class="home-section">
     <h2>Potrebbe interessarti anche</h2>
     <div class="catalogo-grid" id="related"></div>
   </section>
+
 </main>
 
+<!-- FOOTER DINAMICO -->
 <div id="footer-placeholder"></div>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
@@ -56,6 +65,7 @@
   });
 </script>
 
+<!-- TRACKING -->
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   const params = new URLSearchParams(window.location.search);
@@ -71,6 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 </script>
 
+<!-- JS PRODOTTO -->
 <script src="prodotto.js" defer></script>
 
 </body>
