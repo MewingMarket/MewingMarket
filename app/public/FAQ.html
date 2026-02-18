@@ -77,23 +77,36 @@
 
 </main>
 
-<!-- CHATBOT WHATSAPP-STYLE -->
+<!-- CHATBOT -->
 <button id="chat-toggle">
-  <img src="chat-icon.svg" alt="Chat">
+  <img src="chat-icon.png" alt="Chat">
 </button>
 
 <div id="chat-container">
   <div id="chat-header">
-    <img src="chat-icon.svg" alt="">
+    <img src="chat-icon.png" alt="">
     Supporto MewingMarket
   </div>
 
   <div id="chat-box"></div>
 
   <div id="chat-input-area">
+
+    <!-- Campo testo -->
     <input id="chat-input" type="text" placeholder="Scrivi un messaggio...">
+
+    <!-- Pulsante invio -->
     <button id="chat-send">➤</button>
+
+    <!-- Pulsante voce -->
     <button id="chat-voice">🎤</button>
+
+    <!-- ⭐ NUOVO: Pulsante allegati -->
+    <button id="chat-attach">📎</button>
+
+    <!-- Input file nascosto -->
+    <input type="file" id="chat-file" style="display:none" accept="image/*,application/pdf">
+
   </div>
 </div>
 
