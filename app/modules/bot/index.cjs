@@ -5,11 +5,12 @@
 
 const path = require("path");
 
-// PATCH: utils NON esporta log → uso logger globale
+// Utils
 const utils = require("./utils.cjs");
 const { reply, setState, generateUID, addEmojis, isYes } = utils;
 const log = global.logBot || console.log;
 
+// Core
 const detectIntent = require("./intent.cjs");
 const callGPT = require("./gpt.cjs");
 const transcribeAudio = require("./whisper.cjs");
@@ -34,8 +35,12 @@ const { getProducts } = require(path.join(__dirname, "..", "airtable.cjs"));
 ============================================================ */
 async function handleConversation(req, res) {
   try {
-    const rawText = req?.body?.text || "";
+    // PATCH: il frontend invia "message", non "text"
+    const rawText = req?.body?.message || req?.body?.text || "";
+    
+    // PATCH: UID persistente
     const uid = req?.uid || generateUID();
+    req.uid = uid;
 
     const { intent, sub } = detectIntent(rawText);
     const pageContext = Context.get(req) || {};
@@ -54,7 +59,9 @@ async function handleConversation(req, res) {
 
     // Memory push
     try {
-      Memory.push(uid, rawText);
+      if (rawText.trim() !== "") {
+        Memory.push(uid, rawText);
+      }
       state.lastIntent = intent;
       log("MEMORY_PUSH", rawText);
     } catch (err) {
