@@ -40,7 +40,9 @@ a {
   max-width: 900px;
   margin: auto;
   padding: 40px 20px;
-} /* --------------------------------------------------
+}
+
+/* --------------------------------------------------
    HEADER PREMIUM
 -------------------------------------------------- */
 .header-premium {
@@ -167,9 +169,7 @@ a {
 .home-section h2 {
   text-align: center;
   margin-bottom: 25px;
-}
-
-/* --------------------------------------------------
+}  /* --------------------------------------------------
    GRIGLIA PRODOTTI
 -------------------------------------------------- */
 .products-grid,
@@ -248,7 +248,9 @@ a {
 .product-card .btn-secondary {
   background: #eee;
   color: #000;
-} /* --------------------------------------------------
+}
+
+/* --------------------------------------------------
    PAGINA PRODOTTO
 -------------------------------------------------- */
 .hero-wrapper {
@@ -329,9 +331,7 @@ a {
 .faq-question:hover,
 .faq-item.open .faq-question {
   color: #ffcc00;
-}
-
-/* --------------------------------------------------
+} /* --------------------------------------------------
    PERCHÉ MEWINGMARKET
 -------------------------------------------------- */
 .why-mm {
@@ -400,74 +400,15 @@ a {
   font-weight: 700;
   margin: 0 auto 12px;
   font-size: 1.1rem;
-} /* --------------------------------------------------
-   FOOTER PREMIUM
+}
+
+/* --------------------------------------------------
+   NOVITÀ DAL CATALOGO (HOME)
 -------------------------------------------------- */
-footer {
-  background: #000;
-  color: #fff;
-  padding: 40px 20px 20px;
-  margin-top: 60px;
-}
-
-.footer-inner {
+#catalogo {
   max-width: 1200px;
-  margin: auto;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 40px;
-}
-
-.footer-block h4 {
-  margin-bottom: 12px;
-  font-size: 20px;
-  color: #ffcc00;
-}
-
-.footer-links,
-.footer-legal {
-  list-style: none;
-  padding: 0;
-}
-
-.footer-links li,
-.footer-legal li {
-  margin-bottom: 8px;
-}
-
-.footer-links a,
-.footer-legal a {
-  color: #fff;
-  transition: 0.2s;
-}
-
-.footer-links a:hover,
-.footer-legal a:hover {
-  color: #ffcc00;
-}
-
-.footer-social {
-  display: flex;
-  gap: 14px;
-  margin-top: 12px;
-}
-
-.footer-social a {
-  font-size: 22px;
-  color: #fff;
-  transition: 0.2s;
-}
-
-.footer-social a:hover {
-  color: #ffcc00;
-  transform: scale(1.15);
-}
-
-.footer-bottom {
-  text-align: center;
-  margin-top: 30px;
-  font-size: 14px;
-  opacity: 0.7;
+  margin: 50px auto;
+  padding: 0 20px;
 }
 
 /* --------------------------------------------------
@@ -525,7 +466,7 @@ footer {
   background: #ffb3b3;
   color: #8a0000;
   font-weight: bold;
-} /* --------------------------------------------------
+}  /* --------------------------------------------------
    ANIMAZIONI GLOBALI
 -------------------------------------------------- */
 
@@ -570,7 +511,9 @@ footer {
   0% { transform: scale(1); }
   50% { transform: scale(1.04); }
   100% { transform: scale(1); }
-} /* --------------------------------------------------
+}
+
+/* --------------------------------------------------
    ELEMENTI EXTRA
 -------------------------------------------------- */
 
@@ -728,7 +671,7 @@ footer {
 }
 
 /* --------------------------------------------------
-   CARD BASE
+   CARD BASE (MM)
 -------------------------------------------------- */
 .mm-card {
   background: #ffffff;
@@ -780,8 +723,8 @@ footer {
   border-radius: 6px;
   text-decoration: none;
   font-size: 13px;
-}  /* --------------------------------------------------
-   CHATBOT WHATSAPP STYLE — NUOVO SISTEMA
+} /* --------------------------------------------------
+   CHATBOT WHATSAPP STYLE — VERSIONE PATCHATA
 -------------------------------------------------- */
 
 /* Pulsante flottante */
@@ -813,7 +756,14 @@ footer {
   pointer-events: none;
 }
 
-/* Contenitore chat */
+/* Nascondi il bottone quando la chat è aperta */
+#chat-toggle.hide {
+  display: none !important;
+}
+
+/* --------------------------------------------------
+   CONTENITORE CHAT
+-------------------------------------------------- */
 #chat-container {
   position: fixed;
   bottom: 20px;
@@ -835,7 +785,9 @@ footer {
   transform: translateY(0);
 }
 
-/* Header */
+/* --------------------------------------------------
+   HEADER CHAT
+-------------------------------------------------- */
 #chat-header {
   background: #075e54;
   color: white;
@@ -853,7 +805,9 @@ footer {
   border-radius: 50%;
 }
 
-/* Area messaggi */
+/* --------------------------------------------------
+   AREA MESSAGGI
+-------------------------------------------------- */
 #chat-box {
   flex: 1;
   padding: 15px;
@@ -885,7 +839,9 @@ footer {
   border-bottom-left-radius: 2px;
 }
 
-/* Input area */
+/* --------------------------------------------------
+   INPUT AREA
+-------------------------------------------------- */
 #chat-input-area {
   display: flex;
   align-items: center;
@@ -919,7 +875,9 @@ footer {
   background: #0a6f63;
 }
 
-/* Pulsante vocale */
+/* --------------------------------------------------
+   PULSANTE VOCALE
+-------------------------------------------------- */
 #chat-voice {
   background: #128c7e;
   color: white;
@@ -945,12 +903,12 @@ footer {
   0% { box-shadow: 0 0 0 0 rgba(217,83,79,0.6); }
   70% { box-shadow: 0 0 0 12px rgba(217,83,79,0); }
   100% { box-shadow: 0 0 0 0 rgba(217,83,79,0); }
-} /* --------------------------------------------------
-   CHATBOT — MOBILE FIX
+}
+
+/* --------------------------------------------------
+   MOBILE FIX
 -------------------------------------------------- */
 @media (max-width: 480px) {
-
-  /* Chat container a tutta larghezza */
   #chat-container {
     width: 100%;
     right: 0;
@@ -959,7 +917,6 @@ footer {
     max-height: 100%;
   }
 
-  /* Bottone più piccolo */
   #chat-toggle {
     bottom: 20px;
     right: 20px;
@@ -971,41 +928,4 @@ footer {
     width: 28px;
     height: 28px;
   }
-} 
-#chat-toggle {
-  position: fixed;
-  bottom: 25px;
-  right: 25px;
-  width: 62px;
-  height: 62px;
-  background: #ffcc00;
-  border-radius: 50%;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
-  cursor: pointer;
-  z-index: 999999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  transition: transform 0.2s ease;
-}
-
-#chat-toggle:hover {
-  transform: scale(1.08);
-}
-
-#chat-toggle img {
-  width: 34px;
-  height: 34px;
-  pointer-events: none;
-} 
-/* Nascondi il bottone quando la chat è aperta */
-#chat-container.open + #chat-toggle,
-#chat-container.open ~ #chat-toggle {
-  display: none !important;
-}
-
-/* Alternativa JS (se usi la classe .hide) */
-#chat-toggle.hide {
-  display: none !important;
 } 
