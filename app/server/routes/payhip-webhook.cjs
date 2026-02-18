@@ -5,8 +5,8 @@
 
 const crypto = require("crypto");
 
-// Usa la funzione reale che esiste davvero
-const { saveSaleToAirtable } = require("../../../modules/airtable.cjs");
+// PATCH: percorso corretto verso airtable.cjs
+const { saveSaleToAirtable } = require("../../modules/airtable.cjs");
 
 module.exports = function (app) {
   app.post("/payhip/webhook", async (req, res) => {
