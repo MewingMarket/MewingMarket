@@ -9,8 +9,8 @@ const Memory = require("../../memory.cjs");
 const Context = require("../../context.cjs");
 
 /* ============================================================
-   FALLBACK GPT
-   ============================================================ */
+   FALLBACK GPT (VERSIONE RESILIENTE)
+============================================================ */
 module.exports = async function fallbackHandler(req, res, rawText) {
   log("HANDLER_FALLBACK", { rawText });
 
@@ -32,5 +32,6 @@ Se possibile, proponi una delle seguenti opzioni:
     {}
   );
 
+  // ⭐ PATCH: reply ora gestisce sia Express che modalità interna
   return reply(res, enriched || "Non ho capito bene, vuoi vedere il menu?");
 };
