@@ -8,7 +8,7 @@ const path = require("path");
 const multer = require("multer");
 
 // BOT → percorso corretto
-const { detectIntent, handleConversation, reply } = require("../../modules/bot/index.cjs");
+const { detectIntent, handleConversation, reply: buildReply } = require("../../modules/bot/index.cjs");
 
 // GA4 → dal nuovo server
 const { trackGA4 } = require("../services/ga4.cjs");
@@ -58,8 +58,8 @@ module.exports = function (app) {
       // 3) Conversation handler
       const response = await handleConversation(intent, text, uid, userState);
 
-      // 4) Reply builder
-      const finalReply = await reply(response, uid);
+      // 4) Reply builder (NON invia nulla)
+      const finalReply = await buildReply(response, uid);
 
       // GA4 tracking
       trackGA4("voice_message", {
