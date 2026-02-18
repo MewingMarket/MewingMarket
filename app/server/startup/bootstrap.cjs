@@ -8,9 +8,9 @@ const { syncYouTube } = require("../../services/youtube.cjs");
 const { syncAirtable, loadProducts } = require("../../modules/airtable.cjs");
 
 module.exports = async function bootstrap() {
-  console.log("\n===============================");
+  console.log("\n====================================");
   console.log("🚀 BOOTSTRAP MewingMarket");
-  console.log("===============================\n");
+  console.log("====================================\n");
 
   global.catalogReady = false;
 
@@ -36,7 +36,7 @@ module.exports = async function bootstrap() {
 
   global.catalogReady = true;
 
-  console.log("===============================");
+  console.log("====================================");
   console.log("🎉 BOOTSTRAP COMPLETATO");
-  console.log("===============================\n");
+  console.log("====================================\n");
 };
