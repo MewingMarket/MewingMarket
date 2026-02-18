@@ -7,7 +7,7 @@ const { stripHTML } = require("../utils.cjs"); // usa il tuo utils generale
 
 /* ============================================================
    LOG ENGINE — logging totale
-   ============================================================ */
+============================================================ */
 function log(section, data) {
   try {
     const formatted =
@@ -20,7 +20,7 @@ function log(section, data) {
 
 /* ============================================================
    EMOJI BOOSTER
-   ============================================================ */
+============================================================ */
 function addEmojis(text = "") {
   log("EMOJI_IN", text);
   try {
@@ -43,7 +43,7 @@ function addEmojis(text = "") {
 
 /* ============================================================
    UID GENERATOR
-   ============================================================ */
+============================================================ */
 function generateUID() {
   const uid = "mm_" + Math.random().toString(36).substring(2, 12);
   log("UID_GENERATED", uid);
@@ -52,7 +52,7 @@ function generateUID() {
 
 /* ============================================================
    STATE MANAGER
-   ============================================================ */
+============================================================ */
 function setState(req, newState) {
   try {
     const old = req?.userState?.state || "none";
@@ -64,20 +64,40 @@ function setState(req, newState) {
 }
 
 /* ============================================================
-   BOT REPLY WRAPPER
-   ============================================================ */
+   BOT REPLY WRAPPER (VERSIONE RESILIENTE)
+============================================================ */
 function reply(res, text) {
   try {
     log("BOT_REPLY", text);
-    res.json({ reply: addEmojis(text || "") });
+
+    const payload = { reply: addEmojis(text || "") };
+
+    // Caso 1 — risposta HTTP Express
+    if (res && typeof res.json === "function") {
+      return res.json(payload);
+    }
+
+    // Caso 2 — risposta interna (fallback, eventi, errori GPT)
+    return payload;
+
   } catch (err) {
-    res.json({ reply: "Errore tecnico, ma posso aiutarti." });
+    log("BOT_REPLY_ERROR", err);
+
+    const fallback = {
+      reply: "C’è un piccolo problema tecnico, ma posso aiutarti."
+    };
+
+    if (res && typeof res.json === "function") {
+      return res.json(fallback);
+    }
+
+    return fallback;
   }
 }
 
 /* ============================================================
    YES DETECTOR
-   ============================================================ */
+============================================================ */
 function isYes(text) {
   const t = (text || "").toLowerCase();
   return (
@@ -92,7 +112,7 @@ function isYes(text) {
 
 /* ============================================================
    EXPORT
-   ============================================================ */
+============================================================ */
 module.exports = {
   log,
   reply,
