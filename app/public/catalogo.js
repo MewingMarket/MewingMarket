@@ -1,8 +1,8 @@
-// catalogo.js — versione definitiva con TitoloBreve + DescrizioneBreve + YouTube fallback
+// catalogo.js — versione patchata e stabile
 
 async function loadProducts() {
   try {
-    const res = await fetch("data/products.json", { cache: "no-store" });
+    const res = await fetch("/data/products.json", { cache: "no-store" });
     if (!res.ok) throw new Error("Errore fetch products.json");
     const data = await res.json();
     return Array.isArray(data) ? data : [];
@@ -50,12 +50,22 @@ function getShortDescription(p) {
   return clean(short);
 }
 
+function getImage(p) {
+  if (Array.isArray(p.Immagine) && p.Immagine[0]?.url) {
+    return p.Immagine[0].url;
+  }
+  if (typeof p.Immagine === "string" && p.Immagine.startsWith("http")) {
+    return p.Immagine;
+  }
+  return "img/placeholder.webp";
+}
+
 function cardHTML(p) {
-  const img = p.Immagine?.[0]?.url || "img/placeholder.webp";
+  const img = getImage(p);
   const titolo = clean(p.TitoloBreve || p.Titolo || "");
   const descrizione = getShortDescription(p);
   const prezzo = Number(p.Prezzo) || 0;
-  const slug = clean(p.slug);
+  const slug = clean(p.slug || "");
 
   return `
     <div class="product-card" data-cat="${clean(p.Categoria || "")}" data-prezzo="${prezzo}">
@@ -76,7 +86,7 @@ function cardHTML(p) {
 
   if (!container || !categorieBox) return;
 
-  const categorie = [...new Set(products.map(p => p.Categoria))].filter(Boolean);
+  const categorie = [...new Set(products.map(p => p.Categoria || ""))].filter(Boolean);
 
   categorieBox.innerHTML = categorie.length
     ? categorie.map(cat => `<button class="btn" data-cat="${clean(cat)}">${clean(cat)}</button>`).join("")
@@ -92,18 +102,6 @@ function cardHTML(p) {
 
     document.querySelectorAll(".product-card").forEach(card => {
       card.style.display = card.dataset.cat === cat ? "block" : "none";
-    });
-  });
-
-  document.querySelectorAll("[data-prezzo]").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const max = parseFloat(btn.dataset.prezzo);
-      if (isNaN(max)) return;
-
-      document.querySelectorAll(".product-card").forEach(card => {
-        const prezzo = parseFloat(card.dataset.prezzo);
-        card.style.display = prezzo <= max ? "block" : "none";
-      });
     });
   });
 
