@@ -10,10 +10,13 @@ const Context = require("../../context.cjs");
 
 /* ============================================================
    SUPPORTO GENERICO
-   ============================================================ */
+============================================================ */
 async function handleSupportGeneric(req, res, rawText) {
   const uid = req?.uid || "unknown_user";
-  const pageContext = Context.get(req) || {};
+  const pageContext = Context.get(uid) || {};
+
+  // ⭐ PATCH: aggiorna contesto automaticamente
+  Context.update(uid, "supporto", null);
 
   const base = `
 <div class="mm-card">
@@ -41,10 +44,13 @@ async function handleSupportGeneric(req, res, rawText) {
 
 /* ============================================================
    SUPPORTO DOWNLOAD
-   ============================================================ */
+============================================================ */
 async function handleDownload(req, res, rawText) {
   const uid = req?.uid || "unknown_user";
-  const pageContext = Context.get(req) || {};
+  const pageContext = Context.get(uid) || {};
+
+  // ⭐ PATCH
+  Context.update(uid, "supporto", "download");
 
   const base = `
 <div class="mm-card">
@@ -72,10 +78,13 @@ async function handleDownload(req, res, rawText) {
 
 /* ============================================================
    SUPPORTO PAYHIP
-   ============================================================ */
+============================================================ */
 async function handlePayhip(req, res, rawText) {
   const uid = req?.uid || "unknown_user";
-  const pageContext = Context.get(req) || {};
+  const pageContext = Context.get(uid) || {};
+
+  // ⭐ PATCH
+  Context.update(uid, "supporto", "payhip");
 
   const base = `
 <div class="mm-card">
@@ -101,10 +110,13 @@ async function handlePayhip(req, res, rawText) {
 
 /* ============================================================
    SUPPORTO RIMBORSO
-   ============================================================ */
+============================================================ */
 async function handleRefund(req, res, rawText) {
   const uid = req?.uid || "unknown_user";
-  const pageContext = Context.get(req) || {};
+  const pageContext = Context.get(uid) || {};
+
+  // ⭐ PATCH
+  Context.update(uid, "supporto", "rimborso");
 
   const base = `
 <div class="mm-card">
@@ -133,10 +145,13 @@ async function handleRefund(req, res, rawText) {
 
 /* ============================================================
    SUPPORTO CONTATTO
-   ============================================================ */
+============================================================ */
 async function handleContact(req, res, rawText) {
   const uid = req?.uid || "unknown_user";
-  const pageContext = Context.get(req) || {};
+  const pageContext = Context.get(uid) || {};
+
+  // ⭐ PATCH
+  Context.update(uid, "supporto", "contatto");
 
   const base = `
 <div class="mm-card">
@@ -161,7 +176,7 @@ async function handleContact(req, res, rawText) {
 
 /* ============================================================
    ROUTER INTERNO
-   ============================================================ */
+============================================================ */
 module.exports = function supportHandler(req, res, sub, rawText) {
   log("HANDLER_SUPPORT", { sub, rawText });
 
