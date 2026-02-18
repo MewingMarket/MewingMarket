@@ -44,11 +44,21 @@ async function callGPT(
       return addEmojis("Sto avendo un problema tecnico, ma posso aiutarti.");
     }
 
+    /* ============================================================
+       PATCH: risposte brevi senza GPT (evita bug OpenRouter)
+    ============================================================ */
+    const short = (userPrompt || "").trim().toLowerCase();
+    if (["ciao", "hey", "hi", "salve", "menu", "ok"].includes(short)) {
+      return addEmojis("Ciao! 👋 Come posso aiutarti oggi?");
+    }
+
     const safeMemory = Array.isArray(memory) ? memory.slice(-6) : [];
     const ctx = context && typeof context === "object" ? context : {};
     const data = extraData && typeof extraData === "object" ? extraData : {};
 
-    // Costruisco un unico system prompt pulito
+    /* ============================================================
+       Costruzione system prompt pulito
+    ============================================================ */
     let system = BASE_SYSTEM_PROMPT + (extraSystem || "");
 
     const extraBlocks = [];
@@ -79,6 +89,9 @@ async function callGPT(
 
     log("GPT_PAYLOAD", payload);
 
+    /* ============================================================
+       TIMEOUT MANUALE — evita fetch infinite
+    ============================================================ */
     const controller = new AbortController();
     const timeout = setTimeout(() => {
       controller.abort();
