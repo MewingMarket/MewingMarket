@@ -10,10 +10,13 @@ const Context = require("../../context.cjs");
 
 /* ============================================================
    HANDLER DISISCRIZIONE
-   ============================================================ */
+============================================================ */
 async function handleUnsubscribe(req, res, rawText) {
   const uid = req?.uid || "unknown_user";
-  const pageContext = Context.get(req) || {};
+  const pageContext = Context.get(uid) || {};
+
+  // ⭐ PATCH: aggiorna contesto automaticamente
+  Context.update(uid, "newsletter", "unsubscribe");
 
   const base = `
 <div class="mm-card">
@@ -38,10 +41,13 @@ async function handleUnsubscribe(req, res, rawText) {
 
 /* ============================================================
    HANDLER ISCRIZIONE
-   ============================================================ */
+============================================================ */
 async function handleSubscribe(req, res, rawText) {
   const uid = req?.uid || "unknown_user";
-  const pageContext = Context.get(req) || {};
+  const pageContext = Context.get(uid) || {};
+
+  // ⭐ PATCH: aggiorna contesto automaticamente
+  Context.update(uid, "newsletter", "subscribe");
 
   const base = `
 <div class="mm-card">
@@ -65,7 +71,7 @@ async function handleSubscribe(req, res, rawText) {
 
 /* ============================================================
    ROUTER INTERNO
-   ============================================================ */
+============================================================ */
 module.exports = function newsletterHandler(req, res, sub, rawText) {
   log("HANDLER_NEWSLETTER", { sub, rawText });
 
