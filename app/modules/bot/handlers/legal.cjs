@@ -10,10 +10,13 @@ const Context = require("../../context.cjs");
 
 /* ============================================================
    PRIVACY
-   ============================================================ */
+============================================================ */
 async function handlePrivacy(req, res, rawText) {
   const uid = req?.uid || "unknown_user";
-  const pageContext = Context.get(req) || {};
+  const pageContext = Context.get(uid) || {};
+
+  // ⭐ PATCH: aggiorna contesto automaticamente
+  Context.update(uid, "privacy", null);
 
   const base = `
 <div class="mm-card">
@@ -41,10 +44,13 @@ async function handlePrivacy(req, res, rawText) {
 
 /* ============================================================
    TERMINI E CONDIZIONI
-   ============================================================ */
+============================================================ */
 async function handleTerms(req, res, rawText) {
   const uid = req?.uid || "unknown_user";
-  const pageContext = Context.get(req) || {};
+  const pageContext = Context.get(uid) || {};
+
+  // ⭐ PATCH: aggiorna contesto automaticamente
+  Context.update(uid, "termini", null);
 
   const base = `
 <div class="mm-card">
@@ -72,10 +78,13 @@ async function handleTerms(req, res, rawText) {
 
 /* ============================================================
    COOKIE
-   ============================================================ */
+============================================================ */
 async function handleCookie(req, res, rawText) {
   const uid = req?.uid || "unknown_user";
-  const pageContext = Context.get(req) || {};
+  const pageContext = Context.get(uid) || {};
+
+  // ⭐ PATCH: aggiorna contesto automaticamente
+  Context.update(uid, "cookie", null);
 
   const base = `
 <div class="mm-card">
@@ -100,7 +109,7 @@ async function handleCookie(req, res, rawText) {
 
 /* ============================================================
    ROUTER INTERNO
-   ============================================================ */
+============================================================ */
 module.exports = function legalHandler(req, res, intent, rawText) {
   log("HANDLER_LEGAL", { intent, rawText });
 
