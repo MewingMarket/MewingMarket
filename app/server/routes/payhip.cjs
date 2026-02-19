@@ -3,8 +3,8 @@
  * Sync manuale Payhip → Airtable → products.json
  */
 
-const { syncPayhip } = require("../services/payhip.cjs");
 
+const { syncPayhip } = require("../../services/payhip.cjs");
 // PATCH: percorso corretto verso airtable.cjs
 const { syncAirtable, loadProducts } = require("../../modules/airtable.cjs");
 
