@@ -1,8 +1,10 @@
 /* =========================================================
-   CHATBOX — VERSIONE COMPLETA + PATCH + ALLEGATI
+   CHATBOX — VERSIONE COMPLETA + PATCH DOMINIO
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
+  const API_BASE = "https://www.mewingmarket.it"; // ⭐ dominio verificato
+
   const chatBox = document.getElementById("chat-box");
   const chatInput = document.getElementById("chat-input");
   const chatSend = document.getElementById("chat-send");
@@ -17,17 +19,11 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  /* =========================================================
-     SANITIZZAZIONE TESTO
-  ========================================================== */
   const clean = (t) =>
     typeof t === "string"
       ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
       : "";
 
-  /* =========================================================
-     AGGIUNGI MESSAGGIO
-  ========================================================== */
   function addMessage(text, sender = "bot") {
     const bubble = document.createElement("div");
     bubble.className = sender === "user" ? "chat-bubble user" : "chat-bubble bot";
@@ -51,7 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
     chatInput.value = "";
 
     try {
-      const res = await fetch("/chat", {
+      const res = await fetch(`${API_BASE}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message })
@@ -136,7 +132,7 @@ document.addEventListener("DOMContentLoaded", () => {
     formData.append("audio", blob, "audio.webm");
 
     try {
-      const res = await fetch("/chat/voice", {
+      const res = await fetch(`${API_BASE}/chat/voice`, {
         method: "POST",
         body: formData
       });
@@ -149,9 +145,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* =========================================================
-     📎 ALLEGATI — PATCH COMPLETA
+     📎 ALLEGATI
   ========================================================== */
-
   if (chatAttach && chatFile) {
     chatAttach.addEventListener("click", () => {
       chatFile.click();
@@ -167,7 +162,7 @@ document.addEventListener("DOMContentLoaded", () => {
       formData.append("file", file);
 
       try {
-        const res = await fetch("/chat/attachment", {
+        const res = await fetch(`${API_BASE}/chat/attachment`, {
           method: "POST",
           body: formData
         });
