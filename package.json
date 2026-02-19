@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node app/server/server.cjs",
     "build": "node scripts/build.js",
-    "test-vendite": "node test-vendite.cjs"
+    "test-vendite": "node test-vendite.cjs",
+    "postinstall": "playwright install --with-deps"
   },
   "dependencies": {
     "airtable": "^0.12.2",
@@ -19,7 +20,8 @@
     "multer": "^1.4.5-lts.1",
     "node-cron": "^3.0.3",
     "openai": "^4.22.1",
-    "xml2js": "^0.6.2"
+    "xml2js": "^0.6.2",
+    "playwright": "^1.44.0"
   },
   "engines": {
     "node": ">=18"
