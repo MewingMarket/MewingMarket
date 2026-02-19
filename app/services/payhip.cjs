@@ -1,7 +1,7 @@
 // app/services/payhip.cjs
-// Sync Payhip via scraping HTML (Playwright, future-proof)
+// Sync Payhip via scraping HTML (Playwright-core, future-proof)
 
-const { chromium } = require("playwright");
+const { chromium } = require("playwright-core");
 const { updateFromPayhip, removeMissingPayhipProducts } = require("../modules/payhip.cjs");
 
 // URL del tuo store Payhip
@@ -22,7 +22,7 @@ function canUseAirtable() {
 }
 
 /* =========================================================
-   1) Scarica HTML dello store con Playwright
+   1) Scarica HTML dello store con Playwright-core
 ========================================================= */
 async function fetchStoreHtml() {
   let browser;
@@ -41,7 +41,7 @@ async function fetchStoreHtml() {
     await browser.close();
     return html || "";
   } catch (err) {
-    console.error("[PAYHIP] errore fetchStoreHtml (Playwright):", err.message);
+    console.error("[PAYHIP] errore fetchStoreHtml (Playwright-core):", err.message);
     if (browser) await browser.close();
     return "";
   }
@@ -65,7 +65,7 @@ function extractProductSlugs(html) {
 }
 
 /* =========================================================
-   3) Scarica pagina singolo prodotto con Playwright
+   3) Scarica pagina singolo prodotto con Playwright-core
 ========================================================= */
 async function fetchProductPage(slug) {
   let browser;
@@ -85,7 +85,7 @@ async function fetchProductPage(slug) {
 
     return { url, html: html || "" };
   } catch (err) {
-    console.error("[PAYHIP] errore fetchProductPage (Playwright):", slug, err.message);
+    console.error("[PAYHIP] errore fetchProductPage (Playwright-core):", slug, err.message);
     if (browser) await browser.close();
     return { url: "", html: "" };
   }
@@ -192,7 +192,6 @@ async function syncPayhip() {
   for (const p of products) {
     try {
       if (canUseAirtable()) {
-        // qui entra il tuo modulo future-proof con JSON-LD
         await updateFromPayhip(p);
       } else {
         console.log("⏭️ Skip updateFromPayhip: Airtable non configurato");
