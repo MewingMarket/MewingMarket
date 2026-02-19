@@ -1,10 +1,7 @@
 // app/services/payhip.cjs
-// Sync Payhip via scraping HTML (nessuna API)
+// Sync Payhip via scraping HTML (Playwright, future-proof)
 
-const axios = require("axios");
-
-// 🔥 PATCH: ora importiamo updateFromPayhip e removeMissingPayhipProducts
-// dal modulo CORRETTO: airtable.cjs
+const { chromium } = require("playwright");
 const { updateFromPayhip, removeMissingPayhipProducts } = require("../modules/payhip.cjs");
 
 // URL del tuo store Payhip
@@ -25,20 +22,27 @@ function canUseAirtable() {
 }
 
 /* =========================================================
-   1) Scarica HTML dello store
+   1) Scarica HTML dello store con Playwright
 ========================================================= */
 async function fetchStoreHtml() {
+  let browser;
   try {
-    const res = await axios.get(PAYHIP_STORE_URL, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0 Safari/537.36"
-      }
+    browser = await chromium.launch({ headless: true });
+    const page = await browser.newPage();
+
+    await page.goto(PAYHIP_STORE_URL, {
+      waitUntil: "networkidle"
     });
 
-    return res.data || "";
+    // aspetta che ci sia almeno un link prodotto
+    await page.waitForSelector("a[href*='/b/']", { timeout: 15000 });
+
+    const html = await page.content();
+    await browser.close();
+    return html || "";
   } catch (err) {
-    console.error("[PAYHIP] errore fetchStoreHtml:", err.message);
+    console.error("[PAYHIP] errore fetchStoreHtml (Playwright):", err.message);
+    if (browser) await browser.close();
     return "";
   }
 }
@@ -61,27 +65,34 @@ function extractProductSlugs(html) {
 }
 
 /* =========================================================
-   3) Scarica pagina singolo prodotto
+   3) Scarica pagina singolo prodotto con Playwright
 ========================================================= */
 async function fetchProductPage(slug) {
+  let browser;
   try {
     const url = `https://payhip.com/b/${slug}`;
-    const res = await axios.get(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0 Safari/537.36"
-      }
-    });
 
-    return { url, html: res.data || "" };
+    browser = await chromium.launch({ headless: true });
+    const page = await browser.newPage();
+
+    await page.goto(url, { waitUntil: "networkidle" });
+
+    // aspetta il titolo prodotto
+    await page.waitForSelector("h1", { timeout: 15000 });
+
+    const html = await page.content();
+    await browser.close();
+
+    return { url, html: html || "" };
   } catch (err) {
-    console.error("[PAYHIP] errore fetchProductPage:", slug, err.message);
+    console.error("[PAYHIP] errore fetchProductPage (Playwright):", slug, err.message);
+    if (browser) await browser.close();
     return { url: "", html: "" };
   }
 }
 
 /* =========================================================
-   4) Parsing HTML prodotto
+   4) Parsing HTML prodotto (fallback se JSON-LD non basta)
 ========================================================= */
 function parseProduct(html, slug, url) {
   if (!html) {
@@ -159,7 +170,7 @@ async function fetchPayhipCatalog() {
 }
 
 /* =========================================================
-   6) Sync completo con Airtable
+   6) Sync completo con Airtable (via modules/payhip.cjs)
 ========================================================= */
 async function syncPayhip() {
   console.log("[PAYHIP] sync_start {}");
@@ -171,21 +182,24 @@ async function syncPayhip() {
       success: false,
       reason: result.reason || "no_products"
     });
-    return { success: false, count: 0, reason: result.reason || "no_products" };
+    return { success: false, count: 0, ok: 0, fail: 0, reason: result.reason || "no_products" };
   }
 
   const products = result.products;
   let ok = 0;
+  let fail = 0;
 
   for (const p of products) {
     try {
       if (canUseAirtable()) {
+        // qui entra il tuo modulo future-proof con JSON-LD
         await updateFromPayhip(p);
       } else {
         console.log("⏭️ Skip updateFromPayhip: Airtable non configurato");
       }
       ok++;
     } catch (err) {
+      fail++;
       console.error("[PAYHIP] error_update_product", p.slug, err.message);
     }
   }
@@ -200,8 +214,8 @@ async function syncPayhip() {
     console.error("[PAYHIP] error_remove_missing", err.message);
   }
 
-  console.log("[PAYHIP] sync_success", { success: true, count: ok });
-  return { success: true, count: ok };
+  console.log("[PAYHIP] sync_success", { success: true, count: ok, ok, fail });
+  return { success: true, count: ok, ok, fail };
 }
 
 module.exports = {
