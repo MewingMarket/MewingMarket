@@ -1,6 +1,6 @@
 /**
  * app/modules/airtable.cjs
- * Gestione catalogo prodotti + vendite (versione definitiva con PAT)
+ * Gestione catalogo prodotti + vendite (versione definitiva con PATCH anti-cache)
  */
 
 const fs = require("fs");
@@ -22,13 +22,14 @@ let SALES_CACHE = {};
 function saveProductsToFile(products) {
   try {
     fs.writeFileSync(DATA_PATH, JSON.stringify(products, null, 2));
+    console.log("💾 products.json aggiornato");
   } catch (err) {
     console.error("Errore salvataggio products.json:", err);
   }
 }
 
 /* =========================================================
-   CARICAMENTO DA FILE
+   CARICAMENTO DA FILE (PATCH: NON attivare catalogReady)
 ========================================================= */
 function loadProducts() {
   try {
@@ -36,11 +37,8 @@ function loadProducts() {
       const raw = fs.readFileSync(DATA_PATH, "utf8");
       PRODUCTS_CACHE = JSON.parse(raw);
 
-      // Se abbiamo prodotti da file → catalogo pronto
-      if (Array.isArray(PRODUCTS_CACHE) && PRODUCTS_CACHE.length > 0) {
-        global.catalogReady = true;
-        console.log("📦 Catalogo caricato da file (catalogReady = true)");
-      }
+      console.log("📦 Catalogo caricato da file (catalogReady = false)");
+      // ❗ PATCH: NON impostare catalogReady qui
     }
   } catch (err) {
     console.error("Errore loadProducts:", err);
@@ -78,13 +76,13 @@ async function syncAirtable() {
       const f = r.fields;
       return {
         id: r.id,
-        slug: f.Slug || f.slug || "",
-        titolo: f.Titolo || f.title || "",
+        slug: f.Slug || "",
+        titolo: f.Titolo || "",
         titoloBreve: f.TitoloBreve || "",
-        descrizione: f.Descrizione || f.description || "",
+        descrizione: f.Descrizione || "",
         descrizioneBreve: f.DescrizioneBreve || "",
-        prezzo: f.Prezzo || f.price || 0,
-        immagine: f.Immagine || f.image || [],
+        prezzo: f.Prezzo || 0,
+        immagine: f.Immagine || [],
         linkPayhip: f.LinkPayhip || "",
         youtube_url: f.youtube_url || "",
         youtube_title: f.youtube_title || "",
