@@ -1,6 +1,6 @@
-// modules/payhip.cjs — VERSIONE FUTURE-PROOF (JSON-LD multiplo + RESILIENTE)
+// modules/payhip.cjs — VERSIONE FUTURE-PROOF + PATCH ANTI-TEMPLATE
 
-console.log("🔥 PAYHIP MODULE LOADED (FUTURE-PROOF EDITION)");
+console.log("🔥 PAYHIP MODULE LOADED (FUTURE-PROOF + ANTI-TEMPLATE)");
 
 const fetch = require("node-fetch");
 const { safeText, stripHTML, safeSlug } = require("./utils.cjs");
@@ -128,11 +128,23 @@ async function updateRecord(id, fields) {
 }
 
 /* =========================================================
-   UPDATE DA PAYHIP (VERSIONE FUTURE-PROOF + PATCH TITOLI)
+   PATCH ANTI-TEMPLATE
+========================================================= */
+function isTemplate(v) {
+  return typeof v === "string" && (
+    v.includes("{{") ||
+    v.includes("}}") ||
+    v.includes("product.media") ||
+    v.includes("selectedVariant")
+  );
+}
+
+/* =========================================================
+   UPDATE DA PAYHIP (VERSIONE FUTURE-PROOF + PATCH ANTI-TEMPLATE)
 ========================================================= */
 async function updateFromPayhip(data) {
   try {
-    console.log("🔥 PATCH PAYHIP FUTURE-PROOF ATTIVA");
+    console.log("🔥 PATCH PAYHIP FUTURE-PROOF + ANTI-TEMPLATE ATTIVA");
 
     if (!canUseAirtable()) {
       console.log("⏭️ updateFromPayhip skipped: Airtable non configurato");
@@ -199,21 +211,26 @@ async function updateFromPayhip(data) {
       ? [{ url: immagineUrl }]
       : [];
 
-    // 5) COSTRUZIONE CAMPI PER AIRTABLE
+    // 5) COSTRUZIONE CAMPI PER AIRTABLE (ANTI-TEMPLATE)
     const fields = {
       Slug: slug,
       Titolo: titolo,
       TitoloBreve: titolo.slice(0, 48),
-      Prezzo: prezzo,
+      Prezzo: isTemplate(prezzo) ? undefined : prezzo,
       LinkPayhip: data.url,
       DescrizioneLunga: descrizione,
       DescrizioneBreve: descrizione.split(/\s+/).slice(0, 26).join(" "),
-      Immagine: immagine
+      Immagine: isTemplate(immagineUrl) ? undefined : immagine
     };
+
+    // Rimuovi campi undefined
+    Object.keys(fields).forEach(k => {
+      if (fields[k] === undefined) delete fields[k];
+    });
 
     const safeFields = filterFields(fields);
 
-    // 6) UPDATE O CREATE (PATCH TITOLI)
+    // 6) UPDATE O CREATE
     async function findRecordByTitle(title) {
       if (!title || !canUseAirtable()) return null;
 
@@ -300,8 +317,6 @@ async function removeMissingPayhipProducts(currentSlugs) {
       console.log(`⏭️ Skip delete: ${slug} non esiste su Payhip → record manuale preservato.`);
       continue;
     }
-
-    // Se esiste su Payhip → non fare nulla
   }
 }
 
