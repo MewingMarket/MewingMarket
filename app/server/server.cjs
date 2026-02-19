@@ -54,9 +54,13 @@ require("./routes/sitemap.cjs")(app);
 require("./routes/payhip-webhook.cjs")(app);
 require("./routes/sales.cjs")(app);
 require("./routes/meta-feed.cjs")(app);
+
+/* ⭐ PAYHIP DEVE STARE QUI — PRIMA DI product-page */
+require("./routes/payhip.cjs")(app);
+
 require("./routes/product-page.cjs")(app);
 require("./routes/system-status.cjs")(app);
-require("./routes/payhip.cjs")(app);
+
 /* ============================================================
    BOOTSTRAP ORDINATO (Payhip → YouTube → Airtable → Products)
 ============================================================ */
