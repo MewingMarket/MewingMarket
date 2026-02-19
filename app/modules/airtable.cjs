@@ -1,6 +1,6 @@
 /**
  * app/modules/airtable.cjs
- * Gestione catalogo prodotti + vendite (versione definitiva con PATCH anti-cache)
+ * Versione definitiva con PATCH anti-cache + auto-create directory
  */
 
 const fs = require("fs");
@@ -8,7 +8,8 @@ const path = require("path");
 const Airtable = require("airtable");
 
 const ROOT = path.resolve(__dirname, "..");
-const DATA_PATH = path.join(ROOT, "data", "products.json");
+const DATA_DIR = path.join(ROOT, "data");
+const DATA_PATH = path.join(DATA_DIR, "products.json");
 
 // ⭐ READY FLAG — il bot risponde solo quando è true
 global.catalogReady = false;
@@ -17,14 +18,29 @@ let PRODUCTS_CACHE = [];
 let SALES_CACHE = {};
 
 /* =========================================================
+   CREA CARTELLA SE NON ESISTE
+========================================================= */
+function ensureDataDir() {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+      console.log("📁 Cartella /data ricreata");
+    }
+  } catch (err) {
+    console.error("❌ Errore creazione cartella /data:", err);
+  }
+}
+
+/* =========================================================
    SALVATAGGIO SU FILE
 ========================================================= */
 function saveProductsToFile(products) {
   try {
+    ensureDataDir();
     fs.writeFileSync(DATA_PATH, JSON.stringify(products, null, 2));
     console.log("💾 products.json aggiornato");
   } catch (err) {
-    console.error("Errore salvataggio products.json:", err);
+    console.error("❌ Errore salvataggio products.json:", err);
   }
 }
 
@@ -33,6 +49,8 @@ function saveProductsToFile(products) {
 ========================================================= */
 function loadProducts() {
   try {
+    ensureDataDir();
+
     if (fs.existsSync(DATA_PATH)) {
       const raw = fs.readFileSync(DATA_PATH, "utf8");
       PRODUCTS_CACHE = JSON.parse(raw);
@@ -41,7 +59,7 @@ function loadProducts() {
       // ❗ PATCH: NON impostare catalogReady qui
     }
   } catch (err) {
-    console.error("Errore loadProducts:", err);
+    console.error("❌ Errore loadProducts:", err);
   }
   return PRODUCTS_CACHE;
 }
@@ -109,75 +127,8 @@ async function syncAirtable() {
   }
 }
 
-/* =========================================================
-   SALVATAGGIO VENDITE
-========================================================= */
-async function saveSaleToAirtable(data) {
-  try {
-    const PAT = process.env.AIRTABLE_PAT;
-    const BASE = process.env.AIRTABLE_BASE;
-
-    if (!PAT || !BASE) {
-      console.log("⏭️ saveSaleToAirtable skipped: missing PAT / BASE");
-      return;
-    }
-
-    const base = new Airtable({ apiKey: PAT }).base(BASE);
-
-    await base("Sales").create([
-      {
-        fields: {
-          uid: data.uid,
-          product: data.product,
-          price: data.price,
-          email: data.email,
-        }
-      }
-    ]);
-
-  } catch (err) {
-    console.error("Errore saveSaleToAirtable:", err);
-  }
-}
-
-/* =========================================================
-   GET SALES
-========================================================= */
-async function getSalesByUID(uid) {
-  try {
-    const PAT = process.env.AIRTABLE_PAT;
-    const BASE = process.env.AIRTABLE_BASE;
-
-    if (!PAT || !BASE) {
-      console.log("⏭️ getSalesByUID skipped: missing PAT / BASE");
-      return [];
-    }
-
-    const base = new Airtable({ apiKey: PAT }).base(BASE);
-
-    const records = await base("Sales").select({
-      filterByFormula: `{uid} = "${uid}"`
-    }).all();
-
-    return records.map((r) => ({
-      id: r.id,
-      uid: r.get("uid"),
-      product: r.get("product"),
-      price: r.get("price"),
-      email: r.get("email"),
-      created: r.get("created"),
-    }));
-
-  } catch (err) {
-    console.error("Errore getSalesByUID:", err);
-    return [];
-  }
-}
-
 module.exports = {
   loadProducts,
   getProducts,
-  syncAirtable,
-  saveSaleToAirtable,
-  getSalesByUID
+  syncAirtable
 };
