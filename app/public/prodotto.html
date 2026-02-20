@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <!-- HEAD DINAMICO -->
   <script>
@@ -13,21 +13,20 @@
           const temp = document.createElement("div");
           temp.innerHTML = html;
           [...temp.children].forEach(node => document.head.appendChild(node));
-        })
-        .catch(err => console.error("Errore caricamento head:", err));
+        });
     });
   </script>
 
   <script src="seo.js" defer></script>
   <script src="structured-data.js" defer></script>
-
-  <!-- CARRELLO -->
   <script src="carrello.js" defer></script>
+
+  <link rel="stylesheet" href="prodotto.css" />
 </head>
 
 <body>
 
-<!-- HEADER DINAMICO -->
+<!-- HEADER -->
 <div id="header-placeholder"></div>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
@@ -36,7 +35,6 @@
       .then(h => {
         document.getElementById("header-placeholder").innerHTML = h;
 
-        // ⭐ AGGIUNGO ICONA CARRELLO DOPO IL CARICAMENTO DELL'HEADER
         const cartBtn = document.createElement("div");
         cartBtn.id = "cart-icon";
         cartBtn.innerHTML = "🛒";
@@ -49,33 +47,59 @@
         });
 
         document.querySelector("header nav").appendChild(cartBtn);
-      })
-      .catch(err => console.error("Errore caricamento header:", err));
+      });
   });
 </script>
 
-<main>
+<main id="page-product">
 
-  <!-- SEZIONE PRODOTTO (popolata da prodotto.js) -->
-  <section class="hero-wrapper" id="prodotto">
-    <p>Caricamento prodotto…</p>
+  <!-- HERO PREMIUM -->
+  <section id="hero" class="hero-premium">
+    <div class="hero-left">
+      <img id="product-image" src="" alt="Prodotto" />
+    </div>
+
+    <div class="hero-right">
+      <h1 id="product-title"></h1>
+      <p id="product-subtitle" class="subtitle"></p>
+
+      <div class="price-box">
+        <span id="product-price"></span>
+      </div>
+
+      <div class="cta-box">
+        <button id="btn-acquista" class="btn-primario">Acquista ora</button>
+        <button id="btn-carrello" class="btn-secondario">Aggiungi al carrello</button>
+      </div>
+
+      <div class="trust-badges">
+        <span>✔ Pagamento sicuro</span>
+        <span>✔ Accesso immediato</span>
+        <span>✔ Supporto incluso</span>
+      </div>
+    </div>
   </section>
 
-  <!-- ⭐ BOTTONI ACQUISTO + CARRELLO -->
-  <section id="azioni-prodotto" style="text-align:center; margin-top:20px; display:none;">
-    <button id="btn-acquista" class="btn-primario">Acquista ora</button>
-    <button id="btn-carrello" class="btn-secondario">Aggiungi al carrello</button>
+  <!-- VIDEO -->
+  <section id="video-section" class="video-wrapper" style="display:none;">
+    <iframe id="product-video" src="" frameborder="0" allowfullscreen></iframe>
+  </section>
+
+  <!-- DESCRIZIONE -->
+  <section id="descrizione" class="descrizione-section">
+    <h2>Descrizione</h2>
+    <div id="product-description"></div>
   </section>
 
   <!-- CORRELATI -->
-  <section class="home-section">
+  <section class="related-section">
     <h2>Potrebbe interessarti anche</h2>
     <div class="catalogo-grid" id="related"></div>
   </section>
 
 </main>
 
-<!-- FOOTER DINAMICO -->
+<!-- FOOTER -->
 <div id="footer-placeholder"></div>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
@@ -83,23 +107,16 @@
       .then(r => r.text())
       .then(h => {
         document.getElementById("footer-placeholder").innerHTML = h;
-      })
-      .catch(err => console.error("Errore caricamento footer:", err));
+      });
   });
 </script>
 
 <!-- TRACKING -->
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-  const params = new URLSearchParams(window.location.search);
-  const slug = params.get("slug");
-
+  const slug = window.location.pathname.split("/").pop();
   if (window.trackEvent && slug) {
-    try {
-      trackEvent("product_view", { slug });
-    } catch (err) {
-      console.warn("Tracking error:", err);
-    }
+    trackEvent("product_view", { slug });
   }
 });
 </script>
