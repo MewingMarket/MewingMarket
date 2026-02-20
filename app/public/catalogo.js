@@ -1,11 +1,13 @@
-// catalogo.js — versione patchata e stabile
+// =========================================================
+// File: app/public/catalogo.js
+// Versione patchata: Airtable + API interne + categorie + filtri
+// =========================================================
 
 async function loadProducts() {
   try {
-    const res = await fetch("/data/products.json", { cache: "no-store" });
-    if (!res.ok) throw new Error("Errore fetch products.json");
+    const res = await fetch("/api/products", { cache: "no-store" });
     const data = await res.json();
-    return Array.isArray(data) ? data : [];
+    return data.success && Array.isArray(data.products) ? data.products : [];
   } catch (err) {
     console.error("Errore caricamento prodotti:", err);
     return [];
@@ -40,35 +42,33 @@ function renderYouTubeLink(p) {
 }
 
 function getShortDescription(p) {
-  if (p.DescrizioneBreve && p.DescrizioneBreve.trim() !== "") {
-    return clean(p.DescrizioneBreve);
+  if (p.descrizione_breve && p.descrizione_breve.trim() !== "") {
+    return clean(p.descrizione_breve);
   }
 
-  const full = p.Descrizione || "";
+  const full = p.descrizione || "";
   const short = full.length > 120 ? full.slice(0, 120) + "…" : full;
 
   return clean(short);
 }
 
 function getImage(p) {
-  if (Array.isArray(p.Immagine) && p.Immagine[0]?.url) {
-    return p.Immagine[0].url;
+  if (p.immagine && p.immagine.startsWith("http")) {
+    return p.immagine;
   }
-  if (typeof p.Immagine === "string" && p.Immagine.startsWith("http")) {
-    return p.Immagine;
-  }
-  return "img/placeholder.webp";
+  return "/placeholder.webp";
 }
 
 function cardHTML(p) {
   const img = getImage(p);
-  const titolo = clean(p.TitoloBreve || p.Titolo || "");
+  const titolo = clean(p.titolo || "");
   const descrizione = getShortDescription(p);
-  const prezzo = Number(p.Prezzo) || 0;
+  const prezzo = Number(p.prezzo) || 0;
   const slug = clean(p.slug || "");
+  const categoria = clean(p.categoria || "");
 
   return `
-    <div class="product-card" data-cat="${clean(p.Categoria || "")}" data-prezzo="${prezzo}">
+    <div class="product-card" data-cat="${categoria}" data-prezzo="${prezzo}">
       <img src="${img}" alt="${titolo}" loading="lazy">
       <h2>${titolo}</h2>
       <p>${descrizione}</p>
@@ -86,16 +86,25 @@ function cardHTML(p) {
 
   if (!container || !categorieBox) return;
 
-  const categorie = [...new Set(products.map(p => p.Categoria || ""))].filter(Boolean);
+  // ============================================================
+  // CATEGORIE DINAMICHE
+  // ============================================================
+  const categorie = [...new Set(products.map(p => p.categoria || ""))].filter(Boolean);
 
   categorieBox.innerHTML = categorie.length
     ? categorie.map(cat => `<button class="btn" data-cat="${clean(cat)}">${clean(cat)}</button>`).join("")
     : "<p>Nessuna categoria disponibile</p>";
 
+  // ============================================================
+  // GRID PRODOTTI
+  // ============================================================
   container.innerHTML = products.length
     ? products.map(cardHTML).join("")
     : "<p>Nessun prodotto disponibile.</p>";
 
+  // ============================================================
+  // FILTRO CATEGORIA
+  // ============================================================
   categorieBox.addEventListener("click", e => {
     const cat = e.target.dataset.cat;
     if (!cat) return;
@@ -105,6 +114,23 @@ function cardHTML(p) {
     });
   });
 
+  // ============================================================
+  // FILTRO PREZZO
+  // ============================================================
+  document.querySelectorAll("[data-prezzo]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const max = Number(btn.dataset.prezzo);
+
+      document.querySelectorAll(".product-card").forEach(card => {
+        const prezzo = Number(card.dataset.prezzo);
+        card.style.display = prezzo <= max ? "block" : "none";
+      });
+    });
+  });
+
+  // ============================================================
+  // RESET FILTRI
+  // ============================================================
   const resetBtn = document.getElementById("reset");
   if (resetBtn) {
     resetBtn.addEventListener("click", () => {
