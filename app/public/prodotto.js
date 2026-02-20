@@ -1,4 +1,7 @@
-// prodotto.js — versione definitiva blindata + correlati + YouTube robusto
+// =========================================================
+// File: app/public/prodotto.js
+// Versione definitiva: Airtable + API interne + correlati + YouTube
+// =========================================================
 
 document.addEventListener("DOMContentLoaded", async () => {
 
@@ -37,40 +40,35 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  let products = [];
+  // ============================================================
+  // 1) CARICA PRODOTTO DA API INTERNA
+  // ============================================================
+  let p;
   try {
-    const res = await fetch("/data/products.json", { cache: "no-store" });
-    products = await res.json();
-  } catch {
+    const res = await fetch(`/api/products/${slug}`, { cache: "no-store" });
+    const data = await res.json();
+
+    if (!data.success) {
+      prodottoBox.innerHTML = "<p>Prodotto non trovato.</p>";
+      return;
+    }
+
+    p = data.product;
+
+  } catch (err) {
+    console.error(err);
     prodottoBox.innerHTML = "<p>Errore caricamento prodotto.</p>";
     return;
   }
 
-  const p = products.find((x) => x.slug === slug);
+  // ============================================================
+  // 2) PREPARA CAMPI
+  // ============================================================
+  const descrizione = clean(p.descrizione || "");
 
-  if (!p) {
-    prodottoBox.innerHTML = "<p>Prodotto non trovato.</p>";
-    return;
-  }
+  const paypalLink = safeURL(p.paypal_link || "");
 
-  const descrizione = clean(
-    p.DescrizioneLunga ||
-    p.Descrizione ||
-    ""
-  );
-
-  const linkPayhip = safeURL(
-    p.LinkPayhip ||
-    p.linkPayhip ||
-    ""
-  );
-
-  // YouTube (se presente)
-  const ytURL = safeURL(
-    p.youtube_url ||
-    p.youtube_last_video_url ||
-    ""
-  );
+  const ytURL = safeURL(p.youtube_url || "");
 
   let youtubeEmbed = "";
   const videoId = extractYouTubeId(ytURL);
@@ -89,14 +87,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     `;
   }
 
-  const img =
-    (Array.isArray(p.Immagine) && p.Immagine[0]?.url) ||
-    (typeof p.Immagine === "string" && p.Immagine.startsWith("http") && p.Immagine) ||
-    "/placeholder.webp";
+  const img = p.immagine || "/placeholder.webp";
 
-  /* ============================================================
-     BLOCCO PRODOTTO
-  ============================================================ */
+  // ============================================================
+  // 3) RENDER BLOCCO PRODOTTO
+  // ============================================================
   prodottoBox.innerHTML = `
     <div class="product-layout">
 
@@ -105,10 +100,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       </div>
 
       <div class="product-main">
-        <h1 class="product-title">${clean(p.Titolo)}</h1>
+        <h1 class="product-title">${clean(p.titolo)}</h1>
 
         <img src="${img}"
-             alt="${clean(p.Titolo)}"
+             alt="${clean(p.titolo)}"
              class="product-image">
 
         <div class="product-description">
@@ -116,40 +111,44 @@ document.addEventListener("DOMContentLoaded", async () => {
         </div>
 
         ${
-          linkPayhip
-            ? `<a href="${linkPayhip}" class="btn btn-primary buy-btn" target="_blank">
-                 Acquista su Payhip
+          paypalLink
+            ? `<a href="${paypalLink}" class="btn btn-primary buy-btn" target="_blank">
+                 Acquista con PayPal
                </a>`
-            : `<p><strong>Link Payhip mancante.</strong></p>`
+            : `<p><strong>Link PayPal mancante.</strong></p>`
         }
       </div>
 
     </div>
   `;
 
-  /* ============================================================
-     CORRELATI (stessa categoria)
-  ============================================================ */
-  if (relatedBox && p.Categoria) {
-    const correlati = products
-      .filter((x) => x.Categoria === p.Categoria && x.slug !== p.slug)
-      .slice(0, 4);
+  // ============================================================
+  // 4) CORRELATI (API INTERNA)
+  // ============================================================
+  try {
+    const res = await fetch(`/api/products?categoria=${encodeURIComponent(p.categoria)}`);
+    const data = await res.json();
 
-    relatedBox.innerHTML = correlati.length
-      ? correlati
-          .map(
-            (c) => `
-          <div class="product-card">
-            <img src="${
-              (Array.isArray(c.Immagine) && c.Immagine[0]?.url) ||
-              "/placeholder.webp"
-            }" alt="${clean(c.Titolo)}">
-            <h3>${clean(c.TitoloBreve || c.Titolo)}</h3>
-            <a href="prodotto.html?slug=${clean(c.slug)}" class="btn">Scopri</a>
-          </div>
-        `
-          )
-          .join("")
-      : "<p>Nessun prodotto correlato.</p>";
+    if (data.success && Array.isArray(data.products)) {
+      const correlati = data.products
+        .filter((x) => x.slug !== p.slug)
+        .slice(0, 4);
+
+      relatedBox.innerHTML = correlati.length
+        ? correlati
+            .map(
+              (c) => `
+            <div class="product-card">
+              <img src="${c.immagine || "/placeholder.webp"}" alt="${clean(c.titolo)}">
+              <h3>${clean(c.titolo)}</h3>
+              <a href="prodotto.html?slug=${clean(c.slug)}" class="btn">Scopri</a>
+            </div>
+          `
+            )
+            .join("")
+        : "<p>Nessun prodotto correlato.</p>";
+    }
+  } catch (err) {
+    console.warn("Errore correlati:", err);
   }
 });
