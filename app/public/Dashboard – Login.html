@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard – Login</title>
+  <link rel="stylesheet" href="/stile.css">
+</head>
+<body class="login-body">
+
+  <div class="login-box">
+    <h1>Login Dashboard</h1>
+
+    <form id="login-form">
+      <label>Email</label>
+      <input type="email" name="email" required>
+
+      <label>Password</label>
+      <input type="password" name="password" required>
+
+      <button type="submit">Entra</button>
+    </form>
+
+    <div class="divider"></div>
+
+    <h2>Reset password</h2>
+
+    <form id="reset-form">
+      <label>Email</label>
+      <input type="email" name="email" required>
+
+      <label>Nuova password</label>
+      <input type="password" name="newPassword" required>
+
+      <button type="submit" class="secondary">Reset immediato</button>
+    </form>
+
+    <div id="msg" class="msg"></div>
+  </div>
+
+  <script src="/login.js"></script>
+  <script src="/reset.js"></script>
+</body>
+</html>
