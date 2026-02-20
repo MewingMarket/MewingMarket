@@ -1,4 +1,7 @@
-// modules/sitemap-store.cjs — VERSIONE BLINDATA
+// =========================================================
+// File: app/modules/sitemap-store.cjs
+// Sitemap prodotti per Google — versione patchata store interno
+// =========================================================
 
 const path = require("path");
 const { getProducts } = require(path.join(__dirname, "airtable.cjs"));
@@ -24,8 +27,10 @@ function generateStoreSitemap() {
     xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
 
     products.forEach(p => {
-      const url = cleanURL(p?.linkPayhip);
-      if (!url) return; // evita URL rotti
+      const slug = p?.slug;
+      if (!slug) return;
+
+      const url = cleanURL(`https://mewingmarket.com/prodotto/${slug}`);
 
       xml += `
   <url>
