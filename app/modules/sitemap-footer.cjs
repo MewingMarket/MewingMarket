@@ -1,5 +1,5 @@
 // =========================================================
-// File: app/modules/sitemap-store.cjs
+// File: app/modules/sitemap-footer.cjs
 // Sitemap footer dinamica — legge direttamente footer.html
 // =========================================================
 
