@@ -1,11 +1,11 @@
 /**
  * =========================================================
  * File: app/modules/airtable.cjs
- * Modulo Airtable definitivo per il nuovo store interno
- * - Sync Airtable → cache interna + products.json
- * - Anti-cache
- * - Auto-create directory
- * - Campi coerenti con prodotto.js / catalogo.js / index.js
+ * Versione definitiva:
+ * - Sync Airtable → cache + file
+ * - Merge intelligente (non sovrascrive campi esistenti)
+ * - Auto-create prodotto se non esiste
+ * - Update PayPal link senza toccare altro
  * =========================================================
  */
 
@@ -17,68 +17,45 @@ const ROOT = path.resolve(__dirname, "..");
 const DATA_DIR = path.join(ROOT, "data");
 const DATA_PATH = path.join(DATA_DIR, "products.json");
 
-// Flag globale: il catalogo è pronto solo dopo sync Airtable
 global.catalogReady = false;
 
-// Cache interna
 let PRODUCTS_CACHE = [];
 
 /* =========================================================
-   CREA CARTELLA /data SE NON ESISTE
+   UTILS
 ========================================================= */
 function ensureDataDir() {
-  try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-      console.log("📁 Cartella /data creata");
-    }
-  } catch (err) {
-    console.error("❌ Errore creazione cartella /data:", err);
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    console.log("📁 Cartella /data creata");
   }
 }
 
-/* =========================================================
-   SALVATAGGIO SU FILE
-========================================================= */
 function saveProductsToFile(products) {
-  try {
-    ensureDataDir();
-    fs.writeFileSync(DATA_PATH, JSON.stringify(products, null, 2));
-    console.log("💾 products.json aggiornato");
-  } catch (err) {
-    console.error("❌ Errore salvataggio products.json:", err);
-  }
+  ensureDataDir();
+  fs.writeFileSync(DATA_PATH, JSON.stringify(products, null, 2));
+  console.log("💾 products.json aggiornato");
 }
 
-/* =========================================================
-   CARICAMENTO DA FILE (senza attivare catalogReady)
-========================================================= */
 function loadProducts() {
   try {
     ensureDataDir();
-
     if (fs.existsSync(DATA_PATH)) {
-      const raw = fs.readFileSync(DATA_PATH, "utf8");
-      PRODUCTS_CACHE = JSON.parse(raw);
-
-      console.log("📦 Catalogo caricato da file (catalogReady = false)");
+      PRODUCTS_CACHE = JSON.parse(fs.readFileSync(DATA_PATH, "utf8"));
+      console.log("📦 Catalogo caricato da file");
     }
   } catch (err) {
     console.error("❌ Errore loadProducts:", err);
   }
+  return PRODUCTS_CACHE;
+}
 
+function getProducts() {
   return PRODUCTS_CACHE;
 }
 
 /* =========================================================
-   GET PRODUCTS — blindato
-========================================================= */
-function getProducts() {
-  return Array.isArray(PRODUCTS_CACHE) ? PRODUCTS_CACHE : [];
-}
-
-/* =========================================================
-   SYNC AIRTABLE → CACHE + FILE
+   SYNC AIRTABLE
 ========================================================= */
 async function syncAirtable() {
   try {
@@ -98,7 +75,6 @@ async function syncAirtable() {
 
     const products = records.map((r) => {
       const f = r.fields;
-
       return {
         id: r.id,
         slug: f.slug || f.Slug || "",
@@ -121,7 +97,7 @@ async function syncAirtable() {
     saveProductsToFile(products);
 
     global.catalogReady = true;
-    console.log("🟢 Sync Airtable OK:", products.length, "prodotti (catalogReady = true)");
+    console.log("🟢 Sync Airtable OK:", products.length, "prodotti");
 
     return true;
 
@@ -131,8 +107,80 @@ async function syncAirtable() {
   }
 }
 
+/* =========================================================
+   MERGE INTELLIGENTE
+   - Non sovrascrive campi già esistenti
+========================================================= */
+function mergeProduct(existing, incoming) {
+  return {
+    ...existing,
+    ...Object.fromEntries(
+      Object.entries(incoming).filter(([k, v]) => v !== undefined && v !== "")
+    )
+  };
+}
+
+/* =========================================================
+   UPDATE PAYPAL LINK
+========================================================= */
+async function updatePayPal(slug, paypalLink) {
+  const PAT = process.env.AIRTABLE_PAT;
+  const BASE = process.env.AIRTABLE_BASE;
+  const TABLE = process.env.AIRTABLE_TABLE_NAME;
+
+  const base = new Airtable({ apiKey: PAT }).base(BASE);
+  const tableName = decodeURIComponent(TABLE);
+
+  const records = await base(tableName)
+    .select({ filterByFormula: `{slug} = '${slug}'`, maxRecords: 1 })
+    .all();
+
+  if (!records.length) return false;
+
+  const id = records[0].id;
+
+  await base(tableName).update(id, { paypal_link: paypalLink });
+
+  console.log("💰 PayPal link aggiornato per", slug);
+
+  return true;
+}
+
+/* =========================================================
+   AUTO-CREATE PRODOTTO
+========================================================= */
+async function createProductIfMissing(slug, fields = {}) {
+  const PAT = process.env.AIRTABLE_PAT;
+  const BASE = process.env.AIRTABLE_BASE;
+  const TABLE = process.env.AIRTABLE_TABLE_NAME;
+
+  const base = new Airtable({ apiKey: PAT }).base(BASE);
+  const tableName = decodeURIComponent(TABLE);
+
+  const records = await base(tableName)
+    .select({ filterByFormula: `{slug} = '${slug}'`, maxRecords: 1 })
+    .all();
+
+  if (records.length) {
+    console.log("ℹ️ Prodotto già esistente:", slug);
+    return records[0].id;
+  }
+
+  const newRecord = await base(tableName).create({
+    slug,
+    ...fields
+  });
+
+  console.log("🆕 Prodotto creato:", slug);
+
+  return newRecord.id;
+}
+
 module.exports = {
   loadProducts,
   getProducts,
-  syncAirtable
+  syncAirtable,
+  updatePayPal,
+  createProductIfMissing,
+  mergeProduct
 };
