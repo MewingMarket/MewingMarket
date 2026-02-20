@@ -1,6 +1,6 @@
 // =========================================================
 // File: app/public/prodotto.js
-// Versione definitiva: Airtable + API interne + correlati + YouTube
+// Versione MAX (UX Premium) — Airtable + API interne + correlati
 // =========================================================
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -29,19 +29,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     return null;
   };
 
-  const params = new URLSearchParams(window.location.search);
-  const slug = params.get("slug");
-
-  const prodottoBox = document.getElementById("prodotto");
-  const relatedBox = document.getElementById("related");
+  // ============================================================
+  // 1) OTTIENI SLUG DALL'URL
+  // ============================================================
+  const slug = window.location.pathname.split("/").pop();
 
   if (!slug) {
-    prodottoBox.innerHTML = "<p>Parametro slug mancante.</p>";
+    document.getElementById("product-title").innerText = "Slug mancante";
     return;
   }
 
   // ============================================================
-  // 1) CARICA PRODOTTO DA API INTERNA
+  // 2) CARICA PRODOTTO DA API INTERNA
   // ============================================================
   let p;
   try {
@@ -49,7 +48,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const data = await res.json();
 
     if (!data.success) {
-      prodottoBox.innerHTML = "<p>Prodotto non trovato.</p>";
+      document.getElementById("product-title").innerText = "Prodotto non trovato";
       return;
     }
 
@@ -57,77 +56,73 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   } catch (err) {
     console.error(err);
-    prodottoBox.innerHTML = "<p>Errore caricamento prodotto.</p>";
+    document.getElementById("product-title").innerText = "Errore caricamento prodotto";
     return;
   }
 
   // ============================================================
-  // 2) PREPARA CAMPI
+  // 3) POPOLA HERO
   // ============================================================
-  const descrizione = clean(p.descrizione || "");
+  document.getElementById("product-title").innerText = clean(p.titolo);
+  document.getElementById("product-subtitle").innerText = clean(p.titolo_breve || "");
+  document.getElementById("product-price").innerText = p.prezzo ? `${p.prezzo}€` : "";
 
-  const paypalLink = safeURL(p.paypal_link || "");
+  const img = p.immagine || "/placeholder.webp";
+  document.getElementById("product-image").src = img;
+  document.getElementById("product-image").alt = clean(p.titolo);
 
+  // ============================================================
+  // 4) VIDEO YOUTUBE (se presente)
+  // ============================================================
   const ytURL = safeURL(p.youtube_url || "");
-
-  let youtubeEmbed = "";
   const videoId = extractYouTubeId(ytURL);
 
   if (videoId) {
-    youtubeEmbed = `
-      <div class="video-wrapper">
-        <iframe
-          src="https://www.youtube.com/embed/${videoId}"
-          frameborder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowfullscreen
-          loading="lazy">
-        </iframe>
-      </div>
-    `;
+    const videoSection = document.getElementById("video-section");
+    const iframe = document.getElementById("product-video");
+
+    iframe.src = `https://www.youtube.com/embed/${videoId}`;
+    videoSection.style.display = "block";
   }
 
-  const img = p.immagine || "/placeholder.webp";
+  // ============================================================
+  // 5) DESCRIZIONE
+  // ============================================================
+  document.getElementById("product-description").innerHTML = clean(p.descrizione || "");
 
   // ============================================================
-  // 3) RENDER BLOCCO PRODOTTO
+  // 6) BOTTONI ACQUISTO
   // ============================================================
-  prodottoBox.innerHTML = `
-    <div class="product-layout">
+  const paypalLink = safeURL(p.paypal_link || "");
 
-      <div class="product-video">
-        ${youtubeEmbed}
-      </div>
+  document.getElementById("btn-acquista").addEventListener("click", () => {
+    if (!paypalLink) {
+      alert("Link di acquisto non disponibile");
+      return;
+    }
+    window.open(paypalLink, "_blank");
+  });
 
-      <div class="product-main">
-        <h1 class="product-title">${clean(p.titolo)}</h1>
-
-        <img src="${img}"
-             alt="${clean(p.titolo)}"
-             class="product-image">
-
-        <div class="product-description">
-          <p>${descrizione}</p>
-        </div>
-
-        ${
-          paypalLink
-            ? `<a href="${paypalLink}" class="btn btn-primary buy-btn" target="_blank">
-                 Acquista con PayPal
-               </a>`
-            : `<p><strong>Link PayPal mancante.</strong></p>`
-        }
-      </div>
-
-    </div>
-  `;
+  document.getElementById("btn-carrello").addEventListener("click", () => {
+    if (window.addToCart) {
+      addToCart({
+        slug: p.slug,
+        titolo: p.titolo,
+        prezzo: p.prezzo,
+        immagine: p.immagine
+      });
+      alert("Aggiunto al carrello");
+    }
+  });
 
   // ============================================================
-  // 4) CORRELATI (API INTERNA)
+  // 7) CORRELATI
   // ============================================================
   try {
     const res = await fetch(`/api/products?categoria=${encodeURIComponent(p.categoria)}`);
     const data = await res.json();
+
+    const relatedBox = document.getElementById("related");
 
     if (data.success && Array.isArray(data.products)) {
       const correlati = data.products
@@ -141,7 +136,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             <div class="product-card">
               <img src="${c.immagine || "/placeholder.webp"}" alt="${clean(c.titolo)}">
               <h3>${clean(c.titolo)}</h3>
-              <a href="prodotto.html?slug=${clean(c.slug)}" class="btn">Scopri</a>
+              <a href="/prodotto/${clean(c.slug)}" class="btn">Scopri</a>
             </div>
           `
             )
