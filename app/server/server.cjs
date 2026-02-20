@@ -1,6 +1,9 @@
 /**
- * app/server/server.cjs
+ * =========================================================
+ * File: app/server/server.cjs
  * Entry point del server — versione modulare + BOOTSTRAP ORDINATO
+ * Versione patchata per nuovo store interno (senza Payhip)
+ * =========================================================
  */
 
 const express = require("express");
@@ -51,25 +54,31 @@ require("./routes/chat.cjs")(app);
 require("./routes/chat-voice.cjs")(app);
 require("./routes/newsletter.cjs")(app);
 require("./routes/sitemap.cjs")(app);
-require("./routes/payhip-webhook.cjs")(app);
 require("./routes/sales.cjs")(app);
 require("./routes/meta-feed.cjs")(app);
 
-/* ⭐ PAYHIP DEVE STARE QUI — PRIMA DI product-page */
-require("./routes/payhip.cjs")(app);
+/* ❌ RIMOSSO: Payhip non esiste più */
+// require("./routes/payhip-webhook.cjs")(app);
+// require("./routes/payhip.cjs")(app);
 
+/* ⭐ ROUTE PAGINA PRODOTTO (serve solo HTML) */
 require("./routes/product-page.cjs")(app);
+
+/* ⭐ API PRODOTTI (catalogo + singolo) */
+require("./api-prodotti.cjs")(app);
+
+/* STATUS SISTEMA */
 require("./routes/system-status.cjs")(app);
 
 /* ============================================================
-   BOOTSTRAP ORDINATO (Payhip → YouTube → Airtable → Products)
+   BOOTSTRAP ORDINATO (YouTube → Airtable)
 ============================================================ */
 async function startServer() {
   console.log("\n====================================");
   console.log("🚀 Avvio MewingMarket — BOOTSTRAP");
   console.log("====================================\n");
 
-  // ⭐ Carica bootstrap orchestrato
+  // ⭐ Carica bootstrap orchestrato (senza Payhip)
   await require("./startup/bootstrap.cjs")();
 
   /* ============================================================
