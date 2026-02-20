@@ -24,16 +24,32 @@
 
 <body>
 
+<!-- HEADER DINAMICO -->
+<div id="header-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("header.html")
+      .then(r => r.text())
+      .then(h => {
+        document.getElementById("header-placeholder").innerHTML = h;
+      })
+      .catch(err => console.error("Errore caricamento header:", err));
+  });
+</script>
+
 <div class="dashboard-header">
   Dashboard Vendite – MewingMarket
+
   <button style="float:right;background:#fff;color:#000;padding:6px 12px;border-radius:6px;border:none;cursor:pointer;margin-left:10px;"
           onclick="location.href='/tracking.html'">Tracking</button>
+
   <button style="float:right;background:#fff;color:#000;padding:6px 12px;border-radius:6px;border:none;cursor:pointer;"
           onclick="location.reload()">Aggiorna</button>
 </div>
 
 <div class="dashboard-container">
 
+  <!-- PERFORMANCE PRODOTTI -->
   <h2>Performance Prodotti</h2>
   <table class="dashboard-table" id="productsTable">
     <thead>
@@ -49,6 +65,7 @@
     <tbody></tbody>
   </table>
 
+  <!-- TUTTE LE VENDITE -->
   <h2>Tutte le Vendite</h2>
   <table class="dashboard-table" id="salesTable">
     <thead>
@@ -66,7 +83,34 @@
     <tbody></tbody>
   </table>
 
+  <!-- FEEDBACK -->
+  <h2>Feedback Clienti</h2>
+  <table class="dashboard-table" id="feedbackTable">
+    <thead>
+      <tr>
+        <th>Prodotto</th>
+        <th>Rating</th>
+        <th>Commento</th>
+        <th>Data</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
 </div>
+
+<!-- FOOTER DINAMICO -->
+<div id="footer-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("footer.html")
+      .then(r => r.text())
+      .then(h => {
+        document.getElementById("footer-placeholder").innerHTML = h;
+      })
+      .catch(err => console.error("Errore caricamento footer:", err));
+  });
+</script>
 
 <script>
 /* =========================================================
@@ -107,8 +151,19 @@ async function loadSummary() {
   }
 }
 
+async function loadFeedback() {
+  try {
+    const res = await fetch(`/api/feedback?secret=${secret}`);
+    if (!res.ok) throw new Error("Errore fetch feedback");
+    return await res.json();
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
+}
+
 /* =========================================================
-   RENDER PRODOTTI (blindato)
+   RENDER PERFORMANCE PRODOTTI
 ========================================================= */
 function renderProducts(summary) {
   const tbody = document.querySelector("#productsTable tbody");
@@ -129,7 +184,7 @@ function renderProducts(summary) {
 }
 
 /* =========================================================
-   RENDER VENDITE (blindato)
+   RENDER VENDITE
 ========================================================= */
 function renderSales(sales) {
   const tbody = document.querySelector("#salesTable tbody");
@@ -153,14 +208,35 @@ function renderSales(sales) {
 }
 
 /* =========================================================
-   INIT (blindato)
+   RENDER FEEDBACK
+========================================================= */
+function renderFeedback(list) {
+  const tbody = document.querySelector("#feedbackTable tbody");
+  tbody.innerHTML = "";
+
+  (list || []).forEach(f => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${clean(f.prodotto)}</td>
+      <td>${clean(String(f.rating))} ⭐</td>
+      <td>${clean(f.comment)}</td>
+      <td>${clean(f.timestamp)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+/* =========================================================
+   INIT
 ========================================================= */
 (async () => {
   const sales = await loadSales();
   const summary = await loadSummary();
+  const feedback = await loadFeedback();
 
   renderSales(sales);
   renderProducts(summary);
+  renderFeedback(feedback);
 })();
 </script>
 
