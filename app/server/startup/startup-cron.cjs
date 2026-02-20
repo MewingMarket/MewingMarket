@@ -1,13 +1,14 @@
 /**
- * app/server/startup/startup-cron.cjs
- * Cron job periodici — versione ottimizzata (post-bootstrap)
+ * =========================================================
+ * File: app/server/startup/startup-cron.cjs
+ * Cron job periodici — versione patchata per nuovo store interno
+ * =========================================================
  */
 
 const cron = require("node-cron");
 
-const { syncPayhip } = require("../../services/payhip.cjs");
 const { syncYouTube } = require("../../services/youtube.cjs");
-const { syncAirtable, loadProducts } = require("../../modules/airtable.cjs");
+const { syncAirtable } = require("../../modules/airtable.cjs");
 
 const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
 const AIRTABLE_BASE = process.env.AIRTABLE_BASE;
@@ -21,20 +22,8 @@ module.exports = function startCronJobs() {
   console.log("⏱️ Cron attivi (post-bootstrap)");
 
   /* =========================================================
-     1) PAYHIP — ogni 10 minuti
-  ========================================================== */
-  cron.schedule("*/10 * * * *", async () => {
-    console.log("🔄 [CRON] Sync Payhip…");
-    try {
-      await syncPayhip();
-      console.log("✅ [CRON] Payhip OK");
-    } catch (err) {
-      console.error("❌ [CRON] Payhip error:", err);
-    }
-  });
-
-  /* =========================================================
-     2) YOUTUBE — ogni 30 minuti
+     1) YOUTUBE — ogni 30 minuti
+     (solo se Airtable è configurato)
   ========================================================== */
   cron.schedule("*/30 * * * *", async () => {
     if (!canUseAirtable()) return;
@@ -49,8 +38,8 @@ module.exports = function startCronJobs() {
   });
 
   /* =========================================================
-     3) AIRTABLE — ogni 15 minuti
-     Deve essere DOPO Payhip e YouTube
+     2) AIRTABLE — ogni 15 minuti
+     Deve essere DOPO YouTube
   ========================================================== */
   cron.schedule("*/15 * * * *", async () => {
     if (!canUseAirtable()) return;
@@ -58,12 +47,7 @@ module.exports = function startCronJobs() {
     console.log("📡 [CRON] Sync Airtable…");
     try {
       await syncAirtable();
-      console.log("✅ [CRON] Airtable OK");
-
-      // Aggiorna products.json dopo Airtable
-      await loadProducts();
-      console.log("📦 [CRON] Catalogo aggiornato");
-
+      console.log("🟢 [CRON] Airtable OK (catalogReady = true)");
     } catch (err) {
       console.error("❌ [CRON] Airtable error:", err);
     }
