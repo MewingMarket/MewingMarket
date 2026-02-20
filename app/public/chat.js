@@ -1,30 +1,29 @@
 /* =========================================================
-   CHATBOX — VERSIONE COMPLETA + BLINDATA
+   CHATBOX — VERSIONE COMPLETA + PATCH DOMINIO
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
+  const API_BASE = "https://www.mewingmarket.it"; // ⭐ dominio verificato
+
   const chatBox = document.getElementById("chat-box");
   const chatInput = document.getElementById("chat-input");
   const chatSend = document.getElementById("chat-send");
   const chatVoice = document.getElementById("chat-voice");
+  const chatAttach = document.getElementById("chat-attach");
+  const chatFile = document.getElementById("chat-file");
   const chatContainer = document.getElementById("chat-container");
+  const chatToggle = document.getElementById("chat-toggle");
 
-  if (!chatBox || !chatInput || !chatSend || !chatContainer) {
+  if (!chatBox || !chatInput || !chatSend || !chatContainer || !chatToggle) {
     console.error("Chat: elementi mancanti");
     return;
   }
 
-  /* =========================================================
-     SANITIZZAZIONE TESTO
-  ========================================================== */
   const clean = (t) =>
     typeof t === "string"
       ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
       : "";
 
-  /* =========================================================
-     AGGIUNGI MESSAGGIO
-  ========================================================== */
   function addMessage(text, sender = "bot") {
     const bubble = document.createElement("div");
     bubble.className = sender === "user" ? "chat-bubble user" : "chat-bubble bot";
@@ -34,7 +33,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* =========================================================
-     INVIO TESTO (blindato)
+     INVIO TESTO
   ========================================================== */
   let sending = false;
 
@@ -48,7 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
     chatInput.value = "";
 
     try {
-      const res = await fetch("/chat", {
+      const res = await fetch(`${API_BASE}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message })
@@ -73,7 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* =========================================================
-     🎤 REGISTRAZIONE VOCALE (blindata)
+     🎤 REGISTRAZIONE VOCALE
   ========================================================== */
   let isRecording = false;
   let mediaRecorder = null;
@@ -98,8 +97,6 @@ document.addEventListener("DOMContentLoaded", () => {
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
         await sendVoiceMessage(audioBlob);
-
-        // Rilascia risorse
         stream.getTracks().forEach((t) => t.stop());
       };
 
@@ -120,15 +117,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  if (chatVoice) {
-    chatVoice.addEventListener("click", () => {
-      if (!isRecording) startRecording();
-      else stopRecording();
-    });
-  }
+  chatVoice.addEventListener("click", () => {
+    if (!isRecording) startRecording();
+    else stopRecording();
+  });
 
   /* =========================================================
-     INVIO VOCALE (blindato)
+     INVIO VOCALE
   ========================================================== */
   async function sendVoiceMessage(blob) {
     addMessage("🎤 Sto elaborando il vocale...", "bot");
@@ -137,7 +132,7 @@ document.addEventListener("DOMContentLoaded", () => {
     formData.append("audio", blob, "audio.webm");
 
     try {
-      const res = await fetch("/chat/voice", {
+      const res = await fetch(`${API_BASE}/chat/voice`, {
         method: "POST",
         body: formData
       });
@@ -150,13 +145,42 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* =========================================================
-     APERTURA CHAT (blindata)
+     📎 ALLEGATI
   ========================================================== */
-  const chatToggle = document.getElementById("chat-toggle");
-  if (chatToggle) {
-    chatToggle.addEventListener("click", () => {
-      chatContainer.classList.toggle("open");
-      chatBox.scrollTop = chatBox.scrollHeight;
+  if (chatAttach && chatFile) {
+    chatAttach.addEventListener("click", () => {
+      chatFile.click();
+    });
+
+    chatFile.addEventListener("change", async () => {
+      const file = chatFile.files[0];
+      if (!file) return;
+
+      addMessage("📎 Allegato caricato: " + file.name, "user");
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const res = await fetch(`${API_BASE}/chat/attachment`, {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await res.json();
+        addMessage(data.reply || "Allegato ricevuto.");
+      } catch (err) {
+        addMessage("Errore durante l'invio dell'allegato.", "bot");
+      }
     });
   }
+
+  /* =========================================================
+     APERTURA CHAT
+  ========================================================== */
+  chatToggle.addEventListener("click", () => {
+    chatContainer.classList.toggle("open");
+    chatToggle.classList.toggle("hide");
+    chatBox.scrollTop = chatBox.scrollHeight;
+  });
 });

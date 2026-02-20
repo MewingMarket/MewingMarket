@@ -1,10 +1,7 @@
-// public/index.js — versione blindata
+// index.js — versione definitiva blindata + fallback immagini + slider robusto
 
 document.addEventListener("DOMContentLoaded", async () => {
 
-  /* =========================================================
-     SANITIZZAZIONE
-  ========================================================== */
   const clean = (t) =>
     typeof t === "string"
       ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
@@ -16,17 +13,42 @@ document.addEventListener("DOMContentLoaded", async () => {
       : "";
 
   /* =========================================================
-     HERO SLIDER (blindato)
-  ========================================================== */
+     FALLBACK DESCRIZIONE BREVE
+  ========================================================= */
+  function getShortDescription(p) {
+    if (p.DescrizioneBreve && p.DescrizioneBreve.trim() !== "") {
+      return clean(p.DescrizioneBreve);
+    }
+
+    const full = p.Descrizione || "";
+    const short = full.length > 120 ? full.slice(0, 120) + "…" : full;
+
+    return clean(short);
+  }
+
+  /* =========================================================
+     FALLBACK IMMAGINE
+  ========================================================= */
+  function getImage(p) {
+    if (Array.isArray(p.Immagine) && p.Immagine[0]?.url) {
+      return p.Immagine[0].url;
+    }
+    if (typeof p.Immagine === "string" && p.Immagine.startsWith("http")) {
+      return p.Immagine;
+    }
+    return "/placeholder.webp";
+  }
+
+  /* =========================================================
+     SLIDER HERO
+  ========================================================= */
   try {
-    const resHero = await fetch("/products.json", { cache: "no-store" });
+    const resHero = await fetch("/data/products.json", { cache: "no-store" });
     if (!resHero.ok) throw new Error("products.json non disponibile");
 
     const productsHero = await resHero.json();
-    if (!Array.isArray(productsHero)) throw new Error("Formato JSON non valido");
-
     const images = productsHero
-      .map(p => safeURL(p.immagine))
+      .map(getImage)
       .filter(Boolean);
 
     const slider = document.getElementById("hero-slider");
@@ -58,13 +80,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /* =========================================================
-     SEZIONE 3 PRODOTTI (blindata)
-  ========================================================== */
+     GRID HOMEPAGE
+  ========================================================= */
   const grid = document.getElementById("products-grid");
   if (!grid) return;
 
   try {
-    const res = await fetch("/products.json", { cache: "no-store" });
+    const res = await fetch("/data/products.json", { cache: "no-store" });
     if (!res.ok) {
       grid.innerHTML = `<p>Il catalogo sarà presto disponibile.</p>`;
       return;
@@ -79,24 +101,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     grid.innerHTML = "";
 
     products.slice(0, 3).forEach((p) => {
-      const img = safeURL(p.immagine) || "/placeholder.webp";
-      const titolo = clean(p.titoloBreve || p.titolo);
-      const descrizione = clean(p.descrizioneBreve || "");
-      const prezzo = p.prezzo ? clean(String(p.prezzo)) + " €" : "";
-      const slug = clean(p.slug);
+      const img = getImage(p);
+      const titolo = clean(p.TitoloBreve || p.Titolo || "Prodotto");
+      const descrizione = getShortDescription(p);
+      const prezzo = p.Prezzo ? clean(String(p.Prezzo)) + " €" : "";
+      const slug = clean(p.slug || "");
 
       const card = document.createElement("article");
       card.className = "product-card";
 
       card.innerHTML = `
-        <img src="${img}" 
-             alt="${titolo}" 
-             loading="lazy">
-
+        <img src="${img}" alt="${titolo}" loading="lazy">
         <h3>${titolo}</h3>
         <p>${descrizione}</p>
         <p class="price">${prezzo}</p>
-
         <a href="/prodotto.html?slug=${encodeURIComponent(slug)}" class="btn">
           Scopri
         </a>

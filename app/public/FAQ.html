@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- HEAD DINAMICO (blindato) -->
+  <!-- HEAD DINAMICO -->
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       fetch("head.html")
@@ -24,7 +24,7 @@
 
 <body>
 
-<!-- HEADER DINAMICO (blindato) -->
+<!-- HEADER DINAMICO -->
 <div id="header-placeholder"></div>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
@@ -78,19 +78,39 @@
 </main>
 
 <!-- CHATBOT -->
-<div id="mm-chat-btn"></div>
+<button id="chat-toggle">
+  <img src="chat-icon.png" alt="Chat">
+</button>
 
-<div id="mm-chatbox">
-  <div id="mm-chat-header">Supporto MewingMarket</div>
-  <div id="mm-chat-messages"></div>
+<div id="chat-container">
+  <div id="chat-header">
+    <img src="chat-icon.png" alt="">
+    Supporto MewingMarket
+  </div>
 
-  <div id="mm-chat-input">
-    <input id="mm-chat-text" type="text" placeholder="Scrivi un messaggio..." autocomplete="off">
-    <button id="mm-chat-send">Invia</button>
+  <div id="chat-box"></div>
+
+  <div id="chat-input-area">
+
+    <!-- Campo testo -->
+    <input id="chat-input" type="text" placeholder="Scrivi un messaggio...">
+
+    <!-- Pulsante invio -->
+    <button id="chat-send">➤</button>
+
+    <!-- Pulsante voce -->
+    <button id="chat-voice">🎤</button>
+
+    <!-- ⭐ NUOVO: Pulsante allegati -->
+    <button id="chat-attach">📎</button>
+
+    <!-- Input file nascosto -->
+    <input type="file" id="chat-file" style="display:none" accept="image/*,application/pdf">
+
   </div>
 </div>
 
-<!-- FOOTER DINAMICO (blindato) -->
+<!-- FOOTER DINAMICO -->
 <div id="footer-placeholder"></div>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
@@ -105,7 +125,8 @@
 
 <!-- JS -->
 <script src="FAQ.js" defer></script>
-<script src="chat.js?v=2" defer></script>
+<script src="chat.js" defer></script>
+<script src="premium.js" defer></script>
 
 </body>
 </html>

@@ -1,11 +1,8 @@
-// catalogo.js — versione blindata + video YouTube
+// catalogo.js — versione patchata e stabile
 
-/* =========================================================
-   CARICAMENTO PRODOTTI (blindato)
-========================================================= */
 async function loadProducts() {
   try {
-    const res = await fetch("products.json", { cache: "no-store" });
+    const res = await fetch("/data/products.json", { cache: "no-store" });
     if (!res.ok) throw new Error("Errore fetch products.json");
     const data = await res.json();
     return Array.isArray(data) ? data : [];
@@ -15,9 +12,6 @@ async function loadProducts() {
   }
 }
 
-/* =========================================================
-   SANITIZZAZIONE BASE
-========================================================= */
 function clean(t) {
   return typeof t === "string"
     ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
@@ -28,12 +22,14 @@ function safeURL(u) {
   return typeof u === "string" && u.startsWith("http") ? u : "";
 }
 
-/* =========================================================
-   VIDEO YOUTUBE (blindato)
-========================================================= */
 function renderYouTubeLink(p) {
-  const url = safeURL(p.youtube_url);
+  const url =
+    safeURL(p.youtube_url) ||
+    safeURL(p.youtube_last_video_url) ||
+    "";
+
   if (!url) return "";
+
   return `
     <div class="video-link">
       <a href="${url}" target="_blank" rel="noopener noreferrer">
@@ -43,18 +39,36 @@ function renderYouTubeLink(p) {
   `;
 }
 
-/* =========================================================
-   CARD PRODOTTO (blindata)
-========================================================= */
+function getShortDescription(p) {
+  if (p.DescrizioneBreve && p.DescrizioneBreve.trim() !== "") {
+    return clean(p.DescrizioneBreve);
+  }
+
+  const full = p.Descrizione || "";
+  const short = full.length > 120 ? full.slice(0, 120) + "…" : full;
+
+  return clean(short);
+}
+
+function getImage(p) {
+  if (Array.isArray(p.Immagine) && p.Immagine[0]?.url) {
+    return p.Immagine[0].url;
+  }
+  if (typeof p.Immagine === "string" && p.Immagine.startsWith("http")) {
+    return p.Immagine;
+  }
+  return "img/placeholder.webp";
+}
+
 function cardHTML(p) {
-  const img = safeURL(p.immagine) || "img/placeholder.webp";
-  const titolo = clean(p.titoloBreve || p.titolo);
-  const descrizione = clean(p.descrizioneBreve || "");
-  const prezzo = parseFloat(p.prezzo) || 0;
-  const slug = clean(p.slug);
+  const img = getImage(p);
+  const titolo = clean(p.TitoloBreve || p.Titolo || "");
+  const descrizione = getShortDescription(p);
+  const prezzo = Number(p.Prezzo) || 0;
+  const slug = clean(p.slug || "");
 
   return `
-    <div class="product-card" data-cat="${clean(p.categoria)}" data-prezzo="${prezzo}">
+    <div class="product-card" data-cat="${clean(p.Categoria || "")}" data-prezzo="${prezzo}">
       <img src="${img}" alt="${titolo}" loading="lazy">
       <h2>${titolo}</h2>
       <p>${descrizione}</p>
@@ -65,38 +79,23 @@ function cardHTML(p) {
   `;
 }
 
-/* =========================================================
-   INIZIALIZZAZIONE CATALOGO (blindata)
-========================================================= */
 (async function initCatalogo() {
   const products = await loadProducts();
   const container = document.getElementById("catalogo");
   const categorieBox = document.getElementById("categorie");
 
-  if (!container || !categorieBox) {
-    console.error("catalogo.js: elementi mancanti");
-    return;
-  }
+  if (!container || !categorieBox) return;
 
-  /* ----------------------------
-     CATEGORIE DINAMICHE (blindate)
-  ----------------------------- */
-  const categorie = [...new Set(products.map(p => p.categoria))].filter(Boolean);
+  const categorie = [...new Set(products.map(p => p.Categoria || ""))].filter(Boolean);
 
   categorieBox.innerHTML = categorie.length
     ? categorie.map(cat => `<button class="btn" data-cat="${clean(cat)}">${clean(cat)}</button>`).join("")
     : "<p>Nessuna categoria disponibile</p>";
 
-  /* ----------------------------
-     POPOLA CATALOGO
-  ----------------------------- */
   container.innerHTML = products.length
     ? products.map(cardHTML).join("")
     : "<p>Nessun prodotto disponibile.</p>";
 
-  /* ----------------------------
-     FILTRO CATEGORIA (blindato)
-  ----------------------------- */
   categorieBox.addEventListener("click", e => {
     const cat = e.target.dataset.cat;
     if (!cat) return;
@@ -106,24 +105,6 @@ function cardHTML(p) {
     });
   });
 
-  /* ----------------------------
-     FILTRO PREZZO (blindato)
-  ----------------------------- */
-  document.querySelectorAll("[data-prezzo]").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const max = parseFloat(btn.dataset.prezzo);
-      if (isNaN(max)) return;
-
-      document.querySelectorAll(".product-card").forEach(card => {
-        const prezzo = parseFloat(card.dataset.prezzo);
-        card.style.display = prezzo <= max ? "block" : "none";
-      });
-    });
-  });
-
-  /* ----------------------------
-     RESET FILTRI
-  ----------------------------- */
   const resetBtn = document.getElementById("reset");
   if (resetBtn) {
     resetBtn.addEventListener("click", () => {

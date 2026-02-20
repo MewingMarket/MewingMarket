@@ -1,165 +1,155 @@
-// prodotto.js — versione blindata + YouTube fix totale
+// prodotto.js — versione definitiva blindata + correlati + YouTube robusto
 
-/* =========================================================
-   SANITIZZAZIONE
-========================================================= */
-const clean = (t) =>
-  typeof t === "string"
-    ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
-    : "";
+document.addEventListener("DOMContentLoaded", async () => {
 
-/* =========================================================
-   URL SICURI
-========================================================= */
-function safeURL(url) {
-  return typeof url === "string" && url.startsWith("http") ? url : "";
-}
+  const clean = (t) =>
+    typeof t === "string"
+      ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
+      : "";
 
-/* =========================================================
-   YOUTUBE ID EXTRACTOR (blindato)
-========================================================= */
-function extractYouTubeID(url) {
-  if (!url || typeof url !== "string") return null;
+  const safeURL = (u) =>
+    typeof u === "string" && u.startsWith("http") ? u : "";
 
-  try {
-    // youtu.be
-    if (url.includes("youtu.be/")) {
-      return clean(url.split("youtu.be/")[1].split("?")[0]);
-    }
+  // Estrazione videoId da TUTTI i formati YouTube
+  const extractYouTubeId = (url) => {
+    if (!url) return null;
 
-    // watch?v=
-    if (url.includes("watch?v=")) {
-      return clean(url.split("watch?v=")[1].split("&")[0]);
-    }
+    const classic = url.match(/v=([^&]+)/);
+    if (classic) return classic[1];
 
-    // embed
-    if (url.includes("embed/")) {
-      return clean(url.split("embed/")[1].split("?")[0]);
-    }
-  } catch {
+    const shorts = url.match(/shorts\/([^?]+)/);
+    if (shorts) return shorts[1];
+
+    const embed = url.match(/embed\/([^?]+)/);
+    if (embed) return embed[1];
+
     return null;
-  }
+  };
 
-  return null;
-}
-
-/* =========================================================
-   YOUTUBE EMBED (blindato)
-========================================================= */
-function renderYouTubeEmbed(p) {
-  const id = extractYouTubeID(p.youtube_url);
-  if (!id) return "";
-
-  return `
-    <div class="video-embed">
-      <iframe
-        src="https://www.youtube.com/embed/${id}"
-        title="YouTube video"
-        loading="lazy"
-        allowfullscreen
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-      ></iframe>
-    </div>
-  `;
-}
-
-/* =========================================================
-   INIT PRODOTTO (blindato)
-========================================================= */
-(async function () {
   const params = new URLSearchParams(window.location.search);
-  const slug = clean(params.get("slug"));
+  const slug = params.get("slug");
+
+  const prodottoBox = document.getElementById("prodotto");
+  const relatedBox = document.getElementById("related");
 
   if (!slug) {
-    console.warn("Nessuno slug presente");
+    prodottoBox.innerHTML = "<p>Parametro slug mancante.</p>";
     return;
   }
 
-  /* ----------------------------
-     FETCH PRODOTTI (blindato)
-  ----------------------------- */
   let products = [];
   try {
-    const res = await fetch("products.json", { cache: "no-store" });
-    if (!res.ok) throw new Error("Errore fetch products.json");
+    const res = await fetch("/data/products.json", { cache: "no-store" });
     products = await res.json();
-    if (!Array.isArray(products)) products = [];
-  } catch (err) {
-    console.error("Errore caricamento prodotti:", err);
+  } catch {
+    prodottoBox.innerHTML = "<p>Errore caricamento prodotto.</p>";
     return;
   }
 
-  /* ----------------------------
-     TROVA PRODOTTO
-  ----------------------------- */
-  const p = products.find(pr => pr.slug === slug);
+  const p = products.find((x) => x.slug === slug);
+
   if (!p) {
-    console.warn("Prodotto non trovato:", slug);
+    prodottoBox.innerHTML = "<p>Prodotto non trovato.</p>";
     return;
   }
 
-  /* ----------------------------
-     ELEMENTI DOM (blindati)
-  ----------------------------- */
-  const container = document.getElementById("prodotto");
-  if (!container) {
-    console.error("Elemento #prodotto mancante");
-    return;
+  const descrizione = clean(
+    p.DescrizioneLunga ||
+    p.Descrizione ||
+    ""
+  );
+
+  const linkPayhip = safeURL(
+    p.LinkPayhip ||
+    p.linkPayhip ||
+    ""
+  );
+
+  // YouTube (se presente)
+  const ytURL = safeURL(
+    p.youtube_url ||
+    p.youtube_last_video_url ||
+    ""
+  );
+
+  let youtubeEmbed = "";
+  const videoId = extractYouTubeId(ytURL);
+
+  if (videoId) {
+    youtubeEmbed = `
+      <div class="video-wrapper">
+        <iframe
+          src="https://www.youtube.com/embed/${videoId}"
+          frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen
+          loading="lazy">
+        </iframe>
+      </div>
+    `;
   }
 
-  /* ----------------------------
-     RENDER PRODOTTO (blindato)
-  ----------------------------- */
-  const img = safeURL(p.immagine) || "img/placeholder.webp";
-  const titolo = clean(p.titolo);
-  const descrizione = clean(p.descrizioneLunga || p.descrizioneBreve || "");
-  const prezzo = clean(String(p.prezzo));
-  const linkPayhip = safeURL(p.linkPayhip);
+  const img =
+    (Array.isArray(p.Immagine) && p.Immagine[0]?.url) ||
+    (typeof p.Immagine === "string" && p.Immagine.startsWith("http") && p.Immagine) ||
+    "/placeholder.webp";
 
-  container.innerHTML = `
-    <div class="hero-wrapper">
-      <div class="hero-media">
-        <img src="${img}" alt="${titolo}" loading="lazy">
-        ${renderYouTubeEmbed(p)}
+  /* ============================================================
+     BLOCCO PRODOTTO
+  ============================================================ */
+  prodottoBox.innerHTML = `
+    <div class="product-layout">
+
+      <div class="product-video">
+        ${youtubeEmbed}
       </div>
 
-      <div class="hero-content">
-        <h1>${titolo}</h1>
-        <p>${descrizione}</p>
-        <p class="prezzo">€${prezzo}</p>
-        <a href="${linkPayhip}" class="btn-acquista" target="_blank" rel="noopener noreferrer">Acquista ora</a>
+      <div class="product-main">
+        <h1 class="product-title">${clean(p.Titolo)}</h1>
+
+        <img src="${img}"
+             alt="${clean(p.Titolo)}"
+             class="product-image">
+
+        <div class="product-description">
+          <p>${descrizione}</p>
+        </div>
+
+        ${
+          linkPayhip
+            ? `<a href="${linkPayhip}" class="btn btn-primary buy-btn" target="_blank">
+                 Acquista su Payhip
+               </a>`
+            : `<p><strong>Link Payhip mancante.</strong></p>`
+        }
       </div>
+
     </div>
   `;
 
-  /* =========================================================
-     PRODOTTI CORRELATI (blindato)
-  ========================================================== */
-  const relatedBox = document.getElementById("related");
-  if (!relatedBox) return;
+  /* ============================================================
+     CORRELATI (stessa categoria)
+  ============================================================ */
+  if (relatedBox && p.Categoria) {
+    const correlati = products
+      .filter((x) => x.Categoria === p.Categoria && x.slug !== p.slug)
+      .slice(0, 4);
 
-  const correlati = products
-    .filter(pr => pr.categoria === p.categoria && pr.slug !== slug)
-    .slice(0, 4);
-
-  let html = "";
-  correlati.forEach(pr => {
-    const imgR = safeURL(pr.immagine) || "img/placeholder.webp";
-    const titoloR = clean(pr.titoloBreve || pr.titolo);
-    const descrizioneR = clean(pr.descrizioneBreve || "");
-    const prezzoR = clean(String(pr.prezzo));
-    const slugR = clean(pr.slug);
-
-    html += `
-      <div class="product-card">
-        <img src="${imgR}" alt="${titoloR}" loading="lazy">
-        <h2>${titoloR}</h2>
-        <p>${descrizioneR}</p>
-        <p class="prezzo">€${prezzoR}</p>
-        <a href="prodotto.html?slug=${slugR}" class="btn">Scopri di più</a>
-      </div>
-    `;
-  });
-
-  relatedBox.innerHTML = html;
-})();
+    relatedBox.innerHTML = correlati.length
+      ? correlati
+          .map(
+            (c) => `
+          <div class="product-card">
+            <img src="${
+              (Array.isArray(c.Immagine) && c.Immagine[0]?.url) ||
+              "/placeholder.webp"
+            }" alt="${clean(c.Titolo)}">
+            <h3>${clean(c.TitoloBreve || c.Titolo)}</h3>
+            <a href="prodotto.html?slug=${clean(c.slug)}" class="btn">Scopri</a>
+          </div>
+        `
+          )
+          .join("")
+      : "<p>Nessun prodotto correlato.</p>";
+  }
+});

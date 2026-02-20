@@ -31,14 +31,18 @@ h1, h2, h3 {
 a {
   text-decoration: none;
   color: inherit;
-} /* --------------------------------------------------
+}
+
+/* --------------------------------------------------
    PAGINE STANDARD
 -------------------------------------------------- */
 .pagina-standard {
   max-width: 900px;
   margin: auto;
   padding: 40px 20px;
-} /* --------------------------------------------------
+}
+
+/* --------------------------------------------------
    HEADER PREMIUM
 -------------------------------------------------- */
 .header-premium {
@@ -91,8 +95,10 @@ a {
     flex-wrap: wrap;
     justify-content: center;
   }
-} /* --------------------------------------------------
-   HERO PREMIUM (UNIFICATO)
+}
+
+/* --------------------------------------------------
+   HERO PREMIUM
 -------------------------------------------------- */
 .hero-premium {
   display: flex;
@@ -149,7 +155,9 @@ a {
     flex-direction: column;
     text-align: center;
   }
-} /* --------------------------------------------------
+}
+
+/* --------------------------------------------------
    SEZIONI HOME
 -------------------------------------------------- */
 .home-section {
@@ -161,7 +169,7 @@ a {
 .home-section h2 {
   text-align: center;
   margin-bottom: 25px;
-} /* --------------------------------------------------
+}  /* --------------------------------------------------
    GRIGLIA PRODOTTI
 -------------------------------------------------- */
 .products-grid,
@@ -172,13 +180,14 @@ a {
   padding: 20px 0;
 }
 
-/* Desktop */
 @media (min-width: 768px) {
   .products-grid,
   .catalogo-grid {
     grid-template-columns: repeat(3, 1fr);
   }
-} /* --------------------------------------------------
+}
+
+/* --------------------------------------------------
    CARD PRODOTTO
 -------------------------------------------------- */
 .product-card {
@@ -192,7 +201,6 @@ a {
   text-align: left;
 }
 
-/* Immagine */
 .product-card img {
   width: 100%;
   height: 180px !important;
@@ -201,7 +209,6 @@ a {
   margin-bottom: 12px;
 }
 
-/* Titolo */
 .product-card h3,
 .product-card h2 {
   font-size: 1.1rem;
@@ -209,14 +216,12 @@ a {
   margin: 0 0 8px;
 }
 
-/* Descrizione */
 .product-card p {
   font-size: 0.9rem;
   color: #444;
   margin-bottom: 10px;
 }
 
-/* Prezzo */
 .product-card .price,
 .product-card .prezzo {
   font-size: 1rem;
@@ -224,7 +229,6 @@ a {
   margin-bottom: 12px;
 }
 
-/* Pulsanti */
 .product-card .btn,
 .product-card .btn-secondary {
   display: block;
@@ -244,7 +248,9 @@ a {
 .product-card .btn-secondary {
   background: #eee;
   color: #000;
-} /* --------------------------------------------------
+}
+
+/* --------------------------------------------------
    PAGINA PRODOTTO
 -------------------------------------------------- */
 .hero-wrapper {
@@ -277,12 +283,13 @@ a {
   background: #e6b800;
 }
 
-/* Mobile */
 @media (max-width: 768px) {
   .hero-wrapper {
     flex-direction: column;
   }
-} /* --------------------------------------------------
+}
+
+/* --------------------------------------------------
    VIDEO YOUTUBE RESPONSIVE
 -------------------------------------------------- */
 .video-embed {
@@ -297,7 +304,9 @@ a {
   width: 100%;
   height: 100%;
   border: none;
-} /* --------------------------------------------------
+}
+
+/* --------------------------------------------------
    FAQ
 -------------------------------------------------- */
 .faq-answer {
@@ -354,7 +363,9 @@ a {
 .why-card p {
   color: #444;
   font-size: 0.95rem;
-} /* --------------------------------------------------
+}
+
+/* --------------------------------------------------
    COME FUNZIONA
 -------------------------------------------------- */
 .how-it-works {
@@ -389,429 +400,20 @@ a {
   font-weight: 700;
   margin: 0 auto 12px;
   font-size: 1.1rem;
-} /* --------------------------------------------------
-   FOOTER PREMIUM
--------------------------------------------------- */
-footer {
-  background: #000;
-  color: #fff;
-  padding: 40px 20px 20px;
-  margin-top: 60px;
 }
 
-.footer-inner {
+/* --------------------------------------------------
+   NOVITÀ DAL CATALOGO (HOME)
+-------------------------------------------------- */
+#catalogo {
   max-width: 1200px;
-  margin: auto;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 40px;
+  margin: 50px auto;
+  padding: 0 20px;
 }
 
-.footer-block h4 {
-  margin-bottom: 12px;
-  font-size: 20px;
-  color: #ffcc00;
-}
-
-.footer-links,
-.footer-legal {
-  list-style: none;
-  padding: 0;
-}
-
-.footer-links li,
-.footer-legal li {
-  margin-bottom: 8px;
-}
-
-.footer-links a,
-.footer-legal a {
-  color: #fff;
-  transition: 0.2s;
-}
-
-.footer-links a:hover,
-.footer-legal a:hover {
-  color: #ffcc00;
-}
-
-.footer-social {
-  display: flex;
-  gap: 14px;
-  margin-top: 12px;
-}
-
-.footer-social a {
-  font-size: 22px;
-  color: #fff;
-  transition: 0.2s;
-}
-
-.footer-social a:hover {
-  color: #ffcc00;
-  transform: scale(1.15);
-}
-
-.footer-bottom {
-  text-align: center;
-  margin-top: 30px;
-  font-size: 14px;
-  opacity: 0.7;
-} /* --------------------------------------------------
-   CHATBOT PREMIUM
--------------------------------------------------- */
-#mm-chat-btn {
-  position: fixed;
-  bottom: 25px;
-  right: 25px;
-  width: 62px;
-  height: 62px;
-  background: #ffcc00;
-  border-radius: 50%;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
-  cursor: pointer;
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform .2s ease;
-}
-
-#mm-chat-btn:hover {
-  transform: scale(1.08);
-}
-
-.mm-chat-icon {
-  width: 34px;
-  height: 34px;
-  pointer-events: none;
-}
-
-/* Chatbox */
-#mm-chatbox {
-  position: fixed;
-  bottom: 100px;
-  right: 25px;
-  width: 330px;
-  height: 470px;
-  background: #ffffff;
-  border-radius: 14px;
-  box-shadow: 0 6px 24px rgba(0,0,0,0.25);
-  display: none;
-  flex-direction: column;
-  overflow: hidden;
-  z-index: 9999;
-}
-
-#mm-chatbox.open {
-  display: flex;
-}
-
-/* Header */
-#mm-chat-header {
-  background: #000;
-  color: #fff;
-  padding: 14px;
-  font-weight: 600;
-  font-size: 15px;
-  text-align: center;
-}
-
-/* Messaggi */
-#mm-chat-messages {
-  flex: 1;
-  padding: 14px;
-  overflow-y: auto;
-  background: #fafafa;
-}
-
-/* Bubbles */
-.mm-bubble {
-  padding: 10px 14px;
-  border-radius: 12px;
-  margin-bottom: 12px;
-  max-width: 80%;
-  font-size: 14px;
-  line-height: 1.45;
-  animation: mm-bubble-in 0.22s ease-out;
-}
-
-.mm-user {
-  background: #ffcc00;
-  margin-left: auto;
-  color: #000;
-}
-
-.mm-bot {
-  background: #eaeaea;
-  color: #000;
-}
-
-@keyframes mm-bubble-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* Input */
-#mm-chat-input {
-  display: flex;
-  border-top: 1px solid #ddd;
-  background: #fff;
-}
-
-#mm-chat-input input {
-  flex: 1;
-  padding: 12px;
-  border: none;
-  font-size: 14px;
-}
-
-#mm-chat-input button {
-  background: #000;
-  color: #fff;
-  padding: 12px 16px;
-  border: none;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-/* Quick replies */
-.mm-quick-wrap {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.mm-quick-btn {
-  background: #000;
-  color: #fff;
-  padding: 6px 12px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  font-size: 13px;
-  transition: 0.2s;
-}
-
-.mm-quick-btn:hover {
-  background: #ffcc00;
-  color: #000;
-}
-
-/* Product card bot */
-.mm-product-card {
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.15);
-  padding: 12px;
-  margin-bottom: 14px;
-}
-
-.mm-product-img {
-  width: 100%;
-  border-radius: 10px;
-  margin-bottom: 10px;
-}
-
-.mm-product-body {
-  font-size: 14px;
-  line-height: 1.45;
-  margin-bottom: 10px;
-}
-
-.mm-product-btn {
-  display: block;
-  background: #ffcc00;
-  padding: 10px;
-  text-align: center;
-  border-radius: 6px;
-  color: #000;
-  font-weight: 600;
-  text-decoration: none;
-  transition: 0.2s;
-}
-
-.mm-product-btn:hover {
-  background: #e6b800;
-}
-
-/* Mobile */
-@media (max-width: 480px) {
-  #mm-chatbox {
-    bottom: 90px;
-    right: 15px;
-    width: 320px;
-    height: 420px;
-    max-width: calc(100% - 30px);
-  }
-
-  #mm-chat-btn {
-    bottom: 20px;
-    right: 20px;
-    width: 54px;
-    height: 54px;
-  }
-
-  .mm-chat-icon {
-    width: 28px;
-    height: 28px;
-  }
-   } /* --------------------------------------------------
-   CHATBOX WHATSAPP STYLE
--------------------------------------------------- */
-#chat-container {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: 340px;
-  max-height: 520px;
-  background: #ffffff;
-  border-radius: 18px;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  transform: translateY(120%);
-  transition: 0.35s ease;
-  z-index: 999999;
-}
-
-#chat-container.open {
-  transform: translateY(0);
-}
-
-/* Header */
-#chat-header {
-  background: #075e54;
-  color: white;
-  padding: 14px 18px;
-  font-size: 17px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-#chat-header img {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-}
-
-/* Area messaggi */
-#chat-box {
-  flex: 1;
-  padding: 15px;
-  overflow-y: auto;
-  background: #ece5dd;
-}
-
-/* Bubbles */
-.chat-bubble {
-  max-width: 80%;
-  padding: 10px 14px;
-  margin-bottom: 10px;
-  border-radius: 12px;
-  font-size: 15px;
-  line-height: 1.35;
-  word-break: break-word;
-  animation: fadeIn 0.2s ease;
-}
-
-.chat-bubble.user {
-  background: #dcf8c6;
-  margin-left: auto;
-  border-bottom-right-radius: 2px;
-}
-
-.chat-bubble.bot {
-  background: #ffffff;
-  margin-right: auto;
-  border-bottom-left-radius: 2px;
-}
-
-/* Input area */
-#chat-input-area {
-  display: flex;
-  align-items: center;
-  padding: 10px;
-  background: #f0f0f0;
-  gap: 8px;
-}
-
-#chat-input {
-  flex: 1;
-  padding: 10px 12px;
-  border-radius: 20px;
-  border: 1px solid #ccc;
-  outline: none;
-  font-size: 15px;
-  background: white;
-}
-
-#chat-send {
-  background: #075e54;
-  color: white;
-  border: none;
-  padding: 10px 14px;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 16px;
-  transition: 0.2s;
-}
-
-#chat-send:hover {
-  background: #0a6f63;
-}
-
-/* Pulsante vocale */
-#chat-voice {
-  background: #128c7e;
-  color: white;
-  border: none;
-  padding: 10px 14px;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 18px;
-  transition: 0.2s;
-}
-
-#chat-voice:hover {
-  background: #0f7a6d;
-}
-
-/* Animazione registrazione */
-#chat-voice.recording {
-  background: #d9534f !important;
-  animation: pulse 1s infinite;
-}
-
-@keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(217,83,79,0.6); }
-  70% { box-shadow: 0 0 0 12px rgba(217,83,79,0); }
-  100% { box-shadow: 0 0 0 0 rgba(217,83,79,0); }
-}
-
-/* Fade-in bubble */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* Mobile fix */
-@media (max-width: 480px) {
-  #chat-container {
-    width: 100%;
-    right: 0;
-    bottom: 0;
-    border-radius: 0;
-    max-height: 100%;
-  }
-   } /* =========================================================
+/* --------------------------------------------------
    TRACKING + DASHBOARD (LIGHT MODE)
-========================================================= */
-
+-------------------------------------------------- */
 .tracking-container,
 .dashboard-container {
   max-width: 1200px;
@@ -864,7 +466,7 @@ footer {
   background: #ffb3b3;
   color: #8a0000;
   font-weight: bold;
-} /* --------------------------------------------------
+}  /* --------------------------------------------------
    ANIMAZIONI GLOBALI
 -------------------------------------------------- */
 
@@ -957,4 +559,481 @@ footer {
 .btn-premium:hover {
   background: #ffcc00;
   color: #000;
+}
+
+/* --------------------------------------------------
+   EMBED YOUTUBE RESPONSIVE
+-------------------------------------------------- */
+.video-wrapper {
+  position: relative;
+  width: 100%;
+  padding-bottom: 56.25%; /* 16:9 */
+  height: 0;
+  overflow: hidden;
+  border-radius: 12px;
+  margin: 30px 0;
+  background: #000;
+}
+
+.video-wrapper iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* --------------------------------------------------
+   LAYOUT PAGINA PRODOTTO
+-------------------------------------------------- */
+.product-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 25px;
+  align-items: start;
+  margin-top: 20px;
+}
+
+.product-main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.product-title {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.product-image {
+  width: 100%;
+  border-radius: 12px;
+}
+
+.buy-btn {
+  margin-top: 10px;
+  padding: 14px 20px;
+  font-size: 18px;
+}
+
+/* Video piccolo a sinistra */
+.product-video {
+  width: 100%;
+}
+
+.product-video .video-wrapper {
+  width: 100%;
+  padding-bottom: 56.25%;
+  border-radius: 12px;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .product-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .product-video {
+    order: -1;
+  }
+}
+
+/* --------------------------------------------------
+   QUICK REPLIES
+-------------------------------------------------- */
+.mm-quick-container {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.mm-quick {
+  background: #f1f1f1;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.mm-quick:hover {
+  background: #e2e2e2;
+}
+
+.mm-quick:active {
+  background: #d6d6d6;
+}
+
+/* --------------------------------------------------
+   CARD BASE (MM)
+-------------------------------------------------- */
+.mm-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 12px 0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  font-family: system-ui, sans-serif;
+}
+
+.mm-card-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.mm-card-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: #222;
+}
+
+.mm-card-body {
+  font-size: 15px;
+  color: #444;
+  line-height: 1.4;
+}
+
+.mm-card-footer {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.mm-btn {
+  background: #007bff;
+  color: #fff !important;
+  padding: 8px 14px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.mm-btn-small {
+  background: #007bff;
+  color: #fff !important;
+  padding: 6px 10px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 13px;
+} /* --------------------------------------------------
+   CHATBOT WHATSAPP STYLE — VERSIONE PATCHATA
+-------------------------------------------------- */
+
+/* Pulsante flottante */
+#chat-toggle {
+  position: fixed;
+  bottom: 25px;
+  right: 25px;
+  width: 62px;
+  height: 62px;
+  background: #ffcc00;
+  border-radius: 50%;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  cursor: pointer;
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  transition: transform 0.2s ease;
+}
+
+#chat-toggle:hover {
+  transform: scale(1.08);
+}
+
+#chat-toggle img {
+  width: 34px;
+  height: 34px;
+  pointer-events: none;
+}
+
+/* Nascondi il bottone quando la chat è aperta */
+#chat-toggle.hide {
+  display: none !important;
+}
+
+/* --------------------------------------------------
+   CONTENITORE CHAT
+-------------------------------------------------- */
+#chat-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 340px;
+  max-height: 520px;
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: translateY(120%);
+  transition: 0.35s ease;
+  z-index: 999998;
+}
+
+#chat-container.open {
+  transform: translateY(0);
+}
+
+/* --------------------------------------------------
+   HEADER CHAT
+-------------------------------------------------- */
+#chat-header {
+  background: #075e54;
+  color: white;
+  padding: 14px 18px;
+  font-size: 17px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#chat-header img {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+}
+
+/* --------------------------------------------------
+   AREA MESSAGGI
+-------------------------------------------------- */
+#chat-box {
+  flex: 1;
+  padding: 15px;
+  overflow-y: auto;
+  background: #ece5dd;
+}
+
+/* Bubbles */
+.chat-bubble {
+  max-width: 80%;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  border-radius: 12px;
+  font-size: 15px;
+  line-height: 1.35;
+  word-break: break-word;
+  animation: fadeIn 0.2s ease;
+}
+
+.chat-bubble.user {
+  background: #dcf8c6;
+  margin-left: auto;
+  border-bottom-right-radius: 2px;
+}
+
+.chat-bubble.bot {
+  background: #ffffff;
+  margin-right: auto;
+  border-bottom-left-radius: 2px;
+}
+
+/* --------------------------------------------------
+   INPUT AREA
+-------------------------------------------------- */
+#chat-input-area {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  background: #f0f0f0;
+  gap: 8px;
+}
+
+#chat-input {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 20px;
+  border: 1px solid #ccc;
+  outline: none;
+  font-size: 15px;
+  background: white;
+}
+
+#chat-send {
+  background: #075e54;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  transition: 0.2s;
+}
+
+#chat-send:hover {
+  background: #0a6f63;
+}
+
+/* --------------------------------------------------
+   PULSANTE VOCALE
+-------------------------------------------------- */
+#chat-voice {
+  background: #128c7e;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  transition: 0.2s;
+}
+
+#chat-voice:hover {
+  background: #0f7a6d;
+}
+
+/* Stato registrazione */
+#chat-voice.recording {
+  background: #d9534f !important;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(217,83,79,0.6); }
+  70% { box-shadow: 0 0 0 12px rgba(217,83,79,0); }
+  100% { box-shadow: 0 0 0 0 rgba(217,83,79,0); }
+}
+
+/* --------------------------------------------------
+   MOBILE FIX
+-------------------------------------------------- */
+@media (max-width: 480px) {
+  #chat-container {
+    width: 100%;
+    right: 0;
+    bottom: 0;
+    border-radius: 0;
+    max-height: 100%;
+  }
+
+  #chat-toggle {
+    bottom: 20px;
+    right: 20px;
+    width: 54px;
+    height: 54px;
+  }
+
+  #chat-toggle img {
+    width: 28px;
+    height: 28px;
+  }
+} #chat-attach {
+  background: #888;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  transition: 0.2s;
+}
+
+#chat-attach:hover {
+  background: #666;
+}  /* --------------------------------------------------
+   FOOTER PREMIUM NERO
+-------------------------------------------------- */
+
+.footer-premium {
+  background: #000;
+  color: #fff;
+  padding: 50px 20px 30px;
+  margin-top: 60px;
+  font-family: 'Inter', sans-serif;
+}
+
+.footer-inner {
+  max-width: 1200px;
+  margin: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 40px;
+}
+
+.footer-block h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 14px;
+  color: #ffcc00;
+}
+
+.footer-subtitle {
+  margin-top: 20px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffcc00;
+}
+
+.footer-links,
+.footer-legal {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.footer-links li,
+.footer-legal li {
+  margin-bottom: 8px;
+}
+
+.footer-links a,
+.footer-legal a {
+  color: #ddd;
+  font-size: 0.95rem;
+  transition: color 0.2s ease;
+}
+
+.footer-links a:hover,
+.footer-legal a:hover {
+  color: #ffcc00;
+}
+
+/* SOCIAL ICONS */
+.footer-social {
+  display: flex;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.footer-social a {
+  color: #fff;
+  font-size: 1.3rem;
+  transition: transform 0.25s ease, color 0.25s ease;
+}
+
+.footer-social a:hover {
+  color: #ffcc00;
+  transform: translateY(-3px);
+}
+
+/* COPYRIGHT */
+.footer-bottom {
+  text-align: center;
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid #333;
+  font-size: 0.9rem;
+  color: #aaa;
+}
+
+/* MOBILE FIX */
+@media (max-width: 480px) {
+  .footer-premium {
+    padding: 40px 20px 20px;
+  }
+
+  .footer-social a {
+    font-size: 1.2rem;
+  }
 }

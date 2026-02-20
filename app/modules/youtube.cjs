@@ -1,76 +1,193 @@
-// modules/youtube.cjs — VERSIONE DEFINITIVA (allineata all’ecosistema)
+// app/modules/youtube.cjs — VERSIONE DEFINITIVA, MATCH AUTOMATICO + LOG AVANZATI (RESILIENTE)
 
-const path = require("path");
-const { stripHTML, safeText, cleanURL } = require("./utils.cjs");
-const { updateAirtableRecord, safeReadJSON } = require("./airtable.cjs");
+const fetch = require("node-fetch");
+
+const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
+const BASE_ID = process.env.AIRTABLE_BASE;
+const TABLE_NAME = process.env.AIRTABLE_TABLE_NAME;
 
 /* =========================================================
-   SLUG DAL TITOLO (blindato)
+   Guard di sicurezza Airtable
 ========================================================= */
-function extractSlugFromTitle(title) {
-  try {
-    if (!title) return null;
-    const match = title.match(/\[([^\]]+)\]/);
-    return match ? match[1].trim().toLowerCase() : null;
-  } catch (err) {
-    console.error("extractSlugFromTitle error:", err);
+function canUseAirtable() {
+  if (!AIRTABLE_PAT || !BASE_ID || !TABLE_NAME) {
+    console.log("⏭️ YouTube → Airtable skipped: missing PAT / BASE / TABLE_NAME");
+    return false;
+  }
+  return true;
+}
+
+/* =========================================================
+   Campi YouTube ammessi in Airtable
+========================================================= */
+const YT_FIELDS = [
+  "youtube_url",
+  "youtube_title",
+  "youtube_description",
+  "youtube_thumbnail",
+  "youtube_last_video_url",
+  "youtube_last_video_title"
+];
+
+/* =========================================================
+   NORMALIZZAZIONE TESTO
+========================================================= */
+function normalize(str) {
+  return str
+    .toLowerCase()
+    .replace(/[^\w\s]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/* =========================================================
+   SIMILARITÀ TRA TITOLI
+========================================================= */
+function similarity(a, b) {
+  a = normalize(a);
+  b = normalize(b);
+  if (!a || !b) return 0;
+
+  const wordsA = a.split(" ");
+  const wordsB = b.split(" ");
+
+  let matches = 0;
+  for (const w of wordsA) {
+    if (wordsB.includes(w)) matches++;
+  }
+
+  return matches / Math.max(wordsA.length, wordsB.length);
+}
+
+/* =========================================================
+   TROVA RECORD IN AIRTABLE TRAMITE TITOLO VIDEO
+========================================================= */
+async function findRecordByTitle(videoTitle) {
+  if (!canUseAirtable()) return null;
+
+  const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}`;
+
+  const res = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${AIRTABLE_PAT}`,
+      "Content-Type": "application/json"
+    }
+  });
+
+  const data = await res.json();
+  if (!data.records) {
+    if (data.error) {
+      console.error("❌ Errore findRecordByTitle YouTube:", data.error);
+    }
     return null;
+  }
+
+  let best = null;
+  let bestScore = 0;
+
+  for (const r of data.records) {
+    const productTitle = r.fields.Titolo || r.fields.titolo;
+    if (!productTitle) continue;
+
+    const score = similarity(videoTitle, productTitle);
+
+    if (score > bestScore) {
+      bestScore = score;
+      best = r;
+    }
+  }
+
+  if (bestScore < 0.45) {
+    console.log(`⏭️ Nessun match affidabile per video: "${videoTitle}" (score: ${bestScore})`);
+    return null;
+  }
+
+  console.log(`🔍 MATCH: "${videoTitle}" → "${best.fields.Titolo}" (score: ${bestScore})`);
+  return best;
+}
+
+/* =========================================================
+   AGGIORNA RECORD AIRTABLE
+========================================================= */
+async function updateRecord(id, fields) {
+  if (!canUseAirtable()) return;
+
+  const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}/${id}`;
+
+  const res = await fetch(url, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${AIRTABLE_PAT}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ fields })
+  });
+
+  const data = await res.json();
+  if (data.error) {
+    console.error("❌ Errore updateRecord YouTube:", data.error);
   }
 }
 
 /* =========================================================
-   UPDATE DA YOUTUBE (versione stabile, senza sync interno)
+   UPDATE DA YOUTUBE — LOG COMPLETI
 ========================================================= */
 async function updateFromYouTube(video) {
   try {
-    if (!video || typeof video !== "object") {
-      console.error("YouTube: video non valido:", video);
+    if (!video || !video.url) {
+      console.log("⏭️ Nessun video valido ricevuto da YouTube.");
       return;
     }
 
-    const slug = extractSlugFromTitle(video.title);
-    if (!slug) {
-      console.log("YouTube: nessuno slug trovato nel titolo:", video.title);
+    if (!canUseAirtable()) {
+      console.log("⏭️ updateFromYouTube skipped: Airtable non configurato");
       return;
     }
 
-    /* =====================================================
-       CARICAMENTO CATALOGO SICURO (senza require cache)
-    ====================================================== */
-    const products = safeReadJSON(path.join(__dirname, "..", "data", "products.json"));
-    const record = products.find(p => p.slug === slug);
+    console.log("\n===============================");
+    console.log("🎥 VIDEO TROVATO");
+    console.log("URL:", video.url);
+    console.log("ID:", video.videoId);
+    console.log("Titolo:", video.title);
+    console.log("Descrizione:", video.description?.slice(0, 120) || "(vuota)");
+    console.log("===============================\n");
 
-    if (!record || !record.id) {
-      console.log("YouTube: prodotto non trovato per slug:", slug);
+    const record = await findRecordByTitle(video.title);
+
+    if (!record) {
+      console.log(`⏭️ Nessun prodotto trovato per video: "${video.title}"`);
       return;
     }
 
-    /* =====================================================
-       PREPARAZIONE CAMPI
-    ====================================================== */
+    console.log(`🎯 Aggiorno prodotto Airtable: ${record.id} (${record.fields.Titolo})`);
+
     const fields = {
-      youtube_url: cleanURL(video.url),
-      youtube_title: safeText(video.title),
-      youtube_description: safeText(stripHTML(video.description || "")),
-      youtube_thumbnail: cleanURL(video.thumbnail)
+      youtube_url: video.url,
+      youtube_title: video.title || "",
+      youtube_description: video.description || "",
+      youtube_thumbnail: video.thumbnail || "",
+      youtube_last_video_url: video.url,
+      youtube_last_video_title: video.title || ""
     };
 
-    /* =====================================================
-       UPDATE SU AIRTABLE (senza syncAirtable interno)
-    ====================================================== */
-    await updateAirtableRecord(record.id, fields);
+    const safeFields = {};
+    for (const key of YT_FIELDS) {
+      if (fields[key] && fields[key].toString().trim() !== "") {
+        safeFields[key] = fields[key];
+      }
+    }
 
-    console.log("YouTube aggiornato:", slug);
+    await updateRecord(record.id, safeFields);
+
+    console.log(`🟢 [UPDATE] YouTube ha aggiunto un video al sito:
+   • Titolo video: ${video.title}
+   • Prodotto associato: ${record.fields.Titolo}`);
 
   } catch (err) {
-    console.error("❌ Errore updateFromYouTube:", err);
+    console.error("❌ updateFromYouTube:", err);
   }
 }
 
-/* =========================================================
-   EXPORT
-========================================================= */
 module.exports = {
-  updateFromYouTube,
-  extractSlugFromTitle
+  updateFromYouTube
 };
