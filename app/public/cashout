@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Cashout</title>
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+  <h1>Cashout</h1>
+
+  <div id="stats">
+    <p><strong>Totale vendite:</strong> <span id="totale"></span>€</p>
+    <p><strong>Da pagare:</strong> <span id="da-pagare"></span>€</p>
+  </div>
+
+  <table id="cashout-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Prodotto</th>
+        <th>Email</th>
+        <th>Prezzo</th>
+        <th>Stato</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script src="cashout.js"></script>
+</body>
+</html>
