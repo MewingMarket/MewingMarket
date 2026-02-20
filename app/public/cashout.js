@@ -1,34 +1,57 @@
-async function loadOrders() {
-  const res = await fetch("/api/ordini");
-  const data = await res.json();
-  return data.orders || [];
-}
+/* =========================================================
+   CASHOUT — legge il carrello e prepara il pagamento
+========================================================= */
 
-function renderCashout(orders) {
+document.addEventListener("DOMContentLoaded", () => {
+  const cart = Cart.get(); // dal carrello.js
   const tbody = document.querySelector("#cashout-table tbody");
-  tbody.innerHTML = "";
+  const totaleEl = document.querySelector("#totale");
+  const daPagareEl = document.querySelector("#da-pagare");
+  const btnPaga = document.getElementById("btn-paga");
 
+  tbody.innerHTML = "";
   let totale = 0;
 
-  orders.forEach(o => {
-    if (o.stato === "paid") totale += Number(o.prezzo);
+  /* ============================
+     RENDER PRODOTTI NEL CARRELLO
+  ============================ */
+  cart.forEach(p => {
+    totale += Number(p.prezzo);
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${o.id}</td>
-      <td>${o.prodotto_slug}</td>
-      <td>${o.email_cliente}</td>
-      <td>${o.prezzo}€</td>
-      <td>${o.stato}</td>
+      <td>${p.titolo}</td>
+      <td>${p.prezzo}€</td>
+      <td><button data-slug="${p.slug}" class="rimuovi">Rimuovi</button></td>
     `;
     tbody.appendChild(tr);
   });
 
-  document.querySelector("#totale").textContent = totale.toFixed(2);
-  document.querySelector("#da-pagare").textContent = totale.toFixed(2);
-}
+  totaleEl.textContent = totale.toFixed(2);
+  daPagareEl.textContent = totale.toFixed(2);
 
-(async () => {
-  const orders = await loadOrders();
-  renderCashout(orders);
-})();
+  /* ============================
+     RIMOZIONE DAL CARRELLO
+  ============================ */
+  tbody.addEventListener("click", e => {
+    if (e.target.classList.contains("rimuovi")) {
+      const slug = e.target.dataset.slug;
+      Cart.remove(slug);
+      location.reload();
+    }
+  });
+
+  /* ============================
+     PULSANTE "PAGA ORA"
+     (per ora redirect semplice)
+  ============================ */
+  btnPaga.addEventListener("click", () => {
+    if (cart.length === 0) {
+      alert("Il carrello è vuoto.");
+      return;
+    }
+
+    // Qui in futuro collegheremo PayPal
+    alert("Pagamento non ancora configurato.");
+  });
+});
