@@ -1,45 +1,38 @@
 /**
- * app/server/routes/product-page.cjs
- * Endpoint pagina prodotto
+ * =========================================================
+ * File: app/server/routes/product-page.cjs
+ * Endpoint pagina prodotto (serve solo l'HTML)
+ * =========================================================
  */
 
-// PRODUCTS → percorso corretto (airtable.cjs)
-const { getProducts } = require("../../modules/airtable.cjs");
+const path = require("path");
 
 module.exports = function (app) {
-  app.get("/prodotto/:slug", async (req, res) => {
-    const slug = req.params.slug;
 
+  // Serve la pagina prodotto statica
+  app.get("/prodotto/:slug", (req, res) => {
     try {
-      const products = Array.isArray(getProducts()) ? getProducts() : [];
-      const product = products.find(
-        (p) => p.slug === slug || p.id === slug
-      );
+      res.sendFile("prodotto.html", {
+        root: path.join(__dirname, "../../public")
+      });
 
-      if (!product) {
-        if (typeof global.logEvent === "function") {
-          global.logEvent("product_not_found", { slug });
-        }
-        return res.status(404).json({ error: "Prodotto non trovato" });
-      }
-
+      // Tracking opzionale
       if (typeof global.logEvent === "function") {
-        global.logEvent("product_page_view", { slug });
+        global.logEvent("product_page_view", { slug: req.params.slug });
       }
-
-      return res.json({ product });
 
     } catch (err) {
       console.error("❌ Errore /prodotto/:slug:", err);
 
       if (typeof global.logEvent === "function") {
         global.logEvent("product_page_error", {
-          slug,
+          slug: req.params.slug,
           error: err?.message || "unknown"
         });
       }
 
-      return res.status(500).json({ error: "Errore caricamento prodotto" });
+      res.status(500).send("Errore caricamento pagina prodotto");
     }
   });
+
 };
