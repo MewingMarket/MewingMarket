@@ -6,6 +6,7 @@
  * - Merge intelligente (non sovrascrive campi esistenti)
  * - Auto-create prodotto se non esiste
  * - Update PayPal link senza toccare altro
+ * - Recupero vendite utente (tabella: Vendite)
  * =========================================================
  */
 
@@ -176,11 +177,48 @@ async function createProductIfMissing(slug, fields = {}) {
   return newRecord.id;
 }
 
+/* =========================================================
+   GET SALES BY UID (Tabella: Vendite)
+========================================================= */
+async function getSalesByUID(uid) {
+  try {
+    const PAT = process.env.AIRTABLE_PAT;
+    const BASE = process.env.AIRTABLE_BASE;
+
+    if (!PAT || !BASE) {
+      console.log("⏭️ getSalesByUID saltato: variabili mancanti");
+      return [];
+    }
+
+    const base = new Airtable({ apiKey: PAT }).base(BASE);
+    const tableName = "Vendite";
+
+    const records = await base(tableName)
+      .select({
+        filterByFormula: `{uid} = '${uid}'`
+      })
+      .all();
+
+    return records.map(r => ({
+      id: r.id,
+      ...r.fields
+    }));
+
+  } catch (err) {
+    console.error("❌ Errore getSalesByUID:", err);
+    return [];
+  }
+}
+
+/* =========================================================
+   EXPORT
+========================================================= */
 module.exports = {
   loadProducts,
   getProducts,
   syncAirtable,
   updatePayPal,
   createProductIfMissing,
-  mergeProduct
+  mergeProduct,
+  getSalesByUID
 };
