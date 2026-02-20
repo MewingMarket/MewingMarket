@@ -176,3 +176,52 @@
   });
 
 })();
+/* =========================================================
+   EVENTI STORE (product view, add to cart, purchase)
+========================================================= */
+
+window.STORE_TRACKING = {
+  productView(slug) {
+    log("product_view", { product: clean(slug) });
+
+    fetch("/api/track", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        event: "product_view",
+        product: clean(slug),
+        timestamp: new Date().toISOString()
+      })
+    }).catch(()=>{});
+  },
+
+  addToCart(product) {
+    log("add_to_cart", { product: clean(product.slug) });
+
+    fetch("/api/track", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        event: "add_to_cart",
+        product: clean(product.slug),
+        price: clean(product.prezzo),
+        timestamp: new Date().toISOString()
+      })
+    }).catch(()=>{});
+  },
+
+  purchase(product, price) {
+    log("purchase_complete", { product: clean(product), price: clean(price) });
+
+    fetch("/api/track", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        event: "purchase_complete",
+        product: clean(product),
+        price: clean(price),
+        timestamp: new Date().toISOString()
+      })
+    }).catch(()=>{});
+  }
+};
