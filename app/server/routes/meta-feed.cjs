@@ -1,9 +1,11 @@
 /**
- * app/server/routes/meta-feed.cjs
+ * =========================================================
+ * File: app/server/routes/meta-feed.cjs
  * Feed prodotti per Meta / Facebook / Instagram
+ * Versione patchata per nuovo store interno
+ * =========================================================
  */
 
-// PRODUCTS → ora arriva da airtable.cjs
 const { getProducts } = require("../../modules/airtable.cjs");
 
 module.exports = function (app) {
@@ -13,11 +15,11 @@ module.exports = function (app) {
 
       const feed = products.map((p) => ({
         id: p.id,
-        title: p.title,
-        description: p.description,
+        title: p.titolo || "",
+        description: p.descrizione || "",
         url: `https://mewingmarket.com/prodotto/${p.slug || p.id}`,
-        image_url: p.image,
-        price: p.price,
+        image_url: p.immagine || "",
+        price: p.prezzo || 0,
         currency: "EUR",
         availability: "in stock"
       }));
