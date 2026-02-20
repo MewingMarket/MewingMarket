@@ -1,12 +1,12 @@
 // =========================================================
 // File: app/server/api-prodotti.cjs
 // API prodotti: catalogo + singolo prodotto
+// Versione patchata per airtable.cjs
 // =========================================================
 
 const {
-  getAllProducts,
-  getProductBySlug
-} = require("../modules/prodotti.cjs");
+  getProducts
+} = require("../modules/airtable.cjs");
 
 module.exports = function (app) {
 
@@ -15,7 +15,7 @@ module.exports = function (app) {
     try {
       const categoria = req.query.categoria || null;
 
-      let products = await getAllProducts();
+      let products = Array.isArray(getProducts()) ? getProducts() : [];
 
       if (categoria) {
         products = products.filter(p => p.categoria === categoria);
@@ -33,7 +33,9 @@ module.exports = function (app) {
   app.get("/api/products/:slug", async (req, res) => {
     try {
       const slug = req.params.slug;
-      const product = await getProductBySlug(slug);
+
+      const products = Array.isArray(getProducts()) ? getProducts() : [];
+      const product = products.find(p => p.slug === slug);
 
       if (!product) {
         return res.json({ success: false, error: "not_found" });
