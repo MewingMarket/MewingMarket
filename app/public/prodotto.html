@@ -20,6 +20,9 @@
 
   <script src="seo.js" defer></script>
   <script src="structured-data.js" defer></script>
+
+  <!-- CARRELLO -->
+  <script src="carrello.js" defer></script>
 </head>
 
 <body>
@@ -32,6 +35,20 @@
       .then(r => r.text())
       .then(h => {
         document.getElementById("header-placeholder").innerHTML = h;
+
+        // ⭐ AGGIUNGO ICONA CARRELLO DOPO IL CARICAMENTO DELL'HEADER
+        const cartBtn = document.createElement("div");
+        cartBtn.id = "cart-icon";
+        cartBtn.innerHTML = "🛒";
+        cartBtn.style.cursor = "pointer";
+        cartBtn.style.fontSize = "26px";
+        cartBtn.style.marginLeft = "12px";
+
+        cartBtn.addEventListener("click", () => {
+          window.location.href = "/dashboard/cashout.html";
+        });
+
+        document.querySelector("header nav").appendChild(cartBtn);
       })
       .catch(err => console.error("Errore caricamento header:", err));
   });
@@ -42,6 +59,12 @@
   <!-- SEZIONE PRODOTTO (popolata da prodotto.js) -->
   <section class="hero-wrapper" id="prodotto">
     <p>Caricamento prodotto…</p>
+  </section>
+
+  <!-- ⭐ BOTTONI ACQUISTO + CARRELLO -->
+  <section id="azioni-prodotto" style="text-align:center; margin-top:20px; display:none;">
+    <button id="btn-acquista" class="btn-primario">Acquista ora</button>
+    <button id="btn-carrello" class="btn-secondario">Aggiungi al carrello</button>
   </section>
 
   <!-- CORRELATI -->
