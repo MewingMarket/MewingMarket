@@ -1,4 +1,7 @@
-// index.js — versione definitiva blindata + fallback immagini + slider robusto
+// =========================================================
+// File: app/public/index.js
+// Versione definitiva: Airtable + API interne + slider + fallback
+// =========================================================
 
 document.addEventListener("DOMContentLoaded", async () => {
 
@@ -16,11 +19,11 @@ document.addEventListener("DOMContentLoaded", async () => {
      FALLBACK DESCRIZIONE BREVE
   ========================================================= */
   function getShortDescription(p) {
-    if (p.DescrizioneBreve && p.DescrizioneBreve.trim() !== "") {
-      return clean(p.DescrizioneBreve);
+    if (p.descrizione_breve && p.descrizione_breve.trim() !== "") {
+      return clean(p.descrizione_breve);
     }
 
-    const full = p.Descrizione || "";
+    const full = p.descrizione || "";
     const short = full.length > 120 ? full.slice(0, 120) + "…" : full;
 
     return clean(short);
@@ -30,26 +33,23 @@ document.addEventListener("DOMContentLoaded", async () => {
      FALLBACK IMMAGINE
   ========================================================= */
   function getImage(p) {
-    if (Array.isArray(p.Immagine) && p.Immagine[0]?.url) {
-      return p.Immagine[0].url;
-    }
-    if (typeof p.Immagine === "string" && p.Immagine.startsWith("http")) {
-      return p.Immagine;
+    if (p.immagine && p.immagine.startsWith("http")) {
+      return p.immagine;
     }
     return "/placeholder.webp";
   }
 
   /* =========================================================
-     SLIDER HERO
+     1) SLIDER HERO (immagini random dai prodotti)
   ========================================================= */
   try {
-    const resHero = await fetch("/data/products.json", { cache: "no-store" });
-    if (!resHero.ok) throw new Error("products.json non disponibile");
+    const resHero = await fetch("/api/products", { cache: "no-store" });
+    const dataHero = await resHero.json();
 
-    const productsHero = await resHero.json();
-    const images = productsHero
-      .map(getImage)
-      .filter(Boolean);
+    if (!dataHero.success) throw new Error("API non disponibile");
+
+    const productsHero = dataHero.products;
+    const images = productsHero.map(getImage).filter(Boolean);
 
     const slider = document.getElementById("hero-slider");
 
@@ -80,31 +80,29 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /* =========================================================
-     GRID HOMEPAGE
+     2) GRID HOMEPAGE (primi 3 prodotti)
   ========================================================= */
   const grid = document.getElementById("products-grid");
   if (!grid) return;
 
   try {
-    const res = await fetch("/data/products.json", { cache: "no-store" });
-    if (!res.ok) {
+    const res = await fetch("/api/products", { cache: "no-store" });
+    const data = await res.json();
+
+    if (!data.success || !Array.isArray(data.products) || data.products.length === 0) {
       grid.innerHTML = `<p>Il catalogo sarà presto disponibile.</p>`;
       return;
     }
 
-    const products = await res.json();
-    if (!Array.isArray(products) || products.length === 0) {
-      grid.innerHTML = `<p>Il catalogo sarà presto disponibile.</p>`;
-      return;
-    }
+    const products = data.products;
 
     grid.innerHTML = "";
 
     products.slice(0, 3).forEach((p) => {
       const img = getImage(p);
-      const titolo = clean(p.TitoloBreve || p.Titolo || "Prodotto");
+      const titolo = clean(p.titolo || "Prodotto");
       const descrizione = getShortDescription(p);
-      const prezzo = p.Prezzo ? clean(String(p.Prezzo)) + " €" : "";
+      const prezzo = p.prezzo ? clean(String(p.prezzo)) + " €" : "";
       const slug = clean(p.slug || "");
 
       const card = document.createElement("article");
