@@ -1,7 +1,7 @@
 // app/services/payhip.cjs
-// Sync Payhip via scraping HTML (Playwright-core, future-proof)
+// Sync Payhip via scraping HTML (Puppeteer, Render-compatible)
 
-const { chromium } = require("playwright-core");
+const puppeteer = require("puppeteer");
 const { updateFromPayhip, removeMissingPayhipProducts } = require("../modules/payhip.cjs");
 
 // URL del tuo store Payhip
@@ -22,26 +22,26 @@ function canUseAirtable() {
 }
 
 /* =========================================================
-   1) Scarica HTML dello store con Playwright-core
+   1) Scarica HTML dello store con Puppeteer
 ========================================================= */
 async function fetchStoreHtml() {
   let browser;
   try {
-    browser = await chromium.launch({ headless: true });
-    const page = await browser.newPage();
-
-    await page.goto(PAYHIP_STORE_URL, {
-      waitUntil: "networkidle"
+    browser = await puppeteer.launch({
+      headless: "new",
+      args: ["--no-sandbox", "--disable-setuid-sandbox"]
     });
 
-    // aspetta che ci sia almeno un link prodotto
+    const page = await browser.newPage();
+    await page.goto(PAYHIP_STORE_URL, { waitUntil: "networkidle0" });
+
     await page.waitForSelector("a[href*='/b/']", { timeout: 15000 });
 
     const html = await page.content();
     await browser.close();
     return html || "";
   } catch (err) {
-    console.error("[PAYHIP] errore fetchStoreHtml (Playwright-core):", err.message);
+    console.error("[PAYHIP] errore fetchStoreHtml (Puppeteer):", err.message);
     if (browser) await browser.close();
     return "";
   }
@@ -65,19 +65,21 @@ function extractProductSlugs(html) {
 }
 
 /* =========================================================
-   3) Scarica pagina singolo prodotto con Playwright-core
+   3) Scarica pagina singolo prodotto con Puppeteer
 ========================================================= */
 async function fetchProductPage(slug) {
   let browser;
   try {
     const url = `https://payhip.com/b/${slug}`;
 
-    browser = await chromium.launch({ headless: true });
+    browser = await puppeteer.launch({
+      headless: "new",
+      args: ["--no-sandbox", "--disable-setuid-sandbox"]
+    });
+
     const page = await browser.newPage();
+    await page.goto(url, { waitUntil: "networkidle0" });
 
-    await page.goto(url, { waitUntil: "networkidle" });
-
-    // aspetta il titolo prodotto
     await page.waitForSelector("h1", { timeout: 15000 });
 
     const html = await page.content();
@@ -85,7 +87,7 @@ async function fetchProductPage(slug) {
 
     return { url, html: html || "" };
   } catch (err) {
-    console.error("[PAYHIP] errore fetchProductPage (Playwright-core):", slug, err.message);
+    console.error("[PAYHIP] errore fetchProductPage (Puppeteer):", slug, err.message);
     if (browser) await browser.close();
     return { url: "", html: "" };
   }
