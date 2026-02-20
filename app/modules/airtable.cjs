@@ -1,6 +1,12 @@
 /**
- * app/modules/airtable.cjs
- * Versione definitiva con PATCH anti-cache + auto-create directory
+ * =========================================================
+ * File: app/modules/airtable.cjs
+ * Modulo Airtable definitivo per il nuovo store interno
+ * - Sync Airtable → cache interna + products.json
+ * - Anti-cache
+ * - Auto-create directory
+ * - Campi coerenti con prodotto.js / catalogo.js / index.js
+ * =========================================================
  */
 
 const fs = require("fs");
@@ -11,20 +17,20 @@ const ROOT = path.resolve(__dirname, "..");
 const DATA_DIR = path.join(ROOT, "data");
 const DATA_PATH = path.join(DATA_DIR, "products.json");
 
-// ⭐ READY FLAG — il bot risponde solo quando è true
+// Flag globale: il catalogo è pronto solo dopo sync Airtable
 global.catalogReady = false;
 
+// Cache interna
 let PRODUCTS_CACHE = [];
-let SALES_CACHE = {};
 
 /* =========================================================
-   CREA CARTELLA SE NON ESISTE
+   CREA CARTELLA /data SE NON ESISTE
 ========================================================= */
 function ensureDataDir() {
   try {
     if (!fs.existsSync(DATA_DIR)) {
       fs.mkdirSync(DATA_DIR, { recursive: true });
-      console.log("📁 Cartella /data ricreata");
+      console.log("📁 Cartella /data creata");
     }
   } catch (err) {
     console.error("❌ Errore creazione cartella /data:", err);
@@ -45,7 +51,7 @@ function saveProductsToFile(products) {
 }
 
 /* =========================================================
-   CARICAMENTO DA FILE (PATCH: NON attivare catalogReady)
+   CARICAMENTO DA FILE (senza attivare catalogReady)
 ========================================================= */
 function loadProducts() {
   try {
@@ -56,11 +62,11 @@ function loadProducts() {
       PRODUCTS_CACHE = JSON.parse(raw);
 
       console.log("📦 Catalogo caricato da file (catalogReady = false)");
-      // ❗ PATCH: NON impostare catalogReady qui
     }
   } catch (err) {
     console.error("❌ Errore loadProducts:", err);
   }
+
   return PRODUCTS_CACHE;
 }
 
@@ -72,7 +78,7 @@ function getProducts() {
 }
 
 /* =========================================================
-   SYNC AIRTABLE (VERSIONE DEFINITIVA)
+   SYNC AIRTABLE → CACHE + FILE
 ========================================================= */
 async function syncAirtable() {
   try {
@@ -81,7 +87,7 @@ async function syncAirtable() {
     const TABLE = process.env.AIRTABLE_TABLE_NAME;
 
     if (!PAT || !BASE || !TABLE) {
-      console.log("⏭️ Airtable sync skipped: missing PAT / BASE / TABLE_NAME");
+      console.log("⏭️ Sync Airtable saltato: variabili mancanti");
       return false;
     }
 
@@ -92,32 +98,30 @@ async function syncAirtable() {
 
     const products = records.map((r) => {
       const f = r.fields;
+
       return {
         id: r.id,
-        slug: f.Slug || "",
-        titolo: f.Titolo || "",
-        titoloBreve: f.TitoloBreve || "",
-        descrizione: f.Descrizione || "",
-        descrizioneBreve: f.DescrizioneBreve || "",
-        prezzo: f.Prezzo || 0,
-        immagine: f.Immagine || [],
-        linkPayhip: f.LinkPayhip || "",
+        slug: f.slug || f.Slug || "",
+        titolo: f.titolo || f.Titolo || "",
+        titolo_breve: f.titolo_breve || f.TitoloBreve || "",
+        descrizione: f.descrizione || f.Descrizione || "",
+        descrizione_breve: f.descrizione_breve || f.DescrizioneBreve || "",
+        prezzo: f.prezzo || f.Prezzo || 0,
+        categoria: f.categoria || f.Categoria || "",
+        paypal_link: f.paypal_link || f.PayPal || "",
         youtube_url: f.youtube_url || "",
-        youtube_title: f.youtube_title || "",
-        youtube_description: f.youtube_description || "",
-        youtube_thumbnail: f.youtube_thumbnail || "",
-        youtube_last_video_url: f.youtube_last_video_url || "",
-        youtube_last_video_title: f.youtube_last_video_title || "",
-        categoria: f.Categoria || ""
+        immagine:
+          Array.isArray(f.immagine) && f.immagine[0]?.url
+            ? f.immagine[0].url
+            : ""
       };
     });
 
     PRODUCTS_CACHE = products;
     saveProductsToFile(products);
 
-    // ⭐ READY FLAG → ora il bot può rispondere
     global.catalogReady = true;
-    console.log("🟢 Airtable sync OK:", products.length, "prodotti (catalogReady = true)");
+    console.log("🟢 Sync Airtable OK:", products.length, "prodotti (catalogReady = true)");
 
     return true;
 
