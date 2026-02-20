@@ -8,6 +8,6 @@ module.exports = function(app) {
   require("./api-reset.cjs")(app);
 
   app.get("/dashboard", (req, res) => {
-    res.sendFile("dashboard.html", { root: "app/public" });
+    res.sendFile("dashboard-login.html", { root: "app/public" });
   });
 };
