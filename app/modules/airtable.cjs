@@ -85,7 +85,7 @@ async function syncAirtable() {
         prezzo: f.prezzo || f.Prezzo || 0,
         categoria: f.categoria || f.Categoria || "",
         paypal_link: f.paypal_link || f.PayPal || "",
-        youtube_url: f.youtube_url || "",
+        youtube_url: f.youtube_url || f.YouTube || "",
         immagine:
           Array.isArray(f.immagine) && f.immagine[0]?.url
             ? f.immagine[0].url
