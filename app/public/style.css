@@ -1108,3 +1108,83 @@ button.secondary {
   margin:18px 0 8px;
   border-top:1px solid #222;
 }
+/* =========================================================
+   DASHBOARD — STILI GENERALI
+========================================================= */
+
+.pagina-standard {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 20px;
+}
+
+/* Input di ricerca */
+.input-standard {
+  width: 100%;
+  max-width: 350px;
+  padding: 10px 14px;
+  margin-bottom: 20px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 16px;
+}
+
+/* Box statistiche */
+.box-standard {
+  background: #f7f7f7;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 25px;
+  border: 1px solid #e2e2e2;
+}
+
+/* Tabelle */
+.tabella-standard {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 15px;
+}
+
+.tabella-standard th {
+  background: #fafafa;
+  text-align: left;
+  padding: 12px;
+  border-bottom: 2px solid #ddd;
+  font-weight: 600;
+}
+
+.tabella-standard td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.tabella-standard tr:hover {
+  background: #f5f5f5;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .tabella-standard th,
+  .tabella-standard td {
+    font-size: 14px;
+    padding: 8px;
+  }
+
+  .input-standard {
+    width: 100%;
+  }
+} .btn-cashout {
+  background: #0070f3;
+  color: white;
+  padding: 12px 18px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  margin-top: 20px;
+}
+
+.btn-cashout:hover {
+  background: #005ad1;
+} 
