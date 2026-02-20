@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- HEAD DINAMICO -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      fetch("../head.html")
+        .then(r => r.text())
+        .then(html => {
+          const temp = document.createElement("div");
+          temp.innerHTML = html;
+          [...temp.children].forEach(node => document.head.appendChild(node));
+        })
+        .catch(err => console.error("Errore caricamento head:", err));
+    });
+  </script>
+
+  <link rel="stylesheet" href="../style.css">
+  <script src="js/admin.js" defer></script>
+  <script src="js/index.js" defer></script>
+</head>
+
+<body>
+
+<!-- HEADER DINAMICO -->
+<div id="header-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("../header.html")
+      .then(r => r.text())
+      .then(h => {
+        document.getElementById("header-placeholder").innerHTML = h;
+      })
+      .catch(err => console.error("Errore caricamento header:", err));
+  });
+</script>
+
+<main class="pagina-standard">
+
+  <h1>Dashboard Admin</h1>
+
+  <!-- METRICHE PRINCIPALI -->
+  <section class="box-standard">
+    <h2>Panoramica</h2>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h3>Vendite totali</h3>
+        <p id="stat-vendite">—</p>
+      </div>
+
+      <div class="stat-card">
+        <h3>Ordini totali</h3>
+        <p id="stat-ordini">—</p>
+      </div>
+
+      <div class="stat-card">
+        <h3>Prodotti attivi</h3>
+        <p id="stat-prodotti">—</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ULTIMI ORDINI -->
+  <section class="box-standard" style="margin-top:30px;">
+    <h2>Ultimi ordini</h2>
+
+    <table class="tabella-standard" id="tabella-ultimi-ordini">
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Prodotto</th>
+          <th>Prezzo</th>
+          <th>Utente</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <!-- PULSANTI RAPIDI -->
+  <section class="box-standard" style="margin-top:30px;">
+    <h2>Azioni rapide</h2>
+
+    <div class="quick-actions">
+      <a href="prodotti.html" class="btn">Gestisci prodotti</a>
+      <a href="vendite.html" class="btn">Vedi vendite</a>
+      <a href="ordini.html" class="btn">Vedi ordini</a>
+      <a href="feedback.html" class="btn">Feedback clienti</a>
+      <a href="analisi.html" class="btn">Analisi performance</a>
+      <a href="settings.html" class="btn">Impostazioni</a>
+    </div>
+  </section>
+
+</main>
+
+<!-- FOOTER DINAMICO -->
+<div id="footer-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("../footer.html")
+      .then(r => r.text())
+      .then(h => {
+        document.getElementById("footer-placeholder").innerHTML = h;
+      })
+      .catch(err => console.error("Errore caricamento footer:", err));
+  });
+</script>
+
+</body>
+</html>
