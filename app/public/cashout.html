@@ -2,31 +2,80 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Cashout</title>
-  <link rel="stylesheet" href="dashboard.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- HEAD DINAMICO -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      fetch("../head.html")
+        .then(r => r.text())
+        .then(html => {
+          const temp = document.createElement("div");
+          temp.innerHTML = html;
+          [...temp.children].forEach(node => document.head.appendChild(node));
+        })
+        .catch(err => console.error("Errore caricamento head:", err));
+    });
+  </script>
+
+  <link rel="stylesheet" href="../style.css">
+  <script src="../carrello.js" defer></script>
+  <script src="cashout.js" defer></script>
 </head>
+
 <body>
+
+<!-- HEADER DINAMICO -->
+<div id="header-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("../header.html")
+      .then(r => r.text())
+      .then(h => {
+        document.getElementById("header-placeholder").innerHTML = h;
+      })
+      .catch(err => console.error("Errore caricamento header:", err));
+  });
+</script>
+
+<main class="pagina-standard">
 
   <h1>Cashout</h1>
 
-  <div id="stats">
-    <p><strong>Totale vendite:</strong> <span id="totale"></span>€</p>
+  <div id="stats" class="box-standard">
+    <p><strong>Totale carrello:</strong> <span id="totale"></span>€</p>
     <p><strong>Da pagare:</strong> <span id="da-pagare"></span>€</p>
   </div>
 
-  <table id="cashout-table">
+  <table id="cashout-table" class="tabella-standard">
     <thead>
       <tr>
-        <th>ID</th>
         <th>Prodotto</th>
-        <th>Email</th>
         <th>Prezzo</th>
-        <th>Stato</th>
+        <th>Rimuovi</th>
       </tr>
     </thead>
     <tbody></tbody>
   </table>
 
-  <script src="cashout.js"></script>
+  <div style="margin-top: 25px; text-align:center;">
+    <button id="btn-paga" class="btn-primario">Procedi al pagamento</button>
+  </div>
+
+</main>
+
+<!-- FOOTER DINAMICO -->
+<div id="footer-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("../footer.html")
+      .then(r => r.text())
+      .then(h => {
+        document.getElementById("footer-placeholder").innerHTML = h;
+      })
+      .catch(err => console.error("Errore caricamento footer:", err));
+  });
+</script>
+
 </body>
 </html>
