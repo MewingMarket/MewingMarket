@@ -2,10 +2,41 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Dashboard – Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- HEAD DINAMICO -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      fetch("head.html")
+        .then(r => r.text())
+        .then(html => {
+          const temp = document.createElement("div");
+          temp.innerHTML = html;
+          [...temp.children].forEach(node => document.head.appendChild(node));
+        })
+        .catch(err => console.error("Errore caricamento head:", err));
+    });
+  </script>
+
   <link rel="stylesheet" href="/stile.css">
 </head>
+
 <body class="login-body">
+
+<!-- HEADER DINAMICO -->
+<div id="header-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("header.html")
+      .then(r => r.text())
+      .then(h => {
+        document.getElementById("header-placeholder").innerHTML = h;
+      })
+      .catch(err => console.error("Errore caricamento header:", err));
+  });
+</script>
+
+<main>
 
   <div class="login-box">
     <h1>Login Dashboard</h1>
@@ -37,7 +68,24 @@
     <div id="msg" class="msg"></div>
   </div>
 
-  <script src="/login.js"></script>
-  <script src="/reset.js"></script>
+</main>
+
+<!-- FOOTER DINAMICO -->
+<div id="footer-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("footer.html")
+      .then(r => r.text())
+      .then(h => {
+        document.getElementById("footer-placeholder").innerHTML = h;
+      })
+      .catch(err => console.error("Errore caricamento footer:", err));
+  });
+</script>
+
+<!-- JS -->
+<script src="/login.js"></script>
+<script src="/reset.js"></script>
+
 </body>
 </html>
