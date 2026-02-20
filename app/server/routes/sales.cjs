@@ -3,7 +3,6 @@
  * Recupero vendite utente
  */
 
-// PATCH: percorso corretto verso airtable.cjs
 const { getSalesByUID } = require("../../modules/airtable.cjs");
 
 module.exports = function (app) {
