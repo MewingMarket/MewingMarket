@@ -5,7 +5,7 @@
   <title>Grazie per il tuo acquisto — MewingMarket</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- HEAD DINAMICO (blindato) -->
+  <!-- HEAD DINAMICO -->
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       fetch("head.html")
@@ -14,60 +14,29 @@
           const temp = document.createElement("div");
           temp.innerHTML = html;
           [...temp.children].forEach(node => document.head.appendChild(node));
-        })
-        .catch(err => console.error("Errore caricamento head:", err));
+        });
     });
   </script>
 
+  <link rel="stylesheet" href="/style.css">
+  <script src="/tracking.js" defer></script>
+
   <style>
-    body {
-      font-family: system-ui, sans-serif;
-      margin: 0;
-      padding: 0;
-      background: #fafafa;
-      color: #222;
-    }
+    body { font-family: system-ui; background:#fafafa; margin:0; padding:0; }
     .container {
-      max-width: 650px;
-      margin: 40px auto;
-      background: white;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      max-width:650px; margin:40px auto; background:white;
+      padding:30px; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.06);
     }
-    h1 {
-      font-size: 26px;
-      margin-bottom: 10px;
+    h1 { font-size:26px; margin-bottom:10px; }
+    .product { font-size:20px; font-weight:600; margin-top:10px; }
+    .section { margin-top:25px; line-height:1.6; }
+    .cta, .feedback-btn {
+      margin-top:25px; display:inline-block; padding:12px 20px;
+      border-radius:8px; font-weight:600; color:white;
     }
-    .product {
-      font-size: 20px;
-      font-weight: 600;
-      margin-top: 10px;
-      color: #333;
-    }
-    .section {
-      margin-top: 25px;
-      line-height: 1.6;
-    }
-    a {
-      color: #0077ff;
-      text-decoration: none;
-    }
-    .cta {
-      margin-top: 25px;
-      display: inline-block;
-      background: #0077ff;
-      color: white;
-      padding: 12px 20px;
-      border-radius: 8px;
-      font-weight: 600;
-    }
-    .footer {
-      margin-top: 40px;
-      font-size: 14px;
-      color: #777;
-      text-align: center;
-    }
+    .cta { background:#0077ff; }
+    .feedback-btn { background:#00b36b; }
+    .footer { margin-top:40px; font-size:14px; color:#777; text-align:center; }
   </style>
 </head>
 
@@ -79,84 +48,54 @@
   <div id="productName" class="product"></div>
 
   <div class="section">
-    Il tuo ordine è stato completato correttamente.  
-    <br>Controlla la tua email: Payhip ti ha già inviato il link per scaricare il file.
+    Il tuo ordine è stato completato correttamente.
+    <br>Riceverai una email con il link per scaricare il prodotto.
   </div>
 
   <div class="section">
     Se non trovi l’email:
     <ul>
       <li>controlla la cartella spam</li>
-      <li>cerca “Payhip” nella posta</li>
-      <li>oppure recupera il file dalla tua area Payhip</li>
+      <li>cerca “MewingMarket” nella posta</li>
+      <li>oppure contattaci</li>
     </ul>
   </div>
 
-  <div class="section">
-    Hai bisogno di aiuto?
-    <br><a href="https://www.mewingmarket.it" rel="noopener noreferrer">Torna al sito</a> oppure scrivici:
-    <br><b>supporto@mewingmarket.it</b>
-  </div>
+  <a class="cta" href="/">Torna al sito</a>
+  <a class="feedback-btn" id="feedbackBtn">Lascia una recensione ⭐</a>
 
-  <a class="cta" href="https://www.mewingmarket.it" rel="noopener noreferrer">Torna al sito</a>
-
-  <div class="footer">
-    MewingMarket — Prodotti digitali per crescere davvero
-  </div>
+  <div class="footer">MewingMarket — Prodotti digitali per crescere davvero</div>
 </div>
 
 <script>
-  /* =========================================================
-     SANITIZZAZIONE
-  ========================================================== */
-  const clean = (t) =>
-    typeof t === "string"
-      ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
-      : "";
+  const clean = t => typeof t === "string" ? t.replace(/</g,"&lt;").replace(/>/g,"&gt;").trim() : "";
 
-  /* =========================================================
-     LETTURA PARAMETRI URL (blindata)
-  ========================================================== */
-  const params = new URLSearchParams(window.location.search);
+  const params = new URLSearchParams(location.search);
   const product = clean(params.get("product") || "");
+  const price = clean(params.get("price") || "");
   const source = clean(params.get("source") || "");
 
-  const productBox = document.getElementById("productName");
-  if (product && productBox) {
-    productBox.textContent = "Hai acquistato: " + product;
-  }
+  document.getElementById("productName").textContent = product ? "Hai acquistato: " + product : "";
 
-  /* =========================================================
-     TRACKING GA4 (blindato)
-  ========================================================== */
-  if (window.gtag && product) {
-    try {
-      gtag("event", "purchase_complete", {
-        event_category: "ecommerce",
-        event_label: product || "unknown",
-        source: source || "unknown"
-      });
-    } catch (err) {
-      console.warn("GA4 tracking error:", err);
-    }
-  }
+  // ⭐ REGISTRAZIONE VENDITA
+  fetch("/api/sales/create", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({
+      prodotto: product,
+      prezzo: price,
+      origine: source,
+      referrer: document.referrer || "",
+      device: navigator.userAgent || "",
+      lingua: navigator.language || "",
+      timestamp: new Date().toISOString()
+    })
+  }).catch(()=>{});
 
-  /* =========================================================
-     TRACKING SERVER-SIDE (blindato)
-  ========================================================== */
-  try {
-    fetch("/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: "THANKYOU_PAGE_VIEW",
-        page: "thankyou",
-        slug: product || ""
-      })
-    }).catch(() => {});
-  } catch (err) {
-    console.warn("Errore tracking server:", err);
-  }
+  // ⭐ FEEDBACK
+  document.getElementById("feedbackBtn").onclick = () => {
+    location.href = "/recensione.html?product=" + encodeURIComponent(product);
+  };
 </script>
 
 </body>
