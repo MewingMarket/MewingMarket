@@ -1,6 +1,6 @@
 // =========================================================
 // File: app/public/login.js
-// Gestione login dashboard
+// Gestione login pubblico
 // =========================================================
 
 const msg = document.getElementById('msg');
@@ -19,7 +19,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     password: e.target.password.value
   };
 
-  const res = await fetch('/api/login', {
+  const res = await fetch('/api/utente/login', {
     method: 'POST',
     headers: { 'Content-Type':'application/json' },
     body: JSON.stringify(body)
@@ -28,8 +28,13 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
   const data = await res.json();
 
   if (data.success) {
+    // Salviamo token e email
     localStorage.setItem('session', data.token);
+    localStorage.setItem('utenteEmail', body.email);
+
     setMsg('Accesso effettuato...', true);
+
+    // Redirect alla dashboard utente
     window.location.href = '/dashboard.html';
   } else {
     setMsg(data.error || 'Credenziali non valide');
