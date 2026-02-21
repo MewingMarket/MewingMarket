@@ -1,6 +1,6 @@
 // =========================================================
 // File: app/public/reset.js
-// Gestione reset password dashboard
+// Gestione reset password pubblico
 // =========================================================
 
 document.getElementById('reset-form').addEventListener('submit', async (e) => {
@@ -12,7 +12,7 @@ document.getElementById('reset-form').addEventListener('submit', async (e) => {
     newPassword: e.target.newPassword.value
   };
 
-  const res = await fetch('/api/reset-password', {
+  const res = await fetch('/api/utente/reset-password', {
     method: 'POST',
     headers: { 'Content-Type':'application/json' },
     body: JSON.stringify(body)
