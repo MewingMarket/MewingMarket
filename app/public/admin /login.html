@@ -13,8 +13,7 @@
           const temp = document.createElement("div");
           temp.innerHTML = html;
           [...temp.children].forEach(node => document.head.appendChild(node));
-        })
-        .catch(err => console.error("Errore caricamento head:", err));
+        });
     });
   </script>
 
@@ -31,7 +30,7 @@
       border-radius:12px;
       box-shadow:0 4px 20px rgba(0,0,0,0.06);
     }
-    input {
+    input, button {
       width:100%;
       padding:12px;
       margin-top:10px;
@@ -40,22 +39,17 @@
       font-size:16px;
     }
     button {
-      width:100%;
-      margin-top:20px;
-      padding:12px;
       background:#0077ff;
       color:white;
       border:none;
-      border-radius:8px;
-      cursor:pointer;
-      font-size:16px;
       font-weight:600;
+      cursor:pointer;
     }
-    #status {
-      margin-top:15px;
-      font-size:14px;
-      color:#d00;
-      text-align:center;
+    .secondary-btn {
+      background:#eee;
+      color:#333;
+      border:none;
+      margin-top:10px;
     }
   </style>
 </head>
@@ -68,10 +62,7 @@
   document.addEventListener("DOMContentLoaded", () => {
     fetch("../header.html")
       .then(r => r.text())
-      .then(h => {
-        document.getElementById("header-placeholder").innerHTML = h;
-      })
-      .catch(err => console.error("Errore caricamento header:", err));
+      .then(h => document.getElementById("header-placeholder").innerHTML = h);
   });
 </script>
 
@@ -80,6 +71,10 @@
 
   <input type="password" id="adminPassword" placeholder="Password admin">
   <button id="loginBtn">Accedi</button>
+
+  <button class="secondary-btn" onclick="window.location.href='../index.html'">
+    Torna al sito pubblico
+  </button>
 
   <p id="status"></p>
 </div>
@@ -90,10 +85,7 @@
   document.addEventListener("DOMContentLoaded", () => {
     fetch("../footer.html")
       .then(r => r.text())
-      .then(h => {
-        document.getElementById("footer-placeholder").innerHTML = h;
-      })
-      .catch(err => console.error("Errore caricamento footer:", err));
+      .then(h => document.getElementById("footer-placeholder").innerHTML = h);
   });
 </script>
 
