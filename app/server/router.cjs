@@ -1,20 +1,22 @@
 // =========================================================
 // File: app/server/router.cjs
-// Router principale del backend
+// Router principale
 // =========================================================
 
-module.exports = function(app) {
+const express = require("express");
+const router = express.Router();
 
-  // --- AUTENTICAZIONE ---
-  require("./api-login.cjs")(app);
-  require("./api-reset.cjs")(app);
+// --- API ---
+router.use(require("./routes/api-login.cjs"));
+router.use(require("./routes/api-reset.cjs"));
+router.use(require("./routes/api-prodotti.cjs"));
+router.use(require("./routes/api-ordini.cjs"));
+router.use(require("./routes/api-vendite.cjs"));
+router.use(require("./routes/api-upload.cjs"));
 
-  // --- PRODOTTI (catalogo + singolo) ---
-  require("./api-prodotti.cjs")(app);
+// --- Dashboard login (pagina statica) ---
+router.get("/dashboard", (req, res) => {
+  res.sendFile("dashboard-login.html", { root: "app/public" });
+});
 
-  // --- DASHBOARD LOGIN ---
-  app.get("/dashboard", (req, res) => {
-    res.sendFile("dashboard-login.html", { root: "app/public" });
-  });
-
-};
+module.exports = router;
