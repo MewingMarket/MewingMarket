@@ -9,6 +9,7 @@
         <li><a href="catalogo.html">Catalogo</a></li>
         <li><a href="chisiamo.html">Chi siamo</a></li>
         <li><a href="FAQ.html">FAQ</a></li>
+        <li><a href="guide.html">Guide & Assistenza</a></li>
         <li><a href="contatti.html">Contatti</a></li>
         <li><a href="dovesiamo.html">Dove siamo</a></li>
       </ul>
@@ -19,7 +20,8 @@
       <h4>Accesso</h4>
       <ul class="footer-legal">
         <li><a href="admin/login.html">Login Admin</a></li>
-        <li><a href="dashboard-login.html">Login Utenti</a></li>
+        <li><a href="login.html">Login Utenti</a></li>
+        <li><a href="dashboard.html">Dashboard Utente</a></li>
         <li><a href="registrazione.html">Registrazione</a></li>
       </ul>
 
@@ -69,6 +71,10 @@
   </div>
 
   <div class="footer-bottom">
-    © 2025 MewingMarket — Tutti i diritti riservati.
+    © <span id="anno"></span> MewingMarket — Tutti i diritti riservati.
   </div>
+
+  <script>
+    document.getElementById("anno").textContent = new Date().getFullYear();
+  </script>
 </footer>
