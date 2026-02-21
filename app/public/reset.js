@@ -1,27 +1,22 @@
 // =========================================================
-// Reset password pubblico – MewingMarket
+// Reset password – MewingMarket (BACKEND READY)
 // =========================================================
 
-document.getElementById('reset-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  setMsg('');
+const msg = document.getElementById('status') || document.getElementById('msg');
 
-  const email = e.target.email.value.trim().toLowerCase();
-  const newPassword = e.target.newPassword.value.trim();
+function setMsg(text, ok = false) {
+  if (!msg) return;
+  msg.textContent = text;
+  msg.style.color = ok ? '#4ade80' : '#f97373';
+}
 
-  // VALIDAZIONI BASE
-  if (!email || !newPassword) {
-    setMsg("Compila tutti i campi");
-    return;
-  }
+document.getElementById('reset-btn')?.addEventListener('click', async () => {
+  setMsg("Eliminazione account in corso...");
 
-  if (!email.includes("@") || !email.includes(".")) {
-    setMsg("Email non valida");
-    return;
-  }
+  const email = localStorage.getItem("utenteEmail");
 
-  if (newPassword.length < 6) {
-    setMsg("La password deve contenere almeno 6 caratteri");
+  if (!email) {
+    setMsg("Nessun utente loggato");
     return;
   }
 
@@ -29,22 +24,28 @@ document.getElementById('reset-form').addEventListener('submit', async (e) => {
     const res = await fetch('/api/utente/reset-password', {
       method: 'POST',
       headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify({ email, newPassword })
+      body: JSON.stringify({ email })
     });
 
-    let data = {};
-    try {
-      data = await res.json();
-    } catch {
-      setMsg("Risposta non valida dal server");
+    const data = await res.json().catch(() => null);
+
+    if (!data) {
+      setMsg("Errore del server");
       return;
     }
 
     if (data.success) {
-      setMsg('Password aggiornata con successo', true);
-      e.target.reset();
+      setMsg("Account eliminato. Reindirizzamento...", true);
+
+      localStorage.removeItem("session");
+      localStorage.removeItem("utenteEmail");
+
+      setTimeout(() => {
+        window.location.href = "cambia-cred.html";
+      }, 800);
+
     } else {
-      setMsg(data.error || 'Errore reset password');
+      setMsg(data.error || "Errore durante il reset");
     }
 
   } catch (err) {
