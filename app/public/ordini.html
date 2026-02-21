@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>I miei ordini — MewingMarket</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="style.css">
+  <script src="ordini.js" defer></script>
+
+  <style>
+    .box {
+      max-width:900px; margin:40px auto; background:white;
+      padding:25px; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.06);
+    }
+    table {
+      width:100%; border-collapse:collapse; margin-top:20px;
+    }
+    th, td {
+      padding:12px; border-bottom:1px solid #eee;
+    }
+    button {
+      padding:8px 14px; background:#d00; color:white;
+      border:none; border-radius:6px; cursor:pointer;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="box">
+  <h1>I miei ordini</h1>
+
+  <p>Gli ordini appariranno qui quando il backend sarà pronto.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Prodotto</th>
+        <th>Prezzo</th>
+        <th>Data</th>
+        <th>Stato</th>
+        <th>Azione</th>
+      </tr>
+    </thead>
+    <tbody id="ordersBody"></tbody>
+  </table>
+</div>
+
+</body>
+</html>
