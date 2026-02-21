@@ -13,13 +13,12 @@
           const temp = document.createElement("div");
           temp.innerHTML = html;
           [...temp.children].forEach(node => document.head.appendChild(node));
-        })
-        .catch(err => console.error("Errore caricamento head:", err));
+        });
     });
   </script>
 
-  <title>Login — MewingMarket</title>
-  <link rel="stylesheet" href="/stile.css">
+  <title>Login Utente – MewingMarket</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body class="login-body">
@@ -30,15 +29,11 @@
   document.addEventListener("DOMContentLoaded", () => {
     fetch("header.html")
       .then(r => r.text())
-      .then(h => {
-        document.getElementById("header-placeholder").innerHTML = h;
-      })
-      .catch(err => console.error("Errore caricamento header:", err));
+      .then(h => document.getElementById("header-placeholder").innerHTML = h);
   });
 </script>
 
 <main>
-
   <div class="login-box">
     <h1>Login</h1>
 
@@ -51,6 +46,10 @@
 
       <button type="submit">Entra</button>
     </form>
+
+    <button class="secondary-btn" onclick="window.location.href='index.html'">
+      Torna alla Home
+    </button>
 
     <div class="divider"></div>
 
@@ -68,7 +67,6 @@
 
     <div id="msg" class="msg"></div>
   </div>
-
 </main>
 
 <!-- FOOTER DINAMICO -->
@@ -77,16 +75,12 @@
   document.addEventListener("DOMContentLoaded", () => {
     fetch("footer.html")
       .then(r => r.text())
-      .then(h => {
-        document.getElementById("footer-placeholder").innerHTML = h;
-      })
-      .catch(err => console.error("Errore caricamento footer:", err));
+      .then(h => document.getElementById("footer-placeholder").innerHTML = h);
   });
 </script>
 
-<!-- JS -->
-<script src="/login.js"></script>
-<script src="/reset.js"></script>
+<script src="login.js"></script>
+<script src="reset.js"></script>
 
 </body>
 </html>
