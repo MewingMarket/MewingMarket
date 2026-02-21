@@ -1,25 +1,22 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- HEAD DINAMICO -->
+  <!-- HEAD ADMIN DINAMICO -->
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      fetch("../head.html")
+      fetch("head-admin.html")
         .then(r => r.text())
         .then(html => {
           const temp = document.createElement("div");
           temp.innerHTML = html;
           [...temp.children].forEach(node => document.head.appendChild(node));
-        });
+        })
+        .catch(err => console.error("Errore caricamento head-admin:", err));
     });
   </script>
 
   <title>Login Admin – MewingMarket</title>
-  <link rel="stylesheet" href="../style.css">
-  <script src="js/login.js" defer></script>
 
   <style>
     .login-box {
@@ -52,19 +49,12 @@
       margin-top:10px;
     }
   </style>
+
+  <script src="js/login.js" defer></script>
+
 </head>
 
 <body>
-
-<!-- HEADER DINAMICO -->
-<div id="header-placeholder"></div>
-<script>
-  document.addEventListener("DOMContentLoaded", () => {
-    fetch("../header.html")
-      .then(r => r.text())
-      .then(h => document.getElementById("header-placeholder").innerHTML = h);
-  });
-</script>
 
 <div class="login-box">
   <h1>Login Admin</h1>
@@ -79,13 +69,16 @@
   <p id="status"></p>
 </div>
 
-<!-- FOOTER DINAMICO -->
-<div id="footer-placeholder"></div>
+<!-- FOOTER ADMIN DINAMICO -->
+<div id="footer-admin-placeholder"></div>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
-    fetch("../footer.html")
+    fetch("footer-admin.html")
       .then(r => r.text())
-      .then(h => document.getElementById("footer-placeholder").innerHTML = h);
+      .then(html => {
+        document.getElementById("footer-admin-placeholder").innerHTML = html;
+      })
+      .catch(err => console.error("Errore caricamento footer-admin:", err));
   });
 </script>
 
