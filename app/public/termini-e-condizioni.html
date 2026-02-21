@@ -12,8 +12,6 @@
         .then(html => {
           const temp = document.createElement("div");
           temp.innerHTML = html;
-
-          // Inserisce TUTTI i nodi dentro <head>
           [...temp.children].forEach(node => document.head.appendChild(node));
         })
         .catch(err => console.error("Errore caricamento head:", err));
@@ -47,17 +45,82 @@
   <h2>1. Oggetto del servizio</h2>
   <p>MewingMarket vende prodotti digitali tramite Payhip, che gestisce pagamento, consegna e download.</p>
 
+  <!-- AGGIUNTA -->
+  <h2>1.1 Account utente</h2>
+  <p>
+    Per accedere ai servizi aggiuntivi (dashboard, download, ordini, recensioni, foto profilo)
+    è necessario creare un account utente. La registrazione è gratuita.
+  </p>
+
+  <h2>1.2 Dashboard utente</h2>
+  <p>
+    La dashboard permette di visualizzare i propri ordini, aggiornare i dati del profilo,
+    caricare una foto profilo, richiedere assistenza e gestire le impostazioni dell’account.
+  </p>
+
   <h2>2. Uso personale</h2>
   <p>Tutti i prodotti sono destinati a uso personale salvo diversa indicazione.</p>
+
+  <!-- AGGIUNTA -->
+  <h2>2.1 Sicurezza dell’account</h2>
+  <p>
+    L’utente è responsabile della riservatezza delle proprie credenziali di accesso.
+    È vietato condividere l’account con terzi.
+  </p>
+
+  <h2>2.2 Foto profilo</h2>
+  <p>
+    L’utente può caricare una foto profilo tramite la dashboard. La foto deve rispettare
+    le linee guida di buon senso: niente contenuti offensivi, illegali o protetti da copyright.
+  </p>
 
   <h2>3. Download dei prodotti</h2>
   <p>Dopo il pagamento riceverai immediatamente il link per scaricare il file digitale.</p>
 
+  <!-- AGGIUNTA -->
+  <h2>3.1 Consegna tramite email</h2>
+  <p>
+    Dopo l’acquisto, il prodotto digitale viene inviato automaticamente via email.
+    In alcuni casi può essere fornito anche un link di download nella dashboard.
+  </p>
+
+  <h2>3.2 Accesso ai download</h2>
+  <p>
+    I prodotti acquistati possono essere visualizzati nella sezione “Download” della dashboard,
+    quando disponibile. Alcuni prodotti potrebbero essere consegnati esclusivamente via email.
+  </p>
+
   <h2>4. Rimborsi</h2>
   <p>I rimborsi vengono valutati caso per caso. Consulta la pagina “Resi e Rimborsi”.</p>
 
+  <!-- AGGIUNTA -->
+  <h2>4.1 Annullamento ordine</h2>
+  <p>
+    L’utente può richiedere l’annullamento di un ordine entro un tempo ragionevole,
+    purché il prodotto digitale non sia già stato scaricato o utilizzato.
+    Le richieste vengono gestite tramite il supporto o tramite la dashboard.
+  </p>
+
+  <h2>4.2 Resi digitali</h2>
+  <p>
+    Essendo prodotti digitali, il reso non è sempre applicabile. Tuttavia,
+    MewingMarket valuta ogni richiesta caso per caso per garantire la massima trasparenza.
+  </p>
+
   <h2>5. Proprietà intellettuale</h2>
   <p>Tutti i contenuti sono protetti da copyright. È vietata la distribuzione non autorizzata.</p>
+
+  <!-- AGGIUNTA -->
+  <h2>5.1 Uso consentito</h2>
+  <p>
+    L’acquisto di un prodotto digitale concede una licenza personale e non trasferibile.
+    È vietata la rivendita, la condivisione o la distribuzione non autorizzata.
+  </p>
+
+  <h2>5.2 Violazioni</h2>
+  <p>
+    In caso di violazione del copyright, l’account può essere sospeso o eliminato.
+  </p>
 
   <h2>6. Contatti</h2>
   <p><strong>Supporto:</strong> <a href="mailto:supporto@mewingmarket.it">supporto@mewingmarket.it</a></p>
@@ -69,8 +132,36 @@
     <a href="https://wa.me/393520266660" rel="noopener noreferrer">352 026 6660</a>
   </p>
 
+  <!-- AGGIUNTA -->
+  <h2>6.1 Assistenza account</h2>
+  <p>
+    Per problemi relativi a login, reset password, annullamento registrazione,
+    ordini o download, è possibile contattare il supporto tramite email o WhatsApp.
+  </p>
+
   <h2>7. Sede</h2>
   <p>Strada Ciousse 35, 18038 Sanremo (IM), Italia</p>
+
+  <!-- AGGIUNTA -->
+  <h2>8. Annullamento registrazione</h2>
+  <p>
+    L’utente può richiedere l’eliminazione del proprio account tramite la dashboard
+    o contattando il supporto. L’eliminazione comporta la rimozione dei dati personali
+    e degli ordini associati, salvo obblighi legali di conservazione.
+  </p>
+
+  <h2>9. Limitazione di responsabilità</h2>
+  <p>
+    MewingMarket non è responsabile per eventuali problemi tecnici, ritardi nella consegna
+    delle email, incompatibilità software o utilizzo improprio dei prodotti digitali.
+  </p>
+
+  <h2>10. Modifiche ai Termini</h2>
+  <p>
+    MewingMarket può aggiornare i presenti Termini e Condizioni in qualsiasi momento.
+    Le modifiche saranno pubblicate su questa pagina.
+  </p>
+
 </main>
 
 <!-- FOOTER DINAMICO (blindato) -->
