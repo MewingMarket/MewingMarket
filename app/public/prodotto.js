@@ -1,11 +1,13 @@
 // =========================================================
-// File: app/public/prodotto.js
-// Versione MAX (UX Premium) — Airtable + API interne + correlati
-// + LOGIN CHECK + CHECKOUT REDIRECT
+// PRODOTTO PREMIUM – MewingMarket
+// Versione: Model A + Carrello + Badge + Checkout Premium
 // =========================================================
 
 document.addEventListener("DOMContentLoaded", async () => {
 
+  // ------------------------------
+  // Sanitizzazione
+  // ------------------------------
   const clean = (t) =>
     typeof t === "string"
       ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
@@ -30,9 +32,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
 
   // ============================================================
-  // 1) OTTIENI SLUG DALL'URL
+  // 1) OTTIENI SLUG DALL'URL (VERSIONE CORRETTA)
   // ============================================================
-  const slug = window.location.pathname.split("/").pop();
+  const urlParams = new URLSearchParams(window.location.search);
+  const slug = urlParams.get("slug");
 
   if (!slug) {
     document.getElementById("product-title").innerText = "Slug mancante";
@@ -91,37 +94,49 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("product-description").innerHTML = clean(p.descrizione || "");
 
   // ============================================================
-  // 6) ACQUISTO — LOGIN CHECK + REDIRECT
+  // 6) ACQUISTA ORA — MODEL A + CHECKOUT PREMIUM
   // ============================================================
-
-  const btnAcquista = document.getElementById("btn-acquista");
-
-  btnAcquista.addEventListener("click", () => {
+  document.getElementById("btn-acquista").addEventListener("click", () => {
     const session = localStorage.getItem("session");
 
-    // Utente NON loggato → login con redirect
+    // Utente NON loggato → login
     if (!session) {
-      window.location.href = `dashboard-login.html?redirect=${slug}`;
+      window.location.href = `login.html?redirect=prodotto.html?slug=${slug}`;
       return;
     }
 
-    // Utente loggato → checkout
-    window.location.href = `/checkout.html?slug=${slug}`;
+    // Utente loggato → aggiungi al carrello e vai al checkout
+    aggiungiAlCarrello({
+      slug: p.slug,
+      titolo: p.titolo,
+      prezzo: p.prezzo,
+      immagine: p.immagine
+    });
+
+    aggiornaBadgeCarrello();
+
+    window.location.href = "checkout.html";
   });
 
   // ============================================================
-  // 7) CARRELLO (opzionale)
+  // 7) AGGIUNGI AL CARRELLO
   // ============================================================
   document.getElementById("btn-carrello").addEventListener("click", () => {
-    if (window.addToCart) {
-      addToCart({
-        slug: p.slug,
-        titolo: p.titolo,
-        prezzo: p.prezzo,
-        immagine: p.immagine
-      });
-      alert("Aggiunto al carrello");
+    const session = localStorage.getItem("session");
+
+    if (!session) {
+      window.location.href = `login.html?redirect=prodotto.html?slug=${slug}`;
+      return;
     }
+
+    aggiungiAlCarrello({
+      slug: p.slug,
+      titolo: p.titolo,
+      prezzo: p.prezzo,
+      immagine: p.immagine
+    });
+
+    aggiornaBadgeCarrello();
   });
 
   // ============================================================
@@ -145,7 +160,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             <div class="product-card">
               <img src="${c.immagine || "/placeholder.webp"}" alt="${clean(c.titolo)}">
               <h3>${clean(c.titolo)}</h3>
-              <a href="/prodotto/${clean(c.slug)}" class="btn">Scopri</a>
+              <a href="prodotto.html?slug=${clean(c.slug)}" class="btn">Scopri</a>
             </div>
           `
             )
@@ -154,5 +169,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   } catch (err) {
     console.warn("Errore correlati:", err);
+  }
+
+  // ============================================================
+  // 9) AGGIORNA BADGE ALL'AVVIO
+  // ============================================================
+  if (typeof aggiornaBadgeCarrello === "function") {
+    aggiornaBadgeCarrello();
   }
 });
