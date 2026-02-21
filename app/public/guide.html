@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- HEAD DINAMICO -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      fetch("head.html")
+        .then(r => r.text())
+        .then(h => {
+          const temp = document.createElement("div");
+          temp.innerHTML = h;
+          document.head.append(...temp.children);
+        })
+        .catch(err => console.error("Errore caricamento head:", err));
+    });
+  </script>
+
+  <link rel="stylesheet" href="style.css">
+  <script src="guide.js" defer></script>
+
+  <style>
+    .guide-search {
+      margin:20px 0;
+      display:flex;
+      gap:10px;
+    }
+    .guide-search input {
+      flex:1;
+      padding:10px;
+      border-radius:8px;
+      border:1px solid #ccc;
+    }
+    .guide-search button {
+      padding:10px 16px;
+      border:none;
+      border-radius:8px;
+      background:#0077ff;
+      color:white;
+      font-weight:600;
+      cursor:pointer;
+    }
+    .breadcrumb {
+      font-size:14px;
+      margin-bottom:10px;
+      color:#555;
+    }
+    .guide-index {
+      background:#f5f5f5;
+      padding:15px;
+      border-radius:10px;
+      margin-bottom:25px;
+    }
+    .guide-index ul {
+      margin:0;
+      padding-left:20px;
+    }
+    .guide-buttons {
+      margin-top:30px;
+      display:flex;
+      gap:15px;
+    }
+    .guide-buttons a {
+      padding:12px 18px;
+      background:#0077ff;
+      color:white;
+      border-radius:8px;
+      text-decoration:none;
+      font-weight:600;
+    }
+    .guide-buttons a.support {
+      background:#00b36b;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- HEADER DINAMICO -->
+<div id="header-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("header.html")
+      .then(r => r.text())
+      .then(h => document.getElementById("header-placeholder").innerHTML = h)
+      .catch(err => console.error("Errore caricamento header:", err));
+  });
+</script>
+
+<main class="pagina-standard">
+
+  <div class="breadcrumb">
+    <a href="FAQ.html">FAQ</a> → <span id="breadcrumb-topic"></span>
+  </div>
+
+  <h1 id="guide-title"></h1>
+
+  <!-- Ricerca interna -->
+  <div class="guide-search">
+    <input id="guide-search-input" type="text" placeholder="Cerca nella guida...">
+    <button id="guide-search-btn">Cerca</button>
+  </div>
+
+  <!-- Indice automatico -->
+  <div id="guide-index" class="guide-index" style="display:none;">
+    <h3>Indice</h3>
+    <ul id="guide-index-list"></ul>
+  </div>
+
+  <div id="guide-content"></div>
+
+  <div class="guide-buttons">
+    <a href="FAQ.html">Torna alla FAQ</a>
+    <a href="https://wa.me/393520266660" class="support" target="_blank">Contatta supporto</a>
+  </div>
+
+</main>
+
+<!-- FOOTER DINAMICO -->
+<div id="footer-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("footer.html")
+      .then(r => r.text())
+      .then(h => document.getElementById("footer-placeholder").innerHTML = h)
+      .catch(err => console.error("Errore caricamento footer:", err));
+  });
+</script>
+
+</body>
+</html>
