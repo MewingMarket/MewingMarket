@@ -1,10 +1,13 @@
 // =========================================================
-// File: app/public/index.js
-// Versione definitiva: Airtable + API interne + slider + fallback
+// HOME PREMIUM — MewingMarket
+// Versione: Model A + Carrello + Badge + Slider + Novità
 // =========================================================
 
 document.addEventListener("DOMContentLoaded", async () => {
 
+  // ------------------------------
+  // Sanitizzazione
+  // ------------------------------
   const clean = (t) =>
     typeof t === "string"
       ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
@@ -15,9 +18,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       ? url
       : "";
 
-  /* =========================================================
-     FALLBACK DESCRIZIONE BREVE
-  ========================================================= */
   function getShortDescription(p) {
     if (p.descrizione_breve && p.descrizione_breve.trim() !== "") {
       return clean(p.descrizione_breve);
@@ -29,9 +29,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     return clean(short);
   }
 
-  /* =========================================================
-     FALLBACK IMMAGINE
-  ========================================================= */
   function getImage(p) {
     if (p.immagine && p.immagine.startsWith("http")) {
       return p.immagine;
@@ -39,9 +36,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     return "/placeholder.webp";
   }
 
-  /* =========================================================
-     1) SLIDER HERO (immagini random dai prodotti)
-  ========================================================= */
+  // ============================================================
+  // 1) AGGIORNA BADGE CARRELLO ALL'AVVIO
+  // ============================================================
+  if (typeof aggiornaBadgeCarrello === "function") {
+    aggiornaBadgeCarrello();
+  }
+
+  // ============================================================
+  // 2) SLIDER HERO (immagini random dai prodotti)
+  // ============================================================
   try {
     const resHero = await fetch("/api/products", { cache: "no-store" });
     const dataHero = await resHero.json();
@@ -79,9 +83,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("Errore slider hero:", err);
   }
 
-  /* =========================================================
-     2) GRID HOMEPAGE (primi 3 prodotti)
-  ========================================================= */
+  // ============================================================
+  // 3) GRID HOMEPAGE (primi 3 prodotti)
+  // ============================================================
   const grid = document.getElementById("products-grid");
   if (!grid) return;
 
@@ -113,12 +117,46 @@ document.addEventListener("DOMContentLoaded", async () => {
         <h3>${titolo}</h3>
         <p>${descrizione}</p>
         <p class="price">${prezzo}</p>
-        <a href="/prodotto.html?slug=${encodeURIComponent(slug)}" class="btn">
-          Scopri
-        </a>
+
+        <div class="card-buttons">
+          <a href="prodotto.html?slug=${encodeURIComponent(slug)}" class="btn">
+            Scopri
+          </a>
+
+          <button class="btn-secondario btn-add-cart"
+            data-slug="${slug}"
+            data-title="${titolo}"
+            data-price="${p.prezzo}"
+            data-img="${img}">
+            Aggiungi al carrello
+          </button>
+        </div>
       `;
 
       grid.appendChild(card);
+    });
+
+    // ============================================================
+    // 4) AGGIUNTA AL CARRELLO (MODEL A)
+    // ============================================================
+    document.querySelectorAll(".btn-add-cart").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const session = localStorage.getItem("session");
+
+        if (!session) {
+          window.location.href = "login.html";
+          return;
+        }
+
+        aggiungiAlCarrello({
+          slug: btn.dataset.slug,
+          titolo: btn.dataset.title,
+          prezzo: Number(btn.dataset.price),
+          immagine: btn.dataset.img
+        });
+
+        aggiornaBadgeCarrello();
+      });
     });
 
   } catch (err) {
