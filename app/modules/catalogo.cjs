@@ -1,178 +1,147 @@
-// modules/catalogo.cjs — VERSIONE MAX (UX PREMIUM)
+/**
+ * modules/catalogo.cjs — VERSIONE DEFINITIVA
+ * Catalogo dinamico basato sul backend /api/prodotti/list
+ * Compatibile con bot, store, PayPal e prodotto.html
+ */
 
 const path = require("path");
+const { normalize, extractKeywords } = require(path.join(__dirname, "bot", "utils.cjs"));
+const fetch = require("node-fetch");
 
-// IMPORT CORRETTI (blindati)
-const { normalize } = require(path.join(__dirname, "utils.cjs"));
-const { getProducts } = require(path.join(__dirname, "airtable.cjs"));
+// Endpoint backend
+const CATALOG_ENDPOINT = "http://localhost:3000/api/prodotti/list";
 
-// Costante prodotto principale
-const MAIN_PRODUCT_SLUG = "guida-ecosistema-digitale-reale";
-
-/* =========================================================
-   FUNZIONI DI SICUREZZA
-========================================================= */
-function safeProducts() {
+/* ============================================================
+   FETCH SICURO DAL BACKEND
+============================================================ */
+async function fetchCatalog() {
   try {
-    const p = getProducts();
-    return Array.isArray(p) ? p : [];
+    const res = await fetch(CATALOG_ENDPOINT);
+    const data = await res.json();
+
+    if (!data.success || !Array.isArray(data.products)) {
+      console.error("catalogo: risposta backend non valida");
+      return [];
+    }
+
+    return data.products;
   } catch (err) {
-    console.error("catalogo: errore getProducts:", err);
+    console.error("catalogo: errore fetchCatalog:", err);
     return [];
   }
 }
 
-function safeString(v) {
-  return typeof v === "string" ? v : "";
+/* ============================================================
+   CACHE INTERNA (auto-refresh)
+============================================================ */
+let CACHE = [];
+let LAST_FETCH = 0;
+
+async function getCatalog() {
+  const now = Date.now();
+
+  // Aggiorna ogni 30 secondi
+  if (now - LAST_FETCH > 30000 || CACHE.length === 0) {
+    CACHE = await fetchCatalog();
+    LAST_FETCH = now;
+  }
+
+  return CACHE;
 }
 
-/* =========================================================
+/* ============================================================
    FUNZIONI DI RICERCA
-========================================================= */
-function findProductBySlug(slug) {
+============================================================ */
+async function findProductBySlug(slug) {
   if (!slug) return null;
-  const PRODUCTS = safeProducts();
+  const PRODUCTS = await getCatalog();
   return PRODUCTS.find(p => p.slug === slug) || null;
 }
 
-function findProductFromText(text) {
+async function findProductFromText(text) {
   if (!text) return null;
 
-  const PRODUCTS = safeProducts();
+  const PRODUCTS = await getCatalog();
   const t = normalize(text);
+  const keys = extractKeywords(text);
 
-  return (
-    PRODUCTS.find(p =>
-      normalize(safeString(p.titolo)).includes(t) ||
-      normalize(safeString(p.titoloBreve)).includes(t) ||
-      normalize(safeString(p.slug)).includes(t) ||
-      normalize(safeString(p.id)).includes(t)
-    ) || null
+  // Match diretto
+  let match = PRODUCTS.find(p =>
+    normalize(p.titolo).includes(t) ||
+    normalize(p.titoloBreve).includes(t) ||
+    normalize(p.slug).includes(t)
   );
+  if (match) return match;
+
+  // Match fuzzy per keyword
+  for (const p of PRODUCTS) {
+    const full = normalize(`${p.titolo} ${p.titoloBreve} ${p.slug}`);
+    if (keys.some(k => full.includes(k))) return p;
+  }
+
+  return null;
 }
 
-function listProductsByCategory(cat) {
-  if (!cat) return [];
-  const PRODUCTS = safeProducts();
+async function listProductsByCategory(cat) {
+  const PRODUCTS = await getCatalog();
   return PRODUCTS.filter(p => p.categoria === cat);
 }
 
-function listAllProducts() {
-  return safeProducts();
+async function listAllProducts() {
+  return await getCatalog();
 }
 
-/* =========================================================
-   RISPOSTE PRODOTTO — VERSIONE MAX (blindata)
-========================================================= */
+/* ============================================================
+   RISPOSTE PRODOTTO — VERSIONE PREMIUM
+============================================================ */
 function productReply(p) {
-  if (!p) return "Non ho trovato questo prodotto nel catalogo.";
+  if (!p) return "Non ho trovato questo prodotto.";
 
-  const titolo = safeString(p.titolo);
-  const breve = safeString(p.descrizioneBreve);
-  const prezzo = p.prezzo ?? "";
-  const link = safeString(p.linkPayhip);
+  return `
+📘 <b>${p.titolo}</b>
 
-  let out = `
-📘 <b>${titolo}</b>
+${p.descrizioneBreve || ""}
 
-${breve}
+💰 <b>Prezzo:</b> ${p.prezzo}€
+👉 <a href="prodotto.html?slug=${p.slug}" class="mm-btn">Vedi prodotto</a>
 
-💰 <b>Prezzo:</b> ${prezzo}
-👉 <b>Acquista ora</b>  
-${link}
+${p.youtube_url ? `🎥 Video: ${p.youtube_url}` : ""}
 `;
-
-  if (p.youtube_url) {
-    out += `
-🎥 <b>Video di presentazione</b>  
-${safeString(p.youtube_url)}
-`;
-  }
-
-  if (p.catalog_video_block) {
-    out += `
-
-🎬 <b>Anteprima</b>  
-${safeString(p.catalog_video_block)}
-`;
-  }
-
-  if (p.slug === MAIN_PRODUCT_SLUG) {
-    out += `
-
-✨ Vuoi vedere il video di presentazione completo?  
-Scrivi: <b>"video"</b> oppure <b>"video ecosistema"</b>.
-`;
-  }
-
-  out += `
-
-Se vuoi un altro prodotto, scrivi il nome o "catalogo".`;
-
-  return out;
 }
 
 function productLongReply(p) {
-  if (!p) return "Non ho trovato questo prodotto nel catalogo.";
+  if (!p) return "Non ho trovato questo prodotto.";
 
-  const titolo = safeString(p.titolo);
-  const lunga = safeString(p.descrizioneLunga);
-  const prezzo = p.prezzo ?? "";
-  const link = safeString(p.linkPayhip);
+  return `
+📘 <b>${p.titolo}</b> — <b>Dettagli completi</b>
 
-  let out = `
-📘 <b>${titolo}</b> — <b>Dettagli completi</b>
+${p.descrizioneLunga || ""}
 
-${lunga}
+💰 <b>Prezzo:</b> ${p.prezzo}€
+👉 <a href="prodotto.html?slug=${p.slug}" class="mm-btn">Vai al prodotto</a>
 
-💰 <b>Prezzo:</b> ${prezzo}
-👉 <b>Acquista ora</b>  
-${link}
+${p.youtube_url ? `🎥 Video: ${p.youtube_url}` : ""}
+${p.youtube_description ? `📝 ${p.youtube_description}` : ""}
 `;
-
-  if (p.youtube_url) {
-    out += `
-
-🎥 <b>Video</b>  
-${safeString(p.youtube_url)}
-`;
-  }
-
-  if (p.youtube_description) {
-    out += `
-
-📝 <b>Descrizione video</b>  
-${safeString(p.youtube_description)}
-`;
-  }
-
-  out += `
-
-Vuoi acquistarlo o tornare al menu?`;
-
-  return out;
 }
 
 function productImageReply(p) {
-  if (!p) return "Non ho trovato questo prodotto nel catalogo.";
+  if (!p) return "Non ho trovato questo prodotto.";
 
   return `
-🖼 <b>Copertina di ${safeString(p.titoloBreve)}</b>
+🖼 <b>${p.titoloBreve}</b>
 
-${safeString(p.immagine)}
+${p.immagine}
 
-👉 <b>Acquista qui:</b>  
-${safeString(p.linkPayhip)}
-
-Vuoi altre info su questo prodotto o tornare al menu?
+👉 <a href="prodotto.html?slug=${p.slug}" class="mm-btn">Vedi prodotto</a>
 `;
 }
 
-/* =========================================================
+/* ============================================================
    EXPORT
-========================================================= */
+============================================================ */
 module.exports = {
-  MAIN_PRODUCT_SLUG,
+  getCatalog,
   findProductBySlug,
   findProductFromText,
   listProductsByCategory,
