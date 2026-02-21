@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+
+  <!-- HEAD DINAMICO -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      fetch("head.html")
+        .then(r => r.text())
+        .then(html => {
+          const temp = document.createElement("div");
+          temp.innerHTML = html;
+          [...temp.children].forEach(node => document.head.appendChild(node));
+        })
+        .catch(err => console.error("Errore caricamento head:", err));
+    });
+  </script>
+
+  <title>Reset Password — MewingMarket</title>
+
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    .reset-box {
+      max-width:400px;
+      margin:60px auto;
+      background:white;
+      padding:25px;
+      border-radius:12px;
+      box-shadow:0 4px 20px rgba(0,0,0,0.06);
+      text-align:center;
+    }
+    button {
+      width:100%;
+      margin-top:20px;
+      padding:12px;
+      background:#ff4444;
+      color:white;
+      border:none;
+      border-radius:8px;
+      cursor:pointer;
+      font-size:16px;
+      font-weight:600;
+    }
+    #status {
+      margin-top:15px;
+      font-size:14px;
+      color:#d00;
+    }
+  </style>
+
+</head>
+
+<body>
+
+<!-- HEADER DINAMICO -->
+<div id="header-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("header.html")
+      .then(r => r.text())
+      .then(h => document.getElementById("header-placeholder").innerHTML = h)
+      .catch(err => console.error("Errore caricamento header:", err));
+  });
+</script>
+
+<main>
+
+  <div class="reset-box">
+    <h1>Reset Password</h1>
+    <p>Questa operazione eliminerà il tuo account e ti permetterà di crearne uno nuovo.</p>
+
+    <button id="reset-btn">Resetta il mio account</button>
+
+    <div id="status"></div>
+  </div>
+
+</main>
+
+<!-- FOOTER DINAMICO -->
+<div id="footer-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("footer.html")
+      .then(r => r.text())
+      .then(h => document.getElementById("footer-placeholder").innerHTML = h)
+      .catch(err => console.error("Errore caricamento footer:", err));
+  });
+</script>
+
+<script src="reset.js"></script>
+
+</body>
+</html>
