@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- HEAD DINAMICO -->
   <script>
@@ -19,7 +17,8 @@
   </script>
 
   <title>Registrazione — MewingMarket</title>
-  <link rel="stylesheet" href="/stile.css">
+
+  <link rel="stylesheet" href="style.css">
 
   <style>
     .register-box {
@@ -57,6 +56,7 @@
       text-align:center;
     }
   </style>
+
 </head>
 
 <body>
@@ -67,9 +67,7 @@
   document.addEventListener("DOMContentLoaded", () => {
     fetch("header.html")
       .then(r => r.text())
-      .then(h => {
-        document.getElementById("header-placeholder").innerHTML = h;
-      })
+      .then(h => document.getElementById("header-placeholder").innerHTML = h)
       .catch(err => console.error("Errore caricamento header:", err));
   });
 </script>
@@ -103,14 +101,12 @@
   document.addEventListener("DOMContentLoaded", () => {
     fetch("footer.html")
       .then(r => r.text())
-      .then(h => {
-        document.getElementById("footer-placeholder").innerHTML = h;
-      })
+      .then(h => document.getElementById("footer-placeholder").innerHTML = h)
       .catch(err => console.error("Errore caricamento footer:", err));
   });
 </script>
 
-<script src="/registrazione.js"></script>
+<script src="registrazione.js"></script>
 
 </body>
 </html>
