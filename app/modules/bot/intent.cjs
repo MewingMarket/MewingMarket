@@ -1,6 +1,6 @@
 /**
  * modules/bot/intent.cjs
- * DETECT INTENT — versione modulare, pulita, con logging totale
+ * DETECT INTENT — versione estesa con GUIDE, ACCOUNT, ORDINI, DOWNLOAD, PAYPAL
  */
 
 const { log } = require("./utils.cjs");
@@ -21,7 +21,9 @@ function detectIntent(rawText) {
 
     log("INTENT_NORMALIZED", { t, q });
 
-    // Conversazione generale
+    /* ============================================================
+       CONVERSAZIONE GENERALE
+    ============================================================ */
     if (
       q.includes("ciao") ||
       q.includes("hey") ||
@@ -34,7 +36,9 @@ function detectIntent(rawText) {
       return { intent: "conversazione", sub: null };
     }
 
-    // Menu
+    /* ============================================================
+       MENU
+    ============================================================ */
     if (
       q.includes("menu") ||
       q.includes("inizio") ||
@@ -45,7 +49,83 @@ function detectIntent(rawText) {
       return { intent: "menu", sub: null };
     }
 
-    // Catalogo
+    /* ============================================================
+       GUIDE / TUTORIAL / ISTRUZIONI
+    ============================================================ */
+    if (
+      q.includes("guida") ||
+      q.includes("guide") ||
+      q.includes("tutorial") ||
+      q.includes("istruzioni") ||
+      q.includes("come fare") ||
+      q.includes("come si fa") ||
+      q.includes("non riesco") ||
+      q.includes("problema con") ||
+      q.includes("spiegami") ||
+      q.includes("passo passo")
+    ) {
+      return { intent: "guida", sub: q };
+    }
+
+    /* ============================================================
+       REGISTRAZIONE / LOGIN / ACCOUNT
+    ============================================================ */
+    if (
+      q.includes("registrazione") ||
+      q.includes("registrarmi") ||
+      q.includes("creare account") ||
+      q.includes("nuovo account")
+    ) {
+      return { intent: "registrazione", sub: null };
+    }
+
+    if (
+      q.includes("login") ||
+      q.includes("accedere") ||
+      q.includes("entra") ||
+      q.includes("accesso")
+    ) {
+      return { intent: "login", sub: null };
+    }
+
+    if (
+      q.includes("password dimenticata") ||
+      q.includes("reset password") ||
+      q.includes("recuperare password")
+    ) {
+      return { intent: "password_reset", sub: null };
+    }
+
+    if (
+      q.includes("account") ||
+      q.includes("dashboard") ||
+      q.includes("profilo")
+    ) {
+      return { intent: "account", sub: null };
+    }
+
+    /* ============================================================
+       ORDINI / DOWNLOAD
+    ============================================================ */
+    if (
+      q.includes("ordini") ||
+      q.includes("miei ordini") ||
+      q.includes("ordine")
+    ) {
+      return { intent: "ordini", sub: null };
+    }
+
+    if (
+      q.includes("download") ||
+      q.includes("scaricare") ||
+      q.includes("non riesco a scaricare")
+    ) {
+      return { intent: "download", sub: null };
+    }
+
+    /* ============================================================
+       CATALOGO
+    ============================================================ */
     if (
       q.includes("catalogo") ||
       q.includes("prodotti") ||
@@ -55,15 +135,25 @@ function detectIntent(rawText) {
       return { intent: "catalogo", sub: null };
     }
 
-    // Newsletter
-    if (q.includes("disiscriv")) {
+    /* ============================================================
+       NEWSLETTER (migliorata)
+    ============================================================ */
+    if (q.includes("disiscriv") || q.includes("cancellami") || q.includes("non voglio più")) {
       return { intent: "newsletter", sub: "unsubscribe" };
     }
-    if (q.includes("newsletter") || q.includes("iscrizione")) {
+
+    if (
+      q.includes("newsletter") ||
+      q.includes("iscrizione") ||
+      q.includes("iscrivimi") ||
+      q.includes("voglio ricevere")
+    ) {
       return { intent: "newsletter", sub: "subscribe" };
     }
 
-    // Social specifici
+    /* ============================================================
+       SOCIAL
+    ============================================================ */
     if (q.includes("instagram")) return { intent: "social_specifico", sub: "instagram" };
     if (q.includes("tiktok")) return { intent: "social_specifico", sub: "tiktok" };
     if (q.includes("youtube")) return { intent: "social_specifico", sub: "youtube" };
@@ -72,21 +162,28 @@ function detectIntent(rawText) {
     if (q.includes("linkedin")) return { intent: "social_specifico", sub: "linkedin" };
     if (q === "x" || q.includes(" x ")) return { intent: "social_specifico", sub: "x" };
 
-    // Social generico
     if (q.includes("social")) return { intent: "social", sub: null };
 
-    // Privacy / Termini / Cookie
+    /* ============================================================
+       LEGAL
+    ============================================================ */
     if (q.includes("privacy")) return { intent: "privacy", sub: null };
     if (q.includes("termini") || q.includes("condizioni")) return { intent: "termini", sub: null };
     if (q.includes("cookie")) return { intent: "cookie", sub: null };
 
-    // Resi
+    /* ============================================================
+       RESI
+    ============================================================ */
     if (q.includes("resi") || q.includes("rimborso")) return { intent: "resi", sub: null };
 
-    // FAQ
+    /* ============================================================
+       FAQ
+    ============================================================ */
     if (q.includes("faq")) return { intent: "faq", sub: null };
 
-    // Contatti
+    /* ============================================================
+       CONTATTI
+    ============================================================ */
     if (
       q.includes("contatti") ||
       q.includes("contatto") ||
@@ -97,12 +194,16 @@ function detectIntent(rawText) {
       return { intent: "contatti", sub: null };
     }
 
-    // Dove siamo
+    /* ============================================================
+       DOVE SIAMO
+    ============================================================ */
     if (q.includes("dove siamo") || q.includes("indirizzo") || q.includes("sede")) {
       return { intent: "dovesiamo", sub: null };
     }
 
-    // Supporto
+    /* ============================================================
+       SUPPORTO
+    ============================================================ */
     if (q.includes("supporto") || q.includes("assistenza") || q.includes("problema")) {
       if (q.includes("download")) return { intent: "supporto", sub: "download" };
       if (q.includes("payhip")) return { intent: "supporto", sub: "payhip" };
@@ -111,7 +212,22 @@ function detectIntent(rawText) {
       return { intent: "supporto", sub: null };
     }
 
-    // Acquisto diretto
+    /* ============================================================
+       PAGAMENTI / PAYPAL
+    ============================================================ */
+    if (
+      q.includes("pagamento") ||
+      q.includes("paypal") ||
+      q.includes("checkout") ||
+      q.includes("ricevuta") ||
+      q.includes("transazione")
+    ) {
+      return { intent: "pagamento", sub: null };
+    }
+
+    /* ============================================================
+       ACQUISTO DIRETTO
+    ============================================================ */
     if (
       q.includes("acquisto") ||
       q.includes("compra") ||
@@ -121,7 +237,9 @@ function detectIntent(rawText) {
       return { intent: "acquisto_diretto", sub: null };
     }
 
-    // Dettagli prodotto
+    /* ============================================================
+       DETTAGLI PRODOTTO
+    ============================================================ */
     if (
       q.includes("dettagli") ||
       q.includes("approfondisci") ||
@@ -130,34 +248,48 @@ function detectIntent(rawText) {
       return { intent: "dettagli_prodotto", sub: null };
     }
 
-    // Video prodotto
+    /* ============================================================
+       VIDEO PRODOTTO
+    ============================================================ */
     if (q.includes("video")) return { intent: "video_prodotto", sub: null };
 
-    // Prezzo prodotto
+    /* ============================================================
+       PREZZO PRODOTTO
+    ============================================================ */
     if (q.includes("prezzo") || q.includes("quanto costa")) {
       return { intent: "prezzo_prodotto", sub: null };
     }
 
-    // Trattativa
+    /* ============================================================
+       TRATTATIVA
+    ============================================================ */
     if (q.includes("sconto") || q.includes("promo")) {
       return { intent: "trattativa", sub: null };
     }
 
-    // Obiezione
+    /* ============================================================
+       OBIEZIONE
+    ============================================================ */
     if (q.includes("caro") || q.includes("vale la pena")) {
       return { intent: "obiezione", sub: null };
     }
 
-    // Allegati
+    /* ============================================================
+       ALLEGATI
+    ============================================================ */
     if (rawText && rawText.startsWith("FILE:")) {
       return { intent: "allegato", sub: rawText.replace("FILE:", "").trim() };
     }
 
-    // Match prodotto fuzzy
+    /* ============================================================
+       MATCH PRODOTTO FUZZY
+    ============================================================ */
     const product = fuzzyMatchProduct(text);
     if (product) return { intent: "prodotto", sub: product.slug };
 
-    // Fallback GPT
+    /* ============================================================
+       FALLBACK GPT
+    ============================================================ */
     return { intent: "gpt", sub: null };
 
   } catch (err) {
