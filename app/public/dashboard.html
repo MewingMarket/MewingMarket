@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard Utente — MewingMarket</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- HEAD DINAMICO -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      fetch("head.html")
+        .then(r => r.text())
+        .then(html => {
+          const temp = document.createElement("div");
+          temp.innerHTML = html;
+          [...temp.children].forEach(node => document.head.appendChild(node));
+        });
+    });
+  </script>
+
+  <link rel="stylesheet" href="style.css">
+  <script src="dashboard.js" defer></script>
+
+  <style>
+    .dashboard {
+      display:flex;
+      max-width:1200px;
+      margin:40px auto;
+      gap:25px;
+    }
+    .sidebar {
+      width:260px;
+      background:white;
+      padding:20px;
+      border-radius:12px;
+      box-shadow:0 4px 20px rgba(0,0,0,0.06);
+    }
+    .sidebar h2 {
+      margin-bottom:20px;
+      font-size:22px;
+    }
+    .sidebar a {
+      display:block;
+      padding:12px;
+      border-radius:8px;
+      margin-bottom:10px;
+      text-decoration:none;
+      color:#333;
+      background:#f5f5f5;
+      font-weight:600;
+    }
+    .sidebar a.active {
+      background:#0077ff;
+      color:white;
+    }
+    .content {
+      flex:1;
+      background:white;
+      padding:25px;
+      border-radius:12px;
+      box-shadow:0 4px 20px rgba(0,0,0,0.06);
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- HEADER DINAMICO -->
+<div id="header-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("header.html")
+      .then(r => r.text())
+      .then(h => document.getElementById("header-placeholder").innerHTML = h);
+  });
+</script>
+
+<div class="dashboard">
+
+  <div class="sidebar">
+    <h2>Il tuo account</h2>
+
+    <a href="#" data-section="profile" class="active">Profilo</a>
+    <a href="#" data-section="orders">I miei ordini</a>
+    <a href="#" data-section="downloads">Download</a>
+    <a href="#" data-section="reviews">Le mie recensioni</a>
+    <a href="#" data-section="settings">Impostazioni</a>
+    <a href="#" data-section="delete">Annulla registrazione</a>
+    <a href="#" data-section="logout" style="color:#d00;">Logout</a>
+  </div>
+
+  <div class="content" id="content">
+    <!-- Sezioni caricate dinamicamente -->
+  </div>
+
+</div>
+
+<!-- FOOTER DINAMICO -->
+<div id="footer-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("footer.html")
+      .then(r => r.text())
+      .then(h => document.getElementById("footer-placeholder").innerHTML = h);
+  });
+</script>
+
+</body>
+</html>
