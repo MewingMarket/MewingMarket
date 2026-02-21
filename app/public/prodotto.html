@@ -35,18 +35,46 @@
       .then(h => {
         document.getElementById("header-placeholder").innerHTML = h;
 
-        const cartBtn = document.createElement("div");
-        cartBtn.id = "cart-icon";
-        cartBtn.innerHTML = "🛒";
-        cartBtn.style.cursor = "pointer";
-        cartBtn.style.fontSize = "26px";
-        cartBtn.style.marginLeft = "12px";
+        // ================================
+        // ICONA CARRELLO + BADGE
+        // ================================
+        const cartWrapper = document.createElement("div");
+        cartWrapper.id = "cart-wrapper";
+        cartWrapper.style.position = "relative";
+        cartWrapper.style.cursor = "pointer";
+        cartWrapper.style.marginLeft = "14px";
 
-        cartBtn.addEventListener("click", () => {
-          window.location.href = "/dashboard/cashout.html";
+        const cartIcon = document.createElement("div");
+        cartIcon.id = "cart-icon";
+        cartIcon.innerHTML = "🛒";
+        cartIcon.style.fontSize = "26px";
+
+        const cartBadge = document.createElement("div");
+        cartBadge.id = "cart-badge";
+        cartBadge.textContent = "0";
+        cartBadge.style.position = "absolute";
+        cartBadge.style.top = "-6px";
+        cartBadge.style.right = "-10px";
+        cartBadge.style.background = "black";
+        cartBadge.style.color = "white";
+        cartBadge.style.fontSize = "12px";
+        cartBadge.style.padding = "2px 6px";
+        cartBadge.style.borderRadius = "50%";
+        cartBadge.style.fontWeight = "bold";
+
+        cartWrapper.appendChild(cartIcon);
+        cartWrapper.appendChild(cartBadge);
+
+        cartWrapper.addEventListener("click", () => {
+          window.location.href = "checkout.html";
         });
 
-        document.querySelector("header nav").appendChild(cartBtn);
+        document.querySelector("header nav").appendChild(cartWrapper);
+
+        // Aggiorna badge quantità
+        if (typeof aggiornaBadgeCarrello === "function") {
+          aggiornaBadgeCarrello();
+        }
       });
   });
 </script>
@@ -114,7 +142,7 @@
 <!-- TRACKING -->
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-  const slug = window.location.pathname.split("/").pop();
+  const slug = new URLSearchParams(window.location.search).get("slug");
   if (window.trackEvent && slug) {
     trackEvent("product_view", { slug });
   }
