@@ -1,6 +1,5 @@
 // =========================================================
-// File: app/public/login.js
-// Gestione login pubblico
+// Login pubblico MewingMarket
 // =========================================================
 
 const msg = document.getElementById('msg');
@@ -14,29 +13,53 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   setMsg('');
 
-  const body = {
-    email: e.target.email.value.trim(),
-    password: e.target.password.value
-  };
+  const email = e.target.email.value.trim().toLowerCase();
+  const password = e.target.password.value;
 
-  const res = await fetch('/api/utente/login', {
-    method: 'POST',
-    headers: { 'Content-Type':'application/json' },
-    body: JSON.stringify(body)
-  });
+  // VALIDAZIONI BASE
+  if (!email || !password) {
+    setMsg("Inserisci email e password");
+    return;
+  }
 
-  const data = await res.json();
+  if (!email.includes("@") || !email.includes(".")) {
+    setMsg("Email non valida");
+    return;
+  }
 
-  if (data.success) {
-    // Salviamo token e email
-    localStorage.setItem('session', data.token);
-    localStorage.setItem('utenteEmail', body.email);
+  try {
+    const res = await fetch('/api/utente/login', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ email, password })
+    });
 
-    setMsg('Accesso effettuato...', true);
+    let data = {};
+    try {
+      data = await res.json();
+    } catch {
+      setMsg("Risposta non valida dal server");
+      return;
+    }
 
-    // Redirect alla dashboard utente
-    window.location.href = '/dashboard.html';
-  } else {
-    setMsg(data.error || 'Credenziali non valide');
+    if (data.success) {
+      // Salviamo token e email
+      localStorage.setItem('session', data.token);
+      localStorage.setItem('utenteEmail', email);
+
+      setMsg('Accesso effettuato...', true);
+
+      // Redirect alla dashboard utente
+      setTimeout(() => {
+        window.location.href = 'dashboard.html';
+      }, 500);
+
+    } else {
+      setMsg(data.error || 'Credenziali non valide');
+    }
+
+  } catch (err) {
+    console.error(err);
+    setMsg("Errore di connessione");
   }
 });
