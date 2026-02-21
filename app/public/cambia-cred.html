@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+
+  <!-- HEAD DINAMICO -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      fetch("head.html")
+        .then(r => r.text())
+        .then(html => {
+          const temp = document.createElement("div");
+          temp.innerHTML = html;
+          [...temp.children].forEach(node => document.head.appendChild(node));
+        })
+        .catch(err => console.error("Errore caricamento head:", err));
+    });
+  </script>
+
+  <title>Cambia Credenziali — MewingMarket</title>
+
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    .box {
+      max-width:450px;
+      margin:60px auto;
+      background:white;
+      padding:25px;
+      border-radius:12px;
+      box-shadow:0 4px 20px rgba(0,0,0,0.06);
+    }
+    input {
+      width:100%;
+      padding:12px;
+      margin-top:10px;
+      border-radius:8px;
+      border:1px solid #ddd;
+      font-size:16px;
+    }
+    button {
+      width:100%;
+      margin-top:20px;
+      padding:12px;
+      background:#0077ff;
+      color:white;
+      border:none;
+      border-radius:8px;
+      cursor:pointer;
+      font-size:16px;
+      font-weight:600;
+    }
+    .section-title {
+      margin-top:30px;
+      font-size:20px;
+      font-weight:700;
+    }
+    #status {
+      margin-top:15px;
+      font-size:14px;
+      text-align:center;
+      color:#d00;
+    }
+  </style>
+
+</head>
+
+<body>
+
+<!-- HEADER DINAMICO -->
+<div id="header-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("header.html")
+      .then(r => r.text())
+      .then(h => document.getElementById("header-placeholder").innerHTML = h)
+      .catch(err => console.error("Errore caricamento header:", err));
+  });
+</script>
+
+<main>
+
+  <div class="box">
+    <h1>Cambia Credenziali</h1>
+
+    <div id="status"></div>
+
+    <!-- CAMBIA EMAIL -->
+    <div class="section-title">Cambia Email</div>
+
+    <form id="change-email-form">
+      <label>Nuova email</label>
+      <input type="email" name="newEmail" required>
+
+      <label>Password attuale</label>
+      <input type="password" name="password" required>
+
+      <button type="submit">Aggiorna Email</button>
+    </form>
+
+    <!-- CAMBIA PASSWORD -->
+    <div class="section-title">Cambia Password</div>
+
+    <form id="change-password-form">
+      <label>Password attuale</label>
+      <input type="password" name="oldPassword" required>
+
+      <label>Nuova password</label>
+      <input type="password" name="newPassword" required>
+
+      <button type="submit">Aggiorna Password</button>
+    </form>
+
+  </div>
+
+</main>
+
+<!-- FOOTER DINAMICO -->
+<div id="footer-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("footer.html")
+      .then(r => r.text())
+      .then(h => document.getElementById("footer-placeholder").innerHTML = h)
+      .catch(err => console.error("Errore caricamento footer:", err));
+  });
+</script>
+
+<script src="cambia-cred.js"></script>
+
+</body>
+</html>
