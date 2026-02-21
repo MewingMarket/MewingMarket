@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Lascia una recensione — MewingMarket</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- HEAD DINAMICO -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      fetch("head.html")
+        .then(r => r.text())
+        .then(html => {
+          const temp = document.createElement("div");
+          temp.innerHTML = html;
+          [...temp.children].forEach(node => document.head.appendChild(node));
+        });
+    });
+  </script>
+
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    body { background:#fafafa; margin:0; padding:0; font-family:system-ui; }
+    .box {
+      max-width:650px; margin:40px auto; background:white;
+      padding:30px; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.06);
+    }
+    h1 { font-size:26px; margin-bottom:10px; }
+    #productName { font-weight:600; margin-bottom:20px; }
+    #stars span {
+      font-size:32px; cursor:pointer; padding:5px;
+      color:#ccc; transition:0.2s;
+    }
+    #stars span.active { color:#ffb400; }
+    textarea {
+      width:100%; height:120px; padding:10px;
+      border-radius:8px; border:1px solid #ddd;
+      resize:none; font-size:15px;
+    }
+    .btn {
+      display:inline-block; margin-top:20px; padding:12px 20px;
+      border-radius:8px; font-weight:600; color:white; text-decoration:none;
+      cursor:pointer; border:none;
+    }
+    .btn-send { background:#0077ff; }
+    #status { margin-top:15px; font-weight:600; }
+  </style>
+</head>
+
+<body>
+
+<!-- HEADER DINAMICO -->
+<div id="header-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("header.html")
+      .then(r => r.text())
+      .then(h => {
+        document.getElementById("header-placeholder").innerHTML = h;
+
+        // ICONA CARRELLO + BADGE
+        const cartWrapper = document.createElement("div");
+        cartWrapper.id = "cart-wrapper";
+        cartWrapper.style.position = "relative";
+        cartWrapper.style.cursor = "pointer";
+        cartWrapper.style.marginLeft = "14px";
+
+        const cartIcon = document.createElement("div");
+        cartIcon.id = "cart-icon";
+        cartIcon.innerHTML = "🛒";
+        cartIcon.style.fontSize = "26px";
+
+        const cartBadge = document.createElement("div");
+        cartBadge.id = "cart-badge";
+        cartBadge.textContent = "0";
+        cartBadge.style.position = "absolute";
+        cartBadge.style.top = "-6px";
+        cartBadge.style.right = "-10px";
+        cartBadge.style.background = "black";
+        cartBadge.style.color = "white";
+        cartBadge.style.fontSize = "12px";
+        cartBadge.style.padding = "2px 6px";
+        cartBadge.style.borderRadius = "50%";
+        cartBadge.style.fontWeight = "bold";
+
+        cartWrapper.appendChild(cartIcon);
+        cartWrapper.appendChild(cartBadge);
+
+        cartWrapper.addEventListener("click", () => {
+          window.location.href = "checkout.html";
+        });
+
+        document.querySelector("header nav").appendChild(cartWrapper);
+
+        if (typeof aggiornaBadgeCarrello === "function") {
+          aggiornaBadgeCarrello();
+        }
+      });
+  });
+</script>
+
+<div class="box">
+  <h1>Lascia una recensione ⭐</h1>
+
+  <p id="productName">Caricamento…</p>
+
+  <div id="stars">
+    <span data-v="1">★</span>
+    <span data-v="2">★</span>
+    <span data-v="3">★</span>
+    <span data-v="4">★</span>
+    <span data-v="5">★</span>
+  </div>
+
+  <textarea id="comment" placeholder="Scrivi qui la tua opinione…"></textarea>
+
+  <button id="sendReview" class="btn btn-send">Invia recensione</button>
+
+  <div id="status"></div>
+</div>
+
+<script src="recensioni.js"></script>
+
+</body>
+</html>
