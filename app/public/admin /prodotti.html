@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- HEAD DINAMICO -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      fetch("../head.html")
+        .then(r => r.text())
+        .then(html => {
+          const temp = document.createElement("div");
+          temp.innerHTML = html;
+          [...temp.children].forEach(node => document.head.appendChild(node));
+        })
+        .catch(err => console.error("Errore caricamento head:", err));
+    });
+  </script>
+
+  <link rel="stylesheet" href="../style.css">
+  <script src="js/admin.js" defer></script>
+  <script src="js/prodotti.js" defer></script>
+</head>
+
+<body>
+
+<!-- HEADER DINAMICO -->
+<div id="header-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("../header.html")
+      .then(r => r.text())
+      .then(h => {
+        document.getElementById("header-placeholder").innerHTML = h;
+      })
+      .catch(err => console.error("Errore caricamento header:", err));
+  });
+</script>
+
+<main class="pagina-standard">
+
+  <h1>Gestione Prodotti</h1>
+
+  <!-- PULSANTE AGGIORNA -->
+  <div style="margin-bottom:20px;">
+    <button id="btn-sync" class="btn-primario">Aggiorna catalogo da Airtable</button>
+  </div>
+
+  <!-- TABELLA PRODOTTI -->
+  <table class="tabella-standard" id="tabella-prodotti">
+    <thead>
+      <tr>
+        <th>Titolo</th>
+        <th>Prezzo</th>
+        <th>Categoria</th>
+        <th>Slug</th>
+        <th>Stato</th>
+        <th>Link</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+</main>
+
+<!-- FOOTER DINAMICO -->
+<div id="footer-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("../footer.html")
+      .then(r => r.text())
+      .then(h => {
+        document.getElementById("footer-placeholder").innerHTML = h;
+      })
+      .catch(err => console.error("Errore caricamento footer:", err));
+  });
+</script>
+
+</body>
+</html>
