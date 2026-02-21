@@ -4,15 +4,13 @@
  */
 
 const callGPT = require("../gpt.cjs");
-
-// PATCH: utils NON esporta log → lo prendiamo dal logger globale
 const { reply } = require("../utils.cjs");
 const log = global.logBot || console.log;
 
 const Memory = require("../../memory.cjs");
 const Context = require("../../context.cjs");
 
-// Import MODEL catalogo
+// MODEL catalogo aggiornato
 const {
   findProductBySlug,
   findProductFromText,
@@ -28,18 +26,16 @@ function resolveProduct(intent, sub, rawText, PRODUCTS) {
   if (intent === "prodotto" && sub) {
     return findProductBySlug(sub);
   }
-
   return findProductFromText(rawText);
 }
 
 /* ============================================================
-   HANDLER RISPOSTA BREVE PRODOTTO
+   RISPOSTA BREVE PRODOTTO
 ============================================================ */
 async function handleProductBasic(req, res, product, rawText) {
   const uid = req?.uid || "unknown_user";
   const pageContext = Context.get(uid) || {};
 
-  // ⭐ PATCH: aggiorna contesto automaticamente
   Context.update(uid, "prodotto", product.slug);
 
   const base = productReply(product);
@@ -48,7 +44,11 @@ async function handleProductBasic(req, res, product, rawText) {
     rawText || "Mostra prodotto",
     Memory.get(uid),
     pageContext,
-    "\nRendi il messaggio più chiaro e utile.",
+    `
+Rendi il messaggio più chiaro e utile.
+Non inventare informazioni. Non creare link Payhip.
+Se suggerisci un link, usa solo: prodotto.html?slug=${product.slug}
+    `.trim(),
     { product }
   );
 
@@ -56,13 +56,12 @@ async function handleProductBasic(req, res, product, rawText) {
 }
 
 /* ============================================================
-   HANDLER DETTAGLI PRODOTTO
+   DETTAGLI PRODOTTO
 ============================================================ */
 async function handleProductDetails(req, res, product, rawText) {
   const uid = req?.uid || "unknown_user";
   const pageContext = Context.get(uid) || {};
 
-  // ⭐ PATCH
   Context.update(uid, "prodotto", product.slug);
 
   const base = productLongReply(product);
@@ -71,7 +70,10 @@ async function handleProductDetails(req, res, product, rawText) {
     rawText || "Dettagli prodotto",
     Memory.get(uid),
     pageContext,
-    "\nRendi il messaggio più approfondito.",
+    `
+Rendi il messaggio più approfondito.
+Non inventare caratteristiche non presenti nel catalogo.
+    `.trim(),
     { product }
   );
 
@@ -79,28 +81,32 @@ async function handleProductDetails(req, res, product, rawText) {
 }
 
 /* ============================================================
-   HANDLER PREZZO PRODOTTO
+   PREZZO PRODOTTO
 ============================================================ */
 async function handleProductPrice(req, res, product, rawText) {
   const uid = req?.uid || "unknown_user";
   const pageContext = Context.get(uid) || {};
 
-  // ⭐ PATCH
   Context.update(uid, "prodotto", product.slug);
 
   const base = `
-💰 <b>Prezzo:</b> ${product.prezzo}€
-👉 <b>Acquista ora:</b>  
-${product.linkPayhip}
-
-Vuoi vedere i dettagli completi?
+<div class="mm-card">
+  <div class="mm-card-title">💰 Prezzo</div>
+  <div class="mm-card-body">
+    <b>${product.prezzo}€</b><br><br>
+    <a href="prodotto.html?slug=${product.slug}" class="mm-btn">Vedi prodotto</a>
+  </div>
+</div>
 `;
 
   const enriched = await callGPT(
     rawText || "Prezzo prodotto",
     Memory.get(uid),
     pageContext,
-    "\nAggiungi una frase che inviti a chiedere altro.",
+    `
+Aggiungi una frase che inviti a chiedere altro.
+Non inventare link o prezzi.
+    `.trim(),
     { product }
   );
 
@@ -108,31 +114,42 @@ Vuoi vedere i dettagli completi?
 }
 
 /* ============================================================
-   HANDLER VIDEO PRODOTTO
+   VIDEO PRODOTTO
 ============================================================ */
 async function handleProductVideo(req, res, product, rawText) {
   const uid = req?.uid || "unknown_user";
   const pageContext = Context.get(uid) || {};
 
-  // ⭐ PATCH
   Context.update(uid, "prodotto", product.slug);
 
   const video = product.youtube_url || product.catalog_video_block;
 
   const base = video
     ? `
-🎥 <b>Video del prodotto</b>  
-${video}
-
-Vuoi altre informazioni?
+<div class="mm-card">
+  <div class="mm-card-title">🎥 Video del prodotto</div>
+  <div class="mm-card-body">
+    ${video}<br><br>
+    Vuoi altre informazioni?
+  </div>
+</div>
 `
-    : "Questo prodotto non ha un video disponibile.";
+    : `
+<div class="mm-card">
+  <div class="mm-card-body">
+    Questo prodotto non ha un video disponibile.
+  </div>
+</div>
+`;
 
   const enriched = await callGPT(
     rawText || "Video prodotto",
     Memory.get(uid),
     pageContext,
-    "\nRendi il messaggio più utile.",
+    `
+Rendi il messaggio più utile.
+Non inventare video o link.
+    `.trim(),
     { product }
   );
 
@@ -140,20 +157,22 @@ Vuoi altre informazioni?
 }
 
 /* ============================================================
-   HANDLER OBIEZIONE
+   OBIEZIONE
 ============================================================ */
 async function handleObjection(req, res, product, rawText) {
   const uid = req?.uid || "unknown_user";
   const pageContext = Context.get(uid) || {};
 
-  // ⭐ PATCH
   Context.update(uid, "prodotto", product.slug);
 
   const enriched = await callGPT(
     rawText || "Obiezione prodotto",
     Memory.get(uid),
     pageContext,
-    "\nRispondi all'obiezione in modo professionale.",
+    `
+Rispondi all'obiezione in modo professionale.
+Non offrire sconti. Non inventare caratteristiche.
+    `.trim(),
     { product }
   );
 
@@ -161,20 +180,22 @@ async function handleObjection(req, res, product, rawText) {
 }
 
 /* ============================================================
-   HANDLER TRATTATIVA
+   TRATTATIVA
 ============================================================ */
 async function handleNegotiation(req, res, product, rawText) {
   const uid = req?.uid || "unknown_user";
   const pageContext = Context.get(uid) || {};
 
-  // ⭐ PATCH
   Context.update(uid, "prodotto", product.slug);
 
   const enriched = await callGPT(
     rawText || "Trattativa prezzo",
     Memory.get(uid),
     pageContext,
-    "\nRispondi in modo elegante senza offrire sconti.",
+    `
+Rispondi in modo elegante senza offrire sconti.
+Non inventare promozioni.
+    `.trim(),
     { product }
   );
 
@@ -182,25 +203,28 @@ async function handleNegotiation(req, res, product, rawText) {
 }
 
 /* ============================================================
-   HANDLER ACQUISTO DIRETTO
+   ACQUISTO DIRETTO
 ============================================================ */
 async function handleDirectPurchase(req, res, product) {
-  // ⭐ PATCH
   Context.update(req.uid || "unknown_user", "prodotto", product.slug);
 
   const base = `
-Perfetto 😎  
-👉 Puoi acquistarlo qui:  
-${product.linkPayhip}
-
-Vuoi vedere anche i dettagli?
+<div class="mm-card">
+  <div class="mm-card-title">Acquisto</div>
+  <div class="mm-card-body">
+    Perfetto 😎<br><br>
+    👉 Puoi acquistarlo qui:<br>
+    <a href="prodotto.html?slug=${product.slug}" class="mm-btn">Vai al prodotto</a><br><br>
+    Vuoi vedere anche i dettagli?
+  </div>
+</div>
 `;
 
   return reply(res, base);
 }
 
 /* ============================================================
-   HANDLER ALLEGATO
+   ALLEGATO
 ============================================================ */
 async function handleAttachment(req, res, fileName) {
   return reply(res, `Hai inviato un file: <b>${fileName}</b>`);
@@ -215,7 +239,14 @@ module.exports = async function productHandler(req, res, intent, sub, rawText, P
   const product = resolveProduct(intent, sub, rawText, PRODUCTS);
 
   if (!product) {
-    return reply(res, "Non ho trovato questo prodotto. Vuoi vedere il catalogo?");
+    return reply(res, `
+<div class="mm-card">
+  <div class="mm-card-body">
+    Non ho trovato questo prodotto.<br>
+    Vuoi vedere il catalogo?
+  </div>
+</div>
+`);
   }
 
   switch (intent) {
