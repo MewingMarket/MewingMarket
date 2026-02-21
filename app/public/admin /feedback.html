@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+
+  <!-- HEAD ADMIN DINAMICO -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      fetch("head-admin.html")
+        .then(r => r.text())
+        .then(html => {
+          const temp = document.createElement("div");
+          temp.innerHTML = html;
+          [...temp.children].forEach(node => document.head.appendChild(node));
+        })
+        .catch(err => console.error("Errore caricamento head-admin:", err));
+    });
+  </script>
+
+  <title>Feedback Clienti – Admin MewingMarket</title>
+
+  <script src="js/admin.js" defer></script>
+  <script src="js/feedback.js" defer></script>
+
+</head>
+
+<body>
+
+<!-- NAV ADMIN DINAMICO -->
+<div id="nav-admin-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("nav-admin.html")
+      .then(r => r.text())
+      .then(html => {
+        document.getElementById("nav-admin-placeholder").innerHTML = html;
+      })
+      .catch(err => console.error("Errore caricamento nav-admin:", err));
+  });
+</script>
+
+<main class="pagina-standard" style="margin-top:20px;">
+
+  <h1>Feedback Clienti</h1>
+
+  <section class="box-standard">
+
+    <table class="tabella-standard" id="tabella-feedback">
+      <thead>
+        <tr>
+          <th>Prodotto</th>
+          <th>Rating</th>
+          <th>Commento</th>
+          <th>Email</th>
+          <th>Data</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+  </section>
+
+</main>
+
+<!-- FOOTER ADMIN DINAMICO -->
+<div id="footer-admin-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("footer-admin.html")
+      .then(r => r.text())
+      .then(html => {
+        document.getElementById("footer-admin-placeholder").innerHTML = html;
+      })
+      .catch(err => console.error("Errore caricamento footer-admin:", err));
+  });
+</script>
+
+</body>
+</html>
