@@ -1,45 +1,44 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- HEAD DINAMICO -->
+  <!-- HEAD ADMIN DINAMICO -->
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      fetch("../head.html")
+      fetch("head-admin.html")
         .then(r => r.text())
         .then(html => {
           const temp = document.createElement("div");
           temp.innerHTML = html;
           [...temp.children].forEach(node => document.head.appendChild(node));
         })
-        .catch(err => console.error("Errore caricamento head:", err));
+        .catch(err => console.error("Errore caricamento head-admin:", err));
     });
   </script>
 
   <title>Ordini – Admin MewingMarket</title>
-  <link rel="stylesheet" href="../style.css">
+
   <script src="js/admin.js" defer></script>
   <script src="js/ordini.js" defer></script>
+
 </head>
 
 <body>
 
-<!-- HEADER DINAMICO -->
-<div id="header-placeholder"></div>
+<!-- NAV ADMIN DINAMICO -->
+<div id="nav-admin-placeholder"></div>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
-    fetch("../header.html")
+    fetch("nav-admin.html")
       .then(r => r.text())
-      .then(h => {
-        document.getElementById("header-placeholder").innerHTML = h;
+      .then(html => {
+        document.getElementById("nav-admin-placeholder").innerHTML = html;
       })
-      .catch(err => console.error("Errore caricamento header:", err));
+      .catch(err => console.error("Errore caricamento nav-admin:", err));
   });
 </script>
 
-<main class="pagina-standard">
+<main class="pagina-standard" style="margin-top:20px;">
 
   <h1>Ordini</h1>
 
@@ -87,16 +86,16 @@
 
 </main>
 
-<!-- FOOTER DINAMICO -->
-<div id="footer-placeholder"></div>
+<!-- FOOTER ADMIN DINAMICO -->
+<div id="footer-admin-placeholder"></div>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
-    fetch("../footer.html")
+    fetch("footer-admin.html")
       .then(r => r.text())
-      .then(h => {
-        document.getElementById("footer-placeholder").innerHTML = h;
+      .then(html => {
+        document.getElementById("footer-admin-placeholder").innerHTML = html;
       })
-      .catch(err => console.error("Errore caricamento footer:", err));
+      .catch(err => console.error("Errore caricamento footer-admin:", err));
   });
 </script>
 
