@@ -1,6 +1,7 @@
 /* =========================================================
-   CARRELLO — gestione locale del carrello utente
-   Versione Premium: sicura, pulita, compatibile con checkout.js
+   CARRELLO PREMIUM — MewingMarket
+   Versione definitiva: compatibile con catalogo, prodotto,
+   checkout, badge, PayPal e Model A
 ========================================================= */
 
 const Cart = {
@@ -31,12 +32,11 @@ const Cart = {
   },
 
   /* -----------------------------------------
-     AGGIUNGI PRODOTTO
+     AGGIUNGI PRODOTTO (senza duplicati)
   ----------------------------------------- */
   add(product) {
     const cart = this.get();
 
-    // Evita duplicati (stesso slug)
     if (!cart.some(p => p.slug === product.slug)) {
       cart.push(product);
       this.save(cart);
@@ -56,5 +56,61 @@ const Cart = {
   ----------------------------------------- */
   clear() {
     localStorage.removeItem(this.key);
+  },
+
+  /* -----------------------------------------
+     TOTALE CARRELLO
+  ----------------------------------------- */
+  total() {
+    return this.get().reduce((sum, p) => sum + Number(p.prezzo || 0), 0);
   }
 };
+
+/* =========================================================
+   FUNZIONI UNIVERSALI — usate da TUTTO il sito
+========================================================= */
+
+/* -----------------------------------------
+   AGGIUNGI AL CARRELLO (funzione globale)
+----------------------------------------- */
+function aggiungiAlCarrello(product) {
+  Cart.add(product);
+  aggiornaBadgeCarrello();
+}
+
+/* -----------------------------------------
+   AGGIORNA BADGE CARRELLO
+----------------------------------------- */
+function aggiornaBadgeCarrello() {
+  const badge = document.getElementById("cart-badge");
+  if (!badge) return;
+
+  const count = Cart.get().length;
+  badge.textContent = count;
+}
+
+/* -----------------------------------------
+   MODALITÀ ACQUISTO:
+   - "single" → 1 prodotto
+   - "multi"  → tutto il carrello
+----------------------------------------- */
+function getCheckoutMode() {
+  const url = new URL(window.location.href);
+  const slug = url.searchParams.get("slug");
+
+  if (slug) return "single";
+  return "multi";
+}
+
+/* -----------------------------------------
+   OTTIENI PRODOTTO SINGOLO (per checkout)
+----------------------------------------- */
+function getSingleProduct() {
+  const url = new URL(window.location.href);
+  const slug = url.searchParams.get("slug");
+
+  if (!slug) return null;
+
+  const cart = Cart.get();
+  return cart.find(p => p.slug === slug) || null;
+}
