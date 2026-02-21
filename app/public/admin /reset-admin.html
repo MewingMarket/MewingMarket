@@ -1,10 +1,51 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reset Admin</title>
-  <link rel="stylesheet" href="/admin/style.css">
+
+  <!-- HEAD ADMIN DINAMICO -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      fetch("head-admin.html")
+        .then(r => r.text())
+        .then(html => {
+          const temp = document.createElement("div");
+          temp.innerHTML = html;
+          [...temp.children].forEach(node => document.head.appendChild(node));
+        })
+        .catch(err => console.error("Errore caricamento head-admin:", err));
+    });
+  </script>
+
+  <title>Reset Admin – MewingMarket</title>
+
+  <style>
+    .box {
+      max-width:400px;
+      margin:60px auto;
+      background:white;
+      padding:25px;
+      border-radius:12px;
+      box-shadow:0 4px 20px rgba(0,0,0,0.06);
+    }
+    input, button {
+      width:100%;
+      padding:12px;
+      margin-top:10px;
+      border-radius:8px;
+      border:1px solid #ddd;
+      font-size:16px;
+    }
+    button {
+      background:#0077ff;
+      color:white;
+      border:none;
+      font-weight:600;
+      cursor:pointer;
+    }
+  </style>
+
+  <script src="js/reset-admin.js" defer></script>
+
 </head>
 
 <body>
@@ -28,6 +69,18 @@
   <p id="msg"></p>
 </div>
 
-<script src="/admin/js/reset-admin.js"></script>
+<!-- FOOTER ADMIN DINAMICO -->
+<div id="footer-admin-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("footer-admin.html")
+      .then(r => r.text())
+      .then(html => {
+        document.getElementById("footer-admin-placeholder").innerHTML = html;
+      })
+      .catch(err => console.error("Errore caricamento footer-admin:", err));
+  });
+</script>
+
 </body>
 </html>
