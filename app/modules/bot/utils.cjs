@@ -1,6 +1,7 @@
 /**
  * modules/bot/utils.cjs
  * Utility interne del bot — logging, reply, emoji, stato, UID
+ * + PATCH: normalizzazione avanzata, ricerca, sicurezza GPT
  */
 
 const { stripHTML } = require("../utils.cjs"); // usa il tuo utils generale
@@ -16,6 +17,29 @@ function log(section, data) {
   } catch (err) {
     console.error("[MM-BOT][LOG_ERROR]", err?.message || err);
   }
+}
+
+/* ============================================================
+   NORMALIZZAZIONE TESTO (PATCH)
+============================================================ */
+function normalize(text = "") {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // rimuove accenti
+    .replace(/[^a-z0-9 ]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/* ============================================================
+   CLEAN SEARCH QUERY (PATCH)
+============================================================ */
+function cleanSearchQuery(text = "") {
+  return normalize(text)
+    .replace(/\b(il|lo|la|i|gli|le|un|una|di|da|per|con|su|che|come)\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 /* ============================================================
@@ -72,12 +96,10 @@ function reply(res, text) {
 
     const payload = { reply: addEmojis(text || "") };
 
-    // Caso 1 — risposta HTTP Express
     if (res && typeof res.json === "function") {
       return res.json(payload);
     }
 
-    // Caso 2 — risposta interna (fallback, eventi, errori GPT)
     return payload;
 
   } catch (err) {
@@ -111,6 +133,14 @@ function isYes(text) {
 }
 
 /* ============================================================
+   KEYWORD EXTRACTOR (PATCH)
+============================================================ */
+function extractKeywords(text = "") {
+  const t = cleanSearchQuery(text);
+  return t.split(" ").filter(w => w.length > 2);
+}
+
+/* ============================================================
    EXPORT
 ============================================================ */
 module.exports = {
@@ -119,5 +149,8 @@ module.exports = {
   addEmojis,
   generateUID,
   setState,
-  isYes
+  isYes,
+  normalize,
+  cleanSearchQuery,
+  extractKeywords
 };
