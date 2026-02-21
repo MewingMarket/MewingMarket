@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Foto Profilo — MewingMarket</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- HEAD DINAMICO -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      fetch("head.html")
+        .then(r => r.text())
+        .then(html => {
+          const temp = document.createElement("div");
+          temp.innerHTML = html;
+          [...temp.children].forEach(node => document.head.appendChild(node));
+        });
+    });
+  </script>
+
+  <link rel="stylesheet" href="style.css">
+  <script src="foto-profilo.js" defer></script>
+
+  <style>
+    .box {
+      max-width:600px; margin:40px auto; background:white;
+      padding:25px; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.06);
+      text-align:center;
+    }
+    #preview {
+      width:150px; height:150px; border-radius:50%;
+      object-fit:cover; margin:20px auto; display:block;
+      border:3px solid #0077ff;
+    }
+    input[type=file] {
+      margin-top:15px;
+    }
+    button {
+      margin-top:20px; padding:12px 20px; background:#0077ff;
+      color:white; border:none; border-radius:8px; cursor:pointer;
+      font-size:16px; font-weight:600;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="box">
+  <h1>Carica la tua foto profilo</h1>
+
+  <img id="preview" src="placeholder.webp" alt="Preview foto profilo">
+
+  <input type="file" id="fileInput" accept="image/*">
+
+  <button id="saveBtn">Salva foto</button>
+
+  <p id="status" style="margin-top:15px;"></p>
+</div>
+
+</body>
+</html>
