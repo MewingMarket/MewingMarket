@@ -1,47 +1,47 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- HEAD DINAMICO (blindato) -->
+  <!-- HEAD ADMIN DINAMICO -->
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      fetch("../head.html")
+      fetch("head-admin.html")
         .then(r => r.text())
         .then(html => {
           const temp = document.createElement("div");
           temp.innerHTML = html;
           [...temp.children].forEach(node => document.head.appendChild(node));
         })
-        .catch(err => console.error("Errore caricamento head:", err));
+        .catch(err => console.error("Errore caricamento head-admin:", err));
     });
   </script>
 
   <title>Dashboard Vendite – MewingMarket</title>
-  <link rel="stylesheet" href="../style.css">
+
+  <script src="js/admin.js" defer></script>
+
 </head>
 
 <body>
 
-<!-- HEADER DINAMICO -->
-<div id="header-placeholder"></div>
+<!-- NAV ADMIN DINAMICO -->
+<div id="nav-admin-placeholder"></div>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
-    fetch("../header.html")
+    fetch("nav-admin.html")
       .then(r => r.text())
-      .then(h => {
-        document.getElementById("header-placeholder").innerHTML = h;
+      .then(html => {
+        document.getElementById("nav-admin-placeholder").innerHTML = html;
       })
-      .catch(err => console.error("Errore caricamento header:", err));
+      .catch(err => console.error("Errore caricamento nav-admin:", err));
   });
 </script>
 
-<div class="dashboard-header">
+<div class="dashboard-header" style="margin-top:20px;">
   Dashboard Vendite – MewingMarket
 
   <button style="float:right;background:#fff;color:#000;padding:6px 12px;border-radius:6px;border:none;cursor:pointer;margin-left:10px;"
-          onclick="location.href='/tracking.html'">Tracking</button>
+          onclick="location.href='../tracking.html'">Tracking</button>
 
   <button style="float:right;background:#fff;color:#000;padding:6px 12px;border-radius:6px;border:none;cursor:pointer;"
           onclick="location.reload()">Aggiorna</button>
@@ -99,16 +99,16 @@
 
 </div>
 
-<!-- FOOTER DINAMICO -->
-<div id="footer-placeholder"></div>
+<!-- FOOTER ADMIN DINAMICO -->
+<div id="footer-admin-placeholder"></div>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
-    fetch("../footer.html")
+    fetch("footer-admin.html")
       .then(r => r.text())
-      .then(h => {
-        document.getElementById("footer-placeholder").innerHTML = h;
+      .then(html => {
+        document.getElementById("footer-admin-placeholder").innerHTML = html;
       })
-      .catch(err => console.error("Errore caricamento footer:", err));
+      .catch(err => console.error("Errore caricamento footer-admin:", err));
   });
 </script>
 
