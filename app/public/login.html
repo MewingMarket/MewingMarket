@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+
+  <!-- HEAD DINAMICO -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      fetch("head.html")
+        .then(r => r.text())
+        .then(html => {
+          const temp = document.createElement("div");
+          temp.innerHTML = html;
+          [...temp.children].forEach(node => document.head.appendChild(node));
+        })
+        .catch(err => console.error("Errore caricamento head:", err));
+    });
+  </script>
+
+  <title>Accedi — MewingMarket</title>
+
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    .login-box {
+      max-width:400px;
+      margin:60px auto;
+      background:white;
+      padding:25px;
+      border-radius:12px;
+      box-shadow:0 4px 20px rgba(0,0,0,0.06);
+    }
+    input {
+      width:100%;
+      padding:12px;
+      margin-top:10px;
+      border-radius:8px;
+      border:1px solid #ddd;
+      font-size:16px;
+    }
+    button {
+      width:100%;
+      margin-top:20px;
+      padding:12px;
+      background:#0077ff;
+      color:white;
+      border:none;
+      border-radius:8px;
+      cursor:pointer;
+      font-size:16px;
+      font-weight:600;
+    }
+    #status {
+      margin-top:15px;
+      font-size:14px;
+      color:#d00;
+      text-align:center;
+    }
+    .links {
+      margin-top:20px;
+      text-align:center;
+      font-size:14px;
+    }
+    .links a {
+      color:#0077ff;
+      text-decoration:none;
+      font-weight:600;
+    }
+  </style>
+
+</head>
+
+<body>
+
+<!-- HEADER DINAMICO -->
+<div id="header-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("header.html")
+      .then(r => r.text())
+      .then(h => document.getElementById("header-placeholder").innerHTML = h)
+      .catch(err => console.error("Errore caricamento header:", err));
+  });
+</script>
+
+<main>
+
+  <div class="login-box">
+    <h1>Accedi</h1>
+
+    <form id="login-form">
+      <label>Email</label>
+      <input type="email" name="email" required>
+
+      <label>Password</label>
+      <input type="password" name="password" required>
+
+      <button type="submit">Accedi</button>
+    </form>
+
+    <div id="status"></div>
+
+    <div class="links">
+      <p><a href="registrazione.html">Non hai un account? Registrati qui</a></p>
+      <p><a href="reset.html">Hai dimenticato la password?</a></p>
+    </div>
+  </div>
+
+</main>
+
+<!-- FOOTER DINAMICO -->
+<div id="footer-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("footer.html")
+      .then(r => r.text())
+      .then(h => document.getElementById("footer-placeholder").innerHTML = h)
+      .catch(err => console.error("Errore caricamento footer:", err));
+  });
+</script>
+
+<script src="login.js"></script>
+
+</body>
+</html>
