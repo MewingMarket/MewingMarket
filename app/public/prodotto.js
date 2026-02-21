@@ -1,6 +1,7 @@
 // =========================================================
 // File: app/public/prodotto.js
 // Versione MAX (UX Premium) — Airtable + API interne + correlati
+// + LOGIN CHECK + CHECKOUT REDIRECT
 // =========================================================
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -13,7 +14,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   const safeURL = (u) =>
     typeof u === "string" && u.startsWith("http") ? u : "";
 
-  // Estrazione videoId da TUTTI i formati YouTube
   const extractYouTubeId = (url) => {
     if (!url) return null;
 
@@ -72,7 +72,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("product-image").alt = clean(p.titolo);
 
   // ============================================================
-  // 4) VIDEO YOUTUBE (se presente)
+  // 4) VIDEO YOUTUBE
   // ============================================================
   const ytURL = safeURL(p.youtube_url || "");
   const videoId = extractYouTubeId(ytURL);
@@ -91,18 +91,27 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("product-description").innerHTML = clean(p.descrizione || "");
 
   // ============================================================
-  // 6) BOTTONI ACQUISTO
+  // 6) ACQUISTO — LOGIN CHECK + REDIRECT
   // ============================================================
-  const paypalLink = safeURL(p.paypal_link || "");
 
-  document.getElementById("btn-acquista").addEventListener("click", () => {
-    if (!paypalLink) {
-      alert("Link di acquisto non disponibile");
+  const btnAcquista = document.getElementById("btn-acquista");
+
+  btnAcquista.addEventListener("click", () => {
+    const session = localStorage.getItem("session");
+
+    // Utente NON loggato → login con redirect
+    if (!session) {
+      window.location.href = `dashboard-login.html?redirect=${slug}`;
       return;
     }
-    window.open(paypalLink, "_blank");
+
+    // Utente loggato → checkout
+    window.location.href = `/checkout.html?slug=${slug}`;
   });
 
+  // ============================================================
+  // 7) CARRELLO (opzionale)
+  // ============================================================
   document.getElementById("btn-carrello").addEventListener("click", () => {
     if (window.addToCart) {
       addToCart({
@@ -116,7 +125,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // ============================================================
-  // 7) CORRELATI
+  // 8) CORRELATI
   // ============================================================
   try {
     const res = await fetch(`/api/products?categoria=${encodeURIComponent(p.categoria)}`);
