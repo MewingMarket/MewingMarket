@@ -1,48 +1,99 @@
 // =========================================================
 // File: app/server/routes/api-prodotti.cjs
-// Creazione + modifica prodotti (Airtable master)
+// Catalogo prodotti — versione definitiva (no Airtable)
+// Compatibile con store, admin, bot, PayPal
 // =========================================================
 
 const express = require("express");
 const router = express.Router();
-const { airtable } = require("../services/airtable");
+const Prodotto = require("../models/Prodotto"); // MODEL DB
 
-// LISTA PRODOTTI
-router.get("/prodotti/lista", async (req, res) => {
-  const records = await airtable("Prodotti").select().all();
+/* ============================================================
+   GET — LISTA COMPLETA PRODOTTI
+============================================================ */
+router.get("/prodotti/list", async (req, res) => {
+  try {
+    const prodotti = await Prodotto.find().sort({ ordine: 1 });
 
-  const prodotti = records.map(r => ({
-    id: r.id,
-    titolo: r.get("Titolo"),
-    prezzo: r.get("Prezzo"),
-    categoria: r.get("Categoria")
-  }));
+    return res.json({
+      success: true,
+      products: prodotti
+    });
 
-  res.json({ success: true, prodotti });
+  } catch (err) {
+    console.error("API /prodotti/list ERROR:", err);
+    return res.json({ success: false, error: "Errore server" });
+  }
 });
 
-// SALVA PRODOTTO (nuovo o esistente)
-router.post("/prodotti/save", async (req, res) => {
-  const { id, titolo, descrizione, prezzo, categoria, slug, youtube, immagine, fileProdotto } = req.body;
+/* ============================================================
+   GET — SINGOLO PRODOTTO PER SLUG
+============================================================ */
+router.get("/prodotti/:slug", async (req, res) => {
+  try {
+    const prodotto = await Prodotto.findOne({ slug: req.params.slug });
 
-  const fields = {
-    Titolo: titolo,
-    Descrizione: descrizione,
-    Prezzo: prezzo,
-    Categoria: categoria,
-    Slug: slug,
-    YouTube: youtube,
-    Immagine: immagine,
-    FileProdotto: fileProdotto
-  };
+    if (!prodotto) {
+      return res.json({ success: false, error: "Prodotto non trovato" });
+    }
 
-  if (id) {
-    await airtable("Prodotti").update(id, fields);
-    return res.json({ success: true, id });
+    return res.json({ success: true, product: prodotto });
+
+  } catch (err) {
+    console.error("API /prodotti/:slug ERROR:", err);
+    return res.json({ success: false, error: "Errore server" });
   }
+});
 
-  const created = await airtable("Prodotti").create(fields);
-  return res.json({ success: true, id: created.id });
+/* ============================================================
+   POST — CREA O MODIFICA PRODOTTO
+============================================================ */
+router.post("/prodotti/save", async (req, res) => {
+  try {
+    const data = req.body;
+
+    // Validazione minima
+    if (!data.titolo || !data.slug) {
+      return res.json({ success: false, error: "Titolo e slug sono obbligatori" });
+    }
+
+    let prodotto;
+
+    if (data.id) {
+      // UPDATE
+      prodotto = await Prodotto.findByIdAndUpdate(data.id, data, { new: true });
+    } else {
+      // CREATE
+      prodotto = await Prodotto.create(data);
+    }
+
+    return res.json({ success: true, product: prodotto });
+
+  } catch (err) {
+    console.error("API /prodotti/save ERROR:", err);
+    return res.json({ success: false, error: "Errore server" });
+  }
+});
+
+/* ============================================================
+   POST — ELIMINA PRODOTTO
+============================================================ */
+router.post("/prodotti/delete", async (req, res) => {
+  try {
+    const { id } = req.body;
+
+    if (!id) {
+      return res.json({ success: false, error: "ID mancante" });
+    }
+
+    await Prodotto.findByIdAndDelete(id);
+
+    return res.json({ success: true });
+
+  } catch (err) {
+    console.error("API /prodotti/delete ERROR:", err);
+    return res.json({ success: false, error: "Errore server" });
+  }
 });
 
 module.exports = router;
