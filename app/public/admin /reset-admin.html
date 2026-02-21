@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reset Admin</title>
+  <link rel="stylesheet" href="/admin/style.css">
+</head>
+
+<body>
+
+<div class="box">
+  <h1>Reset Password Admin</h1>
+
+  <form id="reset-admin-form">
+    <label>Email admin</label>
+    <input type="email" name="email" required>
+
+    <label>Nuova password</label>
+    <input type="password" name="password" required>
+
+    <label>Master Key</label>
+    <input type="password" name="master" required>
+
+    <button type="submit">Reset</button>
+  </form>
+
+  <p id="msg"></p>
+</div>
+
+<script src="/admin/js/reset-admin.js"></script>
+</body>
+</html>
