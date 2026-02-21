@@ -1,96 +1,74 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-  <meta charset="UTF-8">
-  <title>Lascia una recensione — MewingMarket</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+// =========================================================
+// RECENSIONE — stelle + commento + tracking
+// =========================================================
 
-  <!-- HEAD DINAMICO -->
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      fetch("head.html")
-        .then(r => r.text())
-        .then(html => {
-          const temp = document.createElement("div");
-          temp.innerHTML = html;
-          [...temp.children].forEach(node => document.head.appendChild(node));
-        })
-        .catch(err => console.error("Errore caricamento head:", err));
+document.addEventListener("DOMContentLoaded", () => {
+
+  const params = new URLSearchParams(location.search);
+  const product = params.get("product") || "Prodotto acquistato";
+
+  document.getElementById("productName").textContent =
+    "Stai recensendo: " + product;
+
+  const stars = document.querySelectorAll("#stars span");
+  const comment = document.getElementById("comment");
+  const status = document.getElementById("status");
+  let rating = 0;
+
+  // ⭐ Selezione stelle
+  stars.forEach(star => {
+    star.addEventListener("click", () => {
+      rating = Number(star.dataset.v);
+
+      stars.forEach(s => s.classList.remove("active"));
+      for (let i = 0; i < rating; i++) {
+        stars[i].classList.add("active");
+      }
     });
-  </script>
-
-  <link rel="stylesheet" href="/style.css">
-  <script src="/tracking.js" defer></script>
-
-  <style>
-    .review-box {
-      max-width:600px; margin:40px auto; background:white;
-      padding:25px; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.06);
-    }
-    .stars span {
-      font-size:32px; cursor:pointer; color:#ccc;
-    }
-    .stars span.active { color:#ffb400; }
-    textarea {
-      width:100%; height:120px; padding:12px; border-radius:8px;
-      border:1px solid #ddd; margin-top:15px; font-size:16px;
-    }
-    button {
-      margin-top:20px; padding:12px 20px; background:#0077ff;
-      color:white; border:none; border-radius:8px; cursor:pointer;
-      font-size:16px; font-weight:600;
-    }
-  </style>
-</head>
-
-<body>
-
-<!-- HEADER DINAMICO -->
-<div id="header-placeholder"></div>
-<script>
-  document.addEventListener("DOMContentLoaded", () => {
-    fetch("header.html")
-      .then(r => r.text())
-      .then(h => {
-        document.getElementById("header-placeholder").innerHTML = h;
-      })
-      .catch(err => console.error("Errore caricamento header:", err));
   });
-</script>
 
-<div class="review-box">
-  <h1>Lascia una recensione ⭐</h1>
-  <p id="productName"></p>
+  // 📩 Invio recensione
+  document.getElementById("sendReview").addEventListener("click", async () => {
+    status.style.color = "#d00";
 
-  <div class="stars" id="stars">
-    <span data-v="1">★</span>
-    <span data-v="2">★</span>
-    <span data-v="3">★</span>
-    <span data-v="4">★</span>
-    <span data-v="5">★</span>
-  </div>
+    if (rating === 0) {
+      status.textContent = "Seleziona un numero di stelle.";
+      return;
+    }
 
-  <textarea id="comment" placeholder="Scrivi un commento..."></textarea>
+    if (comment.value.trim().length < 5) {
+      status.textContent = "Scrivi un commento più dettagliato.";
+      return;
+    }
 
-  <button id="sendReview">Invia recensione</button>
+    // Tracking frontend
+    if (window.trackEvent) {
+      trackEvent("review_submitted", {
+        product,
+        rating,
+        comment: comment.value.trim()
+      });
+    }
 
-  <p id="status" style="margin-top:15px;"></p>
-</div>
+    // Backend-ready (ma non obbligatorio ora)
+    try {
+      await fetch("/api/reviews/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          product,
+          rating,
+          comment: comment.value.trim(),
+          date: new Date().toISOString()
+        })
+      });
+    } catch (err) {
+      console.warn("Backend non ancora configurato, recensione salvata solo lato tracking.");
+    }
 
-<!-- FOOTER DINAMICO -->
-<div id="footer-placeholder"></div>
-<script>
-  document.addEventListener("DOMContentLoaded", () => {
-    fetch("footer.html")
-      .then(r => r.text())
-      .then(h => {
-        document.getElementById("footer-placeholder").innerHTML = h;
-      })
-      .catch(err => console.error("Errore caricamento footer:", err));
+    status.style.color = "green";
+    status.textContent = "Grazie! La tua recensione è stata inviata.";
+
+    comment.value = "";
   });
-</script>
-
-<script src="/recensione.js"></script>
-
-</body>
-</html>
+});
