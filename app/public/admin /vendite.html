@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- HEAD DINAMICO -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      fetch("../head.html")
+        .then(r => r.text())
+        .then(html => {
+          const temp = document.createElement("div");
+          temp.innerHTML = html;
+          [...temp.children].forEach(node => document.head.appendChild(node));
+        })
+        .catch(err => console.error("Errore caricamento head:", err));
+    });
+  </script>
+
+  <link rel="stylesheet" href="../style.css">
+  <script src="js/admin.js" defer></script>
+  <script src="js/vendite.js" defer></script>
+</head>
+
+<body>
+
+<!-- HEADER DINAMICO -->
+<div id="header-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("../header.html")
+      .then(r => r.text())
+      .then(h => {
+        document.getElementById("header-placeholder").innerHTML = h;
+      })
+      .catch(err => console.error("Errore caricamento header:", err));
+  });
+</script>
+
+<main class="pagina-standard">
+
+  <h1>Vendite</h1>
+
+  <!-- METRICHE -->
+  <section class="box-standard">
+    <h2>Panoramica vendite</h2>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h3>Totale vendite</h3>
+        <p id="vendite-totali">—</p>
+      </div>
+
+      <div class="stat-card">
+        <h3>Prodotti venduti</h3>
+        <p id="prodotti-venduti">—</p>
+      </div>
+
+      <div class="stat-card">
+        <h3>Ultima vendita</h3>
+        <p id="ultima-vendita">—</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- TABELLA VENDITE -->
+  <section class="box-standard" style="margin-top:30px;">
+    <h2>Lista vendite</h2>
+
+    <table class="tabella-standard" id="tabella-vendite">
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Prodotto</th>
+          <th>Prezzo</th>
+          <th>Utente</th>
+          <th>ID ordine</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+</main>
+
+<!-- FOOTER DINAMICO -->
+<div id="footer-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("../footer.html")
+      .then(r => r.text())
+      .then(h => {
+        document.getElementById("footer-placeholder").innerHTML = h;
+      })
+      .catch(err => console.error("Errore caricamento footer:", err));
+  });
+</script>
+
+</body>
+</html>
