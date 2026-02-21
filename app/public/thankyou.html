@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Grazie per il tuo acquisto — MewingMarket</title>
+  <title>Ordine completato — MewingMarket</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- HEAD DINAMICO -->
@@ -18,85 +18,51 @@
     });
   </script>
 
-  <link rel="stylesheet" href="/style.css">
-  <script src="/tracking.js" defer></script>
+  <link rel="stylesheet" href="style.css">
 
   <style>
-    body { font-family: system-ui; background:#fafafa; margin:0; padding:0; }
-    .container {
+    body { background:#fafafa; margin:0; padding:0; font-family:system-ui; }
+    .box {
       max-width:650px; margin:40px auto; background:white;
       padding:30px; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.06);
     }
-    h1 { font-size:26px; margin-bottom:10px; }
-    .product { font-size:20px; font-weight:600; margin-top:10px; }
-    .section { margin-top:25px; line-height:1.6; }
-    .cta, .feedback-btn {
-      margin-top:25px; display:inline-block; padding:12px 20px;
-      border-radius:8px; font-weight:600; color:white;
+    h1 { font-size:28px; margin-bottom:10px; }
+    .order-box {
+      margin-top:20px; padding:20px; background:#f5f5f5;
+      border-radius:10px; line-height:1.6;
     }
-    .cta { background:#0077ff; }
-    .feedback-btn { background:#00b36b; }
-    .footer { margin-top:40px; font-size:14px; color:#777; text-align:center; }
+    .btn {
+      display:inline-block; margin-top:25px; padding:12px 20px;
+      border-radius:8px; font-weight:600; color:white; text-decoration:none;
+    }
+    .btn-home { background:#0077ff; }
+    .btn-feedback { background:#00b36b; margin-left:10px; }
   </style>
 </head>
 
 <body>
 
-<div class="container">
-  <h1>Grazie per il tuo acquisto! 🎉</h1>
+<div class="box">
+  <h1>Ordine completato 🎉</h1>
 
-  <div id="productName" class="product"></div>
+  <p>Grazie per il tuo acquisto! Ecco il riepilogo:</p>
 
-  <div class="section">
-    Il tuo ordine è stato completato correttamente.
-    <br>Riceverai una email con il link per scaricare il prodotto.
+  <div class="order-box">
+    <p><strong>Prodotto:</strong> <span id="prod"></span></p>
+    <p><strong>Prezzo:</strong> <span id="price"></span>€</p>
+    <p><strong>Data:</strong> <span id="date"></span></p>
   </div>
 
-  <div class="section">
-    Se non trovi l’email:
-    <ul>
-      <li>controlla la cartella spam</li>
-      <li>cerca “MewingMarket” nella posta</li>
-      <li>oppure contattaci</li>
-    </ul>
-  </div>
+  <p style="margin-top:20px;">
+    Riceverai una email con il link per scaricare il prodotto.
+  </p>
 
-  <a class="cta" href="/">Torna al sito</a>
-  <a class="feedback-btn" id="feedbackBtn">Lascia una recensione ⭐</a>
-
-  <div class="footer">MewingMarket — Prodotti digitali per crescere davvero</div>
+  <a href="/" class="btn btn-home">Torna al sito</a>
+  <a id="feedbackBtn" class="btn btn-feedback">Lascia una recensione ⭐</a>
 </div>
 
-<script>
-  const clean = t => typeof t === "string" ? t.replace(/</g,"&lt;").replace(/>/g,"&gt;").trim() : "";
-
-  const params = new URLSearchParams(location.search);
-  const product = clean(params.get("product") || "");
-  const price = clean(params.get("price") || "");
-  const source = clean(params.get("source") || "");
-
-  document.getElementById("productName").textContent = product ? "Hai acquistato: " + product : "";
-
-  // ⭐ REGISTRAZIONE VENDITA
-  fetch("/api/sales/create", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({
-      prodotto: product,
-      prezzo: price,
-      origine: source,
-      referrer: document.referrer || "",
-      device: navigator.userAgent || "",
-      lingua: navigator.language || "",
-      timestamp: new Date().toISOString()
-    })
-  }).catch(()=>{});
-
-  // ⭐ FEEDBACK
-  document.getElementById("feedbackBtn").onclick = () => {
-    location.href = "/recensione.html?product=" + encodeURIComponent(product);
-  };
-</script>
+<script src="carrello.js"></script>
+<script src="thankyou.js"></script>
 
 </body>
 </html>
