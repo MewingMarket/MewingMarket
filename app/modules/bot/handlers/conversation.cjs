@@ -1,6 +1,6 @@
 /**
  * modules/bot/handlers/conversation.cjs
- * Gestione conversazione generica + menu
+ * Conversazione generale + Menu intelligente + Suggerimenti dinamici
  */
 
 const callGPT = require("../gpt.cjs");
@@ -8,21 +8,36 @@ const { reply, log } = require("../utils.cjs");
 const Memory = require("../../memory.cjs");
 const Context = require("../../context.cjs");
 
+// Moduli dinamici
+const FAQ = require("../../faq.cjs");
+const Guides = require("../../guides.cjs");
+
 /* ============================================================
-   HANDLER CONVERSAZIONE GENERICA
+   CONVERSAZIONE GENERICA
 ============================================================ */
 async function handleConversationGeneric(req, res, rawText) {
   const uid = req?.uid || "unknown_user";
   const pageContext = Context.get(uid) || {};
 
-  // ⭐ PATCH: aggiorna contesto automaticamente
   Context.update(uid, "conversazione", null);
+
+  // 🔥 Ricerca automatica FAQ + Guide
+  const faqMatch = FAQ.search(rawText);
+  if (faqMatch) return reply(res, FAQ.render(faqMatch));
+
+  const guideMatch = Guides.search(rawText);
+  if (guideMatch) return reply(res, Guides.render(guideMatch));
 
   const base = `
 <div class="mm-card">
   <div class="mm-card-title">Ciao 👋</div>
   <div class="mm-card-body">
-    Sono qui per aiutarti con prodotti, supporto e consigli.<br><br>
+    Sono qui per aiutarti con:<br><br>
+    • Catalogo prodotti<br>
+    • Guide e FAQ<br>
+    • Login / Registrazione<br>
+    • Download e ordini<br>
+    • Pagamenti e rimborsi<br><br>
     Vuoi vedere il <b>menu</b> o il <b>catalogo</b>?
   </div>
 </div>
@@ -32,30 +47,37 @@ async function handleConversationGeneric(req, res, rawText) {
     rawText || "Conversazione",
     Memory.get(uid),
     pageContext,
-    "\nRendi il messaggio più naturale e accogliente."
+    `
+Rendi il messaggio più naturale, accogliente e utile.
+Non inventare prodotti o link.
+Suggerisci gentilmente cosa può fare l’utente.
+    `.trim()
   );
 
   return reply(res, enriched || base);
 }
 
 /* ============================================================
-   HANDLER MENU
+   MENU INTELLIGENTE
 ============================================================ */
 async function handleMenu(req, res, rawText) {
   const uid = req?.uid || "unknown_user";
   const pageContext = Context.get(uid) || {};
 
-  // ⭐ PATCH: aggiorna contesto automaticamente
   Context.update(uid, "menu", null);
 
   const base = `
 <div class="mm-card">
   <div class="mm-card-title">Menu principale</div>
   <div class="mm-card-body">
-    • Catalogo<br>
+    • Catalogo prodotti<br>
+    • Guide e FAQ<br>
+    • Login / Registrazione<br>
+    • Download<br>
+    • Ordini<br>
+    • Pagamenti / PayPal<br>
     • Supporto<br>
     • Contatti<br>
-    • Newsletter<br>
     • Social<br><br>
     Scrivi una di queste parole.
   </div>
@@ -66,7 +88,10 @@ async function handleMenu(req, res, rawText) {
     rawText || "Menu",
     Memory.get(uid),
     pageContext,
-    "\nRendi il messaggio più guidato."
+    `
+Rendi il messaggio più guidato e amichevole.
+Non inventare categorie o funzioni.
+    `.trim()
   );
 
   return reply(res, enriched || base);
@@ -86,5 +111,12 @@ module.exports = function conversationHandler(req, res, intent, sub, rawText) {
     return handleMenu(req, res, rawText);
   }
 
-  return reply(res, "Non ho capito, vuoi vedere il menu?");
+  return reply(res, `
+<div class="mm-card">
+  <div class="mm-card-body">
+    Non ho capito bene.<br>
+    Vuoi vedere il <b>menu</b>?
+  </div>
+</div>
+`);
 };
