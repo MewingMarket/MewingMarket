@@ -1,32 +1,60 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const cart = Cart.get();
-  const tbody = document.querySelector("#cashout-table tbody");
-  const totaleEl = document.querySelector("#totale");
-  const daPagareEl = document.querySelector("#da-pagare");
+/* =========================================================
+   CARRELLO — gestione locale del carrello utente
+   Versione Premium: sicura, pulita, compatibile con checkout.js
+========================================================= */
 
-  let totale = 0;
+const Cart = {
+  key: "mewing_cart",
 
-  cart.forEach(p => {
-    totale += Number(p.prezzo);
-
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${p.titolo}</td>
-      <td>${p.prezzo}€</td>
-      <td><button data-slug="${p.slug}" class="rimuovi">Rimuovi</button></td>
-    `;
-    tbody.appendChild(tr);
-  });
-
-  totaleEl.textContent = totale.toFixed(2);
-  daPagareEl.textContent = totale.toFixed(2);
-
-  // Rimozione
-  tbody.addEventListener("click", e => {
-    if (e.target.classList.contains("rimuovi")) {
-      const slug = e.target.dataset.slug;
-      Cart.remove(slug);
-      location.reload();
+  /* -----------------------------------------
+     LEGGI CARRELLO
+  ----------------------------------------- */
+  get() {
+    try {
+      const raw = localStorage.getItem(this.key);
+      return raw ? JSON.parse(raw) : [];
+    } catch (err) {
+      console.error("Errore lettura carrello:", err);
+      return [];
     }
-  });
-});
+  },
+
+  /* -----------------------------------------
+     SALVA CARRELLO
+  ----------------------------------------- */
+  save(cart) {
+    try {
+      localStorage.setItem(this.key, JSON.stringify(cart));
+    } catch (err) {
+      console.error("Errore salvataggio carrello:", err);
+    }
+  },
+
+  /* -----------------------------------------
+     AGGIUNGI PRODOTTO
+  ----------------------------------------- */
+  add(product) {
+    const cart = this.get();
+
+    // Evita duplicati (stesso slug)
+    if (!cart.some(p => p.slug === product.slug)) {
+      cart.push(product);
+      this.save(cart);
+    }
+  },
+
+  /* -----------------------------------------
+     RIMUOVI PRODOTTO
+  ----------------------------------------- */
+  remove(slug) {
+    const cart = this.get().filter(p => p.slug !== slug);
+    this.save(cart);
+  },
+
+  /* -----------------------------------------
+     SVUOTA CARRELLO
+  ----------------------------------------- */
+  clear() {
+    localStorage.removeItem(this.key);
+  }
+};
