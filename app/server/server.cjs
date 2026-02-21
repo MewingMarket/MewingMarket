@@ -3,6 +3,7 @@
  * File: app/server/server.cjs
  * Entry point del server — versione modulare + BOOTSTRAP ORDINATO
  * Versione patchata per nuovo store interno (senza Payhip)
+ * Compatibile con nuova architettura API in /routes
  * =========================================================
  */
 
@@ -48,7 +49,13 @@ app.use(express.static(path.join(ROOT, "public")));
 app.use("/data", express.static(path.join(ROOT, "data")));
 
 /* ============================================================
-   ROUTES
+   ROUTES API (NUOVA ARCHITETTURA)
+============================================================ */
+const router = require("./router.cjs");
+app.use("/api", router);
+
+/* ============================================================
+   ROUTES FRONTEND (rimangono come sono)
 ============================================================ */
 require("./routes/chat.cjs")(app);
 require("./routes/chat-voice.cjs")(app);
@@ -56,18 +63,7 @@ require("./routes/newsletter.cjs")(app);
 require("./routes/sitemap.cjs")(app);
 require("./routes/sales.cjs")(app);
 require("./routes/meta-feed.cjs")(app);
-
-/* ❌ RIMOSSO: Payhip non esiste più */
-// require("./routes/payhip-webhook.cjs")(app);
-// require("./routes/payhip.cjs")(app);
-
-/* ⭐ ROUTE PAGINA PRODOTTO (serve solo HTML) */
 require("./routes/product-page.cjs")(app);
-
-/* ⭐ API PRODOTTI (catalogo + singolo) */
-require("./api-prodotti.cjs")(app);
-
-/* STATUS SISTEMA */
 require("./routes/system-status.cjs")(app);
 
 /* ============================================================
