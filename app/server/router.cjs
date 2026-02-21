@@ -10,9 +10,10 @@ const router = express.Router();
 router.use(require("./routes/api-login.cjs"));
 router.use(require("./routes/api-reset.cjs"));
 router.use(require("./routes/api-prodotti.cjs"));
-router.use(require("./routes/api-ordini.cjs"));
+router.use(require("./routes/api-ordini.cjs"));      // ✔️ REINSERITO
 router.use(require("./routes/api-vendite.cjs"));
 router.use(require("./routes/api-upload.cjs"));
+router.use(require("./routes/api-registrazione.cjs")); // ✔️ REGISTRAZIONE
 
 // --- Dashboard login (pagina statica) ---
 router.get("/dashboard", (req, res) => {
