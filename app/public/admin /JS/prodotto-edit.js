@@ -1,18 +1,72 @@
 // =========================================================
 // File: app/public/admin/js/prodotto-edit.js
-// Gestione creazione/modifica prodotti con salvataggio automatico
+// Gestione creazione/modifica prodotti (versione completa)
 // =========================================================
 
 const statusBox = document.getElementById("status");
 
-// Funzione messaggi
 function setStatus(msg, ok = false) {
   statusBox.textContent = msg;
   statusBox.style.color = ok ? "green" : "red";
 }
 
 // =========================================================
-// 1. CARICAMENTO IMMAGINE
+// 1. CARICAMENTO PRODOTTO ESISTENTE
+// =========================================================
+
+async function caricaProdotto(id) {
+  try {
+    const res = await fetch(`/api/prodotti/get?id=${id}`);
+    const data = await res.json();
+
+    if (!data.success) {
+      setStatus("Errore caricamento prodotto");
+      return;
+    }
+
+    const p = data.prodotto;
+
+    document.getElementById("titolo").value = p.titolo || "";
+    document.getElementById("descrizione").value = p.descrizione || "";
+    document.getElementById("prezzo").value = p.prezzo || "";
+    document.getElementById("categoria").value = p.categoria || "";
+    document.getElementById("slug").value = p.slug || "";
+    document.getElementById("youtube").value = p.youtube || "";
+
+    if (p.immagine) {
+      window.immagineURL = p.immagine;
+      const preview = document.getElementById("preview-img");
+      preview.src = p.immagine;
+      preview.style.display = "block";
+    }
+
+    if (p.fileProdotto) {
+      window.fileProdottoURL = p.fileProdotto;
+    }
+
+    setStatus("Prodotto caricato", true);
+
+  } catch (err) {
+    console.error(err);
+    setStatus("Errore di connessione");
+  }
+}
+
+// =========================================================
+// 2. SLUG AUTOMATICO
+// =========================================================
+
+document.getElementById("titolo").addEventListener("input", () => {
+  const titolo = document.getElementById("titolo").value;
+  const slug = titolo
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  document.getElementById("slug").value = slug;
+});
+
+// =========================================================
+// 3. CARICAMENTO IMMAGINE
 // =========================================================
 
 document.getElementById("immagine").addEventListener("change", async (e) => {
@@ -36,10 +90,8 @@ document.getElementById("immagine").addEventListener("change", async (e) => {
     return;
   }
 
-  // Salviamo l'URL nel campo nascosto
   window.immagineURL = data.url;
 
-  // Anteprima
   const preview = document.getElementById("preview-img");
   preview.src = data.url;
   preview.style.display = "block";
@@ -48,7 +100,7 @@ document.getElementById("immagine").addEventListener("change", async (e) => {
 });
 
 // =========================================================
-// 2. CARICAMENTO FILE PRODOTTO
+// 4. CARICAMENTO FILE PRODOTTO
 // =========================================================
 
 document.getElementById("fileProdotto").addEventListener("change", async (e) => {
@@ -78,14 +130,16 @@ document.getElementById("fileProdotto").addEventListener("change", async (e) => 
 });
 
 // =========================================================
-// 3. SALVATAGGIO PRODOTTO (NUOVO O ESISTENTE)
+// 5. SALVATAGGIO PRODOTTO
 // =========================================================
 
 document.getElementById("btn-salva").addEventListener("click", async () => {
   setStatus("Salvataggio prodotto...");
 
+  const id = new URLSearchParams(window.location.search).get("id") || null;
+
   const body = {
-    id: new URLSearchParams(window.location.search).get("id") || null,
+    id,
     titolo: document.getElementById("titolo").value.trim(),
     descrizione: document.getElementById("descrizione").value.trim(),
     prezzo: parseFloat(document.getElementById("prezzo").value),
@@ -111,10 +165,18 @@ document.getElementById("btn-salva").addEventListener("click", async () => {
 
   setStatus("Prodotto salvato con successo!", true);
 
-  // Se è un nuovo prodotto → redirect alla pagina con ID
-  if (!body.id) {
+  if (!id) {
     setTimeout(() => {
       window.location.href = `/admin/prodotto-edit.html?id=${data.id}`;
-    }, 1000);
+    }, 800);
   }
+});
+
+// =========================================================
+// 6. AVVIO
+// =========================================================
+
+document.addEventListener("DOMContentLoaded", () => {
+  const id = new URLSearchParams(window.location.search).get("id");
+  if (id) caricaProdotto(id);
 });
