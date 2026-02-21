@@ -1,10 +1,10 @@
 /* =========================================================
-   CASHOUT — legge il carrello e prepara il pagamento
+   CHECKOUT — legge il carrello, controlla login e avvia pagamento
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
   const cart = Cart.get(); // dal carrello.js
-  const tbody = document.querySelector("#cashout-table tbody");
+  const tbody = document.querySelector("#checkout-table tbody");
   const totaleEl = document.querySelector("#totale");
   const daPagareEl = document.querySelector("#da-pagare");
   const btnPaga = document.getElementById("btn-paga");
@@ -43,15 +43,52 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /* ============================
      PULSANTE "PAGA ORA"
-     (per ora redirect semplice)
+     — LOGIN CHECK
+     — CREAZIONE ORDINE
+     — REDIRECT PAYPAL
   ============================ */
-  btnPaga.addEventListener("click", () => {
+  btnPaga.addEventListener("click", async () => {
     if (cart.length === 0) {
       alert("Il carrello è vuoto.");
       return;
     }
 
-    // Qui in futuro collegheremo PayPal
-    alert("Pagamento non ancora configurato.");
+    const session = localStorage.getItem("session");
+    const email = localStorage.getItem("utenteEmail");
+
+    if (!session || !email) {
+      window.location.href = "dashboard-login.html?redirect=checkout";
+      return;
+    }
+
+    try {
+      // CREA ORDINE LATO BACKEND
+      const res = await fetch("/api/paypal/create-order", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session}`
+        },
+        body: JSON.stringify({
+          email,
+          prodotti: cart,
+          totale
+        })
+      });
+
+      const data = await res.json();
+
+      if (!data.success || !data.paypalUrl) {
+        alert(data.error || "Errore creazione ordine.");
+        return;
+      }
+
+      // REDIRECT A PAYPAL LIVE
+      window.location.href = data.paypalUrl;
+
+    } catch (err) {
+      console.error(err);
+      alert("Errore di connessione.");
+    }
   });
 });
