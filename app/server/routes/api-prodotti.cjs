@@ -1,6 +1,6 @@
 // =========================================================
 // File: app/server/routes/api-prodotti.cjs
-// Catalogo prodotti — Versione Airtable
+// Catalogo prodotti — Versione Airtable (completa)
 // =========================================================
 
 const express = require("express");
@@ -126,6 +126,19 @@ router.post("/products/delete", async (req, res) => {
   } catch (err) {
     console.error("API /products/delete ERROR:", err);
     return res.json({ success: false, error: "Errore server" });
+  }
+});
+
+// =========================================================
+// POST — SYNC MANUALE DA AIRTABLE
+// =========================================================
+router.post("/products/sync", async (req, res) => {
+  try {
+    await syncAirtable();
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("API /products/sync ERROR:", err);
+    return res.json({ success: false, error: "Errore sincronizzazione" });
   }
 });
 
