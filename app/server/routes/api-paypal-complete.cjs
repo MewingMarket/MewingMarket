@@ -1,101 +1,128 @@
 // =========================================================
 // File: app/server/routes/api-paypal-complete.cjs
-// Conferma pagamento PayPal + email + Airtable
+// Completa ordine PayPal + aggiorna Airtable + email
 // =========================================================
 
 const express = require("express");
 const router = express.Router();
 const fetch = require("node-fetch");
-const { sendOrderEmail } = require("../../modules/email.cjs");
-const { updateOrder, getAllOrders } = require("../../modules/ordini.cjs");
 
-const PAYPAL_CLIENT = process.env.PAYPAL_CLIENT_ID;
-const PAYPAL_SECRET = process.env.PAYPAL_SECRET;
-const PAYPAL_API = "https://api-m.paypal.com";
+const Airtable = require("airtable");
+const base = new Airtable({ apiKey: process.env.AIRTABLE_PAT })
+  .base(process.env.AIRTABLE_BASE);
+
+const { sendOrderEmail } = require("../../modules/email.cjs");
+
+const TABLE = "Ordini";
 
 // =========================================================
-// GET /api/paypal/complete-order
+// GET /api/paypal/complete-order?orderId=xxxx
 // =========================================================
 router.get("/paypal/complete-order", async (req, res) => {
-  const orderId = req.query.orderId;
-
-  if (!orderId) {
-    return res.json({ success: false, error: "Order ID mancante" });
-  }
-
   try {
-    // 1) OTTIENI TOKEN PAYPAL
-    const tokenRes = await fetch(`${PAYPAL_API}/v1/oauth2/token`, {
-      method: "POST",
-      headers: {
-        Authorization:
-          "Basic " +
-          Buffer.from(`${PAYPAL_CLIENT}:${PAYPAL_SECRET}`).toString("base64"),
-        "Content-Type": "application/x-www-form-urlencoded"
-      },
-      body: "grant_type=client_credentials"
-    });
+    const airtableId = req.query.orderId;
 
-    const tokenData = await tokenRes.json();
-    const accessToken = tokenData.access_token;
-
-    // 2) VERIFICA ORDINE PAYPAL
-    const orderRes = await fetch(`${PAYPAL_API}/v2/checkout/orders/${orderId}`, {
-      headers: { Authorization: `Bearer ${accessToken}` }
-    });
-
-    const orderData = await orderRes.json();
-
-    if (orderData.status !== "COMPLETED") {
-      return res.json({ success: false, error: "Pagamento non completato" });
+    if (!airtableId) {
+      return res.json({ success: false, error: "OrderId mancante" });
     }
 
-    // 3) TROVA ORDINE IN AIRTABLE
-    const ordini = await getAllOrders();
-    const ordine = ordini.find(o => o.paypal_transaction_id === orderId);
+    // =========================================================
+    // 1) RECUPERA ORDINE DA AIRTABLE
+    // =========================================================
+    const record = await base(TABLE).find(airtableId);
 
-    if (!ordine) {
+    if (!record) {
       return res.json({ success: false, error: "Ordine non trovato" });
     }
 
-    // 4) PARSA I PRODOTTI (da stringa a array)
-    let prodotti = [];
-    try {
-      prodotti = JSON.parse(ordine.prodotti || "[]");
-    } catch {
-      prodotti = [];
+    const paypalId = record.get("paypal_transaction_id");
+
+    if (!paypalId) {
+      return res.json({ success: false, error: "Transazione PayPal mancante" });
     }
 
-    // 5) AGGIORNA STATO ORDINE
-    await updateOrder(ordine.id, {
+    // =========================================================
+    // 2) CATTURA PAGAMENTO PAYPAL
+    // =========================================================
+    const captureRes = await fetch(
+      `https://api-m.paypal.com/v2/checkout/orders/${paypalId}/capture`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Basic ${Buffer.from(
+            process.env.PAYPAL_CLIENT_ID +
+              ":" +
+              process.env.PAYPAL_SECRET
+          ).toString("base64")}`
+        }
+      }
+    );
+
+    const captureData = await captureRes.json();
+
+    if (!captureData || !captureData.status) {
+      return res.json({
+        success: false,
+        error: "Errore cattura PayPal"
+      });
+    }
+
+    // =========================================================
+    // 3) AGGIORNA ORDINE IN AIRTABLE
+    // =========================================================
+    await base(TABLE).update(airtableId, {
       stato: "completato",
+      paypal_capture_id: captureData.id || "",
       data: new Date().toISOString()
     });
 
-    // 6) INVIA EMAIL DI RINGRAZIAMENTO
-    await sendOrderEmail({
-      email: ordine.utente,
-      ordine: {
-        ...ordine,
-        prodotti,
-        totale: ordine.totale,
-        id_ordine: ordine.id_ordine
-      }
-    });
+    // =========================================================
+    // 4) PREPARA ORDINE PER IL FRONTEND
+    // =========================================================
+    let prodotti = [];
+    try {
+      prodotti = JSON.parse(record.get("prodotti") || "[]");
+    } catch {}
 
-    // 7) RISPONDI ALLA THANKYOU PAGE
+    const ordine = {
+      id: airtableId,
+      id_ordine: record.get("id_ordine"),
+      utente: record.get("utente"),
+      prodotti,
+      totale: record.get("totale"),
+      data: new Date().toISOString(),
+      stato: "completato",
+      metodo_pagamento: "PayPal"
+    };
+
+    // =========================================================
+    // 5) INVIA EMAIL DI CONFERMA ORDINE
+    // =========================================================
+    try {
+      await sendOrderEmail({
+        email: ordine.utente,
+        ordine
+      });
+    } catch (err) {
+      console.error("❌ Errore invio email ordine:", err);
+      // non blocchiamo il flusso
+    }
+
+    // =========================================================
+    // 6) RITORNA ORDINE AL FRONTEND
+    // =========================================================
     return res.json({
       success: true,
-      order: {
-        ...ordine,
-        prodotti,
-        totale: ordine.totale
-      }
+      order: ordine
     });
 
   } catch (err) {
     console.error("❌ Errore complete-order:", err);
-    return res.json({ success: false, error: "Errore server" });
+    return res.json({
+      success: false,
+      error: "Errore server"
+    });
   }
 });
 
