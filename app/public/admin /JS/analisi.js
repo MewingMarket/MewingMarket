@@ -1,54 +1,51 @@
-// =========================================================
-// File: app/public/admin/js/analisi.js
-// Analisi performance (traffico + conversioni)
-// =========================================================
-
-const statusBox = document.getElementById("status");
-
-function setStatus(msg, ok = false) {
-  if (!statusBox) return;
-  statusBox.textContent = msg;
-  statusBox.style.color = ok ? "green" : "red";
-}
+// app/public/admin/js/analisi.js
 
 async function caricaAnalisi() {
-  setStatus("Caricamento analisi...");
+  const res = await adminFetch("/api/admin/analisi/dati");
+  const data = await res.json();
 
-  try {
-    const res = await fetch("/api/analisi/dati");
-    const data = await res.json();
+  document.getElementById("conv-rate").textContent = data.stats.conversione + "%";
+  document.getElementById("traffico-totale").textContent = data.stats.traffico;
+  document.getElementById("ctr-medio").textContent = data.stats.ctr + "%";
 
-    if (!data.success) {
-      setStatus(data.error || "Errore caricamento analisi");
-      return;
-    }
-
-    setStatus("");
-
-    // Panoramica
-    document.getElementById("conv-rate").textContent = data.stats.conversione + "%";
-    document.getElementById("traffico-totale").textContent = data.stats.traffico;
-    document.getElementById("ctr-medio").textContent = data.stats.ctr + "%";
-
-    // Tabelle
-    riempiTabella("tabella-analisi-prodotti", data.prodotti);
-    riempiTabella("tabella-traffico", data.traffico);
-    riempiTabella("tabella-utm", data.utm);
-
-  } catch (err) {
-    console.error(err);
-    setStatus("Errore di connessione");
-  }
-}
-
-function riempiTabella(id, righe) {
-  const tbody = document.querySelector(`#${id} tbody`);
-  tbody.innerHTML = "";
-
-  righe.forEach(r => {
+  const tbodyProd = document.querySelector("#tabella-analisi-prodotti tbody");
+  tbodyProd.innerHTML = "";
+  data.prodotti.forEach(p => {
     const tr = document.createElement("tr");
-    tr.innerHTML = Object.values(r).map(v => `<td>${v}</td>`).join("");
-    tbody.appendChild(tr);
+    tr.innerHTML = `
+      <td>${p.nome}</td>
+      <td>${p.visite}</td>
+      <td>${p.carrelli}</td>
+      <td>${p.vendite}</td>
+      <td>${p.conversione}%</td>
+    `;
+    tbodyProd.appendChild(tr);
+  });
+
+  const tbodyTraffico = document.querySelector("#tabella-traffico tbody");
+  tbodyTraffico.innerHTML = "";
+  data.traffico.forEach(t => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${t.origine}</td>
+      <td>${t.visite}</td>
+      <td>${t.ctr}%</td>
+      <td>${t.conversione}%</td>
+    `;
+    tbodyTraffico.appendChild(tr);
+  });
+
+  const tbodyUTM = document.querySelector("#tabella-utm tbody");
+  tbodyUTM.innerHTML = "";
+  data.utm.forEach(u => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${u.campagna}</td>
+      <td>${u.visite}</td>
+      <td>${u.vendite}</td>
+      <td>${u.conversione}%</td>
+    `;
+    tbodyUTM.appendChild(tr);
   });
 }
 
