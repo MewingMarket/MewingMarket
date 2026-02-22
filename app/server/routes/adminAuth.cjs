@@ -1,15 +1,14 @@
-// routes/adminAuth.cjs
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
-// qui leggi l'admin da Airtable o da config
 const router = express.Router();
 
 router.post("/login", async (req, res) => {
   const { password } = req.body;
+
   try {
-    // Esempio: un solo admin, password hashata in .env o Airtable
-    const hash = process.env.ADMIN_PASSWORD_HASH; // oppure da Airtable
+    const hash = process.env.ADMIN_PASSWORD_HASH;
+
     const ok = await bcrypt.compare(password, hash);
     if (!ok) return res.json({ success: false, error: "Password errata" });
 
@@ -20,6 +19,7 @@ router.post("/login", async (req, res) => {
     );
 
     res.json({ success: true, token });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, error: "Errore server" });
