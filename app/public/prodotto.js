@@ -32,7 +32,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
 
   // ============================================================
-  // 1) OTTIENI SLUG DALL'URL (VERSIONE CORRETTA)
+  // 1) OTTIENI SLUG DALL'URL
   // ============================================================
   const urlParams = new URLSearchParams(window.location.search);
   const slug = urlParams.get("slug");
@@ -55,7 +55,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    p = data.product;
+    // FIX: backend restituisce "prodotto"
+    p = data.prodotto;
 
   } catch (err) {
     console.error(err);
@@ -99,13 +100,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("btn-acquista").addEventListener("click", () => {
     const session = localStorage.getItem("session");
 
-    // Utente NON loggato → login
     if (!session) {
       window.location.href = `login.html?redirect=prodotto.html?slug=${slug}`;
       return;
     }
 
-    // Utente loggato → aggiungi al carrello e vai al checkout
     aggiungiAlCarrello({
       slug: p.slug,
       titolo: p.titolo,
@@ -148,8 +147,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const relatedBox = document.getElementById("related");
 
-    if (data.success && Array.isArray(data.products)) {
-      const correlati = data.products
+    // FIX: backend restituisce "prodotti"
+    if (data.success && Array.isArray(data.prodotti)) {
+      const correlati = data.prodotti
         .filter((x) => x.slug !== p.slug)
         .slice(0, 4);
 
