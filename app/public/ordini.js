@@ -2,7 +2,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const ordersBody = document.getElementById("ordersBody");
 
-  // Recupera sessione utente
+  // ============================================================
+  // 0) RECUPERA SESSIONE UTENTE
+  // ============================================================
   const session = localStorage.getItem("session");
   if (!session) {
     ordersBody.innerHTML = `<tr><td colspan="5">Devi effettuare il login per vedere i tuoi ordini.</td></tr>`;
@@ -38,21 +40,30 @@ document.addEventListener("DOMContentLoaded", async () => {
       ? o.prodotti.map(p => `${p.titolo} (${p.prezzo}€)`).join("<br>")
       : "-";
 
+    // Bottone annulla ordine (solo se non pagato)
+    const annullaBtn =
+      o.stato === "in_attesa_pagamento"
+        ? `<button class="btn-small-red" onclick="annullaOrdine('${o.paypal_transaction_id}')">Annulla</button>`
+        : "";
+
+    // Pulsanti download
+    const downloadBtns = Array.isArray(o.prodotti)
+      ? o.prodotti
+          .map(
+            p => `<a href="/api/vendite/download/${p.slug}" class="btn-small">Download</a>`
+          )
+          .join("<br>")
+      : "-";
+
     tr.innerHTML = `
       <td>${o.data || "-"}</td>
       <td>${prodottiHTML}</td>
       <td>${o.totale || 0}€</td>
       <td>${o.stato || "-"}</td>
       <td>
-        ${
-          Array.isArray(o.prodotti)
-            ? o.prodotti
-                .map(
-                  p => `<a href="/api/vendite/download/${p.slug}" class="btn-small">Download</a>`
-                )
-                .join("<br>")
-            : "-"
-        }
+        ${downloadBtns}
+        <br>
+        ${annullaBtn}
       </td>
     `;
 
@@ -60,3 +71,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
 });
+
+// ============================================================
+// FUNZIONE — REINDIRIZZA ALLA CANCEL PAGE
+// ============================================================
+function annullaOrdine(orderId) {
+  window.location.href = `cancel.html?orderId=${orderId}`;
+}
