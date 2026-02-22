@@ -119,3 +119,15 @@
    - File_consegna (Attachment)
    - Vendite_totali (Rollup / Number)
 */
+
+/* -------------------------------------------------------
+   📌 TABELLA: Utenti
+   -------------------------------------------------------
+   Nome tabella esatto: "Utenti"
+
+   Campi:
+   - email (Primary key)
+   - password_hash (Text)
+   - ruolo (Single select)
+   - data_registrazione (DateTime)
+*/
