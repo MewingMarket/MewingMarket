@@ -12,25 +12,14 @@ router.get("/vendite/lista", authAdmin, async (req, res) => {
       .all();
 
     const vendite = records.map(r => ({
-      data: r.get("Timestamp"),
+      id: r.id,
       prodotto: r.get("Prodotto"),
       prezzo: r.get("Prezzo"),
-      email: r.get("Email"),
-      metodo: r.get("Metodo") || "—"
+      origine: r.get("Origine"),
+      timestamp: r.get("Timestamp")
     }));
 
-    const totaleRicavi = vendite.reduce((s, v) => s + Number(v.prezzo || 0), 0);
-
-    res.json({
-      success: true,
-      stats: {
-        totaleVendite: vendite.length,
-        totaleRicavi,
-        numeroOrdini: vendite.length,
-        conversione: 3.2
-      },
-      vendite
-    });
+    res.json({ success: true, vendite });
 
   } catch (err) {
     console.error(err);
