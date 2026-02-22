@@ -15,21 +15,19 @@ router.get("/ordini/lista", authAdmin, async (req, res) => {
       id: r.id,
       prodotto: r.get("Prodotto"),
       prezzo: r.get("Prezzo"),
-      stato: r.get("Stato") || "completato",
-      email: r.get("Email"),
-      origine: r.get("Origine") || "—",
+      origine: r.get("Origine"),
+      utm: {
+        source: r.get("UTMSource"),
+        medium: r.get("UTMMedium"),
+        campaign: r.get("UTMCampaign")
+      },
+      referrer: r.get("Referrer"),
+      device: r.get("Device"),
+      lingua: r.get("Lingua"),
       data: r.get("Timestamp")
     }));
 
-    res.json({
-      success: true,
-      stats: {
-        totali: ordini.length,
-        completati: ordini.filter(o => o.stato === "completato").length,
-        abbandonati: ordini.filter(o => o.stato === "abbandonato").length
-      },
-      ordini
-    });
+    res.json({ success: true, ordini });
 
   } catch (err) {
     console.error(err);
