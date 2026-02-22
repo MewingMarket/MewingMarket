@@ -1,6 +1,6 @@
 // =========================================================
 // File: app/public/admin/js/ordini.js
-// Gestione ordini e carrelli (lettura da Airtable via backend)
+// Gestione ordini (lettura da Airtable via backend)
 // =========================================================
 
 const tabella = document.querySelector("#tabella-ordini tbody");
@@ -34,13 +34,18 @@ async function caricaOrdini() {
     data.ordini.forEach(o => {
       const tr = document.createElement("tr");
 
+      // Prodotti formattati
+      const prodottiHTML = Array.isArray(o.prodotti)
+        ? o.prodotti.map(p => `${p.titolo} (${p.prezzo}€)`).join("<br>")
+        : "-";
+
       tr.innerHTML = `
-        <td>${o.data}</td>
-        <td>${o.email}</td>
-        <td>${o.prodotto}</td>
-        <td>${o.prezzo} €</td>
-        <td>${o.stato}</td>
-        <td>${o.metodo}</td>
+        <td>${o.data || "-"}</td>
+        <td>${o.utente || "-"}</td>
+        <td>${prodottiHTML}</td>
+        <td>${o.totale || 0} €</td>
+        <td>${o.stato || "-"}</td>
+        <td>${o.metodo_pagamento || "-"}</td>
       `;
 
       tabella.appendChild(tr);
