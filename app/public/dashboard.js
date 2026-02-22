@@ -1,28 +1,16 @@
-/* =========================================================
-   DASHBOARD PREMIUM — MewingMarket
-   Versione definitiva: sezioni dinamiche, ordini reali,
-   recensioni reali, login check, logout premium
-========================================================= */
-
-document.addEventListener("DOMContentLoaded", async () => {
-
+document.addEventListener("DOMContentLoaded", () => {
   const content = document.getElementById("content");
   const links = document.querySelectorAll(".sidebar a");
 
   const session = localStorage.getItem("session");
-  const email = localStorage.getItem("utenteEmail");
+  const email = localStorage.getItem("email");
 
-  /* -----------------------------------------
-     1) LOGIN CHECK (MODEL A)
-  ----------------------------------------- */
+  // Solo utenti loggati
   if (!session || !email) {
     window.location.href = "login.html?redirect=dashboard.html";
     return;
   }
 
-  /* -----------------------------------------
-     2) FUNZIONI DI SUPPORTO
-  ----------------------------------------- */
   function setActive(section) {
     links.forEach(l => l.classList.remove("active"));
     const el = document.querySelector(`[data-section="${section}"]`);
@@ -33,135 +21,197 @@ document.addEventListener("DOMContentLoaded", async () => {
     content.innerHTML = html;
   }
 
-  /* -----------------------------------------
-     3) SEZIONI DINAMICHE
-  ----------------------------------------- */
-
-  // PROFILO
-  async function loadProfile() {
-    render(`
-      <h1>Profilo</h1>
-      <p><strong>Email:</strong> ${email}</p>
-      <p>Foto profilo: (in arrivo)</p>
-    `);
+  // ------------------ PROFILO (usa profilo.html + profilo.js) ------------------
+  function loadProfile() {
+    fetch("profilo.html")
+      .then(r => r.text())
+      .then(html => {
+        content.innerHTML = html;
+        const script = document.createElement("script");
+        script.src = "profilo.js";
+        content.appendChild(script);
+      });
   }
 
-  // ORDINI REALI
+  // ------------------ ORDINI (con annulla ordine) ------------------
   async function loadOrders() {
-    render(`<h1>I miei ordini</h1><p>Caricamento…</p>`);
+    render("<h2>I miei ordini</h2><p>Caricamento…</p>");
 
     try {
-      const res = await fetch(`/api/orders?email=${encodeURIComponent(email)}`, {
-        headers: { "Authorization": `Bearer ${session}` }
+      const res = await fetch("/api/ordini/utente", {
+        headers: {
+          Authorization: "Bearer " + session,
+          "x-email": email
+        }
+      });
+      const data = await res.json();
+
+      if (!data.success || !data.ordini || data.ordini.length === 0) {
+        render("<h2>I miei ordini</h2><p>Nessun ordine trovato.</p>");
+        return;
+      }
+
+      let html = `
+        <h2>I miei ordini</h2>
+        <table class="orders-table">
+          <tr>
+            <th>Data</th>
+            <th>Prodotti</th>
+            <th>Totale</th>
+            <th>Stato</th>
+            <th>Azioni</th>
+          </tr>
+      `;
+
+      data.ordini.forEach(o => {
+        const prodotti = (o.prodotti || [])
+          .map(p => `${p.titolo} (${p.prezzo}€)`)
+          .join("<br>");
+
+        const canCancel = o.stato !== "completato" && o.stato !== "annullato";
+
+        html += `
+          <tr data-id="${o.id}">
+            <td>${o.data || ""}</td>
+            <td>${prodotti}</td>
+            <td>${o.totale}€</td>
+            <td>${o.stato}</td>
+            <td>
+              ${canCancel ? `<button class="btn-small danger js-cancel-order">Annulla</button>` : "-"}
+            </td>
+          </tr>
+        `;
       });
 
-      const data = await res.json();
+      html += "</table>";
+      render(html);
 
-      if (!data.success || data.orders.length === 0) {
-        render(`
-          <h1>I miei ordini</h1>
-          <p>Non hai ancora effettuato acquisti.</p>
-        `);
-        return;
-      }
+      document.querySelectorAll(".js-cancel-order").forEach(btn => {
+        btn.addEventListener("click", async e => {
+          const tr = e.target.closest("tr");
+          const id = tr.getAttribute("data-id");
+          if (!id) return;
 
-      const rows = data.orders.map(o => `
-        <div class="order-box">
-          <p><strong>Ordine:</strong> ${o.orderId}</p>
-          <p><strong>Data:</strong> ${new Date(o.date).toLocaleDateString("it-IT")}</p>
-          <p><strong>Totale:</strong> ${o.totale}€</p>
-          <p><strong>Prodotti:</strong></p>
-          <ul>
-            ${o.prodotti.map(p => `<li>${p.titolo} — ${p.prezzo}€</li>`).join("")}
-          </ul>
-        </div>
-      `).join("");
+          if (!confirm("Vuoi davvero annullare questo ordine?")) return;
 
-      render(`
-        <h1>I miei ordini</h1>
-        ${rows}
-      `);
+          try {
+            const res = await fetch(`/api/ordini/annulla/${id}`, {
+              method: "POST",
+              headers: {
+                Authorization: "Bearer " + session,
+                "x-email": email
+              }
+            });
+            const out = await res.json();
+            if (out.success) {
+              loadOrders();
+            } else {
+              alert(out.error || "Impossibile annullare l'ordine.");
+            }
+          } catch {
+            alert("Errore di connessione.");
+          }
+        });
+      });
 
-    } catch (err) {
-      render(`<h1>I miei ordini</h1><p>Errore di connessione.</p>`);
+    } catch {
+      render("<h2>I miei ordini</h2><p>Errore di connessione.</p>");
     }
   }
 
-  // DOWNLOAD (via email)
+  // ------------------ DOWNLOAD PROTETTI ------------------
   async function loadDownloads() {
-    render(`
-      <h1>Download</h1>
-      <p>I tuoi file sono stati inviati via email al momento dell’acquisto.</p>
-      <p>Se non li trovi, controlla la cartella spam o contattaci.</p>
-    `);
-  }
-
-  // RECENSIONI REALI
-  async function loadReviews() {
-    render(`<h1>Le mie recensioni</h1><p>Caricamento…</p>`);
+    render("<h2>Download</h2><p>Caricamento…</p>");
 
     try {
-      const res = await fetch(`/api/reviews?email=${encodeURIComponent(email)}`);
+      const res = await fetch("/api/ordini/utente", {
+        headers: {
+          Authorization: "Bearer " + session,
+          "x-email": email
+        }
+      });
       const data = await res.json();
 
-      if (!data.success || data.reviews.length === 0) {
-        render(`
-          <h1>Le mie recensioni</h1>
-          <p>Non hai ancora lasciato recensioni.</p>
-        `);
+      if (!data.success || !data.ordini || data.ordini.length === 0) {
+        render("<h2>Download</h2><p>Nessun prodotto acquistato.</p>");
         return;
       }
 
-      const rows = data.reviews.map(r => `
-        <div class="review-box">
-          <p><strong>Prodotto:</strong> ${r.product}</p>
-          <p><strong>Voto:</strong> ${"★".repeat(r.rating)}</p>
-          <p><strong>Commento:</strong> ${r.comment}</p>
-          <p><em>${new Date(r.date).toLocaleDateString("it-IT")}</em></p>
-        </div>
-      `).join("");
+      let prodotti = [];
+      data.ordini.forEach(o => {
+        if (o.stato === "completato" && Array.isArray(o.prodotti)) {
+          prodotti.push(...o.prodotti);
+        }
+      });
 
-      render(`
-        <h1>Le mie recensioni</h1>
-        ${rows}
-      `);
+      if (prodotti.length === 0) {
+        render("<h2>Download</h2><p>Nessun prodotto scaricabile.</p>");
+        return;
+      }
 
-    } catch (err) {
-      render(`<h1>Le mie recensioni</h1><p>Errore di connessione.</p>`);
+      let html = "<h2>Download</h2>";
+      prodotti.forEach(p => {
+        html += `
+          <div class="download-item">
+            <strong>${p.titolo}</strong><br>
+            <a href="/api/vendite/download/${p.slug}" class="btn-small">Scarica</a>
+          </div>
+        `;
+      });
+
+      render(html);
+
+    } catch {
+      render("<h2>Download</h2><p>Errore di connessione.</p>");
     }
   }
 
-  // IMPOSTAZIONI
-  async function loadSettings() {
-    render(`
-      <h1>Impostazioni account</h1>
-      <p>Funzioni in arrivo.</p>
-    `);
+  // ------------------ RECENSIONI / IMPOSTAZIONI PLACEHOLDER ------------------
+  function loadReviews() {
+    render("<h2>Le mie recensioni</h2><p>Funzione in arrivo.</p>");
   }
 
-  // CANCELLAZIONE ACCOUNT
-  async function loadDelete() {
-    render(`
-      <h1>Annulla registrazione</h1>
-      <p>Questa funzione eliminerà il tuo account quando il backend sarà pronto.</p>
-      <button id="deleteBtn" class="btn-primario">Elimina account</button>
-    `);
-
-    document.getElementById("deleteBtn").addEventListener("click", () => {
-      alert("Funzione in arrivo.");
-    });
+  function loadSettings() {
+    render("<h2>Impostazioni</h2><p>Funzione in arrivo.</p>");
   }
 
-  // LOGOUT
+  // ------------------ ELIMINAZIONE ACCOUNT ------------------
+  function loadDelete() {
+    render(`
+      <h2>Annulla registrazione</h2>
+      <p>Questa azione disattiverà il tuo account e terminerà la sessione.</p>
+      <button id="btnDeleteAccount" class="btn-small danger">Elimina account</button>
+      <p id="msgDelete"></p>
+    `);
+
+    document.getElementById("btnDeleteAccount").onclick = async () => {
+      try {
+        const res = await fetch("/api/utente/profilo/elimina", {
+          method: "POST",
+          headers: {
+            Authorization: "Bearer " + session,
+            "x-email": email
+          }
+        });
+        const data = await res.json();
+        if (data.success) {
+          localStorage.clear();
+          window.location.href = "login.html";
+        } else {
+          document.getElementById("msgDelete").textContent = data.error || "Errore.";
+        }
+      } catch {
+        document.getElementById("msgDelete").textContent = "Errore di connessione.";
+      }
+    };
+  }
+
+  // ------------------ LOGOUT ------------------
   function logout() {
-    localStorage.removeItem("session");
-    localStorage.removeItem("utenteEmail");
+    localStorage.clear();
     window.location.href = "index.html";
   }
 
-  /* -----------------------------------------
-     4) ROUTER DELLA DASHBOARD
-  ----------------------------------------- */
   const router = {
     profile: loadProfile,
     orders: loadOrders,
@@ -172,14 +222,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     logout: logout
   };
 
-  /* -----------------------------------------
-     5) CLICK SIDEBAR
-  ----------------------------------------- */
   links.forEach(link => {
     link.addEventListener("click", e => {
       e.preventDefault();
       const section = link.dataset.section;
-
       if (router[section]) {
         setActive(section);
         router[section]();
@@ -187,8 +233,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
 
-  /* -----------------------------------------
-     6) CARICA SEZIONE DI DEFAULT
-  ----------------------------------------- */
+  // sezione di default
   router.profile();
 });
