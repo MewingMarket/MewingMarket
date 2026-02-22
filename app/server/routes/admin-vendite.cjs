@@ -1,3 +1,5 @@
+// FILE: routes/admin-vendite.cjs
+
 const express = require("express");
 const router = express.Router();
 const authAdmin = require("../middleware/authAdmin.cjs");
@@ -5,7 +7,7 @@ const base = require("../lib/airtable.cjs");
 
 router.get("/vendite/lista", authAdmin, async (req, res) => {
   try {
-    const records = await base(process.env.AIRTABLE_SALES)
+    const records = await base("Vendite")
       .select({ sort: [{ field: "Timestamp", direction: "desc" }] })
       .all();
 
@@ -25,7 +27,7 @@ router.get("/vendite/lista", authAdmin, async (req, res) => {
         totaleVendite: vendite.length,
         totaleRicavi,
         numeroOrdini: vendite.length,
-        conversione: 3.2 // placeholder
+        conversione: 3.2
       },
       vendite
     });
