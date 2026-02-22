@@ -1,7 +1,4 @@
-// =========================================================
-// File: app/public/admin/js/settings.js
-// Gestione impostazioni admin
-// =========================================================
+// app/public/admin/js/settings.js
 
 const statusBox = document.getElementById("status");
 
@@ -10,9 +7,8 @@ function setStatus(msg, ok = false) {
   statusBox.style.color = ok ? "green" : "red";
 }
 
-// Carica impostazioni
 async function caricaSettings() {
-  const res = await fetch("/api/settings/get");
+  const res = await adminFetch("/api/admin/settings/get");
   const data = await res.json();
 
   if (!data.success) return;
@@ -23,7 +19,6 @@ async function caricaSettings() {
   document.getElementById("airtable-products").value = data.settings.airtableProducts;
 }
 
-// Salva impostazioni
 document.getElementById("btn-salva").addEventListener("click", async () => {
   setStatus("Salvataggio...");
 
@@ -34,7 +29,7 @@ document.getElementById("btn-salva").addEventListener("click", async () => {
     airtableProducts: document.getElementById("airtable-products").value.trim()
   };
 
-  const res = await fetch("/api/settings/save", {
+  const res = await adminFetch("/api/admin/settings/save", {
     method: "POST",
     headers: { "Content-Type":"application/json" },
     body: JSON.stringify(body)
