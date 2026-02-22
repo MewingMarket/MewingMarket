@@ -3,7 +3,8 @@
  * File: app/modules/airtable.cjs
  * Versione definitiva:
  * - Sync Airtable → cache + file
- * - Merge intelligente (non sovrascrive campi esistenti)
+ * - Usa DescrizioneLunga come descrizione principale
+ * - Descrizione breve generata da codice (non da Airtable)
  * - Auto-create prodotto se non esiste
  * - Update PayPal link senza toccare altro
  * - Recupero vendite utente (tabella: Vendite)
@@ -76,20 +77,33 @@ async function syncAirtable() {
 
     const products = records.map((r) => {
       const f = r.fields;
+
       return {
         id: r.id,
         slug: f.slug || f.Slug || "",
         titolo: f.titolo || f.Titolo || "",
-        titolo_breve: f.titolo_breve || f.TitoloBreve || "",
-        descrizione: f.descrizione || f.Descrizione || "",
-        descrizione_breve: f.descrizione_breve || f.DescrizioneBreve || "",
         prezzo: f.prezzo || f.Prezzo || 0,
         categoria: f.categoria || f.Categoria || "",
         paypal_link: f.paypal_link || f.PayPal || "",
         youtube_url: f.youtube_url || f.YouTube || "",
+
+        // ⭐ DESCRIZIONE LUNGA — campo principale
+        descrizione:
+          f.DescrizioneLunga ||
+          f.descrizione ||
+          f.Descrizione ||
+          "",
+
+        // ⭐ IMMAGINE PRINCIPALE
         immagine:
-          Array.isArray(f.immagine) && f.immagine[0]?.url
-            ? f.immagine[0].url
+          Array.isArray(f.Immagine) && f.Immagine[0]?.url
+            ? f.Immagine[0].url
+            : "",
+
+        // ⭐ FILE PRODOTTO
+        fileProdotto:
+          Array.isArray(f.File_consegna) && f.File_consegna[0]?.url
+            ? f.File_consegna[0].url
             : ""
       };
     });
@@ -110,7 +124,6 @@ async function syncAirtable() {
 
 /* =========================================================
    MERGE INTELLIGENTE
-   - Non sovrascrive campi già esistenti
 ========================================================= */
 function mergeProduct(existing, incoming) {
   return {
