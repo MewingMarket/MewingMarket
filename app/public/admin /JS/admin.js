@@ -1,4 +1,5 @@
 // app/public/admin/js/admin.js
+
 function getAdminToken() {
   return localStorage.getItem("adminToken");
 }
@@ -11,7 +12,6 @@ function requireAdmin() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  // tutte le pagine admin tranne login
   if (!location.pathname.endsWith("login.html")) {
     requireAdmin();
   }
@@ -26,7 +26,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-// helper per fetch autenticati
 async function adminFetch(url, options = {}) {
   const token = getAdminToken();
   const headers = Object.assign(
