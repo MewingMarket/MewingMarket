@@ -1,58 +1,22 @@
-// =========================================================
-// File: app/public/admin/js/feedback.js
-// Gestione recensioni utenti
-// =========================================================
-
-const tabella = document.querySelector("#tabella-feedback tbody");
-const statusBox = document.getElementById("status");
-
-function setStatus(msg, ok = false) {
-  statusBox.textContent = msg;
-  statusBox.style.color = ok ? "green" : "red";
-}
-
-// =========================================================
-// 1. CARICA FEEDBACK
-// =========================================================
+// app/public/admin/js/feedback.js
 
 async function caricaFeedback() {
-  setStatus("Caricamento feedback...");
+  const res = await adminFetch("/api/admin/feedback/lista");
+  const data = await res.json();
 
-  try {
-    const res = await fetch("/api/feedback/lista");
-    const data = await res.json();
+  const tbody = document.querySelector("#tabella-feedback tbody");
+  tbody.innerHTML = "";
 
-    if (!data.success) {
-      setStatus(data.error || "Errore caricamento feedback");
-      return;
-    }
-
-    setStatus("");
-
-    tabella.innerHTML = "";
-
-    data.feedback.forEach(f => {
-      const tr = document.createElement("tr");
-
-      tr.innerHTML = `
-        <td>${f.data}</td>
-        <td>${f.email}</td>
-        <td>${f.prodotto}</td>
-        <td>${f.voto} ⭐</td>
-        <td>${f.commento}</td>
-      `;
-
-      tabella.appendChild(tr);
-    });
-
-  } catch (err) {
-    console.error(err);
-    setStatus("Errore di connessione");
-  }
+  (data.feedback || []).forEach(f => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${f.prodotto}</td>
+      <td>${f.rating}</td>
+      <td>${f.commento}</td>
+      <td>${f.data}</td>
+    `;
+    tbody.appendChild(tr);
+  });
 }
-
-// =========================================================
-// 2. AVVIO
-// =========================================================
 
 document.addEventListener("DOMContentLoaded", caricaFeedback);
