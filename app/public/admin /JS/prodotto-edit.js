@@ -1,6 +1,6 @@
 // =========================================================
 // File: app/public/admin/js/prodotto-edit.js
-// Gestione creazione/modifica prodotti (versione completa)
+// Gestione creazione/modifica prodotti (Airtable)
 // =========================================================
 
 const statusBox = document.getElementById("status");
@@ -11,16 +11,16 @@ function setStatus(msg, ok = false) {
 }
 
 // =========================================================
-// 1. CARICAMENTO PRODOTTO ESISTENTE
+// 1. CARICAMENTO PRODOTTO ESISTENTE (per SLUG)
 // =========================================================
 
-async function caricaProdotto(id) {
+async function caricaProdotto(slug) {
   try {
-    const res = await fetch(`/api/prodotti/get?id=${id}`);
+    const res = await fetch(`/api/products/${slug}`);
     const data = await res.json();
 
     if (!data.success) {
-      setStatus("Errore caricamento prodotto");
+      setStatus("Prodotto non trovato");
       return;
     }
 
@@ -29,9 +29,11 @@ async function caricaProdotto(id) {
     document.getElementById("titolo").value = p.titolo || "";
     document.getElementById("descrizione").value = p.descrizione || "";
     document.getElementById("prezzo").value = p.prezzo || "";
-    document.getElementById("categoria").value = p.categoria || "";
     document.getElementById("slug").value = p.slug || "";
-    document.getElementById("youtube").value = p.youtube || "";
+
+    // Categoria e YouTube non sono gestiti in Airtable
+    document.getElementById("categoria").value = p.categoria || "";
+    document.getElementById("youtube").value = p.youtube_url || "";
 
     if (p.immagine) {
       window.immagineURL = p.immagine;
@@ -130,27 +132,24 @@ document.getElementById("fileProdotto").addEventListener("change", async (e) => 
 });
 
 // =========================================================
-// 5. SALVATAGGIO PRODOTTO
+// 5. SALVATAGGIO PRODOTTO (Airtable)
 // =========================================================
 
 document.getElementById("btn-salva").addEventListener("click", async () => {
   setStatus("Salvataggio prodotto...");
 
-  const id = new URLSearchParams(window.location.search).get("id") || null;
+  const slug = new URLSearchParams(window.location.search).get("slug") || null;
 
   const body = {
-    id,
+    slug,
     titolo: document.getElementById("titolo").value.trim(),
     descrizione: document.getElementById("descrizione").value.trim(),
     prezzo: parseFloat(document.getElementById("prezzo").value),
-    categoria: document.getElementById("categoria").value.trim(),
-    slug: document.getElementById("slug").value.trim(),
-    youtube: document.getElementById("youtube").value.trim(),
     immagine: window.immagineURL || null,
     fileProdotto: window.fileProdottoURL || null
   };
 
-  const res = await fetch("/api/prodotti/save", {
+  const res = await fetch("/api/products/save", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body)
@@ -165,9 +164,10 @@ document.getElementById("btn-salva").addEventListener("click", async () => {
 
   setStatus("Prodotto salvato con successo!", true);
 
-  if (!id) {
+  // Se è un nuovo prodotto, reindirizza con lo slug corretto
+  if (!slug) {
     setTimeout(() => {
-      window.location.href = `/admin/prodotto-edit.html?id=${data.id}`;
+      window.location.href = `/admin/prodotto-edit.html?slug=${body.slug}`;
     }, 800);
   }
 });
@@ -177,6 +177,6 @@ document.getElementById("btn-salva").addEventListener("click", async () => {
 // =========================================================
 
 document.addEventListener("DOMContentLoaded", () => {
-  const id = new URLSearchParams(window.location.search).get("id");
-  if (id) caricaProdotto(id);
+  const slug = new URLSearchParams(window.location.search).get("slug");
+  if (slug) caricaProdotto(slug);
 });
