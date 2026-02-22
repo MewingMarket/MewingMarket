@@ -1,4 +1,5 @@
 // app/public/admin/js/login.js
+
 const statusEl = document.getElementById("status");
 const input = document.getElementById("adminPassword");
 const btn = document.getElementById("loginBtn");
