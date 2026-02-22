@@ -5,57 +5,61 @@
 
 const express = require("express");
 const router = express.Router();
-const fetch = require("node-fetch");
-const { updateOrder, getAllOrders } = require("../../modules/ordini.cjs");
 
-const PAYPAL_CLIENT = process.env.PAYPAL_CLIENT_ID;
-const PAYPAL_SECRET = process.env.PAYPAL_SECRET;
-const PAYPAL_API = "https://api-m.paypal.com";
+const Airtable = require("airtable");
+const base = new Airtable({ apiKey: process.env.AIRTABLE_PAT })
+  .base(process.env.AIRTABLE_BASE);
+
+const TABLE = "Ordini";
 
 // =========================================================
-// GET /api/paypal/cancel-order
+// GET /api/paypal/cancel-order?orderId=xxxx
 // =========================================================
 router.get("/paypal/cancel-order", async (req, res) => {
-  const orderId = req.query.orderId;
-
-  if (!orderId) {
-    return res.json({ success: false, error: "Order ID mancante" });
-  }
-
   try {
-    // 1) OTTIENI TOKEN PAYPAL
-    const tokenRes = await fetch(`${PAYPAL_API}/v1/oauth2/token`, {
-      method: "POST",
-      headers: {
-        Authorization:
-          "Basic " +
-          Buffer.from(`${PAYPAL_CLIENT}:${PAYPAL_SECRET}`).toString("base64"),
-        "Content-Type": "application/x-www-form-urlencoded"
-      },
-      body: "grant_type=client_credentials"
-    });
+    const airtableId = req.query.orderId;
 
-    const tokenData = await tokenRes.json();
-    const accessToken = tokenData.access_token;
+    if (!airtableId) {
+      return res.json({ success: false, error: "OrderId mancante" });
+    }
 
-    // 2) TROVA ORDINE IN AIRTABLE
-    const ordini = await getAllOrders();
-    const ordine = ordini.find(o => o.paypal_transaction_id === orderId);
-
-    if (!ordine) {
+    // =========================================================
+    // 1) RECUPERA ORDINE
+    // =========================================================
+    let record;
+    try {
+      record = await base(TABLE).find(airtableId);
+    } catch {
       return res.json({ success: false, error: "Ordine non trovato" });
     }
 
-    // 3) SE L’ORDINE È ANCORA "in_attesa_pagamento" → annulla
-    await updateOrder(ordine.id, {
-      stato: "annullato"
+    // Se già completato → non lo tocchiamo
+    if (record.get("stato") === "completato") {
+      return res.json({
+        success: true,
+        message: "Ordine già completato, nessuna modifica"
+      });
+    }
+
+    // =========================================================
+    // 2) AGGIORNA STATO → ANNULLATO
+    // =========================================================
+    await base(TABLE).update(airtableId, {
+      stato: "annullato",
+      data: new Date().toISOString()
     });
 
-    return res.json({ success: true });
+    return res.json({
+      success: true,
+      message: "Ordine annullato correttamente"
+    });
 
   } catch (err) {
     console.error("❌ Errore cancel-order:", err);
-    return res.json({ success: false, error: "Errore server" });
+    return res.json({
+      success: false,
+      error: "Errore server"
+    });
   }
 });
 
