@@ -1,11 +1,18 @@
 // =========================================================
 // File: app/server/services/airtable.cjs
-// Wrapper Airtable universale per tutte le API
+// Wrapper Airtable unificato (solo PAT)
 // =========================================================
 
 const Airtable = require("airtable");
 
-const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY })
-  .base(process.env.AIRTABLE_BASE_ID);
+const PAT = process.env.AIRTABLE_PAT;
+const BASE = process.env.AIRTABLE_BASE;
 
-module.exports.airtable = (table) => base(table);
+if (!PAT || !BASE) {
+  console.error("❌ ERRORE: Variabili Airtable mancanti (AIRTABLE_PAT, AIRTABLE_BASE)");
+  process.exit(1);
+}
+
+const base = new Airtable({ apiKey: PAT }).base(BASE);
+
+module.exports.airtable = (tableName) => base(tableName);
