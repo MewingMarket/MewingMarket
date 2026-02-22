@@ -6,8 +6,8 @@
 const express = require("express");
 const router = express.Router();
 const fetch = require("node-fetch");
-const { sendOrderEmail } = require("../modules/email.cjs");
-const { updateOrder, getAllOrders } = require("../modules/ordini.cjs");
+const { sendOrderEmail } = require("../../modules/email.cjs");
+const { updateOrder, getAllOrders } = require("../../modules/ordini.cjs");
 
 const PAYPAL_CLIENT = process.env.PAYPAL_CLIENT_ID;
 const PAYPAL_SECRET = process.env.PAYPAL_SECRET;
@@ -58,21 +58,39 @@ router.get("/paypal/complete-order", async (req, res) => {
       return res.json({ success: false, error: "Ordine non trovato" });
     }
 
-    // 4) AGGIORNA STATO ORDINE
+    // 4) PARSA I PRODOTTI (da stringa a array)
+    let prodotti = [];
+    try {
+      prodotti = JSON.parse(ordine.prodotti || "[]");
+    } catch {
+      prodotti = [];
+    }
+
+    // 5) AGGIORNA STATO ORDINE
     await updateOrder(ordine.id, {
-      stato: "completato"
+      stato: "completato",
+      data: new Date().toISOString()
     });
 
-    // 5) INVIA EMAIL DI RINGRAZIAMENTO
+    // 6) INVIA EMAIL DI RINGRAZIAMENTO
     await sendOrderEmail({
       email: ordine.utente,
-      ordine
+      ordine: {
+        ...ordine,
+        prodotti,
+        totale: ordine.totale,
+        id_ordine: ordine.id_ordine
+      }
     });
 
-    // 6) RISPONDI ALLA THANKYOU PAGE
+    // 7) RISPONDI ALLA THANKYOU PAGE
     return res.json({
       success: true,
-      order: ordine
+      order: {
+        ...ordine,
+        prodotti,
+        totale: ordine.totale
+      }
     });
 
   } catch (err) {
