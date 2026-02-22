@@ -7,9 +7,8 @@ const base = require("../lib/airtable.cjs");
 
 router.get("/stats", authAdmin, async (req, res) => {
   try {
-    // PATCH: uso diretto delle tabelle Airtable
     const vendite = await base("Vendite").select().all();
-    const prodotti = await base("Prodotti").select().all();
+    const prodotti = await base("Catalogo Prodotti Digitali").select().all();
 
     res.json({
       success: true,
