@@ -1,20 +1,39 @@
-// =========================================================
-// File: app/public/admin/js/admin.js
-// Controllo sessione admin
-// =========================================================
+// app/public/admin/js/admin.js
+function getAdminToken() {
+  return localStorage.getItem("adminToken");
+}
 
-function checkAdmin() {
-  const token = localStorage.getItem("adminSession");
-
+function requireAdmin() {
+  const token = getAdminToken();
   if (!token) {
-    window.location.href = "/admin/login.html";
-    return;
+    window.location.href = "login.html";
   }
 }
 
-function logoutAdmin() {
-  localStorage.removeItem("adminSession");
-  window.location.href = "/admin/login.html";
-}
+document.addEventListener("DOMContentLoaded", () => {
+  // tutte le pagine admin tranne login
+  if (!location.pathname.endsWith("login.html")) {
+    requireAdmin();
+  }
 
-document.addEventListener("DOMContentLoaded", checkAdmin);
+  const logoutLink = document.getElementById("logout-admin");
+  if (logoutLink) {
+    logoutLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      localStorage.removeItem("adminToken");
+      window.location.href = "login.html";
+    });
+  }
+});
+
+// helper per fetch autenticati
+async function adminFetch(url, options = {}) {
+  const token = getAdminToken();
+  const headers = Object.assign(
+    {},
+    options.headers || {},
+    token ? { Authorization: `Bearer ${token}` } : {}
+  );
+  const res = await fetch(url, { ...options, headers });
+  return res;
+}
