@@ -19,10 +19,12 @@
   </script>
 
   <link rel="stylesheet" href="style.css">
-  <script src="carrello.js" defer></script>
-  <script src="dashboard.js" defer></script>
-
+  <link rel="stylesheet" href="profilo.css">
   <style>
+    body {
+      background:#f3f3f3;
+      font-family:system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
     .dashboard {
       display:flex;
       max-width:1200px;
@@ -31,7 +33,7 @@
     }
     .sidebar {
       width:260px;
-      background:white;
+      background:#fff;
       padding:20px;
       border-radius:12px;
       box-shadow:0 4px 20px rgba(0,0,0,0.06);
@@ -39,6 +41,7 @@
     .sidebar h2 {
       margin-bottom:20px;
       font-size:22px;
+      color:#111;
     }
     .sidebar a {
       display:block;
@@ -46,22 +49,61 @@
       border-radius:8px;
       margin-bottom:10px;
       text-decoration:none;
-      color:#333;
+      color:#111;
       background:#f5f5f5;
       font-weight:600;
+      transition:background .15s,color .15s;
     }
     .sidebar a.active {
       background:#0077ff;
-      color:white;
+      color:#fff;
     }
     .content {
       flex:1;
-      background:white;
+      background:#fff;
       padding:25px;
       border-radius:12px;
       box-shadow:0 4px 20px rgba(0,0,0,0.06);
+      min-height:400px;
+    }
+    .orders-table {
+      width:100%;
+      border-collapse:collapse;
+      margin-top:15px;
+    }
+    .orders-table th,
+    .orders-table td {
+      border-bottom:1px solid #eee;
+      padding:8px 6px;
+      font-size:14px;
+      vertical-align:top;
+    }
+    .orders-table th {
+      text-align:left;
+      color:#555;
+    }
+    .btn-small {
+      display:inline-block;
+      padding:6px 10px;
+      border-radius:6px;
+      background:#0077ff;
+      color:#fff;
+      text-decoration:none;
+      font-size:13px;
+      border:none;
+      cursor:pointer;
+    }
+    .btn-small.danger {
+      background:#d9534f;
+    }
+    .download-item {
+      padding:10px 0;
+      border-bottom:1px solid #eee;
     }
   </style>
+
+  <script src="carrello.js" defer></script>
+  <script src="dashboard.js" defer></script>
 </head>
 
 <body>
@@ -75,7 +117,6 @@
       .then(h => {
         document.getElementById("header-placeholder").innerHTML = h;
 
-        // ICONA CARRELLO + BADGE
         const cartWrapper = document.createElement("div");
         cartWrapper.id = "cart-wrapper";
         cartWrapper.style.position = "relative";
@@ -107,7 +148,8 @@
           window.location.href = "checkout.html";
         });
 
-        document.querySelector("header nav").appendChild(cartWrapper);
+        const nav = document.querySelector("header nav");
+        if (nav) nav.appendChild(cartWrapper);
 
         if (typeof aggiornaBadgeCarrello === "function") {
           aggiornaBadgeCarrello();
