@@ -8,7 +8,7 @@
         <li><a href="index.html">Home</a></li>
         <li><a href="catalogo.html">Catalogo</a></li>
         <li><a href="chisiamo.html">Chi siamo</a></li>
-        <li><a href="FAQ.html">FAQ</a></li>
+        <li><a href="FAQ.html">FAQ</a>FAQ</li>
         <li><a href="guide.html">Guide & Assistenza</a></li>
         <li><a href="contatti.html">Contatti</a></li>
         <li><a href="dovesiamo.html">Dove siamo</a></li>
@@ -20,9 +20,11 @@
       <h4>Accesso</h4>
       <ul class="footer-legal">
         <li><a href="admin/login.html">Login Admin</a></li>
-        <li><a href="login.html">Login Utenti</a></li>
-        <li><a href="dashboard.html">Dashboard Utente</a></li>
-        <li><a href="registrazione.html">Registrazione</a></li>
+
+        <!-- DINAMICO -->
+        <li><a href="login.html" id="footer-login">Login Utenti</a></li>
+        <li><a href="registrazione.html" id="footer-register">Registrazione</a></li>
+        <li><a href="dashboard.html" id="footer-dashboard" style="display:none;">Profilo Utente</a></li>
       </ul>
 
       <h4>Legale</h4>
@@ -76,5 +78,24 @@
 
   <script>
     document.getElementById("anno").textContent = new Date().getFullYear();
+
+    const session = localStorage.getItem("session");
+    const email = localStorage.getItem("email");
+
+    const logged = !!(session && email);
+
+    const loginLink = document.getElementById("footer-login");
+    const registerLink = document.getElementById("footer-register");
+    const dashboardLink = document.getElementById("footer-dashboard");
+
+    if (logged) {
+      loginLink.style.display = "none";
+      registerLink.style.display = "none";
+      dashboardLink.style.display = "block";
+    } else {
+      loginLink.style.display = "block";
+      registerLink.style.display = "block";
+      dashboardLink.style.display = "none";
+    }
   </script>
 </footer>
