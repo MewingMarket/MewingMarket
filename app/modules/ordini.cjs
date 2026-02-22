@@ -1,7 +1,7 @@
 /**
  * =========================================================
  * File: app/modules/ordini.cjs
- * Gestione ordini + cashout (store interno)
+ * Gestione ordini (Airtable) — Model A
  * =========================================================
  */
 
@@ -19,21 +19,17 @@ const base = new Airtable({ apiKey: process.env.AIRTABLE_PAT })
 const TABLE = "Ordini";
 
 /* =========================================================
-   CARICAMENTO ORDINI (fallback locale)
+   FALLBACK LOCALE
 ========================================================= */
 function loadOrders() {
   try {
     if (!fs.existsSync(ORDERS_PATH)) return [];
-    const raw = fs.readFileSync(ORDERS_PATH, "utf8");
-    return JSON.parse(raw);
+    return JSON.parse(fs.readFileSync(ORDERS_PATH, "utf8"));
   } catch {
     return [];
   }
 }
 
-/* =========================================================
-   SALVATAGGIO ORDINI (fallback locale)
-========================================================= */
 function saveOrders(orders) {
   try {
     fs.writeFileSync(ORDERS_PATH, JSON.stringify(orders, null, 2));
@@ -43,26 +39,70 @@ function saveOrders(orders) {
 }
 
 /* =========================================================
-   CREA ORDINE IN AIRTABLE
+   CREA ORDINE IN AIRTABLE (MODEL A)
 ========================================================= */
-async function createOrder(order) {
-  const record = await base(TABLE).create(order);
-  return record.id;
+async function createOrder({ uid, email, prodotti, totale, metodo = "PayPal" }) {
+  try {
+    const record = await base(TABLE).create({
+      id_ordine: Date.now(), // ID univoco
+      utente: email,
+      prodotti: JSON.stringify(prodotti),
+      totale,
+      data: new Date().toISOString(),
+      stato: "completato",
+      metodo_pagamento: metodo
+    });
+
+    return record.id;
+
+  } catch (err) {
+    console.error("❌ Errore createOrder:", err);
+    throw err;
+  }
 }
 
 /* =========================================================
    LISTA ORDINI
 ========================================================= */
 async function getAllOrders() {
-  const records = await base(TABLE).select({}).all();
-  return records.map(r => ({ id: r.id, ...r.fields }));
+  try {
+    const records = await base(TABLE).select().all();
+
+    return records.map(r => {
+      let prodotti = [];
+      try {
+        prodotti = JSON.parse(r.get("prodotti") || "[]");
+      } catch {}
+
+      return {
+        id: r.id,
+        id_ordine: r.get("id_ordine"),
+        utente: r.get("utente"),
+        prodotti,
+        totale: r.get("totale"),
+        data: r.get("data"),
+        stato: r.get("stato"),
+        metodo_pagamento: r.get("metodo_pagamento"),
+        paypal_transaction_id: r.get("paypal_transaction_id")
+      };
+    });
+
+  } catch (err) {
+    console.error("❌ Errore getAllOrders:", err);
+    return [];
+  }
 }
 
 /* =========================================================
-   AGGIORNA STATO ORDINE
+   AGGIORNA ORDINE
 ========================================================= */
 async function updateOrder(id, fields) {
-  return base(TABLE).update(id, fields);
+  try {
+    return await base(TABLE).update(id, fields);
+  } catch (err) {
+    console.error("❌ Errore updateOrder:", err);
+    throw err;
+  }
 }
 
 module.exports = {
