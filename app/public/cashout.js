@@ -26,8 +26,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   /* =========================================================
      3) DETERMINA MODALITÀ CHECKOUT
-        - single → 1 prodotto
-        - multi  → tutto il carrello
   ========================================================= */
   const mode = getCheckoutMode();
   let prodotti = [];
@@ -91,7 +89,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   /* =========================================================
-     6) PAGA ORA → CREA ORDINE → REDIRECT PAYPAL
+     6) PAGA ORA → CREA ORDINE + REDIRECT PAYPAL
   ========================================================= */
   const btnPaga = document.getElementById("btn-paga");
 
