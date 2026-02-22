@@ -10,7 +10,7 @@ async function loadProducts() {
   try {
     const res = await fetch("/api/products", { cache: "no-store" });
     const data = await res.json();
-    return data.success && Array.isArray(data.products) ? data.products : [];
+    return data.success && Array.isArray(data.prodotti) ? data.prodotti : [];
   } catch (err) {
     console.error("Errore caricamento prodotti:", err);
     return [];
@@ -54,10 +54,12 @@ function renderYouTubeLink(p) {
 // 4) Descrizione breve
 // ------------------------------
 function getShortDescription(p) {
+  // Se Airtable un giorno fornisse una descrizione breve, la useremmo
   if (p.descrizione_breve && p.descrizione_breve.trim() !== "") {
     return clean(p.descrizione_breve);
   }
 
+  // Generazione automatica da descrizione lunga
   const full = p.descrizione || "";
   const short = full.length > 120 ? full.slice(0, 120) + "…" : full;
 
@@ -96,7 +98,11 @@ function cardHTML(p) {
 
       <div class="card-buttons">
         <a href="prodotto.html?slug=${slug}" class="btn">Scopri di più</a>
-        <button class="btn-secondario btn-add-cart" data-slug="${slug}" data-title="${titolo}" data-price="${prezzo}" data-img="${img}">
+        <button class="btn-secondario btn-add-cart" 
+          data-slug="${slug}" 
+          data-title="${titolo}" 
+          data-price="${prezzo}" 
+          data-img="${img}">
           Aggiungi al carrello
         </button>
       </div>
