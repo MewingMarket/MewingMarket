@@ -10,10 +10,17 @@ router.get("/feedback/lista", authAdmin, async (req, res) => {
     const records = await base("Feedback").select().all();
 
     const feedback = records.map(r => ({
-      prodotto: r.get("Prodotto"),
-      rating: r.get("Rating"),
-      commento: r.get("Commento"),
-      data: r.get("Timestamp")
+      id: r.id,
+      utente: r.get("utente"),
+      prodotto: r.get("prodotto"),
+      rating: r.get("rating"),
+      testo: r.get("testo"),
+      data: r.get("data"),
+      pubblico: r.get("pubblico"),
+      risposta_admin: r.get("risposta_admin"),
+      segnalato: r.get("segnalato"),
+      sentiment: r.get("sentiment"),
+      categoria: r.get("categoria_feedback")
     }));
 
     res.json({ success: true, feedback });
