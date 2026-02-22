@@ -52,7 +52,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (!dataHero.success) throw new Error("API non disponibile");
 
-    const productsHero = dataHero.products;
+    // FIX: backend restituisce "prodotti"
+    const productsHero = dataHero.prodotti;
     const images = productsHero.map(getImage).filter(Boolean);
 
     const slider = document.getElementById("hero-slider");
@@ -93,12 +94,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     const res = await fetch("/api/products", { cache: "no-store" });
     const data = await res.json();
 
-    if (!data.success || !Array.isArray(data.products) || data.products.length === 0) {
+    // FIX: backend restituisce "prodotti"
+    if (!data.success || !Array.isArray(data.prodotti) || data.prodotti.length === 0) {
       grid.innerHTML = `<p>Il catalogo sarà presto disponibile.</p>`;
       return;
     }
 
-    const products = data.products;
+    const products = data.prodotti;
 
     grid.innerHTML = "";
 
