@@ -1,106 +1,124 @@
 // =========================================================
 // File: app/server/routes/api-paypal-create.cjs
-// CREA ORDINE PAYPAL + CREA ORDINE IN AIRTABLE
+// Crea ordine PayPal (solo utenti loggati) + Airtable
 // =========================================================
 
 const express = require("express");
 const router = express.Router();
 const fetch = require("node-fetch");
-const { createOrder } = require("../../modules/ordini.cjs");
 
-const PAYPAL_CLIENT = process.env.PAYPAL_CLIENT_ID;
-const PAYPAL_SECRET = process.env.PAYPAL_SECRET;
-const PAYPAL_API = "https://api-m.paypal.com";
+const authUser = require("../middleware/auth-user.cjs");
+
+const Airtable = require("airtable");
+const base = new Airtable({ apiKey: process.env.AIRTABLE_PAT })
+  .base(process.env.AIRTABLE_BASE);
+
+const TABLE = "Ordini";
 
 // =========================================================
 // POST /api/paypal/create-order
+// Protetto da auth-user
 // =========================================================
-router.post("/paypal/create-order", async (req, res) => {
-  const { email, prodotti, totale, mode } = req.body;
-
-  if (!email || !prodotti || prodotti.length === 0) {
-    return res.json({ success: false, error: "Dati ordine mancanti" });
-  }
-
+router.post("/paypal/create-order", authUser, async (req, res) => {
   try {
-    // 1) OTTIENI TOKEN PAYPAL
-    const tokenRes = await fetch(`${PAYPAL_API}/v1/oauth2/token`, {
-      method: "POST",
-      headers: {
-        Authorization:
-          "Basic " +
-          Buffer.from(`${PAYPAL_CLIENT}:${PAYPAL_SECRET}`).toString("base64"),
-        "Content-Type": "application/x-www-form-urlencoded"
-      },
-      body: "grant_type=client_credentials"
-    });
+    const { email, prodotti, totale, mode } = req.body;
 
-    const tokenData = await tokenRes.json();
-    const accessToken = tokenData.access_token;
-
-    // 2) CREA ORDINE PAYPAL
-    const ppOrderRes = await fetch(`${PAYPAL_API}/v2/checkout/orders`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        intent: "CAPTURE",
-        purchase_units: [
-          {
-            amount: {
-              currency_code: "EUR",
-              value: totale.toFixed(2)
-            }
-          }
-        ],
-        application_context: {
-          brand_name: "MewingMarket",
-          landing_page: "NO_PREFERENCE",
-          user_action: "PAY_NOW",
-          return_url: "https://mewingmarket.it/thankyou.html?orderId={order_id}",
-          cancel_url: "https://mewingmarket.it/cancel.html"
-        }
-      })
-    });
-
-    const ppOrder = await ppOrderRes.json();
-
-    if (!ppOrder.id) {
-      return res.json({ success: false, error: "Errore creazione ordine PayPal" });
+    if (!email || !Array.isArray(prodotti) || prodotti.length === 0) {
+      return res.json({ success: false, error: "Dati ordine mancanti" });
     }
 
-    const paypalOrderId = ppOrder.id;
+    // =========================================================
+    // 1) CREA ORDINE IN AIRTABLE (stato: in_attesa_pagamento)
+    // =========================================================
+    const ordineId = Date.now(); // ID univoco locale
 
-    // 3) CREA ORDINE IN AIRTABLE
-    const ordineCreato = await createOrder({
+    const record = await base(TABLE).create({
+      id_ordine: ordineId,
       utente: email,
       prodotti: JSON.stringify(prodotti),
-      totale: totale,
+      totale,
+      data: new Date().toISOString(),
       stato: "in_attesa_pagamento",
-      paypal_transaction_id: paypalOrderId,
-      mode
+      metodo_pagamento: "PayPal"
     });
 
-    // 4) OTTIENI LINK PAYPAL
-    const approveLink = ppOrder.links.find(l => l.rel === "approve");
+    const airtableId = record.id;
 
-    if (!approveLink) {
-      return res.json({ success: false, error: "Link PayPal non trovato" });
+    // =========================================================
+    // 2) CREA ORDINE PAYPAL
+    // =========================================================
+    const paypalRes = await fetch(
+      "https://api-m.paypal.com/v2/checkout/orders",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Basic ${Buffer.from(
+            process.env.PAYPAL_CLIENT_ID +
+              ":" +
+              process.env.PAYPAL_SECRET
+          ).toString("base64")}`
+        },
+        body: JSON.stringify({
+          intent: "CAPTURE",
+          purchase_units: [
+            {
+              reference_id: airtableId,
+              amount: {
+                currency_code: "EUR",
+                value: totale.toFixed(2)
+              }
+            }
+          ],
+          application_context: {
+            return_url: `${process.env.SITE_URL}/thankyou.html?orderId=${airtableId}`,
+            cancel_url: `${process.env.SITE_URL}/cancel.html?orderId=${airtableId}`
+          }
+        })
+      }
+    );
+
+    const paypalData = await paypalRes.json();
+
+    if (!paypalData.id) {
+      return res.json({
+        success: false,
+        error: "Errore PayPal"
+      });
     }
 
-    // 5) RISPONDI AL CHECKOUT
+    // =========================================================
+    // 3) SALVA TRANSACTION ID PAYPAL IN AIRTABLE
+    // =========================================================
+    await base(TABLE).update(airtableId, {
+      paypal_transaction_id: paypalData.id
+    });
+
+    // =========================================================
+    // 4) TROVA LINK APPROVAL PAYPAL
+    // =========================================================
+    const approveLink = paypalData.links.find(
+      l => l.rel === "approve"
+    );
+
+    if (!approveLink) {
+      return res.json({
+        success: false,
+        error: "Nessun link PayPal trovato"
+      });
+    }
+
     return res.json({
       success: true,
-      paypalUrl: approveLink.href,
-      orderId: paypalOrderId,
-      airtableId: ordineCreato.id
+      paypalUrl: approveLink.href
     });
 
   } catch (err) {
     console.error("❌ Errore create-order:", err);
-    return res.json({ success: false, error: "Errore server" });
+    return res.json({
+      success: false,
+      error: "Errore server"
+    });
   }
 });
 
