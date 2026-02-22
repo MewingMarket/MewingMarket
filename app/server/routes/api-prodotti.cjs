@@ -1,97 +1,130 @@
 // =========================================================
 // File: app/server/routes/api-prodotti.cjs
-// Catalogo prodotti — versione definitiva (no Airtable)
-// Compatibile con store, admin, bot, PayPal
+// Catalogo prodotti — Versione Airtable
 // =========================================================
 
 const express = require("express");
 const router = express.Router();
-const Prodotto = require("../models/Prodotto"); // MODEL DB
+const {
+  getProducts,
+  syncAirtable
+} = require("../services/airtable.cjs");
 
-/* ============================================================
-   GET — LISTA COMPLETA PRODOTTI
-============================================================ */
-router.get("/prodotti/list", async (req, res) => {
+const Airtable = require("airtable");
+
+// Config Airtable
+const PAT = process.env.AIRTABLE_PAT;
+const BASE = process.env.AIRTABLE_BASE;
+const TABLE = process.env.AIRTABLE_TABLE_NAME;
+
+// Helper base
+const base = new Airtable({ apiKey: PAT }).base(BASE);
+const tableName = decodeURIComponent(TABLE);
+
+// =========================================================
+// GET — LISTA PRODOTTI
+// =========================================================
+router.get("/products", async (req, res) => {
   try {
-    const prodotti = await Prodotto.find().sort({ ordine: 1 });
+    if (!global.catalogReady) await syncAirtable();
+
+    const prodotti = getProducts();
 
     return res.json({
       success: true,
-      products: prodotti
+      prodotti
     });
 
   } catch (err) {
-    console.error("API /prodotti/list ERROR:", err);
+    console.error("API /products ERROR:", err);
     return res.json({ success: false, error: "Errore server" });
   }
 });
 
-/* ============================================================
-   GET — SINGOLO PRODOTTO PER SLUG
-============================================================ */
-router.get("/prodotti/:slug", async (req, res) => {
+// =========================================================
+// GET — SINGOLO PRODOTTO PER SLUG
+// =========================================================
+router.get("/products/:slug", async (req, res) => {
   try {
-    const prodotto = await Prodotto.findOne({ slug: req.params.slug });
+    if (!global.catalogReady) await syncAirtable();
+
+    const prodotti = getProducts();
+    const prodotto = prodotti.find(p => p.slug === req.params.slug);
 
     if (!prodotto) {
       return res.json({ success: false, error: "Prodotto non trovato" });
     }
 
-    return res.json({ success: true, product: prodotto });
+    return res.json({ success: true, prodotto });
 
   } catch (err) {
-    console.error("API /prodotti/:slug ERROR:", err);
+    console.error("API /products/:slug ERROR:", err);
     return res.json({ success: false, error: "Errore server" });
   }
 });
 
-/* ============================================================
-   POST — CREA O MODIFICA PRODOTTO
-============================================================ */
-router.post("/prodotti/save", async (req, res) => {
+// =========================================================
+// POST — CREA O MODIFICA PRODOTTO
+// =========================================================
+router.post("/products/save", async (req, res) => {
   try {
     const data = req.body;
 
-    // Validazione minima
     if (!data.titolo || !data.slug) {
-      return res.json({ success: false, error: "Titolo e slug sono obbligatori" });
+      return res.json({ success: false, error: "Titolo e slug obbligatori" });
     }
 
-    let prodotto;
+    // Cerca record esistente
+    const records = await base(tableName)
+      .select({ filterByFormula: `{slug} = '${data.slug}'`, maxRecords: 1 })
+      .all();
 
-    if (data.id) {
+    const fields = {
+      Titolo: data.titolo,
+      Slug: data.slug,
+      Prezzo: data.prezzo,
+      DescrizioneLunga: data.descrizione,
+      Immagine: data.immagine ? [{ url: data.immagine }] : [],
+      File_consegna: data.fileProdotto ? [{ url: data.fileProdotto }] : []
+    };
+
+    let record;
+
+    if (records.length) {
       // UPDATE
-      prodotto = await Prodotto.findByIdAndUpdate(data.id, data, { new: true });
+      record = await base(tableName).update(records[0].id, fields);
     } else {
       // CREATE
-      prodotto = await Prodotto.create(data);
+      record = await base(tableName).create(fields);
     }
 
-    return res.json({ success: true, product: prodotto });
+    await syncAirtable();
+
+    return res.json({ success: true, id: record.id });
 
   } catch (err) {
-    console.error("API /prodotti/save ERROR:", err);
+    console.error("API /products/save ERROR:", err);
     return res.json({ success: false, error: "Errore server" });
   }
 });
 
-/* ============================================================
-   POST — ELIMINA PRODOTTO
-============================================================ */
-router.post("/prodotti/delete", async (req, res) => {
+// =========================================================
+// POST — ELIMINA PRODOTTO
+// =========================================================
+router.post("/products/delete", async (req, res) => {
   try {
     const { id } = req.body;
 
-    if (!id) {
-      return res.json({ success: false, error: "ID mancante" });
-    }
+    if (!id) return res.json({ success: false, error: "ID mancante" });
 
-    await Prodotto.findByIdAndDelete(id);
+    await base(tableName).destroy(id);
+
+    await syncAirtable();
 
     return res.json({ success: true });
 
   } catch (err) {
-    console.error("API /prodotti/delete ERROR:", err);
+    console.error("API /products/delete ERROR:", err);
     return res.json({ success: false, error: "Errore server" });
   }
 });
