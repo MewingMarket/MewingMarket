@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Pagamento annullato — MewingMarket</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      fetch("../head.html")
+        .then(r => r.text())
+        .then(html => {
+          const temp = document.createElement("div");
+          temp.innerHTML = html;
+          [...temp.children].forEach(node => document.head.appendChild(node));
+        });
+    });
+  </script>
+
+  <link rel="stylesheet" href="../style.css">
+  <script src="cancel.js" defer></script>
+
+  <style>
+    .cancel-box {
+      max-width: 600px;
+      margin: 60px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      text-align: center;
+    }
+    .cancel-box h1 {
+      margin-bottom: 15px;
+      font-size: 26px;
+    }
+    .cancel-box p {
+      font-size: 16px;
+      margin-bottom: 20px;
+    }
+    .btn {
+      display: inline-block;
+      padding: 12px 20px;
+      background: #0077ff;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="header-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("../header.html")
+      .then(r => r.text())
+      .then(h => document.getElementById("header-placeholder").innerHTML = h);
+  });
+</script>
+
+<div class="cancel-box">
+  <h1>Pagamento annullato</h1>
+  <p>Hai annullato il pagamento. Nessun importo è stato addebitato.</p>
+  <p>Il tuo ordine è stato automaticamente annullato.</p>
+
+  <a href="../dashboard.html" class="btn">Torna alla dashboard</a>
+</div>
+
+<div id="footer-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("../footer.html")
+      .then(r => r.text())
+      .then(h => document.getElementById("footer-placeholder").innerHTML = h);
+  });
+</script>
+
+</body>
+</html>
