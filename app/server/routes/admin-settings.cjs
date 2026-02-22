@@ -1,3 +1,5 @@
+// FILE: routes/admin-settings.cjs
+
 const express = require("express");
 const router = express.Router();
 const authAdmin = require("../middleware/authAdmin.cjs");
