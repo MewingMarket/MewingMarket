@@ -1,6 +1,6 @@
 // =========================================================
 // File: app/server/router.cjs
-// Router principale (PATCHATO DEFINITIVO)
+// Router principale (DEFINITIVO basato sulla tua cartella)
 // =========================================================
 
 const express = require("express");
@@ -13,9 +13,14 @@ router.use(require("./routes/api-login.cjs"));
 router.use(require("./routes/api-reset.cjs"));
 router.use(require("./routes/api-prodotti.cjs"));
 router.use(require("./routes/api-ordini.cjs"));
-router.use(require("./routes/api-vendite.cjs"));        // ← UTENTE
+router.use(require("./routes/api-vendite.cjs"));
 router.use(require("./routes/api-upload.cjs"));
 router.use(require("./routes/api-registrazione.cjs"));
+router.use(require("./routes/api-utente.cjs"));
+router.use(require("./routes/api-utenti.cjs"));
+router.use(require("./routes/api-ordini-annulla.cjs"));
+router.use(require("./routes/api-ordini-utente.cjs"));
+router.use(require("./routes/api-track.cjs"));
 
 // =========================================================
 // BRIDGE LEGACY
@@ -23,9 +28,12 @@ router.use(require("./routes/api-registrazione.cjs"));
 router.use(require("./routes/api-bridge.cjs"));
 
 // =========================================================
-// PAYPAL BRIDGE
+// PAYPAL
 // =========================================================
 router.use(require("./routes/api-paypal-bridge.cjs"));
+router.use(require("./routes/api-paypal-create.cjs"));
+router.use(require("./routes/api-paypal-complete.cjs"));
+router.use(require("./routes/api-paypal-cancel.cjs"));
 
 // =========================================================
 // ADMIN (NUOVI MODULI API)
@@ -34,13 +42,17 @@ const { router: adminAuthRouter } = require("./routes/api-admin-auth.cjs");
 router.use(adminAuthRouter);
 
 router.use(require("./routes/api-admin-analytics.cjs"));
-router.use(require("./routes/api-admin-utenti.cjs"));
-router.use(require("./routes/api-admin-ordini.cjs"));
 
 // =========================================================
-// ADMIN (VECCHIO MODULO VENDITE)
+// ADMIN (VECCHI MODULI)
 // =========================================================
-router.use(require("./routes/admin-vendite.cjs"));      // ← ADMIN
+router.use(require("./routes/admin-analisi.cjs"));
+router.use(require("./routes/admin-feedback.cjs"));
+router.use(require("./routes/admin-login.cjs"));
+router.use(require("./routes/admin-ordini.cjs"));
+router.use(require("./routes/admin-settings.cjs"));
+router.use(require("./routes/admin-stats.cjs"));
+router.use(require("./routes/admin-vendite.cjs"));
 
 // =========================================================
 // ROUTE FRONTEND
