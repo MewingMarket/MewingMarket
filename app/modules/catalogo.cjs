@@ -92,6 +92,34 @@ async function listAllProducts() {
 }
 
 /* ============================================================
+   MATCH FUZZY PER FALLBACK
+============================================================ */
+function fuzzyMatchProduct(text = "") {
+  if (!text) return null;
+  const t = normalize(text);
+  const keys = extractKeywords(text);
+
+  const PRODUCTS = CACHE || [];
+  if (!PRODUCTS.length) return null;
+
+  // Match diretto su CACHE
+  let match = PRODUCTS.find(p =>
+    normalize(p.titolo).includes(t) ||
+    normalize(p.titoloBreve).includes(t) ||
+    normalize(p.slug).includes(t)
+  );
+  if (match) return match;
+
+  // Match fuzzy per keyword
+  for (const p of PRODUCTS) {
+    const full = normalize(`${p.titolo} ${p.titoloBreve} ${p.slug}`);
+    if (keys.some(k => full.includes(k))) return p;
+  }
+
+  return null;
+}
+
+/* ============================================================
    RISPOSTE PRODOTTO — VERSIONE PREMIUM
 ============================================================ */
 function productReply(p) {
@@ -146,6 +174,7 @@ module.exports = {
   findProductFromText,
   listProductsByCategory,
   listAllProducts,
+  fuzzyMatchProduct,
   productReply,
   productLongReply,
   productImageReply
