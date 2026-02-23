@@ -36,7 +36,7 @@ router.use(adminAuthRouter);
 router.use(require("./routes/api-admin-analytics.cjs"));
 router.use(require("./routes/api-admin-vendite.cjs"));
 router.use(require("./routes/api-admin-utenti.cjs"));
-router.use(require("./routes/api-admin-ordini.cjs"));   // ← ESISTE DAVVERO
+router.use(require("./routes/api-admin-ordini.cjs"));
 
 // =========================================================
 // ROUTE FRONTEND
