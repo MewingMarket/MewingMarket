@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Analytics</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    h1 { margin-bottom: 10px; }
+    .box { padding: 20px; background: #f5f5f5; margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+
+<h1>Dashboard Traffico</h1>
+
+<div class="box">
+  <h2>Statistiche</h2>
+  <pre id="stats"></pre>
+</div>
+
+<div class="box">
+  <h2>Eventi</h2>
+  <pre id="events"></pre>
+</div>
+
+<script>
+fetch("/api/admin/analytics")
+  .then(r => r.json())
+  .then(data => {
+    document.getElementById("stats").textContent = JSON.stringify(data.stats, null, 2);
+    document.getElementById("events").textContent = JSON.stringify(data.events.slice(-50), null, 2);
+  });
+</script>
+
+</body>
+</html>
