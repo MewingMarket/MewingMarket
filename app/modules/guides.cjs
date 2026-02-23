@@ -3,7 +3,7 @@
  * Guides engine — coerente con guide.html
  */
 
-const { cleanSearchQuery } = require("../utils.js");
+const { cleanSearchQuery } = require("./utils.js");
 
 const GUIDES = [
   {
