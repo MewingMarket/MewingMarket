@@ -1,9 +1,9 @@
 // =========================================================
 // File: app/modules/email.cjs
-// Invio email di ringraziamento ordine (Brevo 4.x + ESM)
+// Invio email ordine completato (Brevo 4.x)
 // =========================================================
 
-import * as brevo from "@getbrevo/brevo";
+const brevo = require("@getbrevo/brevo");
 
 console.log("EMAIL-ORDER: Brevo 4.x caricato");
 
@@ -16,18 +16,16 @@ const senderName = "MewingMarket";
 const client = new brevo.TransactionalEmailsApi();
 client.apiKey = apiKey;
 
-/**
- * Invia email di ringraziamento dopo ordine completato
- */
-export async function sendOrderEmail({ email, ordine }) {
+async function sendOrderEmail({ email, ordine }) {
   const prodottiHTML = ordine.prodotti
     .map(
       p => `
-      <li style="margin-bottom:6px;">
+      <li>
         <strong>${p.titolo}</strong> — ${p.prezzo}€
         <br>
-        <a href="https://mewingmarket.it/api/vendite/download/${p.slug}"
-           style="color:#007bff;">Scarica il prodotto</a>
+        <a href="https://mewingmarket.it/api/vendite/download/${p.slug}">
+          Scarica il prodotto
+        </a>
       </li>
     `
     )
@@ -35,16 +33,8 @@ export async function sendOrderEmail({ email, ordine }) {
 
   const html = `
 <div style="font-family:Arial, sans-serif; max-width:600px; margin:auto; color:#333;">
-  <h2 style="color:#111; margin-bottom:10px;">
-    Grazie per il tuo acquisto da MewingMarket! 🎉
-  </h2>
-
-  <p>Ciao!</p>
-  <p>Abbiamo ricevuto correttamente il tuo ordine.</p>
-
-  <h3>📦 RIEPILOGO ORDINE</h3>
+  <h2>Grazie per il tuo acquisto da MewingMarket! 🎉</h2>
   <ul>${prodottiHTML}</ul>
-
   <p><strong>Totale:</strong> ${ordine.totale}€</p>
 </div>
 `;
@@ -56,3 +46,5 @@ export async function sendOrderEmail({ email, ordine }) {
     htmlContent: html
   });
 }
+
+module.exports = { sendOrderEmail };
