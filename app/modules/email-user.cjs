@@ -3,14 +3,20 @@
 // Email utente: registrazione + cambio credenziali (Brevo)
 // =========================================================
 
-const SibApiV3Sdk = require("@getbrevo/brevo");
+const Brevo = require("@getbrevo/brevo");
 
 const apiKey = process.env.BREVO_API_KEY;
-const senderEmail = "vendite@mewingmarket.it";
+const senderEmail = process.env.BREVO_SENDER; // email verificata su Brevo
 const senderName = "MewingMarket";
 
-const client = new SibApiV3Sdk.TransactionalEmailsApi();
-client.setApiKey(SibApiV3Sdk.TransactionalEmailsApiApiKeys.apiKey, apiKey);
+// Inizializzazione client Brevo
+const client = new Brevo.TransactionalEmailsApi();
+
+// Impostazione API Key (nuova sintassi Brevo)
+client.setApiKey(
+  Brevo.TransactionalEmailsApiApiKeys.apiKey,
+  apiKey
+);
 
 // Registrazione + benvenuto
 async function sendWelcomeEmail({ email }) {
