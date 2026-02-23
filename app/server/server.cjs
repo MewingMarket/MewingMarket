@@ -2,8 +2,7 @@
  * =========================================================
  * File: app/server/server.cjs
  * Entry point del server — versione modulare + BOOTSTRAP ORDINATO
- * Versione patchata per nuovo store interno (senza Payhip)
- * Compatibile con nuova architettura API in /routes
+ * Versione patchata per nuovo store interno + bridge legacy
  * =========================================================
  */
 
@@ -49,10 +48,30 @@ app.use(express.static(path.join(ROOT, "public")));
 app.use("/data", express.static(path.join(ROOT, "data")));
 
 /* ============================================================
-   ROUTES API (NUOVA ARCHITETTURA)
+   ROUTES API ORIGINALI
 ============================================================ */
 const router = require("./router.cjs");
 app.use("/api", router);
+
+/* ============================================================
+   ⭐ ROUTES BRIDGE LEGACY (catalogo, ordini utente, download,
+   newsletter, utente finto)
+============================================================ */
+app.use("/api", require("./routes/api-bridge.cjs"));
+
+/* ============================================================
+   ⭐ ROUTES BRIDGE PAYPAL (checkout premium → PayPal Model A)
+============================================================ */
+app.use("/api", require("./routes/api-paypal-bridge.cjs"));
+
+/* ============================================================
+   ⭐ ADMIN (login + stats + ordini)
+============================================================ */
+const { router: apiAdminAuth } = require("./routes/api-admin-auth.cjs");
+const apiAdminOrdini = require("./routes/api-admin-ordini.cjs");
+
+app.use("/api", apiAdminAuth);
+app.use("/api", apiAdminOrdini);
 
 /* ============================================================
    ROUTES FRONTEND (rimangono come sono)
