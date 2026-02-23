@@ -1,16 +1,22 @@
 // =========================================================
 // File: app/modules/email.cjs
-// Invio email di ringraziamento tramite Brevo (Sendinblue)
+// Invio email di ringraziamento tramite Brevo (nuova SDK)
 // =========================================================
 
-const SibApiV3Sdk = require("@getbrevo/brevo");
+const Brevo = require("@getbrevo/brevo");
 
 const apiKey = process.env.BREVO_API_KEY;
-const senderEmail = process.env.BREVO_SENDER; // es: info@mewingmarket.com
+const senderEmail = process.env.BREVO_SENDER; // email verificata su Brevo
 const senderName = "MewingMarket";
 
-const client = new SibApiV3Sdk.TransactionalEmailsApi();
-client.setApiKey(SibApiV3Sdk.TransactionalEmailsApiApiKeys.apiKey, apiKey);
+// Inizializzazione client Brevo
+const client = new Brevo.TransactionalEmailsApi();
+
+// Impostazione API Key (nuova sintassi Brevo)
+client.setApiKey(
+  Brevo.TransactionalEmailsApiApiKeys.apiKey,
+  apiKey
+);
 
 /**
  * Invia email di ringraziamento dopo ordine completato
