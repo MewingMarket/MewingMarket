@@ -13,11 +13,8 @@ const senderName = "MewingMarket";
 const client = new Brevo.TransactionalEmailsApi();
 
 // Impostazione API Key (nuova sintassi Brevo)
-client.setApiKey(
-  Brevo.TransactionalEmailsApiApiKeys.apiKey,
-  apiKey
-);
 
+client.authentications["apiKey"].apiKey = apiKey;
 /**
  * Invia email di ringraziamento dopo ordine completato
  */
