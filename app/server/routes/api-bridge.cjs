@@ -1,16 +1,16 @@
 // =========================================================
 // File: app/server/routes/api-bridge.cjs
-// Bridge API legacy → Airtable (catalogo, ordini, download,
-// newsletter, utente finto)
+// Bridge API legacy → Catalogo automatico + Airtable (ordini)
 // =========================================================
 
 const express = require("express");
 const Airtable = require("airtable");
+const { getProducts } = require("../../modules/airtable.cjs");
 
 const router = express.Router();
 
 // ---------------------------------------------------------
-// CONFIG AIRTABLE
+// CONFIG AIRTABLE (solo per ordini e download)
 // ---------------------------------------------------------
 const PAT = process.env.AIRTABLE_PAT;
 const BASE = process.env.AIRTABLE_BASE;
@@ -21,7 +21,7 @@ if (!PAT || !BASE) {
 
 const base = new Airtable({ apiKey: PAT }).base(BASE);
 
-// Nomi tabelle (adattali se diversi)
+// Tabelle
 const TABLE_PRODOTTI = "Prodotti";
 const TABLE_ORDINI = "Ordini";
 
@@ -34,36 +34,13 @@ function safeGet(record, field) {
   }
 }
 
-// =========================================================
-// 1) CATALOGO — /api/products
-//    Usato da: home.js, catalogo.js
-// =========================================================
-router.get("/products", async (req, res) => {
+/* =========================================================
+   1) CATALOGO — /api/products
+   ORA USA products.json (catalogo automatico)
+========================================================= */
+router.get("/products", (req, res) => {
   try {
-    const records = await base(TABLE_PRODOTTI).select().all();
-
-    const prodotti = records.map(r => {
-      const allegati = safeGet(r, "Immagine") || [];
-      const img =
-        Array.isArray(allegati) && allegati[0] && allegati[0].url
-          ? allegati[0].url
-          : null;
-
-      return {
-        // formato "vecchio" che si aspetta il frontend
-        id: r.id,
-        titolo: safeGet(r, "Nome") || safeGet(r, "Titolo") || "Prodotto",
-        slug: safeGet(r, "Slug") || "",
-        prezzo: Number(safeGet(r, "Prezzo") || 0),
-        descrizione: safeGet(r, "Descrizione") || "",
-        descrizione_breve: safeGet(r, "Descrizione breve") || "",
-        categoria: safeGet(r, "Categoria") || "",
-        immagine: img,
-        youtube_url: safeGet(r, "YouTube URL") || "",
-        youtube_last_video_url: safeGet(r, "YouTube Last Video URL") || ""
-      };
-    });
-
+    const prodotti = getProducts(); // <-- catalogo automatico
     return res.json({ success: true, prodotti });
   } catch (err) {
     console.error("❌ Errore /api/products:", err);
@@ -71,11 +48,11 @@ router.get("/products", async (req, res) => {
   }
 });
 
-// =========================================================
-// 2) PRODOTTO SINGOLO — /api/products/:slug
-//    Usato da: prodotto.js
-// =========================================================
-router.get("/products/:slug", async (req, res) => {
+/* =========================================================
+   2) PRODOTTO SINGOLO — /api/products/:slug
+   ORA USA products.json (catalogo automatico)
+========================================================= */
+router.get("/products/:slug", (req, res) => {
   const { slug } = req.params;
 
   if (!slug) {
@@ -83,36 +60,12 @@ router.get("/products/:slug", async (req, res) => {
   }
 
   try {
-    const records = await base(TABLE_PRODOTTI)
-      .select({
-        filterByFormula: `{Slug} = '${slug}'`
-      })
-      .all();
+    const prodotti = getProducts(); // <-- catalogo automatico
+    const prodotto = prodotti.find(p => p.slug === slug);
 
-    if (!records.length) {
+    if (!prodotto) {
       return res.json({ success: false, error: "Prodotto non trovato" });
     }
-
-    const r = records[0];
-    const allegati = safeGet(r, "Immagine") || [];
-    const img =
-      Array.isArray(allegati) && allegati[0] && allegati[0].url
-        ? allegati[0].url
-        : null;
-
-    const prodotto = {
-      id: r.id,
-      titolo: safeGet(r, "Nome") || safeGet(r, "Titolo") || "Prodotto",
-      titolo_breve: safeGet(r, "Titolo breve") || "",
-      slug: safeGet(r, "Slug") || "",
-      prezzo: Number(safeGet(r, "Prezzo") || 0),
-      descrizione: safeGet(r, "Descrizione") || "",
-      descrizione_breve: safeGet(r, "Descrizione breve") || "",
-      categoria: safeGet(r, "Categoria") || "",
-      immagine: img,
-      youtube_url: safeGet(r, "YouTube URL") || "",
-      youtube_last_video_url: safeGet(r, "YouTube Last Video URL") || ""
-    };
 
     return res.json({ success: true, prodotto });
   } catch (err) {
@@ -121,11 +74,10 @@ router.get("/products/:slug", async (req, res) => {
   }
 });
 
-// =========================================================
-// 3) ORDINI UTENTE — /api/ordini/utente
-//    Usato da: dashboard.js, ordini-utente.js, downloads
-//    Header: Authorization: Bearer <session>, x-email: <email>
-// =========================================================
+/* =========================================================
+   3) ORDINI UTENTE — /api/ordini/utente
+   (rimane Airtable)
+========================================================= */
 router.get("/ordini/utente", async (req, res) => {
   const email = req.headers["x-email"];
 
@@ -168,10 +120,9 @@ router.get("/ordini/utente", async (req, res) => {
   }
 });
 
-// =========================================================
-// 4) ANNULLA ORDINE — /api/ordini/annulla/:id
-//    Usato da: dashboard.js (annulla ordine)
-// =========================================================
+/* =========================================================
+   4) ANNULLA ORDINE — /api/ordini/annulla/:id
+========================================================= */
 router.post("/ordini/annulla/:id", async (req, res) => {
   const { id } = req.params;
 
@@ -191,11 +142,9 @@ router.post("/ordini/annulla/:id", async (req, res) => {
   }
 });
 
-// =========================================================
-// 5) DOWNLOAD PROTETTI — /api/vendite/download/:slug
-//    Usato da: dashboard.js (download), downloads.js
-//    Header: x-email
-// =========================================================
+/* =========================================================
+   5) DOWNLOAD PROTETTI — /api/vendite/download/:slug
+========================================================= */
 router.get("/vendite/download/:slug", async (req, res) => {
   const { slug } = req.params;
   const email = req.headers["x-email"];
@@ -205,7 +154,6 @@ router.get("/vendite/download/:slug", async (req, res) => {
   }
 
   try {
-    // 1) Verifica che l'utente abbia acquistato il prodotto
     const ordini = await base(TABLE_ORDINI)
       .select({
         filterByFormula: `AND({utente} = '${email}', {stato} = 'completato')`
@@ -232,7 +180,6 @@ router.get("/vendite/download/:slug", async (req, res) => {
       return res.status(403).send("Accesso negato");
     }
 
-    // 2) Recupera URL file dal prodotto
     const prodotti = await base(TABLE_PRODOTTI)
       .select({
         filterByFormula: `{Slug} = '${slug}'`
@@ -245,7 +192,6 @@ router.get("/vendite/download/:slug", async (req, res) => {
 
     const pr = prodotti[0];
 
-    // Prova prima campo "File URL", poi allegato "File"
     const fileUrl =
       safeGet(pr, "File URL") ||
       (() => {
@@ -260,7 +206,6 @@ router.get("/vendite/download/:slug", async (req, res) => {
       return res.status(404).send("File non disponibile");
     }
 
-    // Redirect diretto al file
     return res.redirect(fileUrl);
   } catch (err) {
     console.error("❌ Errore /api/vendite/download:", err);
@@ -268,63 +213,45 @@ router.get("/vendite/download/:slug", async (req, res) => {
   }
 });
 
-// =========================================================
-// 6) NEWSLETTER — /newsletter/subscribe /unsubscribe
-//    Usato da: subscribe.js, disiscrizione.js
-//    Per ora: NO-OP con risposta ok
-// =========================================================
+/* =========================================================
+   6) NEWSLETTER — NO-OP
+========================================================= */
 router.post("/newsletter/subscribe", async (req, res) => {
   const { email } = req.body || {};
   console.log("📩 Richiesta iscrizione newsletter:", email);
-  // Qui in futuro puoi integrare Brevo / altro
   return res.json({ status: "ok" });
 });
 
 router.post("/newsletter/unsubscribe", async (req, res) => {
   const { email } = req.body || {};
   console.log("📭 Richiesta disiscrizione newsletter:", email);
-  // Qui in futuro puoi integrare Brevo / altro
   return res.json({ status: "ok" });
 });
 
-// =========================================================
-// 7) UTENTE — endpoint finti per compatibilità frontend
-//    Usati da: profilo.js, cambia-cred.js, reset-password.js
-// =========================================================
-
-// Cambio email (vecchia versione)
+/* =========================================================
+   7) UTENTE — endpoint finti (rimangono)
+========================================================= */
 router.post("/utente/cambia-email", (req, res) => {
-  console.log("👤 /api/utente/cambia-email (fake)", req.body);
   return res.json({ success: true });
 });
 
-// Cambio password (vecchia versione)
 router.post("/utente/cambia-password", (req, res) => {
-  console.log("👤 /api/utente/cambia-password (fake)", req.body);
   return res.json({ success: true });
 });
 
-// Cambio email (profilo.js)
 router.post("/utente/profilo/cambia-email", (req, res) => {
-  console.log("👤 /api/utente/profilo/cambia-email (fake)", req.body);
   return res.json({ success: true });
 });
 
-// Cambio password (profilo.js)
 router.post("/utente/profilo/cambia-password", (req, res) => {
-  console.log("👤 /api/utente/profilo/cambia-password (fake)", req.body);
   return res.json({ success: true });
 });
 
-// Elimina account (profilo.js + dashboard.js)
 router.post("/utente/profilo/elimina", (req, res) => {
-  console.log("👤 /api/utente/profilo/elimina (fake)");
   return res.json({ success: true });
 });
 
-// Reset password (se esiste nel frontend)
 router.post("/utente/reset-password", (req, res) => {
-  console.log("👤 /api/utente/reset-password (fake)", req.body);
   return res.json({ success: true });
 });
 
