@@ -1,9 +1,9 @@
-// ================================================================
+// =========================================================
 // File: app/modules/email-user.cjs
-// Email utente: registrazione + cambio credenziali (Brevo 4.x)
-// ================================================================
+// Email utente: registrazione + cambio credenziali (Brevo 4.x + ESM)
+// =========================================================
 
-const brevo = require("@getbrevo/brevo");
+import * as brevo from "@getbrevo/brevo";
 
 console.log("EMAIL-USER VERSIONE BREVO 4.x CARICATA");
 
@@ -19,67 +19,48 @@ client.apiKey = apiKey;
 // ================================================================
 // EMAIL: Registrazione + Benvenuto
 // ================================================================
-async function sendWelcomeEmail({ email }) {
+export async function sendWelcomeEmail({ email }) {
   const html = `
-    <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto">
-        <h2 style="color:#111;margin-bottom:10px">Benvenuto su MewingMarket 🎉</h2>
-            <p>Ciao,</p>
-                <p>La tua registrazione è avvenuta con successo.</p>
-                    <p>Da ora puoi accedere alla tua area riservata, acquistare prodotti e gestire il tuo account.</p>
+  <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto">
+    <h2 style="color:#111;margin-bottom:10px">Benvenuto su MewingMarket 🎉</h2>
+    <p>Ciao,</p>
+    <p>La tua registrazione è avvenuta con successo.</p>
+    <p>Da ora puoi accedere alla tua area riservata, acquistare prodotti e gestire il tuo account.</p>
 
-                        <p style="margin-top:16px;">
-                              <a href="https://mewingmarket.it/login.html"
-                                       style="display:inline-block;padding:10px 16px;background:#007bff;color:#fff;text-decoration:none;border-radius:4px">
-                                                Vai al login
-                                                      </a>
-                                                          </p>
+    <p style="margin-top:16px;">
+      <a href="https://mewingmarket.it/login.html"
+         style="display:inline-block;padding:10px 16px;background:#007bff;color:#fff;text-decoration:none;border-radius:4px">
+         Vai al login
+      </a>
+    </p>
+  </div>
+  `;
 
-                                                              <hr style="border:none;border-top:1px solid #ddd;margin:20px 0;">
-                                                                  <h3 style="margin-bottom:6px;">Supporto</h3>
-                                                                      <p>
-                                                                            Email: <a href="mailto:supporto@mewingmarket.it">supporto@mewingmarket.it</a><br>
-                                                                                  Sito: <a href="https://mewingmarket.it">https://mewingmarket.it</a>
-                                                                                      </p>
-                                                                                        </div>
-                                                                                          `;
+  await client.sendTransacEmail({
+    sender: { email: senderEmail, name: senderName },
+    to: [{ email }],
+    subject: "Benvenuto su MewingMarket 🎉",
+    htmlContent: html
+  });
+}
 
-                                                                                            await client.sendTransacEmail({
-                                                                                                sender: { email: senderEmail, name: senderName },
-                                                                                                    to: [{ email }],
-                                                                                                        subject: "Benvenuto su MewingMarket 🎉",
-                                                                                                            htmlContent: html
-                                                                                                              });
-                                                                                                              }
+// ================================================================
+// EMAIL: Cambio Credenziali
+// ================================================================
+export async function sendCredentialsChangedEmail({ email }) {
+  const html = `
+  <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;color:#333;">
+    <h2 style="color:#111;margin-bottom:10px;">Le tue credenziali sono state modificate</h2>
+    <p>Ciao,</p>
+    <p>Ti confermiamo che i dati di accesso al tuo account MewingMarket sono stati modificati.</p>
+    <p>Se non sei stato tu a richiedere questa modifica, contattaci subito.</p>
+  </div>
+  `;
 
-                                                                                                              // ================================================================
-                                                                                                              // EMAIL: Cambio Credenziali
-                                                                                                              // ================================================================
-                                                                                                              async function sendCredentialsChangedEmail({ email }) {
-                                                                                                                const html = `
-                                                                                                                  <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;color:#333;">
-                                                                                                                      <h2 style="color:#111;margin-bottom:10px;">Le tue credenziali sono state modificate</h2>
-                                                                                                                          <p>Ciao,</p>
-                                                                                                                              <p>Ti confermiamo che i dati di accesso al tuo account MewingMarket sono stati modificati.</p>
-                                                                                                                                  <p>Se non sei stato tu a richiedere questa modifica, contattaci subito.</p>
-
-                                                                                                                                      <hr style="border:none;border-top:1px solid #ddd;margin:20px 0;" />
-                                                                                                                                          <h3 style="margin-bottom:6px;">Supporto</h3>
-                                                                                                                                              <p>
-                                                                                                                                                    Email: <a href="mailto:supporto@mewingmarket.it">supporto@mewingmarket.it</a><br />
-                                                                                                                                                          Sito: <a href="https://mewingmarket.it">https://mewingmarket.it</a>
-                                                                                                                                                              </p>
-                                                                                                                                                                </div>
-                                                                                                                                                                  `;
-
-                                                                                                                                                                    await client.sendTransacEmail({
-                                                                                                                                                                        sender: { email: senderEmail, name: senderName },
-                                                                                                                                                                            to: [{ email }],
-                                                                                                                                                                                subject: "Aggiornamento credenziali account MewingMarket",
-                                                                                                                                                                                    htmlContent: html
-                                                                                                                                                                                      });
-                                                                                                                                                                                      }
-
-                                                                                                                                                                                      module.exports = {
-                                                                                                                                                                                        sendWelcomeEmail,
-                                                                                                                                                                                          sendCredentialsChangedEmail
-                                                                                                                                                                                          };
+  await client.sendTransacEmail({
+    sender: { email: senderEmail, name: senderName },
+    to: [{ email }],
+    subject: "Aggiornamento credenziali account MewingMarket",
+    htmlContent: html
+  });
+}
