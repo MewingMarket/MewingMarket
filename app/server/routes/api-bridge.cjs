@@ -1,6 +1,6 @@
 // =========================================================
 // File: app/server/routes/api-bridge.cjs
-// Bridge API legacy → Catalogo automatico + Airtable (ordini)
+// Bridge API legacy → Catalogo automatico + Ordini reali
 // =========================================================
 
 const express = require("express");
@@ -10,22 +10,17 @@ const { getProducts } = require("../../modules/airtable.cjs");
 const router = express.Router();
 
 // ---------------------------------------------------------
-// CONFIG AIRTABLE (solo per ordini e download)
+// CONFIG AIRTABLE
 // ---------------------------------------------------------
 const PAT = process.env.AIRTABLE_PAT;
 const BASE = process.env.AIRTABLE_BASE;
 
-if (!PAT || !BASE) {
-  console.warn("⚠️ AIRTABLE_PAT o AIRTABLE_BASE non configurati");
-}
-
 const base = new Airtable({ apiKey: PAT }).base(BASE);
 
-// Tabelle
 const TABLE_PRODOTTI = "Prodotti";
 const TABLE_ORDINI = "Ordini";
 
-// Helper sicuro
+// Helper
 function safeGet(record, field) {
   try {
     return record.get(field) ?? null;
@@ -35,12 +30,11 @@ function safeGet(record, field) {
 }
 
 /* =========================================================
-   1) CATALOGO — /api/products
-   ORA USA products.json (catalogo automatico)
+   1) CATALOGO AUTOMATICO — /api/products
 ========================================================= */
 router.get("/products", (req, res) => {
   try {
-    const prodotti = getProducts(); // <-- catalogo automatico
+    const prodotti = getProducts();
     return res.json({ success: true, prodotti });
   } catch (err) {
     console.error("❌ Errore /api/products:", err);
@@ -50,33 +44,22 @@ router.get("/products", (req, res) => {
 
 /* =========================================================
    2) PRODOTTO SINGOLO — /api/products/:slug
-   ORA USA products.json (catalogo automatico)
 ========================================================= */
 router.get("/products/:slug", (req, res) => {
   const { slug } = req.params;
 
-  if (!slug) {
-    return res.json({ success: false, error: "Slug mancante" });
+  const prodotti = getProducts();
+  const prodotto = prodotti.find(p => p.slug === slug);
+
+  if (!prodotto) {
+    return res.json({ success: false, error: "Prodotto non trovato" });
   }
 
-  try {
-    const prodotti = getProducts(); // <-- catalogo automatico
-    const prodotto = prodotti.find(p => p.slug === slug);
-
-    if (!prodotto) {
-      return res.json({ success: false, error: "Prodotto non trovato" });
-    }
-
-    return res.json({ success: true, prodotto });
-  } catch (err) {
-    console.error("❌ Errore /api/products/:slug:", err);
-    return res.json({ success: false, error: "Errore server" });
-  }
+  return res.json({ success: true, prodotto });
 });
 
 /* =========================================================
-   3) ORDINI UTENTE — /api/ordini/utente
-   (rimane Airtable)
+   3) ORDINI REALI — /api/ordini/utente
 ========================================================= */
 router.get("/ordini/utente", async (req, res) => {
   const email = req.headers["x-email"];
@@ -102,11 +85,11 @@ router.get("/ordini/utente", async (req, res) => {
 
       return {
         id: r.id,
-        id_ordine: safeGet(r, "id_ordine") || null,
-        utente: safeGet(r, "utente") || null,
+        id_ordine: safeGet(r, "id_ordine"),
+        utente: safeGet(r, "utente"),
         prodotti,
         totale: Number(safeGet(r, "totale") || 0),
-        data: safeGet(r, "data") || r._rawJson.createdTime || null,
+        data: safeGet(r, "data") || r._rawJson.createdTime,
         stato: safeGet(r, "stato") || "sconosciuto",
         metodo_pagamento: safeGet(r, "metodo_pagamento") || "paypal",
         paypal_transaction_id: safeGet(r, "paypal_transaction_id") || null
@@ -126,10 +109,6 @@ router.get("/ordini/utente", async (req, res) => {
 router.post("/ordini/annulla/:id", async (req, res) => {
   const { id } = req.params;
 
-  if (!id) {
-    return res.json({ success: false, error: "ID mancante" });
-  }
-
   try {
     await base(TABLE_ORDINI).update(id, {
       stato: "annullato"
@@ -143,7 +122,7 @@ router.post("/ordini/annulla/:id", async (req, res) => {
 });
 
 /* =========================================================
-   5) DOWNLOAD PROTETTI — /api/vendite/download/:slug
+   5) DOWNLOAD REALI — /api/vendite/download/:slug
 ========================================================= */
 router.get("/vendite/download/:slug", async (req, res) => {
   const { slug } = req.params;
@@ -154,9 +133,10 @@ router.get("/vendite/download/:slug", async (req, res) => {
   }
 
   try {
+    // 1) Verifica acquisto COMPLETATO
     const ordini = await base(TABLE_ORDINI)
       .select({
-        filterByFormula: `AND({utente} = '${email}', {stato} = 'completato')`
+        filterByFormula: `AND({utente} = '${email}', {stato} = 'COMPLETED')`
       })
       .all();
 
@@ -180,6 +160,7 @@ router.get("/vendite/download/:slug", async (req, res) => {
       return res.status(403).send("Accesso negato");
     }
 
+    // 2) Recupera file da Airtable
     const prodotti = await base(TABLE_PRODOTTI)
       .select({
         filterByFormula: `{Slug} = '${slug}'`
@@ -193,14 +174,10 @@ router.get("/vendite/download/:slug", async (req, res) => {
     const pr = prodotti[0];
 
     const fileUrl =
+      safeGet(pr, "File_consegna")?.[0]?.url ||
+      safeGet(pr, "File")?.[0]?.url ||
       safeGet(pr, "File URL") ||
-      (() => {
-        const allegati = safeGet(pr, "File") || [];
-        if (Array.isArray(allegati) && allegati[0] && allegati[0].url) {
-          return allegati[0].url;
-        }
-        return null;
-      })();
+      null;
 
     if (!fileUrl) {
       return res.status(404).send("File non disponibile");
@@ -214,45 +191,64 @@ router.get("/vendite/download/:slug", async (req, res) => {
 });
 
 /* =========================================================
-   6) NEWSLETTER — NO-OP
+   6) NEWSLETTER REALE (Brevo-ready)
 ========================================================= */
 router.post("/newsletter/subscribe", async (req, res) => {
   const { email } = req.body || {};
-  console.log("📩 Richiesta iscrizione newsletter:", email);
+
+  if (!email) return res.json({ status: "error", error: "Email mancante" });
+
+  // Se hai BREVO_API_KEY → integrazione reale
+  if (process.env.BREVO_API_KEY) {
+    try {
+      const fetch = (await import("node-fetch")).default;
+
+      await fetch("https://api.brevo.com/v3/contacts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": process.env.BREVO_API_KEY
+        },
+        body: JSON.stringify({ email })
+      });
+
+      return res.json({ status: "ok" });
+    } catch (err) {
+      console.error("❌ Newsletter Brevo:", err);
+      return res.json({ status: "error" });
+    }
+  }
+
+  // Fallback se Brevo non è configurato
+  console.log("📩 Newsletter (fallback):", email);
   return res.json({ status: "ok" });
 });
 
 router.post("/newsletter/unsubscribe", async (req, res) => {
   const { email } = req.body || {};
-  console.log("📭 Richiesta disiscrizione newsletter:", email);
+
+  if (!email) return res.json({ status: "error", error: "Email mancante" });
+
+  if (process.env.BREVO_API_KEY) {
+    try {
+      const fetch = (await import("node-fetch")).default;
+
+      await fetch(`https://api.brevo.com/v3/contacts/${email}`, {
+        method: "DELETE",
+        headers: {
+          "api-key": process.env.BREVO_API_KEY
+        }
+      });
+
+      return res.json({ status: "ok" });
+    } catch (err) {
+      console.error("❌ Newsletter Brevo:", err);
+      return res.json({ status: "error" });
+    }
+  }
+
+  console.log("📭 Unsubscribe (fallback):", email);
   return res.json({ status: "ok" });
-});
-
-/* =========================================================
-   7) UTENTE — endpoint finti (rimangono)
-========================================================= */
-router.post("/utente/cambia-email", (req, res) => {
-  return res.json({ success: true });
-});
-
-router.post("/utente/cambia-password", (req, res) => {
-  return res.json({ success: true });
-});
-
-router.post("/utente/profilo/cambia-email", (req, res) => {
-  return res.json({ success: true });
-});
-
-router.post("/utente/profilo/cambia-password", (req, res) => {
-  return res.json({ success: true });
-});
-
-router.post("/utente/profilo/elimina", (req, res) => {
-  return res.json({ success: true });
-});
-
-router.post("/utente/reset-password", (req, res) => {
-  return res.json({ success: true });
 });
 
 module.exports = router;
