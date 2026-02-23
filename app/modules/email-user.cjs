@@ -4,18 +4,16 @@
 // =========================================================
 
 const Brevo = require("@getbrevo/brevo");
-console.log("EMAIL-USER VERSIONE NUOVA CARICATA");const apiKey = process.env.BREVO_API_KEY;
+
+const apiKey = process.env.BREVO_API_KEY;
 const senderEmail = process.env.BREVO_SENDER; // email verificata su Brevo
 const senderName = "MewingMarket";
 
 // Inizializzazione client Brevo
 const client = new Brevo.TransactionalEmailsApi();
 
-// Impostazione API Key (nuova sintassi Brevo)
-client.setApiKey(
-  Brevo.TransactionalEmailsApiApiKeys.apiKey,
-  apiKey
-);
+// Impostazione API Key (metodo UNIVERSALE, compatibile con tutte le versioni)
+client.authentications["apiKey"].apiKey = apiKey;
 
 // Registrazione + benvenuto
 async function sendWelcomeEmail({ email }) {
