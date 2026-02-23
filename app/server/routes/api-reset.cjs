@@ -1,7 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const crypto = require("crypto");
-const { airtable } = require("../services/airtable");
+const crypto = require("crypto");const { airtable } = require("../services/airtable.cjs");
 
 // Hash password
 function hashPassword(pwd) {
