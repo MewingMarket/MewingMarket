@@ -1,42 +1,53 @@
 // =========================================================
 // File: app/server/router.cjs
-// Router principale (PATCHATO)
+// Router principale (PATCHATO DEFINITIVO)
 // =========================================================
 
 const express = require("express");
 const router = express.Router();
 
-// --- API ORIGINALI ---
+// =========================================================
+// API ORIGINALI
+// =========================================================
 router.use(require("./routes/api-login.cjs"));
 router.use(require("./routes/api-reset.cjs"));
 router.use(require("./routes/api-prodotti.cjs"));
-router.use(require("./routes/api-ordini.cjs"));          // ✔️ REINSERITO
+router.use(require("./routes/api-ordini.cjs"));
 router.use(require("./routes/api-vendite.cjs"));
 router.use(require("./routes/api-upload.cjs"));
-router.use(require("./routes/api-registrazione.cjs"));   // ✔️ REGISTRAZIONE
+router.use(require("./routes/api-registrazione.cjs"));
 
 // =========================================================
-// 🔥 NUOVI MODULI (BRIDGE + ADMIN)
+// BRIDGE LEGACY
 // =========================================================
-
-// Bridge legacy → Airtable (catalogo, ordini utente, download, newsletter, utente)
 router.use(require("./routes/api-bridge.cjs"));
 
-// Bridge PayPal legacy → nuovo PayPal Model A
+// =========================================================
+// PAYPAL BRIDGE
+// =========================================================
 router.use(require("./routes/api-paypal-bridge.cjs"));
 
-// Admin login + sessione
+// =========================================================
+// ADMIN (NUOVI MODULI API)
+// =========================================================
 const { router: adminAuthRouter } = require("./routes/api-admin-auth.cjs");
 router.use(adminAuthRouter);
 
-// Admin ordini + stats
-router.use(require("./routes/api-admin-ordini.cjs"));
+router.use(require("./routes/api-admin-analytics.cjs"));
+router.use(require("./routes/api-admin-vendite.cjs"));
+router.use(require("./routes/api-admin-utenti.cjs"));
+router.use(require("./routes/api-admin-ordini.cjs"));   // ← ESISTE DAVVERO
 
 // =========================================================
-// Dashboard login (pagina statica)
+// ROUTE FRONTEND
 // =========================================================
-router.get("/dashboard", (req, res) => {
-  res.sendFile("dashboard-login.html", { root: "app/public" });
-});
+require("./routes/chat.cjs")(router);
+require("./routes/chat-voice.cjs")(router);
+require("./routes/newsletter.cjs")(router);
+require("./routes/sitemap.cjs")(router);
+require("./routes/sales.cjs")(router);
+require("./routes/meta-feed.cjs")(router);
+require("./routes/product-page.cjs")(router);
+require("./routes/system-status.cjs")(router);
 
 module.exports = router;
