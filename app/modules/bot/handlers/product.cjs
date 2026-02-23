@@ -22,11 +22,11 @@ const {
 /* ============================================================
    TROVA PRODOTTO DA INTENT
 ============================================================ */
-function resolveProduct(intent, sub, rawText, PRODUCTS) {
+async function resolveProduct(intent, sub, rawText) {
   if (intent === "prodotto" && sub) {
-    return findProductBySlug(sub);
+    return await findProductBySlug(sub);
   }
-  return findProductFromText(rawText);
+  return await findProductFromText(rawText);
 }
 
 /* ============================================================
@@ -233,10 +233,10 @@ async function handleAttachment(req, res, fileName) {
 /* ============================================================
    ROUTER INTERNO
 ============================================================ */
-module.exports = async function productHandler(req, res, intent, sub, rawText, PRODUCTS) {
+module.exports = async function productHandler(req, res, intent, sub, rawText) {
   log("HANDLER_PRODUCT", { intent, sub, rawText });
 
-  const product = resolveProduct(intent, sub, rawText, PRODUCTS);
+  const product = await resolveProduct(intent, sub, rawText);
 
   if (!product) {
     return reply(res, `
