@@ -15,7 +15,6 @@ async function handlePrivacy(req, res, rawText) {
   const uid = req?.uid || "unknown_user";
   const pageContext = Context.get(uid) || {};
 
-  // ⭐ PATCH: aggiorna contesto automaticamente
   Context.update(uid, "privacy", null);
 
   const base = `
@@ -24,7 +23,7 @@ async function handlePrivacy(req, res, rawText) {
   <div class="mm-card-body">
     In sintesi:<br>
     • raccogliamo nome e email per la newsletter<br>
-    • i pagamenti sono gestiti da Payhip<br>
+    • i pagamenti sono gestiti da PayPal<br>
     • puoi chiedere modifica o cancellazione dei dati<br><br>
     Pagina completa:<br>
     <a href="privacy.html">privacy.html</a>
@@ -49,7 +48,6 @@ async function handleTerms(req, res, rawText) {
   const uid = req?.uid || "unknown_user";
   const pageContext = Context.get(uid) || {};
 
-  // ⭐ PATCH: aggiorna contesto automaticamente
   Context.update(uid, "termini", null);
 
   const base = `
@@ -57,7 +55,7 @@ async function handleTerms(req, res, rawText) {
   <div class="mm-card-title">Termini e Condizioni</div>
   <div class="mm-card-body">
     In sintesi:<br>
-    • vendiamo prodotti digitali tramite Payhip<br>
+    • vendiamo prodotti digitali tramite PayPal<br>
     • l'uso è personale<br>
     • il download è immediato<br><br>
     Pagina completa:<br>
@@ -83,7 +81,6 @@ async function handleCookie(req, res, rawText) {
   const uid = req?.uid || "unknown_user";
   const pageContext = Context.get(uid) || {};
 
-  // ⭐ PATCH: aggiorna contesto automaticamente
   Context.update(uid, "cookie", null);
 
   const base = `
