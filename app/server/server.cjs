@@ -1,7 +1,7 @@
 /**
  * =========================================================
  * File: app/server/server.cjs
- * Entry point del server — versione modulare + BOOTSTRAP ORDINATO
+ * Entry point del server — versione coerente al router
  * =========================================================
  */
 
@@ -34,26 +34,9 @@ require("./middleware/context.cjs")(app);
 app.use(express.static(path.join(ROOT, "public")));
 app.use("/data", express.static(path.join(ROOT, "data")));
 
-// ROUTER API PRINCIPALE (UTENTE + ADMIN + FRONTEND)
+// ROUTER API PRINCIPALE
 const router = require("./router.cjs");
 app.use("/api", router);
-
-// BRIDGE LEGACY
-app.use("/api", require("./routes/api-bridge.cjs"));
-
-// PAYPAL BRIDGE
-app.use("/api", require("./routes/api-paypal-bridge.cjs"));
-
-// ADMIN (NUOVI MODULI API)
-const { router: apiAdminAuth } = require("./routes/api-admin-auth.cjs");
-app.use("/api", apiAdminAuth);
-
-app.use("/api", require("./routes/api-admin-ordini.cjs"));
-app.use("/api", require("./routes/api-admin-analytics.cjs"));
-app.use("/api", require("./routes/api-admin-utenti.cjs"));
-
-// ADMIN (VECCHIO MODULO VENDITE)
-app.use("/api", require("./routes/admin-vendite.cjs"));
 
 // FRONTEND ROUTES
 require("./routes/chat.cjs")(app);
