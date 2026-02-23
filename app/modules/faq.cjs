@@ -2,8 +2,7 @@
  * modules/faq.cjs
  * FAQ engine — versione semplice, coerente con FAQ.html
  */
-
-const { cleanSearchQuery } = require("./utils.js");
+const { cleanSearchQuery } = require("../utils.js");
 
 const FAQ_ITEMS = [
   {
