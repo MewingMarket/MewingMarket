@@ -4,8 +4,7 @@
 // =========================================================
 
 const Brevo = require("@getbrevo/brevo");
-
-const apiKey = process.env.BREVO_API_KEY;
+console.log("EMAIL-USER VERSIONE NUOVA CARICATA");const apiKey = process.env.BREVO_API_KEY;
 const senderEmail = process.env.BREVO_SENDER; // email verificata su Brevo
 const senderName = "MewingMarket";
 
