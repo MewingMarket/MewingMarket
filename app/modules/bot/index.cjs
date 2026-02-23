@@ -28,7 +28,7 @@ const fallbackHandler = require("./handlers/fallback.cjs");
 // External modules
 const Context = require(path.join(__dirname, "..", "context.cjs"));
 const Memory = require(path.join(__dirname, "..", "memory.cjs"));
-const { getProducts } = require(path.join(__dirname, "..", "airtable.cjs"));
+const { getCatalog } = require(path.join(__dirname, "..", "catalogo.cjs"));
 
 /* ============================================================
    HANDLE CONVERSATION — ENTRY POINT
@@ -47,10 +47,7 @@ async function handleConversation(req, res) {
 
     log("HANDLE_START", { uid, intent, sub, rawText });
 
-    /* ⭐ READY SYSTEM — blocca risposte premature
-       Se il catalogo non è pronto → NON rispondiamo.
-       Evita undefined, fatal error e timeout GPT.
-    */
+    /* ⭐ READY SYSTEM — blocca risposte premature */
     if (!global.catalogReady) {
       return reply(res, "Sto pensando… un attimo 😄");
     }
@@ -58,7 +55,7 @@ async function handleConversation(req, res) {
     // Carichiamo i prodotti (blindato)
     let PRODUCTS = [];
     try {
-      PRODUCTS = getProducts() || [];
+      PRODUCTS = await getCatalog() || [];
       log("PRODUCTS_LOADED", { count: PRODUCTS.length });
     } catch (err) {
       log("PRODUCTS_ERROR", err);
