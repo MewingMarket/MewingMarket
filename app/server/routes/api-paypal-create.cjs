@@ -1,19 +1,34 @@
 // =========================================================
 // File: app/server/routes/api-paypal-create.cjs
 // Crea ordine PayPal (solo utenti loggati) + Airtable
+// Versione definitiva (Airtable nuova SDK, blindata)
 // =========================================================
 
 const express = require("express");
-const router = express.Router();
+const Airtable = require("airtable").default;
 const fetch = require("node-fetch");
-
 const authUser = require("../middleware/auth-user.cjs");
 
-const Airtable = require("airtable");
-const base = new Airtable({ apiKey: process.env.AIRTABLE_PAT })
-  .base(process.env.AIRTABLE_BASE);
+const router = express.Router();
 
+// ---------------------------------------------------------
+// CONFIG AIRTABLE (nuova SDK, blindata)
+// ---------------------------------------------------------
+Airtable.configure({
+  apiKey: process.env.AIRTABLE_PAT
+});
+
+const base = Airtable.base(process.env.AIRTABLE_BASE);
 const TABLE = "Ordini";
+
+// Helper sicuro
+function safeGet(record, field) {
+  try {
+    return record.get(field) ?? null;
+  } catch {
+    return null;
+  }
+}
 
 // =========================================================
 // POST /api/paypal/create-order
@@ -21,11 +36,14 @@ const TABLE = "Ordini";
 // =========================================================
 router.post("/paypal/create-order", authUser, async (req, res) => {
   try {
-    const { email, prodotti, totale, mode } = req.body;
+    const { email, prodotti, totale, mode } = req.body || {};
 
     if (!email || !Array.isArray(prodotti) || prodotti.length === 0) {
       return res.json({ success: false, error: "Dati ordine mancanti" });
     }
+
+    // MODEL A → prendiamo solo il primo prodotto
+    const prodotto = prodotti[0];
 
     // =========================================================
     // 1) CREA ORDINE IN AIRTABLE (stato: in_attesa_pagamento)
@@ -36,7 +54,7 @@ router.post("/paypal/create-order", authUser, async (req, res) => {
       id_ordine: ordineId,
       utente: email,
       prodotti: JSON.stringify(prodotti),
-      totale,
+      totale: Number(totale || prodotto.prezzo || 0),
       data: new Date().toISOString(),
       stato: "in_attesa_pagamento",
       metodo_pagamento: "PayPal"
@@ -45,7 +63,7 @@ router.post("/paypal/create-order", authUser, async (req, res) => {
     const airtableId = record.id;
 
     // =========================================================
-    // 2) CREA ORDINE PAYPAL
+    // 2) CREA ORDINE PAYPAL (MODEL A)
     // =========================================================
     const paypalRes = await fetch(
       "https://api-m.paypal.com/v2/checkout/orders",
@@ -54,9 +72,7 @@ router.post("/paypal/create-order", authUser, async (req, res) => {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Basic ${Buffer.from(
-            process.env.PAYPAL_CLIENT_ID +
-              ":" +
-              process.env.PAYPAL_SECRET
+            process.env.PAYPAL_CLIENT_ID + ":" + process.env.PAYPAL_SECRET
           ).toString("base64")}`
         },
         body: JSON.stringify({
@@ -66,7 +82,7 @@ router.post("/paypal/create-order", authUser, async (req, res) => {
               reference_id: airtableId,
               amount: {
                 currency_code: "EUR",
-                value: totale.toFixed(2)
+                value: Number(totale || prodotto.prezzo || 0).toFixed(2)
               }
             }
           ],
@@ -78,9 +94,9 @@ router.post("/paypal/create-order", authUser, async (req, res) => {
       }
     );
 
-    const paypalData = await paypalRes.json();
+    const paypalData = await paypalRes.json().catch(() => null);
 
-    if (!paypalData.id) {
+    if (!paypalData || !paypalData.id) {
       return res.json({
         success: false,
         error: "Errore PayPal"
@@ -97,9 +113,7 @@ router.post("/paypal/create-order", authUser, async (req, res) => {
     // =========================================================
     // 4) TROVA LINK APPROVAL PAYPAL
     // =========================================================
-    const approveLink = paypalData.links.find(
-      l => l.rel === "approve"
-    );
+    const approveLink = paypalData.links?.find(l => l.rel === "approve");
 
     if (!approveLink) {
       return res.json({
