@@ -5,7 +5,7 @@
 // =========================================================
 
 const express = require("express");
-const Airtable = require("airtable").default;
+const Airtable = require("../lib/airtable-wrapper.cjs");
 const { getProducts } = require("../../modules/airtable.cjs");
 
 const router = express.Router();
