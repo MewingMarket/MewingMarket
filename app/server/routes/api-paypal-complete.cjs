@@ -11,7 +11,7 @@ const Airtable = require("airtable");
 const base = new Airtable({ apiKey: process.env.AIRTABLE_PAT })
   .base(process.env.AIRTABLE_BASE);
 
-const { sendOrderEmail } = require("../../modules/email.cjs");
+const { inviaEmailAcquisto } = require("../../modules/email-acquisto.cjs");
 
 const TABLE = "Ordini";
 
@@ -26,9 +26,7 @@ router.get("/paypal/complete-order", async (req, res) => {
       return res.json({ success: false, error: "OrderId mancante" });
     }
 
-    // =========================================================
-    // 1) RECUPERA ORDINE DA AIRTABLE
-    // =========================================================
+    // 1) RECUPERA ORDINE
     const record = await base(TABLE).find(airtableId);
 
     if (!record) {
@@ -41,9 +39,7 @@ router.get("/paypal/complete-order", async (req, res) => {
       return res.json({ success: false, error: "Transazione PayPal mancante" });
     }
 
-    // =========================================================
     // 2) CATTURA PAGAMENTO PAYPAL
-    // =========================================================
     const captureRes = await fetch(
       `https://api-m.paypal.com/v2/checkout/orders/${paypalId}/capture`,
       {
@@ -51,9 +47,7 @@ router.get("/paypal/complete-order", async (req, res) => {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Basic ${Buffer.from(
-            process.env.PAYPAL_CLIENT_ID +
-              ":" +
-              process.env.PAYPAL_SECRET
+            process.env.PAYPAL_CLIENT_ID + ":" + process.env.PAYPAL_SECRET
           ).toString("base64")}`
         }
       }
@@ -68,18 +62,14 @@ router.get("/paypal/complete-order", async (req, res) => {
       });
     }
 
-    // =========================================================
     // 3) AGGIORNA ORDINE IN AIRTABLE
-    // =========================================================
     await base(TABLE).update(airtableId, {
       stato: "completato",
       paypal_capture_id: captureData.id || "",
       data: new Date().toISOString()
     });
 
-    // =========================================================
     // 4) PREPARA ORDINE PER IL FRONTEND
-    // =========================================================
     let prodotti = [];
     try {
       prodotti = JSON.parse(record.get("prodotti") || "[]");
@@ -96,22 +86,17 @@ router.get("/paypal/complete-order", async (req, res) => {
       metodo_pagamento: "PayPal"
     };
 
-    // =========================================================
     // 5) INVIA EMAIL DI CONFERMA ORDINE
-    // =========================================================
     try {
-      await sendOrderEmail({
+      await inviaEmailAcquisto({
         email: ordine.utente,
         ordine
       });
     } catch (err) {
       console.error("❌ Errore invio email ordine:", err);
-      // non blocchiamo il flusso
     }
 
-    // =========================================================
     // 6) RITORNA ORDINE AL FRONTEND
-    // =========================================================
     return res.json({
       success: true,
       order: ordine
