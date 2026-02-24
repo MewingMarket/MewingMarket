@@ -1,21 +1,15 @@
-// =========================================================
-// File: app/modules/email.cjs
-// Invio email ordine completato (Brevo 4.x)
-// =========================================================
-
-const brevo = require("@getbrevo/brevo");
+const { TransactionalEmailsApi } = require("@getbrevo/brevo");
 
 console.log("EMAIL-ORDER: Brevo 4.x caricato");
 
-// Variabili ambiente
 const apiKey = process.env.BREVO_API_KEY;
 const senderEmail = process.env.BREVO_SENDER;
 const senderName = "MewingMarket";
 
-// Inizializzazione client Brevo
-const client = new brevo.TransactionalEmailsApi();
+const client = new TransactionalEmailsApi();
 client.apiKey = apiKey;
 
+// EMAIL ORDINE
 async function sendOrderEmail({ email, ordine }) {
   const prodottiHTML = ordine.prodotti
     .map(
