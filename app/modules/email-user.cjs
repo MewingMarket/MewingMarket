@@ -1,4 +1,4 @@
-const { TransactionalEmailsApi } = require("@getbrevo/brevo");
+const brevo = require("@getbrevo/brevo");
 
 console.log("EMAIL-USER VERSIONE BREVO 4.x CARICATA");
 
@@ -6,7 +6,7 @@ const apiKey = process.env.BREVO_API_KEY;
 const senderEmail = process.env.BREVO_SENDER;
 const senderName = "MewingMarket";
 
-const client = new TransactionalEmailsApi();
+const client = new brevo.TransactionalEmailsApi.TransactionalEmailsApi();
 client.apiKey = apiKey;
 
 // EMAIL DI BENVENUTO
