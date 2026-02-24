@@ -7,7 +7,7 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const Airtable = require("airtable").default;
+const Airtable = require("../lib/airtable-wrapper.cjs");
 
 const { inviaEmailRegistrazione } = require("../modules/email-registrazione.cjs");
 const { inviaEmailCredenziali } = require("../modules/email-credenziali.cjs");
