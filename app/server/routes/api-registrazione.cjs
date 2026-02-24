@@ -1,36 +1,64 @@
-// =========================================================
+-// =========================================================
 // File: app/server/routes/api-registrazione.cjs
 // Registrazione utenti (Airtable master)
+// Versione definitiva (Airtable nuova SDK, blindata)
 // =========================================================
 
 const express = require("express");
 const crypto = require("crypto");
-const router = express.Router();
-const { airtable } = require("../services/airtable.cjs");
+const Airtable = require("airtable").default;
 
-// Hash password
+const router = express.Router();
+
+// ---------------------------------------------------------
+// CONFIG AIRTABLE (nuova SDK, blindata)
+// ---------------------------------------------------------
+Airtable.configure({
+  apiKey: process.env.AIRTABLE_PAT
+});
+
+const base = Airtable.base(process.env.AIRTABLE_BASE);
+const TABLE = "Utenti";
+
+// Hash SHA256 (compatibile con tuo schema)
 function hash(pwd) {
   return crypto.createHash("sha256").update(pwd).digest("hex");
 }
 
-// REGISTRAZIONE UTENTE
+// Helper sicuro
+function safeGet(record, field) {
+  try {
+    return record.get(field) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// =========================================================
+// POST /utente/register
+// =========================================================
 router.post("/utente/register", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body || {};
 
-    if (!email || !password)
+    if (!email || !password) {
       return res.json({ success: false, error: "Dati mancanti" });
+    }
 
-    // Controlla se esiste già
-    const existing = await airtable("Utenti")
-      .select({ filterByFormula: `{Email} = "${email}"` })
+    // 1) Controlla se esiste già
+    const existing = await base(TABLE)
+      .select({
+        filterByFormula: `{Email} = "${email}"`,
+        maxRecords: 1
+      })
       .firstPage();
 
-    if (existing.length > 0)
+    if (existing.length > 0) {
       return res.json({ success: false, error: "Email già registrata" });
+    }
 
-    // Crea utente
-    await airtable("Utenti").create({
+    // 2) Crea utente
+    await base(TABLE).create({
       Email: email,
       PasswordHash: hash(password),
       DataRegistrazione: new Date().toISOString(),
@@ -40,7 +68,7 @@ router.post("/utente/register", async (req, res) => {
     return res.json({ success: true });
 
   } catch (err) {
-    console.error("Errore registrazione:", err);
+    console.error("❌ Errore registrazione:", err);
     return res.json({ success: false, error: "Errore server" });
   }
 });
