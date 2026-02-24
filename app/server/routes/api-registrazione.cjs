@@ -1,4 +1,4 @@
--// =========================================================
+// =========================================================
 // File: app/server/routes/api-registrazione.cjs
 // Registrazione utenti (Airtable master)
 // Versione definitiva (Airtable nuova SDK, blindata)
