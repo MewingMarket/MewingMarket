@@ -1,25 +1,28 @@
-/**
- * =========================================================
- * File: app/server/routes/api-utenti.cjs
- * Sistema utenti reale (Airtable)
- * =========================================================
- */
+// =========================================================
+// File: app/server/routes/api-utenti.cjs
+// Sistema utenti reale (Airtable)
+// Versione definitiva (Airtable nuova SDK, blindata)
+// =========================================================
 
 const express = require("express");
-const Airtable = require("airtable");
 const crypto = require("crypto");
+const Airtable = require("airtable").default;
 
 const router = express.Router();
 
-const PAT = process.env.AIRTABLE_PAT;
-const BASE = process.env.AIRTABLE_BASE;
-const base = new Airtable({ apiKey: PAT }).base(BASE);
+// ---------------------------------------------------------
+// CONFIG AIRTABLE (nuova SDK, blindata)
+// ---------------------------------------------------------
+Airtable.configure({
+  apiKey: process.env.AIRTABLE_PAT
+});
 
+const base = Airtable.base(process.env.AIRTABLE_BASE);
 const TABLE = "Utenti";
 
-/* ============================================================
-   UTILS
-============================================================ */
+// =========================================================
+// UTILS
+// =========================================================
 function hashPassword(pwd) {
   return crypto.createHash("sha256").update(pwd).digest("hex");
 }
@@ -27,135 +30,172 @@ function hashPassword(pwd) {
 async function findUserByEmail(email) {
   const records = await base(TABLE)
     .select({
-      filterByFormula: `{email} = '${email}'`,
+      filterByFormula: `{Email} = "${email}"`,
       maxRecords: 1
     })
-    .all();
+    .firstPage();
 
   return records.length ? records[0] : null;
 }
 
-/* ============================================================
-   REGISTRAZIONE
-============================================================ */
+function safeGet(record, field) {
+  try {
+    return record.get(field) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// =========================================================
+// REGISTRAZIONE
+// =========================================================
 router.post("/utente/register", async (req, res) => {
-  const { email, password, nome } = req.body || {};
+  try {
+    const { email, password, nome } = req.body || {};
 
-  if (!email || !password) {
-    return res.json({ success: false, error: "Dati mancanti" });
+    if (!email || !password) {
+      return res.json({ success: false, error: "Dati mancanti" });
+    }
+
+    const existing = await findUserByEmail(email);
+    if (existing) {
+      return res.json({ success: false, error: "Email già registrata" });
+    }
+
+    await base(TABLE).create({
+      Email: email,
+      PasswordHash: hashPassword(password),
+      Nome: nome || "",
+      AvatarUrl: "",
+      DataRegistrazione: new Date().toISOString()
+    });
+
+    return res.json({ success: true });
+
+  } catch (err) {
+    console.error("❌ Errore registrazione:", err);
+    return res.json({ success: false, error: "Errore server" });
   }
-
-  const existing = await findUserByEmail(email);
-  if (existing) {
-    return res.json({ success: false, error: "Email già registrata" });
-  }
-
-  const record = await base(TABLE).create({
-    email,
-    password_hash: hashPassword(password),
-    nome: nome || "",
-    avatar_url: "",
-    created_at: new Date().toISOString()
-  });
-
-  return res.json({ success: true });
 });
 
-/* ============================================================
-   LOGIN
-============================================================ */
+// =========================================================
+// LOGIN
+// =========================================================
 router.post("/utente/login", async (req, res) => {
-  const { email, password } = req.body || {};
+  try {
+    const { email, password } = req.body || {};
 
-  const user = await findUserByEmail(email);
-  if (!user) {
-    return res.json({ success: false, error: "Credenziali non valide" });
+    const user = await findUserByEmail(email);
+    if (!user) {
+      return res.json({ success: false, error: "Credenziali non valide" });
+    }
+
+    const hash = hashPassword(password);
+    if (hash !== safeGet(user, "PasswordHash")) {
+      return res.json({ success: false, error: "Credenziali non valide" });
+    }
+
+    // Token semplice (compatibile con tuo sistema)
+    const token = "tok_" + crypto.randomBytes(32).toString("hex");
+
+    return res.json({ success: true, token, email });
+
+  } catch (err) {
+    console.error("❌ Errore login:", err);
+    return res.json({ success: false, error: "Errore server" });
   }
-
-  const hash = hashPassword(password);
-  if (hash !== user.get("password_hash")) {
-    return res.json({ success: false, error: "Credenziali non valide" });
-  }
-
-  // Token semplice (non JWT)
-  const token = crypto.randomBytes(32).toString("hex");
-
-  res.cookie("session", token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: false,
-    maxAge: 1000 * 60 * 60 * 24 * 30
-  });
-
-  return res.json({ success: true, email });
 });
 
-/* ============================================================
-   CAMBIO EMAIL
-============================================================ */
+// =========================================================
+// CAMBIO EMAIL
+// =========================================================
 router.post("/utente/cambia-email", async (req, res) => {
-  const { email, newEmail, password } = req.body || {};
+  try {
+    const { email, newEmail, password } = req.body || {};
 
-  const user = await findUserByEmail(email);
-  if (!user) return res.json({ success: false });
+    const user = await findUserByEmail(email);
+    if (!user) return res.json({ success: false });
 
-  if (hashPassword(password) !== user.get("password_hash")) {
-    return res.json({ success: false, error: "Password errata" });
+    if (hashPassword(password) !== safeGet(user, "PasswordHash")) {
+      return res.json({ success: false, error: "Password errata" });
+    }
+
+    await base(TABLE).update(user.id, { Email: newEmail });
+
+    return res.json({ success: true });
+
+  } catch (err) {
+    console.error("❌ Errore cambio email:", err);
+    return res.json({ success: false, error: "Errore server" });
   }
-
-  await base(TABLE).update(user.id, { email: newEmail });
-
-  return res.json({ success: true });
 });
 
-/* ============================================================
-   CAMBIO PASSWORD
-============================================================ */
+// =========================================================
+// CAMBIO PASSWORD
+// =========================================================
 router.post("/utente/cambia-password", async (req, res) => {
-  const { email, oldPassword, newPassword } = req.body || {};
+  try {
+    const { email, oldPassword, newPassword } = req.body || {};
 
-  const user = await findUserByEmail(email);
-  if (!user) return res.json({ success: false });
+    const user = await findUserByEmail(email);
+    if (!user) return res.json({ success: false });
 
-  if (hashPassword(oldPassword) !== user.get("password_hash")) {
-    return res.json({ success: false, error: "Password errata" });
+    if (hashPassword(oldPassword) !== safeGet(user, "PasswordHash")) {
+      return res.json({ success: false, error: "Password errata" });
+    }
+
+    await base(TABLE).update(user.id, {
+      PasswordHash: hashPassword(newPassword)
+    });
+
+    return res.json({ success: true });
+
+  } catch (err) {
+    console.error("❌ Errore cambio password:", err);
+    return res.json({ success: false, error: "Errore server" });
   }
-
-  await base(TABLE).update(user.id, {
-    password_hash: hashPassword(newPassword)
-  });
-
-  return res.json({ success: true });
 });
 
-/* ============================================================
-   RESET PASSWORD
-============================================================ */
+// =========================================================
+// RESET PASSWORD
+// =========================================================
 router.post("/utente/reset-password", async (req, res) => {
-  const { email, newPassword } = req.body || {};
+  try {
+    const { email, newPassword } = req.body || {};
 
-  const user = await findUserByEmail(email);
-  if (!user) return res.json({ success: false });
+    const user = await findUserByEmail(email);
+    if (!user) return res.json({ success: false });
 
-  await base(TABLE).update(user.id, {
-    password_hash: hashPassword(newPassword)
-  });
+    await base(TABLE).update(user.id, {
+      PasswordHash: hashPassword(newPassword)
+    });
 
-  return res.json({ success: true });
+    return res.json({ success: true });
+
+  } catch (err) {
+    console.error("❌ Errore reset password:", err);
+    return res.json({ success: false, error: "Errore server" });
+  }
 });
 
-/* ============================================================
-   ELIMINA ACCOUNT
-============================================================ */
+// =========================================================
+// ELIMINA ACCOUNT
+// =========================================================
 router.post("/utente/profilo/elimina", async (req, res) => {
-  const { email } = req.body || {};
+  try {
+    const { email } = req.body || {};
 
-  const user = await findUserByEmail(email);
-  if (!user) return res.json({ success: false });
+    const user = await findUserByEmail(email);
+    if (!user) return res.json({ success: false });
 
-  await base(TABLE).destroy(user.id);
+    await base(TABLE).destroy(user.id);
 
-  return res.json({ success: true });
+    return res.json({ success: true });
+
+  } catch (err) {
+    console.error("❌ Errore elimina account:", err);
+    return res.json({ success: false, error: "Errore server" });
+  }
 });
 
 module.exports = router;
