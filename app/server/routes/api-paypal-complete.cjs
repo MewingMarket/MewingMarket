@@ -1,19 +1,34 @@
 // =========================================================
 // File: app/server/routes/api-paypal-complete.cjs
 // Completa ordine PayPal + aggiorna Airtable + email
+// Versione definitiva (Airtable nuova SDK, blindata)
 // =========================================================
 
 const express = require("express");
-const router = express.Router();
-const fetch = require("node-fetch");
-
 const Airtable = require("airtable").default;
-const base = new Airtable({ apiKey: process.env.AIRTABLE_PAT })
-  .base(process.env.AIRTABLE_BASE);
-
+const fetch = require("node-fetch");
 const { inviaEmailAcquisto } = require("../modules/email-acquisto.cjs");
 
+const router = express.Router();
+
+// ---------------------------------------------------------
+// CONFIG AIRTABLE (nuova SDK, blindata)
+// ---------------------------------------------------------
+Airtable.configure({
+  apiKey: process.env.AIRTABLE_PAT
+});
+
+const base = Airtable.base(process.env.AIRTABLE_BASE);
 const TABLE = "Ordini";
+
+// Helper sicuro
+function safeGet(record, field) {
+  try {
+    return record.get(field) ?? null;
+  } catch {
+    return null;
+  }
+}
 
 // =========================================================
 // GET /api/paypal/complete-order?orderId=xxxx
@@ -27,13 +42,14 @@ router.get("/paypal/complete-order", async (req, res) => {
     }
 
     // 1) RECUPERA ORDINE
-    const record = await base(TABLE).find(airtableId);
-
-    if (!record) {
+    let record;
+    try {
+      record = await base(TABLE).find(airtableId);
+    } catch {
       return res.json({ success: false, error: "Ordine non trovato" });
     }
 
-    const paypalId = record.get("paypal_transaction_id");
+    const paypalId = safeGet(record, "paypal_transaction_id");
 
     if (!paypalId) {
       return res.json({ success: false, error: "Transazione PayPal mancante" });
@@ -53,7 +69,7 @@ router.get("/paypal/complete-order", async (req, res) => {
       }
     );
 
-    const captureData = await captureRes.json();
+    const captureData = await captureRes.json().catch(() => null);
 
     if (!captureData || !captureData.status) {
       return res.json({
@@ -72,15 +88,17 @@ router.get("/paypal/complete-order", async (req, res) => {
     // 4) PREPARA ORDINE PER IL FRONTEND
     let prodotti = [];
     try {
-      prodotti = JSON.parse(record.get("prodotti") || "[]");
-    } catch {}
+      prodotti = JSON.parse(safeGet(record, "prodotti") || "[]");
+    } catch {
+      prodotti = [];
+    }
 
     const ordine = {
       id: airtableId,
-      id_ordine: record.get("id_ordine"),
-      utente: record.get("utente"),
+      id_ordine: safeGet(record, "id_ordine"),
+      utente: safeGet(record, "utente"),
       prodotti,
-      totale: record.get("totale"),
+      totale: safeGet(record, "totale"),
       data: new Date().toISOString(),
       stato: "completato",
       metodo_pagamento: "PayPal"
