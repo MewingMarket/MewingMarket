@@ -6,7 +6,12 @@
 
 const express = require("express");
 const Airtable = require("../lib/airtable-wrapper.cjs");
-const { getProducts, syncAirtable } = require("../services/airtable.cjs");
+
+// ❌ ERA SBAGLIATO:
+// const { getProducts, syncAirtable } = require("../services/airtable.cjs");
+
+// ✅ VERSIONE CORRETTA:
+const { getProducts, syncAirtable } = require("../modules/airtable.cjs");
 
 const router = express.Router();
 
@@ -146,8 +151,6 @@ router.post("/products/delete", async (req, res) => {
   }
 });
 
-// =========================================================
-// POST — SYNC MANUALE DA AIRTABLE
 // =========================================================
 router.post("/products/sync", async (req, res) => {
   try {
