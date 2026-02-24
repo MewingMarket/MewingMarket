@@ -1,23 +1,56 @@
-const express = require("express");
-const router = express.Router();
-const crypto = require("crypto");const { airtable } = require("../services/airtable.cjs");
+// =========================================================
+// File: app/server/routes/api-reset.cjs
+// Reset password admin (Airtable master)
+// Versione definitiva (Airtable nuova SDK, blindata)
+// =========================================================
 
-// Hash password
+const express = require("express");
+const crypto = require("crypto");
+const Airtable = require("airtable").default;
+
+const router = express.Router();
+
+// ---------------------------------------------------------
+// CONFIG AIRTABLE (nuova SDK, blindata)
+// ---------------------------------------------------------
+Airtable.configure({
+  apiKey: process.env.AIRTABLE_PAT
+});
+
+const base = Airtable.base(process.env.AIRTABLE_BASE);
+const TABLE = "Admin";
+
+// Hash SHA256 (compatibile con tuo schema)
 function hashPassword(pwd) {
   return crypto.createHash("sha256").update(pwd).digest("hex");
 }
 
+// Helper sicuro
+function safeGet(record, field) {
+  try {
+    return record.get(field) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// =========================================================
+// POST /admin/reset-password
+// =========================================================
 router.post("/admin/reset-password", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body || {};
 
     if (!email || !password) {
       return res.json({ success: false, error: "Dati mancanti" });
     }
 
-    // Cerca admin in Airtable
-    const records = await airtable("Admin")
-      .select({ filterByFormula: `{Email} = "${email}"` })
+    // 1) Cerca admin in Airtable
+    const records = await base(TABLE)
+      .select({
+        filterByFormula: `{Email} = "${email}"`,
+        maxRecords: 1
+      })
       .firstPage();
 
     if (records.length === 0) {
@@ -26,8 +59,8 @@ router.post("/admin/reset-password", async (req, res) => {
 
     const admin = records[0];
 
-    // Aggiorna password
-    await airtable("Admin").update(admin.id, {
+    // 2) Aggiorna password
+    await base(TABLE).update(admin.id, {
       PasswordHash: hashPassword(password),
       UltimoReset: new Date().toISOString()
     });
@@ -35,7 +68,7 @@ router.post("/admin/reset-password", async (req, res) => {
     return res.json({ success: true });
 
   } catch (err) {
-    console.error("Errore reset admin:", err);
+    console.error("❌ Errore reset admin:", err);
     return res.json({ success: false, error: "Errore server" });
   }
 });
