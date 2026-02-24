@@ -1,24 +1,15 @@
-// =========================================================
-// File: app/modules/email-user.cjs
-// Email utente: registrazione + cambio credenziali (Brevo 4.x)
-// =========================================================
-
-const brevo = require("@getbrevo/brevo");
+const { TransactionalEmailsApi } = require("@getbrevo/brevo");
 
 console.log("EMAIL-USER VERSIONE BREVO 4.x CARICATA");
 
-// Variabili ambiente
 const apiKey = process.env.BREVO_API_KEY;
 const senderEmail = process.env.BREVO_SENDER;
 const senderName = "MewingMarket";
 
-// Inizializzazione client Brevo (nuova sintassi 4.x)
-const client = new brevo.TransactionalEmailsApi();
+const client = new TransactionalEmailsApi();
 client.apiKey = apiKey;
 
-// ================================================================
-// EMAIL: Registrazione + Benvenuto
-// ================================================================
+// EMAIL DI BENVENUTO
 async function sendWelcomeEmail({ email }) {
   const html = `
   <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto">
@@ -36,9 +27,7 @@ async function sendWelcomeEmail({ email }) {
   });
 }
 
-// ================================================================
-// EMAIL: Cambio Credenziali
-// ================================================================
+// EMAIL CAMBIO CREDENZIALI
 async function sendCredentialsChangedEmail({ email }) {
   const html = `
   <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;color:#333;">
