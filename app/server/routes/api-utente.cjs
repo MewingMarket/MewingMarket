@@ -9,7 +9,7 @@ const router = express.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-const Airtable = require("airtable");
+const Airtable = require("airtable").default;
 const base = new Airtable({ apiKey: process.env.AIRTABLE_PAT })
   .base(process.env.AIRTABLE_BASE);
 
