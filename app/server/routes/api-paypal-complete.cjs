@@ -11,7 +11,7 @@ const Airtable = require("airtable");
 const base = new Airtable({ apiKey: process.env.AIRTABLE_PAT })
   .base(process.env.AIRTABLE_BASE);
 
-const { inviaEmailAcquisto } = require("../../modules/email-acquisto.cjs");
+const { inviaEmailAcquisto } = require("../modules/email-acquisto.cjs");
 
 const TABLE = "Ordini";
 
