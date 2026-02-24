@@ -4,7 +4,7 @@
  * Entry point del server — versione coerente al router
  * =========================================================
  */
-
+console.log(">> PACKAGE TYPE:", require("../../package.json").type);
 const express = require("express");
 const path = require("path");
 const cors = require("cors");
