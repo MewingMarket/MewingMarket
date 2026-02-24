@@ -11,7 +11,7 @@ const Airtable = require("../lib/airtable-wrapper.cjs");
 // const { getProducts, syncAirtable } = require("../services/airtable.cjs");
 
 // ✅ VERSIONE CORRETTA:
-const { getProducts, syncAirtable } = require("./modules/airtable.cjs");
+const { getProducts, syncAirtable } = require("../modules/airtable.cjs");
 
 const router = express.Router();
 
