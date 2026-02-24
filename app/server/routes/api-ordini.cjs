@@ -1,18 +1,33 @@
 // =========================================================
 // File: app/server/routes/api-ordini.cjs
 // Lista ordini (Admin) — Model A
+// Versione definitiva (Airtable nuova SDK, blindata)
 // =========================================================
 
 const express = require("express");
+const Airtable = require("airtable").default;
+
 const router = express.Router();
-const Airtable = require("airtable");
 
-// Config Airtable
-const PAT = process.env.AIRTABLE_PAT;
-const BASE = process.env.AIRTABLE_BASE;
-const TABLE = "Ordini"; // <-- Nome tabella corretto
+// ---------------------------------------------------------
+// CONFIG AIRTABLE (nuova SDK, blindata)
+// ---------------------------------------------------------
+Airtable.configure({
+  apiKey: process.env.AIRTABLE_PAT
+});
 
-const base = new Airtable({ apiKey: PAT }).base(BASE);
+const base = Airtable.base(process.env.AIRTABLE_BASE);
+
+const TABLE = "Ordini";
+
+// Helper sicuro
+function safeGet(record, field) {
+  try {
+    return record.get(field) ?? null;
+  } catch {
+    return null;
+  }
+}
 
 // =========================================================
 // GET — LISTA ORDINI (ADMIN)
@@ -23,23 +38,22 @@ router.get("/ordini/lista", async (req, res) => {
 
     const ordini = records.map(r => {
       let prodotti = [];
-
       try {
-        prodotti = JSON.parse(r.get("prodotti") || "[]");
+        prodotti = JSON.parse(safeGet(r, "prodotti") || "[]");
       } catch {
         prodotti = [];
       }
 
       return {
         id: r.id,
-        id_ordine: r.get("id_ordine") || null,
-        utente: r.get("utente") || null,
+        id_ordine: safeGet(r, "id_ordine"),
+        utente: safeGet(r, "utente"),
         prodotti,
-        totale: r.get("totale") || 0,
-        data: r.get("data") || null,
-        stato: r.get("stato") || "sconosciuto",
-        metodo_pagamento: r.get("metodo_pagamento") || null,
-        paypal_transaction_id: r.get("paypal_transaction_id") || null
+        totale: Number(safeGet(r, "totale") || 0),
+        data: safeGet(r, "data") || r._rawJson.createdTime,
+        stato: safeGet(r, "stato") || "sconosciuto",
+        metodo_pagamento: safeGet(r, "metodo_pagamento") || null,
+        paypal_transaction_id: safeGet(r, "paypal_transaction_id") || null
       };
     });
 
