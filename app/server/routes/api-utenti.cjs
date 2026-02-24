@@ -6,7 +6,7 @@
 
 const express = require("express");
 const crypto = require("crypto");
-const Airtable = require("airtable").default;
+const Airtable = require("../lib/airtable-wrapper.cjs");
 
 const router = express.Router();
 
