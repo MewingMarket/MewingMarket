@@ -33,7 +33,7 @@ router.use(require("./routes/api-utenti-elimina-account.cjs"));
 router.use(require("./routes/api-bridge.cjs"));
 
 // =========================================================
-– PAYPAL
+//PAYPAL
 // =========================================================
 router.use(require("./routes/api-paypal-bridge.cjs"));
 router.use(require("./routes/api-paypal-create.cjs"));
