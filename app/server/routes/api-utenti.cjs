@@ -21,7 +21,7 @@ function genToken(prefix) {
 /* =========================================================
    REGISTRAZIONE
 ========================================================= */
-router.post("/registrazione", async (req, res) => {
+router.post("/api/utenti/registrazione", async (req, res) => {
   const { email, password } = req.body || {};
 
   if (!email || !password) {
@@ -55,7 +55,7 @@ router.post("/registrazione", async (req, res) => {
 /* =========================================================
    LOGIN
 ========================================================= */
-router.post("/login", async (req, res) => {
+router.post("/api/utenti/login", async (req, res) => {
   const { email, password } = req.body || {};
 
   if (!email || !password) {
@@ -91,7 +91,7 @@ router.post("/login", async (req, res) => {
 /* =========================================================
    CAMBIO EMAIL
 ========================================================= */
-router.post("/cambia-email", async (req, res) => {
+router.post("/api/utenti/cambia-email", async (req, res) => {
   const { token, nuova_email, password } = req.body || {};
 
   if (!token || !nuova_email || !password) {
@@ -125,7 +125,7 @@ router.post("/cambia-email", async (req, res) => {
 /* =========================================================
    CAMBIO PASSWORD
 ========================================================= */
-router.post("/cambia-password", async (req, res) => {
+router.post("/api/utenti/cambia-password", async (req, res) => {
   const { token, nuova_password } = req.body || {};
 
   if (!token || !nuova_password) {
@@ -157,7 +157,7 @@ router.post("/cambia-password", async (req, res) => {
 /* =========================================================
    RESET UTENTE
 ========================================================= */
-router.post("/reset", async (req, res) => {
+router.post("/api/utenti/reset", async (req, res) => {
   const { email } = req.body || {};
 
   if (!email) {
@@ -193,4 +193,4 @@ router.post("/reset", async (req, res) => {
   }
 });
 
-module.exports = router; 
+module.exports = router;
