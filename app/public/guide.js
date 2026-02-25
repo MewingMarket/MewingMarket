@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
 
   const params = new URLSearchParams(location.search);
-  const topic = params.get("topic") || "default";
+  const topic = params.get("topic") || "index";
 
   const titleEl = document.getElementById("guide-title");
   const contentEl = document.getElementById("guide-content");
@@ -14,6 +14,24 @@ document.addEventListener("DOMContentLoaded", () => {
   // ============================
 
   const guides = {
+
+    index: {
+      title: "Centro Guide & Assistenza",
+      html: `
+        <h2>Guide disponibili</h2>
+        <ul>
+          <li><a href="guide.html?topic=login">Come accedere al tuo account</a></li>
+          <li><a href="guide.html?topic=registrazione">Come creare un account</a></li>
+          <li><a href="guide.html?topic=download">Come scaricare un prodotto</a></li>
+          <li><a href="guide.html?topic=ordini">Gestione ordini e annullamenti</a></li>
+          <li><a href="guide.html?topic=resi">Resi e rimborsi</a></li>
+          <li><a href="guide.html?topic=annulla-account">Eliminazione account</a></li>
+        </ul>
+
+        <h2>Serve aiuto?</h2>
+        <p>Puoi contattarci tramite email o WhatsApp Business.</p>
+      `
+    },
 
     login: {
       title: "Come accedere al tuo account",
