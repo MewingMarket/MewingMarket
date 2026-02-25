@@ -42,7 +42,7 @@ router.use(require("./routes/api-admin-analytics.cjs"));
 // =========================================================
 router.use(require("./routes/admin-analisi.cjs"));
 router.use(require("./routes/admin-feedback.cjs"));
-router.use(require("./routes/admin-login.cjs"));
+
 router.use(require("./routes/admin-ordini.cjs"));
 router.use(require("./routes/admin-settings.cjs"));
 router.use(require("./routes/admin-stats.cjs"));
