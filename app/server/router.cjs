@@ -1,31 +1,23 @@
 // =========================================================
 // File: app/server/router.cjs
-// Router principale (DEFINITIVO basato sulla tua cartella)
+// Router principale (DEFINITIVO basato sulla struttura reale)
 // =========================================================
 
 const express = require("express");
 const router = express.Router();
 
 // =========================================================
-// API ORIGINALI (UTENTE)
+// API UTENTE REALI
 // =========================================================
-router.use(require("./routes/api-login.cjs"));
-router.use(require("./routes/api-reset.cjs"));
 router.use(require("./routes/api-prodotti.cjs"));
 router.use(require("./routes/api-ordini.cjs"));
 router.use(require("./routes/api-vendite.cjs"));
 router.use(require("./routes/api-upload.cjs"));
-router.use(require("./routes/api-registrazione.cjs"));
-router.use(require("./routes/api-utente.cjs"));
 router.use(require("./routes/api-utenti.cjs"));
+router.use(require("./routes/api-utenti-elimina-account.cjs"));
 router.use(require("./routes/api-ordini-annulla.cjs"));
 router.use(require("./routes/api-ordini-utente.cjs"));
 router.use(require("./routes/api-track.cjs"));
-
-// =========================================================
-// NUOVO ENDPOINT: ELIMINAZIONE ACCOUNT UTENTE
-// =========================================================
-router.use(require("./routes/api-utenti-elimina-account.cjs"));
 
 // =========================================================
 // BRIDGE LEGACY
@@ -43,9 +35,6 @@ router.use(require("./routes/api-paypal-cancel.cjs"));
 // =========================================================
 // ADMIN (NUOVI MODULI API)
 // =========================================================
-const { router: adminAuthRouter } = require("./routes/api-admin-auth.cjs");
-router.use(adminAuthRouter);
-
 router.use(require("./routes/api-admin-analytics.cjs"));
 
 // =========================================================
