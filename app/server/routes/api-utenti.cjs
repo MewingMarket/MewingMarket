@@ -1,6 +1,6 @@
 // =========================================================
 // File: app/server/routes/api-utenti.cjs
-// Sistema utenti definitivo (password in chiaro)
+// Sistema utenti definitivo (password in chiaro) — SAFE VERSION
 // =========================================================
 
 const express = require("express");
@@ -13,6 +13,12 @@ const base = Airtable.base(process.env.AIRTABLE_BASE);
 
 const TABLE_UTENTI = "Utenti";
 
+// Escape sicuro per Airtable
+function escapeAirtable(value) {
+  if (!value) return "";
+  return String(value).replace(/"/g, '\\"');
+}
+
 // Genera token semplice
 function genToken(prefix) {
   return prefix + "_" + crypto.randomBytes(16).toString("hex");
@@ -22,15 +28,22 @@ function genToken(prefix) {
    REGISTRAZIONE
 ========================================================= */
 router.post("/utenti/registrazione", async (req, res) => {
-  const { email, password } = req.body || {};
+  let { email, password } = req.body || {};
+
+  email = (email || "").trim().toLowerCase();
+  password = (password || "").trim();
 
   if (!email || !password) {
     return res.json({ success: false, error: "Dati mancanti" });
   }
 
   try {
+    const safeEmail = escapeAirtable(email);
+
     const esiste = await base(TABLE_UTENTI)
-      .select({ filterByFormula: `{email} = '${email}'` })
+      .select({
+        filterByFormula: `{email} = "${safeEmail}"`
+      })
       .firstPage();
 
     if (esiste.length > 0) {
@@ -46,6 +59,7 @@ router.post("/utenti/registrazione", async (req, res) => {
     });
 
     return res.json({ success: true, token });
+
   } catch (err) {
     console.error("❌ Registrazione:", err);
     return res.json({ success: false, error: "Errore server" });
@@ -56,15 +70,22 @@ router.post("/utenti/registrazione", async (req, res) => {
    LOGIN
 ========================================================= */
 router.post("/utenti/login", async (req, res) => {
-  const { email, password } = req.body || {};
+  let { email, password } = req.body || {};
+
+  email = (email || "").trim().toLowerCase();
+  password = (password || "").trim();
 
   if (!email || !password) {
     return res.json({ success: false, error: "Dati mancanti" });
   }
 
   try {
+    const safeEmail = escapeAirtable(email);
+
     const records = await base(TABLE_UTENTI)
-      .select({ filterByFormula: `{email} = '${email}'` })
+      .select({
+        filterByFormula: `{email} = "${safeEmail}"`
+      })
       .firstPage();
 
     if (records.length === 0) {
@@ -82,6 +103,7 @@ router.post("/utenti/login", async (req, res) => {
     await base(TABLE_UTENTI).update(user.id, { token });
 
     return res.json({ success: true, token });
+
   } catch (err) {
     console.error("❌ Login:", err);
     return res.json({ success: false, error: "Errore server" });
@@ -92,15 +114,23 @@ router.post("/utenti/login", async (req, res) => {
    CAMBIO EMAIL
 ========================================================= */
 router.post("/utenti/cambia-email", async (req, res) => {
-  const { token, nuova_email, password } = req.body || {};
+  let { token, nuova_email, password } = req.body || {};
+
+  token = (token || "").trim();
+  nuova_email = (nuova_email || "").trim().toLowerCase();
+  password = (password || "").trim();
 
   if (!token || !nuova_email || !password) {
     return res.json({ success: false, error: "Dati mancanti" });
   }
 
   try {
+    const safeToken = escapeAirtable(token);
+
     const records = await base(TABLE_UTENTI)
-      .select({ filterByFormula: `{token} = '${token}'` })
+      .select({
+        filterByFormula: `{token} = "${safeToken}"`
+      })
       .firstPage();
 
     if (records.length === 0) {
@@ -116,6 +146,7 @@ router.post("/utenti/cambia-email", async (req, res) => {
     await base(TABLE_UTENTI).update(user.id, { email: nuova_email });
 
     return res.json({ success: true });
+
   } catch (err) {
     console.error("❌ Cambio email:", err);
     return res.json({ success: false, error: "Errore server" });
@@ -126,15 +157,22 @@ router.post("/utenti/cambia-email", async (req, res) => {
    CAMBIO PASSWORD
 ========================================================= */
 router.post("/utenti/cambia-password", async (req, res) => {
-  const { token, nuova_password } = req.body || {};
+  let { token, nuova_password } = req.body || {};
+
+  token = (token || "").trim();
+  nuova_password = (nuova_password || "").trim();
 
   if (!token || !nuova_password) {
     return res.json({ success: false, error: "Dati mancanti" });
   }
 
   try {
+    const safeToken = escapeAirtable(token);
+
     const records = await base(TABLE_UTENTI)
-      .select({ filterByFormula: `{token} = '${token}'` })
+      .select({
+        filterByFormula: `{token} = "${safeToken}"`
+      })
       .firstPage();
 
     if (records.length === 0) {
@@ -148,6 +186,7 @@ router.post("/utenti/cambia-password", async (req, res) => {
     });
 
     return res.json({ success: true });
+
   } catch (err) {
     console.error("❌ Cambio password:", err);
     return res.json({ success: false, error: "Errore server" });
@@ -158,15 +197,21 @@ router.post("/utenti/cambia-password", async (req, res) => {
    RESET UTENTE
 ========================================================= */
 router.post("/utenti/reset", async (req, res) => {
-  const { email } = req.body || {};
+  let { email } = req.body || {};
+
+  email = (email || "").trim().toLowerCase();
 
   if (!email) {
     return res.json({ success: false, error: "Email mancante" });
   }
 
   try {
+    const safeEmail = escapeAirtable(email);
+
     const records = await base(TABLE_UTENTI)
-      .select({ filterByFormula: `{email} = '${email}'` })
+      .select({
+        filterByFormula: `{email} = "${safeEmail}"`
+      })
       .firstPage();
 
     if (records.length === 0) {
@@ -187,6 +232,7 @@ router.post("/utenti/reset", async (req, res) => {
       success: true,
       nuovaPassword
     });
+
   } catch (err) {
     console.error("❌ Reset utente:", err);
     return res.json({ success: false, error: "Errore server" });
