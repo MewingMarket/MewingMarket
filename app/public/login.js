@@ -1,8 +1,8 @@
 // =========================================================
-// Login pubblico – MewingMarket (BACKEND READY)
+// Login pubblico – MewingMarket (BACKEND READY PATCHATO)
 // =========================================================
 
-const msg = document.getElementById('status') || document.getElementById('msg');
+const msg = document.getElementById('status');
 
 function setMsg(text, ok = false) {
   if (!msg) return;
@@ -23,7 +23,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
   }
 
   try {
-    const res = await fetch('/api/utente/login', {
+    const res = await fetch('/api/utenti/login', {
       method: 'POST',
       headers: { 'Content-Type':'application/json' },
       body: JSON.stringify({ email, password })
@@ -37,7 +37,11 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     }
 
     if (data.success) {
-      localStorage.setItem('session', data.token);
+
+      // Salva token nuovo
+      localStorage.setItem('user_token', data.token);
+
+      // Salva email utente
       localStorage.setItem('utenteEmail', email);
 
       setMsg("Accesso effettuato", true);
