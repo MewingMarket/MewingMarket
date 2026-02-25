@@ -1,8 +1,8 @@
 // =========================================================
-// Reset password – MewingMarket (BACKEND READY)
+// Eliminazione Account – MewingMarket (BACKEND READY PATCHATO)
 // =========================================================
 
-const msg = document.getElementById('status') || document.getElementById('msg');
+const msg = document.getElementById('status');
 
 function setMsg(text, ok = false) {
   if (!msg) return;
@@ -13,18 +13,27 @@ function setMsg(text, ok = false) {
 document.getElementById('reset-btn')?.addEventListener('click', async () => {
   setMsg("Eliminazione account in corso...");
 
-  const email = localStorage.getItem("utenteEmail");
+  const token = localStorage.getItem("user_token");
+  const password = document.getElementById("password")?.value.trim();
 
-  if (!email) {
-    setMsg("Nessun utente loggato");
+  if (!token) {
+    setMsg("Devi effettuare il login");
+    return;
+  }
+
+  if (!password) {
+    setMsg("Inserisci la tua password per confermare");
     return;
   }
 
   try {
-    const res = await fetch('/api/utente/reset-password', {
+    const res = await fetch('/api/utenti/elimina-account', {
       method: 'POST',
-      headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify({ email })
+      headers: { 
+        'Content-Type':'application/json',
+        'x-token': token
+      },
+      body: JSON.stringify({ token, password })
     });
 
     const data = await res.json().catch(() => null);
@@ -37,15 +46,16 @@ document.getElementById('reset-btn')?.addEventListener('click', async () => {
     if (data.success) {
       setMsg("Account eliminato. Reindirizzamento...", true);
 
-      localStorage.removeItem("session");
+      // Pulizia locale
+      localStorage.removeItem("user_token");
       localStorage.removeItem("utenteEmail");
 
       setTimeout(() => {
-        window.location.href = "cambia-cred.html";
-      }, 800);
+        window.location.href = "registrazione.html";
+      }, 1000);
 
     } else {
-      setMsg(data.error || "Errore durante il reset");
+      setMsg(data.error || "Errore durante l'eliminazione dell'account");
     }
 
   } catch (err) {
