@@ -1,5 +1,5 @@
 // =========================================================
-// Eliminazione Account – MewingMarket (BACKEND READY PATCHATO)
+// Eliminazione Account – MewingMarket (VERSIONE DEFINITIVA)
 // =========================================================
 
 const msg = document.getElementById('status');
@@ -13,7 +13,8 @@ function setMsg(text, ok = false) {
 document.getElementById('reset-btn')?.addEventListener('click', async () => {
   setMsg("Eliminazione account in corso...");
 
-  const token = localStorage.getItem("user_token");
+  // TOKEN CORRETTO
+  const token = localStorage.getItem("token");
   const password = document.getElementById("password")?.value.trim();
 
   if (!token) {
@@ -30,7 +31,7 @@ document.getElementById('reset-btn')?.addEventListener('click', async () => {
     const res = await fetch('/api/utenti/elimina-account', {
       method: 'POST',
       headers: { 
-        'Content-Type':'application/json',
+        'Content-Type': 'application/json',
         'x-token': token
       },
       body: JSON.stringify({ token, password })
@@ -47,8 +48,13 @@ document.getElementById('reset-btn')?.addEventListener('click', async () => {
       setMsg("Account eliminato. Reindirizzamento...", true);
 
       // Pulizia locale
-      localStorage.removeItem("user_token");
+      localStorage.removeItem("token");
       localStorage.removeItem("utenteEmail");
+
+      // Aggiorna footer dinamico se presente
+      if (typeof aggiornaFooterUtente === "function") {
+        aggiornaFooterUtente();
+      }
 
       setTimeout(() => {
         window.location.href = "registrazione.html";
