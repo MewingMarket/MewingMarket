@@ -23,12 +23,17 @@ router.use(require("./routes/api-ordini-utente.cjs"));
 router.use(require("./routes/api-track.cjs"));
 
 // =========================================================
+// NUOVO ENDPOINT: ELIMINAZIONE ACCOUNT UTENTE
+// =========================================================
+router.use(require("./routes/api-utenti-elimina-account.cjs"));
+
+// =========================================================
 // BRIDGE LEGACY
 // =========================================================
 router.use(require("./routes/api-bridge.cjs"));
 
 // =========================================================
-// PAYPAL
+– PAYPAL
 // =========================================================
 router.use(require("./routes/api-paypal-bridge.cjs"));
 router.use(require("./routes/api-paypal-create.cjs"));
