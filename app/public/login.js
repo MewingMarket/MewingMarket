@@ -1,5 +1,5 @@
 // =========================================================
-// Login pubblico – MewingMarket (BACKEND READY PATCHATO)
+// Login pubblico – MewingMarket (VERSIONE DEFINITIVA)
 // =========================================================
 
 const msg = document.getElementById('status');
@@ -38,11 +38,16 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
 
     if (data.success) {
 
-      // Salva token nuovo
-      localStorage.setItem('user_token', data.token);
+      // Salva token corretto
+      localStorage.setItem('token', data.token);
 
-      // Salva email utente
+      // Salva email utente (opzionale ma utile)
       localStorage.setItem('utenteEmail', email);
+
+      // Aggiorna footer dinamico se presente
+      if (typeof aggiornaFooterUtente === "function") {
+        aggiornaFooterUtente();
+      }
 
       setMsg("Accesso effettuato", true);
 
