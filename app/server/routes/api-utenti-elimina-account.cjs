@@ -1,70 +1,51 @@
 // =========================================================
-// Eliminazione Account – MewingMarket (VERSIONE COMPATIBILE)
+// API: Elimina Account Utente (CJS + EXPRESS COMPATIBILE)
 // =========================================================
 
-const msg = document.getElementById('status');
+const express = require("express");
+const router = express.Router();
 
-function setMsg(text, ok = false) {
-  if (!msg) return;
-  msg.textContent = text;
-  msg.style.color = ok ? '#4ade80' : '#f97373';
-}
-
-document.getElementById('reset-btn')?.addEventListener('click', async () => {
-  setMsg("Eliminazione account in corso...");
-
-  const token = localStorage.getItem("token"); // CORRETTO
-  const password = document.getElementById("password")?.value.trim();
-
-  if (!token) {
-    setMsg("Devi effettuare il login");
-    return;
-  }
-
-  if (!password) {
-    setMsg("Inserisci la tua password per confermare");
-    return;
-  }
+router.post("/api/utenti/elimina-account", async (req, res) => {
+  const db = req.db; // il tuo backend passa db in req
 
   try {
-    const res = await fetch('/api/utenti/elimina-account', { // ENDPOINT ESISTENTE
-      method: 'POST',
-      headers: { 
-        'Content-Type':'application/json',
-        'x-token': token
-      },
-      body: JSON.stringify({ token, password })
-    });
+    const token = req.headers["x-token"];
+    const { password } = req.body;
 
-    const data = await res.json().catch(() => null);
-
-    if (!data) {
-      setMsg("Errore del server");
-      return;
+    if (!token || !password) {
+      return res.json({ success: false, error: "Token o password mancanti" });
     }
 
-    if (data.success) {
-      setMsg("Account eliminato. Reindirizzamento...", true);
+    // 1) Verifica token
+    const utente = await db.get(
+      `SELECT id, password FROM utenti WHERE token = ?`,
+      [token]
+    );
 
-      // Pulizia locale
-      localStorage.removeItem("token");
-      localStorage.removeItem("utenteEmail");
-
-      // Aggiorna footer dinamico
-      if (typeof aggiornaFooterUtente === "function") {
-        aggiornaFooterUtente();
-      }
-
-      setTimeout(() => {
-        window.location.href = "registrazione.html";
-      }, 1000);
-
-    } else {
-      setMsg(data.error || "Errore durante l'eliminazione dell'account");
+    if (!utente) {
+      return res.json({ success: false, error: "Token non valido" });
     }
+
+    // 2) Verifica password
+    if (utente.password !== password) {
+      return res.json({ success: false, error: "Password errata" });
+    }
+
+    const userId = utente.id;
+
+    // 3) Elimina dati collegati
+    await db.run(`DELETE FROM ordini WHERE utente_id = ?`, [userId]);
+    await db.run(`DELETE FROM recensioni WHERE utente_id = ?`, [userId]);
+
+    // 4) Elimina l’utente
+    await db.run(`DELETE FROM utenti WHERE id = ?`, [userId]);
+
+    return res.json({ success: true });
 
   } catch (err) {
-    console.error(err);
-    setMsg("Errore di connessione");
+    console.error("Errore elimina account:", err);
+    return res.json({ success: false, error: "Errore del server" });
   }
 });
+
+module.exports = router;
