@@ -17,13 +17,11 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // Email semplice
     if (!email.includes("@") || !email.includes(".")) {
       statusBox.textContent = "Inserisci un'email valida.";
       return;
     }
 
-    // Password minima
     if (password.length < 6) {
       statusBox.textContent = "La password deve contenere almeno 6 caratteri.";
       return;
@@ -35,8 +33,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      // INVIO AL BACKEND
-      const res = await fetch("/api/utente/registrazione", {
+      // INVIO AL NUOVO BACKEND
+      const res = await fetch("/api/utenti/registrazione", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })
@@ -44,18 +42,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const data = await res.json();
 
-      if (!res.ok) {
+      if (!data.success) {
         statusBox.textContent = data.error || "Errore durante la registrazione.";
         return;
       }
 
-      // SUCCESSO
+      // SUCCESSO → SALVA TOKEN
+      if (data.token) {
+        localStorage.setItem("user_token", data.token);
+      }
+
       statusBox.style.color = "green";
       statusBox.textContent = "Registrazione completata! Reindirizzamento...";
 
       setTimeout(() => {
         window.location.href = "dashboard.html";
-      }, 1500);
+      }, 1200);
 
     } catch (err) {
       console.error(err);
