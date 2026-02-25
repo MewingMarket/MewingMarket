@@ -21,6 +21,11 @@
   <link rel="stylesheet" href="style.css">
 
   <style>
+    body {
+      background:#f7faff;
+      font-family:system-ui, sans-serif;
+      color:#003366;
+    }
     .login-box {
       max-width:400px;
       margin:60px auto;
@@ -34,7 +39,7 @@
       padding:12px;
       margin-top:10px;
       border-radius:8px;
-      border:1px solid #ddd;
+      border:1px solid #cdd7e1;
       font-size:16px;
     }
     button {
@@ -48,12 +53,17 @@
       cursor:pointer;
       font-size:16px;
       font-weight:600;
+      transition:0.2s;
+    }
+    button:hover {
+      background:#005fe0;
     }
     #status {
       margin-top:15px;
       font-size:14px;
       color:#d00;
       text-align:center;
+      font-weight:600;
     }
     .links {
       margin-top:20px;
@@ -101,7 +111,7 @@
 
     <div class="links">
       <p><a href="registrazione.html">Non hai un account? Registrati qui</a></p>
-      <p><a href="reset.html">Hai dimenticato la password?</a></p>
+      <p><a href="reset.html">Vuoi eliminare il tuo account?</a></p>
     </div>
   </div>
 
