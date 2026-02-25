@@ -4,6 +4,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
+
     statusBox.style.color = "#d00";
     statusBox.textContent = "Registrazione in corso...";
 
@@ -33,7 +34,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      // INVIO AL NUOVO BACKEND
+      // INVIO AL BACKEND
       const res = await fetch("/api/utenti/registrazione", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -47,9 +48,14 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // SUCCESSO → SALVA TOKEN
+      // SUCCESSO → SALVA TOKEN (corretto)
       if (data.token) {
-        localStorage.setItem("user_token", data.token);
+        localStorage.setItem("token", data.token);
+      }
+
+      // Aggiorna footer dinamico (se presente)
+      if (typeof aggiornaFooterUtente === "function") {
+        aggiornaFooterUtente();
       }
 
       statusBox.style.color = "green";
@@ -57,7 +63,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       setTimeout(() => {
         window.location.href = "dashboard.html";
-      }, 1200);
+      }, 1000);
 
     } catch (err) {
       console.error(err);
