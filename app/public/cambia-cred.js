@@ -1,5 +1,5 @@
 // =========================================================
-// Cambia Credenziali – MewingMarket (BACKEND READY)
+// Cambia Credenziali – MewingMarket (BACKEND READY PATCHATO)
 // =========================================================
 
 const statusBox = document.getElementById("status");
@@ -10,6 +10,10 @@ function setStatus(msg, ok = false) {
   statusBox.style.color = ok ? "#4ade80" : "#f97373";
 }
 
+function getUserToken() {
+  return localStorage.getItem("user_token");
+}
+
 // =========================================================
 // 1) CAMBIA EMAIL
 // =========================================================
@@ -18,25 +22,25 @@ document.getElementById("change-email-form").addEventListener("submit", async (e
   e.preventDefault();
   setStatus("");
 
-  const newEmail = e.target.newEmail.value.trim().toLowerCase();
+  const nuova_email = e.target.newEmail.value.trim().toLowerCase();
   const password = e.target.password.value.trim();
-  const session = localStorage.getItem("session");
+  const token = getUserToken();
 
-  if (!session) {
+  if (!token) {
     setStatus("Devi effettuare il login");
     return;
   }
 
-  if (!newEmail.includes("@") || !newEmail.includes(".")) {
+  if (!nuova_email.includes("@") || !nuova_email.includes(".")) {
     setStatus("Email non valida");
     return;
   }
 
   try {
-    const res = await fetch("/api/utente/cambia-email", {
+    const res = await fetch("/api/utenti/cambia-email", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token: session, newEmail, password })
+      headers: { "Content-Type": "application/json", "x-token": token },
+      body: JSON.stringify({ token, nuova_email, password })
     });
 
     const data = await res.json().catch(() => null);
@@ -50,7 +54,7 @@ document.getElementById("change-email-form").addEventListener("submit", async (e
       setStatus("Email aggiornata con successo", true);
 
       // Aggiorna email in localStorage
-      localStorage.setItem("utenteEmail", newEmail);
+      localStorage.setItem("utenteEmail", nuova_email);
 
       e.target.reset();
     } else {
@@ -72,24 +76,24 @@ document.getElementById("change-password-form").addEventListener("submit", async
   setStatus("");
 
   const oldPassword = e.target.oldPassword.value.trim();
-  const newPassword = e.target.newPassword.value.trim();
-  const session = localStorage.getItem("session");
+  const nuova_password = e.target.newPassword.value.trim();
+  const token = getUserToken();
 
-  if (!session) {
+  if (!token) {
     setStatus("Devi effettuare il login");
     return;
   }
 
-  if (newPassword.length < 6) {
+  if (nuova_password.length < 6) {
     setStatus("La nuova password deve contenere almeno 6 caratteri");
     return;
   }
 
   try {
-    const res = await fetch("/api/utente/cambia-password", {
+    const res = await fetch("/api/utenti/cambia-password", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token: session, oldPassword, newPassword })
+      headers: { "Content-Type": "application/json", "x-token": token },
+      body: JSON.stringify({ token, oldPassword, nuova_password })
     });
 
     const data = await res.json().catch(() => null);
