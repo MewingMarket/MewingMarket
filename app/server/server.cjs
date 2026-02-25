@@ -27,7 +27,7 @@ app.use(cookieParser());
 // MIDDLEWARE GLOBALI
 require("./middleware/cache.cjs")(app);
 require("./middleware/uploads.cjs")(app);
-require("./middleware/user-state.cjs")(app);
+
 require("./middleware/context.cjs")(app);
 
 // STATICI
