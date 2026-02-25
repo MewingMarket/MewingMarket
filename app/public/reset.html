@@ -16,11 +16,16 @@
     });
   </script>
 
-  <title>Reset Password — MewingMarket</title>
+  <title>Elimina Account — MewingMarket</title>
 
   <link rel="stylesheet" href="style.css">
 
   <style>
+    body {
+      background:#f7faff;
+      font-family:system-ui, sans-serif;
+      color:#003366;
+    }
     .reset-box {
       max-width:400px;
       margin:60px auto;
@@ -41,11 +46,24 @@
       cursor:pointer;
       font-size:16px;
       font-weight:600;
+      transition:0.2s;
+    }
+    button:hover {
+      background:#e63a3a;
     }
     #status {
       margin-top:15px;
       font-size:14px;
       color:#d00;
+      font-weight:600;
+    }
+    input {
+      width:100%;
+      padding:12px;
+      margin-top:10px;
+      border-radius:8px;
+      border:1px solid #cdd7e1;
+      font-size:16px;
     }
   </style>
 
@@ -67,10 +85,13 @@
 <main>
 
   <div class="reset-box">
-    <h1>Reset Password</h1>
-    <p>Questa operazione eliminerà il tuo account e ti permetterà di crearne uno nuovo.</p>
+    <h1>Elimina Account</h1>
+    <p>Questa operazione eliminerà definitivamente il tuo account e tutti i tuoi dati.</p>
 
-    <button id="reset-btn">Resetta il mio account</button>
+    <p style="margin-top:20px; font-weight:600;">Conferma la tua password:</p>
+    <input type="password" id="password" placeholder="Password attuale" required>
+
+    <button id="reset-btn">Elimina definitivamente il mio account</button>
 
     <div id="status"></div>
   </div>
