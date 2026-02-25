@@ -1,5 +1,5 @@
 // =========================================================
-// API: Elimina Account Utente (CJS + EXPRESS COMPATIBILE)
+// api-utenti-elimina-account.cjs API: Elimina Account Utente (CJS + EXPRESS COMPATIBILE)
 // =========================================================
 
 const express = require("express");
