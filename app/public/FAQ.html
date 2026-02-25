@@ -20,6 +20,19 @@
 
   <script src="seo.js" defer></script>
   <script src="structured-data.js" defer></script>
+
+  <style>
+    .btn-guida {
+      display:inline-block;
+      padding:10px 16px;
+      background:#0077ff;
+      color:white;
+      border-radius:8px;
+      text-decoration:none;
+      font-weight:600;
+      margin-top:10px;
+    }
+  </style>
 </head>
 
 <body>
@@ -40,7 +53,6 @@
 <main class="pagina-standard">
   <h1>FAQ – Domande Frequenti</h1>
 
-  <!-- TUE FAQ ORIGINALI (INTOCCATE) -->
   <div class="faq-item">
     <div class="faq-question">Come funziona l’acquisto?</div>
     <div class="faq-answer">
@@ -76,56 +88,15 @@
     </div>
   </div>
 
-  <!-- =============================== -->
-  <!-- 🔥 AGGIUNTA: SEZIONE MINIMAL    -->
-  <!-- =============================== -->
-
-  <h2>Guide complete</h2>
-  <p>Per istruzioni dettagliate consulta il nostro centro assistenza:</p>
-
-  <ul>
-    <li><a href="guide.html?topic=login">Come accedere al tuo account</a></li>
-    <li><a href="guide.html?topic=registrazione">Come creare un account</a></li>
-    <li><a href="guide.html?topic=download">Come scaricare un prodotto</a></li>
-    <li><a href="guide.html?topic=ordini">Gestione ordini e annullamenti</a></li>
-    <li><a href="guide.html?topic=resi">Resi e rimborsi</a></li>
-    <li><a href="guide.html?topic=annulla-account">Eliminazione account</a></li>
-  </ul>
+  <!-- 🔥 SEZIONE MINIMAL COME VOLEVI -->
+  <h2>Hai altri dubbi?</h2>
+  <p>Consulta la nostra pagina di guide complete per istruzioni dettagliate.</p>
+  <p><a href="guide.html" class="btn-guida">Vai alle Guide →</a></p>
 
 </main>
 
-<!-- CHATBOT (INTOCCATO) -->
-<button id="chat-toggle">
-  <img src="chat-icon.png" alt="Chat">
-</button>
-
-<div id="chat-container">
-  <div id="chat-header">
-    <img src="chat-icon.png" alt="">
-    Supporto MewingMarket
-  </div>
-
-  <div id="chat-box"></div>
-
-  <div id="chat-input-area">
-
-    <!-- Campo testo -->
-    <input id="chat-input" type="text" placeholder="Scrivi un messaggio...">
-
-    <!-- Pulsante invio -->
-    <button id="chat-send">➤</button>
-
-    <!-- Pulsante voce -->
-    <button id="chat-voice">🎤</button>
-
-    <!-- ⭐ NUOVO: Pulsante allegati -->
-    <button id="chat-attach">📎</button>
-
-    <!-- Input file nascosto -->
-    <input type="file" id="chat-file" style="display:none" accept="image/*,application/pdf">
-
-  </div>
-</div>
+<!-- CHATBOT -->
+<script src="chat.js" defer></script>
 
 <!-- FOOTER DINAMICO -->
 <div id="footer-placeholder"></div>
@@ -140,9 +111,7 @@
   });
 </script>
 
-<!-- JS -->
 <script src="FAQ.js" defer></script>
-<script src="chat.js" defer></script>
 <script src="premium.js" defer></script>
 
 </body>
