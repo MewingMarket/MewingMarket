@@ -2,7 +2,7 @@
 
 const express = require("express");
 const router = express.Router();
-const authAdmin = require("../middleware/authAdmin.cjs");
+const authAdmin = require("../middleware/auth-admin.cjs"); // PATCH QUI
 
 router.get("/analisi/dati", authAdmin, async (req, res) => {
   res.json({
