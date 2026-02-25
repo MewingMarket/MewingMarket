@@ -1,7 +1,6 @@
 // =========================================================
 // File: app/server/routes/api-utenti.cjs
-// Sistema utenti reale (Airtable)
-// Versione definitiva (Airtable nuova SDK, blindata)
+// Sistema utenti definitivo (password in chiaro)
 // =========================================================
 
 const express = require("express");
@@ -9,193 +8,189 @@ const crypto = require("crypto");
 const Airtable = require("../lib/airtable-wrapper.cjs");
 
 const router = express.Router();
-
-// ---------------------------------------------------------
-// CONFIG AIRTABLE (nuova SDK, blindata)
-// ---------------------------------------------------------
-Airtable.configure({
-  apiKey: process.env.AIRTABLE_PAT
-});
-
+Airtable.configure({ apiKey: process.env.AIRTABLE_PAT });
 const base = Airtable.base(process.env.AIRTABLE_BASE);
-const TABLE = "Utenti";
 
-// =========================================================
-// UTILS
-// =========================================================
-function hashPassword(pwd) {
-  return crypto.createHash("sha256").update(pwd).digest("hex");
+const TABLE_UTENTI = "Utenti";
+
+// Genera token semplice
+function genToken(prefix) {
+  return prefix + "_" + crypto.randomBytes(16).toString("hex");
 }
 
-async function findUserByEmail(email) {
-  const records = await base(TABLE)
-    .select({
-      filterByFormula: `{Email} = "${email}"`,
-      maxRecords: 1
-    })
-    .firstPage();
+/* =========================================================
+   REGISTRAZIONE
+========================================================= */
+router.post("/registrazione", async (req, res) => {
+  const { email, password } = req.body || {};
 
-  return records.length ? records[0] : null;
-}
-
-function safeGet(record, field) {
-  try {
-    return record.get(field) ?? null;
-  } catch {
-    return null;
+  if (!email || !password) {
+    return res.json({ success: false, error: "Dati mancanti" });
   }
-}
 
-// =========================================================
-// REGISTRAZIONE
-// =========================================================
-router.post("/utente/register", async (req, res) => {
   try {
-    const { email, password, nome } = req.body || {};
+    const esiste = await base(TABLE_UTENTI)
+      .select({ filterByFormula: `{email} = '${email}'` })
+      .firstPage();
 
-    if (!email || !password) {
-      return res.json({ success: false, error: "Dati mancanti" });
-    }
-
-    const existing = await findUserByEmail(email);
-    if (existing) {
+    if (esiste.length > 0) {
       return res.json({ success: false, error: "Email già registrata" });
     }
 
-    await base(TABLE).create({
-      Email: email,
-      PasswordHash: hashPassword(password),
-      Nome: nome || "",
-      AvatarUrl: "",
-      DataRegistrazione: new Date().toISOString()
+    const token = genToken("tok");
+
+    await base(TABLE_UTENTI).create({
+      email,
+      password_hash: password,
+      token
     });
 
-    return res.json({ success: true });
-
+    return res.json({ success: true, token });
   } catch (err) {
-    console.error("❌ Errore registrazione:", err);
+    console.error("❌ Registrazione:", err);
     return res.json({ success: false, error: "Errore server" });
   }
 });
 
-// =========================================================
-// LOGIN
-// =========================================================
-router.post("/utente/login", async (req, res) => {
-  try {
-    const { email, password } = req.body || {};
+/* =========================================================
+   LOGIN
+========================================================= */
+router.post("/login", async (req, res) => {
+  const { email, password } = req.body || {};
 
-    const user = await findUserByEmail(email);
-    if (!user) {
-      return res.json({ success: false, error: "Credenziali non valide" });
-    }
-
-    const hash = hashPassword(password);
-    if (hash !== safeGet(user, "PasswordHash")) {
-      return res.json({ success: false, error: "Credenziali non valide" });
-    }
-
-    // Token semplice (compatibile con tuo sistema)
-    const token = "tok_" + crypto.randomBytes(32).toString("hex");
-
-    return res.json({ success: true, token, email });
-
-  } catch (err) {
-    console.error("❌ Errore login:", err);
-    return res.json({ success: false, error: "Errore server" });
+  if (!email || !password) {
+    return res.json({ success: false, error: "Dati mancanti" });
   }
-});
 
-// =========================================================
-// CAMBIO EMAIL
-// =========================================================
-router.post("/utente/cambia-email", async (req, res) => {
   try {
-    const { email, newEmail, password } = req.body || {};
+    const records = await base(TABLE_UTENTI)
+      .select({ filterByFormula: `{email} = '${email}'` })
+      .firstPage();
 
-    const user = await findUserByEmail(email);
-    if (!user) return res.json({ success: false });
+    if (records.length === 0) {
+      return res.json({ success: false, error: "Utente non trovato" });
+    }
 
-    if (hashPassword(password) !== safeGet(user, "PasswordHash")) {
+    const user = records[0];
+
+    if (user.get("password_hash") !== password) {
       return res.json({ success: false, error: "Password errata" });
     }
 
-    await base(TABLE).update(user.id, { Email: newEmail });
+    const token = genToken("tok");
 
-    return res.json({ success: true });
+    await base(TABLE_UTENTI).update(user.id, { token });
 
+    return res.json({ success: true, token });
   } catch (err) {
-    console.error("❌ Errore cambio email:", err);
+    console.error("❌ Login:", err);
     return res.json({ success: false, error: "Errore server" });
   }
 });
 
-// =========================================================
-// CAMBIO PASSWORD
-// =========================================================
-router.post("/utente/cambia-password", async (req, res) => {
+/* =========================================================
+   CAMBIO EMAIL
+========================================================= */
+router.post("/cambia-email", async (req, res) => {
+  const { token, nuova_email, password } = req.body || {};
+
+  if (!token || !nuova_email || !password) {
+    return res.json({ success: false, error: "Dati mancanti" });
+  }
+
   try {
-    const { email, oldPassword, newPassword } = req.body || {};
+    const records = await base(TABLE_UTENTI)
+      .select({ filterByFormula: `{token} = '${token}'` })
+      .firstPage();
 
-    const user = await findUserByEmail(email);
-    if (!user) return res.json({ success: false });
+    if (records.length === 0) {
+      return res.json({ success: false, error: "Token non valido" });
+    }
 
-    if (hashPassword(oldPassword) !== safeGet(user, "PasswordHash")) {
+    const user = records[0];
+
+    if (user.get("password_hash") !== password) {
       return res.json({ success: false, error: "Password errata" });
     }
 
-    await base(TABLE).update(user.id, {
-      PasswordHash: hashPassword(newPassword)
+    await base(TABLE_UTENTI).update(user.id, { email: nuova_email });
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("❌ Cambio email:", err);
+    return res.json({ success: false, error: "Errore server" });
+  }
+});
+
+/* =========================================================
+   CAMBIO PASSWORD
+========================================================= */
+router.post("/cambia-password", async (req, res) => {
+  const { token, nuova_password } = req.body || {};
+
+  if (!token || !nuova_password) {
+    return res.json({ success: false, error: "Dati mancanti" });
+  }
+
+  try {
+    const records = await base(TABLE_UTENTI)
+      .select({ filterByFormula: `{token} = '${token}'` })
+      .firstPage();
+
+    if (records.length === 0) {
+      return res.json({ success: false, error: "Token non valido" });
+    }
+
+    const user = records[0];
+
+    await base(TABLE_UTENTI).update(user.id, {
+      password_hash: nuova_password
     });
 
     return res.json({ success: true });
-
   } catch (err) {
-    console.error("❌ Errore cambio password:", err);
+    console.error("❌ Cambio password:", err);
     return res.json({ success: false, error: "Errore server" });
   }
 });
 
-// =========================================================
-// RESET PASSWORD
-// =========================================================
-router.post("/utente/reset-password", async (req, res) => {
+/* =========================================================
+   RESET UTENTE
+========================================================= */
+router.post("/reset", async (req, res) => {
+  const { email } = req.body || {};
+
+  if (!email) {
+    return res.json({ success: false, error: "Email mancante" });
+  }
+
   try {
-    const { email, newPassword } = req.body || {};
+    const records = await base(TABLE_UTENTI)
+      .select({ filterByFormula: `{email} = '${email}'` })
+      .firstPage();
 
-    const user = await findUserByEmail(email);
-    if (!user) return res.json({ success: false });
+    if (records.length === 0) {
+      return res.json({ success: false, error: "Utente non trovato" });
+    }
 
-    await base(TABLE).update(user.id, {
-      PasswordHash: hashPassword(newPassword)
+    const user = records[0];
+
+    const nuovaPassword = "MM-" + Math.floor(Math.random() * 999999);
+    const nuovoToken = genToken("tok");
+
+    await base(TABLE_UTENTI).update(user.id, {
+      password_hash: nuovaPassword,
+      token: nuovoToken
     });
 
-    return res.json({ success: true });
-
+    return res.json({
+      success: true,
+      nuovaPassword
+    });
   } catch (err) {
-    console.error("❌ Errore reset password:", err);
+    console.error("❌ Reset utente:", err);
     return res.json({ success: false, error: "Errore server" });
   }
 });
 
-// =========================================================
-// ELIMINA ACCOUNT
-// =========================================================
-router.post("/utente/profilo/elimina", async (req, res) => {
-  try {
-    const { email } = req.body || {};
-
-    const user = await findUserByEmail(email);
-    if (!user) return res.json({ success: false });
-
-    await base(TABLE).destroy(user.id);
-
-    return res.json({ success: true });
-
-  } catch (err) {
-    console.error("❌ Errore elimina account:", err);
-    return res.json({ success: false, error: "Errore server" });
-  }
-});
-
-module.exports = router;
+module.exports = router; 
