@@ -54,7 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
       statusBox.textContent = "Registrazione completata! Reindirizzamento...";
 
       setTimeout(() => {
-        window.location.href = "dashboard-login.html";
+        window.location.href = "dashboard.html";
       }, 1500);
 
     } catch (err) {
