@@ -1,5 +1,5 @@
 // =========================================================
-// Cambia Credenziali – MewingMarket (BACKEND READY PATCHATO)
+// Cambia Credenziali – MewingMarket (VERSIONE DEFINITIVA)
 // =========================================================
 
 const statusBox = document.getElementById("status");
@@ -11,7 +11,7 @@ function setStatus(msg, ok = false) {
 }
 
 function getUserToken() {
-  return localStorage.getItem("user_token");
+  return localStorage.getItem("token"); // CORRETTO
 }
 
 // =========================================================
@@ -39,7 +39,10 @@ document.getElementById("change-email-form").addEventListener("submit", async (e
   try {
     const res = await fetch("/api/utenti/cambia-email", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-token": token },
+      headers: { 
+        "Content-Type": "application/json",
+        "x-token": token 
+      },
       body: JSON.stringify({ token, nuova_email, password })
     });
 
@@ -55,6 +58,11 @@ document.getElementById("change-email-form").addEventListener("submit", async (e
 
       // Aggiorna email in localStorage
       localStorage.setItem("utenteEmail", nuova_email);
+
+      // Aggiorna footer dinamico
+      if (typeof aggiornaFooterUtente === "function") {
+        aggiornaFooterUtente();
+      }
 
       e.target.reset();
     } else {
@@ -75,7 +83,6 @@ document.getElementById("change-password-form").addEventListener("submit", async
   e.preventDefault();
   setStatus("");
 
-  const oldPassword = e.target.oldPassword.value.trim();
   const nuova_password = e.target.newPassword.value.trim();
   const token = getUserToken();
 
@@ -92,8 +99,11 @@ document.getElementById("change-password-form").addEventListener("submit", async
   try {
     const res = await fetch("/api/utenti/cambia-password", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-token": token },
-      body: JSON.stringify({ token, oldPassword, nuova_password })
+      headers: { 
+        "Content-Type": "application/json",
+        "x-token": token 
+      },
+      body: JSON.stringify({ token, nuova_password })
     });
 
     const data = await res.json().catch(() => null);
