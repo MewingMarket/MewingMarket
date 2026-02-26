@@ -14,7 +14,6 @@ router.use(require("./routes/api-ordini.cjs"));
 router.use(require("./routes/api-vendite.cjs"));
 router.use(require("./routes/api-upload.cjs"));
 router.use(require("./routes/api-utenti.cjs"));
-router.use(require("./routes/api-utenti-elimina-account.cjs"));
 router.use(require("./routes/api-ordini-annulla.cjs"));
 router.use(require("./routes/api-ordini-utente.cjs"));
 router.use(require("./routes/api-track.cjs"));
