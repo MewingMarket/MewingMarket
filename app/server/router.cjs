@@ -19,12 +19,17 @@ router.use(require("./routes/api-ordini-utente.cjs"));
 router.use(require("./routes/api-track.cjs"));
 
 // =========================================================
-// BRIDGE LEGACY
+// API RECENSIONI (NUOVO MODULO)
+// =========================================================
+router.use(require("./routes/api-feedback.cjs"));   // <— AGGIUNTO QUI
+
+// =========================================================
+// BRIDGE LEGACY (NON USATO DALLA DASHBOARD)
 // =========================================================
 router.use(require("./routes/api-bridge.cjs"));
 
 // =========================================================
-// PAYPAL
+// PAYPAL (LEGACY / COMPATIBILITÀ)
 // =========================================================
 router.use(require("./routes/api-paypal-bridge.cjs"));
 router.use(require("./routes/api-paypal-create.cjs"));
@@ -41,7 +46,6 @@ router.use(require("./routes/api-admin-analytics.cjs"));
 // =========================================================
 router.use(require("./routes/admin-analisi.cjs"));
 router.use(require("./routes/admin-feedback.cjs"));
-
 router.use(require("./routes/admin-ordini.cjs"));
 router.use(require("./routes/admin-settings.cjs"));
 router.use(require("./routes/admin-stats.cjs"));
