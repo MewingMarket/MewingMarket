@@ -170,13 +170,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // ------------------ RECENSIONI / IMPOSTAZIONI ------------------
+  // ------------------ RECENSIONI ------------------
   function loadReviews() {
     render("<h2>Le mie recensioni</h2><p>Funzione in arrivo.</p>");
-  }
-
-  function loadSettings() {
-    render("<h2>Impostazioni</h2><p>Funzione in arrivo.</p>");
   }
 
   // ------------------ ELIMINAZIONE ACCOUNT ------------------
@@ -219,12 +215,12 @@ document.addEventListener("DOMContentLoaded", () => {
     window.location.href = "index.html";
   }
 
+  // ROUTER DEFINITIVO (SENZA SETTINGS)
   const router = {
     profile: loadProfile,
     orders: loadOrders,
     downloads: loadDownloads,
     reviews: loadReviews,
-    settings: loadSettings,
     delete: loadDelete,
     logout: logout
   };
