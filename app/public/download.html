@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>I miei download — MewingMarket</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- HEAD DINAMICO -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      fetch("head.html")
+        .then(r => r.text())
+        .then(html => {
+          const temp = document.createElement("div");
+          temp.innerHTML = html;
+          [...temp.children].forEach(node => document.head.appendChild(node));
+        });
+    });
+  </script>
+
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    body { background:#f7faff; margin:0; font-family:system-ui; color:#003366; }
+    .box {
+      max-width:900px; margin:40px auto; background:white;
+      padding:25px; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.06);
+    }
+    table { width:100%; border-collapse:collapse; margin-top:20px; }
+    th, td { padding:12px; border-bottom:1px solid #eee; }
+    .btn-download {
+      padding:8px 14px; background:#0077ff; color:white;
+      border:none; border-radius:6px; cursor:pointer; text-decoration:none;
+    }
+    .btn-download:hover { background:#005fe0; }
+  </style>
+</head>
+
+<body>
+
+<!-- HEADER DINAMICO -->
+<div id="header-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("header.html")
+      .then(r => r.text())
+      .then(h => document.getElementById("header-placeholder").innerHTML = h);
+  });
+</script>
+
+<div class="box">
+  <h1>I miei download</h1>
+  <p>Qui trovi tutti i prodotti digitali che hai acquistato.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Prodotto</th>
+        <th>Data ordine</th>
+        <th>Download</th>
+      </tr>
+    </thead>
+    <tbody id="downloadBody"></tbody>
+  </table>
+</div>
+
+<!-- FOOTER DINAMICO -->
+<div id="footer-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("footer.html")
+      .then(r => r.text())
+      .then(h => document.getElementById("footer-placeholder").innerHTML = h);
+  });
+</script>
+
+<script src="download.js"></script>
+</body>
+</html>
