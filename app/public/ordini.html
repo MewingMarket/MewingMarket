@@ -5,40 +5,65 @@
   <title>I miei ordini — MewingMarket</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <!-- HEAD DINAMICO -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      fetch("head.html")
+        .then(r => r.text())
+        .then(html => {
+          const temp = document.createElement("div");
+          temp.innerHTML = html;
+          [...temp.children].forEach(node => document.head.appendChild(node));
+        });
+    });
+  </script>
+
   <link rel="stylesheet" href="style.css">
-  <script src="ordini.js" defer></script>
 
   <style>
+    body { background:#f7faff; margin:0; font-family:system-ui; color:#003366; }
     .box {
-      max-width:900px; margin:40px auto; background:white;
+      max-width:1000px; margin:40px auto; background:white;
       padding:25px; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.06);
     }
-    table {
-      width:100%; border-collapse:collapse; margin-top:20px;
+    table { width:100%; border-collapse:collapse; margin-top:20px; }
+    th, td { padding:12px; border-bottom:1px solid #eee; vertical-align:top; }
+    .btn-download {
+      padding:8px 14px; background:#0077ff; color:white;
+      border:none; border-radius:6px; cursor:pointer; text-decoration:none;
     }
-    th, td {
-      padding:12px; border-bottom:1px solid #eee;
-    }
-    button {
-      padding:8px 14px; background:#d00; color:white;
+    .btn-download:hover { background:#005fe0; }
+    .btn-cancel {
+      padding:6px 12px; background:#ff4444; color:white;
       border:none; border-radius:6px; cursor:pointer;
+      margin-top:6px; display:inline-block;
     }
+    .btn-cancel:hover { background:#e63a3a; }
   </style>
 </head>
 
 <body>
 
+<!-- HEADER DINAMICO -->
+<div id="header-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("header.html")
+      .then(r => r.text())
+      .then(h => document.getElementById("header-placeholder").innerHTML = h);
+  });
+</script>
+
 <div class="box">
   <h1>I miei ordini</h1>
-
-  <p>Gli ordini appariranno qui quando il backend sarà pronto.</p>
+  <p>Qui trovi tutti i tuoi ordini, con stato e download disponibili.</p>
 
   <table>
     <thead>
       <tr>
-        <th>Prodotto</th>
-        <th>Prezzo</th>
         <th>Data</th>
+        <th>Prodotti</th>
+        <th>Totale</th>
         <th>Stato</th>
         <th>Azione</th>
       </tr>
@@ -47,5 +72,16 @@
   </table>
 </div>
 
+<!-- FOOTER DINAMICO -->
+<div id="footer-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("footer.html")
+      .then(r => r.text())
+      .then(h => document.getElementById("footer-placeholder").innerHTML = h);
+  });
+</script>
+
+<script src="ordini.js"></script>
 </body>
 </html>
