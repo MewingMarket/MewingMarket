@@ -11,8 +11,9 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  // Mostra email utente
+  // Mostra email e username
   document.getElementById("userEmail").textContent = email;
+  document.getElementById("username").textContent = email.split("@")[0];
 
   // ============================
   // CAMBIO EMAIL
@@ -27,24 +28,30 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const res = await fetch("/api/utenti/cambia-email", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        token,
-        nuova_email,
-        password
-      })
-    });
+    try {
+      const res = await fetch("/api/utenti/cambia-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token,
+          nuova_email,
+          password
+        })
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (data.success) {
-      msg.textContent = "Email aggiornata!";
-      localStorage.setItem("utenteEmail", nuova_email);
-      document.getElementById("userEmail").textContent = nuova_email;
-    } else {
-      msg.textContent = data.error || "Errore";
+      if (data.success) {
+        msg.textContent = "Email aggiornata!";
+        localStorage.setItem("utenteEmail", nuova_email);
+        document.getElementById("userEmail").textContent = nuova_email;
+        document.getElementById("username").textContent = nuova_email.split("@")[0];
+      } else {
+        msg.textContent = data.error || "Errore";
+      }
+
+    } catch {
+      msg.textContent = "Errore di connessione.";
     }
   };
 
@@ -61,33 +68,38 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // Verifica password attuale
-    const resLogin = await fetch("/api/utenti/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password: oldPassword })
-    });
+    try {
+      // Verifica password attuale
+      const resLogin = await fetch("/api/utenti/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password: oldPassword })
+      });
 
-    const loginData = await resLogin.json();
+      const loginData = await resLogin.json();
 
-    if (!loginData.success) {
-      msg.textContent = "Password attuale errata.";
-      return;
+      if (!loginData.success) {
+        msg.textContent = "Password attuale errata.";
+        return;
+      }
+
+      // Aggiorna password
+      const res = await fetch("/api/utenti/cambia-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token,
+          nuova_password
+        })
+      });
+
+      const data = await res.json();
+
+      msg.textContent = data.success ? "Password aggiornata!" : (data.error || "Errore");
+
+    } catch {
+      msg.textContent = "Errore di connessione.";
     }
-
-    // Aggiorna password
-    const res = await fetch("/api/utenti/cambia-password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        token,
-        nuova_password
-      })
-    });
-
-    const data = await res.json();
-
-    msg.textContent = data.success ? "Password aggiornata!" : data.error;
   };
 
   // ============================
@@ -102,19 +114,24 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const res = await fetch("/api/utenti/elimina-account", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, password })
-    });
+    try {
+      const res = await fetch("/api/utenti/elimina-account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, password })
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (data.success) {
-      localStorage.clear();
-      window.location.href = "login.html";
-    } else {
-      msg.textContent = data.error || "Errore.";
+      if (data.success) {
+        localStorage.clear();
+        window.location.href = "login.html";
+      } else {
+        msg.textContent = data.error || "Errore.";
+      }
+
+    } catch {
+      msg.textContent = "Errore di connessione.";
     }
   };
 
