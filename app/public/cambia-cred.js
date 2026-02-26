@@ -18,7 +18,7 @@ function getUserToken() {
 // 1) CAMBIA EMAIL
 // =========================================================
 
-document.getElementById("change-email-form").addEventListener("submit", async (e) => {
+document.getElementById("change-email-form")?.addEventListener("submit", async (e) => {
   e.preventDefault();
   setStatus("");
 
@@ -79,7 +79,7 @@ document.getElementById("change-email-form").addEventListener("submit", async (e
 // 2) CAMBIA PASSWORD
 // =========================================================
 
-document.getElementById("change-password-form").addEventListener("submit", async (e) => {
+document.getElementById("change-password-form")?.addEventListener("submit", async (e) => {
   e.preventDefault();
   setStatus("");
 
