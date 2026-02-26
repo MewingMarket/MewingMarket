@@ -10,6 +10,10 @@ function setMsg(text, ok = false) {
   msg.style.color = ok ? '#4ade80' : '#f97373';
 }
 
+// =========================================================
+// LOGIN
+// =========================================================
+
 document.getElementById('login-form')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   setMsg('');
@@ -63,4 +67,20 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
     console.error(err);
     setMsg("Errore di connessione");
   }
+});
+
+// =========================================================
+// LINK: CAMBIA EMAIL / CAMBIA PASSWORD / ELIMINA ACCOUNT
+// =========================================================
+
+document.getElementById("link-cambia-email")?.addEventListener("click", () => {
+  window.location.href = "cambia-cred.html?mode=email";
+});
+
+document.getElementById("link-cambia-password")?.addEventListener("click", () => {
+  window.location.href = "cambia-cred.html?mode=password";
+});
+
+document.getElementById("link-elimina-account")?.addEventListener("click", () => {
+  window.location.href = "reset.html";
 });
