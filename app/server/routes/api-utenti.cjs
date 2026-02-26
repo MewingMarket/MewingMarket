@@ -10,7 +10,7 @@ const Airtable = require("../lib/airtable-wrapper.cjs");
 // EMAIL MODULES
 const { inviaEmailRegistrazione } = require("../modules/email-registrazione.cjs");
 const { inviaEmailCambioEmail } = require("../modules/email-cambio-email.cjs");
-const { inviaEmailCambioPassword } = require("../modules/email-cambio-password.cjs";
+const { inviaEmailCambioPassword } = require("../modules/email-cambio-password.cjs");
 const { inviaEmailEliminazione } = require("../modules/email-eliminazione.cjs");
 
 const router = express.Router();
