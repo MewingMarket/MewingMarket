@@ -1,63 +1,88 @@
 document.addEventListener("DOMContentLoaded", () => {
 
-  const session = localStorage.getItem("session");
-  const email = localStorage.getItem("email");
+  // ============================
+  // SESSIONE CORRETTA
+  // ============================
+  const token = localStorage.getItem("token");
+  const email = localStorage.getItem("utenteEmail");
 
-  if (!session || !email) {
+  if (!token || !email) {
     window.location.href = "login.html";
     return;
   }
 
-  // Mostra email
+  // Mostra email utente
   document.getElementById("userEmail").textContent = email;
 
-  // Carica data registrazione (se la vuoi mostrare)
-  // Puoi aggiungere un endpoint dedicato se serve
-
-  // ============================================================
+  // ============================
   // CAMBIO EMAIL
-  // ============================================================
+  // ============================
   document.getElementById("btnCambiaEmail").onclick = async () => {
-    const newEmail = document.getElementById("newEmail").value;
+    const nuova_email = document.getElementById("newEmail").value.trim();
+    const password = prompt("Inserisci la tua password attuale");
     const msg = document.getElementById("msgEmail");
 
-    const res = await fetch("/api/utente/profilo/cambia-email", {
+    if (!nuova_email || !password) {
+      msg.textContent = "Compila tutti i campi.";
+      return;
+    }
+
+    const res = await fetch("/api/utenti/cambia-email", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + session,
-        "x-email": email
-      },
-      body: JSON.stringify({ newEmail })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        token,
+        nuova_email,
+        password
+      })
     });
 
     const data = await res.json();
 
     if (data.success) {
       msg.textContent = "Email aggiornata!";
-      localStorage.setItem("email", newEmail);
-      document.getElementById("userEmail").textContent = newEmail;
+      localStorage.setItem("utenteEmail", nuova_email);
+      document.getElementById("userEmail").textContent = nuova_email;
     } else {
       msg.textContent = data.error || "Errore";
     }
   };
 
-  // ============================================================
+  // ============================
   // CAMBIO PASSWORD
-  // ============================================================
+  // ============================
   document.getElementById("btnCambiaPassword").onclick = async () => {
-    const oldPassword = document.getElementById("oldPassword").value;
-    const newPassword = document.getElementById("newPassword").value;
+    const oldPassword = document.getElementById("oldPassword").value.trim();
+    const nuova_password = document.getElementById("newPassword").value.trim();
     const msg = document.getElementById("msgPassword");
 
-    const res = await fetch("/api/utente/profilo/cambia-password", {
+    if (!oldPassword || !nuova_password) {
+      msg.textContent = "Compila tutti i campi.";
+      return;
+    }
+
+    // Prima verifichiamo la password attuale
+    const resLogin = await fetch("/api/utenti/login", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + session,
-        "x-email": email
-      },
-      body: JSON.stringify({ oldPassword, newPassword })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password: oldPassword })
+    });
+
+    const loginData = await resLogin.json();
+
+    if (!loginData.success) {
+      msg.textContent = "Password attuale errata.";
+      return;
+    }
+
+    // Ora aggiorniamo la password
+    const res = await fetch("/api/utenti/cambia-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        token,
+        nuova_password
+      })
     });
 
     const data = await res.json();
@@ -65,45 +90,29 @@ document.addEventListener("DOMContentLoaded", () => {
     msg.textContent = data.success ? "Password aggiornata!" : data.error;
   };
 
-  // ============================================================
-  // UPLOAD FOTO PROFILO
-  // ============================================================
-  document.getElementById("uploadFoto").onchange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const form = new FormData();
-    form.append("foto", file);
-
-    const res = await fetch("/api/utente/profilo/foto", {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer " + session,
-        "x-email": email
-      },
-      body: form
-    });
-
-    const data = await res.json();
-
-    if (data.success) {
-      document.getElementById("fotoProfilo").src = data.foto;
-    }
+  // ============================
+  // FOTO PROFILO (DISATTIVATA)
+  // ============================
+  document.getElementById("uploadFoto").onchange = () => {
+    alert("⚠️ Funzione foto profilo non ancora attiva nel backend.");
   };
 
-  // ============================================================
+  // ============================
   // ELIMINA ACCOUNT
-  // ============================================================
+  // ============================
   document.getElementById("btnEliminaAccount").onclick = async () => {
+    const password = prompt("Conferma la tua password per eliminare l'account");
     const msg = document.getElementById("msgElimina");
 
-    const res = await fetch("/api/utente/profilo/elimina", {
+    if (!password) {
+      msg.textContent = "Password richiesta.";
+      return;
+    }
+
+    const res = await fetch("/api/utenti/elimina-account", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + session,
-        "x-email": email
-      }
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, password })
     });
 
     const data = await res.json();
@@ -112,7 +121,7 @@ document.addEventListener("DOMContentLoaded", () => {
       localStorage.clear();
       window.location.href = "login.html";
     } else {
-      msg.textContent = data.error;
+      msg.textContent = data.error || "Errore.";
     }
   };
 
