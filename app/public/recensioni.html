@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Lascia una recensione — MewingMarket</title>
+  <title>Le mie recensioni — MewingMarket</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- HEAD DINAMICO -->
@@ -21,30 +21,35 @@
   <link rel="stylesheet" href="style.css">
 
   <style>
-    body { background:#fafafa; margin:0; padding:0; font-family:system-ui; }
+    body { background:#f7faff; margin:0; font-family:system-ui; color:#003366; }
     .box {
-      max-width:650px; margin:40px auto; background:white;
-      padding:30px; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.06);
+      max-width:900px; margin:40px auto; background:white;
+      padding:25px; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.06);
     }
-    h1 { font-size:26px; margin-bottom:10px; }
-    #productName { font-weight:600; margin-bottom:20px; }
+    h1 { margin-top:0; }
+    select, textarea {
+      width:100%; padding:10px; border-radius:8px;
+      border:1px solid #cdd7e1; font-size:15px;
+    }
+    textarea { height:120px; resize:none; }
     #stars span {
       font-size:32px; cursor:pointer; padding:5px;
       color:#ccc; transition:0.2s;
     }
     #stars span.active { color:#ffb400; }
-    textarea {
-      width:100%; height:120px; padding:10px;
-      border-radius:8px; border:1px solid #ddd;
-      resize:none; font-size:15px;
-    }
     .btn {
-      display:inline-block; margin-top:20px; padding:12px 20px;
-      border-radius:8px; font-weight:600; color:white; text-decoration:none;
-      cursor:pointer; border:none;
+      padding:10px 16px; border-radius:8px; border:none;
+      cursor:pointer; font-size:15px; font-weight:600;
     }
-    .btn-send { background:#0077ff; }
-    #status { margin-top:15px; font-weight:600; }
+    .btn-primary { background:#0077ff; color:white; }
+    .btn-primary:hover { background:#005fe0; }
+    .status { margin-top:12px; font-weight:600; }
+    .status.ok { color:#4ade80; }
+    .status.err { color:#f97373; }
+    .review-item {
+      padding:15px; border-bottom:1px solid #eee;
+    }
+    .review-item strong { font-size:16px; }
   </style>
 </head>
 
@@ -56,56 +61,21 @@
   document.addEventListener("DOMContentLoaded", () => {
     fetch("header.html")
       .then(r => r.text())
-      .then(h => {
-        document.getElementById("header-placeholder").innerHTML = h;
-
-        // ICONA CARRELLO + BADGE
-        const cartWrapper = document.createElement("div");
-        cartWrapper.id = "cart-wrapper";
-        cartWrapper.style.position = "relative";
-        cartWrapper.style.cursor = "pointer";
-        cartWrapper.style.marginLeft = "14px";
-
-        const cartIcon = document.createElement("div");
-        cartIcon.id = "cart-icon";
-        cartIcon.innerHTML = "🛒";
-        cartIcon.style.fontSize = "26px";
-
-        const cartBadge = document.createElement("div");
-        cartBadge.id = "cart-badge";
-        cartBadge.textContent = "0";
-        cartBadge.style.position = "absolute";
-        cartBadge.style.top = "-6px";
-        cartBadge.style.right = "-10px";
-        cartBadge.style.background = "black";
-        cartBadge.style.color = "white";
-        cartBadge.style.fontSize = "12px";
-        cartBadge.style.padding = "2px 6px";
-        cartBadge.style.borderRadius = "50%";
-        cartBadge.style.fontWeight = "bold";
-
-        cartWrapper.appendChild(cartIcon);
-        cartWrapper.appendChild(cartBadge);
-
-        cartWrapper.addEventListener("click", () => {
-          window.location.href = "checkout.html";
-        });
-
-        document.querySelector("header nav").appendChild(cartWrapper);
-
-        if (typeof aggiornaBadgeCarrello === "function") {
-          aggiornaBadgeCarrello();
-        }
-      });
+      .then(h => document.getElementById("header-placeholder").innerHTML = h);
   });
 </script>
 
 <div class="box">
-  <h1>Lascia una recensione ⭐</h1>
+  <h1>Le mie recensioni ⭐</h1>
 
-  <p id="productName">Caricamento…</p>
+  <h3>Lascia una nuova recensione</h3>
 
-  <div id="stars">
+  <label>Prodotto acquistato</label>
+  <select id="selectProdotto">
+    <option value="">Caricamento…</option>
+  </select>
+
+  <div id="stars" style="margin-top:10px;">
     <span data-v="1">★</span>
     <span data-v="2">★</span>
     <span data-v="3">★</span>
@@ -115,12 +85,26 @@
 
   <textarea id="comment" placeholder="Scrivi qui la tua opinione…"></textarea>
 
-  <button id="sendReview" class="btn btn-send">Invia recensione</button>
+  <button id="sendReview" class="btn btn-primary">Invia recensione</button>
 
-  <div id="status"></div>
+  <div id="status" class="status"></div>
+
+  <hr style="margin:30px 0;">
+
+  <h3>Le tue recensioni</h3>
+  <div id="listaRecensioni"></div>
 </div>
 
-<script src="recensioni.js"></script>
+<!-- FOOTER DINAMICO -->
+<div id="footer-placeholder"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch("footer.html")
+      .then(r => r.text())
+      .then(h => document.getElementById("footer-placeholder").innerHTML = h);
+  });
+</script>
 
+<script src="recensioni.js"></script>
 </body>
 </html>
