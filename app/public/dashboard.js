@@ -6,13 +6,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const token = localStorage.getItem("token");
   const email = localStorage.getItem("utenteEmail");
 
-  // Se non loggato → login
   if (!token || !email) {
     window.location.href = "login.html";
     return;
   }
 
-  // UI base
   const userEmailEl = document.getElementById("userEmail");
   const usernameEl = document.getElementById("username");
   const sidebarEmail = document.getElementById("sidebarEmail");
@@ -25,7 +23,6 @@ document.addEventListener("DOMContentLoaded", () => {
   if (sidebarEmail) sidebarEmail.textContent = email;
   if (sidebarUsername) sidebarUsername.textContent = "@" + username;
 
-  // Helper messaggi
   function setMsg(id, text, ok = false) {
     const el = document.getElementById(id);
     if (!el) return;
@@ -35,7 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ============================
-  // NAV: Download / Ordini / Logout / Elimina
+  // NAV
   // ============================
   document.getElementById("nav-download")?.addEventListener("click", () => {
     window.location.href = "download.html";
@@ -48,11 +45,6 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("nav-logout")?.addEventListener("click", () => {
     localStorage.removeItem("token");
     localStorage.removeItem("utenteEmail");
-
-    if (typeof aggiornaFooterUtente === "function") {
-      aggiornaFooterUtente();
-    }
-
     window.location.href = "login.html";
   });
 
@@ -75,11 +67,8 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const res = await fetch("/api/utenti/cambia-email", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-token": token
-        },
-        body: JSON.stringify({ nuova_email, password })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, nuova_email, password })
       });
 
       const data = await res.json();
@@ -116,7 +105,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      // Verifica password attuale
       const resLogin = await fetch("/api/utenti/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -130,14 +118,10 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // Aggiorna password
       const res = await fetch("/api/utenti/cambia-password", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-token": token
-        },
-        body: JSON.stringify({ nuova_password })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, nuova_password })
       });
 
       const data = await res.json();
@@ -171,11 +155,8 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const res = await fetch("/api/utenti/elimina-account", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-token": token
-        },
-        body: JSON.stringify({ password })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, password })
       });
 
       const data = await res.json();
@@ -185,10 +166,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         localStorage.removeItem("token");
         localStorage.removeItem("utenteEmail");
-
-        if (typeof aggiornaFooterUtente === "function") {
-          aggiornaFooterUtente();
-        }
 
         setTimeout(() => {
           window.location.href = "registrazione.html";
