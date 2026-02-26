@@ -30,6 +30,16 @@ function genToken(prefix) {
   return prefix + "_" + crypto.randomBytes(16).toString("hex");
 }
 
+// =========================================================
+// Helper: estrai token da body OPPURE da header
+// =========================================================
+function getToken(req) {
+  return (
+    (req.body?.token || "").trim() ||
+    (req.headers["x-token"] || "").trim()
+  );
+}
+
 /* =========================================================
    REGISTRAZIONE
 ========================================================= */
@@ -108,7 +118,6 @@ router.post("/utenti/login", async (req, res) => {
 
     const token = genToken("tok");
 
-    // PATCH IMPORTANTE: update in forma ARRAY
     await base(TABLE_UTENTI).update([
       {
         id: user.id,
@@ -128,9 +137,9 @@ router.post("/utenti/login", async (req, res) => {
    CAMBIO EMAIL
 ========================================================= */
 router.post("/utenti/cambia-email", async (req, res) => {
-  let { token, nuova_email, password } = req.body || {};
+  let token = getToken(req);
+  let { nuova_email, password } = req.body || {};
 
-  token = (token || "").trim();
   nuova_email = (nuova_email || "").trim().toLowerCase();
   password = (password || "").trim();
 
@@ -176,9 +185,9 @@ router.post("/utenti/cambia-email", async (req, res) => {
    CAMBIO PASSWORD
 ========================================================= */
 router.post("/utenti/cambia-password", async (req, res) => {
-  let { token, nuova_password } = req.body || {};
+  let token = getToken(req);
+  let { nuova_password } = req.body || {};
 
-  token = (token || "").trim();
   nuova_password = (nuova_password || "").trim();
 
   if (!token || !nuova_password) {
@@ -219,9 +228,9 @@ router.post("/utenti/cambia-password", async (req, res) => {
    ELIMINAZIONE ACCOUNT
 ========================================================= */
 router.post("/utenti/elimina-account", async (req, res) => {
-  let { token, password } = req.body || {};
+  let token = getToken(req);
+  let { password } = req.body || {};
 
-  token = (token || "").trim();
   password = (password || "").trim();
 
   if (!token || !password) {
