@@ -7,11 +7,10 @@ const express = require("express");
 const crypto = require("crypto");
 const Airtable = require("../lib/airtable-wrapper.cjs");
 
-// EMAIL MODULES
+// EMAIL MODULES (coerenti con la tua struttura reale)
 const { inviaEmailRegistrazione } = require("../modules/email-registrazione.cjs");
 const { inviaEmailCambioEmail } = require("../modules/email-cambio-email.cjs");
 const { inviaEmailCambioPassword } = require("../modules/email-cambio-password.cjs");
-const { inviaEmailReset } = require("../modules/email-reset.cjs");
 const { inviaEmailEliminazione } = require("../modules/email-eliminazione.cjs");
 
 const router = express.Router();
@@ -197,50 +196,6 @@ router.post("/utenti/cambia-password", async (req, res) => {
 
   } catch (err) {
     console.error("❌ Cambio password:", err);
-    return res.json({ success: false, error: "Errore server" });
-  }
-});
-
-/* =========================================================
-   RESET PASSWORD
-========================================================= */
-router.post("/utenti/reset", async (req, res) => {
-  let { email } = req.body || {};
-
-  email = (email || "").trim().toLowerCase();
-
-  if (!email) {
-    return res.json({ success: false, error: "Email mancante" });
-  }
-
-  try {
-    const safeEmail = escapeAirtable(email);
-
-    const records = await base(TABLE_UTENTI)
-      .select({ filterByFormula: `{email} = "${safeEmail}"` })
-      .firstPage();
-
-    if (records.length === 0) {
-      return res.json({ success: false, error: "Utente non trovato" });
-    }
-
-    const user = records[0];
-
-    const nuovaPassword = "MM-" + Math.floor(Math.random() * 999999);
-    const nuovoToken = genToken("tok");
-
-    await base(TABLE_UTENTI).update(user.id, {
-      password_hash: nuovaPassword,
-      token: nuovoToken
-    });
-
-    // 📩 EMAIL RESET PASSWORD
-    inviaEmailReset({ email, nuovaPassword });
-
-    return res.json({ success: true });
-
-  } catch (err) {
-    console.error("❌ Reset utente:", err);
     return res.json({ success: false, error: "Errore server" });
   }
 });
