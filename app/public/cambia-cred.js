@@ -11,14 +11,45 @@ function setStatus(msg, ok = false) {
 }
 
 function getUserToken() {
-  return localStorage.getItem("token"); // CORRETTO
+  return localStorage.getItem("token");
 }
+
+// =========================================================
+// MOSTRA SOLO IL FORM GIUSTO
+// =========================================================
+
+const formEmail = document.getElementById("change-email-form");
+const formPassword = document.getElementById("change-password-form");
+
+function mostraForm(tipo) {
+  setStatus("");
+
+  if (tipo === "email") {
+    formEmail.style.display = "block";
+    formPassword.style.display = "none";
+  } else if (tipo === "password") {
+    formEmail.style.display = "none";
+    formPassword.style.display = "block";
+  }
+}
+
+// Link attivazione (registrazione.js li punta qui)
+document.getElementById("link-cambia-email")?.addEventListener("click", () => {
+  mostraForm("email");
+});
+
+document.getElementById("link-cambia-password")?.addEventListener("click", () => {
+  mostraForm("password");
+});
+
+// Default: nessun form visibile finché non clicchi
+mostraForm(null);
 
 // =========================================================
 // 1) CAMBIA EMAIL
 // =========================================================
 
-document.getElementById("change-email-form")?.addEventListener("submit", async (e) => {
+formEmail?.addEventListener("submit", async (e) => {
   e.preventDefault();
   setStatus("");
 
@@ -56,10 +87,8 @@ document.getElementById("change-email-form")?.addEventListener("submit", async (
     if (data.success) {
       setStatus("Email aggiornata con successo", true);
 
-      // Aggiorna email in localStorage
       localStorage.setItem("utenteEmail", nuova_email);
 
-      // Aggiorna footer dinamico
       if (typeof aggiornaFooterUtente === "function") {
         aggiornaFooterUtente();
       }
@@ -79,7 +108,7 @@ document.getElementById("change-email-form")?.addEventListener("submit", async (
 // 2) CAMBIA PASSWORD
 // =========================================================
 
-document.getElementById("change-password-form")?.addEventListener("submit", async (e) => {
+formPassword?.addEventListener("submit", async (e) => {
   e.preventDefault();
   setStatus("");
 
