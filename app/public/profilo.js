@@ -61,7 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // Prima verifichiamo la password attuale
+    // Verifica password attuale
     const resLogin = await fetch("/api/utenti/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -75,7 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // Ora aggiorniamo la password
+    // Aggiorna password
     const res = await fetch("/api/utenti/cambia-password", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -88,13 +88,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const data = await res.json();
 
     msg.textContent = data.success ? "Password aggiornata!" : data.error;
-  };
-
-  // ============================
-  // FOTO PROFILO (DISATTIVATA)
-  // ============================
-  document.getElementById("uploadFoto").onchange = () => {
-    alert("⚠️ Funzione foto profilo non ancora attiva nel backend.");
   };
 
   // ============================
