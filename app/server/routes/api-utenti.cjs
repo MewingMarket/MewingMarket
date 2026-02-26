@@ -25,6 +25,11 @@ function escapeAirtable(value) {
   return String(value).replace(/"/g, '\\"');
 }
 
+// Normalizzazione password
+function normalizePassword(p) {
+  return String(p || "").trim();
+}
+
 // Genera token
 function genToken(prefix) {
   return prefix + "_" + crypto.randomBytes(16).toString("hex");
@@ -35,8 +40,8 @@ function genToken(prefix) {
 // =========================================================
 function getToken(req) {
   return (
-    (req.body?.token || "").trim() ||
-    (req.headers["x-token"] || "").trim()
+    normalizePassword(req.body?.token) ||
+    normalizePassword(req.headers["x-token"])
   );
 }
 
@@ -47,7 +52,7 @@ router.post("/utenti/registrazione", async (req, res) => {
   let { email, password } = req.body || {};
 
   email = (email || "").trim().toLowerCase();
-  password = (password || "").trim();
+  password = normalizePassword(password);
 
   if (!email || !password) {
     return res.json({ success: false, error: "Dati mancanti" });
@@ -70,7 +75,7 @@ router.post("/utenti/registrazione", async (req, res) => {
       {
         fields: {
           email,
-          password_hash: password,
+          password_hash: String(password),
           token
         }
       }
@@ -93,7 +98,7 @@ router.post("/utenti/login", async (req, res) => {
   let { email, password } = req.body || {};
 
   email = (email || "").trim().toLowerCase();
-  password = (password || "").trim();
+  password = normalizePassword(password);
 
   if (!email || !password) {
     return res.json({ success: false, error: "Dati mancanti" });
@@ -112,7 +117,9 @@ router.post("/utenti/login", async (req, res) => {
 
     const user = records[0];
 
-    if (user.get("password_hash") !== password) {
+    const savedPass = normalizePassword(user.get("password_hash"));
+
+    if (savedPass !== password) {
       return res.json({ success: false, error: "Password errata" });
     }
 
@@ -141,7 +148,7 @@ router.post("/utenti/cambia-email", async (req, res) => {
   let { nuova_email, password } = req.body || {};
 
   nuova_email = (nuova_email || "").trim().toLowerCase();
-  password = (password || "").trim();
+  password = normalizePassword(password);
 
   if (!token || !nuova_email || !password) {
     return res.json({ success: false, error: "Dati mancanti" });
@@ -159,8 +166,9 @@ router.post("/utenti/cambia-email", async (req, res) => {
     }
 
     const user = records[0];
+    const savedPass = normalizePassword(user.get("password_hash"));
 
-    if (user.get("password_hash") !== password) {
+    if (savedPass !== password) {
       return res.json({ success: false, error: "Password errata" });
     }
 
@@ -188,7 +196,7 @@ router.post("/utenti/cambia-password", async (req, res) => {
   let token = getToken(req);
   let { nuova_password } = req.body || {};
 
-  nuova_password = (nuova_password || "").trim();
+  nuova_password = normalizePassword(nuova_password);
 
   if (!token || !nuova_password) {
     return res.json({ success: false, error: "Dati mancanti" });
@@ -210,7 +218,7 @@ router.post("/utenti/cambia-password", async (req, res) => {
     await base(TABLE_UTENTI).update([
       {
         id: user.id,
-        fields: { password_hash: nuova_password }
+        fields: { password_hash: String(nuova_password) }
       }
     ]);
 
@@ -231,7 +239,7 @@ router.post("/utenti/elimina-account", async (req, res) => {
   let token = getToken(req);
   let { password } = req.body || {};
 
-  password = (password || "").trim();
+  password = normalizePassword(password);
 
   if (!token || !password) {
     return res.json({ success: false, error: "Dati mancanti" });
@@ -249,8 +257,9 @@ router.post("/utenti/elimina-account", async (req, res) => {
     }
 
     const user = records[0];
+    const savedPass = normalizePassword(user.get("password_hash"));
 
-    if (user.get("password_hash") !== password) {
+    if (savedPass !== password) {
       return res.json({ success: false, error: "Password errata" });
     }
 
