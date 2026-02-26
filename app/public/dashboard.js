@@ -11,7 +11,12 @@ document.addEventListener("DOMContentLoaded", () => {
     if (t) localStorage.setItem("token", t);
   }
 
-  const email = localStorage.getItem("utenteEmail");
+  function setEmail(e) {
+    if (e) localStorage.setItem("utenteEmail", e);
+  }
+
+  let email = localStorage.getItem("utenteEmail");
+
   if (!getToken() || !email) {
     window.location.href = "login.html";
     return;
@@ -22,12 +27,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const sidebarEmail = document.getElementById("sidebarEmail");
   const sidebarUsername = document.getElementById("sidebarUsername");
 
-  const username = email.split("@")[0];
+  function refreshUI() {
+    email = localStorage.getItem("utenteEmail");
+    const username = email.split("@")[0];
 
-  if (userEmailEl) userEmailEl.textContent = email;
-  if (usernameEl) usernameEl.textContent = username;
-  if (sidebarEmail) sidebarEmail.textContent = email;
-  if (sidebarUsername) sidebarUsername.textContent = "@" + username;
+    if (userEmailEl) userEmailEl.textContent = email;
+    if (usernameEl) usernameEl.textContent = username;
+    if (sidebarEmail) sidebarEmail.textContent = email;
+    if (sidebarUsername) sidebarUsername.textContent = "@" + username;
+  }
+
+  refreshUI();
 
   function setMsg(id, text, ok = false) {
     const el = document.getElementById(id);
@@ -59,7 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ============================
-  // CAMBIO EMAIL
+  // CAMBIO EMAIL (VERSIONE DEFINITIVA)
   // ============================
   document.getElementById("btnCambiaEmail")?.addEventListener("click", async () => {
     const nuova_email = document.getElementById("newEmail").value.trim().toLowerCase();
@@ -71,6 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
+      // 1) Cambia email
       const res = await fetch("/api/utenti/cambia-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -83,19 +94,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const data = await res.json();
 
-      if (data.success) {
-        setMsg("msgEmail", "Email aggiornata!", true);
-
-        localStorage.setItem("utenteEmail", nuova_email);
-
-        const newUser = nuova_email.split("@")[0];
-        if (userEmailEl) userEmailEl.textContent = nuova_email;
-        if (usernameEl) usernameEl.textContent = newUser;
-        if (sidebarEmail) sidebarEmail.textContent = nuova_email;
-        if (sidebarUsername) sidebarUsername.textContent = "@" + newUser;
-      } else {
+      if (!data.success) {
         setMsg("msgEmail", data.error || "Errore.");
+        return;
       }
+
+      // 2) LOGIN INVISIBILE per aggiornare token
+      const resLogin = await fetch("/api/utenti/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: nuova_email, password })
+      });
+
+      const loginData = await resLogin.json();
+
+      if (loginData.success && loginData.token) {
+        setToken(loginData.token);
+        setEmail(nuova_email);
+      }
+
+      // 3) Aggiorna UI
+      refreshUI();
+      setMsg("msgEmail", "Email aggiornata!", true);
 
     } catch {
       setMsg("msgEmail", "Errore di connessione.");
@@ -103,7 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ============================
-  // CAMBIO PASSWORD
+  // CAMBIO PASSWORD (VERSIONE DEFINITIVA)
   // ============================
   document.getElementById("btnCambiaPassword")?.addEventListener("click", async () => {
     const oldPassword = document.getElementById("oldPassword").value.trim();
@@ -115,7 +135,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      // 1) Verifica password attuale → login rigenera token
+      // 1) LOGIN INVISIBILE → verifica password attuale e genera token nuovo
       const resLogin = await fetch("/api/utenti/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -133,7 +153,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const newToken = loginData.token;
       setToken(newToken);
 
-      // 2) Cambia password usando il token aggiornato
+      // 2) Cambia password usando token aggiornato
       const res = await fetch("/api/utenti/cambia-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
