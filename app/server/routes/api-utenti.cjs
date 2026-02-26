@@ -7,10 +7,10 @@ const express = require("express");
 const crypto = require("crypto");
 const Airtable = require("../lib/airtable-wrapper.cjs");
 
-// EMAIL MODULES (coerenti con la tua struttura reale)
+// EMAIL MODULES
 const { inviaEmailRegistrazione } = require("../modules/email-registrazione.cjs");
 const { inviaEmailCambioEmail } = require("../modules/email-cambio-email.cjs");
-const { inviaEmailCambioPassword } = require("../modules/email-cambio-password.cjs");
+const { inviaEmailCambioPassword } = require("../modules/email-cambio-password.cjs";
 const { inviaEmailEliminazione } = require("../modules/email-eliminazione.cjs");
 
 const router = express.Router();
@@ -25,7 +25,7 @@ function escapeAirtable(value) {
   return String(value).replace(/"/g, '\\"');
 }
 
-// Genera token semplice
+// Genera token
 function genToken(prefix) {
   return prefix + "_" + crypto.randomBytes(16).toString("hex");
 }
@@ -56,13 +56,16 @@ router.post("/utenti/registrazione", async (req, res) => {
 
     const token = genToken("tok");
 
-    await base(TABLE_UTENTI).create({
-      email,
-      password_hash: password,
-      token
-    });
+    await base(TABLE_UTENTI).create([
+      {
+        fields: {
+          email,
+          password_hash: password,
+          token
+        }
+      }
+    ]);
 
-    // 📩 EMAIL DI BENVENUTO
     inviaEmailRegistrazione({ email });
 
     return res.json({ success: true, token });
@@ -105,7 +108,13 @@ router.post("/utenti/login", async (req, res) => {
 
     const token = genToken("tok");
 
-    await base(TABLE_UTENTI).update(user.id, { token });
+    // PATCH IMPORTANTE: update in forma ARRAY
+    await base(TABLE_UTENTI).update([
+      {
+        id: user.id,
+        fields: { token }
+      }
+    ]);
 
     return res.json({ success: true, token });
 
@@ -146,9 +155,13 @@ router.post("/utenti/cambia-email", async (req, res) => {
       return res.json({ success: false, error: "Password errata" });
     }
 
-    await base(TABLE_UTENTI).update(user.id, { email: nuova_email });
+    await base(TABLE_UTENTI).update([
+      {
+        id: user.id,
+        fields: { email: nuova_email }
+      }
+    ]);
 
-    // 📩 EMAIL CAMBIO EMAIL
     inviaEmailCambioEmail({ email: nuova_email });
 
     return res.json({ success: true });
@@ -185,11 +198,13 @@ router.post("/utenti/cambia-password", async (req, res) => {
 
     const user = records[0];
 
-    await base(TABLE_UTENTI).update(user.id, {
-      password_hash: nuova_password
-    });
+    await base(TABLE_UTENTI).update([
+      {
+        id: user.id,
+        fields: { password_hash: nuova_password }
+      }
+    ]);
 
-    // 📩 EMAIL CAMBIO PASSWORD
     inviaEmailCambioPassword({ email: user.get("email") });
 
     return res.json({ success: true });
@@ -232,7 +247,6 @@ router.post("/utenti/elimina-account", async (req, res) => {
 
     await base(TABLE_UTENTI).destroy(user.id);
 
-    // 📩 EMAIL ELIMINAZIONE ACCOUNT
     inviaEmailEliminazione({ email: user.get("email") });
 
     return res.json({ success: true });
