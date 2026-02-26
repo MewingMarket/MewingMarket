@@ -1,10 +1,6 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <title>Dashboard Utente — MewingMarket</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <!-- HEAD DINAMICO -->
   <script>
     document.addEventListener("DOMContentLoaded", () => {
@@ -14,97 +10,117 @@
           const temp = document.createElement("div");
           temp.innerHTML = html;
           [...temp.children].forEach(node => document.head.appendChild(node));
-        });
+        })
+        .catch(err => console.error("Errore caricamento head:", err));
     });
   </script>
 
+  <title>Dashboard — MewingMarket</title>
   <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="profilo.css">
 
   <style>
     body {
-      background:#f3f3f3;
-      font-family:system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin:0;
+      background:#f7faff;
+      font-family:system-ui, sans-serif;
+      color:#003366;
     }
-    .dashboard {
-      display:flex;
-      max-width:1200px;
+    main {
+      max-width:1100px;
       margin:40px auto;
-      gap:25px;
+      display:flex;
+      gap:24px;
     }
     .sidebar {
       width:260px;
-      background:#fff;
-      padding:20px;
+      background:white;
       border-radius:12px;
       box-shadow:0 4px 20px rgba(0,0,0,0.06);
+      padding:20px;
     }
     .sidebar h2 {
-      margin-bottom:20px;
-      font-size:22px;
-      color:#111;
+      margin-top:0;
+      font-size:20px;
     }
-    .sidebar a {
-      display:block;
-      padding:12px;
+    .nav-item {
+      padding:10px 12px;
       border-radius:8px;
-      margin-bottom:10px;
-      text-decoration:none;
-      color:#111;
-      background:#f5f5f5;
-      font-weight:600;
-      transition:background .15s,color .15s;
+      cursor:pointer;
+      font-size:15px;
+      margin-top:6px;
     }
-    .sidebar a.active {
-      background:#0077ff;
-      color:#fff;
+    .nav-item:hover {
+      background:#eef4ff;
+    }
+    .nav-item.danger {
+      color:#cc0000;
     }
     .content {
       flex:1;
-      background:#fff;
-      padding:25px;
+      background:white;
       border-radius:12px;
       box-shadow:0 4px 20px rgba(0,0,0,0.06);
-      min-height:400px;
+      padding:24px;
     }
-    .orders-table {
-      width:100%;
-      border-collapse:collapse;
-      margin-top:15px;
+    .content h1 {
+      margin-top:0;
+      font-size:24px;
     }
-    .orders-table th,
-    .orders-table td {
-      border-bottom:1px solid #eee;
-      padding:8px 6px;
+    .field-group {
+      margin-top:18px;
+    }
+    .field-group label {
+      display:block;
       font-size:14px;
-      vertical-align:top;
+      margin-bottom:6px;
     }
-    .orders-table th {
-      text-align:left;
-      color:#555;
+    .field-group input {
+      width:100%;
+      padding:10px;
+      border-radius:8px;
+      border:1px solid #cdd7e1;
+      font-size:15px;
     }
-    .btn-small {
-      display:inline-block;
-      padding:6px 10px;
-      border-radius:6px;
-      background:#0077ff;
-      color:#fff;
-      text-decoration:none;
-      font-size:13px;
+    .btn {
+      margin-top:16px;
+      padding:10px 16px;
+      border-radius:8px;
       border:none;
       cursor:pointer;
+      font-size:15px;
+      font-weight:600;
     }
-    .btn-small.danger {
-      background:#d9534f;
+    .btn-primary {
+      background:#0077ff;
+      color:white;
     }
-    .download-item {
-      padding:10px 0;
-      border-bottom:1px solid #eee;
+    .btn-primary:hover {
+      background:#005fe0;
+    }
+    .btn-danger {
+      background:#ff4444;
+      color:white;
+    }
+    .btn-danger:hover {
+      background:#e63a3a;
+    }
+    .status {
+      margin-top:12px;
+      font-size:14px;
+      font-weight:600;
+    }
+    .status.ok {
+      color:#4ade80;
+    }
+    .status.err {
+      color:#f97373;
+    }
+    .user-meta {
+      font-size:14px;
+      color:#335;
+      margin-top:4px;
     }
   </style>
-
-  <script src="carrello.js" defer></script>
-  <script src="dashboard.js" defer></script>
 </head>
 
 <body>
@@ -115,68 +131,70 @@
   document.addEventListener("DOMContentLoaded", () => {
     fetch("header.html")
       .then(r => r.text())
-      .then(h => {
-        document.getElementById("header-placeholder").innerHTML = h;
-
-        const cartWrapper = document.createElement("div");
-        cartWrapper.id = "cart-wrapper";
-        cartWrapper.style.position = "relative";
-        cartWrapper.style.cursor = "pointer";
-        cartWrapper.style.marginLeft = "14px";
-
-        const cartIcon = document.createElement("div");
-        cartIcon.id = "cart-icon";
-        cartIcon.innerHTML = "🛒";
-        cartIcon.style.fontSize = "26px";
-
-        const cartBadge = document.createElement("div");
-        cartBadge.id = "cart-badge";
-        cartBadge.textContent = "0";
-        cartBadge.style.position = "absolute";
-        cartBadge.style.top = "-6px";
-        cartBadge.style.right = "-10px";
-        cartBadge.style.background = "black";
-        cartBadge.style.color = "white";
-        cartBadge.style.fontSize = "12px";
-        cartBadge.style.padding = "2px 6px";
-        cartBadge.style.borderRadius = "50%";
-        cartBadge.style.fontWeight = "bold";
-
-        cartWrapper.appendChild(cartIcon);
-        cartWrapper.appendChild(cartBadge);
-
-        cartWrapper.addEventListener("click", () => {
-          window.location.href = "checkout.html";
-        });
-
-        const nav = document.querySelector("header nav");
-        if (nav) nav.appendChild(cartWrapper);
-
-        if (typeof aggiornaBadgeCarrello === "function") {
-          aggiornaBadgeCarrello();
-        }
-      });
+      .then(h => document.getElementById("header-placeholder").innerHTML = h)
+      .catch(err => console.error("Errore caricamento header:", err));
   });
 </script>
 
-<div class="dashboard">
+<main>
 
-  <div class="sidebar">
-    <h2>Il tuo account</h2>
+  <aside class="sidebar">
+    <h2>Area utente</h2>
+    <div class="user-meta">
+      <div id="sidebarEmail"></div>
+      <div id="sidebarUsername"></div>
+    </div>
 
-    <a href="#" data-section="profile" class="active">Profilo</a>
-    <a href="#" data-section="orders">I miei ordini</a>
-    <a href="#" data-section="downloads">Download</a>
-    <a href="#" data-section="reviews">Le mie recensioni</a>
-    <a href="#" data-section="delete">Annulla registrazione</a>
-    <a href="#" data-section="logout" style="color:#d00;">Logout</a>
-  </div>
+    <div style="margin-top:16px;">
+      <div class="nav-item" id="nav-profilo">Modifica profilo</div>
+      <div class="nav-item" id="nav-download">Download</div>
+      <div class="nav-item" id="nav-ordini">I miei ordini</div>
+      <div class="nav-item" id="nav-logout">Logout</div>
+      <div class="nav-item danger" id="nav-elimina">Elimina account</div>
+    </div>
+  </aside>
 
-  <div class="content" id="content">
-    <!-- Sezioni caricate dinamicamente -->
-  </div>
+  <section class="content" id="content-profilo">
+    <h1>Profilo utente</h1>
+    <p class="user-meta">
+      Email: <span id="userEmail"></span><br>
+      Username: <span id="username"></span>
+    </p>
 
-</div>
+    <!-- CAMBIO EMAIL -->
+    <div class="field-group">
+      <h3>Cambia email</h3>
+      <label for="newEmail">Nuova email</label>
+      <input type="email" id="newEmail" placeholder="Nuova email">
+      <label for="passwordEmail">Password attuale</label>
+      <input type="password" id="passwordEmail" placeholder="Password attuale">
+      <button class="btn btn-primary" id="btnCambiaEmail">Aggiorna email</button>
+      <div class="status" id="msgEmail"></div>
+    </div>
+
+    <!-- CAMBIO PASSWORD -->
+    <div class="field-group">
+      <h3>Cambia password</h3>
+      <label for="oldPassword">Password attuale</label>
+      <input type="password" id="oldPassword" placeholder="Password attuale">
+      <label for="newPassword">Nuova password</label>
+      <input type="password" id="newPassword" placeholder="Nuova password">
+      <button class="btn btn-primary" id="btnCambiaPassword">Aggiorna password</button>
+      <div class="status" id="msgPassword"></div>
+    </div>
+
+    <!-- ELIMINA ACCOUNT -->
+    <div class="field-group">
+      <h3>Elimina account</h3>
+      <p>Questa azione è irreversibile. Tutti i tuoi dati verranno eliminati.</p>
+      <label for="passwordDelete">Conferma password</label>
+      <input type="password" id="passwordDelete" placeholder="Password per confermare">
+      <button class="btn btn-danger" id="btnEliminaAccount">Elimina account</button>
+      <div class="status" id="msgElimina"></div>
+    </div>
+  </section>
+
+</main>
 
 <!-- FOOTER DINAMICO -->
 <div id="footer-placeholder"></div>
@@ -184,9 +202,11 @@
   document.addEventListener("DOMContentLoaded", () => {
     fetch("footer.html")
       .then(r => r.text())
-      .then(h => document.getElementById("footer-placeholder").innerHTML = h);
+      .then(h => document.getElementById("footer-placeholder").innerHTML = h)
+      .catch(err => console.error("Errore caricamento footer:", err));
   });
 </script>
 
+<script src="dashboard.js"></script>
 </body>
 </html>
