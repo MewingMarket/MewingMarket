@@ -1,11 +1,18 @@
 // =========================================================
 // File: app/server/routes/api-utenti.cjs
-// Sistema utenti definitivo (password in chiaro) — SAFE VERSION
+// Sistema utenti definitivo + EMAIL integrate
 // =========================================================
 
 const express = require("express");
 const crypto = require("crypto");
 const Airtable = require("../lib/airtable-wrapper.cjs");
+
+// EMAIL MODULES
+const { inviaEmailRegistrazione } = require("../modules/email-registrazione.cjs");
+const { inviaEmailCambioEmail } = require("../modules/email-cambio-email.cjs");
+const { inviaEmailCambioPassword } = require("../modules/email-cambio-password.cjs");
+const { inviaEmailReset } = require("../modules/email-reset.cjs");
+const { inviaEmailEliminazione } = require("../modules/email-eliminazione.cjs");
 
 const router = express.Router();
 Airtable.configure({ apiKey: process.env.AIRTABLE_PAT });
@@ -41,9 +48,7 @@ router.post("/utenti/registrazione", async (req, res) => {
     const safeEmail = escapeAirtable(email);
 
     const esiste = await base(TABLE_UTENTI)
-      .select({
-        filterByFormula: `{email} = "${safeEmail}"`
-      })
+      .select({ filterByFormula: `{email} = "${safeEmail}"` })
       .firstPage();
 
     if (esiste.length > 0) {
@@ -57,6 +62,9 @@ router.post("/utenti/registrazione", async (req, res) => {
       password_hash: password,
       token
     });
+
+    // 📩 EMAIL DI BENVENUTO
+    inviaEmailRegistrazione({ email });
 
     return res.json({ success: true, token });
 
@@ -83,9 +91,7 @@ router.post("/utenti/login", async (req, res) => {
     const safeEmail = escapeAirtable(email);
 
     const records = await base(TABLE_UTENTI)
-      .select({
-        filterByFormula: `{email} = "${safeEmail}"`
-      })
+      .select({ filterByFormula: `{email} = "${safeEmail}"` })
       .firstPage();
 
     if (records.length === 0) {
@@ -128,9 +134,7 @@ router.post("/utenti/cambia-email", async (req, res) => {
     const safeToken = escapeAirtable(token);
 
     const records = await base(TABLE_UTENTI)
-      .select({
-        filterByFormula: `{token} = "${safeToken}"`
-      })
+      .select({ filterByFormula: `{token} = "${safeToken}"` })
       .firstPage();
 
     if (records.length === 0) {
@@ -144,6 +148,9 @@ router.post("/utenti/cambia-email", async (req, res) => {
     }
 
     await base(TABLE_UTENTI).update(user.id, { email: nuova_email });
+
+    // 📩 EMAIL CAMBIO EMAIL
+    inviaEmailCambioEmail({ email: nuova_email });
 
     return res.json({ success: true });
 
@@ -170,9 +177,7 @@ router.post("/utenti/cambia-password", async (req, res) => {
     const safeToken = escapeAirtable(token);
 
     const records = await base(TABLE_UTENTI)
-      .select({
-        filterByFormula: `{token} = "${safeToken}"`
-      })
+      .select({ filterByFormula: `{token} = "${safeToken}"` })
       .firstPage();
 
     if (records.length === 0) {
@@ -185,6 +190,9 @@ router.post("/utenti/cambia-password", async (req, res) => {
       password_hash: nuova_password
     });
 
+    // 📩 EMAIL CAMBIO PASSWORD
+    inviaEmailCambioPassword({ email: user.get("email") });
+
     return res.json({ success: true });
 
   } catch (err) {
@@ -194,7 +202,7 @@ router.post("/utenti/cambia-password", async (req, res) => {
 });
 
 /* =========================================================
-   RESET UTENTE
+   RESET PASSWORD
 ========================================================= */
 router.post("/utenti/reset", async (req, res) => {
   let { email } = req.body || {};
@@ -209,9 +217,7 @@ router.post("/utenti/reset", async (req, res) => {
     const safeEmail = escapeAirtable(email);
 
     const records = await base(TABLE_UTENTI)
-      .select({
-        filterByFormula: `{email} = "${safeEmail}"`
-      })
+      .select({ filterByFormula: `{email} = "${safeEmail}"` })
       .firstPage();
 
     if (records.length === 0) {
@@ -228,13 +234,56 @@ router.post("/utenti/reset", async (req, res) => {
       token: nuovoToken
     });
 
-    return res.json({
-      success: true,
-      nuovaPassword
-    });
+    // 📩 EMAIL RESET PASSWORD
+    inviaEmailReset({ email, nuovaPassword });
+
+    return res.json({ success: true });
 
   } catch (err) {
     console.error("❌ Reset utente:", err);
+    return res.json({ success: false, error: "Errore server" });
+  }
+});
+
+/* =========================================================
+   ELIMINAZIONE ACCOUNT
+========================================================= */
+router.post("/utenti/elimina-account", async (req, res) => {
+  let { token, password } = req.body || {};
+
+  token = (token || "").trim();
+  password = (password || "").trim();
+
+  if (!token || !password) {
+    return res.json({ success: false, error: "Dati mancanti" });
+  }
+
+  try {
+    const safeToken = escapeAirtable(token);
+
+    const records = await base(TABLE_UTENTI)
+      .select({ filterByFormula: `{token} = "${safeToken}"` })
+      .firstPage();
+
+    if (records.length === 0) {
+      return res.json({ success: false, error: "Token non valido" });
+    }
+
+    const user = records[0];
+
+    if (user.get("password_hash") !== password) {
+      return res.json({ success: false, error: "Password errata" });
+    }
+
+    await base(TABLE_UTENTI).destroy(user.id);
+
+    // 📩 EMAIL ELIMINAZIONE ACCOUNT
+    inviaEmailEliminazione({ email: user.get("email") });
+
+    return res.json({ success: true });
+
+  } catch (err) {
+    console.error("❌ Eliminazione account:", err);
     return res.json({ success: false, error: "Errore server" });
   }
 });
