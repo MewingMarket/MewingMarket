@@ -2,11 +2,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const content = document.getElementById("content");
   const links = document.querySelectorAll(".sidebar a");
 
-  const session = localStorage.getItem("session");
-  const email = localStorage.getItem("email");
+  // NUOVO SISTEMA UTENTI
+  const token = localStorage.getItem("token");
+  const email = localStorage.getItem("utenteEmail");
 
   // Solo utenti loggati
-  if (!session || !email) {
+  if (!token || !email) {
     window.location.href = "login.html?redirect=dashboard.html";
     return;
   }
@@ -21,7 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
     content.innerHTML = html;
   }
 
-  // ------------------ PROFILO (usa profilo.html + profilo.js) ------------------
+  // ------------------ PROFILO ------------------
   function loadProfile() {
     fetch("profilo.html")
       .then(r => r.text())
@@ -33,17 +34,18 @@ document.addEventListener("DOMContentLoaded", () => {
       });
   }
 
-  // ------------------ ORDINI (con annulla ordine) ------------------
+  // ------------------ ORDINI ------------------
   async function loadOrders() {
     render("<h2>I miei ordini</h2><p>Caricamento…</p>");
 
     try {
       const res = await fetch("/api/ordini/utente", {
         headers: {
-          Authorization: "Bearer " + session,
+          "x-token": token,
           "x-email": email
         }
       });
+
       const data = await res.json();
 
       if (!data.success || !data.ordini || data.ordini.length === 0) {
@@ -98,10 +100,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const res = await fetch(`/api/ordini/annulla/${id}`, {
               method: "POST",
               headers: {
-                Authorization: "Bearer " + session,
+                "x-token": token,
                 "x-email": email
               }
             });
+
             const out = await res.json();
             if (out.success) {
               loadOrders();
@@ -119,17 +122,18 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // ------------------ DOWNLOAD PROTETTI ------------------
+  // ------------------ DOWNLOAD ------------------
   async function loadDownloads() {
     render("<h2>Download</h2><p>Caricamento…</p>");
 
     try {
       const res = await fetch("/api/ordini/utente", {
         headers: {
-          Authorization: "Bearer " + session,
+          "x-token": token,
           "x-email": email
         }
       });
+
       const data = await res.json();
 
       if (!data.success || !data.ordini || data.ordini.length === 0) {
@@ -166,7 +170,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // ------------------ RECENSIONI / IMPOSTAZIONI PLACEHOLDER ------------------
+  // ------------------ RECENSIONI / IMPOSTAZIONI ------------------
   function loadReviews() {
     render("<h2>Le mie recensioni</h2><p>Funzione in arrivo.</p>");
   }
@@ -179,21 +183,24 @@ document.addEventListener("DOMContentLoaded", () => {
   function loadDelete() {
     render(`
       <h2>Annulla registrazione</h2>
-      <p>Questa azione disattiverà il tuo account e terminerà la sessione.</p>
+      <p>Questa azione eliminerà definitivamente il tuo account.</p>
       <button id="btnDeleteAccount" class="btn-small danger">Elimina account</button>
       <p id="msgDelete"></p>
     `);
 
     document.getElementById("btnDeleteAccount").onclick = async () => {
       try {
-        const res = await fetch("/api/utente/profilo/elimina", {
+        const res = await fetch("/api/utenti/elimina-account", {
           method: "POST",
           headers: {
-            Authorization: "Bearer " + session,
-            "x-email": email
-          }
+            "Content-Type": "application/json",
+            "x-token": token
+          },
+          body: JSON.stringify({ token, password: prompt("Conferma la tua password") })
         });
+
         const data = await res.json();
+
         if (data.success) {
           localStorage.clear();
           window.location.href = "login.html";
