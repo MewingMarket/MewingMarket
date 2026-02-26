@@ -10,7 +10,7 @@ function setMsg(text, ok = false) {
   msg.style.color = ok ? '#4ade80' : '#f97373';
 }
 
-document.getElementById('login-form').addEventListener('submit', async (e) => {
+document.getElementById('login-form')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   setMsg('');
 
@@ -41,7 +41,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
       // Salva token corretto
       localStorage.setItem('token', data.token);
 
-      // Salva email utente (opzionale ma utile)
+      // Salva email utente (utile per UI)
       localStorage.setItem('utenteEmail', email);
 
       // Aggiorna footer dinamico se presente
