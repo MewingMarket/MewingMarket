@@ -1,86 +1,53 @@
-// =========================================================
-// Login pubblico – MewingMarket (VERSIONE DEFINITIVA)
-// =========================================================
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("login-form");
+  const statusBox = document.getElementById("status");
 
-const msg = document.getElementById('status');
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-function setMsg(text, ok = false) {
-  if (!msg) return;
-  msg.textContent = text;
-  msg.style.color = ok ? '#4ade80' : '#f97373';
-}
+    statusBox.style.color = "#d00";
+    statusBox.textContent = "Accesso in corso...";
 
-// =========================================================
-// LOGIN
-// =========================================================
+    const email = form.email.value.trim().toLowerCase();
+    const password = form.password.value.trim();
 
-document.getElementById('login-form')?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  setMsg('');
-
-  const email = e.target.email.value.trim().toLowerCase();
-  const password = e.target.password.value.trim();
-
-  if (!email || !password) {
-    setMsg("Inserisci email e password");
-    return;
-  }
-
-  try {
-    const res = await fetch('/api/utenti/login', {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify({ email, password })
-    });
-
-    const data = await res.json().catch(() => null);
-
-    if (!data) {
-      setMsg("Errore del server");
+    if (!email || !password) {
+      statusBox.textContent = "Compila tutti i campi.";
       return;
     }
 
-    if (data.success) {
+    try {
+      const res = await fetch("/api/utenti/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
 
-      // Salva token corretto
-      localStorage.setItem('token', data.token);
+      const data = await res.json();
 
-      // Salva email utente (utile per UI)
-      localStorage.setItem('utenteEmail', email);
+      if (!data.success) {
+        statusBox.textContent = data.error || "Credenziali errate.";
+        return;
+      }
 
-      // Aggiorna footer dinamico se presente
+      // Salva token + email
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("utenteEmail", email);
+
       if (typeof aggiornaFooterUtente === "function") {
         aggiornaFooterUtente();
       }
 
-      setMsg("Accesso effettuato", true);
+      statusBox.style.color = "green";
+      statusBox.textContent = "Accesso effettuato! Reindirizzamento...";
 
       setTimeout(() => {
         window.location.href = "dashboard.html";
-      }, 500);
+      }, 800);
 
-    } else {
-      setMsg(data.error || "Credenziali non valide");
+    } catch (err) {
+      console.error(err);
+      statusBox.textContent = "Errore di connessione.";
     }
-
-  } catch (err) {
-    console.error(err);
-    setMsg("Errore di connessione");
-  }
-});
-
-// =========================================================
-// LINK: CAMBIA EMAIL / CAMBIA PASSWORD / ELIMINA ACCOUNT
-// =========================================================
-
-document.getElementById("link-cambia-email")?.addEventListener("click", () => {
-  window.location.href = "cambia-cred.html?mode=email";
-});
-
-document.getElementById("link-cambia-password")?.addEventListener("click", () => {
-  window.location.href = "cambia-cred.html?mode=password";
-});
-
-document.getElementById("link-elimina-account")?.addEventListener("click", () => {
-  window.location.href = "reset.html";
+  });
 });
