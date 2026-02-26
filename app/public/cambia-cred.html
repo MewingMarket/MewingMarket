@@ -71,6 +71,14 @@
       color:#d00;
       font-weight:600;
     }
+    .link-switch {
+      margin-top:10px;
+      font-size:15px;
+      color:#0055cc;
+      cursor:pointer;
+      text-decoration:underline;
+      display:block;
+    }
   </style>
 
 </head>
@@ -95,10 +103,14 @@
 
     <div id="status"></div>
 
-    <!-- CAMBIA EMAIL -->
-    <div class="section-title">Cambia Email</div>
+    <!-- LINK PER ATTIVARE I FORM -->
+    <span id="link-cambia-email" class="link-switch">Cambia Email</span>
+    <span id="link-cambia-password" class="link-switch">Cambia Password</span>
 
-    <form id="change-email-form">
+    <!-- CAMBIA EMAIL -->
+    <form id="change-email-form" style="display:none;">
+      <div class="section-title">Cambia Email</div>
+
       <label>Nuova email</label>
       <input type="email" name="newEmail" required>
 
@@ -109,9 +121,9 @@
     </form>
 
     <!-- CAMBIA PASSWORD -->
-    <div class="section-title">Cambia Password</div>
+    <form id="change-password-form" style="display:none;">
+      <div class="section-title">Cambia Password</div>
 
-    <form id="change-password-form">
       <label>Password attuale</label>
       <input type="password" name="oldPassword" required>
 
