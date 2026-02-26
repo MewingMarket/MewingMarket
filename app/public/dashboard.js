@@ -2,11 +2,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const content = document.getElementById("content");
   const links = document.querySelectorAll(".sidebar a");
 
-  // NUOVO SISTEMA UTENTI
+  // ============================
+  // SESSIONE UTENTE
+  // ============================
   const token = localStorage.getItem("token");
   const email = localStorage.getItem("utenteEmail");
 
-  // Solo utenti loggati
   if (!token || !email) {
     window.location.href = "login.html?redirect=dashboard.html";
     return;
@@ -22,7 +23,9 @@ document.addEventListener("DOMContentLoaded", () => {
     content.innerHTML = html;
   }
 
-  // ------------------ PROFILO ------------------
+  // ============================
+  // PROFILO
+  // ============================
   function loadProfile() {
     fetch("profilo.html")
       .then(r => r.text())
@@ -34,7 +37,9 @@ document.addEventListener("DOMContentLoaded", () => {
       });
   }
 
-  // ------------------ ORDINI ------------------
+  // ============================
+  // ORDINI
+  // ============================
   async function loadOrders() {
     render("<h2>I miei ordini</h2><p>Caricamento…</p>");
 
@@ -122,7 +127,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // ------------------ DOWNLOAD ------------------
+  // ============================
+  // DOWNLOAD
+  // ============================
   async function loadDownloads() {
     render("<h2>Download</h2><p>Caricamento…</p>");
 
@@ -142,11 +149,17 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       let prodotti = [];
+
       data.ordini.forEach(o => {
         if (o.stato === "completato" && Array.isArray(o.prodotti)) {
           prodotti.push(...o.prodotti);
         }
       });
+
+      // Rimuove duplicati per slug
+      prodotti = prodotti.filter((p, i, arr) =>
+        arr.findIndex(x => x.slug === p.slug) === i
+      );
 
       if (prodotti.length === 0) {
         render("<h2>Download</h2><p>Nessun prodotto scaricabile.</p>");
@@ -154,6 +167,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       let html = "<h2>Download</h2>";
+
       prodotti.forEach(p => {
         html += `
           <div class="download-item">
@@ -170,12 +184,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // ------------------ RECENSIONI ------------------
+  // ============================
+  // RECENSIONI
+  // ============================
   function loadReviews() {
     render("<h2>Le mie recensioni</h2><p>Funzione in arrivo.</p>");
   }
 
-  // ------------------ ELIMINAZIONE ACCOUNT ------------------
+  // ============================
+  // ELIMINA ACCOUNT
+  // ============================
   function loadDelete() {
     render(`
       <h2>Annulla registrazione</h2>
@@ -185,14 +203,19 @@ document.addEventListener("DOMContentLoaded", () => {
     `);
 
     document.getElementById("btnDeleteAccount").onclick = async () => {
+      const password = prompt("Conferma la tua password");
+      const msg = document.getElementById("msgDelete");
+
+      if (!password) {
+        msg.textContent = "Password richiesta.";
+        return;
+      }
+
       try {
         const res = await fetch("/api/utenti/elimina-account", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-token": token
-          },
-          body: JSON.stringify({ token, password: prompt("Conferma la tua password") })
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token, password })
         });
 
         const data = await res.json();
@@ -201,21 +224,26 @@ document.addEventListener("DOMContentLoaded", () => {
           localStorage.clear();
           window.location.href = "login.html";
         } else {
-          document.getElementById("msgDelete").textContent = data.error || "Errore.";
+          msg.textContent = data.error || "Errore.";
         }
+
       } catch {
-        document.getElementById("msgDelete").textContent = "Errore di connessione.";
+        msg.textContent = "Errore di connessione.";
       }
     };
   }
 
-  // ------------------ LOGOUT ------------------
+  // ============================
+  // LOGOUT
+  // ============================
   function logout() {
     localStorage.clear();
     window.location.href = "index.html";
   }
 
-  // ROUTER DEFINITIVO (SENZA SETTINGS)
+  // ============================
+  // ROUTER
+  // ============================
   const router = {
     profile: loadProfile,
     orders: loadOrders,
@@ -236,6 +264,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // sezione di default
+  // Sezione iniziale
   router.profile();
 });
