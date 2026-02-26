@@ -128,7 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
       title: "Eliminazione account",
       html: `
         <h2>Come eliminare l’account</h2>
-        <p>Vai su <strong>Profilo→ Impostazioni → Annulla registrazione</strong>.</p>
+        <p>Vai su <strong>Profilo→ Annulla registrazione</strong>.</p>
 
         <h2>Email di conferma</h2>
         <p>Riceverai una email automatica di conferma eliminazione.</p>
