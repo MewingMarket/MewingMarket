@@ -38,11 +38,11 @@ document.addEventListener("DOMContentLoaded", () => {
   // NAV: Download / Ordini / Logout / Elimina
   // ============================
   document.getElementById("nav-download")?.addEventListener("click", () => {
-    window.location.href = "download.html"; // tua pagina download
+    window.location.href = "download.html";
   });
 
   document.getElementById("nav-ordini")?.addEventListener("click", () => {
-    window.location.href = "ordini.html"; // tua pagina ordini
+    window.location.href = "ordini.html";
   });
 
   document.getElementById("nav-logout")?.addEventListener("click", () => {
@@ -57,7 +57,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.getElementById("nav-elimina")?.addEventListener("click", () => {
-    // Scroll alla sezione elimina
     document.getElementById("passwordDelete")?.focus();
   });
 
@@ -73,16 +72,14 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    if (!nuova_email.includes("@") || !nuova_email.includes(".")) {
-      setMsg("msgEmail", "Inserisci un'email valida.");
-      return;
-    }
-
     try {
       const res = await fetch("/api/utenti/cambia-email", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, nuova_email, password })
+        headers: {
+          "Content-Type": "application/json",
+          "x-token": token
+        },
+        body: JSON.stringify({ nuova_email, password })
       });
 
       const data = await res.json();
@@ -118,11 +115,6 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    if (nuova_password.length < 6) {
-      setMsg("msgPassword", "La nuova password deve avere almeno 6 caratteri.");
-      return;
-    }
-
     try {
       // Verifica password attuale
       const resLogin = await fetch("/api/utenti/login", {
@@ -141,8 +133,11 @@ document.addEventListener("DOMContentLoaded", () => {
       // Aggiorna password
       const res = await fetch("/api/utenti/cambia-password", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, nuova_password })
+        headers: {
+          "Content-Type": "application/json",
+          "x-token": token
+        },
+        body: JSON.stringify({ nuova_password })
       });
 
       const data = await res.json();
@@ -176,8 +171,11 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const res = await fetch("/api/utenti/elimina-account", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, password })
+        headers: {
+          "Content-Type": "application/json",
+          "x-token": token
+        },
+        body: JSON.stringify({ password })
       });
 
       const data = await res.json();
