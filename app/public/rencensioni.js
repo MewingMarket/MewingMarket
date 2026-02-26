@@ -1,65 +1,52 @@
-/* =========================================================
-   RECENSIONE PREMIUM — MewingMarket
-   Versione definitiva: ordine reale, stelle, commento,
-   tracking, backend, UX moderna
-========================================================= */
-
 document.addEventListener("DOMContentLoaded", async () => {
+  const token = localStorage.getItem("token");
+  const email = localStorage.getItem("utenteEmail");
 
-  /* -----------------------------------------
-     1) OTTIENI ORDER ID DALL'URL
-  ----------------------------------------- */
-  const url = new URL(window.location.href);
-  const orderId = url.searchParams.get("orderId");
-
-  if (!orderId) {
-    document.getElementById("status").textContent =
-      "Ordine non valido.";
-    return;
-  }
-
-  /* -----------------------------------------
-     2) OTTIENI DETTAGLI ORDINE DAL BACKEND
-  ----------------------------------------- */
-  let ordine;
-
-  try {
-    const res = await fetch(`/api/paypal/complete-order?orderId=${orderId}`);
-    const data = await res.json();
-
-    if (!data.success) {
-      document.getElementById("status").textContent =
-        "Impossibile caricare l'ordine.";
-      return;
-    }
-
-    ordine = data.order;
-
-  } catch (err) {
-    console.error(err);
-    document.getElementById("status").textContent =
-      "Errore di connessione.";
-    return;
-  }
-
-  /* -----------------------------------------
-     3) MOSTRA NOME PRODOTTO
-  ----------------------------------------- */
-  const productName = document.getElementById("productName");
-
-  if (ordine.prodotti.length === 1) {
-    productName.textContent = "Stai recensendo: " + ordine.prodotti[0].titolo;
-  } else {
-    productName.textContent =
-      `Stai recensendo un ordine di ${ordine.prodotti.length} prodotti`;
-  }
-
-  /* -----------------------------------------
-     4) SISTEMA STELLE
-  ----------------------------------------- */
+  const selectProdotto = document.getElementById("selectProdotto");
   const stars = document.querySelectorAll("#stars span");
   const comment = document.getElementById("comment");
   const status = document.getElementById("status");
+  const listaRecensioni = document.getElementById("listaRecensioni");
+
+  if (!token || !email) {
+    status.textContent = "Devi effettuare il login.";
+    status.classList.add("err");
+    return;
+  }
+
+  // ============================
+  // 1) CARICA PRODOTTI ACQUISTATI
+  // ============================
+  let ordini;
+  try {
+    const res = await fetch("/api/ordini/utente", {
+      headers: { "x-token": token }
+    });
+    const data = await res.json();
+    ordini = data.ordini || [];
+  } catch {
+    selectProdotto.innerHTML = `<option>Errore caricamento</option>`;
+    return;
+  }
+
+  const prodotti = [];
+  ordini.forEach(o => {
+    if (Array.isArray(o.prodotti)) {
+      o.prodotti.forEach(p => prodotti.push(p));
+    }
+  });
+
+  if (prodotti.length === 0) {
+    selectProdotto.innerHTML = `<option>Nessun prodotto acquistato</option>`;
+  } else {
+    selectProdotto.innerHTML = prodotti
+      .map(p => `<option value="${p.slug}" data-title="${p.titolo}">${p.titolo}</option>`)
+      .join("");
+  }
+
+  // ============================
+  // 2) SISTEMA STELLE
+  // ============================
   let rating = 0;
 
   stars.forEach(star => {
@@ -73,53 +60,98 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
 
-  /* -----------------------------------------
-     5) INVIO RECENSIONE
-  ----------------------------------------- */
+  // ============================
+  // 3) INVIA RECENSIONE
+  // ============================
   document.getElementById("sendReview").addEventListener("click", async () => {
-    status.style.color = "#d00";
+    status.textContent = "";
+    status.classList.remove("ok", "err");
+
+    const slug = selectProdotto.value;
+    const titolo = selectProdotto.selectedOptions[0]?.dataset.title || "";
+
+    if (!slug) {
+      status.textContent = "Seleziona un prodotto.";
+      status.classList.add("err");
+      return;
+    }
 
     if (rating === 0) {
       status.textContent = "Seleziona un numero di stelle.";
+      status.classList.add("err");
       return;
     }
 
     if (comment.value.trim().length < 5) {
       status.textContent = "Scrivi un commento più dettagliato.";
+      status.classList.add("err");
       return;
     }
 
-    /* -----------------------------------------
-       TRACKING
-    ----------------------------------------- */
-    if (window.trackEvent) {
-      trackEvent("review_submitted", {
-        orderId,
-        rating,
-        comment: comment.value.trim()
-      });
-    }
-
-    /* -----------------------------------------
-       INVIO AL BACKEND
-    ----------------------------------------- */
     try {
-      await fetch("/api/reviews/create", {
+      const res = await fetch("/api/recensioni/crea", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-token": token },
         body: JSON.stringify({
-          orderId,
+          slug,
+          titolo,
           rating,
-          comment: comment.value.trim(),
-          date: new Date().toISOString()
+          commento: comment.value.trim()
         })
       });
-    } catch (err) {
-      console.warn("Backend non ancora configurato, recensione salvata solo lato tracking.");
-    }
 
-    status.style.color = "green";
-    status.textContent = "Grazie! La tua recensione è stata inviata.";
-    comment.value = "";
+      const data = await res.json();
+
+      if (data.success) {
+        status.textContent = "Recensione inviata!";
+        status.classList.add("ok");
+        comment.value = "";
+        rating = 0;
+        stars.forEach(s => s.classList.remove("active"));
+        caricaRecensioni();
+      } else {
+        status.textContent = data.error || "Errore.";
+        status.classList.add("err");
+      }
+
+    } catch {
+      status.textContent = "Errore di connessione.";
+      status.classList.add("err");
+    }
   });
+
+  // ============================
+  // 4) CARICA RECENSIONI UTENTE
+  // ============================
+  async function caricaRecensioni() {
+    listaRecensioni.innerHTML = "Caricamento…";
+
+    try {
+      const res = await fetch("/api/recensioni/utente", {
+        headers: { "x-token": token }
+      });
+      const data = await res.json();
+
+      if (!data.success || data.recensioni.length === 0) {
+        listaRecensioni.innerHTML = "Nessuna recensione.";
+        return;
+      }
+
+      listaRecensioni.innerHTML = data.recensioni
+        .map(r => `
+          <div class="review-item">
+            <strong>${r.prodotto_titolo}</strong><br>
+            ⭐ ${r.rating}/5<br>
+            <em>${new Date(r.data).toLocaleDateString("it-IT")}</em><br><br>
+            ${r.commento}
+          </div>
+        `)
+        .join("");
+
+    } catch {
+      listaRecensioni.innerHTML = "Errore caricamento recensioni.";
+    }
+  }
+
+  caricaRecensioni();
 });
