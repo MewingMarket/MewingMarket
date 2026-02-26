@@ -3,10 +3,16 @@
 // =========================================================
 
 document.addEventListener("DOMContentLoaded", () => {
-  const token = localStorage.getItem("token");
-  const email = localStorage.getItem("utenteEmail");
+  function getToken() {
+    return localStorage.getItem("token") || "";
+  }
 
-  if (!token || !email) {
+  function setToken(t) {
+    if (t) localStorage.setItem("token", t);
+  }
+
+  const email = localStorage.getItem("utenteEmail");
+  if (!getToken() || !email) {
     window.location.href = "login.html";
     return;
   }
@@ -68,7 +74,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch("/api/utenti/cambia-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, nuova_email, password })
+        body: JSON.stringify({
+          token: getToken(),
+          nuova_email,
+          password
+        })
       });
 
       const data = await res.json();
@@ -105,6 +115,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
+      // 1) Verifica password attuale → login rigenera token
       const resLogin = await fetch("/api/utenti/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -118,10 +129,18 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
+      // 🔥 TOKEN AGGIORNATO
+      const newToken = loginData.token;
+      setToken(newToken);
+
+      // 2) Cambia password usando il token aggiornato
       const res = await fetch("/api/utenti/cambia-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, nuova_password })
+        body: JSON.stringify({
+          token: newToken,
+          nuova_password
+        })
       });
 
       const data = await res.json();
@@ -156,7 +175,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch("/api/utenti/elimina-account", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, password })
+        body: JSON.stringify({
+          token: getToken(),
+          password
+        })
       });
 
       const data = await res.json();
