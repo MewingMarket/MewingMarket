@@ -1,12 +1,14 @@
-// =========================================================
-// File: app/server/routes/api-ordini-annulla.cjs
-// Annulla un ordine dell'utente loggato
-// Versione definitiva (Airtable nuova SDK, blindata)
-// =========================================================
+/**
+ * app/server/routes/api-ordini-annulla.cjs
+ * Annulla un ordine dell'utente loggato + invio email
+ * Versione definitiva (Airtable nuova SDK, blindata)
+ */
 
 const express = require("express");
 const Airtable = require("../lib/airtable-wrapper.cjs");
 const authUser = require("../middleware/auth-user.cjs");
+const { inviaEmailOrdineAnnullato } = require("../modules/email-ordine-annullato.cjs");
+const { trackGA4 } = require("../services/ga4.cjs");
 
 const router = express.Router();
 
@@ -71,6 +73,22 @@ router.post("/ordini/annulla/:id", authUser, async (req, res) => {
     await base(TABLE).update(airtableId, {
       stato: "annullato",
       data: new Date().toISOString()
+    });
+
+    // 5) Tracking GA4
+    trackGA4("ordine_annullato", { uid: req.uid, email, ordine: airtableId });
+
+    // 6) Log interno
+    if (typeof global.logEvent === "function") {
+      global.logEvent("ordine_annullato", { uid: req.uid, email, ordine: airtableId });
+    }
+
+    // 7) Email ordine annullato
+    await inviaEmailOrdineAnnullato({
+      email,
+      ordine: {
+        id_ordine: safeGet(record, "id_ordine")
+      }
     });
 
     return res.json({ success: true });
