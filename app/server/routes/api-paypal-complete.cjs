@@ -1,6 +1,6 @@
 // =========================================================
 // File: app/server/routes/api-paypal-complete.cjs
-// Completa ordine PayPal + aggiorna Airtable + email
+// Completa ordine PayPal + aggiorna Airtable + email + tracking
 // Versione definitiva (Airtable nuova SDK, blindata)
 // =========================================================
 
@@ -8,6 +8,9 @@ const express = require("express");
 const Airtable = require("../lib/airtable-wrapper.cjs");
 const fetch = require("node-fetch");
 const { inviaEmailAcquisto } = require("../modules/email-acquisto.cjs");
+const { inviaEmailLista } = require("../modules/invia-email-lista.cjs");
+const { LISTA_CLIENTI } = require("../modules/liste-brevo.cjs");
+const { trackGA4 } = require("../services/ga4.cjs");
 
 const router = express.Router();
 
@@ -104,7 +107,29 @@ router.get("/paypal/complete-order", async (req, res) => {
       metodo_pagamento: "PayPal"
     };
 
-    // 5) INVIA EMAIL DI CONFERMA ORDINE
+    // 5) TRACKING GA4
+    trackGA4("ordine_completato", {
+      email: ordine.utente,
+      totale: ordine.totale,
+      id_ordine: ordine.id_ordine
+    });
+
+    // 6) LOG EVENTO INTERNO
+    if (typeof global.logEvent === "function") {
+      global.logEvent("ordine_completato", ordine);
+    }
+
+    // 7) AGGIUNGI UTENTE ALLA LISTA CLIENTI (blindato)
+    try {
+      await inviaEmailLista({
+        email: ordine.utente,
+        listId: LISTA_CLIENTI
+      });
+    } catch (err) {
+      console.error("⚠️ Errore aggiunta lista clienti:", err);
+    }
+
+    // 8) INVIA EMAIL DI CONFERMA ORDINE
     try {
       await inviaEmailAcquisto({
         email: ordine.utente,
@@ -114,7 +139,7 @@ router.get("/paypal/complete-order", async (req, res) => {
       console.error("❌ Errore invio email ordine:", err);
     }
 
-    // 6) RITORNA ORDINE AL FRONTEND
+    // 9) RITORNA ORDINE AL FRONTEND
     return res.json({
       success: true,
       order: ordine
