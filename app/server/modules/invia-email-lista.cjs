@@ -4,7 +4,7 @@ const axios = require("axios");
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
 const BREVO_API_BASE = "https://api.brevo.com/v3";
 
-async function inviaEmailLista({ email, listId, subject, html }) {
+async function inviaEmailLista({ email, listId, subject, html, sender }) {
   if (!BREVO_API_KEY) {
     console.error("❌ BREVO_API_KEY mancante");
     return;
@@ -16,25 +16,27 @@ async function inviaEmailLista({ email, listId, subject, html }) {
   }
 
   try {
-    // 1) Assicura contatto nella lista
-    await axios.post(
-      `${BREVO_API_BASE}/contacts`,
-      {
-        email,
-        listIds: listId ? [listId] : []
-      },
-      {
-        headers: {
-          "api-key": BREVO_API_KEY,
-          "Content-Type": "application/json"
+    // 1) Assicura contatto nella lista (solo se listId è presente)
+    if (listId) {
+      await axios.post(
+        `${BREVO_API_BASE}/contacts`,
+        {
+          email,
+          listIds: [listId]
+        },
+        {
+          headers: {
+            "api-key": BREVO_API_KEY,
+            "Content-Type": "application/json"
+          }
         }
-      }
-    ).catch(err => {
-      const code = err?.response?.status;
-      if (code !== 400) {
-        console.error("❌ Errore contatto Brevo:", err?.response?.data || err.message);
-      }
-    });
+      ).catch(err => {
+        const code = err?.response?.status;
+        if (code !== 400) {
+          console.error("❌ Errore contatto Brevo:", err?.response?.data || err.message);
+        }
+      });
+    }
 
     // 2) Invia email transazionale
     await axios.post(
@@ -43,9 +45,11 @@ async function inviaEmailLista({ email, listId, subject, html }) {
         to: [{ email }],
         subject,
         htmlContent: html,
-        sender: {
-          name: "MewingMarket",
-          email: process.env.BREVO_SENDER_EMAIL || "no-reply@mewingmarket.com"
+
+        // ⭐ Mittente personalizzato (vendite/supporto/newsletter/credenziali)
+        sender: sender || {
+          name: process.env.BREVO_SENDER_NAME || "MewingMarket",
+          email: process.env.BREVO_SENDER_VENDITE || "no-reply@mewingmarket.com"
         }
       },
       {
