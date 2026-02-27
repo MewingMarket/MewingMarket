@@ -1,6 +1,11 @@
 // app/server/modules/email-acquisto.cjs
 const { inviaEmailLista } = require("./invia-email-lista.cjs");
+const { LISTA_CLIENTI } = require("./liste-brevo.cjs");
+const { SENDER_ACQUISTI } = require("./email-senders.cjs");
 
+/* =========================================================
+   RENDER TABELLA PRODOTTI
+========================================================= */
 function renderProdotti(prodotti) {
   return prodotti.map(p => `
     <tr>
@@ -10,6 +15,9 @@ function renderProdotti(prodotti) {
   `).join("");
 }
 
+/* =========================================================
+   INVIO EMAIL ACQUISTO
+========================================================= */
 async function inviaEmailAcquisto({ email, ordine }) {
   const subject = `Grazie per il tuo acquisto – Ordine #${ordine.id_ordine}`;
 
@@ -17,6 +25,7 @@ async function inviaEmailAcquisto({ email, ordine }) {
   <html>
     <body style="font-family: system-ui; background:#020617; color:#e5e7eb; padding:24px;">
       <div style="max-width:640px;margin:0 auto;border-radius:16px;border:1px solid #1f2937;padding:24px;background:#111827;">
+        
         <h1 style="color:#22c55e;font-size:24px;">Grazie per il tuo acquisto</h1>
         <p>Ordine <strong>#${ordine.id_ordine}</strong> completato.</p>
 
@@ -25,12 +34,19 @@ async function inviaEmailAcquisto({ email, ordine }) {
         </table>
 
         <p style="margin-top:16px;"><strong>Totale:</strong> ${ordine.totale}€</p>
+
       </div>
     </body>
   </html>
   `;
 
-  await inviaEmailLista({ email, listId: 12, subject, html });
+  return inviaEmailLista({
+    email,
+    listId: LISTA_CLIENTI,   // ID 12
+    subject,
+    html,
+    sender: SENDER_ACQUISTI  // vendite@mewingmarket.it
+  });
 }
 
 module.exports = { inviaEmailAcquisto };
