@@ -59,7 +59,7 @@ module.exports = function (app) {
   });
 
   /* =========================================================
-     DISISCRIZIONE NEWSLETTER
+     DISISCRIZIONE NEWSLETTER (PATCH DEFINITIVA)
   ========================================================== */
   app.post("/newsletter/unsubscribe", async (req, res) => {
     const uid = req.uid;
@@ -71,10 +71,10 @@ module.exports = function (app) {
     }
 
     try {
-      // Rimuove dalla lista newsletter
+      // Rimuove dalla lista newsletter (endpoint corretto Brevo)
       await axios.post(
-        "https://api.brevo.com/v3/contacts/unlink",
-        { email },
+        `https://api.brevo.com/v3/contacts/${encodeURIComponent(email)}/lists/remove`,
+        { ids: [LISTA_NEWSLETTER] },
         {
           headers: {
             "api-key": process.env.BREVO_API_KEY,
