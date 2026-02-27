@@ -27,12 +27,20 @@ app.use(cookieParser());
 // MIDDLEWARE GLOBALI
 require("./middleware/cache.cjs")(app);
 require("./middleware/uploads.cjs")(app);
-
 require("./middleware/context.cjs")(app);
 
-// STATICI
+// STATICI FRONTEND
 app.use(express.static(path.join(ROOT, "public")));
 app.use("/data", express.static(path.join(ROOT, "data")));
+
+// =========================================================
+// PATCH ADMIN (UNICA MODIFICA NECESSARIA)
+// Serve correttamente tutte le pagine admin:
+// /admin/admin-login.html
+// /admin/dashboard.html
+// /admin/JS/dashboard-admin.js
+// =========================================================
+app.use("/admin", express.static(path.join(ROOT, "public/admin")));
 
 // ROUTER API PRINCIPALE
 const router = require("./router.cjs");
