@@ -34,14 +34,16 @@ app.use(express.static(path.join(ROOT, "public")));
 app.use("/data", express.static(path.join(ROOT, "data")));
 
 // =========================================================
-// PATCH ADMIN — SERVE TUTTA LA CARTELLA ADMIN
+// PATCH ADMIN — ORDINE CORRETTO
 // =========================================================
-app.use("/admin", express.static(path.join(ROOT, "public/admin")));
 
-// PATCH: rotta pulita /admin/login
+// 1) Rotta pulita /admin/login
 app.get("/admin/login", (req, res) => {
   res.sendFile(path.join(ROOT, "public/admin/admin-login.html"));
 });
+
+// 2) Statici admin
+app.use("/admin", express.static(path.join(ROOT, "public/admin")));
 
 // ROUTER API PRINCIPALE
 const router = require("./router.cjs");
