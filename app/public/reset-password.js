@@ -1,6 +1,6 @@
 document.getElementById("btnResetPassword").addEventListener("click", async () => {
   const email = document.getElementById("resetEmail").value.trim().toLowerCase();
-  const msg = document.getElementById("msgResetPass");
+  const msg = document.getElementById("msgResetPassword");
 
   if (!email) {
     msg.textContent = "Inserisci la tua email.";
