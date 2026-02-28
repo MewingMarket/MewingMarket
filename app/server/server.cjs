@@ -34,7 +34,7 @@ app.use(express.static(path.join(ROOT, "public")));
 app.use("/data", express.static(path.join(ROOT, "data")));
 
 // =========================================================
-// PATCH ADMIN — ORDINE CORRETTO
+// ADMIN — ORDINE CORRETTO
 // =========================================================
 
 // 1) Rotta pulita /admin/login
@@ -45,11 +45,15 @@ app.get("/admin/login", (req, res) => {
 // 2) Statici admin
 app.use("/admin", express.static(path.join(ROOT, "public/admin")));
 
-// ROUTER API PRINCIPALE
+// =========================================================
+// API (router montato su /api)
+// =========================================================
 const router = require("./router.cjs");
 app.use("/api", router);
 
-// FRONTEND ROUTES
+// =========================================================
+// ROUTE FRONTEND (DEVONO ESSERE SU app, NON SU router)
+// =========================================================
 require("./routes/chat.cjs")(app);
 require("./routes/chat-voice.cjs")(app);
 require("./routes/newsletter.cjs")(app);
