@@ -1,19 +1,18 @@
 const urlParams = new URLSearchParams(window.location.search);
 const token = urlParams.get("token");
 
-document.getElementById("btnConfirmReset").addEventListener("click", async () => {
-  const nuova_password = document.getElementById("newPassword").value.trim();
-  const conferma = document.getElementById("confirmPassword").value.trim();
-  const msg = document.getElementById("msgConfirmReset");
+document.getElementById("btnConfirmEmail").addEventListener("click", async () => {
+  const nuova_email = document.getElementById("newEmail").value.trim().toLowerCase();
+  const msg = document.getElementById("msgConfirmEmail");
 
-  if (!nuova_password || !conferma) {
-    msg.textContent = "Compila tutti i campi.";
+  if (!nuova_email) {
+    msg.textContent = "Inserisci la nuova email.";
     msg.className = "err";
     return;
   }
 
-  if (nuova_password !== conferma) {
-    msg.textContent = "Le password non coincidono.";
+  if (!nuova_email.includes("@") || !nuova_email.includes(".")) {
+    msg.textContent = "Inserisci un'email valida.";
     msg.className = "err";
     return;
   }
@@ -25,16 +24,16 @@ document.getElementById("btnConfirmReset").addEventListener("click", async () =>
   }
 
   try {
-    const res = await fetch("/api/utenti/reset-password-confirm", {
+    const res = await fetch("/api/utenti/reset-email-confirm", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, nuova_password })
+      body: JSON.stringify({ token, nuova_email })
     });
 
     const data = await res.json();
 
     if (data.success) {
-      msg.textContent = "Password aggiornata! Ora puoi accedere.";
+      msg.textContent = "Email aggiornata correttamente!";
       msg.className = "ok";
     } else {
       msg.textContent = data.error || "Errore.";
