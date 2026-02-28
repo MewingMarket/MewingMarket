@@ -76,7 +76,7 @@
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            email: "admin",   // l'email non serve, la gestisce ENV
+            email: "admin",
             password
           })
         });
@@ -89,14 +89,13 @@
           return;
         }
 
-        // Salva token admin
         localStorage.setItem("admin_token", data.token);
 
         status.textContent = "Accesso effettuato!";
         status.style.color = "green";
 
         setTimeout(() => {
-          window.location.href = "dashboard.html";
+          window.location.href = "/admin/dashboard.html";
         }, 600);
 
       } catch (err) {
@@ -121,7 +120,7 @@
   <input type="password" id="adminPassword" placeholder="Password admin">
   <button id="loginBtn">Accedi</button>
 
-  <button class="secondary-btn" onclick="window.location.href='../index.html'">
+  <button class="secondary-btn" onclick="window.location.href='/'">
     Torna al sito pubblico
   </button>
 
