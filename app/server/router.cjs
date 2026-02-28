@@ -56,7 +56,7 @@ router.use(require("./routes/admin-vendite.cjs"));
 // =========================================================
 require("./routes/chat.cjs")(router);
 require("./routes/chat-voice.cjs")(router);
-require("./routes/newsletter.cjs")(router);
+require("./routes/newsletter.cjs")(app);
 require("./routes/sitemap.cjs")(router);
 require("./routes/sales.cjs")(router);
 require("./routes/meta-feed.cjs")(router);
