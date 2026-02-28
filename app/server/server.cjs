@@ -34,13 +34,14 @@ app.use(express.static(path.join(ROOT, "public")));
 app.use("/data", express.static(path.join(ROOT, "data")));
 
 // =========================================================
-// PATCH ADMIN (UNICA MODIFICA NECESSARIA)
-// Serve correttamente tutte le pagine admin:
-// /admin/admin-login.html
-// /admin/dashboard.html
-// /admin/JS/dashboard-admin.js
+// PATCH ADMIN — SERVE TUTTA LA CARTELLA ADMIN
 // =========================================================
 app.use("/admin", express.static(path.join(ROOT, "public/admin")));
+
+// PATCH: rotta pulita /admin/login
+app.get("/admin/login", (req, res) => {
+  res.sendFile(path.join(ROOT, "public/admin/admin-login.html"));
+});
 
 // ROUTER API PRINCIPALE
 const router = require("./router.cjs");
