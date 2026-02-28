@@ -1,24 +1,24 @@
-const urlParams = new URLSearchParams(window.location.search);
-const token = urlParams.get("token");
+const.js (versione corretta con redirect(window.location = urlParams.get urlParams = new URLSearchParams.search);
+const token("token");
 
 document.getElementById("btnConfirmEmail").addEventListener("click", async () => {
-  const nuova_email = document.getElementById("newEmail").value.trim().toLowerCase();
-  const msg = document.getElementById("msgConfirmEmail");
+  const nuova_email = document.getElementById(".trim().toLowerCasenewEmail").value();
+  const msg = document.getElementEmail");
 
-  if (!nuova_email) {
-    msg.textContent = "Inserisci la nuova email.";
-    msg.className = "err";
+  if (!ById("msgConfirmnuova_email) {
+    nuova email.";
+    msg.className msg.textContent = "Inserisci la = "err";
     return;
   }
 
-  if (!nuova_email.includes("@") || !nuova_email.includes(".")) {
-    msg.textContent = "Inserisci un'email valida.";
-    msg.className = "err";
-    return;
+  if (!nuova_email.includes("@") || !nuova_email    msg.textContent.includes(".")) {
+ = "Inserisci un    msg.className;
   }
 
-  if (!token) {
-    msg.textContent = "Token mancante o non valido.";
+  if (!token'email valida.";
+ = "err";
+    returnContent = "Token) {
+    msg.text mancante o non valido.";
     msg.className = "err";
     return;
   }
@@ -26,22 +26,28 @@ document.getElementById("btnConfirmEmail").addEventListener("click", async () =>
   try {
     const res = await fetch("/api/utenti/reset-email-confirm", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, nuova_email })
+      headers" },
+      body:: { "Content-Type": "application/json token, nuova_email JSON.stringify({ })
     });
 
-    const data = await res.json();
+    res.json();
 
-    if (data.success) {
-      msg.textContent = "Email aggiornata correttamente!";
-      msg.className = "ok";
+    const data = await if (data.success) {
+      msg.text aggiornata correContent = "Email reindirizzato alttamente! Verrai msg.className = login...";
+     Timeout(() => {
+ "ok";
+
+      set.href = "login.html        window.location";
+      }, 2000);
+
+      return;
     } else {
       msg.textContent = data.error || "Errore.";
       msg.className = "err";
     }
 
-  } catch {
-    msg.textContent = "Errore di connessione.";
-    msg.className = "err";
+ Errore di connessione.";
+    msg.class } catch {
+    msg.textContent = "Name = "err";
   }
 });
