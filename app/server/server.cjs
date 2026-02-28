@@ -31,26 +31,25 @@ require("./middleware/context.cjs")(app);
 
 /**
  * =========================================================
- * STATICI FRONTEND — versione corretta
- * Serve SEMPRE /app/public
+ * STATICI FRONTEND — percorso assoluto
  * =========================================================
  */
-app.use(express.static(path.join(ROOT, "public")));
-app.use("/data", express.static(path.join(ROOT, "data")));
+app.use(express.static(path.resolve("app/public")));
+app.use("/data", express.static(path.resolve("app/data")));
 
 /**
  * =========================================================
- * ADMIN — ordine corretto
+ * ADMIN — percorso assoluto
  * =========================================================
  */
 
 // Rotta pulita /admin/login
 app.get("/admin/login", (req, res) => {
-  res.sendFile(path.join(ROOT, "public/admin/admin-login.html"));
+  res.sendFile(path.resolve("app/public/admin/admin-login.html"));
 });
 
 // Statici admin
-app.use("/admin", express.static(path.join(ROOT, "public/admin")));
+app.use("/admin", express.static(path.resolve("app/public/admin")));
 
 /**
  * =========================================================
