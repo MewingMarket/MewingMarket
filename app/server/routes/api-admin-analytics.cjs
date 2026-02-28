@@ -8,7 +8,7 @@
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
-const { requireAdmin } = require("./api-admin-auth.cjs");
+const authAdmin = require("../middleware/auth-admin.cjs"); // PATCH QUI
 
 const router = express.Router();
 
@@ -22,7 +22,7 @@ function load() {
   }
 }
 
-router.get("/admin/analytics", requireAdmin, (req, res) => {
+router.get("/admin/analytics", authAdmin, (req, res) => {
   const events = load();
 
   const stats = {

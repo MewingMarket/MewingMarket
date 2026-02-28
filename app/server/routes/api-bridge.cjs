@@ -1,26 +1,28 @@
 // =========================================================
 // File: app/server/routes/api-bridge.cjs
 // Bridge API legacy → Catalogo automatico + Ordini reali
+// Versione definitiva (Airtable nuova SDK, percorsi corretti)
 // =========================================================
 
 const express = require("express");
-const Airtable = require("airtable");
+const Airtable = require("../lib/airtable-wrapper.cjs");
 const { getProducts } = require("../../modules/airtable.cjs");
 
 const router = express.Router();
 
 // ---------------------------------------------------------
-// CONFIG AIRTABLE
+// CONFIG AIRTABLE (nuova SDK, blindata)
 // ---------------------------------------------------------
-const PAT = process.env.AIRTABLE_PAT;
-const BASE = process.env.AIRTABLE_BASE;
+Airtable.configure({
+  apiKey: process.env.AIRTABLE_PAT
+});
 
-const base = new Airtable({ apiKey: PAT }).base(BASE);
+const base = Airtable.base(process.env.AIRTABLE_BASE);
 
 const TABLE_PRODOTTI = "Prodotti";
 const TABLE_ORDINI = "Ordini";
 
-// Helper
+// Helper sicuro
 function safeGet(record, field) {
   try {
     return record.get(field) ?? null;
@@ -48,14 +50,19 @@ router.get("/products", (req, res) => {
 router.get("/products/:slug", (req, res) => {
   const { slug } = req.params;
 
-  const prodotti = getProducts();
-  const prodotto = prodotti.find(p => p.slug === slug);
+  try {
+    const prodotti = getProducts();
+    const prodotto = prodotti.find(p => p.slug === slug);
 
-  if (!prodotto) {
-    return res.json({ success: false, error: "Prodotto non trovato" });
+    if (!prodotto) {
+      return res.json({ success: false, error: "Prodotto non trovato" });
+    }
+
+    return res.json({ success: true, prodotto });
+  } catch (err) {
+    console.error("❌ Errore /api/products/:slug:", err);
+    return res.json({ success: false, error: "Errore server" });
   }
-
-  return res.json({ success: true, prodotto });
 });
 
 /* =========================================================
@@ -198,7 +205,6 @@ router.post("/newsletter/subscribe", async (req, res) => {
 
   if (!email) return res.json({ status: "error", error: "Email mancante" });
 
-  // Se hai BREVO_API_KEY → integrazione reale
   if (process.env.BREVO_API_KEY) {
     try {
       const fetch = (await import("node-fetch")).default;
@@ -209,7 +215,7 @@ router.post("/newsletter/subscribe", async (req, res) => {
           "Content-Type": "application/json",
           "api-key": process.env.BREVO_API_KEY
         },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ email, listIds: [8] })
       });
 
       return res.json({ status: "ok" });
@@ -219,7 +225,6 @@ router.post("/newsletter/subscribe", async (req, res) => {
     }
   }
 
-  // Fallback se Brevo non è configurato
   console.log("📩 Newsletter (fallback):", email);
   return res.json({ status: "ok" });
 });

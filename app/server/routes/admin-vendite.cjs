@@ -2,8 +2,19 @@
 
 const express = require("express");
 const router = express.Router();
-const authAdmin = require("../middleware/authAdmin.cjs");
-const base = require("../lib/airtable.cjs");
+const authAdmin = require("../middleware/auth-admin.cjs"); // PATCH QUI
+
+// ❌ Vecchio require (non esiste più)
+// const base = require("../lib/airtable.cjs");
+
+// ✅ Nuovo wrapper Airtable
+const Airtable = require("../lib/airtable-wrapper.cjs");
+
+Airtable.configure({
+  apiKey: process.env.AIRTABLE_PAT
+});
+
+const base = Airtable.base(process.env.AIRTABLE_BASE);
 
 router.get("/vendite/lista", authAdmin, async (req, res) => {
   try {

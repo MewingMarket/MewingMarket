@@ -19,6 +19,11 @@
   <title>Login Admin – MewingMarket</title>
 
   <style>
+    body {
+      background:#f7faff;
+      font-family:system-ui, sans-serif;
+      color:#003366;
+    }
     .login-box {
       max-width:400px;
       margin:60px auto;
@@ -26,13 +31,14 @@
       padding:25px;
       border-radius:12px;
       box-shadow:0 4px 20px rgba(0,0,0,0.06);
+      text-align:center;
     }
     input, button {
       width:100%;
       padding:12px;
       margin-top:10px;
       border-radius:8px;
-      border:1px solid #ddd;
+      border:1px solid #cdd7e1;
       font-size:16px;
     }
     button {
@@ -41,16 +47,68 @@
       border:none;
       font-weight:600;
       cursor:pointer;
+      transition:0.2s;
+    }
+    button:hover {
+      background:#005fe0;
     }
     .secondary-btn {
-      background:#eee;
-      color:#333;
+      background:#e8eef5;
+      color:#003366;
       border:none;
       margin-top:10px;
     }
+    #status {
+      margin-top:15px;
+      font-weight:600;
+    }
   </style>
 
-  <script src="js/login.js" defer></script>
+  <script defer>
+    async function loginAdmin() {
+      const password = document.getElementById("adminPassword").value;
+      const status = document.getElementById("status");
+
+      status.textContent = "Verifica in corso...";
+
+      try {
+        const res = await fetch("/api/admin/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: "admin",
+            password
+          })
+        });
+
+        const data = await res.json();
+
+        if (!data.success) {
+          status.textContent = data.error || "Errore login";
+          status.style.color = "red";
+          return;
+        }
+
+        localStorage.setItem("admin_token", data.token);
+
+        status.textContent = "Accesso effettuato!";
+        status.style.color = "green";
+
+        setTimeout(() => {
+          window.location.href = "/admin/dashboard.html";
+        }, 600);
+
+      } catch (err) {
+        console.error(err);
+        status.textContent = "Errore server";
+        status.style.color = "red";
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("loginBtn").addEventListener("click", loginAdmin);
+    });
+  </script>
 
 </head>
 
@@ -62,7 +120,7 @@
   <input type="password" id="adminPassword" placeholder="Password admin">
   <button id="loginBtn">Accedi</button>
 
-  <button class="secondary-btn" onclick="window.location.href='../index.html'">
+  <button class="secondary-btn" onclick="window.location.href='/'">
     Torna al sito pubblico
   </button>
 

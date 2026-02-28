@@ -4,7 +4,7 @@
  * Entry point del server — versione coerente al router
  * =========================================================
  */
-
+console.log(">> PACKAGE TYPE:", require("../../package.json").type);
 const express = require("express");
 const path = require("path");
 const cors = require("cors");
@@ -27,18 +27,33 @@ app.use(cookieParser());
 // MIDDLEWARE GLOBALI
 require("./middleware/cache.cjs")(app);
 require("./middleware/uploads.cjs")(app);
-require("./middleware/user-state.cjs")(app);
 require("./middleware/context.cjs")(app);
 
-// STATICI
+// STATICI FRONTEND
 app.use(express.static(path.join(ROOT, "public")));
 app.use("/data", express.static(path.join(ROOT, "data")));
 
-// ROUTER API PRINCIPALE
+// =========================================================
+// ADMIN — ORDINE CORRETTO
+// =========================================================
+
+// 1) Rotta pulita /admin/login
+app.get("/admin/login", (req, res) => {
+  res.sendFile(path.join(ROOT, "public/admin/admin-login.html"));
+});
+
+// 2) Statici admin
+app.use("/admin", express.static(path.join(ROOT, "public/admin")));
+
+// =========================================================
+// API (router montato su /api)
+// =========================================================
 const router = require("./router.cjs");
 app.use("/api", router);
 
-// FRONTEND ROUTES
+// =========================================================
+// ROUTE FRONTEND (DEVONO ESSERE SU app, NON SU router)
+// =========================================================
 require("./routes/chat.cjs")(app);
 require("./routes/chat-voice.cjs")(app);
 require("./routes/newsletter.cjs")(app);

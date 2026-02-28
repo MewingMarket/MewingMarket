@@ -21,6 +21,12 @@
   <link rel="stylesheet" href="style.css">
 
   <style>
+    body {
+      background:#f7faff;
+      font-family:system-ui, sans-serif;
+      color:#003366;
+    }
+
     .login-box {
       max-width:400px;
       margin:60px auto;
@@ -29,14 +35,36 @@
       border-radius:12px;
       box-shadow:0 4px 20px rgba(0,0,0,0.06);
     }
+
+    .login-box h1 {
+      margin-bottom:10px;
+      font-size:26px;
+      color:#003366;
+      text-align:center;
+    }
+
+    label {
+      font-weight:600;
+      margin-top:15px;
+      display:block;
+      color:#003366;
+    }
+
     input {
       width:100%;
       padding:12px;
-      margin-top:10px;
+      margin-top:6px;
       border-radius:8px;
-      border:1px solid #ddd;
+      border:1px solid #cdd7e1;
       font-size:16px;
+      background:white !important;
+      color:#003366 !important;
     }
+
+    input::placeholder {
+      color:#7a8a9a !important;
+    }
+
     button {
       width:100%;
       margin-top:20px;
@@ -48,22 +76,37 @@
       cursor:pointer;
       font-size:16px;
       font-weight:600;
+      transition:0.2s;
     }
+
+    button:hover {
+      background:#005fe0;
+    }
+
     #status {
       margin-top:15px;
       font-size:14px;
       color:#d00;
       text-align:center;
+      font-weight:600;
+      min-height:20px;
     }
+
     .links {
       margin-top:20px;
       text-align:center;
       font-size:14px;
+      line-height:1.6;
     }
+
     .links a {
       color:#0077ff;
       text-decoration:none;
       font-weight:600;
+    }
+
+    .links a:hover {
+      text-decoration:underline;
     }
   </style>
 
@@ -89,10 +132,10 @@
 
     <form id="login-form">
       <label>Email</label>
-      <input type="email" name="email" required>
+      <input type="email" name="email" placeholder="Inserisci la tua email" required>
 
       <label>Password</label>
-      <input type="password" name="password" required>
+      <input type="password" name="password" placeholder="Inserisci la password" required>
 
       <button type="submit">Accedi</button>
     </form>
@@ -100,8 +143,9 @@
     <div id="status"></div>
 
     <div class="links">
-      <p><a href="registrazione.html">Non hai un account? Registrati qui</a></p>
-      <p><a href="reset.html">Hai dimenticato la password?</a></p>
+      <a href="reset-password.html">Hai dimenticato la password?</a><br>
+      <a href="reset-email.html">Hai dimenticato l'email?</a><br>
+      <a href="registrazione.html">Non hai un account? Registrati</a>
     </div>
   </div>
 

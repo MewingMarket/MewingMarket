@@ -1,80 +1,87 @@
 document.addEventListener("DOMContentLoaded", async () => {
+  const token = localStorage.getItem("token");
+  const email = localStorage.getItem("utenteEmail");
+  const body = document.getElementById("ordersBody");
 
-  const ordersBody = document.getElementById("ordersBody");
-
-  // ============================================================
-  // 0) RECUPERA SESSIONE UTENTE
-  // ============================================================
-  const session = localStorage.getItem("session");
-  if (!session) {
-    ordersBody.innerHTML = `<tr><td colspan="5">Devi effettuare il login per vedere i tuoi ordini.</td></tr>`;
+  if (!token || !email) {
+    body.innerHTML = `<tr><td colspan="5">Devi effettuare il login.</td></tr>`;
     return;
   }
 
-  // ============================================================
-  // 1) CARICA ORDINI UTENTE
-  // ============================================================
+  // 1) Recupera ordini dell’utente
   let data;
   try {
-    const res = await fetch(`/api/ordini/utente/${session}`);
+    const res = await fetch("/api/ordini/utente", {
+      headers: { "x-token": token }
+    });
     data = await res.json();
   } catch (err) {
     console.error(err);
-    ordersBody.innerHTML = `<tr><td colspan="5">Errore di connessione.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="5">Errore di connessione.</td></tr>`;
     return;
   }
 
   if (!data.success || !Array.isArray(data.ordini) || data.ordini.length === 0) {
-    ordersBody.innerHTML = `<tr><td colspan="5">Nessun ordine trovato.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="5">Nessun ordine trovato.</td></tr>`;
     return;
   }
 
-  // ============================================================
-  // 2) MOSTRA ORDINI
-  // ============================================================
+  // 2) Mostra ordini
   data.ordini.forEach(o => {
     const tr = document.createElement("tr");
 
-    // Prodotti formattati
     const prodottiHTML = Array.isArray(o.prodotti)
       ? o.prodotti.map(p => `${p.titolo} (${p.prezzo}€)`).join("<br>")
       : "-";
 
-    // Bottone annulla ordine (solo se non pagato)
-    const annullaBtn =
-      o.stato === "in_attesa_pagamento"
-        ? `<button class="btn-small-red" onclick="annullaOrdine('${o.paypal_transaction_id}')">Annulla</button>`
-        : "";
-
-    // Pulsanti download
     const downloadBtns = Array.isArray(o.prodotti)
       ? o.prodotti
           .map(
-            p => `<a href="/api/vendite/download/${p.slug}" class="btn-small">Download</a>`
+            p => `<a class="btn-download" href="/api/vendite/download/${p.slug}?token=${token}">Download</a>`
           )
           .join("<br>")
       : "-";
 
+    const annullaBtn =
+      o.stato !== "completato" &&
+      o.stato !== "COMPLETED" &&
+      o.stato !== "annullato"
+        ? `<button class="btn-cancel" onclick="annullaOrdine('${o.id}')">Annulla</button>`
+        : "";
+
     tr.innerHTML = `
-      <td>${o.data || "-"}</td>
+      <td>${new Date(o.data).toLocaleDateString("it-IT")}</td>
       <td>${prodottiHTML}</td>
-      <td>${o.totale || 0}€</td>
-      <td>${o.stato || "-"}</td>
-      <td>
-        ${downloadBtns}
-        <br>
-        ${annullaBtn}
-      </td>
+      <td>${o.totale}€</td>
+      <td>${o.stato}</td>
+      <td>${downloadBtns}<br>${annullaBtn}</td>
     `;
 
-    ordersBody.appendChild(tr);
+    body.appendChild(tr);
   });
-
 });
 
-// ============================================================
-// FUNZIONE — REINDIRIZZA ALLA CANCEL PAGE
-// ============================================================
-function annullaOrdine(orderId) {
-  window.location.href = `cancel.html?orderId=${orderId}`;
+// 3) Funzione annulla ordine
+async function annullaOrdine(id) {
+  const token = localStorage.getItem("token");
+
+  if (!confirm("Vuoi davvero annullare questo ordine?")) return;
+
+  try {
+    const res = await fetch(`/api/ordini/annulla/${id}`, {
+      method: "POST",
+      headers: { "x-token": token }
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      alert("Ordine annullato.");
+      location.reload();
+    } else {
+      alert(data.error || "Errore.");
+    }
+  } catch {
+    alert("Errore di connessione.");
+  }
 }

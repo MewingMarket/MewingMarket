@@ -48,7 +48,7 @@ document.addEventListener("DOMContentLoaded", () => {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    if (sending) return; // evita doppio invio
+    if (sending) return;
     sending = true;
 
     const email = clean(emailInput.value.trim());
@@ -73,20 +73,20 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         data = await res.json();
       } catch {
-        data = { status: "error", message: "Invalid JSON" };
+        data = { success: false, error: "Invalid JSON" };
       }
 
       console.log("📬 Risposta server:", data);
 
-      if (data.status === "ok") {
+      if (data.success === true) {
         safeTrack("newsletter_unsubscribe_success", { email });
         alert("Disiscrizione completata.");
       } else {
         safeTrack("newsletter_unsubscribe_error", {
           email,
-          reason: data.message || "generic"
+          reason: data.error || "generic"
         });
-        alert("Errore durante la disiscrizione.");
+        alert(data.error || "Errore durante la disiscrizione.");
       }
 
     } catch (err) {

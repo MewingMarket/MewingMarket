@@ -1,18 +1,36 @@
-// =========================================================
-// File: app/server/routes/api-ordini-annulla.cjs
-// Annulla un ordine dell'utente loggato
-// =========================================================
+/**
+ * app/server/routes/api-ordini-annulla.cjs
+ * Annulla un ordine dell'utente loggato + invio email
+ * Versione definitiva (Airtable nuova SDK, blindata)
+ */
 
 const express = require("express");
+const Airtable = require("../lib/airtable-wrapper.cjs");
+const authUser = require("../middleware/auth-user.cjs");
+const { inviaEmailOrdineAnnullato } = require("../modules/email-ordine-annullato.cjs");
+const { trackGA4 } = require("../services/ga4.cjs");
+
 const router = express.Router();
 
-const authUser = require("../middleware/auth-user.cjs");
+// ---------------------------------------------------------
+// CONFIG AIRTABLE (nuova SDK, blindata)
+// ---------------------------------------------------------
+Airtable.configure({
+  apiKey: process.env.AIRTABLE_PAT
+});
 
-const Airtable = require("airtable");
-const base = new Airtable({ apiKey: process.env.AIRTABLE_PAT })
-  .base(process.env.AIRTABLE_BASE);
+const base = Airtable.base(process.env.AIRTABLE_BASE);
 
 const TABLE = "Ordini";
+
+// Helper sicuro
+function safeGet(record, field) {
+  try {
+    return record.get(field) ?? null;
+  } catch {
+    return null;
+  }
+}
 
 // =========================================================
 // POST /api/ordini/annulla/:id
@@ -36,16 +54,18 @@ router.post("/ordini/annulla/:id", authUser, async (req, res) => {
     }
 
     // 2) Controlla che appartenga all'utente
-    if (record.get("utente") !== email) {
+    if (safeGet(record, "utente") !== email) {
       return res.json({ success: false, error: "Non autorizzato" });
     }
 
     // 3) Controlla stato
-    const stato = record.get("stato");
-    if (stato === "completato") {
+    const stato = safeGet(record, "stato");
+
+    if (stato === "completato" || stato === "COMPLETED") {
       return res.json({ success: false, error: "Ordine già completato" });
     }
-    if (stato === "annullato") {
+
+    if (stato === "annullato" || stato === "CANCELLED") {
       return res.json({ success: false, error: "Ordine già annullato" });
     }
 
@@ -53,6 +73,22 @@ router.post("/ordini/annulla/:id", authUser, async (req, res) => {
     await base(TABLE).update(airtableId, {
       stato: "annullato",
       data: new Date().toISOString()
+    });
+
+    // 5) Tracking GA4
+    trackGA4("ordine_annullato", { uid: req.uid, email, ordine: airtableId });
+
+    // 6) Log interno
+    if (typeof global.logEvent === "function") {
+      global.logEvent("ordine_annullato", { uid: req.uid, email, ordine: airtableId });
+    }
+
+    // 7) Email ordine annullato
+    await inviaEmailOrdineAnnullato({
+      email,
+      ordine: {
+        id_ordine: safeGet(record, "id_ordine")
+      }
     });
 
     return res.json({ success: true });

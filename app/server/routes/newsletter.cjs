@@ -1,34 +1,39 @@
 /**
  * app/server/routes/newsletter.cjs
- * Gestione iscrizione newsletter (lista 8)
+ * Gestione iscrizione e disiscrizione newsletter (lista 8)
  */
 
 const axios = require("axios");
 const { trackGA4 } = require("../services/ga4.cjs");
+const { LISTA_NEWSLETTER } = require("../modules/liste-brevo.cjs");
+const { inviaEmailNewsletterBenvenuto } = require("../modules/email-newsletter.cjs");
+const { inviaEmailNewsletterUnsubscribe } = require("../modules/email-newsletter-unsubscribe.cjs");
 
 module.exports = function (app) {
 
-  // =========================================================
-  // ISCRIZIONE NEWSLETTER
-  // =========================================================
+  /* =========================================================
+     ISCRIZIONE NEWSLETTER
+  ========================================================== */
   app.post("/newsletter/subscribe", async (req, res) => {
     const uid = req.uid;
-    const email = req.body?.email || "";
+    const rawEmail = req.body?.email || "";
+    const email = String(rawEmail).trim().toLowerCase();
+
+    if (!email) {
+      return res.json({ success: false, error: "Email mancante" });
+    }
 
     try {
-      if (!email) {
-        return res.json({ error: "Email mancante" });
-      }
-
       if (typeof global.logEvent === "function") {
         global.logEvent("newsletter_subscribe_attempt", { uid, email });
       }
 
-      const result = await axios.post(
+      await axios.post(
         "https://api.brevo.com/v3/contacts",
         {
           email,
-          listIds: [8] // LISTA UNIFICATA
+          listIds: [LISTA_NEWSLETTER],
+          updateEnabled: true
         },
         {
           headers: {
@@ -40,30 +45,35 @@ module.exports = function (app) {
 
       trackGA4("newsletter_subscribe", { uid, email });
 
-      return res.json({ success: true, result: result.data });
+      await inviaEmailNewsletterBenvenuto({ email });
+
+      return res.json({ success: true });
 
     } catch (err) {
       console.error("❌ Errore /newsletter/subscribe:", err?.response?.data || err);
-
-      return res.json({ error: "Errore durante l'iscrizione" });
+      return res.json({ success: false, error: "Errore durante l'iscrizione" });
     }
   });
 
-  // =========================================================
-  // DISISCRIZIONE NEWSLETTER
-  // =========================================================
+  /* =========================================================
+     DISISCRIZIONE NEWSLETTER — PATCH DEFINITIVA BREVO 2025
+  ========================================================== */
   app.post("/newsletter/unsubscribe", async (req, res) => {
     const uid = req.uid;
-    const email = req.body?.email || "";
+    const rawEmail = req.body?.email || "";
+    const email = String(rawEmail).trim().toLowerCase();
+
+    if (!email) {
+      return res.json({ success: false, error: "Email mancante" });
+    }
 
     try {
-      if (!email) {
-        return res.json({ error: "Email mancante" });
-      }
-
-      const result = await axios.post(
-        "https://api.brevo.com/v3/contacts/unlink",
-        { email },
+      await axios.post(
+        "https://api.brevo.com/v3/contacts/lists/remove",
+        {
+          emails: [email],
+          listIds: [LISTA_NEWSLETTER]
+        },
         {
           headers: {
             "api-key": process.env.BREVO_API_KEY,
@@ -74,27 +84,28 @@ module.exports = function (app) {
 
       trackGA4("newsletter_unsubscribe", { uid, email });
 
-      return res.json({ success: true, result: result.data });
+      await inviaEmailNewsletterUnsubscribe({ email });
+
+      return res.json({ success: true });
 
     } catch (err) {
       console.error("❌ Errore /newsletter/unsubscribe:", err?.response?.data || err);
-
-      return res.json({ error: "Errore durante la disiscrizione" });
+      return res.json({ success: false, error: "Errore durante la disiscrizione" });
     }
   });
 
-  // =========================================================
-  // STATO NEWSLETTER
-  // =========================================================
+  /* =========================================================
+     STATO NEWSLETTER
+  ========================================================== */
   app.get("/newsletter/status", async (req, res) => {
-    const uid = req.uid;
-    const email = req.query?.email || "";
+    const rawEmail = req.query?.email || "";
+    const email = String(rawEmail).trim().toLowerCase();
+
+    if (!email) {
+      return res.json({ success: false, error: "Email mancante" });
+    }
 
     try {
-      if (!email) {
-        return res.json({ error: "Email mancante" });
-      }
-
       const result = await axios.get(
         `https://api.brevo.com/v3/contacts/${encodeURIComponent(email)}`,
         {
@@ -105,14 +116,14 @@ module.exports = function (app) {
       );
 
       return res.json({
-        subscribed: result.data?.listIds?.includes(8) || false,
+        success: true,
+        subscribed: result.data?.listIds?.includes(LISTA_NEWSLETTER) || false,
         data: result.data
       });
 
     } catch (err) {
       console.error("❌ Errore /newsletter/status:", err?.response?.data || err);
-
-      return res.json({ error: "Errore nel recupero dello stato" });
+      return res.json({ success: false, error: "Errore nel recupero dello stato" });
     }
   });
 };

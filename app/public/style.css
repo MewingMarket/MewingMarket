@@ -1366,3 +1366,12 @@ button.secondary {
     height: 260px;
   }
 }
+input, select, textarea {
+  background: #fff !important;
+  color: #003366 !important;
+  border: 1px solid #cdd7e1 !important;
+}
+
+input::placeholder {
+  color: #7a8a9a !important;
+}

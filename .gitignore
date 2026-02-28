@@ -1,0 +1,19 @@
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Build output
+dist/
+build/
+
+# Render build output (verrà ricreato dallo script)
+pages/
+
+# Cache
+.cache/
+.tmp/
+
+# System files
+.DS_Store
+Thumbs.db

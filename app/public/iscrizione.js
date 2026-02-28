@@ -37,7 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      if (sending) return; // evita doppio invio
+      if (sending) return;
       sending = true;
 
       const email = clean(emailInput.value.trim());
@@ -59,12 +59,12 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
           data = await res.json();
         } catch {
-          data = { status: "error", message: "Invalid JSON" };
+          data = { success: false, message: "Invalid JSON" };
         }
 
         console.log("Risposta server:", data);
 
-        if (data.status === "ok") {
+        if (data.success === true) {
           alert("Iscrizione completata!");
         } else {
           alert("Errore durante l'iscrizione.");
@@ -77,5 +77,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
       sending = false;
     });
-  }, 200); // attesa minima per caricamento header/footer
+  }, 200);
 });

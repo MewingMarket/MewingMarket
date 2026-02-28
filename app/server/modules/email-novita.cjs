@@ -1,21 +1,177 @@
 // app/server/modules/email-novita.cjs
+const path = require("path");
 const { inviaEmailLista } = require("./invia-email-lista.cjs");
+const { LISTA_NOVITA } = require("./liste-brevo.cjs");
+const { SENDER_VENDITE } = require("./email-senders.cjs");
+const { getProducts } = require(path.join(__dirname, "airtable.cjs"));
+const { safeText, cleanURL } = require(path.join(__dirname, "utils.cjs"));
 
-async function inviaEmailNovita({ email, titolo, contenuto }) {
-  const subject = titolo || "Nuove novità da MewingMarket";
+/* =========================================================
+   FUNZIONI DI SICUREZZA
+========================================================= */
+function safeProducts() {
+  try {
+    const p = getProducts();
+    return Array.isArray(p) ? p : [];
+  } catch (err) {
+    console.error("email-novita: errore getProducts:", err);
+    return [];
+  }
+}
 
-  const html = `
-  <html>
-    <body style="font-family: system-ui; background:#020617; color:#e5e7eb; padding:24px;">
-      <div style="max-width:600px;margin:0 auto;border-radius:16px;border:1px solid #1f2937;padding:24px;background:#111827;">
-        <h1 style="color:#a855f7;font-size:22px;">${subject}</h1>
-        <p>${contenuto}</p>
-      </div>
-    </body>
-  </html>
-  `;
+function safeString(v) {
+  return typeof v === "string" ? v : (v == null ? "" : String(v));
+}
 
-  await inviaEmailLista({ email, listId: 13, subject, html });
+/* =========================================================
+   GENERA HTML NEWSLETTER NOVITÀ
+========================================================= */
+function generateNovitaHTML(latest) {
+  const titolo = safeString(latest.titoloBreve || latest.titolo);
+  const descrizione = safeString(latest.descrizioneBreve || latest.descrizione || "");
+  const immagine = cleanURL(latest.immagine);
+  const link = cleanURL(latest.linkPayhip);
+
+  return `
+<html lang="it">
+<body>
+<div style="font-family:Arial, sans-serif; max-width:600px; margin:0 auto; padding:20px; line-height:1.6;">
+
+  <div style="text-align:center; margin-bottom:25px;">
+    <img src="https://i.ibb.co/35J1n37X/AZs-ERch-6-Fz-Ziggb-HFCSA-AZs-ERch-3-XKzqhgk-AXmbbg-20251209-190133-0000.jpg" 
+         alt="MewingMarket" 
+         style="max-width:100%; border-radius:6px;">
+  </div>
+
+  <h2 style="text-align:center; color:#333;">✨ Una novità che ti porta un passo avanti</h2>
+
+  <p style="font-size:16px; color:#444;">
+    Ogni giorno hai due scelte: restare dove sei o fare un passo in avanti.
+  </p>
+
+  <p style="font-size:16px; color:#444;">
+    Per questo oggi ti presento qualcosa che può davvero spostarti in avanti.
+  </p>
+
+  <h2 style="text-align:center; color:#333; margin-top:35px;">🔥 È arrivato “${safeText(titolo)}”</h2>
+
+  <p style="font-size:16px; color:#444;">
+    ${safeText(descrizione)}
+  </p>
+
+  <div style="text-align:center; margin:25px 0;">
+    <img src="${immagine}" 
+         alt="${safeText(titolo)}" 
+         style="max-width:100%; border-radius:6px;">
+  </div>
+
+  <p style="text-align:center;">
+    <a href="${link}?utm_source=brevo&utm_campaign=novita&utm_medium=email" 
+       style="background:#28a745; color:white; padding:14px 24px; border-radius:6px; text-decoration:none; font-size:16px; display:inline-block;">
+       SCOPRI IL NUOVO CONTENUTO
+    </a>
+  </p>
+
+  <hr style="margin:30px 0;">
+
+  <h3 style="color:#333;">🎯 Perché questo contenuto può fare la differenza</h3>
+
+  <p style="font-size:16px; color:#444;">
+    Chi ottiene risultati non è chi sa di più, ma chi applica ciò che sa.
+  </p>
+
+  <p style="font-size:16px; color:#444;">
+    “${safeText(titolo)}” è stato creato per darti un vantaggio reale e immediato.
+  </p>
+
+  <p style="text-align:center; margin-top:25px;">
+    <a href="${link}?utm_source=brevo&utm_campaign=novita&utm_medium=email" 
+       style="background:#007bff; color:white; padding:12px 20px; border-radius:6px; text-decoration:none; display:inline-block;">
+       VAI AL PRODOTTO
+    </a>
+  </p>
+
+  <hr style="margin:30px 0;">
+
+  <h3 style="color:#333;">📱 Seguici sui social</h3>
+  <p style="color:#444;">Contenuti quotidiani, zero fuffa:</p>
+
+  <div style="text-align:left;">
+    ${generateSocialIcons()}
+  </div>
+
+  <hr style="margin:30px 0;">
+
+  <p style="font-size:14px; color:#777; text-align:center;">
+    Se non vuoi più ricevere email, puoi disiscriverti qui:<br>
+    <a href="https://mewingmarket.it/disiscriviti.html" style="color:#999; text-decoration:underline;">Disiscriviti</a>
+  </p>
+
+</div>
+</body>
+</html>
+`;
+}
+
+/* =========================================================
+   SOCIAL ICONS
+========================================================= */
+function generateSocialIcons() {
+  try {
+    const socials = [
+      ["Instagram", "https://www.instagram.com/mewingmarket", "https://cdn-icons-png.flaticon.com/512/2111/2111463.png"],
+      ["TikTok", "https://www.tiktok.com/@mewingmarket", "https://cdn-icons-png.flaticon.com/512/3046/3046121.png"],
+      ["YouTube", "https://www.youtube.com/@mewingmarket2", "https://cdn-icons-png.flaticon.com/512/1384/1384060.png"],
+      ["X", "https://x.com/mewingm8", "https://cdn-icons-png.flaticon.com/512/5968/5968958.png"]
+    ];
+
+    return socials
+      .map(([name, url, icon]) =>
+        `<a href="${cleanURL(url)}" target="_blank" style="margin-right:10px;">
+          <img src="${cleanURL(icon)}" width="32" style="vertical-align:middle;" alt="${safeText(name)}">
+        </a>`
+      )
+      .join("\n");
+
+  } catch (err) {
+    console.error("email-novita: errore social icons:", err);
+    return "";
+  }
+}
+
+/* =========================================================
+   INVIO NEWSLETTER NOVITÀ
+========================================================= */
+async function inviaEmailNovita({ email }) {
+  try {
+    const products = safeProducts();
+    const latest = products.length ? products[products.length - 1] : null;
+
+    if (!latest) {
+      return inviaEmailLista({
+        email,
+        listId: LISTA_NOVITA,
+        subject: "Novità dal mondo digitale",
+        html: "<p>Nessun prodotto disponibile.</p>",
+        sender: SENDER_VENDITE
+      });
+    }
+
+    const titolo = safeString(latest.titoloBreve || latest.titolo);
+    const oggetto = `✨ Novità: è arrivato “${titolo}”`;
+    const html = generateNovitaHTML(latest);
+
+    return inviaEmailLista({
+      email,
+      listId: LISTA_NOVITA,
+      subject: oggetto,
+      html,
+      sender: SENDER_VENDITE
+    });
+
+  } catch (err) {
+    console.error("email-novita: errore invio:", err);
+  }
 }
 
 module.exports = { inviaEmailNovita };

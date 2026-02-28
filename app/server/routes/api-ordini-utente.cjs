@@ -1,18 +1,34 @@
 // =========================================================
 // File: app/server/routes/api-ordini-utente.cjs
 // Restituisce gli ordini dell'utente loggato
+// Versione definitiva (Airtable nuova SDK, blindata)
 // =========================================================
 
 const express = require("express");
-const router = express.Router();
-
+const Airtable = require("../lib/airtable-wrapper.cjs");
 const authUser = require("../middleware/auth-user.cjs");
 
-const Airtable = require("airtable");
-const base = new Airtable({ apiKey: process.env.AIRTABLE_PAT })
-  .base(process.env.AIRTABLE_BASE);
+const router = express.Router();
+
+// ---------------------------------------------------------
+// CONFIG AIRTABLE (nuova SDK, blindata)
+// ---------------------------------------------------------
+Airtable.configure({
+  apiKey: process.env.AIRTABLE_PAT
+});
+
+const base = Airtable.base(process.env.AIRTABLE_BASE);
 
 const TABLE = "Ordini";
+
+// Helper sicuro
+function safeGet(record, field) {
+  try {
+    return record.get(field) ?? null;
+  } catch {
+    return null;
+  }
+}
 
 // =========================================================
 // GET /api/ordini/utente
@@ -20,11 +36,9 @@ const TABLE = "Ordini";
 // =========================================================
 router.get("/ordini/utente", authUser, async (req, res) => {
   try {
-    const email = req.user.email; // da auth-user
+    const email = req.user.email;
 
-    // =========================================================
     // 1) CERCA ORDINI DELL'UTENTE
-    // =========================================================
     const records = await base(TABLE)
       .select({
         filterByFormula: `{utente} = "${email}"`,
@@ -39,25 +53,25 @@ router.get("/ordini/utente", authUser, async (req, res) => {
       });
     }
 
-    // =========================================================
     // 2) FORMATTA ORDINI PER IL FRONTEND
-    // =========================================================
     const ordini = records.map(r => {
       let prodotti = [];
       try {
-        prodotti = JSON.parse(r.get("prodotti") || "[]");
-      } catch {}
+        prodotti = JSON.parse(safeGet(r, "prodotti") || "[]");
+      } catch {
+        prodotti = [];
+      }
 
       return {
         id: r.id,
-        id_ordine: r.get("id_ordine"),
-        utente: r.get("utente"),
+        id_ordine: safeGet(r, "id_ordine"),
+        utente: safeGet(r, "utente"),
         prodotti,
-        totale: r.get("totale"),
-        data: r.get("data"),
-        stato: r.get("stato"),
-        metodo_pagamento: r.get("metodo_pagamento"),
-        paypal_transaction_id: r.get("paypal_transaction_id") || null
+        totale: Number(safeGet(r, "totale") || 0),
+        data: safeGet(r, "data") || r._rawJson.createdTime,
+        stato: safeGet(r, "stato") || "sconosciuto",
+        metodo_pagamento: safeGet(r, "metodo_pagamento") || "paypal",
+        paypal_transaction_id: safeGet(r, "paypal_transaction_id") || null
       };
     });
 

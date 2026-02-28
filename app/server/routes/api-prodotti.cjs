@@ -1,32 +1,46 @@
 // =========================================================
 // File: app/server/routes/api-prodotti.cjs
 // Catalogo prodotti — Versione Airtable (completa)
+// Versione definitiva (Airtable nuova SDK, blindata)
 // =========================================================
 
 const express = require("express");
+const Airtable = require("../lib/airtable-wrapper.cjs");
+
+// ❌ ERA SBAGLIATO:
+// const { getProducts, syncAirtable } = require("../services/airtable.cjs");
+
+// ✅ VERSIONE CORRETTA:
+const { getProducts, syncAirtable } = require("../../modules/airtable.cjs");
 const router = express.Router();
-const {
-  getProducts,
-  syncAirtable
-} = require("../services/airtable.cjs");
 
-const Airtable = require("airtable");
+// ---------------------------------------------------------
+// CONFIG AIRTABLE (nuova SDK, blindata)
+// ---------------------------------------------------------
+Airtable.configure({
+  apiKey: process.env.AIRTABLE_PAT
+});
 
-// Config Airtable
-const PAT = process.env.AIRTABLE_PAT;
-const BASE = process.env.AIRTABLE_BASE;
-const TABLE = process.env.AIRTABLE_TABLE_NAME;
+const base = Airtable.base(process.env.AIRTABLE_BASE);
+const tableName = decodeURIComponent(process.env.AIRTABLE_TABLE_NAME);
 
-// Helper base
-const base = new Airtable({ apiKey: PAT }).base(BASE);
-const tableName = decodeURIComponent(TABLE);
+// Helper sicuro
+function safeGet(record, field) {
+  try {
+    return record.get(field) ?? null;
+  } catch {
+    return null;
+  }
+}
 
 // =========================================================
 // GET — LISTA PRODOTTI
 // =========================================================
 router.get("/products", async (req, res) => {
   try {
-    if (!global.catalogReady) await syncAirtable();
+    if (!global.catalogReady) {
+      await syncAirtable();
+    }
 
     const prodotti = getProducts();
 
@@ -46,7 +60,9 @@ router.get("/products", async (req, res) => {
 // =========================================================
 router.get("/products/:slug", async (req, res) => {
   try {
-    if (!global.catalogReady) await syncAirtable();
+    if (!global.catalogReady) {
+      await syncAirtable();
+    }
 
     const prodotti = getProducts();
     const prodotto = prodotti.find(p => p.slug === req.params.slug);
@@ -68,7 +84,7 @@ router.get("/products/:slug", async (req, res) => {
 // =========================================================
 router.post("/products/save", async (req, res) => {
   try {
-    const data = req.body;
+    const data = req.body || {};
 
     if (!data.titolo || !data.slug) {
       return res.json({ success: false, error: "Titolo e slug obbligatori" });
@@ -76,14 +92,17 @@ router.post("/products/save", async (req, res) => {
 
     // Cerca record esistente
     const records = await base(tableName)
-      .select({ filterByFormula: `{slug} = '${data.slug}'`, maxRecords: 1 })
+      .select({
+        filterByFormula: `{slug} = '${data.slug}'`,
+        maxRecords: 1
+      })
       .all();
 
     const fields = {
       Titolo: data.titolo,
       Slug: data.slug,
-      Prezzo: data.prezzo,
-      DescrizioneLunga: data.descrizione,
+      Prezzo: Number(data.prezzo || 0),
+      DescrizioneLunga: data.descrizione || "",
       Immagine: data.immagine ? [{ url: data.immagine }] : [],
       File_consegna: data.fileProdotto ? [{ url: data.fileProdotto }] : []
     };
@@ -113,9 +132,11 @@ router.post("/products/save", async (req, res) => {
 // =========================================================
 router.post("/products/delete", async (req, res) => {
   try {
-    const { id } = req.body;
+    const { id } = req.body || {};
 
-    if (!id) return res.json({ success: false, error: "ID mancante" });
+    if (!id) {
+      return res.json({ success: false, error: "ID mancante" });
+    }
 
     await base(tableName).destroy(id);
 
@@ -129,8 +150,6 @@ router.post("/products/delete", async (req, res) => {
   }
 });
 
-// =========================================================
-// POST — SYNC MANUALE DA AIRTABLE
 // =========================================================
 router.post("/products/sync", async (req, res) => {
   try {

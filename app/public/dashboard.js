@@ -1,238 +1,223 @@
+// =========================================================
+// Dashboard utente – MewingMarket (profilo integrato)
+// =========================================================
+
 document.addEventListener("DOMContentLoaded", () => {
-  const content = document.getElementById("content");
-  const links = document.querySelectorAll(".sidebar a");
+  function getToken() {
+    return localStorage.getItem("token") || "";
+  }
 
-  const session = localStorage.getItem("session");
-  const email = localStorage.getItem("email");
+  function setToken(t) {
+    if (t) localStorage.setItem("token", t);
+  }
 
-  // Solo utenti loggati
-  if (!session || !email) {
-    window.location.href = "login.html?redirect=dashboard.html";
+  function setEmail(e) {
+    if (e) localStorage.setItem("utenteEmail", e);
+  }
+
+  let email = localStorage.getItem("utenteEmail");
+
+  if (!getToken() || !email) {
+    window.location.href = "login.html";
     return;
   }
 
-  function setActive(section) {
-    links.forEach(l => l.classList.remove("active"));
-    const el = document.querySelector(`[data-section="${section}"]`);
-    if (el) el.classList.add("active");
+  const userEmailEl = document.getElementById("userEmail");
+  const usernameEl = document.getElementById("username");
+  const sidebarEmail = document.getElementById("sidebarEmail");
+  const sidebarUsername = document.getElementById("sidebarUsername");
+
+  function refreshUI() {
+    email = localStorage.getItem("utenteEmail");
+    const username = email.split("@")[0];
+
+    if (userEmailEl) userEmailEl.textContent = email;
+    if (usernameEl) usernameEl.textContent = username;
+    if (sidebarEmail) sidebarEmail.textContent = email;
+    if (sidebarUsername) sidebarUsername.textContent = "@" + username;
   }
 
-  function render(html) {
-    content.innerHTML = html;
+  refreshUI();
+
+  function setMsg(id, text, ok = false) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = text;
+    el.classList.remove("ok", "err");
+    el.classList.add(ok ? "ok" : "err");
   }
 
-  // ------------------ PROFILO (usa profilo.html + profilo.js) ------------------
-  function loadProfile() {
-    fetch("profilo.html")
-      .then(r => r.text())
-      .then(html => {
-        content.innerHTML = html;
-        const script = document.createElement("script");
-        script.src = "profilo.js";
-        content.appendChild(script);
-      });
-  }
-
-  // ------------------ ORDINI (con annulla ordine) ------------------
-  async function loadOrders() {
-    render("<h2>I miei ordini</h2><p>Caricamento…</p>");
-
-    try {
-      const res = await fetch("/api/ordini/utente", {
-        headers: {
-          Authorization: "Bearer " + session,
-          "x-email": email
-        }
-      });
-      const data = await res.json();
-
-      if (!data.success || !data.ordini || data.ordini.length === 0) {
-        render("<h2>I miei ordini</h2><p>Nessun ordine trovato.</p>");
-        return;
-      }
-
-      let html = `
-        <h2>I miei ordini</h2>
-        <table class="orders-table">
-          <tr>
-            <th>Data</th>
-            <th>Prodotti</th>
-            <th>Totale</th>
-            <th>Stato</th>
-            <th>Azioni</th>
-          </tr>
-      `;
-
-      data.ordini.forEach(o => {
-        const prodotti = (o.prodotti || [])
-          .map(p => `${p.titolo} (${p.prezzo}€)`)
-          .join("<br>");
-
-        const canCancel = o.stato !== "completato" && o.stato !== "annullato";
-
-        html += `
-          <tr data-id="${o.id}">
-            <td>${o.data || ""}</td>
-            <td>${prodotti}</td>
-            <td>${o.totale}€</td>
-            <td>${o.stato}</td>
-            <td>
-              ${canCancel ? `<button class="btn-small danger js-cancel-order">Annulla</button>` : "-"}
-            </td>
-          </tr>
-        `;
-      });
-
-      html += "</table>";
-      render(html);
-
-      document.querySelectorAll(".js-cancel-order").forEach(btn => {
-        btn.addEventListener("click", async e => {
-          const tr = e.target.closest("tr");
-          const id = tr.getAttribute("data-id");
-          if (!id) return;
-
-          if (!confirm("Vuoi davvero annullare questo ordine?")) return;
-
-          try {
-            const res = await fetch(`/api/ordini/annulla/${id}`, {
-              method: "POST",
-              headers: {
-                Authorization: "Bearer " + session,
-                "x-email": email
-              }
-            });
-            const out = await res.json();
-            if (out.success) {
-              loadOrders();
-            } else {
-              alert(out.error || "Impossibile annullare l'ordine.");
-            }
-          } catch {
-            alert("Errore di connessione.");
-          }
-        });
-      });
-
-    } catch {
-      render("<h2>I miei ordini</h2><p>Errore di connessione.</p>");
-    }
-  }
-
-  // ------------------ DOWNLOAD PROTETTI ------------------
-  async function loadDownloads() {
-    render("<h2>Download</h2><p>Caricamento…</p>");
-
-    try {
-      const res = await fetch("/api/ordini/utente", {
-        headers: {
-          Authorization: "Bearer " + session,
-          "x-email": email
-        }
-      });
-      const data = await res.json();
-
-      if (!data.success || !data.ordini || data.ordini.length === 0) {
-        render("<h2>Download</h2><p>Nessun prodotto acquistato.</p>");
-        return;
-      }
-
-      let prodotti = [];
-      data.ordini.forEach(o => {
-        if (o.stato === "completato" && Array.isArray(o.prodotti)) {
-          prodotti.push(...o.prodotti);
-        }
-      });
-
-      if (prodotti.length === 0) {
-        render("<h2>Download</h2><p>Nessun prodotto scaricabile.</p>");
-        return;
-      }
-
-      let html = "<h2>Download</h2>";
-      prodotti.forEach(p => {
-        html += `
-          <div class="download-item">
-            <strong>${p.titolo}</strong><br>
-            <a href="/api/vendite/download/${p.slug}" class="btn-small">Scarica</a>
-          </div>
-        `;
-      });
-
-      render(html);
-
-    } catch {
-      render("<h2>Download</h2><p>Errore di connessione.</p>");
-    }
-  }
-
-  // ------------------ RECENSIONI / IMPOSTAZIONI PLACEHOLDER ------------------
-  function loadReviews() {
-    render("<h2>Le mie recensioni</h2><p>Funzione in arrivo.</p>");
-  }
-
-  function loadSettings() {
-    render("<h2>Impostazioni</h2><p>Funzione in arrivo.</p>");
-  }
-
-  // ------------------ ELIMINAZIONE ACCOUNT ------------------
-  function loadDelete() {
-    render(`
-      <h2>Annulla registrazione</h2>
-      <p>Questa azione disattiverà il tuo account e terminerà la sessione.</p>
-      <button id="btnDeleteAccount" class="btn-small danger">Elimina account</button>
-      <p id="msgDelete"></p>
-    `);
-
-    document.getElementById("btnDeleteAccount").onclick = async () => {
-      try {
-        const res = await fetch("/api/utente/profilo/elimina", {
-          method: "POST",
-          headers: {
-            Authorization: "Bearer " + session,
-            "x-email": email
-          }
-        });
-        const data = await res.json();
-        if (data.success) {
-          localStorage.clear();
-          window.location.href = "login.html";
-        } else {
-          document.getElementById("msgDelete").textContent = data.error || "Errore.";
-        }
-      } catch {
-        document.getElementById("msgDelete").textContent = "Errore di connessione.";
-      }
-    };
-  }
-
-  // ------------------ LOGOUT ------------------
-  function logout() {
-    localStorage.clear();
-    window.location.href = "index.html";
-  }
-
-  const router = {
-    profile: loadProfile,
-    orders: loadOrders,
-    downloads: loadDownloads,
-    reviews: loadReviews,
-    settings: loadSettings,
-    delete: loadDelete,
-    logout: logout
-  };
-
-  links.forEach(link => {
-    link.addEventListener("click", e => {
-      e.preventDefault();
-      const section = link.dataset.section;
-      if (router[section]) {
-        setActive(section);
-        router[section]();
-      }
-    });
+  // ============================
+  // NAV
+  // ============================
+  document.getElementById("nav-download")?.addEventListener("click", () => {
+    window.location.href = "download.html";
   });
 
-  // sezione di default
-  router.profile();
+  document.getElementById("nav-ordini")?.addEventListener("click", () => {
+    window.location.href = "ordini.html";
+  });
+
+  document.getElementById("nav-logout")?.addEventListener("click", () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("utenteEmail");
+    window.location.href = "login.html";
+  });
+
+  document.getElementById("nav-elimina")?.addEventListener("click", () => {
+    document.getElementById("passwordDelete")?.focus();
+  });
+
+  // ============================
+  // CAMBIO EMAIL (VERSIONE DEFINITIVA)
+  // ============================
+  document.getElementById("btnCambiaEmail")?.addEventListener("click", async () => {
+    const nuova_email = document.getElementById("newEmail").value.trim().toLowerCase();
+    const password = document.getElementById("passwordEmail").value.trim();
+
+    if (!nuova_email || !password) {
+      setMsg("msgEmail", "Compila tutti i campi.");
+      return;
+    }
+
+    try {
+      // 1) Cambia email
+      const res = await fetch("/api/utenti/cambia-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: getToken(),
+          nuova_email,
+          password
+        })
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        setMsg("msgEmail", data.error || "Errore.");
+        return;
+      }
+
+      // 2) LOGIN INVISIBILE per aggiornare token
+      const resLogin = await fetch("/api/utenti/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: nuova_email, password })
+      });
+
+      const loginData = await resLogin.json();
+
+      if (loginData.success && loginData.token) {
+        setToken(loginData.token);
+        setEmail(nuova_email);
+      }
+
+      // 3) Aggiorna UI
+      refreshUI();
+      setMsg("msgEmail", "Email aggiornata!", true);
+
+    } catch {
+      setMsg("msgEmail", "Errore di connessione.");
+    }
+  });
+
+  // ============================
+  // CAMBIO PASSWORD (VERSIONE DEFINITIVA)
+  // ============================
+  document.getElementById("btnCambiaPassword")?.addEventListener("click", async () => {
+    const oldPassword = document.getElementById("oldPassword").value.trim();
+    const nuova_password = document.getElementById("newPassword").value.trim();
+
+    if (!oldPassword || !nuova_password) {
+      setMsg("msgPassword", "Compila tutti i campi.");
+      return;
+    }
+
+    try {
+      // 1) LOGIN INVISIBILE → verifica password attuale e genera token nuovo
+      const resLogin = await fetch("/api/utenti/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password: oldPassword })
+      });
+
+      const loginData = await resLogin.json();
+
+      if (!loginData.success) {
+        setMsg("msgPassword", "Password attuale errata.");
+        return;
+      }
+
+      // 🔥 TOKEN AGGIORNATO
+      const newToken = loginData.token;
+      setToken(newToken);
+
+      // 2) Cambia password usando token aggiornato
+      const res = await fetch("/api/utenti/cambia-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: newToken,
+          nuova_password
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setMsg("msgPassword", "Password aggiornata!", true);
+      } else {
+        setMsg("msgPassword", data.error || "Errore.");
+      }
+
+    } catch {
+      setMsg("msgPassword", "Errore di connessione.");
+    }
+  });
+
+  // ============================
+  // ELIMINA ACCOUNT
+  // ============================
+  document.getElementById("btnEliminaAccount")?.addEventListener("click", async () => {
+    const password = document.getElementById("passwordDelete").value.trim();
+
+    if (!password) {
+      setMsg("msgElimina", "Inserisci la password per confermare.");
+      return;
+    }
+
+    if (!confirm("Sei sicuro di voler eliminare definitivamente il tuo account?")) {
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/utenti/elimina-account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: getToken(),
+          password
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setMsg("msgElimina", "Account eliminato. Verrai reindirizzato...", true);
+
+        localStorage.removeItem("token");
+        localStorage.removeItem("utenteEmail");
+
+        setTimeout(() => {
+          window.location.href = "registrazione.html";
+        }, 1000);
+      } else {
+        setMsg("msgElimina", data.error || "Errore.");
+      }
+
+    } catch {
+      setMsg("msgElimina", "Errore di connessione.");
+    }
+  });
 });

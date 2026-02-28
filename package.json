@@ -2,7 +2,7 @@
   "name": "mewingmarket",
   "version": "1.0.0",
   "main": "app/server.cjs",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
     "start": "node app/server.cjs",
     "build": "node scripts/build.js"

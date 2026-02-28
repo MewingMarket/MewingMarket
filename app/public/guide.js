@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
 
   const params = new URLSearchParams(location.search);
-  const topic = params.get("topic") || "default";
+  const topic = params.get("topic") || "index";
 
   const titleEl = document.getElementById("guide-title");
   const contentEl = document.getElementById("guide-content");
@@ -15,13 +15,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const guides = {
 
+    index: {
+      title: "Centro Guide & Assistenza",
+      html: `
+        <h2>Guide disponibili</h2>
+        <ul>
+          <li><a href="guide.html?topic=login">Come accedere al tuo account</a></li>
+          <li><a href="guide.html?topic=registrazione">Come creare un account</a></li>
+          <li><a href="guide.html?topic=download">Come scaricare un prodotto</a></li>
+          <li><a href="guide.html?topic=ordini">Gestione ordini e annullamenti</a></li>
+          <li><a href="guide.html?topic=resi">Resi e rimborsi</a></li>
+          <li><a href="guide.html?topic=annulla-account">Eliminazione account</a></li>
+        </ul>
+
+        <h2>Serve aiuto?</h2>
+        <p>Puoi contattarci tramite email o WhatsApp Business.</p>
+      `
+    },
+
     login: {
       title: "Come accedere al tuo account",
       html: `
         <h2>Accesso rapido</h2>
         <p>Per accedere al tuo account MewingMarket:</p>
         <ol>
-          <li>Vai su <strong>dashboard-login.html</strong></li>
+          <li>Vai su <strong>login utente</strong></li>
           <li>Inserisci email e password</li>
           <li>Clicca su <strong>Accedi</strong></li>
         </ol>
@@ -37,7 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <h2>Registrazione</h2>
         <p>Per registrarti:</p>
         <ol>
-          <li>Vai su <strong>dashboard-register.html</strong></li>
+          <li>Vai su <strong>registrazione</strong></li>
           <li>Inserisci email e password</li>
           <li>Conferma la registrazione</li>
         </ol>
@@ -110,7 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
       title: "Eliminazione account",
       html: `
         <h2>Come eliminare l’account</h2>
-        <p>Vai su <strong>Dashboard → Impostazioni → Annulla registrazione</strong>.</p>
+        <p>Vai su <strong>Profilo→ Annulla registrazione</strong>.</p>
 
         <h2>Email di conferma</h2>
         <p>Riceverai una email automatica di conferma eliminazione.</p>
