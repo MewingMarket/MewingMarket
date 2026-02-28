@@ -80,6 +80,16 @@
     }
   </style>
 
+  <!-- PATCH: controllo token admin -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const token = localStorage.getItem("admin_token");
+      if (!token) {
+        window.location.href = "/admin/login";
+      }
+    });
+  </script>
+
 </head>
 
 <body>
