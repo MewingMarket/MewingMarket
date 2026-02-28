@@ -73,7 +73,7 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         data = await res.json();
       } catch {
-        data = { success: false, message: "Invalid JSON" };
+        data = { success: false, error: "Invalid JSON" };
       }
 
       console.log("📬 Risposta server:", data);
@@ -84,9 +84,9 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         safeTrack("newsletter_unsubscribe_error", {
           email,
-          reason: data.message || "generic"
+          reason: data.error || "generic"
         });
-        alert("Errore durante la disiscrizione.");
+        alert(data.error || "Errore durante la disiscrizione.");
       }
 
     } catch (err) {
