@@ -1,7 +1,7 @@
 /**
  * =========================================================
  * File: app/server/server.cjs
- * Entry point del server — versione finale e coerente
+ * Entry point del server — versione stabile per Render
  * =========================================================
  */
 console.log(">> PACKAGE TYPE:", require("../../package.json").type);
@@ -13,8 +13,8 @@ const cookieParser = require("cookie-parser");
 const app = express();
 app.disable("x-powered-by");
 
-// ROOT = /project/app
-const ROOT = path.resolve(__dirname, "..");
+// ROOT = /project/src/app
+const ROOT = path.resolve("app");
 
 // LOGGING
 require("./services/logging.cjs");
@@ -31,7 +31,7 @@ require("./middleware/context.cjs")(app);
 
 /**
  * =========================================================
- * STATICI FRONTEND — percorso assoluto
+ * STATICI FRONTEND — SOLO percorsi assoluti
  * =========================================================
  */
 app.use(express.static(path.resolve("app/public")));
@@ -39,21 +39,18 @@ app.use("/data", express.static(path.resolve("app/data")));
 
 /**
  * =========================================================
- * ADMIN — percorso assoluto
+ * ADMIN — SOLO percorsi assoluti
  * =========================================================
  */
-
-// Rotta pulita /admin/login
 app.get("/admin/login", (req, res) => {
   res.sendFile(path.resolve("app/public/admin/admin-login.html"));
 });
 
-// Statici admin
 app.use("/admin", express.static(path.resolve("app/public/admin")));
 
 /**
  * =========================================================
- * API (router montato su /api)
+ * API
  * =========================================================
  */
 const router = require("./router.cjs");
@@ -61,7 +58,7 @@ app.use("/api", router);
 
 /**
  * =========================================================
- * ROUTE FRONTEND (DEVONO ESSERE SU app, NON SU router)
+ * ROUTE FRONTEND
  * =========================================================
  */
 require("./routes/chat.cjs")(app);
