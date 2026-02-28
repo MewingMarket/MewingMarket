@@ -28,7 +28,6 @@ module.exports = function (app) {
         global.logEvent("newsletter_subscribe_attempt", { uid, email });
       }
 
-      // Aggiunge alla lista newsletter
       await axios.post(
         "https://api.brevo.com/v3/contacts",
         {
@@ -44,10 +43,8 @@ module.exports = function (app) {
         }
       );
 
-      // Tracking GA4
       trackGA4("newsletter_subscribe", { uid, email });
 
-      // Email di benvenuto
       await inviaEmailNewsletterBenvenuto({ email });
 
       return res.json({ success: true });
@@ -59,7 +56,7 @@ module.exports = function (app) {
   });
 
   /* =========================================================
-     DISISCRIZIONE NEWSLETTER (PATCH DEFINITIVA)
+     DISISCRIZIONE NEWSLETTER — PATCH DEFINITIVA BREVO 2025
   ========================================================== */
   app.post("/newsletter/unsubscribe", async (req, res) => {
     const uid = req.uid;
@@ -71,10 +68,12 @@ module.exports = function (app) {
     }
 
     try {
-      // Rimuove dalla lista newsletter (endpoint corretto Brevo)
       await axios.post(
-        `https://api.brevo.com/v3/contacts/${encodeURIComponent(email)}/lists/remove`,
-        { ids: [LISTA_NEWSLETTER] },
+        "https://api.brevo.com/v3/contacts/lists/remove",
+        {
+          emails: [email],
+          listIds: [LISTA_NEWSLETTER]
+        },
         {
           headers: {
             "api-key": process.env.BREVO_API_KEY,
@@ -83,10 +82,8 @@ module.exports = function (app) {
         }
       );
 
-      // Tracking GA4
       trackGA4("newsletter_unsubscribe", { uid, email });
 
-      // Email post-disicrizione
       await inviaEmailNewsletterUnsubscribe({ email });
 
       return res.json({ success: true });
