@@ -1,7 +1,7 @@
 /**
  * =========================================================
  * File: app/server/server.cjs
- * Entry point del server — versione coerente al router
+ * Entry point del server — versione finale e coerente
  * =========================================================
  */
 console.log(">> PACKAGE TYPE:", require("../../package.json").type);
@@ -13,7 +13,7 @@ const cookieParser = require("cookie-parser");
 const app = express();
 app.disable("x-powered-by");
 
-// ROOT
+// ROOT = /project/app
 const ROOT = path.resolve(__dirname, "..");
 
 // LOGGING
@@ -31,26 +31,26 @@ require("./middleware/context.cjs")(app);
 
 /**
  * =========================================================
- * STATICI FRONTEND — OPZIONE A
- * Serve SEMPRE app/public (mai pages)
+ * STATICI FRONTEND — versione corretta
+ * Serve SEMPRE /app/public
  * =========================================================
  */
-app.use(express.static(path.join(ROOT, "app/public")));
-app.use("/data", express.static(path.join(ROOT, "app/data")));
+app.use(express.static(path.join(ROOT, "public")));
+app.use("/data", express.static(path.join(ROOT, "data")));
 
 /**
  * =========================================================
- * ADMIN — ORDINE CORRETTO
+ * ADMIN — ordine corretto
  * =========================================================
  */
 
-// 1) Rotta pulita /admin/login
+// Rotta pulita /admin/login
 app.get("/admin/login", (req, res) => {
-  res.sendFile(path.join(ROOT, "app/public/admin/admin-login.html"));
+  res.sendFile(path.join(ROOT, "public/admin/admin-login.html"));
 });
 
-// 2) Statici admin
-app.use("/admin", express.static(path.join(ROOT, "app/public/admin")));
+// Statici admin
+app.use("/admin", express.static(path.join(ROOT, "public/admin")));
 
 /**
  * =========================================================
