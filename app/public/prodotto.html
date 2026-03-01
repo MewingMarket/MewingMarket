@@ -13,7 +13,8 @@
           const temp = document.createElement("div");
           temp.innerHTML = html;
           [...temp.children].forEach(node => document.head.appendChild(node));
-        });
+        })
+        .catch(err => console.error("Errore caricamento head:", err));
     });
   </script>
 
@@ -26,7 +27,7 @@
 
 <body>
 
-<!-- HEADER -->
+<!-- HEADER DINAMICO -->
 <div id="header-placeholder"></div>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
@@ -35,9 +36,9 @@
       .then(h => {
         document.getElementById("header-placeholder").innerHTML = h;
 
-        // ================================
-        // ICONA CARRELLO + BADGE
-        // ================================
+        /* ================================
+           ICONA CARRELLO + BADGE
+        ================================= */
         const cartWrapper = document.createElement("div");
         cartWrapper.id = "cart-wrapper";
         cartWrapper.style.position = "relative";
@@ -71,11 +72,14 @@
 
         document.querySelector("header nav").appendChild(cartWrapper);
 
-        // Aggiorna badge quantità
-        if (typeof aggiornaBadgeCarrello === "function") {
-          aggiornaBadgeCarrello();
-        }
-      });
+        // Aggiorna badge quantità (patch anti-race)
+        setTimeout(() => {
+          if (typeof aggiornaBadgeCarrello === "function") {
+            aggiornaBadgeCarrello();
+          }
+        }, 50);
+      })
+      .catch(err => console.error("Errore caricamento header:", err));
   });
 </script>
 
@@ -127,7 +131,7 @@
 
 </main>
 
-<!-- FOOTER -->
+<!-- FOOTER DINAMICO -->
 <div id="footer-placeholder"></div>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
@@ -135,7 +139,8 @@
       .then(r => r.text())
       .then(h => {
         document.getElementById("footer-placeholder").innerHTML = h;
-      });
+      })
+      .catch(err => console.error("Errore caricamento footer:", err));
   });
 </script>
 
