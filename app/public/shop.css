@@ -1,0 +1,95 @@
+/* ===========================
+   HEADER SHOP
+=========================== */
+.shop-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.shop-header .main-nav {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+}
+
+/* Carrello */
+#cart-wrapper {
+  position: relative;
+  cursor: pointer;
+}
+
+#cart-icon {
+  font-size: 26px;
+}
+
+#cart-badge {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  background: black;
+  color: white;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 50%;
+  font-weight: bold;
+}
+
+/* ===========================
+   CATEGORIE
+=========================== */
+#categorie .btn {
+  padding: 6px 14px;
+  font-size: 14px;
+  border-radius: 6px;
+  margin: 4px;
+}
+
+/* ===========================
+   PRODOTTO — LAYOUT PREMIUM
+=========================== */
+.video-descrizione-wrapper {
+  display: flex;
+  gap: 30px;
+  margin-top: 30px;
+  align-items: flex-start;
+}
+
+#video-section iframe {
+  width: 420px;
+  height: 240px;
+  border-radius: 8px;
+}
+
+#descrizione {
+  max-width: 600px;
+}
+
+/* Bottoni sotto descrizione */
+.sotto-descrizione {
+  margin-top: 20px;
+  display: flex;
+  gap: 12px;
+}
+
+/* ===========================
+   CATALOGO
+=========================== */
+.product-card {
+  border: 1px solid #eee;
+  padding: 14px;
+  border-radius: 10px;
+  background: white;
+}
+
+.product-card img {
+  border-radius: 8px;
+}
+
+.card-buttons {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+}
