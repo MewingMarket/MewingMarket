@@ -1,15 +1,16 @@
 /* =========================================================
    FILE: /public/dashboard.js
-   DASHBOARD — Versione stabile, semplice, funzionante
+   DASHBOARD — Compatibile al 100% con il backend reale
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
 
-  function getSession() {
+  // SESSIONE
+  function getToken() {
     return localStorage.getItem("session") || "";
   }
 
-  function setSession(t) {
+  function setToken(t) {
     if (t) localStorage.setItem("session", t);
   }
 
@@ -18,14 +19,15 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   let email = localStorage.getItem("email");
+  let token = getToken();
 
-  // 🔵 LOGIN CHECK
-  if (!getSession() || !email) {
+  // LOGIN CHECK
+  if (!token || !email) {
     window.location.href = "login.html?redirect=dashboard.html";
     return;
   }
 
-  // 🔵 UI ELEMENTS
+  // UI
   const userEmailEl = document.getElementById("userEmail");
   const usernameEl = document.getElementById("username");
   const sidebarEmail = document.getElementById("sidebarEmail");
@@ -51,7 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
     el.classList.add(ok ? "ok" : "err");
   }
 
-  // 🔵 NAVIGAZIONE
+  // NAVIGAZIONE
   document.getElementById("nav-download")?.addEventListener("click", () => {
     window.location.href = "download.html";
   });
@@ -69,7 +71,9 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("passwordDelete")?.focus();
   });
 
-  // 🔵 CAMBIO EMAIL
+  // =========================================================
+  // CAMBIO EMAIL — COMPATIBILE CON IL BACKEND
+  // =========================================================
   document.getElementById("btnCambiaEmail")?.addEventListener("click", async () => {
     const nuova_email = document.getElementById("newEmail").value.trim().toLowerCase();
     const password = document.getElementById("passwordEmail").value.trim();
@@ -80,33 +84,18 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      // Verifica password (login invisibile)
-      const resLogin = await fetch("/api/utenti/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
-      });
-
-      const loginData = await resLogin.json();
-      if (!loginData.success || !loginData.token) {
-        setMsg("msgEmail", "Password errata.");
-        return;
-      }
-
-      setSession(loginData.token);
-
-      // Cambia email — 🔴 ORA MANDIAMO TUTTI I CAMPI
       const res = await fetch("/api/utenti/cambia-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email,          // email attuale
-          newEmail: nuova_email,
-          password        // conferma password
+          token,
+          nuova_email,
+          password
         })
       });
 
       const data = await res.json();
+
       if (!data.success) {
         setMsg("msgEmail", data.error || "Errore.");
         return;
@@ -121,62 +110,49 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // 🔵 CAMBIO PASSWORD
+  // =========================================================
+  // CAMBIO PASSWORD — COMPATIBILE CON IL BACKEND
+  // =========================================================
   document.getElementById("btnCambiaPassword")?.addEventListener("click", async () => {
-    const oldPassword = document.getElementById("oldPassword").value.trim();
     const nuova_password = document.getElementById("newPassword").value.trim();
 
-    if (!oldPassword || !nuova_password) {
-      setMsg("msgPassword", "Compila tutti i campi.");
+    if (!nuova_password) {
+      setMsg("msgPassword", "Inserisci la nuova password.");
       return;
     }
 
     try {
-      // Verifica password attuale
-      const resLogin = await fetch("/api/utenti/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password: oldPassword })
-      });
-
-      const loginData = await resLogin.json();
-      if (!loginData.success) {
-        setMsg("msgPassword", "Password attuale errata.");
-        return;
-      }
-
-      setSession(loginData.token);
-
-      // Cambia password — 🔴 ORA MANDIAMO TUTTI I CAMPI
       const res = await fetch("/api/utenti/cambia-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email,
-          oldPassword,
-          newPassword: nuova_password
+          token,
+          nuova_password
         })
       });
 
       const data = await res.json();
 
-      if (data.success) {
-        setMsg("msgPassword", "Password aggiornata!", true);
-      } else {
+      if (!data.success) {
         setMsg("msgPassword", data.error || "Errore.");
+        return;
       }
+
+      setMsg("msgPassword", "Password aggiornata!", true);
 
     } catch {
       setMsg("msgPassword", "Errore di connessione.");
     }
   });
 
-  // 🔵 ELIMINA ACCOUNT
+  // =========================================================
+  // ELIMINA ACCOUNT — COMPATIBILE CON IL BACKEND
+  // =========================================================
   document.getElementById("btnEliminaAccount")?.addEventListener("click", async () => {
     const password = document.getElementById("passwordDelete").value.trim();
 
     if (!password) {
-      setMsg("msgElimina", "Inserisci la password per confermare.");
+      setMsg("msgElimina", "Inserisci la password.");
       return;
     }
 
@@ -189,27 +165,28 @@ document.addEventListener("DOMContentLoaded", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email,
+          token,
           password
         })
       });
 
       const data = await res.json();
 
-      if (data.success) {
-        setMsg("msgElimina", "Account eliminato. Verrai reindirizzato...", true);
-
-        localStorage.clear();
-
-        setTimeout(() => {
-          window.location.href = "registrazione.html";
-        }, 1000);
-      } else {
+      if (!data.success) {
         setMsg("msgElimina", data.error || "Errore.");
+        return;
       }
+
+      localStorage.clear();
+      setMsg("msgElimina", "Account eliminato.", true);
+
+      setTimeout(() => {
+        window.location.href = "registrazione.html";
+      }, 1000);
 
     } catch {
       setMsg("msgElimina", "Errore di connessione.");
     }
   });
+
 });
