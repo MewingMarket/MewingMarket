@@ -6,9 +6,6 @@
 
 document.addEventListener("DOMContentLoaded", () => {
 
-  /* -----------------------------------------
-     SESSIONE
-  ----------------------------------------- */
   function getSession() {
     return localStorage.getItem("session") || "";
   }
@@ -23,17 +20,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let email = localStorage.getItem("utenteEmail");
 
-  /* -----------------------------------------
-     LOGIN CHECK
-  ----------------------------------------- */
   if (!getSession() || !email) {
-    window.location.href = "login.html";
+    window.location.href = "login.html?redirect=dashboard.html";
     return;
   }
 
-  /* -----------------------------------------
-     UI ELEMENTS
-  ----------------------------------------- */
   const userEmailEl = document.getElementById("userEmail");
   const usernameEl = document.getElementById("username");
   const sidebarEmail = document.getElementById("sidebarEmail");
@@ -59,9 +50,6 @@ document.addEventListener("DOMContentLoaded", () => {
     el.classList.add(ok ? "ok" : "err");
   }
 
-  /* -----------------------------------------
-     NAVIGAZIONE
-  ----------------------------------------- */
   document.getElementById("nav-download")?.addEventListener("click", () => {
     window.location.href = "download.html";
   });
@@ -72,16 +60,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("nav-logout")?.addEventListener("click", () => {
     localStorage.clear();
-    window.location.href = "login.html";
+    window.location.href = "index.html";
   });
 
   document.getElementById("nav-elimina")?.addEventListener("click", () => {
     document.getElementById("passwordDelete")?.focus();
   });
 
-  /* -----------------------------------------
-     CAMBIO EMAIL
-  ----------------------------------------- */
   document.getElementById("btnCambiaEmail")?.addEventListener("click", async () => {
     const nuova_email = document.getElementById("newEmail").value.trim().toLowerCase();
     const password = document.getElementById("passwordEmail").value.trim();
@@ -92,7 +77,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      // 1) Verifica password (login invisibile)
       const resLogin = await fetch("/api/utenti/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -108,7 +92,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const session = loginData.token;
       setSession(session);
 
-      // 2) Cambia email
       const res = await fetch("/api/utenti/cambia-email", {
         method: "POST",
         headers: {
@@ -124,7 +107,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // 3) Aggiorna localStorage
       setEmail(nuova_email);
       refreshUI();
       setMsg("msgEmail", "Email aggiornata!", true);
@@ -134,9 +116,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  /* -----------------------------------------
-     CAMBIO PASSWORD
-  ----------------------------------------- */
   document.getElementById("btnCambiaPassword")?.addEventListener("click", async () => {
     const oldPassword = document.getElementById("oldPassword").value.trim();
     const nuova_password = document.getElementById("newPassword").value.trim();
@@ -147,7 +126,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      // 1) Verifica password attuale
       const resLogin = await fetch("/api/utenti/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -163,7 +141,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const session = loginData.token;
       setSession(session);
 
-      // 2) Cambia password
       const res = await fetch("/api/utenti/cambia-password", {
         method: "POST",
         headers: {
@@ -186,9 +163,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  /* -----------------------------------------
-     ELIMINA ACCOUNT
-  ----------------------------------------- */
   document.getElementById("btnEliminaAccount")?.addEventListener("click", async () => {
     const password = document.getElementById("passwordDelete").value.trim();
 
