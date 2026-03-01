@@ -80,7 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      // Verifica password
+      // Verifica password (login invisibile)
       const resLogin = await fetch("/api/utenti/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -95,11 +95,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
       setSession(loginData.token);
 
-      // Cambia email
+      // Cambia email — 🔴 ORA MANDIAMO TUTTI I CAMPI
       const res = await fetch("/api/utenti/cambia-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nuova_email })
+        body: JSON.stringify({
+          email,          // email attuale
+          newEmail: nuova_email,
+          password        // conferma password
+        })
       });
 
       const data = await res.json();
@@ -128,6 +132,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
+      // Verifica password attuale
       const resLogin = await fetch("/api/utenti/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -142,10 +147,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
       setSession(loginData.token);
 
+      // Cambia password — 🔴 ORA MANDIAMO TUTTI I CAMPI
       const res = await fetch("/api/utenti/cambia-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nuova_password })
+        body: JSON.stringify({
+          email,
+          oldPassword,
+          newPassword: nuova_password
+        })
       });
 
       const data = await res.json();
@@ -178,7 +188,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch("/api/utenti/elimina-account", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password })
+        body: JSON.stringify({
+          email,
+          password
+        })
       });
 
       const data = await res.json();
