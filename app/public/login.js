@@ -1,7 +1,6 @@
 /* =========================================================
    FILE: /public/login.js
-   LOGIN PREMIUM — MewingMarket
-   Versione definitiva e coerente con tutto il sito
+   LOGIN — Versione stabile e compatibile con tutto il sito
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -11,9 +10,6 @@ document.addEventListener("DOMContentLoaded", () => {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    statusBox.style.color = "#d00";
-    statusBox.textContent = "Accesso in corso...";
-
     const email = form.email.value.trim().toLowerCase();
     const password = form.password.value.trim();
 
@@ -21,6 +17,8 @@ document.addEventListener("DOMContentLoaded", () => {
       statusBox.textContent = "Compila tutti i campi.";
       return;
     }
+
+    statusBox.textContent = "Accesso in corso...";
 
     try {
       const res = await fetch("/api/utenti/login", {
@@ -36,25 +34,17 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
+      // 🔵 SALVATAGGIO ORIGINALE
       localStorage.setItem("session", data.token);
-      localStorage.setItem("utenteEmail", email);
+      localStorage.setItem("email", email);
 
-      statusBox.style.color = "green";
-      statusBox.textContent = "Accesso effettuato! Reindirizzamento...";
+      // 🔵 REDIRECT
+      const params = new URLSearchParams(window.location.search);
+      const redirect = params.get("redirect");
 
-      setTimeout(() => {
-        const params = new URLSearchParams(window.location.search);
-        const redirect = params.get("redirect");
-
-        if (redirect) {
-          window.location.href = redirect;
-        } else {
-          window.location.href = "dashboard.html";
-        }
-      }, 800);
+      window.location.href = redirect || "dashboard.html";
 
     } catch (err) {
-      console.error(err);
       statusBox.textContent = "Errore di connessione.";
     }
   });
