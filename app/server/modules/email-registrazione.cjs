@@ -77,10 +77,7 @@ async function inviaEmailRegistrazione({ email }) {
   <hr style="margin:30px 0;">
 
   <!-- FOOTER -->
-  <p style="font-size:14px; color:#777; text-align:center;">
-    Se non vuoi più ricevere email, puoi disiscriverti qui:<br>
-    <a href="https://www.mewingmarket.it/disiscriviti.html" style="color:#999; text-decoration:underline;">Disiscriviti</a>
-  </p>
+  
 
 </div>
 
