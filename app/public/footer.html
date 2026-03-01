@@ -19,16 +19,12 @@
     <div class="footer-block">
       <h4>Accesso</h4>
       <ul class="footer-legal">
-
-        <!-- PATCH: percorso assoluto -->
         <li><a href="/admin/admin-login.html">Login Admin</a></li>
 
-        <!-- DINAMICO -->
         <li><a href="login.html" id="footer-login">Login Utenti</a></li>
         <li><a href="registrazione.html" id="footer-register">Registrazione</a></li>
         <li><a href="dashboard.html" id="footer-dashboard" style="display:none;">Profilo Utente</a></li>
         <li><a href="#" id="footer-logout" style="display:none;">Logout</a></li>
-
       </ul>
 
       <h4>Legale</h4>
@@ -80,13 +76,12 @@
     © <span id="anno"></span> MewingMarket — Tutti i diritti riservati.
   </div>
 
+  <script src="auth.js"></script>
+
   <script>
     document.getElementById("anno").textContent = new Date().getFullYear();
 
-    const session = localStorage.getItem("session");
-    const email = localStorage.getItem("utenteEmail"); // ✔ COERENTE CON TUTTO IL SITO
-
-    const logged = !!(session && email);
+    const logged = isLogged();
 
     const loginLink = document.getElementById("footer-login");
     const registerLink = document.getElementById("footer-register");
@@ -107,9 +102,7 @@
 
     logoutLink.addEventListener("click", (e) => {
       e.preventDefault();
-      localStorage.removeItem("session");
-      localStorage.removeItem("utenteEmail");
-      window.location.href = "index.html";
+      logout();
     });
   </script>
 </footer>
