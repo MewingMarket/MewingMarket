@@ -1,4 +1,5 @@
 /* =========================================================
+   FILE: /public/checkout.js   (o /public/cashout.js)
    CHECKOUT PREMIUM — MewingMarket
    Versione definitiva: login check, single/multi, PayPal,
    badge carrello, redirect thank you
