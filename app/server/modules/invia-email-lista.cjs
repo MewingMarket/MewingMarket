@@ -4,7 +4,7 @@ const axios = require("axios");
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
 const BREVO_API_BASE = "https://api.brevo.com/v3";
 
-async function inviaEmailLista({ email, listId, subject, html, sender }) {
+async function inviaEmailLista({ email, listId, subject, html, sender, attachments = [] }) {
   if (!BREVO_API_KEY) {
     console.error("❌ BREVO_API_KEY mancante");
     return;
@@ -38,7 +38,7 @@ async function inviaEmailLista({ email, listId, subject, html, sender }) {
       });
     }
 
-    // 2) Invia email transazionale
+    // 2) Invia email transazionale (con allegati)
     await axios.post(
       `${BREVO_API_BASE}/smtp/email`,
       {
@@ -46,11 +46,17 @@ async function inviaEmailLista({ email, listId, subject, html, sender }) {
         subject,
         htmlContent: html,
 
-        // ⭐ Mittente personalizzato (vendite/supporto/newsletter/credenziali)
         sender: sender || {
           name: process.env.BREVO_SENDER_NAME || "MewingMarket",
           email: process.env.BREVO_SENDER_VENDITE || "no-reply@mewingmarket.com"
-        }
+        },
+
+        // ⭐ Allegati PDF (base64)
+        attachment: attachments.map(a => ({
+          name: a.filename,
+          content: a.content,
+          type: a.mimeType || "application/pdf"
+        }))
       },
       {
         headers: {
