@@ -2,36 +2,74 @@
 const PDFDocument = require("pdfkit");
 const { Buffer } = require("buffer");
 
-const MARCA_BOLLO_SOGLIA = 77.47; // soglia classica
+const MARCA_BOLLO_SOGLIA = 77.47; // soglia classica italiana
 
+// ===============================
+// DATI FISCALI MEWINGMARKET
+// ===============================
+const DATI_PRESTATORE = {
+  nome: "MewingMarket",
+  indirizzo: "Strada Ciousse 35",
+  citta: "18038 Sanremo (IM) – Liguria, Italia",
+  cf: "INSERISCI_TUO_CODICE_FISCALE", // ← DA COMPILARE
+  email: "supporto@mewingmarket.it"
+};
+
+// ===============================
+// TEMPLATE PDF
+// ===============================
 function creaPDFBase(ordine, { includeMarcaBollo = false, titolo = "Ricevuta fiscale" }) {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ margin: 50 });
     const chunks = [];
 
     doc.on("data", chunk => chunks.push(chunk));
-    doc.on("end", () => {
-      const pdfBuffer = Buffer.concat(chunks);
-      resolve(pdfBuffer);
-    });
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
 
     const dataOrdine = ordine.data
       ? new Date(ordine.data).toLocaleDateString("it-IT")
       : new Date().toLocaleDateString("it-IT");
 
+    // ===============================
+    // INTESTAZIONE
+    // ===============================
     doc.fontSize(18).text(titolo, { align: "center" });
     doc.moveDown();
 
-    doc.fontSize(12).text(`Data: ${dataOrdine}`);
+    doc.fontSize(12).text(`${DATI_PRESTATORE.nome}`);
+    doc.text(`${DATI_PRESTATORE.indirizzo}`);
+    doc.text(`${DATI_PRESTATORE.citta}`);
+    doc.text(`Codice Fiscale: ${DATI_PRESTATORE.cf}`);
+    doc.text(`Email: ${DATI_PRESTATORE.email}`);
+    doc.moveDown();
+
+    // ===============================
+    // DATI ORDINE
+    // ===============================
+    doc.text(`Data: ${dataOrdine}`);
     doc.text(`Ordine n.: ${ordine.id_ordine || ordine.id || "-"}`);
     doc.moveDown();
 
+    // ===============================
+    // DATI CLIENTE
+    // ===============================
     doc.text("Dati cliente:");
     doc.text(`Email: ${ordine.email || "-"}`);
     doc.moveDown();
 
-    doc.text("Descrizione prestazione occasionale:");
+    // ===============================
+    // DESCRIZIONE
+    // ===============================
+    doc.text("Oggetto della prestazione:");
+    doc.moveDown(0.5);
+    doc.text("Fornitura di prodotti digitali acquistati tramite la piattaforma MewingMarket.");
+    doc.moveDown();
+
+    // ===============================
+    // PRODOTTI
+    // ===============================
+    doc.text("Dettaglio prodotti:");
     doc.moveDown(0.5);
 
     if (Array.isArray(ordine.prodotti)) {
@@ -42,30 +80,39 @@ function creaPDFBase(ordine, { includeMarcaBollo = false, titolo = "Ricevuta fis
 
     doc.moveDown();
     doc.text(`Totale corrisposto: ${ordine.totale}€`, { align: "right" });
-
     doc.moveDown();
 
+    // ===============================
+    // MARCA DA BOLLO
+    // ===============================
     if (includeMarcaBollo) {
-      doc.text("Marca da bollo assolta ai sensi di legge.", { align: "right" });
+      doc.text("Importo superiore alla soglia di 77,47 €.", { align: "right" });
+      doc.text("Marca da bollo da 2,00 € assolta ai sensi di legge.", { align: "right" });
     } else {
-      doc.text("Operazione sotto soglia marca da bollo.", { align: "right" });
+      doc.text("Operazione sotto soglia marca da bollo (77,47 €).", { align: "right" });
+      doc.text("Marca da bollo NON dovuta.", { align: "right" });
     }
 
     doc.moveDown(2);
-    doc.text("Prestazione occasionale ai sensi della normativa italiana.", {
-      align: "left"
-    });
+
+    // ===============================
+    // NOTA FISCALE
+    // ===============================
+    doc.text(
+      "La prestazione è di natura occasionale ed è esclusa dall’applicazione dell’IVA ai sensi dell’art. 5 del D.P.R. 633/1972."
+    );
+    doc.moveDown();
+
+    doc.text("Documento generato elettronicamente ai sensi della normativa vigente.");
+    doc.moveDown();
 
     doc.end();
   });
 }
 
-/**
- * Genera:
- * - pdfCliente: ricevuta generica per il cliente (senza dettaglio marca da bollo)
- * - pdfInternoSenzaBollo: per te, sotto soglia
- * - pdfInternoConBollo: per te, sopra soglia
- */
+// ===============================
+// GENERATORE COMPLETO
+// ===============================
 async function generaRicevuteFiscali(ordine) {
   const sopraSoglia = Number(ordine.totale || 0) >= MARCA_BOLLO_SOGLIA;
 
