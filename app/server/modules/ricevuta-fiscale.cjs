@@ -1,8 +1,13 @@
-// app/server/modules/ricevuta-fiscale.cjs
+// =========================================================
+// File: app/server/modules/ricevuta-fiscale.cjs
+// Generatore PDF ricevuta fiscale prestazione occasionale
+// Versione definitiva con firma digitale e marca da bollo
+// =========================================================
+
 const PDFDocument = require("pdfkit");
 const { Buffer } = require("buffer");
 
-const MARCA_BOLLO_SOGLIA = 77.47; // soglia classica italiana
+const MARCA_BOLLO_SOGLIA = 77.47;
 
 // ===============================
 // DATI FISCALI MEWINGMARKET
@@ -11,12 +16,12 @@ const DATI_PRESTATORE = {
   nome: "MewingMarket",
   indirizzo: "Strada Ciousse 35",
   citta: "18038 Sanremo (IM) – Liguria, Italia",
-  cf: "INSERISCI_TUO_CODICE_FISCALE", // ← DA COMPILARE
+  cf: "GRSSMN92H25I138W",
   email: "supporto@mewingmarket.it"
 };
 
 // ===============================
-// TEMPLATE PDF
+// FUNZIONE BASE PER CREARE PDF
 // ===============================
 function creaPDFBase(ordine, { includeMarcaBollo = false, titolo = "Ricevuta fiscale" }) {
   return new Promise((resolve, reject) => {
@@ -37,9 +42,9 @@ function creaPDFBase(ordine, { includeMarcaBollo = false, titolo = "Ricevuta fis
     doc.fontSize(18).text(titolo, { align: "center" });
     doc.moveDown();
 
-    doc.fontSize(12).text(`${DATI_PRESTATORE.nome}`);
-    doc.text(`${DATI_PRESTATORE.indirizzo}`);
-    doc.text(`${DATI_PRESTATORE.citta}`);
+    doc.fontSize(12).text(DATI_PRESTATORE.nome);
+    doc.text(DATI_PRESTATORE.indirizzo);
+    doc.text(DATI_PRESTATORE.citta);
     doc.text(`Codice Fiscale: ${DATI_PRESTATORE.cf}`);
     doc.text(`Email: ${DATI_PRESTATORE.email}`);
     doc.moveDown();
@@ -104,7 +109,16 @@ function creaPDFBase(ordine, { includeMarcaBollo = false, titolo = "Ricevuta fis
     doc.moveDown();
 
     doc.text("Documento generato elettronicamente ai sensi della normativa vigente.");
-    doc.moveDown();
+    doc.moveDown(2);
+
+    // ===============================
+    // FIRMA DIGITALE
+    // ===============================
+    doc.fontSize(14).text("Firma:", { align: "left" });
+    doc.moveDown(0.5);
+
+    // Firma digitale stilizzata (testuale)
+    doc.fontSize(20).text("Simone Griseri", { align: "left" });
 
     doc.end();
   });
