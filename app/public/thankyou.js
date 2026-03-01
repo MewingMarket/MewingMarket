@@ -1,4 +1,5 @@
 /* =========================================================
+   FILE: /public/thankyou.js
    THANK YOU PAGE — MewingMarket
    Versione Premium: verifica ordine, mostra riepilogo,
    svuota carrello, aggiorna badge, UX pulita
@@ -6,9 +7,6 @@
 
 document.addEventListener("DOMContentLoaded", async () => {
 
-  /* -----------------------------------------
-     1) OTTIENI ORDER ID DALL'URL
-  ----------------------------------------- */
   const url = new URL(window.location.href);
   const orderId = url.searchParams.get("orderId");
 
@@ -17,17 +15,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  /* -----------------------------------------
-     2) CHIAMA BACKEND PER VERIFICARE ORDINE
-  ----------------------------------------- */
   let ordine;
 
   try {
-    const res = await fetch(`/api/paypal/complete-order?orderId=${orderId}`, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" }
-    });
-
+    const res = await fetch(`/api/paypal/complete-order?orderId=${orderId}`);
     const data = await res.json();
 
     if (!data.success) {
@@ -51,47 +42,41 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  /* -----------------------------------------
-     3) POPOLA RIEPILOGO ORDINE
-  ----------------------------------------- */
   const prodEl = document.getElementById("prod");
   const priceEl = document.getElementById("price");
   const dateEl = document.getElementById("date");
 
-  // Se è un solo prodotto
   if (ordine.prodotti.length === 1) {
     prodEl.textContent = ordine.prodotti[0].titolo;
     priceEl.textContent = ordine.prodotti[0].prezzo;
   } else {
-    // Multi prodotto
     prodEl.textContent = `${ordine.prodotti.length} prodotti`;
     priceEl.textContent = ordine.totale;
   }
 
-  const now = new Date();
-  dateEl.textContent = now.toLocaleDateString("it-IT");
+  // PATCH: lista prodotti
+  const listEl = document.getElementById("prod-list");
+  listEl.innerHTML = ordine.prodotti
+    .map(p => `<li>${p.titolo} — ${p.prezzo}€</li>`)
+    .join("");
 
-  /* -----------------------------------------
-     4) SVUOTA CARRELLO + AGGIORNA BADGE
-  ----------------------------------------- */
-  Cart.clear();
+  dateEl.textContent = new Date().toLocaleDateString("it-IT");
 
-  if (typeof aggiornaBadgeCarrello === "function") {
-    aggiornaBadgeCarrello();
+  // PATCH: download se COMPLETED
+  const dlBox = document.getElementById("download-box");
+  if (ordine.stato === "COMPLETED") {
+    dlBox.innerHTML = ordine.prodotti
+      .map(p => `<a class="btn-download" href="/api/vendite/download/${p.slug}?token=${localStorage.getItem("session")}">Scarica ${p.titolo}</a>`)
+      .join("<br>");
   }
 
-  /* -----------------------------------------
-     5) PULSANTE RECENSIONE
-  ----------------------------------------- */
-  const feedbackBtn = document.getElementById("feedbackBtn");
+  Cart.clear();
+  if (typeof aggiornaBadgeCarrello === "function") aggiornaBadgeCarrello();
 
-  feedbackBtn.addEventListener("click", () => {
+  document.getElementById("feedbackBtn").addEventListener("click", () => {
     window.location.href = `feedback.html?orderId=${orderId}`;
   });
 
-  /* -----------------------------------------
-     6) TRACKING EVENTO
-  ----------------------------------------- */
   if (window.trackEvent) {
     trackEvent("order_completed", {
       orderId,
