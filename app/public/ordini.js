@@ -1,3 +1,10 @@
+/* =========================================================
+   FILE: /public/ordini.js
+   ORDINI PREMIUM — MewingMarket
+   Versione definitiva: lista ordini + annulla ordine
+   (NO download qui — download è in download.html)
+========================================================= */
+
 document.addEventListener("DOMContentLoaded", async () => {
   const session = localStorage.getItem("session");
   const email = localStorage.getItem("utenteEmail");
@@ -8,11 +15,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  // 1) Recupera ordini dell’utente
+  /* =========================================================
+     1) Recupera ordini utente
+  ========================================================= */
   let data;
   try {
     const res = await fetch("/api/ordini/utente", {
-      headers: { "x-token": session }
+      headers: {
+        "Authorization": `Bearer ${session}`
+      }
     });
     data = await res.json();
   } catch (err) {
@@ -26,38 +37,65 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  // 2) Mostra ordini
+  /* =========================================================
+     2) Render ordini (NO download)
+  ========================================================= */
   data.ordini.forEach(o => {
     const tr = document.createElement("tr");
 
     const prodottiHTML = Array.isArray(o.prodotti)
-      ? o.prodotti.map(p => `${p.titolo} (${p.prezzo}€)`).join("<br>")
+      ? o.prodotti.map(p => `${p.titolo} (${p.prezzo}€ × ${p.qty || 1})`).join("<br>")
       : "-";
 
-    const downloadBtns = Array.isArray(o.prodotti)
-      ? o.prodotti
-          .map(
-            p => `<a class="btn-download" href="/api/vendite/download/${p.slug}?token=${session}">Download</a>`
-          )
-          .join("<br>")
-      : "-";
-
-    // PATCH: bottone annulla ordine → redirect a cancel.html
     const annullaBtn =
-      o.stato !== "COMPLETED" && o.stato !== "CANCELLED"
-        ? `<a class="btn-cancel" href="paypal/cancel/index.html?orderId=${o.orderId}">
-             Annulla ordine
-           </a>`
-        : "";
+      o.stato === "completato" || o.stato === "annullato"
+        ? ""
+        : `<button class="btn-annulla" data-id="${o.id}">Annulla</button>`;
 
     tr.innerHTML = `
       <td>${new Date(o.data).toLocaleDateString("it-IT")}</td>
       <td>${prodottiHTML}</td>
       <td>${o.totale}€</td>
       <td>${o.stato}</td>
-      <td>${downloadBtns}<br>${annullaBtn}</td>
+      <td>${annullaBtn}</td>
     `;
 
     body.appendChild(tr);
+  });
+
+  /* =========================================================
+     3) Annulla ordine
+  ========================================================= */
+  body.addEventListener("click", async e => {
+    if (!e.target.classList.contains("btn-annulla")) return;
+
+    const id = e.target.dataset.id;
+    if (!id) return;
+
+    if (!confirm("Vuoi annullare questo ordine?")) return;
+
+    try {
+      const res = await fetch(`/api/ordini/annulla/${id}`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${session}`,
+          "Content-Type": "application/json"
+        }
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        alert(data.error || "Errore annullamento.");
+        return;
+      }
+
+      alert("Ordine annullato.");
+      location.reload();
+
+    } catch (err) {
+      console.error(err);
+      alert("Errore di connessione.");
+    }
   });
 });
