@@ -85,7 +85,8 @@ router.post("/utenti/registrazione", async (req, res) => {
       }
     ]);
 
-    inviaEmailRegistrazione({ email });
+    // 🔵 AWAIT AGGIUNTO
+    await inviaEmailRegistrazione({ email });
 
     return res.json({ success: true, token });
 
@@ -183,7 +184,8 @@ router.post("/utenti/cambia-email", async (req, res) => {
       }
     ]);
 
-    inviaEmailCambioEmail({ email: nuova_email });
+    // 🔵 AWAIT AGGIUNTO
+    await inviaEmailCambioEmail({ email: nuova_email });
 
     return res.json({ success: true });
 
@@ -226,7 +228,8 @@ router.post("/utenti/cambia-password", async (req, res) => {
       }
     ]);
 
-    inviaEmailCambioPassword({ email: user.get("email") });
+    // 🔵 AWAIT AGGIUNTO
+    await inviaEmailCambioPassword({ email: user.get("email") });
 
     return res.json({ success: true });
 
@@ -269,7 +272,8 @@ router.post("/utenti/elimina-account", async (req, res) => {
 
     await base(TABLE_UTENTI).destroy(user.id);
 
-    inviaEmailEliminazione({ email: user.get("email") });
+    // 🔵 AWAIT AGGIUNTO
+    await inviaEmailEliminazione({ email: user.get("email") });
 
     return res.json({ success: true });
 
@@ -311,7 +315,8 @@ router.post("/utenti/reset-password-request", async (req, res) => {
       }
     ]);
 
-    inviaEmailResetPassword({
+    // 🔵 AWAIT AGGIUNTO
+    await inviaEmailResetPassword({
       email,
       link: `https://mewingmarket.it/reset-password-confirm.html?token=${resetToken}`
     });
@@ -399,7 +404,8 @@ router.post("/utenti/reset-email-request", async (req, res) => {
       }
     ]);
 
-    inviaEmailResetEmail({
+    // 🔵 AWAIT AGGIUNTO
+    await inviaEmailResetEmail({
       email: user.get("email"),
       link: `https://mewingmarket.it/reset-email-confirm.html?token=${resetToken}`
     });
