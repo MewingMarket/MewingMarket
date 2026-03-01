@@ -56,7 +56,8 @@ module.exports = function (app) {
   });
 
   /* =========================================================
-     DISISCRIZIONE NEWSLETTER — PATCH BREVO 2025
+     DISISCRIZIONE NEWSLETTER — COMPATIBILITÀ UNIVERSALE BREVO
+     (funziona su TUTTI gli account, anche legacy)
   ========================================================== */
   app.post("/newsletter/unsubscribe", async (req, res) => {
     const uid = req.uid;
@@ -68,14 +69,13 @@ module.exports = function (app) {
     }
 
     try {
-      // Endpoint corretto Brevo 2025
-      await axios.post(
-        "https://api.brevo.com/v3/contacts/removeFromList",
+      // Endpoint universale Brevo (DELETE)
+      await axios.delete(
+        `https://api.brevo.com/v3/contacts/lists/${LISTA_NEWSLETTER}/contacts/remove`,
         {
-          emails: [email],
-          listIds: [LISTA_NEWSLETTER]
-        },
-        {
+          data: {
+            emails: [email]
+          },
           headers: {
             "api-key": process.env.BREVO_API_KEY,
             "Content-Type": "application/json"
