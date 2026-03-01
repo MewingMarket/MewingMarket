@@ -1,6 +1,6 @@
 // =========================================================
 // PRODOTTO PREMIUM – MewingMarket
-// Versione: Model A + Carrello + Badge + Checkout Premium
+// Versione: Model A + Carrello Guest + Badge + Checkout Premium
 // =========================================================
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -55,7 +55,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    // FIX: backend restituisce "prodotto"
     p = data.prodotto;
 
   } catch (err) {
@@ -95,15 +94,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("product-description").innerHTML = clean(p.descrizione || "");
 
   // ============================================================
-  // 6) ACQUISTA ORA — MODEL A + CHECKOUT PREMIUM
+  // 6) ACQUISTA ORA — checkout single (NO login qui)
   // ============================================================
   document.getElementById("btn-acquista").addEventListener("click", () => {
-    const session = localStorage.getItem("session");
-
-    if (!session) {
-      window.location.href = `login.html?redirect=prodotto.html?slug=${slug}`;
-      return;
-    }
 
     aggiungiAlCarrello({
       slug: p.slug,
@@ -114,19 +107,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     aggiornaBadgeCarrello();
 
-    window.location.href = "checkout.html";
+    // Checkout single
+    window.location.href = `checkout.html?slug=${p.slug}`;
   });
 
   // ============================================================
-  // 7) AGGIUNGI AL CARRELLO
+  // 7) AGGIUNGI AL CARRELLO — guest OK
   // ============================================================
   document.getElementById("btn-carrello").addEventListener("click", () => {
-    const session = localStorage.getItem("session");
-
-    if (!session) {
-      window.location.href = `login.html?redirect=prodotto.html?slug=${slug}`;
-      return;
-    }
 
     aggiungiAlCarrello({
       slug: p.slug,
@@ -136,6 +124,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     aggiornaBadgeCarrello();
+
+    if (!isLogged()) {
+      alert("Per completare l'acquisto dovrai fare login in checkout.");
+    }
   });
 
   // ============================================================
@@ -147,7 +139,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const relatedBox = document.getElementById("related");
 
-    // FIX: backend restituisce "prodotti"
     if (data.success && Array.isArray(data.prodotti)) {
       const correlati = data.prodotti
         .filter((x) => x.slug !== p.slug)
