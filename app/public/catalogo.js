@@ -118,25 +118,19 @@ function cardHTML(p) {
 
   if (!container || !categorieBox) return;
 
-  // ---------------------------
   // CATEGORIE DINAMICHE
-  // ---------------------------
   const categorie = [...new Set(products.map(p => p.categoria || ""))].filter(Boolean);
 
   categorieBox.innerHTML = categorie.length
     ? categorie.map(cat => `<button class="btn" data-cat="${clean(cat)}">${clean(cat)}</button>`).join("")
     : "<p>Nessuna categoria disponibile</p>";
 
-  // ---------------------------
   // GRID PRODOTTI
-  // ---------------------------
   container.innerHTML = products.length
     ? products.map(cardHTML).join("")
     : "<p>Nessun prodotto disponibile.</p>";
 
-  // ---------------------------
   // FILTRO CATEGORIA
-  // ---------------------------
   categorieBox.addEventListener("click", e => {
     const cat = e.target.dataset.cat;
     if (!cat) return;
@@ -146,9 +140,7 @@ function cardHTML(p) {
     });
   });
 
-  // ---------------------------
   // FILTRO PREZZO
-  // ---------------------------
   document.querySelectorAll("[data-prezzo]").forEach(btn => {
     btn.addEventListener("click", () => {
       const max = Number(btn.dataset.prezzo);
@@ -160,9 +152,7 @@ function cardHTML(p) {
     });
   });
 
-  // ---------------------------
   // RESET FILTRI
-  // ---------------------------
   const resetBtn = document.getElementById("reset");
   if (resetBtn) {
     resetBtn.addEventListener("click", () => {
@@ -172,9 +162,7 @@ function cardHTML(p) {
     });
   }
 
-  // ---------------------------
-  // AGGIUNTA AL CARRELLO (MODEL A — carrello guest OK)
-  // ---------------------------
+  // AGGIUNTA AL CARRELLO
   document.querySelectorAll(".btn-add-cart").forEach(btn => {
     btn.addEventListener("click", () => {
 
