@@ -1,10 +1,16 @@
+/* =========================================================
+   FILE: /public/download.js
+   DOWNLOAD PREMIUM — MewingMarket
+   Versione corretta: sessione unificata + download sicuri
+========================================================= */
+
 document.addEventListener("DOMContentLoaded", async () => {
-  const token = localStorage.getItem("token");
+  const session = localStorage.getItem("session");
   const email = localStorage.getItem("utenteEmail");
 
   const body = document.getElementById("downloadBody");
 
-  if (!token || !email) {
+  if (!session || !email) {
     body.innerHTML = `<tr><td colspan="3">Devi effettuare il login.</td></tr>`;
     return;
   }
@@ -13,7 +19,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let data;
   try {
     const res = await fetch("/api/ordini/utente", {
-      headers: { "x-token": token }
+      headers: { "x-token": session }
     });
     data = await res.json();
   } catch (err) {
@@ -55,7 +61,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       <td>${p.titolo}</td>
       <td>${new Date(p.data).toLocaleDateString("it-IT")}</td>
       <td>
-        <a class="btn-download" href="/api/vendite/download/${p.slug}?token=${token}">
+        <a class="btn-download" href="/api/vendite/download/${p.slug}?token=${session}">
           Scarica
         </a>
       </td>
