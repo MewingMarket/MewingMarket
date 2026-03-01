@@ -1,7 +1,7 @@
 /* =========================================================
    FILE: /public/login.js
    LOGIN PREMIUM — MewingMarket
-   Versione corretta: salva sessione compatibile con tutto il sito
+   Versione definitiva e coerente con tutto il sito
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -36,19 +36,13 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // 🔥 FIX: salva la sessione nel formato usato da tutto il sito
       localStorage.setItem("session", data.token);
       localStorage.setItem("utenteEmail", email);
-
-      if (typeof aggiornaFooterUtente === "function") {
-        aggiornaFooterUtente();
-      }
 
       statusBox.style.color = "green";
       statusBox.textContent = "Accesso effettuato! Reindirizzamento...";
 
       setTimeout(() => {
-        // Se c'è redirect, torna alla pagina precedente
         const params = new URLSearchParams(window.location.search);
         const redirect = params.get("redirect");
 
