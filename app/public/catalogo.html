@@ -22,42 +22,35 @@
   <script src="structured-data.js" defer></script>
   <script src="carrello.js" defer></script>
 
+  <!-- CSS SPECIFICO PER LE PAGINE SHOP -->
   <link rel="stylesheet" href="catalogo.css">
+  <link rel="stylesheet" href="shop.css">
 </head>
 
 <body>
 
+<!-- HEADER SHOP -->
 <div id="header-placeholder"></div>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
-    fetch("header.html")
+    fetch("header-shop.html")
       .then(r => r.text())
       .then(h => {
         document.getElementById("header-placeholder").innerHTML = h;
 
+        /* ================================
+           ICONA CARRELLO + BADGE
+        ================================= */
         const cartWrapper = document.createElement("div");
         cartWrapper.id = "cart-wrapper";
-        cartWrapper.style.position = "relative";
-        cartWrapper.style.cursor = "pointer";
-        cartWrapper.style.marginLeft = "14px";
 
         const cartIcon = document.createElement("div");
         cartIcon.id = "cart-icon";
         cartIcon.innerHTML = "🛒";
-        cartIcon.style.fontSize = "26px";
 
         const cartBadge = document.createElement("div");
         cartBadge.id = "cart-badge";
         cartBadge.textContent = "0";
-        cartBadge.style.position = "absolute";
-        cartBadge.style.top = "-6px";
-        cartBadge.style.right = "-10px";
-        cartBadge.style.background = "black";
-        cartBadge.style.color = "white";
-        cartBadge.style.fontSize = "12px";
-        cartBadge.style.padding = "2px 6px";
-        cartBadge.style.borderRadius = "50%";
-        cartBadge.style.fontWeight = "bold";
 
         cartWrapper.appendChild(cartIcon);
         cartWrapper.appendChild(cartBadge);
@@ -66,7 +59,8 @@
           window.location.href = "checkout.html";
         });
 
-        document.querySelector("header nav").appendChild(cartWrapper);
+        const nav = document.querySelector("header nav");
+        if (nav) nav.appendChild(cartWrapper);
 
         setTimeout(() => {
           if (typeof aggiornaBadgeCarrello === "function") {
@@ -74,7 +68,7 @@
           }
         }, 50);
       })
-      .catch(err => console.error("Errore caricamento header:", err));
+      .catch(err => console.error("Errore caricamento header-shop:", err));
   });
 </script>
 
@@ -82,8 +76,10 @@
 
   <h1 class="center">Catalogo Prodotti Digitali</h1>
 
+  <!-- CATEGORIE -->
   <div id="categorie" class="center"></div>
 
+  <!-- FILTRI PREZZO -->
   <div class="center">
     <button class="btn" data-prezzo="10">Sotto i 10€</button>
     <button class="btn" data-prezzo="20">Sotto i 20€</button>
@@ -91,10 +87,12 @@
     <button class="btn" id="reset">Tutti</button>
   </div>
 
+  <!-- GRID CATALOGO -->
   <section id="catalogo" class="catalogo-grid"></section>
 
 </main>
 
+<!-- FOOTER -->
 <div id="footer-placeholder"></div>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
