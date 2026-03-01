@@ -1,11 +1,11 @@
 // =========================================================
 // CATALOGO PREMIUM – MewingMarket
-// Versione: Model A + Carrello Guest + Badge + Filtri
+// Versione definitiva: Model A + Carrello Guest + Badge + Filtri
 // =========================================================
 
-// ------------------------------
-// 1) Carica prodotti dal backend
-// ------------------------------
+/* =========================================================
+   1) CARICA PRODOTTI DAL BACKEND
+========================================================= */
 async function loadProducts() {
   try {
     const res = await fetch("/api/products", { cache: "no-store" });
@@ -17,9 +17,9 @@ async function loadProducts() {
   }
 }
 
-// ------------------------------
-// 2) Sanitizzazione
-// ------------------------------
+/* =========================================================
+   2) SANITIZZAZIONE
+========================================================= */
 function clean(t) {
   return typeof t === "string"
     ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
@@ -30,9 +30,9 @@ function safeURL(u) {
   return typeof u === "string" && u.startsWith("http") ? u : "";
 }
 
-// ------------------------------
-// 3) Video YouTube
-// ------------------------------
+/* =========================================================
+   3) VIDEO YOUTUBE
+========================================================= */
 function renderYouTubeLink(p) {
   const url =
     safeURL(p.youtube_url) ||
@@ -50,9 +50,9 @@ function renderYouTubeLink(p) {
   `;
 }
 
-// ------------------------------
-// 4) Descrizione breve
-// ------------------------------
+/* =========================================================
+   4) DESCRIZIONE BREVE
+========================================================= */
 function getShortDescription(p) {
   if (p.descrizione_breve && p.descrizione_breve.trim() !== "") {
     return clean(p.descrizione_breve);
@@ -64,9 +64,9 @@ function getShortDescription(p) {
   return clean(short);
 }
 
-// ------------------------------
-// 5) Immagine
-// ------------------------------
+/* =========================================================
+   5) IMMAGINE
+========================================================= */
 function getImage(p) {
   if (p.immagine && p.immagine.startsWith("http")) {
     return p.immagine;
@@ -74,9 +74,9 @@ function getImage(p) {
   return "/placeholder.webp";
 }
 
-// ------------------------------
-// 6) Card prodotto (VERSIONE PREMIUM)
-// ------------------------------
+/* =========================================================
+   6) CARD PRODOTTO (VERSIONE PREMIUM)
+========================================================= */
 function cardHTML(p) {
   const img = getImage(p);
   const titolo = clean(p.titolo || "");
@@ -108,29 +108,36 @@ function cardHTML(p) {
   `;
 }
 
-// ------------------------------
-// 7) Inizializzazione catalogo
-// ------------------------------
-(async function initCatalogo() {
+/* =========================================================
+   7) INIZIALIZZAZIONE CATALOGO
+========================================================= */
+document.addEventListener("DOMContentLoaded", async () => {
+
   const products = await loadProducts();
   const container = document.getElementById("catalogo");
   const categorieBox = document.getElementById("categorie");
 
   if (!container || !categorieBox) return;
 
-  // CATEGORIE DINAMICHE
+  /* ------------------------------
+     CATEGORIE DINAMICHE
+  ------------------------------ */
   const categorie = [...new Set(products.map(p => p.categoria || ""))].filter(Boolean);
 
   categorieBox.innerHTML = categorie.length
     ? categorie.map(cat => `<button class="btn" data-cat="${clean(cat)}">${clean(cat)}</button>`).join("")
     : "<p>Nessuna categoria disponibile</p>";
 
-  // GRID PRODOTTI
+  /* ------------------------------
+     GRID PRODOTTI
+  ------------------------------ */
   container.innerHTML = products.length
     ? products.map(cardHTML).join("")
     : "<p>Nessun prodotto disponibile.</p>";
 
-  // FILTRO CATEGORIA
+  /* ------------------------------
+     FILTRO CATEGORIA
+  ------------------------------ */
   categorieBox.addEventListener("click", e => {
     const cat = e.target.dataset.cat;
     if (!cat) return;
@@ -140,7 +147,9 @@ function cardHTML(p) {
     });
   });
 
-  // FILTRO PREZZO
+  /* ------------------------------
+     FILTRO PREZZO
+  ------------------------------ */
   document.querySelectorAll("[data-prezzo]").forEach(btn => {
     btn.addEventListener("click", () => {
       const max = Number(btn.dataset.prezzo);
@@ -152,7 +161,9 @@ function cardHTML(p) {
     });
   });
 
-  // RESET FILTRI
+  /* ------------------------------
+     RESET FILTRI
+  ------------------------------ */
   const resetBtn = document.getElementById("reset");
   if (resetBtn) {
     resetBtn.addEventListener("click", () => {
@@ -162,7 +173,9 @@ function cardHTML(p) {
     });
   }
 
-  // AGGIUNTA AL CARRELLO
+  /* ------------------------------
+     AGGIUNTA AL CARRELLO
+  ------------------------------ */
   document.querySelectorAll(".btn-add-cart").forEach(btn => {
     btn.addEventListener("click", () => {
 
@@ -185,10 +198,12 @@ function cardHTML(p) {
     });
   });
 
-  // Aggiorna badge all’avvio
+  /* ------------------------------
+     AGGIORNA BADGE ALL’AVVIO
+  ------------------------------ */
   setTimeout(() => {
     if (typeof aggiornaBadgeCarrello === "function") {
       aggiornaBadgeCarrello();
     }
   }, 50);
-})();
+});
