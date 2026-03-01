@@ -17,6 +17,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   let ordine;
 
+  /* =========================================================
+     1) VERIFICA ORDINE (complete-order)
+  ========================================================= */
   try {
     const res = await fetch(`/api/paypal/complete-order?orderId=${orderId}`);
     const data = await res.json();
@@ -42,41 +45,67 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
+  /* =========================================================
+     2) RENDER RIEPILOGO
+  ========================================================= */
   const prodEl = document.getElementById("prod");
   const priceEl = document.getElementById("price");
   const dateEl = document.getElementById("date");
 
   if (ordine.prodotti.length === 1) {
-    prodEl.textContent = ordine.prodotti[0].titolo;
-    priceEl.textContent = ordine.prodotti[0].prezzo;
+    const p = ordine.prodotti[0];
+    prodEl.textContent = p.titolo;
+    priceEl.textContent = (p.prezzo * (p.qty || 1)).toFixed(2);
   } else {
     prodEl.textContent = `${ordine.prodotti.length} prodotti`;
     priceEl.textContent = ordine.totale;
   }
 
-  // PATCH: lista prodotti
+  // Lista prodotti
   const listEl = document.getElementById("prod-list");
   listEl.innerHTML = ordine.prodotti
-    .map(p => `<li>${p.titolo} — ${p.prezzo}€</li>`)
+    .map(p => `<li>${p.titolo} — ${(p.prezzo * (p.qty || 1)).toFixed(2)}€</li>`)
     .join("");
 
   dateEl.textContent = new Date().toLocaleDateString("it-IT");
 
-  // PATCH: download se COMPLETED
+  /* =========================================================
+     3) DOWNLOAD (solo se completato)
+     Backend usa "completato", NON "COMPLETED"
+  ========================================================= */
   const dlBox = document.getElementById("download-box");
-  if (ordine.stato === "COMPLETED") {
+
+  if (ordine.stato === "completato") {
     dlBox.innerHTML = ordine.prodotti
-      .map(p => `<a class="btn-download" href="/api/vendite/download/${p.slug}?token=${localStorage.getItem("session")}">Scarica ${p.titolo}</a>`)
+      .map(p => `
+        <a class="btn-download" href="/api/vendite/download/${p.slug}">
+          Scarica ${p.titolo}
+        </a>
+      `)
       .join("<br>");
+  } else {
+    dlBox.innerHTML = `<p>L'ordine non risulta completato.</p>`;
   }
 
+  /* =========================================================
+     4) SVUOTA CARRELLO + BADGE
+  ========================================================= */
   Cart.clear();
   if (typeof aggiornaBadgeCarrello === "function") aggiornaBadgeCarrello();
 
-  document.getElementById("feedbackBtn").addEventListener("click", () => {
-    window.location.href = `feedback.html?orderId=${orderId}`;
-  });
+  /* =========================================================
+     5) FEEDBACK
+  ========================================================= */
+  const fbBtn = document.getElementById("feedbackBtn");
+  if (fbBtn) {
+    fbBtn.addEventListener("click", () => {
+      window.location.href = `feedback.html?orderId=${orderId}`;
+    });
+  }
 
+  /* =========================================================
+     6) TRACKING EVENTO
+  ========================================================= */
   if (window.trackEvent) {
     trackEvent("order_completed", {
       orderId,
