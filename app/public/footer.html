@@ -27,6 +27,8 @@
         <li><a href="login.html" id="footer-login">Login Utenti</a></li>
         <li><a href="registrazione.html" id="footer-register">Registrazione</a></li>
         <li><a href="dashboard.html" id="footer-dashboard" style="display:none;">Profilo Utente</a></li>
+        <li><a href="#" id="footer-logout" style="display:none;">Logout</a></li>
+
       </ul>
 
       <h4>Legale</h4>
@@ -82,22 +84,32 @@
     document.getElementById("anno").textContent = new Date().getFullYear();
 
     const session = localStorage.getItem("session");
-    const email = localStorage.getItem("email");
+    const email = localStorage.getItem("utenteEmail"); // ✔ COERENTE CON TUTTO IL SITO
 
     const logged = !!(session && email);
 
     const loginLink = document.getElementById("footer-login");
     const registerLink = document.getElementById("footer-register");
     const dashboardLink = document.getElementById("footer-dashboard");
+    const logoutLink = document.getElementById("footer-logout");
 
     if (logged) {
       loginLink.style.display = "none";
       registerLink.style.display = "none";
       dashboardLink.style.display = "block";
+      logoutLink.style.display = "block";
     } else {
       loginLink.style.display = "block";
       registerLink.style.display = "block";
       dashboardLink.style.display = "none";
+      logoutLink.style.display = "none";
     }
+
+    logoutLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      localStorage.removeItem("session");
+      localStorage.removeItem("utenteEmail");
+      window.location.href = "index.html";
+    });
   </script>
 </footer>
