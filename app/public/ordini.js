@@ -1,9 +1,9 @@
 document.addEventListener("DOMContentLoaded", async () => {
-  const token = localStorage.getItem("token");
+  const session = localStorage.getItem("session");
   const email = localStorage.getItem("utenteEmail");
   const body = document.getElementById("ordersBody");
 
-  if (!token || !email) {
+  if (!session || !email) {
     body.innerHTML = `<tr><td colspan="5">Devi effettuare il login.</td></tr>`;
     return;
   }
@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let data;
   try {
     const res = await fetch("/api/ordini/utente", {
-      headers: { "x-token": token }
+      headers: { "x-token": session }
     });
     data = await res.json();
   } catch (err) {
@@ -37,16 +37,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     const downloadBtns = Array.isArray(o.prodotti)
       ? o.prodotti
           .map(
-            p => `<a class="btn-download" href="/api/vendite/download/${p.slug}?token=${token}">Download</a>`
+            p => `<a class="btn-download" href="/api/vendite/download/${p.slug}?token=${session}">Download</a>`
           )
           .join("<br>")
       : "-";
 
+    // PATCH: bottone annulla ordine → redirect a cancel.html
     const annullaBtn =
-      o.stato !== "completato" &&
-      o.stato !== "COMPLETED" &&
-      o.stato !== "annullato"
-        ? `<button class="btn-cancel" onclick="annullaOrdine('${o.id}')">Annulla</button>`
+      o.stato !== "COMPLETED" && o.stato !== "CANCELLED"
+        ? `<a class="btn-cancel" href="paypal/cancel/index.html?orderId=${o.orderId}">
+             Annulla ordine
+           </a>`
         : "";
 
     tr.innerHTML = `
@@ -60,28 +61,3 @@ document.addEventListener("DOMContentLoaded", async () => {
     body.appendChild(tr);
   });
 });
-
-// 3) Funzione annulla ordine
-async function annullaOrdine(id) {
-  const token = localStorage.getItem("token");
-
-  if (!confirm("Vuoi davvero annullare questo ordine?")) return;
-
-  try {
-    const res = await fetch(`/api/ordini/annulla/${id}`, {
-      method: "POST",
-      headers: { "x-token": token }
-    });
-
-    const data = await res.json();
-
-    if (data.success) {
-      alert("Ordine annullato.");
-      location.reload();
-    } else {
-      alert(data.error || "Errore.");
-    }
-  } catch {
-    alert("Errore di connessione.");
-  }
-}
