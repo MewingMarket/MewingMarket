@@ -1,6 +1,6 @@
 // =========================================================
 // HOME PREMIUM — MewingMarket
-// Versione: Model A + Carrello + Badge + Slider + Novità
+// Versione: Model A + Slider + Novità (SENZA CARRELLO)
 // =========================================================
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -37,14 +37,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // ============================================================
-  // 1) AGGIORNA BADGE CARRELLO ALL'AVVIO
-  // ============================================================
-  if (typeof aggiornaBadgeCarrello === "function") {
-    aggiornaBadgeCarrello();
-  }
-
-  // ============================================================
-  // 2) SLIDER HERO (immagini random dai prodotti)
+  // 1) SLIDER HERO (immagini random dai prodotti)
   // ============================================================
   try {
     const resHero = await fetch("/api/products", { cache: "no-store" });
@@ -52,7 +45,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (!dataHero.success) throw new Error("API non disponibile");
 
-    // FIX: backend restituisce "prodotti"
     const productsHero = dataHero.prodotti;
     const images = productsHero.map(getImage).filter(Boolean);
 
@@ -85,7 +77,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // ============================================================
-  // 3) GRID HOMEPAGE (primi 3 prodotti)
+  // 2) GRID HOMEPAGE (primi 3 prodotti)
   // ============================================================
   const grid = document.getElementById("products-grid");
   if (!grid) return;
@@ -94,7 +86,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const res = await fetch("/api/products", { cache: "no-store" });
     const data = await res.json();
 
-    // FIX: backend restituisce "prodotti"
     if (!data.success || !Array.isArray(data.prodotti) || data.prodotti.length === 0) {
       grid.innerHTML = `<p>Il catalogo sarà presto disponibile.</p>`;
       return;
@@ -124,41 +115,10 @@ document.addEventListener("DOMContentLoaded", async () => {
           <a href="prodotto.html?slug=${encodeURIComponent(slug)}" class="btn">
             Scopri
           </a>
-
-          <button class="btn-secondario btn-add-cart"
-            data-slug="${slug}"
-            data-title="${titolo}"
-            data-price="${p.prezzo}"
-            data-img="${img}">
-            Aggiungi al carrello
-          </button>
         </div>
       `;
 
       grid.appendChild(card);
-    });
-
-    // ============================================================
-    // 4) AGGIUNTA AL CARRELLO (MODEL A)
-    // ============================================================
-    document.querySelectorAll(".btn-add-cart").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const session = localStorage.getItem("session");
-
-        if (!session) {
-          window.location.href = "login.html";
-          return;
-        }
-
-        aggiungiAlCarrello({
-          slug: btn.dataset.slug,
-          titolo: btn.dataset.title,
-          prezzo: Number(btn.dataset.price),
-          immagine: btn.dataset.img
-        });
-
-        aggiornaBadgeCarrello();
-      });
     });
 
   } catch (err) {
