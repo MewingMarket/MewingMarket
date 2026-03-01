@@ -150,3 +150,12 @@ function getSingleProduct() {
   const cart = Cart.get();
   return cart.find(p => p.slug === slug) || null;
 }
+
+/* -----------------------------------------
+   CHECK LOGIN (coerente con checkout.js)
+----------------------------------------- */
+function isLogged() {
+  const session = localStorage.getItem("session");
+  const email = localStorage.getItem("utenteEmail");
+  return !!(session && email);
+}
