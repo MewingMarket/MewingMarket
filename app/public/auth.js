@@ -1,26 +1,16 @@
 /* =========================================================
-   FILE: /public/auth.js
-   Controllo login universale — Model A
-   Versione definitiva: robusta, coerente, sicura
+   AUTH.JS — Gestione login/logout centralizzata
+   Usato da header, footer, dashboard, checkout, ecc.
 ========================================================= */
 
-/* -----------------------------------------
-   UTENTE LOGGATO?
------------------------------------------ */
 function isLogged() {
   const session = localStorage.getItem("session");
   const email = localStorage.getItem("utenteEmail");
-  return !!session && !!email;
+  return !!(session && email);
 }
 
-/* -----------------------------------------
-   RICHIEDI LOGIN (con redirect pulito)
------------------------------------------ */
-function requireLogin(redirectTo = null) {
-  if (isLogged()) return;
-
-  // URL corrente completo (senza dominio)
-  const current = redirectTo || window.location.pathname.split("/").pop();
-
-  window.location.href = `login.html?redirect=${encodeURIComponent(current)}`;
+function logout() {
+  localStorage.removeItem("session");
+  localStorage.removeItem("utenteEmail");
+  window.location.href = "index.html";
 }
