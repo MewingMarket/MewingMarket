@@ -7,9 +7,7 @@
 
 document.addEventListener("DOMContentLoaded", async () => {
 
-  /* =========================================================
-     1) LOGIN CHECK (MODEL A)
-  ========================================================= */
+  // 1) LOGIN CHECK
   const session = localStorage.getItem("session");
   const email = localStorage.getItem("utenteEmail");
 
@@ -18,16 +16,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  /* =========================================================
-     2) AGGIORNA BADGE CARRELLO
-  ========================================================= */
+  // 2) BADGE
   if (typeof aggiornaBadgeCarrello === "function") {
     aggiornaBadgeCarrello();
   }
 
-  /* =========================================================
-     3) DETERMINA MODALITÀ CHECKOUT
-  ========================================================= */
+  // 3) MODE
   const mode = getCheckoutMode();
   let prodotti = [];
   let totale = 0;
@@ -49,9 +43,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     totale = Cart.total();
   }
 
-  /* =========================================================
-     4) RENDER TABELLA PRODOTTI
-  ========================================================= */
+  // 4) RENDER TABELLA
   const tbody = document.querySelector("#checkout-table tbody");
   const totaleEl = document.querySelector("#totale");
   const daPagareEl = document.querySelector("#da-pagare");
@@ -76,9 +68,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   totaleEl.textContent = totale.toFixed(2);
   daPagareEl.textContent = totale.toFixed(2);
 
-  /* =========================================================
-     5) RIMOZIONE PRODOTTO
-  ========================================================= */
+  // 5) RIMOZIONE
   tbody.addEventListener("click", e => {
     if (!e.target.classList.contains("rimuovi")) return;
 
@@ -94,9 +84,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     location.reload();
   });
 
-  /* =========================================================
-     6) PAGA ORA → CREA ORDINE + REDIRECT PAYPAL
-  ========================================================= */
+  // 6) PAGA ORA
   const btnPaga = document.getElementById("btn-paga");
 
   btnPaga.addEventListener("click", async () => {
@@ -132,7 +120,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
 
-      // REDIRECT A PAYPAL
       window.location.href = data.paypalUrl;
 
     } catch (err) {
