@@ -1,132 +1,193 @@
+// =========================================================
+// CHECKOUT PREMIUM – MewingMarket
+// Versione definitiva: login check + single/multi + qty + totale
+// =========================================================
+
 /* =========================================================
-   FILE: /public/checkout.js
-   CHECKOUT PREMIUM — MewingMarket
-   Versione definitiva: login check, single/multi, PayPal,
-   badge carrello, redirect thank you
+   1) LOGIN CHECK
 ========================================================= */
+document.addEventListener("DOMContentLoaded", () => {
+  if (!isLogged()) {
+    const params = new URLSearchParams(window.location.search);
+    const slug = params.get("slug");
 
-document.addEventListener("DOMContentLoaded", async () => {
+    const redirectURL = slug
+      ? `login.html?redirect=checkout.html?slug=${slug}`
+      : `login.html?redirect=checkout.html`;
 
-  // 1) LOGIN CHECK
-  const session = localStorage.getItem("session");
-  const email = localStorage.getItem("utenteEmail");
-
-  if (!session || !email) {
-    window.location.href = "login.html?redirect=checkout.html";
+    window.location.href = redirectURL;
     return;
   }
 
-  // 2) BADGE
-  if (typeof aggiornaBadgeCarrello === "function") {
-    aggiornaBadgeCarrello();
-  }
+  initCheckout();
+});
 
-  // 3) MODE
-  const mode = getCheckoutMode();
-  let prodotti = [];
-  let totale = 0;
+/* =========================================================
+   2) INIZIALIZZAZIONE CHECKOUT
+========================================================= */
+function initCheckout() {
+  const mode = getCheckoutMode(); // single | multi
 
   if (mode === "single") {
-    const single = getSingleProduct();
-    if (!single) {
-      window.location.href = "catalogo.html";
-      return;
-    }
-    prodotti = [single];
-    totale = Number(single.prezzo) * (single.qty || 1);
+    renderSingleCheckout();
   } else {
-    prodotti = Cart.get();
-    if (prodotti.length === 0) {
-      window.location.href = "catalogo.html";
-      return;
-    }
-    totale = Cart.total();
+    renderMultiCheckout();
   }
 
-  // 4) RENDER TABELLA
-  const tbody = document.querySelector("#checkout-table tbody");
-  const totaleEl = document.querySelector("#totale");
-  const daPagareEl = document.querySelector("#da-pagare");
+  aggiornaBadgeCarrello();
+}
 
-  tbody.innerHTML = "";
+/* =========================================================
+   3) CHECKOUT SINGOLO PRODOTTO
+========================================================= */
+function renderSingleCheckout() {
+  const prodotto = getSingleProduct();
 
-  prodotti.forEach(p => {
-    const qty = p.qty || 1;
-    const subtotal = (p.prezzo * qty).toFixed(2);
+  if (!prodotto) {
+    document.getElementById("checkout-container").innerHTML =
+      "<p>Prodotto non trovato nel carrello.</p>";
+    return;
+  }
 
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${p.titolo}</td>
-      <td>${p.prezzo}€</td>
-      <td>${qty}</td>
-      <td>${subtotal}€</td>
-      <td><button data-slug="${p.slug}" class="rimuovi">Rimuovi</button></td>
+  document.getElementById("checkout-container").innerHTML = `
+    <h2>Checkout — Acquisto Singolo</h2>
+
+    <div class="checkout-item">
+      <img src="${prodotto.immagine}" alt="${prodotto.titolo}">
+      <div>
+        <h3>${prodotto.titolo}</h3>
+        <p>Prezzo: €${prodotto.prezzo}</p>
+      </div>
+    </div>
+
+    <div class="checkout-totale">
+      <h3>Totale: €${prodotto.prezzo}</h3>
+    </div>
+
+    <button id="btn-paga" class="btn-primario">Paga ora</button>
+  `;
+
+  document.getElementById("btn-paga").addEventListener("click", () => {
+    pagaOrdine([prodotto]);
+  });
+}
+
+/* =========================================================
+   4) CHECKOUT MULTIPLO (CARRELLO)
+========================================================= */
+function renderMultiCheckout() {
+  const items = Cart.get();
+
+  if (!items.length) {
+    document.getElementById("checkout-container").innerHTML =
+      "<p>Il carrello è vuoto.</p>";
+    return;
+  }
+
+  let html = `
+    <h2>Checkout — Carrello</h2>
+    <div class="checkout-list">
+  `;
+
+  items.forEach((p) => {
+    html += `
+      <div class="checkout-item" data-slug="${p.slug}">
+        <img src="${p.immagine}" alt="${p.titolo}">
+        <div class="info">
+          <h3>${p.titolo}</h3>
+          <p>Prezzo: €${p.prezzo}</p>
+
+          <div class="qty-box">
+            <button class="qty-minus" data-slug="${p.slug}">-</button>
+            <span class="qty">${p.qty}</span>
+            <button class="qty-plus" data-slug="${p.slug}">+</button>
+          </div>
+        </div>
+
+        <button class="btn-remove" data-slug="${p.slug}">Rimuovi</button>
+      </div>
     `;
-    tbody.appendChild(tr);
   });
 
-  totaleEl.textContent = totale.toFixed(2);
-  daPagareEl.textContent = totale.toFixed(2);
+  html += `</div>`;
 
-  // 5) RIMOZIONE
-  tbody.addEventListener("click", e => {
-    if (!e.target.classList.contains("rimuovi")) return;
+  html += `
+    <div class="checkout-totale">
+      <h3>Totale: €${Cart.total()}</h3>
+    </div>
 
-    const slug = e.target.dataset.slug;
+    <button id="btn-paga" class="btn-primario">Paga ora</button>
+  `;
 
-    Cart.remove(slug);
+  document.getElementById("checkout-container").innerHTML = html;
 
-    if (mode === "single") {
-      window.location.href = "catalogo.html";
-      return;
-    }
+  bindQtyButtons();
+  bindRemoveButtons();
 
-    location.reload();
+  document.getElementById("btn-paga").addEventListener("click", () => {
+    pagaOrdine(items);
+  });
+}
+
+/* =========================================================
+   5) QUANTITÀ (+ / -)
+========================================================= */
+function bindQtyButtons() {
+  document.querySelectorAll(".qty-plus").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const slug = btn.dataset.slug;
+      const items = Cart.get();
+      const p = items.find((x) => x.slug === slug);
+      if (!p) return;
+
+      p.qty++;
+      Cart.save(items);
+      renderMultiCheckout();
+    });
   });
 
-  // 6) PAGA ORA
-  const btnPaga = document.getElementById("btn-paga");
+  document.querySelectorAll(".qty-minus").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const slug = btn.dataset.slug;
+      const items = Cart.get();
+      const p = items.find((x) => x.slug === slug);
+      if (!p) return;
 
-  btnPaga.addEventListener("click", async () => {
-    if (prodotti.length === 0) {
-      alert("Il carrello è vuoto.");
-      return;
-    }
-
-    btnPaga.disabled = true;
-    btnPaga.textContent = "Elaborazione…";
-
-    try {
-      const res = await fetch("/api/paypal/create-order", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${session}`
-        },
-        body: JSON.stringify({
-          email,
-          prodotti,
-          totale,
-          mode
-        })
-      });
-
-      const data = await res.json();
-
-      if (!data.success || !data.paypalUrl) {
-        alert(data.error || "Errore creazione ordine.");
-        btnPaga.disabled = false;
-        btnPaga.textContent = "Procedi al pagamento";
-        return;
-      }
-
-      window.location.href = data.paypalUrl;
-
-    } catch (err) {
-      console.error(err);
-      alert("Errore di connessione.");
-      btnPaga.disabled = false;
-      btnPaga.textContent = "Procedi al pagamento";
-    }
+      p.qty = Math.max(1, p.qty - 1);
+      Cart.save(items);
+      renderMultiCheckout();
+    });
   });
-});
+}
+
+/* =========================================================
+   6) RIMOZIONE PRODOTTO
+========================================================= */
+function bindRemoveButtons() {
+  document.querySelectorAll(".btn-remove").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const slug = btn.dataset.slug;
+      Cart.remove(slug);
+      renderMultiCheckout();
+      aggiornaBadgeCarrello();
+    });
+  });
+}
+
+/* =========================================================
+   7) PAGAMENTO (FAKE / API READY)
+========================================================= */
+function pagaOrdine(items) {
+  if (!items || !items.length) {
+    alert("Nessun prodotto da acquistare.");
+    return;
+  }
+
+  // Qui puoi integrare PayPal / Stripe / API backend
+  alert("Ordine completato! Riceverai una email con i dettagli.");
+
+  Cart.clear();
+  aggiornaBadgeCarrello();
+
+  window.location.href = "dashboard.html";
+}
