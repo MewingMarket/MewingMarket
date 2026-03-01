@@ -1,7 +1,6 @@
 /* =========================================================
    FILE: /public/dashboard.js
-   DASHBOARD PREMIUM — MewingMarket
-   Versione definitiva: sessione unificata + profilo stabile
+   DASHBOARD — Versione stabile, semplice, funzionante
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -15,23 +14,25 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function setEmail(e) {
-    if (e) localStorage.setItem("utenteEmail", e);
+    if (e) localStorage.setItem("email", e);
   }
 
-  let email = localStorage.getItem("utenteEmail");
+  let email = localStorage.getItem("email");
 
+  // 🔵 LOGIN CHECK
   if (!getSession() || !email) {
     window.location.href = "login.html?redirect=dashboard.html";
     return;
   }
 
+  // 🔵 UI ELEMENTS
   const userEmailEl = document.getElementById("userEmail");
   const usernameEl = document.getElementById("username");
   const sidebarEmail = document.getElementById("sidebarEmail");
   const sidebarUsername = document.getElementById("sidebarUsername");
 
   function refreshUI() {
-    email = localStorage.getItem("utenteEmail");
+    email = localStorage.getItem("email");
     const username = email.split("@")[0];
 
     if (userEmailEl) userEmailEl.textContent = email;
@@ -50,6 +51,7 @@ document.addEventListener("DOMContentLoaded", () => {
     el.classList.add(ok ? "ok" : "err");
   }
 
+  // 🔵 NAVIGAZIONE
   document.getElementById("nav-download")?.addEventListener("click", () => {
     window.location.href = "download.html";
   });
@@ -67,6 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("passwordDelete")?.focus();
   });
 
+  // 🔵 CAMBIO EMAIL
   document.getElementById("btnCambiaEmail")?.addEventListener("click", async () => {
     const nuova_email = document.getElementById("newEmail").value.trim().toLowerCase();
     const password = document.getElementById("passwordEmail").value.trim();
@@ -77,6 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
+      // Verifica password
       const resLogin = await fetch("/api/utenti/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -89,15 +93,12 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      const session = loginData.token;
-      setSession(session);
+      setSession(loginData.token);
 
+      // Cambia email
       const res = await fetch("/api/utenti/cambia-email", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${session}`
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nuova_email })
       });
 
@@ -116,6 +117,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // 🔵 CAMBIO PASSWORD
   document.getElementById("btnCambiaPassword")?.addEventListener("click", async () => {
     const oldPassword = document.getElementById("oldPassword").value.trim();
     const nuova_password = document.getElementById("newPassword").value.trim();
@@ -133,20 +135,16 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       const loginData = await resLogin.json();
-      if (!loginData.success || !loginData.token) {
+      if (!loginData.success) {
         setMsg("msgPassword", "Password attuale errata.");
         return;
       }
 
-      const session = loginData.token;
-      setSession(session);
+      setSession(loginData.token);
 
       const res = await fetch("/api/utenti/cambia-password", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${session}`
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nuova_password })
       });
 
@@ -163,6 +161,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // 🔵 ELIMINA ACCOUNT
   document.getElementById("btnEliminaAccount")?.addEventListener("click", async () => {
     const password = document.getElementById("passwordDelete").value.trim();
 
@@ -178,10 +177,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const res = await fetch("/api/utenti/elimina-account", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${getSession()}`
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password })
       });
 
