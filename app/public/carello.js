@@ -1,4 +1,5 @@
 /* =========================================================
+   FILE: /public/carrello.js
    CARRELLO PREMIUM — MewingMarket
    Versione definitiva: compatibile con catalogo, prodotto,
    checkout, badge, PayPal e Model A
