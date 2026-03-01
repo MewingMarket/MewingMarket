@@ -26,7 +26,6 @@
 
 <body>
 
-<!-- HEADER DINAMICO -->
 <div id="header-placeholder"></div>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
@@ -35,7 +34,6 @@
       .then(h => {
         document.getElementById("header-placeholder").innerHTML = h;
 
-        // ICONA CARRELLO + BADGE (coerente con tutto il sito)
         const cartWrapper = document.createElement("div");
         cartWrapper.id = "cart-wrapper";
         cartWrapper.style.position = "relative";
@@ -64,7 +62,6 @@
         cartWrapper.appendChild(cartBadge);
 
         cartWrapper.addEventListener("click", () => {
-          // Siamo già nel checkout: niente redirect
           window.scrollTo({ top: 0, behavior: "smooth" });
         });
 
@@ -92,6 +89,8 @@
       <tr>
         <th>Prodotto</th>
         <th>Prezzo</th>
+        <th>Quantità</th>
+        <th>Subtotale</th>
         <th>Rimuovi</th>
       </tr>
     </thead>
@@ -100,12 +99,10 @@
 
   <div style="margin-top: 25px; text-align:center;">
     <button id="btn-paga" class="btn-primario">Procedi al pagamento</button>
-    <!-- Qui dopo metteremo il bottone PayPal / redirect -->
   </div>
 
 </main>
 
-<!-- FOOTER DINAMICO -->
 <div id="footer-placeholder"></div>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
