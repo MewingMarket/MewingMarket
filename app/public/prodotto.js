@@ -5,9 +5,6 @@
 
 document.addEventListener("DOMContentLoaded", async () => {
 
-  // ------------------------------
-  // Sanitizzazione
-  // ------------------------------
   const clean = (t) =>
     typeof t === "string"
       ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
@@ -31,9 +28,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     return null;
   };
 
-  // ============================================================
-  // 1) OTTIENI SLUG DALL'URL
-  // ============================================================
+  // 1) SLUG
   const urlParams = new URLSearchParams(window.location.search);
   const slug = urlParams.get("slug");
 
@@ -42,9 +37,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  // ============================================================
-  // 2) CARICA PRODOTTO DA API INTERNA
-  // ============================================================
+  // 2) CARICA PRODOTTO
   let p;
   try {
     const res = await fetch(`/api/products/${slug}`, { cache: "no-store" });
@@ -63,9 +56,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  // ============================================================
-  // 3) POPOLA HERO
-  // ============================================================
+  // 3) HERO
   document.getElementById("product-title").innerText = clean(p.titolo);
   document.getElementById("product-subtitle").innerText = clean(p.titolo_breve || "");
   document.getElementById("product-price").innerText = p.prezzo ? `${p.prezzo}€` : "";
@@ -74,9 +65,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("product-image").src = img;
   document.getElementById("product-image").alt = clean(p.titolo);
 
-  // ============================================================
-  // 4) VIDEO YOUTUBE
-  // ============================================================
+  // 4) VIDEO
   const ytURL = safeURL(p.youtube_url || "");
   const videoId = extractYouTubeId(ytURL);
 
@@ -88,14 +77,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     videoSection.style.display = "block";
   }
 
-  // ============================================================
   // 5) DESCRIZIONE
-  // ============================================================
   document.getElementById("product-description").innerHTML = clean(p.descrizione || "");
 
-  // ============================================================
-  // 6) ACQUISTA ORA — checkout single (NO login qui)
-  // ============================================================
+  // 6) ACQUISTA ORA — checkout single
   document.getElementById("btn-acquista").addEventListener("click", () => {
 
     aggiungiAlCarrello({
@@ -107,13 +92,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     aggiornaBadgeCarrello();
 
-    // Checkout single
     window.location.href = `checkout.html?slug=${p.slug}`;
   });
 
-  // ============================================================
   // 7) AGGIUNGI AL CARRELLO — guest OK
-  // ============================================================
   document.getElementById("btn-carrello").addEventListener("click", () => {
 
     aggiungiAlCarrello({
@@ -130,9 +112,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // ============================================================
   // 8) CORRELATI
-  // ============================================================
   try {
     const res = await fetch(`/api/products?categoria=${encodeURIComponent(p.categoria)}`);
     const data = await res.json();
@@ -162,9 +142,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.warn("Errore correlati:", err);
   }
 
-  // ============================================================
-  // 9) AGGIORNA BADGE ALL'AVVIO
-  // ============================================================
+  // 9) BADGE ALL'AVVIO
   if (typeof aggiornaBadgeCarrello === "function") {
     aggiornaBadgeCarrello();
   }
