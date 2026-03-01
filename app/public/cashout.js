@@ -1,4 +1,5 @@
 /* =========================================================
+   FILE: /public/checkout.js
    CHECKOUT PREMIUM — MewingMarket
    Versione definitiva: login check, single/multi, PayPal,
    badge carrello, redirect thank you
@@ -38,7 +39,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
     prodotti = [single];
-    totale = Number(single.prezzo);
+    totale = Number(single.prezzo) * (single.qty || 1);
   } else {
     prodotti = Cart.get();
     if (prodotti.length === 0) {
@@ -58,10 +59,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   tbody.innerHTML = "";
 
   prodotti.forEach(p => {
+    const qty = p.qty || 1;
+    const subtotal = (p.prezzo * qty).toFixed(2);
+
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${p.titolo}</td>
       <td>${p.prezzo}€</td>
+      <td>${qty}</td>
+      <td>${subtotal}€</td>
       <td><button data-slug="${p.slug}" class="rimuovi">Rimuovi</button></td>
     `;
     tbody.appendChild(tr);

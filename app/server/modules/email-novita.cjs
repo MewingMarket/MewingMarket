@@ -1,7 +1,7 @@
 // app/server/modules/email-novita.cjs
 const path = require("path");
 const { inviaEmailLista } = require("./invia-email-lista.cjs");
-const { LISTA_NOVITA } = require("./liste-brevo.cjs");
+const { LISTA_NEWSLETTER } = require("./liste-brevo.cjs");
 const { SENDER_VENDITE } = require("./email-senders.cjs");
 const { getProducts } = require(path.join(__dirname, "airtable.cjs"));
 const { safeText, cleanURL } = require(path.join(__dirname, "utils.cjs"));
@@ -74,34 +74,6 @@ function generateNovitaHTML(latest) {
 
   <hr style="margin:30px 0;">
 
-  <h3 style="color:#333;">🎯 Perché questo contenuto può fare la differenza</h3>
-
-  <p style="font-size:16px; color:#444;">
-    Chi ottiene risultati non è chi sa di più, ma chi applica ciò che sa.
-  </p>
-
-  <p style="font-size:16px; color:#444;">
-    “${safeText(titolo)}” è stato creato per darti un vantaggio reale e immediato.
-  </p>
-
-  <p style="text-align:center; margin-top:25px;">
-    <a href="${link}?utm_source=brevo&utm_campaign=novita&utm_medium=email" 
-       style="background:#007bff; color:white; padding:12px 20px; border-radius:6px; text-decoration:none; display:inline-block;">
-       VAI AL PRODOTTO
-    </a>
-  </p>
-
-  <hr style="margin:30px 0;">
-
-  <h3 style="color:#333;">📱 Seguici sui social</h3>
-  <p style="color:#444;">Contenuti quotidiani, zero fuffa:</p>
-
-  <div style="text-align:left;">
-    ${generateSocialIcons()}
-  </div>
-
-  <hr style="margin:30px 0;">
-
   <p style="font-size:14px; color:#777; text-align:center;">
     Se non vuoi più ricevere email, puoi disiscriverti qui:<br>
     <a href="https://mewingmarket.it/disiscriviti.html" style="color:#999; text-decoration:underline;">Disiscriviti</a>
@@ -111,32 +83,6 @@ function generateNovitaHTML(latest) {
 </body>
 </html>
 `;
-}
-
-/* =========================================================
-   SOCIAL ICONS
-========================================================= */
-function generateSocialIcons() {
-  try {
-    const socials = [
-      ["Instagram", "https://www.instagram.com/mewingmarket", "https://cdn-icons-png.flaticon.com/512/2111/2111463.png"],
-      ["TikTok", "https://www.tiktok.com/@mewingmarket", "https://cdn-icons-png.flaticon.com/512/3046/3046121.png"],
-      ["YouTube", "https://www.youtube.com/@mewingmarket2", "https://cdn-icons-png.flaticon.com/512/1384/1384060.png"],
-      ["X", "https://x.com/mewingm8", "https://cdn-icons-png.flaticon.com/512/5968/5968958.png"]
-    ];
-
-    return socials
-      .map(([name, url, icon]) =>
-        `<a href="${cleanURL(url)}" target="_blank" style="margin-right:10px;">
-          <img src="${cleanURL(icon)}" width="32" style="vertical-align:middle;" alt="${safeText(name)}">
-        </a>`
-      )
-      .join("\n");
-
-  } catch (err) {
-    console.error("email-novita: errore social icons:", err);
-    return "";
-  }
 }
 
 /* =========================================================
@@ -150,7 +96,7 @@ async function inviaEmailNovita({ email }) {
     if (!latest) {
       return inviaEmailLista({
         email,
-        listId: LISTA_NOVITA,
+        listId: LISTA_NEWSLETTER,
         subject: "Novità dal mondo digitale",
         html: "<p>Nessun prodotto disponibile.</p>",
         sender: SENDER_VENDITE
@@ -163,7 +109,7 @@ async function inviaEmailNovita({ email }) {
 
     return inviaEmailLista({
       email,
-      listId: LISTA_NOVITA,
+      listId: LISTA_NEWSLETTER,
       subject: oggetto,
       html,
       sender: SENDER_VENDITE

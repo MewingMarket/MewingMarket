@@ -13,6 +13,5 @@ module.exports = {
   // Clienti (acquisti, ordini completati, ordini annullati)
   LISTA_CLIENTI: 12,
 
-  // Email novità prodotti (newsletter prodotti)
-  LISTA_NOVITA: 13
+  
 };

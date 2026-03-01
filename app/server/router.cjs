@@ -19,11 +19,10 @@ router.use(require("./routes/api-track.cjs"));
 // API FEEDBACK
 router.use(require("./routes/api-feedback.cjs"));
 
-// LEGACY
-router.use(require("./routes/api-bridge.cjs"));
+
 
 // PAYPAL
-router.use(require("./routes/api-paypal-bridge.cjs"));
+
 router.use(require("./routes/api-paypal-create.cjs"));
 router.use(require("./routes/api-paypal-complete.cjs"));
 router.use(require("./routes/api-paypal-cancel.cjs"));

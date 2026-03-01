@@ -1,6 +1,6 @@
 // =========================================================
 // CATALOGO PREMIUM – MewingMarket
-// Versione: Model A + Carrello + Badge + Login Check
+// Versione: Model A + Carrello Guest + Badge + Filtri
 // =========================================================
 
 // ------------------------------
@@ -54,12 +54,10 @@ function renderYouTubeLink(p) {
 // 4) Descrizione breve
 // ------------------------------
 function getShortDescription(p) {
-  // Se Airtable un giorno fornisse una descrizione breve, la useremmo
   if (p.descrizione_breve && p.descrizione_breve.trim() !== "") {
     return clean(p.descrizione_breve);
   }
 
-  // Generazione automatica da descrizione lunga
   const full = p.descrizione || "";
   const short = full.length > 120 ? full.slice(0, 120) + "…" : full;
 
@@ -175,17 +173,10 @@ function cardHTML(p) {
   }
 
   // ---------------------------
-  // AGGIUNTA AL CARRELLO
+  // AGGIUNTA AL CARRELLO (MODEL A — carrello guest OK)
   // ---------------------------
   document.querySelectorAll(".btn-add-cart").forEach(btn => {
     btn.addEventListener("click", () => {
-      const session = localStorage.getItem("session");
-
-      // MODEL A → solo utenti registrati
-      if (!session) {
-        window.location.href = "login.html";
-        return;
-      }
 
       const prodotto = {
         slug: btn.dataset.slug,
@@ -195,12 +186,21 @@ function cardHTML(p) {
       };
 
       aggiungiAlCarrello(prodotto);
-      aggiornaBadgeCarrello();
+
+      if (typeof aggiornaBadgeCarrello === "function") {
+        aggiornaBadgeCarrello();
+      }
+
+      if (!isLogged()) {
+        alert("Per completare l'acquisto dovrai fare login in checkout.");
+      }
     });
   });
 
   // Aggiorna badge all’avvio
-  if (typeof aggiornaBadgeCarrello === "function") {
-    aggiornaBadgeCarrello();
-  }
+  setTimeout(() => {
+    if (typeof aggiornaBadgeCarrello === "function") {
+      aggiornaBadgeCarrello();
+    }
+  }, 50);
 })();

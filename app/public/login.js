@@ -1,3 +1,9 @@
+/* =========================================================
+   FILE: /public/login.js
+   LOGIN PREMIUM — MewingMarket
+   Versione corretta: salva sessione compatibile con tutto il sito
+========================================================= */
+
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("login-form");
   const statusBox = document.getElementById("status");
@@ -30,8 +36,8 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // Salva token + email
-      localStorage.setItem("token", data.token);
+      // 🔥 FIX: salva la sessione nel formato usato da tutto il sito
+      localStorage.setItem("session", data.token);
       localStorage.setItem("utenteEmail", email);
 
       if (typeof aggiornaFooterUtente === "function") {
@@ -42,7 +48,15 @@ document.addEventListener("DOMContentLoaded", () => {
       statusBox.textContent = "Accesso effettuato! Reindirizzamento...";
 
       setTimeout(() => {
-        window.location.href = "dashboard.html";
+        // Se c'è redirect, torna alla pagina precedente
+        const params = new URLSearchParams(window.location.search);
+        const redirect = params.get("redirect");
+
+        if (redirect) {
+          window.location.href = redirect;
+        } else {
+          window.location.href = "dashboard.html";
+        }
       }, 800);
 
     } catch (err) {

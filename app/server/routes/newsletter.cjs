@@ -56,7 +56,7 @@ module.exports = function (app) {
   });
 
   /* =========================================================
-     DISISCRIZIONE NEWSLETTER — PATCH DEFINITIVA BREVO 2025
+     DISISCRIZIONE NEWSLETTER — ENDPOINT CORRETTO EU LEGACY
   ========================================================== */
   app.post("/newsletter/unsubscribe", async (req, res) => {
     const uid = req.uid;
@@ -69,10 +69,9 @@ module.exports = function (app) {
 
     try {
       await axios.post(
-        "https://api.brevo.com/v3/contacts/lists/remove",
+        `https://api.brevo.com/v3/contacts/lists/${LISTA_NEWSLETTER}/contacts/remove`,
         {
-          emails: [email],
-          listIds: [LISTA_NEWSLETTER]
+          emails: [email]
         },
         {
           headers: {

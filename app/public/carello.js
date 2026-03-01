@@ -1,4 +1,5 @@
 /* =========================================================
+   FILE: /public/carrello.js
    CARRELLO PREMIUM — MewingMarket
    Versione definitiva: compatibile con catalogo, prodotto,
    checkout, badge, PayPal e Model A
@@ -32,15 +33,43 @@ const Cart = {
   },
 
   /* -----------------------------------------
-     AGGIUNGI PRODOTTO (senza duplicati)
+     AGGIUNGI PRODOTTO (con quantità)
   ----------------------------------------- */
   add(product) {
     const cart = this.get();
+    const existing = cart.find(p => p.slug === product.slug);
 
-    if (!cart.some(p => p.slug === product.slug)) {
-      cart.push(product);
-      this.save(cart);
+    if (existing) {
+      existing.qty = (existing.qty || 1) + 1;
+    } else {
+      cart.push({
+        slug: product.slug,
+        titolo: product.titolo,
+        prezzo: Number(product.prezzo),
+        qty: 1
+      });
     }
+
+    this.save(cart);
+  },
+
+  /* -----------------------------------------
+     MODIFICA QUANTITÀ (+ / -)
+  ----------------------------------------- */
+  updateQty(slug, delta) {
+    const cart = this.get();
+    const item = cart.find(p => p.slug === slug);
+    if (!item) return;
+
+    const newQty = (item.qty || 1) + delta;
+
+    if (newQty <= 0) {
+      this.remove(slug);
+      return;
+    }
+
+    item.qty = newQty;
+    this.save(cart);
   },
 
   /* -----------------------------------------
@@ -62,7 +91,9 @@ const Cart = {
      TOTALE CARRELLO
   ----------------------------------------- */
   total() {
-    return this.get().reduce((sum, p) => sum + Number(p.prezzo || 0), 0);
+    return this.get().reduce((sum, p) => {
+      return sum + Number(p.prezzo || 0) * (p.qty || 1);
+    }, 0);
   }
 };
 
@@ -76,6 +107,11 @@ const Cart = {
 function aggiungiAlCarrello(product) {
   Cart.add(product);
   aggiornaBadgeCarrello();
+
+  // Se non loggato → solo avviso gentile
+  if (!isLogged()) {
+    alert("Per completare l'acquisto dovrai fare login in checkout.");
+  }
 }
 
 /* -----------------------------------------
@@ -85,7 +121,7 @@ function aggiornaBadgeCarrello() {
   const badge = document.getElementById("cart-badge");
   if (!badge) return;
 
-  const count = Cart.get().length;
+  const count = Cart.get().reduce((sum, p) => sum + (p.qty || 1), 0);
   badge.textContent = count;
 }
 

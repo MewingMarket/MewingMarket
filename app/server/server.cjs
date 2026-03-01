@@ -1,7 +1,7 @@
 /**
  * =========================================================
  * File: app/server/server.cjs
- * Entry point del server — versione coerente al router
+ * Entry point del server — versione stabile per Render
  * =========================================================
  */
 console.log(">> PACKAGE TYPE:", require("../../package.json").type);
@@ -13,8 +13,8 @@ const cookieParser = require("cookie-parser");
 const app = express();
 app.disable("x-powered-by");
 
-// ROOT
-const ROOT = path.resolve(__dirname, "..");
+// ROOT = /project/src/app
+const ROOT = path.resolve("app");
 
 // LOGGING
 require("./services/logging.cjs");
@@ -29,31 +29,38 @@ require("./middleware/cache.cjs")(app);
 require("./middleware/uploads.cjs")(app);
 require("./middleware/context.cjs")(app);
 
-// STATICI FRONTEND
-app.use(express.static(path.join(ROOT, "public")));
-app.use("/data", express.static(path.join(ROOT, "data")));
+/**
+ * =========================================================
+ * STATICI FRONTEND — SOLO percorsi assoluti
+ * =========================================================
+ */
+app.use(express.static(path.resolve("app/public")));
+app.use("/data", express.static(path.resolve("app/data")));
 
-// =========================================================
-// ADMIN — ORDINE CORRETTO
-// =========================================================
-
-// 1) Rotta pulita /admin/login
+/**
+ * =========================================================
+ * ADMIN — SOLO percorsi assoluti
+ * =========================================================
+ */
 app.get("/admin/login", (req, res) => {
-  res.sendFile(path.join(ROOT, "public/admin/admin-login.html"));
+  res.sendFile(path.resolve("app/public/admin/admin-login.html"));
 });
 
-// 2) Statici admin
-app.use("/admin", express.static(path.join(ROOT, "public/admin")));
+app.use("/admin", express.static(path.resolve("app/public/admin")));
 
-// =========================================================
-// API (router montato su /api)
-// =========================================================
+/**
+ * =========================================================
+ * API
+ * =========================================================
+ */
 const router = require("./router.cjs");
 app.use("/api", router);
 
-// =========================================================
-// ROUTE FRONTEND (DEVONO ESSERE SU app, NON SU router)
-// =========================================================
+/**
+ * =========================================================
+ * ROUTE FRONTEND
+ * =========================================================
+ */
 require("./routes/chat.cjs")(app);
 require("./routes/chat-voice.cjs")(app);
 require("./routes/newsletter.cjs")(app);
@@ -63,7 +70,11 @@ require("./routes/meta-feed.cjs")(app);
 require("./routes/product-page.cjs")(app);
 require("./routes/system-status.cjs")(app);
 
-// BOOTSTRAP
+/**
+ * =========================================================
+ * BOOTSTRAP
+ * =========================================================
+ */
 async function startServer() {
   console.log("\n====================================");
   console.log("🚀 Avvio MewingMarket — BOOTSTRAP");

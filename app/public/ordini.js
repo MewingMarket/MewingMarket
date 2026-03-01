@@ -1,18 +1,29 @@
+/* =========================================================
+   FILE: /public/ordini.js
+   ORDINI PREMIUM — MewingMarket
+   Versione definitiva: lista ordini + annulla ordine
+   (NO download qui — download è in download.html)
+========================================================= */
+
 document.addEventListener("DOMContentLoaded", async () => {
-  const token = localStorage.getItem("token");
+  const session = localStorage.getItem("session");
   const email = localStorage.getItem("utenteEmail");
   const body = document.getElementById("ordersBody");
 
-  if (!token || !email) {
+  if (!session || !email) {
     body.innerHTML = `<tr><td colspan="5">Devi effettuare il login.</td></tr>`;
     return;
   }
 
-  // 1) Recupera ordini dell’utente
+  /* =========================================================
+     1) Recupera ordini utente
+  ========================================================= */
   let data;
   try {
     const res = await fetch("/api/ordini/utente", {
-      headers: { "x-token": token }
+      headers: {
+        "Authorization": `Bearer ${session}`
+      }
     });
     data = await res.json();
   } catch (err) {
@@ -26,62 +37,65 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  // 2) Mostra ordini
+  /* =========================================================
+     2) Render ordini (NO download)
+  ========================================================= */
   data.ordini.forEach(o => {
     const tr = document.createElement("tr");
 
     const prodottiHTML = Array.isArray(o.prodotti)
-      ? o.prodotti.map(p => `${p.titolo} (${p.prezzo}€)`).join("<br>")
-      : "-";
-
-    const downloadBtns = Array.isArray(o.prodotti)
-      ? o.prodotti
-          .map(
-            p => `<a class="btn-download" href="/api/vendite/download/${p.slug}?token=${token}">Download</a>`
-          )
-          .join("<br>")
+      ? o.prodotti.map(p => `${p.titolo} (${p.prezzo}€ × ${p.qty || 1})`).join("<br>")
       : "-";
 
     const annullaBtn =
-      o.stato !== "completato" &&
-      o.stato !== "COMPLETED" &&
-      o.stato !== "annullato"
-        ? `<button class="btn-cancel" onclick="annullaOrdine('${o.id}')">Annulla</button>`
-        : "";
+      o.stato === "completato" || o.stato === "annullato"
+        ? ""
+        : `<button class="btn-annulla" data-id="${o.id}">Annulla</button>`;
 
     tr.innerHTML = `
       <td>${new Date(o.data).toLocaleDateString("it-IT")}</td>
       <td>${prodottiHTML}</td>
       <td>${o.totale}€</td>
       <td>${o.stato}</td>
-      <td>${downloadBtns}<br>${annullaBtn}</td>
+      <td>${annullaBtn}</td>
     `;
 
     body.appendChild(tr);
   });
-});
 
-// 3) Funzione annulla ordine
-async function annullaOrdine(id) {
-  const token = localStorage.getItem("token");
+  /* =========================================================
+     3) Annulla ordine
+  ========================================================= */
+  body.addEventListener("click", async e => {
+    if (!e.target.classList.contains("btn-annulla")) return;
 
-  if (!confirm("Vuoi davvero annullare questo ordine?")) return;
+    const id = e.target.dataset.id;
+    if (!id) return;
 
-  try {
-    const res = await fetch(`/api/ordini/annulla/${id}`, {
-      method: "POST",
-      headers: { "x-token": token }
-    });
+    if (!confirm("Vuoi annullare questo ordine?")) return;
 
-    const data = await res.json();
+    try {
+      const res = await fetch(`/api/ordini/annulla/${id}`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${session}`,
+          "Content-Type": "application/json"
+        }
+      });
 
-    if (data.success) {
+      const data = await res.json();
+
+      if (!data.success) {
+        alert(data.error || "Errore annullamento.");
+        return;
+      }
+
       alert("Ordine annullato.");
       location.reload();
-    } else {
-      alert(data.error || "Errore.");
+
+    } catch (err) {
+      console.error(err);
+      alert("Errore di connessione.");
     }
-  } catch {
-    alert("Errore di connessione.");
-  }
-}
+  });
+});

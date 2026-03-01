@@ -1,19 +1,29 @@
+/* =========================================================
+   FILE: /public/download.js
+   DOWNLOAD PREMIUM — MewingMarket
+   Versione corretta: sessione unificata + download sicuri
+========================================================= */
+
 document.addEventListener("DOMContentLoaded", async () => {
-  const token = localStorage.getItem("token");
+  const session = localStorage.getItem("session");
   const email = localStorage.getItem("utenteEmail");
 
   const body = document.getElementById("downloadBody");
 
-  if (!token || !email) {
+  if (!session || !email) {
     body.innerHTML = `<tr><td colspan="3">Devi effettuare il login.</td></tr>`;
     return;
   }
 
-  // 1) Recupera ordini dell’utente
+  /* =========================================================
+     1) Recupera ordini dell’utente
+  ========================================================= */
   let data;
   try {
     const res = await fetch("/api/ordini/utente", {
-      headers: { "x-token": token }
+      headers: { 
+        "Authorization": `Bearer ${session}`
+      }
     });
     data = await res.json();
   } catch (err) {
@@ -27,7 +37,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  // 2) Estrai tutti i prodotti acquistati
+  /* =========================================================
+     2) Estrai tutti i prodotti acquistati
+  ========================================================= */
   const prodotti = [];
 
   data.ordini.forEach(o => {
@@ -47,7 +59,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  // 3) Mostra prodotti
+  /* =========================================================
+     3) Mostra prodotti + link download sicuro
+  ========================================================= */
   prodotti.forEach(p => {
     const tr = document.createElement("tr");
 
@@ -55,7 +69,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       <td>${p.titolo}</td>
       <td>${new Date(p.data).toLocaleDateString("it-IT")}</td>
       <td>
-        <a class="btn-download" href="/api/vendite/download/${p.slug}?token=${token}">
+        <a class="btn-download" href="/api/vendite/download/${p.slug}">
           Scarica
         </a>
       </td>
