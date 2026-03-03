@@ -1,76 +1,50 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- HEAD DINAMICO (blindato) -->
+  <!-- HEAD IMPORTATA (corretto: niente <div> dentro <head>) -->
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      fetch("head.html")
-        .then(r => r.text())
-        .then(h => {
-          const temp = document.createElement("div");
-          temp.innerHTML = h;
-          document.head.append(...temp.children);
-        })
-        .catch(err => console.error("Errore caricamento head:", err));
-    });
+    fetch("head.html")
+      .then(r => r.text())
+      .then(h => {
+        const temp = document.createElement("div");
+        temp.innerHTML = h;
+        document.head.append(...temp.children);
+      });
   </script>
 
-  
-  <script src="carrello.js" defer></script>
+  <script src="seo.js" defer></script>
+  <script src="structured-data.js" defer></script>
+  <script src="tracking.js" defer></script>
+  <script src="index.js" defer></script>
 
-  
 </head>
 
 <body>
-<!-- AUTH GLOBALE -->
-<script src="/auth.js"></script>
 
-<!-- LOGICA HEADER SHOP -->
-<script src="/header-shop.js"></script>
-
-<!-- LOGICA FOOTER -->
-<script src="/footer.js"></script>
-
-<!-- TRACKING UNIVERSALE -->
-<script src="/tracking.js"></script>
-
-
-<script src="/structured-data.js"></script>
-  
-<!-- SEO DINAMICO -->
-<script src="/seo.js"></script> 
-<!-- HEADER DINAMICO (blindato) -->
+<!-- HEADER -->
 <div id="header-placeholder"></div>
 <script>
-  document.addEventListener("DOMContentLoaded", () => {
-    fetch("header.html")
-      .then(r => r.text())
-      .then(h => {
-        document.getElementById("header-placeholder").innerHTML = h;
-        // ⚠️ PATCH: niente carrello in homepage
-      })
-      .catch(err => console.error("Errore caricamento header:", err));
-  });
+  fetch("header.html")
+    .then(r => r.text())
+    .then(h => document.getElementById("header-placeholder").innerHTML = h);
 </script>
 
 <main class="home">
 
-  <section class="hero-premium">
-    <div class="hero-left">
-      <h1>Soluzioni digitali per crescere</h1>
-      <p>Prodotti creati con Intelligenza Artificiale, chiari, moderni e subito utili.</p>
-      <a href="catalogo.html" class="btn-hero">Esplora il catalogo</a>
-    </div>
+<section class="hero-premium">
+  <div class="hero-left">
+    <h1>Soluzioni digitali per crescere</h1>
+    <p>Prodotti creati con Intelligenza Artificiale, chiari, moderni e subito utili.</p>
+    <a href="catalogo.html" class="btn-hero">Esplora il catalogo</a>
+  </div>
 
-    <div class="hero-right">
-      <img id="hero-slider" src="" alt="Anteprima prodotto">
-    </div>
-  </section>
+  <div class="hero-right">
+    <img id="hero-slider" src="" alt="Anteprima prodotto">
+  </div>
+</section>
 
-  <!-- TESTO BENVENUTO -->
+  <!-- TESTO BENVENUTO (il tuo testo, intatto) -->
   <section class="home-section">
     <h2>Benvenuto su MewingMarket</h2>
     <p>
@@ -84,7 +58,7 @@
     <a href="chisiamo.html" class="btn">Scopri chi siamo</a>
   </section>
 
-  <!-- PERCHÉ MEWINGMARKET -->
+  <!-- SEZIONE PREMIUM: PERCHÉ MEWINGMARKET -->
   <section class="home-section why-mm">
     <h2>Perché scegliere MewingMarket</h2>
 
@@ -111,7 +85,7 @@
     </div>
   </section>
 
-  <!-- COME FUNZIONA -->
+  <!-- SEZIONE PREMIUM: COME FUNZIONA -->
   <section class="home-section how-it-works">
     <h2>Come funziona</h2>
 
@@ -119,30 +93,30 @@
       <div class="how-step">
         <span class="step-number">1</span>
         <h3>Scegli il prodotto</h3>
-        <p>Esplora il catalogo e trova la guida o la risorsa più adatta alle tue esigenze.</p>
+        <p>Trova la guida o la risorsa più adatta alle tue esigenze.</p>
       </div>
 
       <div class="how-step">
         <span class="step-number">2</span>
         <h3>Acquista in sicurezza</h3>
-        <p>Pagamento gestito tramite il nostro store interno con PayPal.</p>
+        <p>Pagamento gestito da Payhip, sicuro e immediato.</p>
       </div>
 
       <div class="how-step">
         <span class="step-number">3</span>
-        <h3>Ricevi il contenuto</h3>
-        <p>Accesso immediato al materiale digitale dopo la conferma del pagamento.</p>
+        <h3>Scarica subito</h3>
+        <p>Ricevi il file immediatamente via email.</p>
       </div>
 
       <div class="how-step">
         <span class="step-number">4</span>
         <h3>Inizia a crescere</h3>
-        <p>Applica i contenuti e ottieni risultati concreti nella tua vita o nel tuo lavoro.</p>
+        <p>Applica i contenuti e ottieni risultati concreti.</p>
       </div>
     </div>
   </section>
 
-  <!-- NOVITÀ DAL CATALOGO -->
+  <!-- NOVITÀ DAL CATALOGO (il tuo blocco, intatto) -->
   <section class="home-section" id="catalogo">
     <h2>Novità dal catalogo</h2>
     <div id="products-grid" class="products-grid"></div>
@@ -150,22 +124,15 @@
 
 </main>
 
-<!-- FOOTER DINAMICO (blindato) -->
+<!-- FOOTER -->
 <div id="footer-placeholder"></div>
 <script>
-  document.addEventListener("DOMContentLoaded", () => {
-    fetch("footer.html")
-      .then(r => r.text())
-      .then(h => {
-        document.getElementById("footer-placeholder").innerHTML = h;
-      })
-      .catch(err => console.error("Errore caricamento footer:", err));
-  });
+  fetch("footer.html")
+    .then(r => r.text())
+    .then(h => document.getElementById("footer-placeholder").innerHTML = h);
 </script>
 
-<!-- TRACKING + JS HOME -->
 
-<script src="index.js" defer></script>
 
 </body>
 </html>
