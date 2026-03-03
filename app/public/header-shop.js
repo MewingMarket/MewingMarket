@@ -1,6 +1,11 @@
-document.addEventListener("DOMContentLoaded", () => {
-  // LOGIN / LOGOUT DINAMICO
-  const logged = isLogged();
+/* ============================
+   HEADER-SHOP.JS - Dinamica login + carrello
+============================ */
+
+document.addEventListener("auth-ready", () => {
+  console.log("HEADER: auth-ready ricevuto");
+
+  const logged = window.isLogged;
 
   const loginLink = document.getElementById("nav-login");
   const registerLink = document.getElementById("nav-register");
@@ -8,23 +13,27 @@ document.addEventListener("DOMContentLoaded", () => {
   const logoutLink = document.getElementById("nav-logout");
 
   if (logged) {
-    loginLink.style.display = "none";
-    registerLink.style.display = "none";
-    dashboardLink.style.display = "inline-block";
-    logoutLink.style.display = "inline-block";
+    if (loginLink) loginLink.style.display = "none";
+    if (registerLink) registerLink.style.display = "none";
+    if (dashboardLink) dashboardLink.style.display = "inline-block";
+    if (logoutLink) logoutLink.style.display = "inline-block";
   } else {
-    loginLink.style.display = "inline-block";
-    registerLink.style.display = "inline-block";
-    dashboardLink.style.display = "none";
-    logoutLink.style.display = "none";
+    if (loginLink) loginLink.style.display = "inline-block";
+    if (registerLink) registerLink.style.display = "inline-block";
+    if (dashboardLink) dashboardLink.style.display = "none";
+    if (logoutLink) logoutLink.style.display = "none";
   }
 
-  logoutLink.addEventListener("click", (e) => {
-    e.preventDefault();
-    logout();
-  });
+  if (logoutLink) {
+    logoutLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      logout();
+    });
+  }
 
-  // CARRELLO
+  /* -----------------------------
+     CARRELLO
+  ----------------------------- */
   const cartWrapper = document.createElement("div");
   cartWrapper.id = "cart-wrapper";
 
@@ -46,6 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const nav = document.querySelector("header nav");
   if (nav) nav.appendChild(cartWrapper);
 
+  // Aggiorna badge carrello quando auth è pronta
   setTimeout(() => {
     if (typeof aggiornaBadgeCarrello === "function") {
       aggiornaBadgeCarrello();
