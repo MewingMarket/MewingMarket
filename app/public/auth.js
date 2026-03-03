@@ -1,34 +1,54 @@
-/* =========================================================
-   AUTH.JS — Gestione login/logout centralizzata (UNIVERSALE)
-========================================================= */
+/* ============================
+   AUTH.JS - Gestione login/logout certificati
+      ============================ */
 
-console.log("AUTH JS CARICATO");
+      console.log("AUTH JS CARICATO");
 
-function isLogged() {
-  try {
-    const session = localStorage.getItem("session");
-    const email = localStorage.getItem("email");
+      /* -----------------------------------------
+         UTENTE LOGGATO?
+         ----------------------------------------- */
+         function isLogged() {
+             try {
+                     const session = localStorage.getItem("session");
+                             const email = localStorage.getItem("email");
 
-    const token = localStorage.getItem("token");
-    const utenteEmail = localStorage.getItem("utenteEmail");
+                                     const token = localStorage.getItem("token");
+                                             const utenteEmail = localStorage.getItem("utenteEmail");
 
-    if ((session && email) || (token && utenteEmail)) {
-      return true;
-    }
+                                                     if ((session && email) || (token && utenteEmail)) {
+                                                                 return true;
+                                                                         }
 
-    return false;
-  } catch (e) {
-    return false;
-  }
-}
+                                                                                 return false;
+                                                                                     } catch (e) {
+                                                                                             return false;
+                                                                                                 }
+                                                                                                 }
 
-function logout() {
-  try {
-    localStorage.removeItem("session");
-    localStorage.removeItem("email");
-    localStorage.removeItem("token");
-    localStorage.removeItem("utenteEmail");
-  } catch (e) {}
+                                                                                                 /* -----------------------------------------
+                                                                                                    ESPONE LO STATO UTENTE AL RESTO DEL SITO
+                                                                                                    ----------------------------------------- */
+                                                                                                    window.isLogged = isLogged();
+                                                                                                    window.userEmail =
+                                                                                                        localStorage.getItem("utenteEmail") ||
+                                                                                                            localStorage.getItem("email") ||
+                                                                                                                null;
 
-  window.location.href = "index.html";
-}
+                                                                                                                console.log("Auth state:", {
+                                                                                                                    isLogged: window.isLogged,
+                                                                                                                        email: window.userEmail
+                                                                                                                        });
+
+                                                                                                                        /* -----------------------------------------
+                                                                                                                           LOGOUT
+                                                                                                                           ----------------------------------------- */
+                                                                                                                           function logout() {
+                                                                                                                               try {
+                                                                                                                                       localStorage.removeItem("session");
+                                                                                                                                               localStorage.removeItem("email");
+                                                                                                                                                       localStorage.removeItem("token");
+                                                                                                                                                               localStorage.removeItem("utenteEmail");
+                                                                                                                                                                   } catch (e) {}
+
+                                                                                                                                                                       window.location.href = "index.html";
+                                                                                                                                                                       }
