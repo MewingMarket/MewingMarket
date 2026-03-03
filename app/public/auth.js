@@ -8,7 +8,9 @@ console.log("AUTH JS CARICATO");
 window.isLogged = false;   // 0 = visitatore
 window.userEmail = null;
 
-// Funzione che legge lo stato reale
+/* -----------------------------------------
+   Legge lo stato reale dell'utente
+----------------------------------------- */
 function readAuthState() {
   try {
     const session = localStorage.getItem("session");
@@ -38,7 +40,7 @@ function readAuthState() {
 }
 
 /* -----------------------------------------
-   EMETTE auth-ready SOLO QUANDO IL DOM È PRONTO
+   Emette auth-ready SOLO quando il DOM è pronto
 ----------------------------------------- */
 function dispatchAuthReady() {
   const event = new CustomEvent("auth-ready");
@@ -53,7 +55,7 @@ function dispatchAuthReady() {
 }
 
 /* -----------------------------------------
-   Esegui subito
+   Esegui subito la lettura dello stato
 ----------------------------------------- */
 readAuthState();
 
