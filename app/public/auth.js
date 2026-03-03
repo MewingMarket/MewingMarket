@@ -1,54 +1,60 @@
 /* ============================
-   AUTH.JS - Gestione login/logout certificati
-      ============================ */
+   AUTH.JS - Stato login globale
+============================ */
 
-      console.log("AUTH JS CARICATO");
+console.log("AUTH JS CARICATO");
 
-      /* -----------------------------------------
-         UTENTE LOGGATO?
-         ----------------------------------------- */
-         function isLogged() {
-             try {
-                     const session = localStorage.getItem("session");
-                             const email = localStorage.getItem("email");
+// Stato globale iniziale
+window.isLogged = false;
+window.userEmail = null;
 
-                                     const token = localStorage.getItem("token");
-                                             const utenteEmail = localStorage.getItem("utenteEmail");
+// Funzione che legge lo stato reale
+function readAuthState() {
+  try {
+    const session = localStorage.getItem("session");
+    const email = localStorage.getItem("email");
+    const token = localStorage.getItem("token");
+    const utenteEmail = localStorage.getItem("utenteEmail");
 
-                                                     if ((session && email) || (token && utenteEmail)) {
-                                                                 return true;
-                                                                         }
+    if ((session && email) || (token && utenteEmail)) {
+      window.isLogged = true;
+      window.userEmail = utenteEmail || email;
+    } else {
+      window.isLogged = false;
+      window.userEmail = null;
+    }
 
-                                                                                 return false;
-                                                                                     } catch (e) {
-                                                                                             return false;
-                                                                                                 }
-                                                                                                 }
+  } catch (e) {
+    window.isLogged = false;
+    window.userEmail = null;
+  }
 
-                                                                                                 /* -----------------------------------------
-                                                                                                    ESPONE LO STATO UTENTE AL RESTO DEL SITO
-                                                                                                    ----------------------------------------- */
-                                                                                                    window.isLogged = isLogged();
-                                                                                                    window.userEmail =
-                                                                                                        localStorage.getItem("utenteEmail") ||
-                                                                                                            localStorage.getItem("email") ||
-                                                                                                                null;
+  console.log("Auth state aggiornato:", {
+    isLogged: window.isLogged,
+    email: window.userEmail
+  });
 
-                                                                                                                console.log("Auth state:", {
-                                                                                                                    isLogged: window.isLogged,
-                                                                                                                        email: window.userEmail
-                                                                                                                        });
+  // Notifica gli altri script
+  document.dispatchEvent(new CustomEvent("auth-ready"));
+}
 
-                                                                                                                        /* -----------------------------------------
-                                                                                                                           LOGOUT
-                                                                                                                           ----------------------------------------- */
-                                                                                                                           function logout() {
-                                                                                                                               try {
-                                                                                                                                       localStorage.removeItem("session");
-                                                                                                                                               localStorage.removeItem("email");
-                                                                                                                                                       localStorage.removeItem("token");
-                                                                                                                                                               localStorage.removeItem("utenteEmail");
-                                                                                                                                                                   } catch (e) {}
+// Esegui subito
+readAuthState();
 
-                                                                                                                                                                       window.location.href = "index.html";
-                                                                                                                                                                       }
+// Rileggi lo stato ogni volta che cambia localStorage
+window.addEventListener("storage", readAuthState);
+
+/* -----------------------------------------
+   LOGOUT
+----------------------------------------- */
+function logout() {
+  try {
+    localStorage.removeItem("session");
+    localStorage.removeItem("email");
+    localStorage.removeItem("token");
+    localStorage.removeItem("utenteEmail");
+  } catch (e) {}
+
+  readAuthState();
+  window.location.href = "index.html";
+}
