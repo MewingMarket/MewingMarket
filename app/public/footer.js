@@ -1,8 +1,14 @@
-document.addEventListener("DOMContentLoaded", () => {
+/* ============================
+   FOOTER.JS - Stato login nel footer
+============================ */
+
+document.addEventListener("auth-ready", () => {
+  console.log("FOOTER: auth-ready ricevuto");
+
   const anno = document.getElementById("anno");
   if (anno) anno.textContent = new Date().getFullYear();
 
-  const logged = isLogged();
+  const logged = window.isLogged;
 
   const loginLink = document.getElementById("footer-login");
   const registerLink = document.getElementById("footer-register");
@@ -10,19 +16,21 @@ document.addEventListener("DOMContentLoaded", () => {
   const logoutLink = document.getElementById("footer-logout");
 
   if (logged) {
-    loginLink.style.display = "none";
-    registerLink.style.display = "none";
-    dashboardLink.style.display = "block";
-    logoutLink.style.display = "block";
+    if (loginLink) loginLink.style.display = "none";
+    if (registerLink) registerLink.style.display = "none";
+    if (dashboardLink) dashboardLink.style.display = "block";
+    if (logoutLink) logoutLink.style.display = "block";
   } else {
-    loginLink.style.display = "block";
-    registerLink.style.display = "block";
-    dashboardLink.style.display = "none";
-    logoutLink.style.display = "none";
+    if (loginLink) loginLink.style.display = "block";
+    if (registerLink) registerLink.style.display = "block";
+    if (dashboardLink) dashboardLink.style.display = "none";
+    if (logoutLink) logoutLink.style.display = "none";
   }
 
-  logoutLink.addEventListener("click", (e) => {
-    e.preventDefault();
-    logout();
-  });
+  if (logoutLink) {
+    logoutLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      logout();
+    });
+  }
 });
