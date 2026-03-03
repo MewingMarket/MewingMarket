@@ -1,9 +1,9 @@
 /* ============================
-   FOOTER.JS - Stato login nel footer
+   FOOTER.JS
 ============================ */
 
-document.addEventListener("auth-ready", () => {
-  console.log("FOOTER: auth-ready ricevuto");
+document.addEventListener("footer-loaded", () => {
+  console.log("FOOTER: footer-loaded ricevuto");
 
   const anno = document.getElementById("anno");
   if (anno) anno.textContent = new Date().getFullYear();
