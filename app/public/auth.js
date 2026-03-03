@@ -5,7 +5,7 @@
 console.log("AUTH JS CARICATO");
 
 // Stato globale iniziale
-window.isLogged = false;
+window.isLogged = false;   // 0 = visitatore
 window.userEmail = null;
 
 // Funzione che legge lo stato reale
@@ -17,10 +17,10 @@ function readAuthState() {
     const utenteEmail = localStorage.getItem("utenteEmail");
 
     if ((session && email) || (token && utenteEmail)) {
-      window.isLogged = true;
+      window.isLogged = true;   // 1 = utente loggato
       window.userEmail = utenteEmail || email;
     } else {
-      window.isLogged = false;
+      window.isLogged = false;  // 0 = visitatore
       window.userEmail = null;
     }
 
@@ -34,14 +34,32 @@ function readAuthState() {
     email: window.userEmail
   });
 
-  // Notifica gli altri script
-  document.dispatchEvent(new CustomEvent("auth-ready"));
+  dispatchAuthReady();
 }
 
-// Esegui subito
+/* -----------------------------------------
+   EMETTE auth-ready SOLO QUANDO IL DOM È PRONTO
+----------------------------------------- */
+function dispatchAuthReady() {
+  const event = new CustomEvent("auth-ready");
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => {
+      document.dispatchEvent(event);
+    });
+  } else {
+    document.dispatchEvent(event);
+  }
+}
+
+/* -----------------------------------------
+   Esegui subito
+----------------------------------------- */
 readAuthState();
 
-// Rileggi lo stato ogni volta che cambia localStorage
+/* -----------------------------------------
+   Rileggi lo stato ogni volta che cambia localStorage
+----------------------------------------- */
 window.addEventListener("storage", readAuthState);
 
 /* -----------------------------------------
@@ -55,6 +73,6 @@ function logout() {
     localStorage.removeItem("utenteEmail");
   } catch (e) {}
 
-  readAuthState();
+  readAuthState();  // stato 2 = logout
   window.location.href = "index.html";
 }
