@@ -5,15 +5,17 @@ const root = process.cwd();
 const publicDir = path.join(root, "app", "public");
 const pagesDir = path.join(root, "pages");
 
-// Assicura che /pages esista
-if (!fs.existsSync(pagesDir)) {
-  fs.mkdirSync(pagesDir, { recursive: true });
-  console.log("📁 Creata cartella /pages");
+// 🔥 1. Elimina completamente /pages
+if (fs.existsSync(pagesDir)) {
+  fs.rmSync(pagesDir, { recursive: true, force: true });
+  console.log("🗑️  Rimossa cartella /pages");
 }
 
-// Leggi TUTTI i file in /app/public
-const files = fs.readdirSync(publicDir, { withFileTypes: true });
+// 🔥 2. Ricrea /pages
+fs.mkdirSync(pagesDir, { recursive: true });
+console.log("📁 Creata nuova cartella /pages");
 
+// 🔥 3. Copia ricorsiva public → pages
 function copyRecursive(srcDir, destDir) {
   const entries = fs.readdirSync(srcDir, { withFileTypes: true });
 
@@ -22,7 +24,7 @@ function copyRecursive(srcDir, destDir) {
     const dest = path.join(destDir, entry.name);
 
     if (entry.isDirectory()) {
-      if (!fs.existsSync(dest)) fs.mkdirSync(dest);
+      fs.mkdirSync(dest, { recursive: true });
       copyRecursive(src, dest);
     } else {
       fs.copyFileSync(src, dest);
@@ -31,7 +33,6 @@ function copyRecursive(srcDir, destDir) {
   }
 }
 
-// Copia TUTTO public → pages
 copyRecursive(publicDir, pagesDir);
 
-console.log("\n🎉 Build completata! /pages è sincronizzata con /app/public\n");
+console.log("\n🎉 Build completata! /pages ora è IDENTICO a /app/public\n");
