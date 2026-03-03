@@ -4,7 +4,7 @@
 
   <!-- HEAD ADMIN DINAMICO -->
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
+    
       fetch("head-admin.html")
         .then(r => r.text())
         .then(html => {
@@ -13,7 +13,7 @@
           [...temp.children].forEach(node => document.head.appendChild(node));
         })
         .catch(err => console.error("Errore caricamento head-admin:", err));
-    });
+    
   </script>
 
   <title>Feedback Clienti – Admin MewingMarket</title>
@@ -25,17 +25,27 @@
 
 <body>
 
+<script src="auth.js"></script>
+<script src="header-shop.js"></script>
+<script src="footer.js"></script>
+<script src="tracking.js"></script>
+<script src="structured-data.js"></script>
+<script src="seo.js"></script>
+
+
+
+
 <!-- NAV ADMIN DINAMICO -->
 <div id="nav-admin-placeholder"></div>
 <script>
-  document.addEventListener("DOMContentLoaded", () => {
+  
     fetch("nav-admin.html")
       .then(r => r.text())
       .then(html => {
         document.getElementById("nav-admin-placeholder").innerHTML = html;
       })
       .catch(err => console.error("Errore caricamento nav-admin:", err));
-  });
+  
 </script>
 
 <main class="pagina-standard" style="margin-top:20px;">
@@ -64,14 +74,14 @@
 <!-- FOOTER ADMIN DINAMICO -->
 <div id="footer-admin-placeholder"></div>
 <script>
-  document.addEventListener("DOMContentLoaded", () => {
+  
     fetch("footer-admin.html")
       .then(r => r.text())
       .then(html => {
         document.getElementById("footer-admin-placeholder").innerHTML = html;
       })
       .catch(err => console.error("Errore caricamento footer-admin:", err));
-  });
+  
 </script>
 
 </body>

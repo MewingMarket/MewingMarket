@@ -1,49 +1,76 @@
 const fs = require("fs");
 const path = require("path");
 
-const directory = "./app/public";
+const ROOT = "./app/public";
 
 const scripts = `
-<script src="/auth.js"></script>
-<script src="/header-shop.js"></script>
-<script src="/footer.js"></script>
-<script src="/tracking.js"></script>
-<script src="/structured-data.js"></script>
-<script src="/seo.js"></script>
+<script src="auth.js"></script>
+<script src="header-shop.js"></script>
+<script src="footer.js"></script>
+<script src="tracking.js"></script>
+<script src="structured-data.js"></script>
+<script src="seo.js"></script>
 `;
 
-function patchFile(filePath) {
-  let content = fs.readFileSync(filePath, "utf8");
+const SKIP_FILES = [
+  "footer.html",
+    "head.html",
+      "header.html",
+        "header-shop.html"
+        ];
 
-  // evita admin
-  if (filePath.includes("/admin/")) return;
+        // 1️⃣ elimina tutte le righe che contengono /qualcosa.js
+        function removeOldScriptLines(content) {
+          return content
+              .split("\n")
+                  .filter(line => !line.includes('src="/'))
+                      .filter(line => !line.includes("auth.js"))
+                          .filter(line => !line.includes("header-shop.js"))
+                              .filter(line => !line.includes("tracking.js"))
+                                  .filter(line => !line.includes("structured-data.js"))
+                                      .filter(line => !line.includes("seo.js"))
+                                          .filter(line => !line.includes("footer.js"))
+                                              .join("\n");
+                                              }
 
-  // evita doppio inserimento
-  if (content.includes("auth.js")) return;
+                                              function patchFile(filePath) {
+                                                const normalized = filePath.replace(/\\/g, "/");
 
-  // PATCH HEAD FETCH: rimuove DOMContentLoaded
-  content = content.replace(
-    /document\.addEventListener\("DOMContentLoaded",\s*\(\)\s*=>\s*\{/g,
-    ""
-  );
-  content = content.replace(/\}\);/g, "");
+                                                  // ❌ salta admin
+                                                    if (normalized.includes("/admin/")) return;
 
-  // inserisci subito dopo <body>
-  content = content.replace("<body>", `<body>\n${scripts}`);
+                                                      // ❌ salta file che non vanno patchati
+                                                        if (SKIP_FILES.some(name => normalized.endsWith(name))) return;
 
-  fs.writeFileSync(filePath, content, "utf8");
-  console.log("Patchato:", filePath);
-}
+                                                          let content = fs.readFileSync(filePath, "utf8");
 
-function scan(dir) {
-  fs.readdirSync(dir).forEach(file => {
-    const full = path.join(dir, file);
-    if (fs.statSync(full).isDirectory()) {
-      scan(full);
-    } else if (file.endsWith(".html")) {
-      patchFile(full);
-    }
-  });
-}
+                                                            // 2️⃣ elimina tutte le righe vecchie
+                                                              content = removeOldScriptLines(content);
 
-scan(directory);
+                                                                // 3️⃣ se non c'è <body> non patchare
+                                                                  if (!content.includes("<body")) {
+                                                                      console.log("⚠ Nessun <body> trovato in:", normalized);
+                                                                          return;
+                                                                            }
+
+                                                                              // 4️⃣ inserisci gli script nuovi subito dopo <body>
+                                                                                content = content.replace("<body>", `<body>\n${scripts}`);
+
+                                                                                  fs.writeFileSync(filePath, content, "utf8");
+                                                                                    console.log("Patchato:", normalized);
+                                                                                    }
+
+                                                                                    function scan(dir) {
+                                                                                      fs.readdirSync(dir).forEach(item => {
+                                                                                          const full = path.join(dir, item);
+                                                                                              const stat = fs.statSync(full);
+
+                                                                                                  if (stat.isDirectory()) {
+                                                                                                        scan(full);
+                                                                                                            } else if (item.endsWith(".html")) {
+                                                                                                                  patchFile(full);
+                                                                                                                      }
+                                                                                                                        });
+                                                                                                                        }
+
+                                                                                                                        scan(ROOT);

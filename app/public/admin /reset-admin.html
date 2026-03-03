@@ -4,7 +4,7 @@
 
   <!-- HEAD ADMIN DINAMICO -->
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
+    
       fetch("head-admin.html")
         .then(r => r.text())
         .then(html => {
@@ -13,7 +13,7 @@
           [...temp.children].forEach(node => document.head.appendChild(node));
         })
         .catch(err => console.error("Errore caricamento head-admin:", err));
-    });
+    
   </script>
 
   <title>Reset Admin – MewingMarket</title>
@@ -70,7 +70,7 @@
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: "admin" })
-        });
+        
 
         const data = await res.json();
 
@@ -94,15 +94,25 @@
       }
     }
 
-    document.addEventListener("DOMContentLoaded", () => {
+    
       document.getElementById("reset-admin-form")
         .addEventListener("submit", resetAdmin);
-    });
+    
   </script>
 
 </head>
 
 <body>
+
+<script src="auth.js"></script>
+<script src="header-shop.js"></script>
+<script src="footer.js"></script>
+<script src="tracking.js"></script>
+<script src="structured-data.js"></script>
+<script src="seo.js"></script>
+
+
+
 <script src="js/admin.js"></script>
 <div class="box">
   <h1>Reset Password Admin</h1>
@@ -119,14 +129,14 @@
 <!-- FOOTER ADMIN DINAMICO -->
 <div id="footer-admin-placeholder"></div>
 <script>
-  document.addEventListener("DOMContentLoaded", () => {
+  
     fetch("footer-admin.html")
       .then(r => r.text())
       .then(html => {
         document.getElementById("footer-admin-placeholder").innerHTML = html;
       })
       .catch(err => console.error("Errore caricamento footer-admin:", err));
-  });
+  
 </script>
 
 </body>

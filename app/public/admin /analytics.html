@@ -10,6 +10,16 @@
 </head>
 <body>
 
+<script src="auth.js"></script>
+<script src="header-shop.js"></script>
+<script src="footer.js"></script>
+<script src="tracking.js"></script>
+<script src="structured-data.js"></script>
+<script src="seo.js"></script>
+
+
+
+
 <h1>Dashboard Traffico</h1>
 
 <div class="box">
@@ -28,7 +38,7 @@ fetch("/api/admin/analytics")
   .then(data => {
     document.getElementById("stats").textContent = JSON.stringify(data.stats, null, 2);
     document.getElementById("events").textContent = JSON.stringify(data.events.slice(-50), null, 2);
-  });
+  
 </script>
 
 </body>
