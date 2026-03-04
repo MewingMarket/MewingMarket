@@ -1,61 +1,42 @@
-/* ============================
-   HEADER-SHOP.JS
-============================ */
+// =========================================================
+// HEADER SHOP – MewingMarket
+// Compatibile con loader-header-footer.js
+// =========================================================
 
 document.addEventListener("header-loaded", () => {
-  console.log("HEADER: header-loaded ricevuto");
+  // Gli elementi del DOM ora esistono
+  const navLogin = document.getElementById("nav-login");
+  const navRegister = document.getElementById("nav-register");
+  const navDashboard = document.getElementById("nav-dashboard");
+  const navLogout = document.getElementById("nav-logout");
 
-  const logged = window.isLogged;
-
-  const loginLink = document.getElementById("nav-login");
-  const registerLink = document.getElementById("nav-register");
-  const dashboardLink = document.getElementById("nav-dashboard");
-  const logoutLink = document.getElementById("nav-logout");
-
-  if (logged) {
-    if (loginLink) loginLink.style.display = "none";
-    if (registerLink) registerLink.style.display = "none";
-    if (dashboardLink) dashboardLink.style.display = "inline-block";
-    if (logoutLink) logoutLink.style.display = "inline-block";
-  } else {
-    if (loginLink) loginLink.style.display = "inline-block";
-    if (registerLink) registerLink.style.display = "inline-block";
-    if (dashboardLink) dashboardLink.style.display = "none";
-    if (logoutLink) logoutLink.style.display = "none";
+  // Se per qualche motivo il DOM non è ancora pronto, esci
+  if (!navLogin || !navRegister || !navDashboard || !navLogout) {
+    console.warn("Header shop: elementi non trovati.");
+    return;
   }
 
-  if (logoutLink) {
-    logoutLink.addEventListener("click", (e) => {
+  // Attendi che auth.js abbia caricato lo stato utente
+  document.addEventListener("auth-ready", () => {
+    const logged = isLogged();
+
+    if (logged) {
+      navLogin.style.display = "none";
+      navRegister.style.display = "none";
+      navDashboard.style.display = "inline-block";
+      navLogout.style.display = "inline-block";
+    } else {
+      navLogin.style.display = "inline-block";
+      navRegister.style.display = "inline-block";
+      navDashboard.style.display = "none";
+      navLogout.style.display = "none";
+    }
+
+    // Logout
+    navLogout.addEventListener("click", (e) => {
       e.preventDefault();
       logout();
+      window.location.href = "index.html";
     });
-  }
-
-  /* CARRELLO */
-  const cartWrapper = document.createElement("div");
-  cartWrapper.id = "cart-wrapper";
-
-  const cartIcon = document.createElement("div");
-  cartIcon.id = "cart-icon";
-  cartIcon.innerHTML = "🛒";
-
-  const cartBadge = document.createElement("div");
-  cartBadge.id = "cart-badge";
-  cartBadge.textContent = "0";
-
-  cartWrapper.appendChild(cartIcon);
-  cartWrapper.appendChild(cartBadge);
-
-  cartWrapper.addEventListener("click", () => {
-    window.location.href = "checkout.html";
   });
-
-  const nav = document.querySelector("header nav");
-  if (nav) nav.appendChild(cartWrapper);
-
-  setTimeout(() => {
-    if (typeof aggiornaBadgeCarrello === "function") {
-      aggiornaBadgeCarrello();
-    }
-  }, 50);
 });
