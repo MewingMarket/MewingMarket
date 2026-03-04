@@ -42,7 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const params = new URLSearchParams(window.location.search);
       const redirect = params.get("redirect");
 
-      window.location.href = redirect || "dashboard.html";
+      window.location.href = redirect || "index.html";
 
     } catch (err) {
       statusBox.textContent = "Errore di connessione.";
