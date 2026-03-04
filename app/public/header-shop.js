@@ -1,9 +1,9 @@
 /* ============================
-   HEADER-SHOP.JS - Dinamica login + carrello
+   HEADER-SHOP.JS
 ============================ */
 
-document.addEventListener("auth-ready", () => {
-  console.log("HEADER: auth-ready ricevuto");
+document.addEventListener("header-loaded", () => {
+  console.log("HEADER: header-loaded ricevuto");
 
   const logged = window.isLogged;
 
@@ -31,9 +31,7 @@ document.addEventListener("auth-ready", () => {
     });
   }
 
-  /* -----------------------------
-     CARRELLO
-  ----------------------------- */
+  /* CARRELLO */
   const cartWrapper = document.createElement("div");
   cartWrapper.id = "cart-wrapper";
 
@@ -55,7 +53,6 @@ document.addEventListener("auth-ready", () => {
   const nav = document.querySelector("header nav");
   if (nav) nav.appendChild(cartWrapper);
 
-  // Aggiorna badge carrello quando auth è pronta
   setTimeout(() => {
     if (typeof aggiornaBadgeCarrello === "function") {
       aggiornaBadgeCarrello();
