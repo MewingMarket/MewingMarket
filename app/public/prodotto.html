@@ -1,11 +1,15 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <!-- HEAD DINAMICO -->
-  
+  <div id="head-placeholder"></div>
+
+</head>
+<body>
+
+<!-- HEADER DINAMICO (SHOP) -->
+<div id="header-placeholder"></div>
 
 <main id="page-product">
 
@@ -63,29 +67,11 @@
 <!-- FOOTER DINAMICO -->
 <div id="footer-placeholder"></div>
 
-
 <!-- TRACKING -->
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-  const slug = new URLSearchParams(window.location.search).get("slug");
-  if (window.trackEvent && slug) {
-    trackEvent("product_view", { slug });
-  }
-});
-</script>
+<script src="tracking.js"></script>
 
-<!-- JS PRODOTTO -->
+<!-- LOADER -->
+<script src="loader-header-footer.js"></script>
 
-
-
-         
-         
-         
-         
-         
-         <script src="tracking.js"></script>
-         
-         
-         
 </body>
 </html>
