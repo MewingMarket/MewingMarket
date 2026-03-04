@@ -1,16 +1,18 @@
-/* ============================
+/* =========================================================
    LOADER HEADER + FOOTER
-   Carica header diverso per pagine shop
-============================ */
+   Header globale vs Header shop
+   (catalogo, prodotto, checkout)
+========================================================= */
 
 function isShopPage() {
-  const shopPages = [
-    "catalogo.html",
-    "prodotto.html",
-    "checkout.html"
-  ];
+  const path = window.location.pathname;
 
-  return shopPages.some(page => window.location.pathname.endsWith(page));
+  // SOLO queste tre pagine devono avere header-shop
+  return (
+    path.includes("catalogo") ||
+    path.includes("prodotto") ||
+    path.includes("checkout")
+  );
 }
 
 function loadHeader() {
@@ -18,19 +20,28 @@ function loadHeader() {
 
   return fetch(headerFile)
     .then(r => r.text())
-    .then(h => {
-      document.getElementById("header-placeholder").innerHTML = h;
+    .then(html => {
+      const placeholder = document.getElementById("header-placeholder");
+      if (placeholder) {
+        placeholder.innerHTML = html;
+      }
       document.dispatchEvent(new Event("header-loaded"));
-    });
+    })
+    .catch(err => console.error("Errore caricamento header:", err));
 }
 
 function loadFooter() {
   return fetch("footer.html")
     .then(r => r.text())
-    .then(h => {
-      document.getElementById("footer-placeholder").innerHTML = h;
+    .then(html => {
+      const placeholder = document.getElementById("footer-placeholder");
+      if (placeholder) {
+        placeholder.innerHTML = html;
+      }
       document.dispatchEvent(new Event("footer-loaded"));
-    });
+    })
+    .catch(err => console.error("Errore caricamento footer:", err));
 }
 
+// Carica prima header, poi footer
 loadHeader().then(loadFooter);
