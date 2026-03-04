@@ -20,6 +20,7 @@
 <body>
 
 <script src="auth.js"></script>
+<script src="loader-header-footer.js"></script>
 <script src="header-shop.js"></script>
 <script src="footer.js"></script>
 <script src="tracking.js"></script>
@@ -29,10 +30,11 @@
 
 
 
+
+
 <!-- HEADER -->
 <div id="header-placeholder"></div>
 <script>
-  fetch("header.html")
     .then(r => r.text())
     .then(h => document.getElementById("header-placeholder").innerHTML = h);
 </script>
@@ -134,7 +136,6 @@
 <!-- FOOTER -->
 <div id="footer-placeholder"></div>
 <script>
-  fetch("footer.html")
     .then(r => r.text())
     .then(h => document.getElementById("footer-placeholder").innerHTML = h);
 </script>
