@@ -183,11 +183,12 @@ function pagaOrdine(items) {
     return;
   }
 
-  // Qui puoi integrare PayPal / Stripe / API backend
+  // Qui integrerai PayPal / Stripe / API backend
   alert("Ordine completato! Riceverai una email con i dettagli.");
 
   Cart.clear();
   aggiornaBadgeCarrello();
 
-  window.location.href = "dashboard.html";
+  // PATCH: redirect corretto
+  window.location.href = "thankyou.html";
 }
