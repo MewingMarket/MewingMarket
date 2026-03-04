@@ -1,13 +1,13 @@
 /* =========================================================
    LOADER HEAD + HEADER + FOOTER
-   Versione stabile per Render
+   Versione stabile per Render (percorsi assoluti)
 ========================================================= */
 
 /* -----------------------------
    1) HEAD DINAMICO
 ----------------------------- */
 function loadHead() {
-  return fetch("head.html")
+  return fetch("/head.html")
     .then(r => r.text())
     .then(html => {
       const temp = document.createElement("div");
@@ -20,11 +20,11 @@ function loadHead() {
    2) Riconoscimento pagine shop
 ----------------------------- */
 function isShopPage() {
-  const url = window.location.href;
+  const path = window.location.pathname;
   return (
-    url.includes("catalogo") ||
-    url.includes("prodotto") ||
-    url.includes("checkout")
+    path.includes("catalogo") ||
+    path.includes("prodotto") ||
+    path.includes("checkout")
   );
 }
 
@@ -32,7 +32,7 @@ function isShopPage() {
    3) HEADER DINAMICO
 ----------------------------- */
 function loadHeader() {
-  const headerFile = isShopPage() ? "header-shop.html" : "header.html";
+  const headerFile = isShopPage() ? "/header-shop.html" : "/header.html";
 
   return fetch(headerFile)
     .then(r => r.text())
@@ -57,7 +57,7 @@ function loadHeader() {
    4) FOOTER DINAMICO
 ----------------------------- */
 function loadFooter() {
-  return fetch("footer.html")
+  return fetch("/footer.html")
     .then(r => r.text())
     .then(html => {
       const placeholder = document.getElementById("footer-placeholder");
