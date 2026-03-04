@@ -1,6 +1,6 @@
 /* =========================================================
    LOADER HEAD + HEADER + FOOTER
-   Versione stabile per Render (percorsi assoluti)
+   Versione stabile con funzioni separate
 ========================================================= */
 
 /* -----------------------------
@@ -20,21 +20,32 @@ function loadHead() {
    2) Riconoscimento pagine shop
 ----------------------------- */
 function isShopPage() {
-  const path = window.location.pathname;
+  const url = window.location.href;
   return (
-    path.includes("catalogo") ||
-    path.includes("prodotto") ||
-    path.includes("checkout")
+    url.includes("catalogo") ||
+    url.includes("prodotto") ||
+    url.includes("checkout")
   );
 }
 
 /* -----------------------------
-   3) HEADER DINAMICO
+   3) HEADER GLOBALE
 ----------------------------- */
-function loadHeader() {
-  const headerFile = isShopPage() ? "/header-shop.html" : "/header.html";
+function loadGlobalHeader() {
+  return fetch("/header.html")
+    .then(r => r.text())
+    .then(html => {
+      const placeholder = document.getElementById("header-placeholder");
+      if (!placeholder) return;
+      placeholder.innerHTML = html;
+    });
+}
 
-  return fetch(headerFile)
+/* -----------------------------
+   4) HEADER SHOP
+----------------------------- */
+function loadShopHeader() {
+  return fetch("/header-shop.html")
     .then(r => r.text())
     .then(html => {
       const placeholder = document.getElementById("header-placeholder");
@@ -54,7 +65,18 @@ function loadHeader() {
 }
 
 /* -----------------------------
-   4) FOOTER DINAMICO
+   5) ROUTER HEADER
+----------------------------- */
+function loadHeader() {
+  if (isShopPage()) {
+    return loadShopHeader();
+  } else {
+    return loadGlobalHeader();
+  }
+}
+
+/* -----------------------------
+   6) FOOTER
 ----------------------------- */
 function loadFooter() {
   return fetch("/footer.html")
@@ -66,7 +88,7 @@ function loadFooter() {
 }
 
 /* -----------------------------
-   5) SEQUENZA DI CARICAMENTO
+   7) SEQUENZA DI CARICAMENTO
 ----------------------------- */
 loadHead()
   .then(loadHeader)
