@@ -1,6 +1,6 @@
 /* =========================================================
    LOADER HEAD + HEADER + FOOTER
-   Con ri-esecuzione script header-shop
+   Versione stabile per Render
 ========================================================= */
 
 /* -----------------------------
@@ -20,11 +20,11 @@ function loadHead() {
    2) Riconoscimento pagine shop
 ----------------------------- */
 function isShopPage() {
-  const path = window.location.pathname;
+  const url = window.location.href;
   return (
-    path.includes("catalogo") ||
-    path.includes("prodotto") ||
-    path.includes("checkout")
+    url.includes("catalogo") ||
+    url.includes("prodotto") ||
+    url.includes("checkout")
   );
 }
 
@@ -42,17 +42,12 @@ function loadHeader() {
 
       placeholder.innerHTML = html;
 
-      // 🔥 RIESCI GLI SCRIPT INTERNI (fondamentale per header-shop)
+      // RIESCI GLI SCRIPT INTERNI
       const scripts = placeholder.querySelectorAll("script");
       scripts.forEach(oldScript => {
         const newScript = document.createElement("script");
-
-        if (oldScript.src) {
-          newScript.src = oldScript.src;
-        } else {
-          newScript.textContent = oldScript.textContent;
-        }
-
+        if (oldScript.src) newScript.src = oldScript.src;
+        else newScript.textContent = oldScript.textContent;
         document.body.appendChild(newScript);
       });
     });
