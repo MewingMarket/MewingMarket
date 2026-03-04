@@ -1,10 +1,6 @@
 /* =========================================================
-   LOADER HEADER + FOOTER + HEAD
-   Gestione dinamica globale
-   - Head (CSS, meta, favicon)
-   - Header normale
-   - Header shop (catalogo, prodotto, checkout)
-   - Footer
+   LOADER HEAD + HEADER + FOOTER
+   Con ri-esecuzione script header-shop
 ========================================================= */
 
 /* -----------------------------
@@ -16,13 +12,8 @@ function loadHead() {
     .then(html => {
       const temp = document.createElement("div");
       temp.innerHTML = html;
-
-      // Inserisce TUTTI i nodi del file head.html
       [...temp.children].forEach(node => document.head.appendChild(node));
-
-      document.dispatchEvent(new Event("head-loaded"));
-    })
-    .catch(err => console.error("Errore caricamento head:", err));
+    });
 }
 
 /* -----------------------------
@@ -30,7 +21,6 @@ function loadHead() {
 ----------------------------- */
 function isShopPage() {
   const path = window.location.pathname;
-
   return (
     path.includes("catalogo") ||
     path.includes("prodotto") ||
@@ -48,13 +38,24 @@ function loadHeader() {
     .then(r => r.text())
     .then(html => {
       const placeholder = document.getElementById("header-placeholder");
-      if (placeholder) {
-        placeholder.innerHTML = html;
-      }
+      if (!placeholder) return;
 
-      document.dispatchEvent(new Event("header-loaded"));
-    })
-    .catch(err => console.error("Errore caricamento header:", err));
+      placeholder.innerHTML = html;
+
+      // 🔥 RIESCI GLI SCRIPT INTERNI (fondamentale per header-shop)
+      const scripts = placeholder.querySelectorAll("script");
+      scripts.forEach(oldScript => {
+        const newScript = document.createElement("script");
+
+        if (oldScript.src) {
+          newScript.src = oldScript.src;
+        } else {
+          newScript.textContent = oldScript.textContent;
+        }
+
+        document.body.appendChild(newScript);
+      });
+    });
 }
 
 /* -----------------------------
@@ -65,19 +66,13 @@ function loadFooter() {
     .then(r => r.text())
     .then(html => {
       const placeholder = document.getElementById("footer-placeholder");
-      if (placeholder) {
-        placeholder.innerHTML = html;
-      }
-
-      document.dispatchEvent(new Event("footer-loaded"));
-    })
-    .catch(err => console.error("Errore caricamento footer:", err));
+      if (placeholder) placeholder.innerHTML = html;
+    });
 }
 
 /* -----------------------------
    5) SEQUENZA DI CARICAMENTO
 ----------------------------- */
-
 loadHead()
   .then(loadHeader)
   .then(loadFooter);
