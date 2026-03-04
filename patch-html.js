@@ -1,11 +1,11 @@
 /* =========================================================
    PATCH HTML — MewingMarket
       Inserisce gli script globali nell’ordine corretto
-         Versione definitiva 2026
+         Versione definitiva CommonJS
          ========================================================= */
 
-         import fs from "fs";
-         import path from "path";
+         const fs = require("fs");
+         const path = require("path");
 
          const ROOT = "./app/public";
 
@@ -30,7 +30,6 @@
                  "head.html"
                  ];
 
-                 // Funzione principale
                  function patchHTML(filePath) {
                    let html = fs.readFileSync(filePath, "utf8");
 
@@ -51,22 +50,22 @@
                                              console.log("Patch applicata:", filePath);
                                              }
 
-                                             // Scansione ricorsiva della cartella
                                              function scan(dir) {
                                                const files = fs.readdirSync(dir);
 
                                                  for (const file of files) {
                                                      const fullPath = path.join(dir, file);
+                                                         const stat = fs.statSync(fullPath);
 
-                                                         if (fs.statSync(fullPath).isDirectory()) {
-                                                               scan(fullPath);
-                                                                     return;
-                                                                         }
+                                                             if (stat.isDirectory()) {
+                                                                   scan(fullPath);
+                                                                         continue;
+                                                                             }
 
-                                                                             if (file.endsWith(".html") && !skipFiles.includes(file)) {
-                                                                                   patchHTML(fullPath);
-                                                                                       }
-                                                                                         }
-                                                                                         }
+                                                                                 if (file.endsWith(".html") && !skipFiles.includes(file)) {
+                                                                                       patchHTML(fullPath);
+                                                                                           }
+                                                                                             }
+                                                                                             }
 
-                                                                                         scan(ROOT); 
+                                                                                             scan(ROOT);
