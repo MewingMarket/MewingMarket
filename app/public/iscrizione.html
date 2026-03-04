@@ -5,20 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- HEAD DINAMICO (blindato) -->
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      fetch("head.html")
-        .then(r => r.text())
-        .then(html => {
-          const temp = document.createElement("div");
-          temp.innerHTML = html;
-
-          // Inserisce TUTTI i nodi dentro <head>
-          [...temp.children].forEach(node => document.head.appendChild(node));
-        })
-        .catch(err => console.error("Errore caricamento head:", err));
-    });
-  </script>
+  
 </head>
 
 <body>
@@ -33,28 +20,20 @@
 
 
 
-<!-- AUTH GLOBALE -->
 
-<!-- LOGICA HEADER SHOP -->
 
-<!-- LOGICA FOOTER -->
 
-<!-- TRACKING UNIVERSALE -->
+
+
+
+
 
 
   
-<!-- SEO DINAMICO -->
+
 <!-- HEADER DINAMICO (blindato) -->
 <div id="header-placeholder"></div>
-<script>
-  document.addEventListener("DOMContentLoaded", () => {
-      .then(r => r.text())
-      .then(h => {
-        document.getElementById("header-placeholder").innerHTML = h;
-      })
-      .catch(err => console.error("Errore caricamento header:", err));
-  });
-</script>
+
 
 <main>
   <section class="form-premium">
@@ -73,15 +52,7 @@
 
 <!-- FOOTER DINAMICO (blindato) -->
 <div id="footer-placeholder"></div>
-<script>
-  document.addEventListener("DOMContentLoaded", () => {
-      .then(r => r.text())
-      .then(h => {
-        document.getElementById("footer-placeholder").innerHTML = h;
-      })
-      .catch(err => console.error("Errore caricamento footer:", err));
-  });
-</script>
+
 
 <script src="iscrizione.js" defer></script>
 

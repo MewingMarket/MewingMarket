@@ -6,17 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- HEAD DINAMICO -->
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      fetch("head.html")
-        .then(r => r.text())
-        .then(html => {
-          const temp = document.createElement("div");
-          temp.innerHTML = html;
-          [...temp.children].forEach(node => document.head.appendChild(node));
-        });
-    });
-  </script>
+  
 
   <link rel="stylesheet" href="style.css">
 
@@ -69,25 +59,20 @@
 
 
 
-<!-- AUTH GLOBALE -->
 
-<!-- LOGICA HEADER SHOP -->
 
-<!-- LOGICA FOOTER -->
 
-<!-- TRACKING UNIVERSALE -->
+
+
+
+
 
 
   
-<!-- SEO DINAMICO -->
+
 <!-- HEADER DINAMICO -->
 <div id="header-placeholder"></div>
-<script>
-  document.addEventListener("DOMContentLoaded", () => {
-      .then(r => r.text())
-      .then(h => document.getElementById("header-placeholder").innerHTML = h);
-  });
-</script>
+
 
 <div class="box">
   <h1>I miei ordini</h1>
@@ -115,12 +100,7 @@
 
 <!-- FOOTER DINAMICO -->
 <div id="footer-placeholder"></div>
-<script>
-  document.addEventListener("DOMContentLoaded", () => {
-      .then(r => r.text())
-      .then(h => document.getElementById("footer-placeholder").innerHTML = h);
-  });
-</script>
+
 
 <script src="ordini.js"></script>
 

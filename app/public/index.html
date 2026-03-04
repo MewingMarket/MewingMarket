@@ -3,15 +3,7 @@
 <head>
 
   <!-- HEAD IMPORTATA (corretto: niente <div> dentro <head>) -->
-  <script>
-    fetch("head.html")
-      .then(r => r.text())
-      .then(h => {
-        const temp = document.createElement("div");
-        temp.innerHTML = h;
-        document.head.append(...temp.children);
-      });
-  </script>
+  
 
   <script src="index.js" defer></script>
 
@@ -34,10 +26,7 @@
 
 <!-- HEADER -->
 <div id="header-placeholder"></div>
-<script>
-    .then(r => r.text())
-    .then(h => document.getElementById("header-placeholder").innerHTML = h);
-</script>
+
 
 <main class="home">
 
@@ -135,10 +124,7 @@
 
 <!-- FOOTER -->
 <div id="footer-placeholder"></div>
-<script>
-    .then(r => r.text())
-    .then(h => document.getElementById("footer-placeholder").innerHTML = h);
-</script>
+
 
 
 

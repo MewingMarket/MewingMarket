@@ -6,18 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- HEAD DINAMICO (blindato) -->
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      fetch("head.html")
-        .then(r => r.text())
-        .then(html => {
-          const temp = document.createElement("div");
-          temp.innerHTML = html;
-          [...temp.children].forEach(node => document.head.appendChild(node));
-        })
-        .catch(err => console.error("Errore caricamento head:", err));
-    });
-  </script>
+  
 
   <link rel="stylesheet" href="/style.css">
 
@@ -83,17 +72,17 @@
 
 
 
-<!-- AUTH GLOBALE -->
 
-<!-- LOGICA HEADER SHOP -->
 
-<!-- LOGICA FOOTER -->
+
+
+
 
 
 
 
   
-<!-- SEO DINAMICO -->
+
 <div class="tracking-container">
   <h1>Tracking – MewingMarket MAX</h1>
   <p>Eventi raccolti dal bot e dal sito (solo sessione corrente).</p>

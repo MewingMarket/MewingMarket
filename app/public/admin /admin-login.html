@@ -3,18 +3,7 @@
 <head>
 
   <!-- HEAD ADMIN DINAMICO -->
-  <script>
-    
-      fetch("head-admin.html")
-        .then(r => r.text())
-        .then(html => {
-          const temp = document.createElement("div");
-          temp.innerHTML = html;
-          [...temp.children].forEach(node => document.head.appendChild(node));
-        })
-        .catch(err => console.error("Errore caricamento head-admin:", err));
-    
-  </script>
+  
 
   <title>Login Admin – MewingMarket</title>
 
@@ -142,16 +131,7 @@
 
 <!-- FOOTER ADMIN DINAMICO -->
 <div id="footer-admin-placeholder"></div>
-<script>
-  
-    fetch("footer-admin.html")
-      .then(r => r.text())
-      .then(html => {
-        document.getElementById("footer-admin-placeholder").innerHTML = html;
-      })
-      .catch(err => console.error("Errore caricamento footer-admin:", err));
-  
-</script>
+
 
 
          <script src="auth.js"></script>

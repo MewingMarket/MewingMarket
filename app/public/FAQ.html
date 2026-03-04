@@ -5,18 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- HEAD DINAMICO -->
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      fetch("head.html")
-        .then(r => r.text())
-        .then(h => {
-          const placeholder = document.createElement("div");
-          placeholder.innerHTML = h;
-          document.head.append(...placeholder.children);
-        })
-        .catch(err => console.error("Errore caricamento head:", err));
-    });
-  </script>
+  
 
 
   <style>
@@ -45,28 +34,20 @@
 
 
 
-<!-- AUTH GLOBALE -->
 
-<!-- LOGICA HEADER SHOP -->
 
-<!-- LOGICA FOOTER -->
 
-<!-- TRACKING UNIVERSALE -->
+
+
+
+
 
 
   
-<!-- SEO DINAMICO -->
+
 <!-- HEADER DINAMICO -->
 <div id="header-placeholder"></div>
-<script>
-  document.addEventListener("DOMContentLoaded", () => {
-      .then(r => r.text())
-      .then(h => {
-        document.getElementById("header-placeholder").innerHTML = h;
-      })
-      .catch(err => console.error("Errore caricamento header:", err));
-  });
-</script>
+
 
 <main class="pagina-standard">
   <h1>FAQ – Domande Frequenti</h1>
@@ -137,15 +118,7 @@
 </div> 
 <!-- FOOTER DINAMICO -->
 <div id="footer-placeholder"></div>
-<script>
-  document.addEventListener("DOMContentLoaded", () => {
-      .then(r => r.text())
-      .then(h => {
-        document.getElementById("footer-placeholder").innerHTML = h;
-      })
-      .catch(err => console.error("Errore caricamento footer:", err));
-  });
-</script>
+
 
 <script src="FAQ.js" defer></script>
 <script src="premium.js" defer></script>

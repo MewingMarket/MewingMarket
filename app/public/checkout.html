@@ -3,94 +3,7 @@
 <head>
 
   <!-- HEAD DINAMICO -->
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      fetch("head.html")
-        .then(r => r.text())
-        .then(html => {
-          const temp = document.createElement("div");
-          temp.innerHTML = html;
-          [...temp.children].forEach(node => document.head.appendChild(node));
-        })
-        .catch(err => console.error("Errore caricamento head:", err));
-    });
-  </script>
-
-  <title>Checkout – MewingMarket</title>
-
-  <!-- CSS -->
-  <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="shop.css">
-
-  <!-- JS -->
-  <script src="carrello.js" defer></script>
-  <script src="checkout.js" defer></script>
-
-</head>
-
-<body>
-
-
-
-
-
-
-
-
-
-
-
-<!-- AUTH GLOBALE -->
-
-<!-- LOGICA HEADER SHOP -->
-
-<!-- LOGICA FOOTER -->
-
-<!-- TRACKING UNIVERSALE -->
-
-
   
-<!-- SEO DINAMICO -->
-<!-- HEADER SHOP -->
-<div id="header-placeholder"></div>
-<script>
-  document.addEventListener("DOMContentLoaded", () => {
-    fetch("header-shop.html")
-      .then(r => r.text())
-      .then(h => {
-        document.getElementById("header-placeholder").innerHTML = h;
-
-        /* ================================
-           ICONA CARRELLO + BADGE
-        ================================= */
-        const cartWrapper = document.createElement("div");
-        cartWrapper.id = "cart-wrapper";
-
-        const cartIcon = document.createElement("div");
-        cartIcon.id = "cart-icon";
-        cartIcon.innerHTML = "🛒";
-
-        const cartBadge = document.createElement("div");
-        cartBadge.id = "cart-badge";
-        cartBadge.textContent = "0";
-
-        cartWrapper.appendChild(cartIcon);
-        cartWrapper.appendChild(cartBadge);
-
-        cartWrapper.addEventListener("click", () => {
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        });
-
-        const nav = document.querySelector("header nav");
-        if (nav) nav.appendChild(cartWrapper);
-
-        if (typeof aggiornaBadgeCarrello === "function") {
-          aggiornaBadgeCarrello();
-        }
-      })
-      .catch(err => console.error("Errore caricamento header-shop:", err));
-  });
-</script>
 
 <main class="pagina-standard">
 
@@ -122,15 +35,7 @@
 
 <!-- FOOTER -->
 <div id="footer-placeholder"></div>
-<script>
-  document.addEventListener("DOMContentLoaded", () => {
-      .then(r => r.text())
-      .then(h => {
-        document.getElementById("footer-placeholder").innerHTML = h;
-      })
-      .catch(err => console.error("Errore caricamento footer:", err));
-  });
-</script>
+
 
 
          <script src="auth.js"></script>
