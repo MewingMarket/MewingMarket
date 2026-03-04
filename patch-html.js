@@ -1,80 +1,72 @@
-const fs = require("fs");
-const path = require("path");
+/* =========================================================
+   PATCH HTML — MewingMarket
+      Inserisce gli script globali nell’ordine corretto
+         Versione definitiva 2026
+         ========================================================= */
 
-const ROOT = "./app/public";
+         import fs from "fs";
+         import path from "path";
 
-const scripts = `
-<script src="auth.js"></script>
-<script src="loader-header-footer.js"></script>
-<script src="header-shop.js"></script>
-<script src="footer.js"></script>
-<script src="tracking.js"></script>
-<script src="structured-data.js"></script>
-<script src="seo.js"></script>
-`;
+         const ROOT = "./app/public";
 
-const SKIP_FILES = [
-  "footer.html",
-    "head.html",
-      "header.html",
-        "header-shop.html"
-        ];
+         // Script globali da inserire in TUTTE le pagine HTML
+         // (ordine corretto e definitivo)
+         const scripts = `
+         <script src="auth.js"></script>
+         <script src="loader-header-footer.js"></script>
+         <script src="carrello.js"></script>
+         <script src="header-shop.js"></script>
+         <script src="footer.js"></script>
+         <script src="tracking.js"></script>
+         <script src="structured-data.js"></script>
+         <script src="seo.js"></script>
+         `;
 
-        // Rimuove vecchi script e fetch inline
-        function removeOldScriptLines(content) {
-          return content
-              .split("\n")
-                  .filter(line => !line.includes("fetch(\"header.html\""))
-                      .filter(line => !line.includes("fetch(\"footer.html\""))
-                          .filter(line => !line.includes("src=\"/"))
-                              .filter(line => !line.includes("auth.js"))
-                                  .filter(line => !line.includes("header-shop.js"))
-                                      .filter(line => !line.includes("footer.js"))
-                                          .filter(line => !line.includes("tracking.js"))
-                                              .filter(line => !line.includes("structured-data.js"))
-                                                  .filter(line => !line.includes("seo.js"))
-                                                      .filter(line => !line.includes("loader-header-footer.js"))
-                                                          .join("\n");
-                                                          }
+         // File HTML che NON devono essere patchati
+         const skipFiles = [
+           "header.html",
+             "header-shop.html",
+               "footer.html",
+                 "head.html"
+                 ];
 
-                                                          function patchFile(filePath) {
-                                                            const normalized = filePath.replace(/\\/g, "/");
+                 // Funzione principale
+                 function patchHTML(filePath) {
+                   let html = fs.readFileSync(filePath, "utf8");
 
-                                                              // Salta admin
-                                                                if (normalized.includes("/admin/")) return;
+                     // Rimuove eventuali vecchi script già presenti
+                       html = html.replace(/<script src="auth\.js"><\/script>/g, "");
+                         html = html.replace(/<script src="loader-header-footer\.js"><\/script>/g, "");
+                           html = html.replace(/<script src="carrello\.js"><\/script>/g, "");
+                             html = html.replace(/<script src="header-shop\.js"><\/script>/g, "");
+                               html = html.replace(/<script src="footer\.js"><\/script>/g, "");
+                                 html = html.replace(/<script src="tracking\.js"><\/script>/g, "");
+                                   html = html.replace(/<script src="structured-data\.js"><\/script>/g, "");
+                                     html = html.replace(/<script src="seo\.js"><\/script>/g, "");
 
-                                                                  // Salta file che non vanno patchati
-                                                                    if (SKIP_FILES.some(name => normalized.endsWith(name))) return;
+                                       // Inserisce gli script PRIMA della chiusura </body>
+                                         html = html.replace("</body>", `${scripts}\n</body>`);
 
-                                                                      let content = fs.readFileSync(filePath, "utf8");
+                                           fs.writeFileSync(filePath, html, "utf8");
+                                             console.log("Patch applicata:", filePath);
+                                             }
 
-                                                                        // Se non contiene <body> → skip
-                                                                          if (!content.includes("<body")) {
-                                                                              console.log("⚠ Nessun <body> trovato in:", normalized);
-                                                                                  return;
-                                                                                    }
+                                             // Scansione ricorsiva della cartella
+                                             function scan(dir) {
+                                               const files = fs.readdirSync(dir);
 
-                                                                                      // Rimuove vecchi script e fetch inline
-                                                                                        content = removeOldScriptLines(content);
+                                                 for (const file of files) {
+                                                     const fullPath = path.join(dir, file);
 
-                                                                                          // Inserisce gli script nuovi subito dopo <body>
-                                                                                            content = content.replace("<body>", `<body>\n${scripts}`);
+                                                         if (fs.statSync(fullPath).isDirectory()) {
+                                                               scan(fullPath);
+                                                                     return;
+                                                                         }
 
-                                                                                              fs.writeFileSync(filePath, content, "utf8");
-                                                                                                console.log("Patchato:", normalized);
-                                                                                                }
+                                                                             if (file.endsWith(".html") && !skipFiles.includes(file)) {
+                                                                                   patchHTML(fullPath);
+                                                                                       }
+                                                                                         }
+                                                                                         }
 
-                                                                                                function scan(dir) {
-                                                                                                  fs.readdirSync(dir).forEach(item => {
-                                                                                                      const full = path.join(dir, item);
-                                                                                                          const stat = fs.statSync(full);
-
-                                                                                                              if (stat.isDirectory()) {
-                                                                                                                    scan(full);
-                                                                                                                        } else if (item.endsWith(".html")) {
-                                                                                                                              patchFile(full);
-                                                                                                                                  }
-                                                                                                                                    });
-                                                                                                                                    }
-
-                                                                                                                                    scan(ROOT);
+                                                                                         scan(ROOT);
