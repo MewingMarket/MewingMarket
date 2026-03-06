@@ -1,0 +1,49 @@
+body {
+  background: #f7faff;
+  font-family: system-ui, sans-serif;
+  color: #003366;
+}
+
+.register-box {
+  max-width: 400px;
+  margin: 60px auto;
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  border-radius: 8px;
+  border: 1px solid #cdd7e1;
+  font-size: 16px;
+}
+
+button {
+  width: 100%;
+  margin-top: 20px;
+  padding: 12px;
+  background: #0077ff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  transition: 0.2s;
+}
+
+button:hover {
+  background: #005fe0;
+}
+
+#status {
+  margin-top: 15px;
+  font-size: 14px;
+  color: #d00;
+  text-align: center;
+  font-weight: 600;
+}
