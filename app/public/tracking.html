@@ -2,92 +2,19 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Tracking – MewingMarket MAX</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- HEAD DINAMICO (blindato) -->
-  
+  <div id="head-placeholder"></div>
 
-  <link rel="stylesheet" href="/style.css">
-
-  <style>
-    /* Stile locale del pannello tracking (light mode) */
-    .tracking-container {
-      max-width: 1100px;
-      margin: 40px auto;
-      padding: 20px;
-    }
-
-    .tracking-toolbar {
-      margin-bottom: 20px;
-      display: flex;
-      gap: 12px;
-    }
-
-    .tracking-btn {
-      padding: 8px 14px;
-      border-radius: 6px;
-      border: none;
-      cursor: pointer;
-      background: #000;
-      color: #fff;
-      font-weight: 600;
-    }
-
-    .tracking-btn.secondary {
-      background: #ddd;
-      color: #000;
-    }
-
-    .tracking-table {
-      width: 100%;
-      border-collapse: collapse;
-      background: #fff;
-    }
-
-    .tracking-table th,
-    .tracking-table td {
-      border: 1px solid #ccc;
-      padding: 10px;
-      vertical-align: top;
-    }
-
-    .tracking-table th {
-      background: #f3f3f3;
-      font-weight: 600;
-    }
-  </style>
-
-
-    <script src="/seo.js"></script>
-    <script src="/structured-data.js"></script>
-  
+  <!-- CSS SPECIFICO -->
+  <link rel="stylesheet" href="tracking.css">
 </head>
 
 <body>
+
+<!-- HEADER DINAMICO -->
 <div id="header-placeholder"></div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
 
 <div class="tracking-container">
   <h1>Tracking – MewingMarket MAX</h1>
@@ -112,7 +39,6 @@
   </table>
 </div>
 
-
 <script>
   /* =========================================================
      RENDER TRACKING BLINDATO
@@ -132,19 +58,11 @@
   document.addEventListener("DOMContentLoaded", safeRender);
 </script>
 
-
-         
-         
-         
-         
-         
-         
-         
-         
-         
-<script src="tracking.js"></script>
+<!-- JS GLOBALI -->
 <script src="loader-header-footer.js"></script>
 <script src="seo.js"></script>
 <script src="structured-data.js"></script>
+<script src="tracking.js"></script>
+
 </body>
 </html>
