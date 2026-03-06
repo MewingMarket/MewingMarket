@@ -1,0 +1,150 @@
+/* ===========================
+   DASHBOARD — Layout & UI
+=========================== */
+
+body {
+  margin: 0;
+  background: #f7faff;
+  font-family: system-ui, sans-serif;
+  color: #003366;
+}
+
+main {
+  max-width: 1100px;
+  margin: 40px auto;
+  display: flex;
+  gap: 24px;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 260px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  padding: 20px;
+}
+
+.sidebar h2 {
+  margin-top: 0;
+  font-size: 20px;
+}
+
+.nav-item {
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 15px;
+  margin-top: 6px;
+}
+
+.nav-item:hover {
+  background: #eef4ff;
+}
+
+.nav-item.danger {
+  color: #cc0000;
+}
+
+.user-meta {
+  font-size: 14px;
+  color: #335;
+  margin-top: 4px;
+}
+
+/* Content */
+.content {
+  flex: 1;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  padding: 24px;
+}
+
+.content h1 {
+  margin-top: 0;
+  font-size: 24px;
+}
+
+/* Form fields */
+.field-group {
+  margin-top: 18px;
+}
+
+.field-group label {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.field-group input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #cdd7e1;
+  font-size: 15px;
+}
+
+/* Buttons */
+.btn {
+  margin-top: 16px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.btn-primary {
+  background: #0077ff;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #005fe0;
+}
+
+.btn-danger {
+  background: #ff4444;
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #e63a3a;
+}
+
+/* Status messages */
+.status {
+  margin-top: 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.status.ok {
+  color: #4ade80;
+}
+
+.status.err {
+  color: #f97373;
+}
+
+/* Link to site */
+.nav-site {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.nav-site a {
+  display: inline-block;
+  padding: 10px 16px;
+  background: #0057ff;
+  color: white;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.nav-site a:hover {
+  background: #003fcc;
+}
