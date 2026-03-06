@@ -2,35 +2,18 @@
 <html lang="it">
 <head>
 
-  <!-- HEAD IMPORTATA (corretto: niente <div> dentro <head>) -->
-  
+  <!-- HEAD IMPORTATA -->
+  <div id="head-placeholder"></div>
 
-  
+  <!-- CSS SPECIFICO HOMEPAGE -->
+  <link rel="stylesheet" href="css/index.css">
 
-
-    <script src="/seo.js"></script>
-    <script src="/structured-data.js"></script>
-  
 </head>
 
 <body>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 <!-- HEADER -->
 <div id="header-placeholder"></div>
-
 
 <main class="home">
 
@@ -46,105 +29,90 @@
   </div>
 </section>
 
-  <!-- TESTO BENVENUTO (il tuo testo, intatto) -->
-  <section class="home-section">
-    <h2>Benvenuto su MewingMarket</h2>
-    <p>
-      MewingMarket è un progetto dedicato alla creazione di prodotti digitali, guide e risorse sviluppate con l’Intelligenza Artificiale.
-      Il nostro obiettivo è offrirti strumenti moderni, chiari e immediati per migliorare la tua vita personale e professionale.
-    </p>
-    <p> 
-      Ogni contenuto nasce da un processo di ricerca, sperimentazione e ottimizzazione continua.
-      Non vendiamo semplici file, ma soluzioni pensate per aiutarti davvero, ridurre la complessità e accelerare i tuoi risultati.
-    </p>
-    <a href="chisiamo.html" class="btn">Scopri chi siamo</a>
-  </section>
+<section class="home-section">
+  <h2>Benvenuto su MewingMarket</h2>
+  <p>
+    MewingMarket è un progetto dedicato alla creazione di prodotti digitali, guide e risorse sviluppate con l’Intelligenza Artificiale.
+    Il nostro obiettivo è offrirti strumenti moderni, chiari e immediati per migliorare la tua vita personale e professionale.
+  </p>
+  <p> 
+    Ogni contenuto nasce da un processo di ricerca, sperimentazione e ottimizzazione continua.
+    Non vendiamo semplici file, ma soluzioni pensate per aiutarti davvero, ridurre la complessità e accelerare i tuoi risultati.
+  </p>
+  <a href="chisiamo.html" class="btn">Scopri chi siamo</a>
+</section>
 
-  <!-- SEZIONE PREMIUM: PERCHÉ MEWINGMARKET -->
-  <section class="home-section why-mm">
-    <h2>Perché scegliere MewingMarket</h2>
+<section class="home-section why-mm">
+  <h2>Perché scegliere MewingMarket</h2>
 
-    <div class="why-grid">
-      <div class="why-card">
-        <h3>🎯 Soluzioni pratiche</h3>
-        <p>Ogni prodotto è progettato per risolvere un problema reale, non per riempire spazio.</p>
-      </div>
-
-      <div class="why-card">
-        <h3>⚡ Velocità e chiarezza</h3>
-        <p>Contenuti sintetici, moderni e subito applicabili, senza fronzoli inutili.</p>
-      </div>
-
-      <div class="why-card">
-        <h3>🤖 Intelligenza Artificiale</h3>
-        <p>Ogni guida nasce da un processo avanzato di ricerca e ottimizzazione AI.</p>
-      </div>
-
-      <div class="why-card">
-        <h3>📈 Crescita continua</h3>
-        <p>Aggiornamenti costanti, nuovi prodotti e supporto dedicato.</p>
-      </div>
+  <div class="why-grid">
+    <div class="why-card">
+      <h3>🎯 Soluzioni pratiche</h3>
+      <p>Ogni prodotto è progettato per risolvere un problema reale, non per riempire spazio.</p>
     </div>
-  </section>
 
-  <!-- SEZIONE PREMIUM: COME FUNZIONA -->
-  <section class="home-section how-it-works">
-    <h2>Come funziona</h2>
-
-    <div class="how-grid">
-      <div class="how-step">
-        <span class="step-number">1</span>
-        <h3>Scegli il prodotto</h3>
-        <p>Trova la guida o la risorsa più adatta alle tue esigenze.</p>
-      </div>
-
-      <div class="how-step">
-        <span class="step-number">2</span>
-        <h3>Acquista in sicurezza</h3>
-        <p>Pagamento gestito da Payhip, sicuro e immediato.</p>
-      </div>
-
-      <div class="how-step">
-        <span class="step-number">3</span>
-        <h3>Scarica subito</h3>
-        <p>Ricevi il file immediatamente via email.</p>
-      </div>
-
-      <div class="how-step">
-        <span class="step-number">4</span>
-        <h3>Inizia a crescere</h3>
-        <p>Applica i contenuti e ottieni risultati concreti.</p>
-      </div>
+    <div class="why-card">
+      <h3>⚡ Velocità e chiarezza</h3>
+      <p>Contenuti sintetici, moderni e subito applicabili, senza fronzoli inutili.</p>
     </div>
-  </section>
 
-  <!-- NOVITÀ DAL CATALOGO (il tuo blocco, intatto) -->
-  <section class="home-section" id="catalogo">
-    <h2>Novità dal catalogo</h2>
-    <div id="products-grid" class="products-grid"></div>
-  </section>
+    <div class="why-card">
+      <h3>🤖 Intelligenza Artificiale</h3>
+      <p>Ogni guida nasce da un processo avanzato di ricerca e ottimizzazione AI.</p>
+    </div>
+
+    <div class="why-card">
+      <h3>📈 Crescita continua</h3>
+      <p>Aggiornamenti costanti, nuovi prodotti e supporto dedicato.</p>
+    </div>
+  </div>
+</section>
+
+<section class="home-section how-it-works">
+  <h2>Come funziona</h2>
+
+  <div class="how-grid">
+    <div class="how-step">
+      <span class="step-number">1</span>
+      <h3>Scegli il prodotto</h3>
+      <p>Trova la guida o la risorsa più adatta alle tue esigenze.</p>
+    </div>
+
+    <div class="how-step">
+      <span class="step-number">2</span>
+      <h3>Acquista in sicurezza</h3>
+      <p>Pagamento gestito da Payhip, sicuro e immediato.</p>
+    </div>
+
+    <div class="how-step">
+      <span class="step-number">3</span>
+      <h3>Scarica subito</h3>
+      <p>Ricevi il file immediatamente via email.</p>
+    </div>
+
+    <div class="how-step">
+      <span class="step-number">4</span>
+      <h3>Inizia a crescere</h3>
+      <p>Applica i contenuti e ottieni risultati concreti.</p>
+    </div>
+  </div>
+</section>
+
+<section class="home-section" id="catalogo">
+  <h2>Novità dal catalogo</h2>
+  <div id="products-grid" class="products-grid"></div>
+</section>
 
 </main>
 
 <!-- FOOTER -->
 <div id="footer-placeholder"></div>
 
-
-
-
-
-         
-         
-         
-         
-         
-         
-         
-         
-         
-<script src="tracking.js"></script>
+<!-- JS GLOBALI -->
 <script src="loader-header-footer.js"></script>
-<script src="seo.js"></script>
-<script src="structured-data.js"></script>
+
+<!-- JS HOMEPAGE -->
+<script src="index.js"></script>
+
 </body>
 </html>
