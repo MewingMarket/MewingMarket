@@ -1,9 +1,17 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<script src="/seo.js"></script>
-    <script src="/structured-data.js"></script>
+  <meta charset="UTF-8">
+  <title>Checkout — MewingMarket</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- HEAD DINAMICO -->
+  <div id="head-placeholder"></div>
+
+  <!-- CSS SPECIFICO CHECKOUT -->
+  <link rel="stylesheet" href="checkout.css">
 </head>
+
 <body>
 
 <!-- HEADER DINAMICO -->
@@ -18,7 +26,7 @@
     <p><strong>Da pagare:</strong> <span id="da-pagare"></span>€</p>
   </div>
 
-  <!-- PATCH: container mancante -->
+  <!-- Container richiesto dal tuo checkout.js -->
   <div id="checkout-container"></div>
 
 </main>
@@ -26,15 +34,11 @@
 <!-- FOOTER DINAMICO -->
 <div id="footer-placeholder"></div>
 
-<!-- TRACKING -->
-
-
-<!-- LOADER -->
-
-
-<script src="tracking.js"></script>
+<!-- JS GLOBALI -->
 <script src="loader-header-footer.js"></script>
-<script src="seo.js"></script>
-<script src="structured-data.js"></script>
+
+<!-- JS SPECIFICO CHECKOUT -->
+<script src="checkout.js"></script>
+
 </body>
 </html>
