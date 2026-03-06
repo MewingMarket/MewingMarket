@@ -1,0 +1,33 @@
+/* ===========================
+   CANCEL ORDER — Pagamento annullato
+=========================== */
+
+.cancel-box {
+  max-width: 600px;
+  margin: 60px auto;
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  text-align: center;
+}
+
+.cancel-box h1 {
+  margin-bottom: 15px;
+  font-size: 26px;
+}
+
+.cancel-box p {
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+.btn {
+  display: inline-block;
+  padding: 12px 20px;
+  background: #0077ff;
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: bold;
+}
