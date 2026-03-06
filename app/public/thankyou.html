@@ -2,104 +2,19 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Ordine completato — MewingMarket</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- HEAD DINAMICO -->
-  
+  <div id="head-placeholder"></div>
 
-  <link rel="stylesheet" href="style.css">
-
-  <style>
-    body {
-      background:#fafafa;
-      margin:0;
-      padding:0;
-      font-family:system-ui;
-    }
-
-    .box {
-      max-width:650px;
-      margin:40px auto;
-      background:white;
-      padding:30px;
-      border-radius:12px;
-      box-shadow:0 4px 20px rgba(0,0,0,0.06);
-    }
-
-    h1 {
-      font-size:28px;
-      margin-bottom:10px;
-    }
-
-    .order-box {
-      margin-top:20px;
-      padding:20px;
-      background:#f5f5f5;
-      border-radius:10px;
-      line-height:1.6;
-    }
-
-    .btn {
-      display:inline-block;
-      margin-top:25px;
-      padding:12px 20px;
-      border-radius:8px;
-      font-weight:600;
-      color:white;
-      text-decoration:none;
-    }
-
-    .btn-home { background:#0077ff; }
-    .btn-feedback { background:#00b36b; margin-left:10px; }
-
-    .btn-download {
-      display:inline-block;
-      margin-top:10px;
-      padding:10px 16px;
-      background:#0077ff;
-      color:white;
-      border-radius:6px;
-      text-decoration:none;
-      font-weight:600;
-    }
-
-    .btn-download:hover {
-      background:#005fd4;
-    }
-  </style>
-
-    <script src="/seo.js"></script>
-    <script src="/structured-data.js"></script>
-  
+  <!-- CSS SPECIFICO -->
+  <link rel="stylesheet" href="thankyou.css">
 </head>
 
 <body>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
-
 <!-- HEADER DINAMICO -->
 <div id="header-placeholder"></div>
-
 
 <div class="box">
   <h1>Ordine completato 🎉</h1>
@@ -111,13 +26,11 @@
     <p><strong>Prezzo:</strong> <span id="price"></span>€</p>
     <p><strong>Data:</strong> <span id="date"></span></p>
 
-    <!-- 🔵 LISTA PRODOTTI -->
     <div style="margin-top:15px;">
       <strong>Dettaglio prodotti:</strong>
       <ul id="prod-list"></ul>
     </div>
 
-    <!-- 🔵 DOWNLOAD -->
     <div id="download-box" style="margin-top:20px;"></div>
   </div>
 
@@ -129,22 +42,14 @@
   <a id="feedbackBtn" class="btn btn-feedback">Lascia una recensione ⭐</a>
 </div>
 
+<!-- JS SPECIFICO -->
+<script src="thankyou.js"></script>
 
-
-
-
-         
-         
-         
-         
-         
-         
-         
-         
-         
-<script src="tracking.js"></script>
+<!-- JS GLOBALI -->
 <script src="loader-header-footer.js"></script>
 <script src="seo.js"></script>
 <script src="structured-data.js"></script>
+<script src="tracking.js"></script>
+
 </body>
 </html>
