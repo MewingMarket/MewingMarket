@@ -1,13 +1,21 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <script src="/seo.js"></script>
-    <script src="/structured-data.js"></script>
+  <!-- HEAD DINAMICO -->
+  <div id="head-placeholder"></div>
+
+  <!-- CSS SPECIFICI -->
+  <link rel="stylesheet" href="header-shop.css">
+  <link rel="stylesheet" href="catalogo.css">
+  <link rel="stylesheet" href="footer.css">
 </head>
+
 <body>
 
-<!-- HEADER DINAMICO (SHOP) -->
+<!-- HEADER SHOP DINAMICO -->
 <div id="header-placeholder"></div>
 
 <main class="pagina-standard">
@@ -16,8 +24,11 @@
 
   <!-- FILTRI -->
   <section class="filtri-catalogo">
+
+    <!-- CATEGORIE DINAMICHE -->
     <div id="categorie"></div>
 
+    <!-- FILTRI PREZZO -->
     <div class="filtri-prezzo">
       <button class="btn" data-prezzo="10">Fino a 10€</button>
       <button class="btn" data-prezzo="20">Fino a 20€</button>
@@ -34,15 +45,19 @@
 <!-- FOOTER DINAMICO -->
 <div id="footer-placeholder"></div>
 
-<!-- TRACKING -->
+<!-- JS SHOP OBBLIGATORI -->
+<script src="carello.js"></script>
+<script src="auth.js"></script>
+<script src="header-shop.js"></script>
 
+<!-- JS SPECIFICO CATALOGO -->
+<script src="catalogo.js"></script>
 
-<!-- LOADER -->
-
-
-<script src="tracking.js"></script>
+<!-- JS GLOBALI -->
 <script src="loader-header-footer.js"></script>
 <script src="seo.js"></script>
 <script src="structured-data.js"></script>
+<script src="tracking.js"></script>
+
 </body>
 </html>
