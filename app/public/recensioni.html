@@ -2,77 +2,19 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Le mie recensioni — MewingMarket</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- HEAD DINAMICO -->
-  
+  <div id="head-placeholder"></div>
 
-  <link rel="stylesheet" href="style.css">
-
-  <style>
-    body { background:#f7faff; margin:0; font-family:system-ui; color:#003366; }
-    .box {
-      max-width:900px; margin:40px auto; background:white;
-      padding:25px; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.06);
-    }
-    h1 { margin-top:0; }
-    select, textarea {
-      width:100%; padding:10px; border-radius:8px;
-      border:1px solid #cdd7e1; font-size:15px;
-    }
-    textarea { height:120px; resize:none; }
-    #stars span {
-      font-size:32px; cursor:pointer; padding:5px;
-      color:#ccc; transition:0.2s;
-    }
-    #stars span.active { color:#ffb400; }
-    .btn {
-      padding:10px 16px; border-radius:8px; border:none;
-      cursor:pointer; font-size:15px; font-weight:600;
-    }
-    .btn-primary { background:#0077ff; color:white; }
-    .btn-primary:hover { background:#005fe0; }
-    .status { margin-top:12px; font-weight:600; }
-    .status.ok { color:#4ade80; }
-    .status.err { color:#f97373; }
-    .review-item {
-      padding:15px; border-bottom:1px solid #eee;
-    }
-    .review-item strong { font-size:16px; }
-  </style>
-
-    <script src="/seo.js"></script>
-    <script src="/structured-data.js"></script>
-  
+  <!-- CSS SPECIFICO -->
+  <link rel="stylesheet" href="recensioni.css">
 </head>
 
 <body>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
-
 <!-- HEADER DINAMICO -->
 <div id="header-placeholder"></div>
-
 
 <div class="box">
   <h1>Le mie recensioni ⭐</h1>
@@ -107,21 +49,17 @@
 <!-- FOOTER DINAMICO -->
 <div id="footer-placeholder"></div>
 
+<!-- JS SPECIFICO -->
+<script src="recensioni.js"></script>
 
+<!-- JS PROTEZIONE LOGIN -->
+<script src="auth.js"></script>
 
-
-         
-         
-         
-         
-         
-         
-         
-         
-         
-<script src="tracking.js"></script>
+<!-- JS GLOBALI -->
 <script src="loader-header-footer.js"></script>
 <script src="seo.js"></script>
 <script src="structured-data.js"></script>
+<script src="tracking.js"></script>
+
 </body>
 </html>
