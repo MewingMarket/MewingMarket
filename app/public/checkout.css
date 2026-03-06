@@ -1,0 +1,26 @@
+/* ===========================
+   CHECKOUT — Stile pulito
+=========================== */
+
+.pagina-standard {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+h1 {
+  margin-bottom: 25px;
+}
+
+.box-standard {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 10px;
+  border: 1px solid #e5e5e5;
+  margin-bottom: 25px;
+}
+
+.box-standard p {
+  margin: 8px 0;
+  font-size: 16px;
+}
