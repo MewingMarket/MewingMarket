@@ -5,53 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- HEAD DINAMICO -->
-  
+  <div id="head-placeholder"></div>
 
-
-  <style>
-    .btn-guida {
-      display:inline-block;
-      padding:10px 16px;
-      background:#0077ff;
-      color:white;
-      border-radius:8px;
-      text-decoration:none;
-      font-weight:600;
-      margin-top:10px;
-    }
-  </style>
-
-    <script src="/seo.js"></script>
-    <script src="/structured-data.js"></script>
-  
+  <!-- CSS SPECIFICO FAQ -->
+  <link rel="stylesheet" href="faq.css">
 </head>
 
 <body>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
-
 <!-- HEADER DINAMICO -->
 <div id="header-placeholder"></div>
-
 
 <main class="pagina-standard">
   <h1>FAQ – Domande Frequenti</h1>
@@ -91,20 +54,15 @@
     </div>
   </div>
 
-  <!-- 🔥 SEZIONE MINIMAL COME VOLEVI -->
   <h2>Hai altri dubbi?</h2>
   <p>Consulta la nostra pagina di guide complete per istruzioni dettagliate.</p>
   <p><a href="guide.html" class="btn-guida">Vai alle Guide →</a></p>
-
 </main>
 
 <!-- CHATBOT -->
-
-
-<!-- CHATBOT WHATSAPP-STYLE -->
-<button id="chat-toggle">
+<div id="chat-toggle">
   <img src="chat-icon.svg" alt="Chat">
-</button>
+</div>
 
 <div id="chat-container">
   <div id="chat-header">
@@ -118,28 +76,20 @@
     <input id="chat-input" type="text" placeholder="Scrivi un messaggio...">
     <button id="chat-send">➤</button>
     <button id="chat-voice">🎤</button>
+    <button id="chat-attach">📎</button>
+    <input id="chat-file" type="file" style="display:none;">
   </div>
-</div> 
+</div>
+
 <!-- FOOTER DINAMICO -->
 <div id="footer-placeholder"></div>
 
-
-
-
-
-
-         
-         
-         
-         
-         
-         
-         
-         
-         
-<script src="tracking.js"></script>
+<!-- JS GLOBALI -->
 <script src="loader-header-footer.js"></script>
-<script src="seo.js"></script>
-<script src="structured-data.js"></script>
+
+<!-- JS SPECIFICI PAGINA -->
+<script src="faq.js"></script>
+<script src="chat.js"></script>
+
 </body>
 </html>
