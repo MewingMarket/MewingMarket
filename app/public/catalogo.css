@@ -1,0 +1,27 @@
+/* CATEGORIE */
+.categorie-box {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.categorie-box button {
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 20px;
+}
+
+/* FILTRI PREZZO */
+.filtri-prezzo {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 30px;
+}
+
+/* GRID */
+.catalogo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+}
