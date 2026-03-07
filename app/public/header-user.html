@@ -1,4 +1,6 @@
-<header class="user-header">
+<!-- HEADER USER – STRUTTURA PULITA E DINAMICA -->
+
+<div class="user-header">
   <div class="user-header-inner">
 
     <!-- LOGO -->
@@ -13,20 +15,18 @@
     </nav>
 
   </div>
+</div>
 
-  <link rel="stylesheet" href="user.css">
+<script>
+  document.addEventListener("header-loaded", () => {
+    const logoutBtn = document.getElementById("user-logout");
 
-  <script>
-    document.addEventListener("header-loaded", () => {
-      const logoutBtn = document.getElementById("user-logout");
-
-      if (logoutBtn) {
-        logoutBtn.addEventListener("click", e => {
-          e.preventDefault();
-          logout(); // funzione già presente in auth.js
-          location.href = "index.html";
-        });
-      }
-    });
-  </script>
-</header>
+    if (logoutBtn) {
+      logoutBtn.addEventListener("click", e => {
+        e.preventDefault();
+        logout(); // funzione già presente in auth.js
+        location.href = "index.html";
+      });
+    }
+  });
+</script>
