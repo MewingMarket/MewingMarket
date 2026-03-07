@@ -19,14 +19,32 @@
 
 <script>
   document.addEventListener("header-loaded", () => {
+
+    const dashboardBtn = document.getElementById("user-dashboard");
     const logoutBtn = document.getElementById("user-logout");
 
-    if (logoutBtn) {
-      logoutBtn.addEventListener("click", e => {
-        e.preventDefault();
-        logout(); // funzione già presente in auth.js
-        location.href = "index.html";
-      });
+    function aggiornaHeaderUser() {
+      const logged = window.isLogged;
+
+      if (!logged) {
+        // Se non loggato → redirect automatico
+        location.href = "login.html?redirect=dashboard.html";
+        return;
+      }
+
+      // Se loggato → mostra tutto
+      dashboardBtn.style.display = "inline-block";
+      logoutBtn.style.display = "inline-block";
     }
+
+    // Aggiorna quando auth.js è pronto
+    document.addEventListener("auth-ready", aggiornaHeaderUser);
+
+    // Logout
+    logoutBtn.addEventListener("click", e => {
+      e.preventDefault();
+      logout();
+      location.href = "index.html";
+    });
   });
 </script>
