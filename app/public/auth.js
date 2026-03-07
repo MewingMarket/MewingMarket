@@ -1,5 +1,5 @@
 /* =========================================================
-   AUTH.JS — Stato login globale
+   AUTH.JS — Stato login globale (versione definitiva)
 ========================================================= */
 
 console.log("AUTH JS CARICATO");
@@ -9,7 +9,7 @@ window.isLogged = false;
 window.userEmail = null;
 
 /* ---------------------------------------------------------
-   Legge lo stato reale dell'utente
+   Legge lo stato reale dell'utente (con fallback)
 --------------------------------------------------------- */
 function readAuthState() {
   try {
@@ -18,10 +18,29 @@ function readAuthState() {
     const token = localStorage.getItem("token");
     const utenteEmail = localStorage.getItem("utenteEmail");
 
-    const logged = (session && email) || (token && utenteEmail);
+    let logged = false;
+    let user = null;
 
-    window.isLogged = !!logged;
-    window.userEmail = logged ? (utenteEmail || email) : null;
+    /* PRIORITÀ 1 — token + utenteEmail (nuovo sistema) */
+    if (token && utenteEmail) {
+      logged = true;
+      user = utenteEmail;
+    }
+
+    /* PRIORITÀ 2 — session + email (vecchio sistema) */
+    else if (session && email) {
+      logged = true;
+      user = email;
+    }
+
+    /* FALLBACK — se manca una coppia valida → non loggato */
+    else {
+      logged = false;
+      user = null;
+    }
+
+    window.isLogged = logged;
+    window.userEmail = user;
 
   } catch (e) {
     window.isLogged = false;
@@ -52,7 +71,7 @@ function dispatchAuthReady() {
 }
 
 /* ---------------------------------------------------------
-   LOGOUT
+   LOGOUT (blindato)
 --------------------------------------------------------- */
 function logout() {
   try {
@@ -74,7 +93,7 @@ readAuthState();
 window.addEventListener("storage", readAuthState);
 
 /* ---------------------------------------------------------
-   IMPORTANTE: quando l'header è caricato, rileggi lo stato
+   Quando l'header è caricato, rileggi lo stato
 --------------------------------------------------------- */
 document.addEventListener("header-loaded", () => {
   readAuthState();
