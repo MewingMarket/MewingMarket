@@ -85,10 +85,9 @@ router.post("/utenti/registrazione", async (req, res) => {
       }
     ]);
 
-    // 🔵 AWAIT AGGIUNTO
     await inviaEmailRegistrazione({ email });
 
-    return res.json({ success: true, token });
+    return res.json({ success: true, token, email });
 
   } catch (err) {
     console.error("❌ Registrazione:", err);
@@ -97,7 +96,7 @@ router.post("/utenti/registrazione", async (req, res) => {
 });
 
 /* =========================================================
-   LOGIN
+   LOGIN (PATCHATO)
 ========================================================= */
 router.post("/utenti/login", async (req, res) => {
   let { email, password } = req.body || {};
@@ -121,7 +120,6 @@ router.post("/utenti/login", async (req, res) => {
     }
 
     const user = records[0];
-
     const savedPass = normalizePassword(user.get("password_hash"));
 
     if (savedPass !== password) {
@@ -137,7 +135,13 @@ router.post("/utenti/login", async (req, res) => {
       }
     ]);
 
-    return res.json({ success: true, token });
+    // 🔵 PATCH FONDAMENTALE
+    return res.json({
+      success: true,
+      token,
+      email,          // ← aggiunto
+      utenteEmail: email // ← aggiunto
+    });
 
   } catch (err) {
     console.error("❌ Login:", err);
@@ -184,7 +188,6 @@ router.post("/utenti/cambia-email", async (req, res) => {
       }
     ]);
 
-    // 🔵 AWAIT AGGIUNTO
     await inviaEmailCambioEmail({ email: nuova_email });
 
     return res.json({ success: true });
@@ -228,7 +231,6 @@ router.post("/utenti/cambia-password", async (req, res) => {
       }
     ]);
 
-    // 🔵 AWAIT AGGIUNTO
     await inviaEmailCambioPassword({ email: user.get("email") });
 
     return res.json({ success: true });
@@ -272,7 +274,6 @@ router.post("/utenti/elimina-account", async (req, res) => {
 
     await base(TABLE_UTENTI).destroy(user.id);
 
-    // 🔵 AWAIT AGGIUNTO
     await inviaEmailEliminazione({ email: user.get("email") });
 
     return res.json({ success: true });
@@ -315,7 +316,6 @@ router.post("/utenti/reset-password-request", async (req, res) => {
       }
     ]);
 
-    // 🔵 AWAIT AGGIUNTO
     await inviaEmailResetPassword({
       email,
       link: `https://mewingmarket.it/reset-password-confirm.html?token=${resetToken}`
@@ -404,7 +404,6 @@ router.post("/utenti/reset-email-request", async (req, res) => {
       }
     ]);
 
-    // 🔵 AWAIT AGGIUNTO
     await inviaEmailResetEmail({
       email: user.get("email"),
       link: `https://mewingmarket.it/reset-email-confirm.html?token=${resetToken}`
