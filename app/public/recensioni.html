@@ -4,47 +4,51 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- HEAD DINAMICO -->
-  <div id="head-placeholder"></div>
-
   <!-- CSS SPECIFICO -->
   <link rel="stylesheet" href="recensioni.css">
 </head>
 
 <body>
 
+<!-- HEAD DINAMICO -->
+<div id="head-placeholder"></div>
+
 <!-- HEADER DINAMICO -->
 <div id="header-placeholder"></div>
 
-<div class="box">
-  <h1>Le mie recensioni ⭐</h1>
+<main>
 
-  <h3>Lascia una nuova recensione</h3>
+  <div class="box">
+    <h1>Le mie recensioni ⭐</h1>
 
-  <label>Prodotto acquistato</label>
-  <select id="selectProdotto">
-    <option value="">Caricamento…</option>
-  </select>
+    <h3>Lascia una nuova recensione</h3>
 
-  <div id="stars" style="margin-top:10px;">
-    <span data-v="1">★</span>
-    <span data-v="2">★</span>
-    <span data-v="3">★</span>
-    <span data-v="4">★</span>
-    <span data-v="5">★</span>
+    <label>Prodotto acquistato</label>
+    <select id="selectProdotto">
+      <option value="">Caricamento…</option>
+    </select>
+
+    <div id="stars" style="margin-top:10px;">
+      <span data-v="1">★</span>
+      <span data-v="2">★</span>
+      <span data-v="3">★</span>
+      <span data-v="4">★</span>
+      <span data-v="5">★</span>
+    </div>
+
+    <textarea id="comment" placeholder="Scrivi qui la tua opinione…"></textarea>
+
+    <button id="sendReview" class="btn btn-primary">Invia recensione</button>
+
+    <div id="status" class="status"></div>
+
+    <hr style="margin:30px 0;">
+
+    <h3>Le tue recensioni</h3>
+    <div id="listaRecensioni"></div>
   </div>
 
-  <textarea id="comment" placeholder="Scrivi qui la tua opinione…"></textarea>
-
-  <button id="sendReview" class="btn btn-primary">Invia recensione</button>
-
-  <div id="status" class="status"></div>
-
-  <hr style="margin:30px 0;">
-
-  <h3>Le tue recensioni</h3>
-  <div id="listaRecensioni"></div>
-</div>
+</main>
 
 <!-- FOOTER DINAMICO -->
 <div id="footer-placeholder"></div>
