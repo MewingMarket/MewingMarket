@@ -1,6 +1,6 @@
 /* =========================================================
    FILE: /public/login.js
-   LOGIN — Versione stabile e compatibile con tutto il sito
+   LOGIN — Versione definitiva e compatibile con AUTH.JS
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -34,11 +34,19 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // 🔵 SALVATAGGIO ORIGINALE
+      /* =========================================================
+         SALVATAGGIO COMPLETO (compatibile con AUTH.JS)
+      ========================================================== */
       localStorage.setItem("session", data.token);
       localStorage.setItem("email", email);
 
-      // 🔵 REDIRECT
+      // NUOVO — compatibilità futura
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("utenteEmail", email);
+
+      /* =========================================================
+         REDIRECT
+      ========================================================== */
       const params = new URLSearchParams(window.location.search);
       const redirect = params.get("redirect");
 
