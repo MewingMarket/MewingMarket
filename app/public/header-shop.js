@@ -1,3 +1,7 @@
+/* =========================================================
+   HEADER SHOP — login/logout + badge
+========================================================= */
+
 document.addEventListener("header-loaded", () => {
 
   const navLogin = document.getElementById("nav-login");
@@ -6,8 +10,11 @@ document.addEventListener("header-loaded", () => {
   const navLogout = document.getElementById("nav-logout");
   const cartWrapper = document.getElementById("cart-wrapper");
 
-  document.addEventListener("auth-ready", () => {
-    const logged = isLogged();
+  /* ---------------------------------------------------------
+     LOGIN / LOGOUT / PROFILO
+  --------------------------------------------------------- */
+  function aggiornaHeaderAuth() {
+    const logged = window.isLogged;
 
     if (logged) {
       navLogin.style.display = "none";
@@ -20,17 +27,24 @@ document.addEventListener("header-loaded", () => {
       navDashboard.style.display = "none";
       navLogout.style.display = "none";
     }
+  }
 
-    navLogout.addEventListener("click", e => {
-      e.preventDefault();
-      logout();
-      location.href = "index.html";
-    });
+  document.addEventListener("auth-ready", aggiornaHeaderAuth);
+
+  navLogout.addEventListener("click", e => {
+    e.preventDefault();
+    logout();
+    location.href = "index.html";
   });
 
+  /* ---------------------------------------------------------
+     CARRELLO
+  --------------------------------------------------------- */
   cartWrapper.addEventListener("click", () => {
     location.href = "checkout.html";
   });
+
+  document.addEventListener("cart-updated", aggiornaBadgeCarrello);
 
   if (typeof aggiornaBadgeCarrello === "function") aggiornaBadgeCarrello();
 });
