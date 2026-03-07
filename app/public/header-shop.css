@@ -1,0 +1,45 @@
+.shop-header {
+  background: #fff;
+  border-bottom: 1px solid #eee;
+  padding: 14px 20px;
+}
+
+.shop-header-inner {
+  max-width: 1200px;
+  margin: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.main-nav {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.main-nav a {
+  font-weight: 500;
+  color: #000;
+}
+
+#cart-wrapper {
+  position: relative;
+  cursor: pointer;
+}
+
+#cart-icon {
+  font-size: 26px;
+}
+
+#cart-badge {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  background: #000;
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: bold;
+}
