@@ -12,13 +12,29 @@ fetch("head.html")
     document.dispatchEvent(new Event("head-loaded"));
   });
 
-// 2) HEADER (globale o shop)
-const isShopPage =
-  location.pathname.includes("catalogo") ||
-  location.pathname.includes("prodotto") ||
-  location.pathname.includes("checkout");
+// ---------------------------------------------------------
+// 2) DECISIONE HEADER
+// ---------------------------------------------------------
 
-const headerFile = isShopPage ? "header-shop.html" : "header.html";
+const path = location.pathname;
+
+// Pagine shop (vendita)
+const isShopPage =
+  path.includes("catalogo") ||
+  path.includes("prodotto");
+
+// Pagine utente (dashboard e impostazioni)
+const isUserPage =
+  path.includes("dashboard") ||
+  path.includes("reset-password") ||
+  path.includes("reset-email") ||
+  path.includes("elimina-account");
+
+// Header da caricare
+let headerFile = "header.html"; // default globale
+
+if (isShopPage) headerFile = "header-shop.html";
+if (isUserPage) headerFile = "header-user.html";
 
 fetch(headerFile)
   .then(r => r.text())
@@ -27,7 +43,9 @@ fetch(headerFile)
     document.dispatchEvent(new Event("header-loaded"));
   });
 
+// ---------------------------------------------------------
 // 3) FOOTER
+// ---------------------------------------------------------
 fetch("footer.html")
   .then(r => r.text())
   .then(html => {
