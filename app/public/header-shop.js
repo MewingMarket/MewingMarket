@@ -1,23 +1,11 @@
-// =========================================================
-// HEADER SHOP – MewingMarket
-// =========================================================
-
 document.addEventListener("header-loaded", () => {
 
   const navLogin = document.getElementById("nav-login");
   const navRegister = document.getElementById("nav-register");
   const navDashboard = document.getElementById("nav-dashboard");
   const navLogout = document.getElementById("nav-logout");
-
   const cartWrapper = document.getElementById("cart-wrapper");
-  const cartBadge = document.getElementById("cart-badge");
 
-  if (!navLogin || !navRegister || !navDashboard || !navLogout || !cartWrapper) {
-    console.warn("Header shop: elementi non trovati.");
-    return;
-  }
-
-  // LOGIN READY
   document.addEventListener("auth-ready", () => {
     const logged = isLogged();
 
@@ -33,21 +21,16 @@ document.addEventListener("header-loaded", () => {
       navLogout.style.display = "none";
     }
 
-    // LOGOUT
-    navLogout.addEventListener("click", (e) => {
+    navLogout.addEventListener("click", e => {
       e.preventDefault();
       logout();
-      window.location.href = "index.html";
+      location.href = "index.html";
     });
   });
 
-  // CLICK CARRELLO
   cartWrapper.addEventListener("click", () => {
-    window.location.href = "checkout.html";
+    location.href = "checkout.html";
   });
 
-  // BADGE CARRELLO
-  if (typeof aggiornaBadgeCarrello === "function") {
-    aggiornaBadgeCarrello();
-  }
+  if (typeof aggiornaBadgeCarrello === "function") aggiornaBadgeCarrello();
 });
