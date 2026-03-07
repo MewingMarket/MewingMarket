@@ -1,82 +1,40 @@
-/* =========================================================
-   LOADER HEADER / FOOTER / HEAD – MewingMarket
-   Versione definitiva per app/public/ senza sottocartelle
-========================================================= */
+// =========================================================
+// LOADER HEADER + FOOTER + HEAD – MewingMarket
+// =========================================================
 
-document.addEventListener("DOMContentLoaded", async () => {
-  const page = window.location.pathname.split("/").pop();
-
-  const shopPages = ["catalogo.html", "prodotto.html", "checkout.html"];
-
-  /* ------------------------------
-     1) HEAD GLOBALE
-  ------------------------------ */
-  try {
-    const headRes = await fetch("head.html", { cache: "no-store" });
-    const headHTML = await headRes.text();
-    document.head.insertAdjacentHTML("beforeend", headHTML);
+// 1) HEAD
+fetch("head.html")
+  .then(r => r.text())
+  .then(html => {
+    const temp = document.createElement("div");
+    temp.innerHTML = html;
+    [...temp.children].forEach(node => document.head.appendChild(node));
     document.dispatchEvent(new Event("head-loaded"));
-  } catch (err) {
-    console.error("Errore caricamento head.html:", err);
-  }
+  });
 
-  /* ------------------------------
-     2) HEADER (shop o globale)
-  ------------------------------ */
-  const headerPlaceholder = document.getElementById("header-placeholder");
+// 2) HEADER (globale o shop)
+const isShopPage =
+  location.pathname.includes("catalogo") ||
+  location.pathname.includes("prodotto") ||
+  location.pathname.includes("checkout");
 
-  if (headerPlaceholder) {
-    const headerFile = shopPages.includes(page)
-      ? "header-shop.html"
-      : "header.html";
+const headerFile = isShopPage ? "header-shop.html" : "header.html";
 
-    try {
-      const headerRes = await fetch(headerFile, { cache: "no-store" });
-      const headerHTML = await headerRes.text();
-      headerPlaceholder.innerHTML = headerHTML;
-      document.dispatchEvent(new Event("header-loaded"));
-    } catch (err) {
-      console.error("Errore caricamento header:", err);
-    }
-  }
+fetch(headerFile)
+  .then(r => r.text())
+  .then(html => {
+    document.getElementById("header-placeholder").innerHTML = html;
+    document.dispatchEvent(new Event("header-loaded"));
+  });
 
-  /* ------------------------------
-     3) FOOTER
-  ------------------------------ */
-  const footerPlaceholder = document.getElementById("footer-placeholder");
+// 3) FOOTER
+fetch("footer.html")
+  .then(r => r.text())
+  .then(html => {
+    document.getElementById("footer-placeholder").innerHTML = html;
 
-  if (footerPlaceholder) {
-    try {
-      const footerRes = await fetch("footer.html", { cache: "no-store" });
-      const footerHTML = await footerRes.text();
-      footerPlaceholder.innerHTML = footerHTML;
-      document.dispatchEvent(new Event("footer-loaded"));
-    } catch (err) {
-      console.error("Errore caricamento footer:", err);
-    }
-  }
+    const year = document.getElementById("anno");
+    if (year) year.textContent = new Date().getFullYear();
 
-  /* ------------------------------
-     4) SCRIPT GLOBALI
-  ------------------------------ */
-  loadScript("tracking.js");
-
-  /* ------------------------------
-     5) SCRIPT SOLO PAGINE SHOP
-  ------------------------------ */
-  if (shopPages.includes(page)) {
-    loadScript("auth.js");
-    loadScript("carrello.js");
-    loadScript("header-shop.js");
-  }
-});
-
-/* =========================================================
-   FUNZIONE PER CARICARE SCRIPT
-========================================================= */
-function loadScript(src) {
-  const s = document.createElement("script");
-  s.src = src + "?v=" + Date.now();
-  s.defer = true;
-  document.body.appendChild(s);
-}
+    document.dispatchEvent(new Event("footer-loaded"));
+  });
