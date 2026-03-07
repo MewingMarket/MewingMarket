@@ -15,4 +15,18 @@
   </div>
 
   <link rel="stylesheet" href="user.css">
+
+  <script>
+    document.addEventListener("header-loaded", () => {
+      const logoutBtn = document.getElementById("user-logout");
+
+      if (logoutBtn) {
+        logoutBtn.addEventListener("click", e => {
+          e.preventDefault();
+          logout(); // funzione già presente in auth.js
+          location.href = "index.html";
+        });
+      }
+    });
+  </script>
 </header>
