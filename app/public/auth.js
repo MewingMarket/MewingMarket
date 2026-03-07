@@ -72,3 +72,11 @@ readAuthState();
 
 // Rileggi lo stato quando cambia localStorage
 window.addEventListener("storage", readAuthState);
+
+/* ---------------------------------------------------------
+   IMPORTANTE: quando l'header è caricato, rileggi lo stato
+--------------------------------------------------------- */
+document.addEventListener("header-loaded", () => {
+  readAuthState();
+  dispatchAuthReady();
+});
