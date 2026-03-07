@@ -1,7 +1,6 @@
 /* =========================================================
    FILE: /public/carrello.js
    CARRELLO PREMIUM — MewingMarket
-   Versione definitiva: guest + logged, qty, badge, single/multi
 ========================================================= */
 
 const Cart = {
@@ -18,11 +17,11 @@ const Cart = {
 
   save(items) {
     localStorage.setItem(this.key, JSON.stringify(items));
+    triggerCartUpdate();
   },
 
   add(product) {
     const items = this.get();
-
     const existing = items.find(p => p.slug === product.slug);
 
     if (existing) {
@@ -59,8 +58,12 @@ const Cart = {
 };
 
 /* =========================================================
-   FUNZIONI GLOBALI
+   EVENTI GLOBALI
 ========================================================= */
+
+function triggerCartUpdate() {
+  document.dispatchEvent(new Event("cart-updated"));
+}
 
 function aggiungiAlCarrello(prodotto) {
   Cart.add(prodotto);
@@ -74,22 +77,5 @@ function aggiornaBadgeCarrello() {
   badge.textContent = count;
 }
 
-function getCheckoutMode() {
-  const params = new URLSearchParams(window.location.search);
-  return params.get("slug") ? "single" : "multi";
-}
-
-function getSingleProduct() {
-  const params = new URLSearchParams(window.location.search);
-  const slug = params.get("slug");
-  if (!slug) return null;
-
-  const items = Cart.get();
-  return items.find(p => p.slug === slug) || null;
-}
-
-function isLogged() {
-  const session = localStorage.getItem("session");
-  const email = localStorage.getItem("utenteEmail");
-  return !!(session && email);
-}
+document.addEventListener("cart-updated", aggiornaBadgeCarrello);
+document.addEventListener("header-loaded", aggiornaBadgeCarrello);
