@@ -1,0 +1,43 @@
+.hero-premium {
+  max-width: 1200px;
+  margin: auto;
+  padding: 40px 20px;
+  display: flex;
+  gap: 40px;
+}
+
+.hero-left img {
+  width: 100%;
+  border-radius: 12px;
+}
+
+.hero-right {
+  flex: 1;
+}
+
+.price-box {
+  font-size: 26px;
+  font-weight: bold;
+  margin: 20px 0;
+}
+
+.video-descrizione-wrapper {
+  max-width: 1200px;
+  margin: auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  padding: 20px;
+}
+
+.video-wrapper iframe {
+  width: 100%;
+  aspect-ratio: 16/9;
+  border-radius: 12px;
+}
+
+.related-section {
+  max-width: 1200px;
+  margin: 40px auto;
+  padding: 20px;
+}
