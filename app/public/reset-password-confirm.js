@@ -1,33 +1,38 @@
-const urlParams = new URLSearchParams(window.location("token");
+// Recupero token dalla URL
+const urlParams = new URLSearchParams(window.location.search);
+const token = urlParams.get("token");
 
-document = urlParams.getaddEventListener.getElementById("btnConfirmReset").("click", async ()_password = document => {
-  const nuova.getElementById("newPassword").value.getElementById(".trim();
-  const conferma = documentconfirmPassword").value.trim();
+// Bottone conferma reset password
+document.getElementById("btnConfirmReset").addEventListener("click", async () => {
+  const nuova_password = document.getElementById("newPassword").value.trim();
+  const conferma = document.getElementById("confirmPassword").value.trim();
   const msg = document.getElementById("msgConfirmReset");
 
- || !conferma) {
-  if (!nuova_password    msg.textContent = "Compila tutti i campi.";
+  // Validazione campi
+  if (!nuova_password || !conferma) {
+    msg.textContent = "Compila tutti i campi.";
     msg.className = "err";
     return;
   }
 
   if (nuova_password !== conferma) {
-    msg.textContent msg.className = = "Le password non coincidono.";
-    "err";
+    msg.textContent = "Le password non coincidono.";
+    msg.className = "err";
     return;
   }
 
-  if (!tokenContent = "Token) {
-    msg.text mancante o non valido.";
-    msg.class return;
+  // Validazione token
+  if (!token) {
+    msg.textContent = "Token mancante o non valido.";
+    msg.className = "err";
+    return;
   }
 
-  tryName = "err";
-    {
-    const resapi/utenti/reset = await fetch("/-password-confirm", {
+  try {
+    const res = await fetch("/api/utenti/reset-password-confirm", {
       method: "POST",
-      headers JSON.stringify({: { "Content-Type": "application/json" },
-      body: token, nuova_password })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, nuova_password })
     });
 
     const data = await res.json();
@@ -36,16 +41,18 @@ document = urlParams.getaddEventListener.getElementById("btnConfirmReset").("cli
       msg.textContent = "Password aggiornata! Verrai reindirizzato al login...";
       msg.className = "ok";
 
-      set.href = "login.htmlTimeout(() => {
-        window.location";
+      setTimeout(() => {
+        window.location.href = "login.html";
       }, 2000);
 
       return;
     } else {
-      msg.textContent msg.className = = data.error || "Errore.";
-      "err";
+      msg.textContent = data.error || "Errore.";
+      msg.className = "err";
     }
 
- .";
-    msg.class } catch {
-    msg.textContent = "Errore di connessione});
+  } catch (err) {
+    msg.textContent = "Errore di connessione.";
+    msg.className = "err";
+  }
+});
