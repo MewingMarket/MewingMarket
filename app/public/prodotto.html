@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<script src="/seo.js"></script>
-    <script src="/structured-data.js"></script>
+  <div id="head-placeholder"></div>
+
+  <link rel="stylesheet" href="header-shop.css">
+  <link rel="stylesheet" href="prodotto.css">
+  <link rel="stylesheet" href="footer.css">
 </head>
+
 <body>
 
-<!-- HEADER DINAMICO (SHOP) -->
 <div id="header-placeholder"></div>
 
 <main id="page-product">
 
-  <!-- HERO PREMIUM -->
+  <!-- HERO -->
   <section id="hero" class="hero-premium">
     <div class="hero-left">
-      <img id="product-image" src="" alt="Prodotto" />
+      <img id="product-image" src="" alt="Prodotto">
     </div>
 
     <div class="hero-right">
@@ -33,15 +36,13 @@
     </div>
   </section>
 
-  <!-- VIDEO + DESCRIZIONE AFFIANCATI -->
+  <!-- VIDEO + DESCRIZIONE -->
   <section class="video-descrizione-wrapper">
 
-    <!-- VIDEO -->
-    <div id="video-section" style="display:none;">
-      <iframe id="product-video" src="" frameborder="0" allowfullscreen></iframe>
+    <div id="video-section" class="video-wrapper" style="display:none;">
+      <iframe id="product-video" allowfullscreen></iframe>
     </div>
 
-    <!-- DESCRIZIONE + BOTTONI -->
     <div id="descrizione">
       <h2>Descrizione</h2>
       <div id="product-description"></div>
@@ -62,18 +63,21 @@
 
 </main>
 
-<!-- FOOTER DINAMICO -->
 <div id="footer-placeholder"></div>
 
-<!-- TRACKING -->
+<!-- JS SHOP -->
+<script src="carello.js"></script>
+<script src="auth.js"></script>
+<script src="header-shop.js"></script>
 
+<!-- JS SPECIFICO -->
+<script src="prodotto.js"></script>
 
-<!-- LOADER -->
-
-
-<script src="tracking.js"></script>
+<!-- GLOBALI -->
 <script src="loader-header-footer.js"></script>
 <script src="seo.js"></script>
 <script src="structured-data.js"></script>
+<script src="tracking.js"></script>
+
 </body>
 </html>
