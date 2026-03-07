@@ -1,16 +1,16 @@
-/* ============================
-   AUTH.JS - Stato login globale
-============================ */
+/* =========================================================
+   AUTH.JS — Stato login globale
+========================================================= */
 
 console.log("AUTH JS CARICATO");
 
-// Stato globale iniziale
-window.isLogged = false;   // 0 = visitatore
+// Stato globale
+window.isLogged = false;
 window.userEmail = null;
 
-/* -----------------------------------------
+/* ---------------------------------------------------------
    Legge lo stato reale dell'utente
------------------------------------------ */
+--------------------------------------------------------- */
 function readAuthState() {
   try {
     const session = localStorage.getItem("session");
@@ -18,13 +18,10 @@ function readAuthState() {
     const token = localStorage.getItem("token");
     const utenteEmail = localStorage.getItem("utenteEmail");
 
-    if ((session && email) || (token && utenteEmail)) {
-      window.isLogged = true;   // 1 = utente loggato
-      window.userEmail = utenteEmail || email;
-    } else {
-      window.isLogged = false;  // 0 = visitatore
-      window.userEmail = null;
-    }
+    const logged = (session && email) || (token && utenteEmail);
+
+    window.isLogged = !!logged;
+    window.userEmail = logged ? (utenteEmail || email) : null;
 
   } catch (e) {
     window.isLogged = false;
@@ -39,9 +36,9 @@ function readAuthState() {
   dispatchAuthReady();
 }
 
-/* -----------------------------------------
-   Emette auth-ready SOLO quando il DOM è pronto
------------------------------------------ */
+/* ---------------------------------------------------------
+   Emette auth-ready quando il DOM è pronto
+--------------------------------------------------------- */
 function dispatchAuthReady() {
   const event = new CustomEvent("auth-ready");
 
@@ -54,19 +51,9 @@ function dispatchAuthReady() {
   }
 }
 
-/* -----------------------------------------
-   Esegui subito la lettura dello stato
------------------------------------------ */
-readAuthState();
-
-/* -----------------------------------------
-   Rileggi lo stato ogni volta che cambia localStorage
------------------------------------------ */
-window.addEventListener("storage", readAuthState);
-
-/* -----------------------------------------
+/* ---------------------------------------------------------
    LOGOUT
------------------------------------------ */
+--------------------------------------------------------- */
 function logout() {
   try {
     localStorage.removeItem("session");
@@ -75,6 +62,13 @@ function logout() {
     localStorage.removeItem("utenteEmail");
   } catch (e) {}
 
-  readAuthState();  // stato 2 = logout
-  window.location.href = "index.html";
+  readAuthState();
 }
+
+/* ---------------------------------------------------------
+   Inizializzazione
+--------------------------------------------------------- */
+readAuthState();
+
+// Rileggi lo stato quando cambia localStorage
+window.addEventListener("storage", readAuthState);
