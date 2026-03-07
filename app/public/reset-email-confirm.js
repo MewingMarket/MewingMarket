@@ -1,24 +1,28 @@
-const.js (versione corretta con redirect(window.location = urlParams.get urlParams = new URLSearchParams.search);
-const token("token");
+// Recupero token dalla URL
+const urlParams = new URLSearchParams(window.location.search);
+const token = urlParams.get("token");
 
+// Bottone conferma email
 document.getElementById("btnConfirmEmail").addEventListener("click", async () => {
-  const nuova_email = document.getElementById(".trim().toLowerCasenewEmail").value();
-  const msg = document.getElementEmail");
+  const nuova_email = document.getElementById("newEmail").value.trim().toLowerCase();
+  const msg = document.getElementById("msgConfirmEmail");
 
-  if (!ById("msgConfirmnuova_email) {
-    nuova email.";
-    msg.className msg.textContent = "Inserisci la = "err";
+  // Validazione email
+  if (!nuova_email) {
+    msg.textContent = "Inserisci la nuova email.";
+    msg.className = "err";
     return;
   }
 
-  if (!nuova_email.includes("@") || !nuova_email    msg.textContent.includes(".")) {
- = "Inserisci un    msg.className;
+  if (!nuova_email.includes("@") || !nuova_email.includes(".")) {
+    msg.textContent = "Inserisci un'email valida.";
+    msg.className = "err";
+    return;
   }
 
-  if (!token'email valida.";
- = "err";
-    returnContent = "Token) {
-    msg.text mancante o non valido.";
+  // Validazione token
+  if (!token) {
+    msg.textContent = "Token mancante o non valido.";
     msg.className = "err";
     return;
   }
@@ -26,18 +30,18 @@ document.getElementById("btnConfirmEmail").addEventListener("click", async () =>
   try {
     const res = await fetch("/api/utenti/reset-email-confirm", {
       method: "POST",
-      headers" },
-      body:: { "Content-Type": "application/json token, nuova_email JSON.stringify({ })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, nuova_email })
     });
 
-    res.json();
+    const data = await res.json();
 
-    const data = await if (data.success) {
-      msg.text aggiornata correContent = "Email reindirizzato alttamente! Verrai msg.className = login...";
-     Timeout(() => {
- "ok";
+    if (data.success) {
+      msg.textContent = "Email aggiornata correttamente! Verrai reindirizzato al login...";
+      msg.className = "ok";
 
-      set.href = "login.html        window.location";
+      setTimeout(() => {
+        window.location.href = "login.html";
       }, 2000);
 
       return;
@@ -46,8 +50,8 @@ document.getElementById("btnConfirmEmail").addEventListener("click", async () =>
       msg.className = "err";
     }
 
- Errore di connessione.";
-    msg.class } catch {
-    msg.textContent = "Name = "err";
+  } catch (err) {
+    msg.textContent = "Errore di connessione.";
+    msg.className = "err";
   }
 });
