@@ -1,50 +1,26 @@
-/* =========================================================
-   HEADER SHOP — login/logout + badge
-========================================================= */
+<!-- HEADER SHOP – STRUTTURA PULITA E DINAMICA -->
 
-document.addEventListener("header-loaded", () => {
+<div class="shop-header">
+  <div class="shop-header-inner">
 
-  const navLogin = document.getElementById("nav-login");
-  const navRegister = document.getElementById("nav-register");
-  const navDashboard = document.getElementById("nav-dashboard");
-  const navLogout = document.getElementById("nav-logout");
-  const cartWrapper = document.getElementById("cart-wrapper");
+    <a href="index.html" class="logo">
+      <img src="logo.png" alt="MewingMarket" width="160">
+    </a>
 
-  /* ---------------------------------------------------------
-     LOGIN / LOGOUT / PROFILO
-  --------------------------------------------------------- */
-  function aggiornaHeaderAuth() {
-    const logged = window.isLogged;
+    <nav class="main-nav">
+      <a href="catalogo.html">Catalogo</a>
 
-    if (logged) {
-      navLogin.style.display = "none";
-      navRegister.style.display = "none";
-      navDashboard.style.display = "inline-block";
-      navLogout.style.display = "inline-block";
-    } else {
-      navLogin.style.display = "inline-block";
-      navRegister.style.display = "inline-block";
-      navDashboard.style.display = "none";
-      navLogout.style.display = "none";
-    }
-  }
+      <a href="login.html" id="nav-login">Login</a>
+      <a href="registrazione.html" id="nav-register">Registrati</a>
 
-  document.addEventListener("auth-ready", aggiornaHeaderAuth);
+      <!-- Logout presente, ma solo se loggato -->
+      <a href="#" id="nav-logout" style="display:none;">Logout</a>
 
-  navLogout.addEventListener("click", e => {
-    e.preventDefault();
-    logout();
-    location.href = "index.html";
-  });
+      <div id="cart-wrapper">
+        <span id="cart-icon">🛒</span>
+        <span id="cart-badge" style="display:none;">0</span>
+      </div>
+    </nav>
 
-  /* ---------------------------------------------------------
-     CARRELLO
-  --------------------------------------------------------- */
-  cartWrapper.addEventListener("click", () => {
-    location.href = "checkout.html";
-  });
-
-  document.addEventListener("cart-updated", aggiornaBadgeCarrello);
-
-  if (typeof aggiornaBadgeCarrello === "function") aggiornaBadgeCarrello();
-});
+  </div>
+</div>
