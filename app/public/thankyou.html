@@ -10,37 +10,41 @@
 
 <body>
 
-<!-- HEAD DINAMICO (spostato qui, posizione corretta) -->
+<!-- HEAD DINAMICO -->
 <div id="head-placeholder"></div>
 
 <!-- HEADER DINAMICO -->
 <div id="header-placeholder"></div>
 
-<div class="box">
-  <h1>Ordine completato 🎉</h1>
+<main>
 
-  <p>Grazie per il tuo acquisto! Ecco il riepilogo:</p>
+  <div class="box">
+    <h1>Ordine completato 🎉</h1>
 
-  <div class="order-box">
-    <p><strong>Prodotto:</strong> <span id="prod"></span></p>
-    <p><strong>Prezzo:</strong> <span id="price"></span>€</p>
-    <p><strong>Data:</strong> <span id="date"></span></p>
+    <p>Grazie per il tuo acquisto! Ecco il riepilogo:</p>
 
-    <div style="margin-top:15px;">
-      <strong>Dettaglio prodotti:</strong>
-      <ul id="prod-list"></ul>
+    <div class="order-box">
+      <p><strong>Prodotto:</strong> <span id="prod"></span></p>
+      <p><strong>Prezzo:</strong> <span id="price"></span>€</p>
+      <p><strong>Data:</strong> <span id="date"></span></p>
+
+      <div style="margin-top:15px;">
+        <strong>Dettaglio prodotti:</strong>
+        <ul id="prod-list"></ul>
+      </div>
+
+      <div id="download-box" style="margin-top:20px;"></div>
     </div>
 
-    <div id="download-box" style="margin-top:20px;"></div>
+    <p style="margin-top:20px;">
+      Riceverai anche una email con il link per scaricare i prodotti acquistati.
+    </p>
+
+    <a href="index.html" class="btn btn-home">Torna al sito</a>
+    <a id="feedbackBtn" class="btn btn-feedback">Lascia una recensione ⭐</a>
   </div>
 
-  <p style="margin-top:20px;">
-    Riceverai anche una email con il link per scaricare i prodotti acquistati.
-  </p>
-
-  <a href="index.html" class="btn btn-home">Torna al sito</a>
-  <a id="feedbackBtn" class="btn btn-feedback">Lascia una recensione ⭐</a>
-</div>
+</main>
 
 <!-- JS SPECIFICO -->
 <script src="thankyou.js"></script>
