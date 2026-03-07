@@ -21,7 +21,8 @@ const path = location.pathname;
 // Pagine shop (vendita)
 const isShopPage =
   path.includes("catalogo") ||
-  path.includes("prodotto");
+  path.includes("prodotto") ||
+  path.includes("checkout");
 
 // Pagine utente (dashboard e impostazioni)
 const isUserPage =
@@ -29,6 +30,15 @@ const isUserPage =
   path.includes("reset-password") ||
   path.includes("reset-email") ||
   path.includes("elimina-account");
+
+// ---------------------------------------------------------
+// 2B) CARICA CARRELLO.JS PRIMA DELL’HEADER (solo pagine shop)
+// ---------------------------------------------------------
+if (isShopPage) {
+  const s = document.createElement("script");
+  s.src = "carrello.js";
+  document.head.appendChild(s);
+}
 
 // Header da caricare
 let headerFile = "header.html"; // default globale
