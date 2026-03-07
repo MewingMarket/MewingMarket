@@ -10,34 +10,38 @@
 
 <body>
 
-<!-- HEAD DINAMICO (spostato qui, posizione corretta) -->
+<!-- HEAD DINAMICO -->
 <div id="head-placeholder"></div>
 
 <!-- HEADER DINAMICO -->
 <div id="header-placeholder"></div>
 
-<div class="tracking-container">
-  <h1>Tracking – MewingMarket MAX</h1>
-  <p>Eventi raccolti dal bot e dal sito (solo sessione corrente).</p>
+<main>
 
-  <div class="tracking-toolbar">
-    <button class="tracking-btn" onclick="safeRender()">Aggiorna</button>
-    <button class="tracking-btn secondary" onclick="location.reload()">Reload</button>
-    <button class="tracking-btn" onclick="location.href='/dashboard.html?secret=TUO_SECRET'">Vai alla Dashboard</button>
+  <div class="tracking-container">
+    <h1>Tracking – MewingMarket MAX</h1>
+    <p>Eventi raccolti dal bot e dal sito (solo sessione corrente).</p>
+
+    <div class="tracking-toolbar">
+      <button class="tracking-btn" onclick="safeRender()">Aggiorna</button>
+      <button class="tracking-btn secondary" onclick="location.reload()">Reload</button>
+      <button class="tracking-btn" onclick="location.href='/dashboard.html?secret=TUO_SECRET'">Vai alla Dashboard</button>
+    </div>
+
+    <table class="tracking-table">
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Evento</th>
+          <th>Descrizione</th>
+          <th>Parametri</th>
+        </tr>
+      </thead>
+      <tbody id="logTable"></tbody>
+    </table>
   </div>
 
-  <table class="tracking-table">
-    <thead>
-      <tr>
-        <th>Data</th>
-        <th>Evento</th>
-        <th>Descrizione</th>
-        <th>Parametri</th>
-      </tr>
-    </thead>
-    <tbody id="logTable"></tbody>
-  </table>
-</div>
+</main>
 
 <script>
   /* =========================================================
@@ -65,4 +69,4 @@
 <script src="tracking.js"></script>
 
 </body>
-                                        </html>
+</html>
