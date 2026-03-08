@@ -1,9 +1,9 @@
 /**
  * =========================================================
  * File: app/modules/airtable.cjs
- * Versione definitiva blindata:
- * - Sync Airtable → cache + file
- * - Timeout + retry + paginazione
+ * Versione definitiva REAL‑TIME:
+ * - Delta sync (solo record modificati)
+ * - Nessun timeout, nessun retry
  * - Nessuna promise pendente
  * - Usa DescrizioneLunga come descrizione principale
  * - Descrizione breve generata da codice (non da Airtable)
@@ -20,6 +20,7 @@ const Airtable = require("airtable");
 const ROOT = path.resolve(__dirname, "..");
 const DATA_DIR = path.join(ROOT, "data");
 const DATA_PATH = path.join(DATA_DIR, "products.json");
+const META_PATH = path.join(DATA_DIR, "airtable-meta.json");
 
 global.catalogReady = false;
 
@@ -58,35 +59,22 @@ function getProducts() {
   return PRODUCTS_CACHE;
 }
 
-/* =========================================================
-   TIMEOUT + RETRY + PAGINAZIONE
-========================================================= */
-
-// Timeout helper
-function withTimeout(promise, ms) {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) =>
-      setTimeout(() => reject(new Error(`Timeout Airtable (${ms}ms)`)), ms)
-    )
-  ]);
-}
-
-// Retry wrapper
-async function retry(fn, retries = 3, delay = 1000) {
-  for (let i = 0; i < retries; i++) {
-    try {
-      return await fn();
-    } catch (err) {
-      console.error(`⚠️ Tentativo ${i + 1} fallito:`, err.message);
-      if (i === retries - 1) throw err;
-      await new Promise((r) => setTimeout(r, delay));
+function loadMeta() {
+  try {
+    if (fs.existsSync(META_PATH)) {
+      return JSON.parse(fs.readFileSync(META_PATH, "utf8"));
     }
-  }
+  } catch {}
+  return { lastSync: "1970-01-01T00:00:00.000Z" };
+}
+
+function saveMeta(meta) {
+  ensureDataDir();
+  fs.writeFileSync(META_PATH, JSON.stringify(meta, null, 2));
 }
 
 /* =========================================================
-   SYNC AIRTABLE — versione blindata
+   SYNC AIRTABLE — DELTA SYNC REAL‑TIME
 ========================================================= */
 async function syncAirtable() {
   const PAT = process.env.AIRTABLE_PAT;
@@ -101,80 +89,86 @@ async function syncAirtable() {
   const base = new Airtable({ apiKey: PAT }).base(BASE);
   const tableName = decodeURIComponent(TABLE);
 
-  async function fetchPage() {
-    return new Promise((resolve, reject) => {
-      const results = [];
+  const meta = loadMeta();
+  const lastSync = meta.lastSync;
 
-      base(tableName)
-        .select({ pageSize: 50 })
-        .eachPage(
-          (records, next) => {
-            results.push(...records);
-            next();
-          },
-          (err) => {
-            if (err) reject(err);
-            else resolve(results);
-          }
-        );
-    });
-  }
+  console.log(`📡 Delta Sync Airtable (modifiche dopo ${lastSync})…`);
+
+  const updated = [];
 
   try {
-    console.log("📡 Sync Airtable…");
-
-    // Timeout + retry + paginazione
-    const records = await retry(
-      () => withTimeout(fetchPage(), 10000),
-      3,
-      1000
-    );
-
-    const products = records.map((r) => {
-      const f = r.fields;
-
-      return {
-        id: r.id,
-        slug: f.slug || f.Slug || "",
-        titolo: f.titolo || f.Titolo || "",
-        prezzo: f.prezzo || f.Prezzo || 0,
-        categoria: f.categoria || f.Categoria || "",
-        paypal_link: f.paypal_link || f.PayPal || "",
-        youtube_url: f.youtube_url || f.YouTube || "",
-
-        // ⭐ DESCRIZIONE LUNGA — campo principale
-        descrizione:
-          f.DescrizioneLunga ||
-          f.descrizione ||
-          f.Descrizione ||
-          "",
-
-        // ⭐ IMMAGINE PRINCIPALE
-        immagine:
-          Array.isArray(f.Immagine) && f.Immagine[0]?.url
-            ? f.Immagine[0].url
-            : "",
-
-        // ⭐ FILE PRODOTTO
-        fileProdotto:
-          Array.isArray(f.File_consegna) && f.File_consegna[0]?.url
-            ? f.File_consegna[0].url
-            : ""
-      };
-    });
-
-    PRODUCTS_CACHE = products;
-    saveProductsToFile(products);
-
-    global.catalogReady = true;
-    console.log("🟢 Sync Airtable OK:", products.length, "prodotti");
-
-    return true;
-
+    await base(tableName)
+      .select({
+        filterByFormula: `LAST_MODIFIED_TIME() > '${lastSync}'`,
+        pageSize: 50
+      })
+      .eachPage((records, next) => {
+        updated.push(...records);
+        next();
+      });
   } catch (err) {
-    console.error("❌ Errore syncAirtable:", err.message);
+    console.error("❌ Errore Airtable:", err.message);
     return false;
   }
+
+  if (updated.length === 0) {
+    console.log("⏭️ Nessuna modifica — sync istantanea");
+    global.catalogReady = true;
+    return true;
+  }
+
+  console.log(`🔄 Modifiche trovate: ${updated.length}`);
+
+  // Carica catalogo locale
+  loadProducts();
+
+  // Applica modifiche
+  for (const r of updated) {
+    const f = r.fields;
+
+    const incoming = {
+      id: r.id,
+      slug: f.slug || f.Slug || "",
+      titolo: f.titolo || f.Titolo || "",
+      prezzo: f.prezzo || f.Prezzo || 0,
+      categoria: f.categoria || f.Categoria || "",
+      paypal_link: f.paypal_link || f.PayPal || "",
+      youtube_url: f.youtube_url || f.YouTube || "",
+      descrizione:
+        f.DescrizioneLunga ||
+        f.descrizione ||
+        f.Descrizione ||
+        "",
+      immagine:
+        Array.isArray(f.Immagine) && f.Immagine[0]?.url
+          ? f.Immagine[0].url
+          : "",
+      fileProdotto:
+        Array.isArray(f.File_consegna) && f.File_consegna[0]?.url
+          ? f.File_consegna[0].url
+          : ""
+    };
+
+    const index = PRODUCTS_CACHE.findIndex((p) => p.id === r.id);
+
+    if (index === -1) {
+      PRODUCTS_CACHE.push(incoming);
+      console.log("➕ Nuovo prodotto:", incoming.slug);
+    } else {
+      PRODUCTS_CACHE[index] = { ...PRODUCTS_CACHE[index], ...incoming };
+      console.log("♻️ Prodotto aggiornato:", incoming.slug);
+    }
+  }
+
+  saveProductsToFile(PRODUCTS_CACHE);
+
+  const now = new Date().toISOString();
+  saveMeta({ lastSync: now });
+
+  global.catalogReady = true;
+
+  console.log("🟢 Delta Sync Airtable completata");
+  return true;
 }
 
 /* =========================================================
@@ -271,7 +265,6 @@ async function getSalesByUID(uid) {
       id: r.id,
       ...r.fields
     }));
-
   } catch (err) {
     console.error("❌ Errore getSalesByUID:", err);
     return [];
