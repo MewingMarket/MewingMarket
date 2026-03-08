@@ -66,3 +66,50 @@ button:hover {
 .admin-logo img {
   display:block;
 }
+/* HEADER ADMIN */
+.admin-header {
+  background:#ffffff;
+  border-bottom:1px solid #d5e1f0;
+  padding:20px 0;
+}
+
+.admin-header-container {
+  max-width:1200px;
+  margin:0 auto;
+  padding:0 20px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.admin-logo img {
+  display:block;
+}
+
+/* NAV ADMIN */
+.admin-nav ul {
+  list-style:none;
+  margin:0;
+  padding:0;
+  display:flex;
+  flex-wrap:wrap;
+  gap:20px;
+}
+
+.admin-nav a {
+  color:#003366;
+  text-decoration:none;
+  font-size:16px;
+  font-weight:600;
+  padding:8px 12px;
+  border-radius:6px;
+  transition:0.2s;
+}
+
+.admin-nav a:hover {
+  background:#e8eef5;
+}
+
+.admin-nav a i {
+  margin-right:8px;
+}
