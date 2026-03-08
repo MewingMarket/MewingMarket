@@ -1,42 +1,50 @@
 /**
  * =========================================================
- * File: app/server/startup/bootstrap.cjs
- * Bootstrap completo — YouTube → Airtable → Catalogo
- * Versione patchata per nuovo store interno
+ * BOOTSTRAP FAILSAFE — mai più blocchi su Render
  * =========================================================
  */
 
 const { syncYouTube } = require("../../services/youtube.cjs");
 const { syncAirtable } = require("../../modules/airtable.cjs");
 
+// Timeout helper
+function withTimeout(promise, ms, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timeout (${ms}ms)`)), ms)
+    )
+  ]);
+}
+
 module.exports = async function bootstrap() {
   console.log("\n====================================");
   console.log("🚀 BOOTSTRAP MewingMarket");
   console.log("====================================\n");
 
-  // Il catalogo sarà pronto solo dopo sync Airtable
   global.catalogReady = false;
 
   /* =========================================================
-     1) YOUTUBE SYNC (opzionale)
+     1) YOUTUBE SYNC (con timeout)
   ========================================================== */
   console.log("🎥 Sync YouTube…");
   try {
-    await syncYouTube();
+    await withTimeout(syncYouTube(), 8000, "YouTube sync");
     console.log("✅ YouTube completata\n");
   } catch (err) {
-    console.error("❌ Errore YouTube:", err);
+    console.error("❌ Errore YouTube:", err.message);
   }
 
   /* =========================================================
-     2) AIRTABLE SYNC (fonte principale del catalogo)
+     2) AIRTABLE SYNC (con timeout)
   ========================================================== */
   console.log("📡 Sync Airtable…");
   try {
-    await syncAirtable();
+    await withTimeout(syncAirtable(), 10000, "Airtable sync");
     console.log("🟢 Airtable completata (catalogReady = true)\n");
+    global.catalogReady = true;
   } catch (err) {
-    console.error("❌ Errore Airtable:", err);
+    console.error("❌ Errore Airtable:", err.message);
   }
 
   /* =========================================================
