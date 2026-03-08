@@ -1,26 +1,77 @@
-<!-- HEADER SHOP – STRUTTURA PULITA E DINAMICA -->
+/* =========================================================
+   HEADER-SHOP.JS — Gestione login/logout + carrello
+========================================================= */
 
-<div class="shop-header">
-  <div class="shop-header-inner">
+console.log("HEADER SHOP JS CARICATO");
 
-    <a href="index.html" class="logo">
-      <img src="logo.png" alt="MewingMarket" width="160">
-    </a>
+/* ---------------------------------------------------------
+   Riferimenti DOM
+--------------------------------------------------------- */
+const navLogin = document.getElementById("nav-login");
+const navRegister = document.getElementById("nav-register");
+const navLogout = document.getElementById("nav-logout");
+const cartBadge = document.getElementById("cart-badge");
 
-    <nav class="main-nav">
-      <a href="catalogo.html">Catalogo</a>
+/* ---------------------------------------------------------
+   Aggiorna la UI in base allo stato login
+--------------------------------------------------------- */
+function updateHeaderUI() {
+  if (window.isLogged) {
+    // Utente loggato
+    navLogin.style.display = "none";
+    navRegister.style.display = "none";
+    navLogout.style.display = "inline-block";
+  } else {
+    // Utente NON loggato
+    navLogin.style.display = "inline-block";
+    navRegister.style.display = "inline-block";
+    navLogout.style.display = "none";
+  }
+}
 
-      <a href="login.html" id="nav-login">Login</a>
-      <a href="registrazione.html" id="nav-register">Registrati</a>
+/* ---------------------------------------------------------
+   Logout
+--------------------------------------------------------- */
+navLogout.addEventListener("click", (e) => {
+  e.preventDefault();
+  logout(); // funzione di auth.js
+});
 
-      <!-- Logout presente, ma solo se loggato -->
-      <a href="#" id="nav-logout" style="display:none;">Logout</a>
+/* ---------------------------------------------------------
+   Aggiorna badge carrello
+--------------------------------------------------------- */
+function updateCartBadge() {
+  try {
+    const cart = JSON.parse(localStorage.getItem("carrello")) || [];
+    const count = cart.length;
 
-      <div id="cart-wrapper">
-        <span id="cart-icon">🛒</span>
-        <span id="cart-badge" style="display:none;">0</span>
-      </div>
-    </nav>
+    if (count > 0) {
+      cartBadge.textContent = count;
+      cartBadge.style.display = "inline-block";
+    } else {
+      cartBadge.style.display = "none";
+    }
+  } catch (e) {
+    cartBadge.style.display = "none";
+  }
+}
 
-  </div>
-</div>
+/* ---------------------------------------------------------
+   EVENTI
+--------------------------------------------------------- */
+
+// Quando auth.js ha finito → aggiorna header
+document.addEventListener("auth-ready", () => {
+  updateHeaderUI();
+});
+
+// Quando cambia il carrello
+window.addEventListener("storage", (e) => {
+  if (e.key === "carrello") updateCartBadge();
+});
+
+/* ---------------------------------------------------------
+   Inizializzazione
+--------------------------------------------------------- */
+updateHeaderUI();
+updateCartBadge();
