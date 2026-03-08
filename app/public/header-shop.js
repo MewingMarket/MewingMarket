@@ -16,6 +16,11 @@ const cartBadge = document.getElementById("cart-badge");
    Aggiorna la UI in base allo stato login
 --------------------------------------------------------- */
 function updateHeaderUI() {
+  console.log("HEADER: updateHeaderUI()", {
+    isLogged: window.isLogged,
+    email: window.userEmail
+  });
+
   if (window.isLogged) {
     // Utente loggato
     navLogin.style.display = "none";
@@ -34,6 +39,7 @@ function updateHeaderUI() {
 --------------------------------------------------------- */
 navLogout.addEventListener("click", (e) => {
   e.preventDefault();
+  console.log("HEADER: Logout cliccato");
   logout(); // funzione di auth.js
 });
 
@@ -62,16 +68,19 @@ function updateCartBadge() {
 
 // Quando auth.js ha finito → aggiorna header
 document.addEventListener("auth-ready", () => {
+  console.log("HEADER: Evento auth-ready ricevuto");
   updateHeaderUI();
+  updateCartBadge();
 });
+
+// Se header-shop.js parte DOPO auth.js
+if (window.isLogged !== undefined) {
+  console.log("HEADER: Stato auth già disponibile");
+  updateHeaderUI();
+  updateCartBadge();
+}
 
 // Quando cambia il carrello
 window.addEventListener("storage", (e) => {
   if (e.key === "carrello") updateCartBadge();
 });
-
-/* ---------------------------------------------------------
-   Inizializzazione
---------------------------------------------------------- */
-updateHeaderUI();
-updateCartBadge();
