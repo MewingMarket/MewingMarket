@@ -1,78 +1,56 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <!-- HEAD ADMIN DINAMICO -->
-  
-
-  <title>Gestione Prodotti – Admin MewingMarket</title>
-
- 
-
-
-    <script src="/seo.js"></script>
-    <script src="/structured-data.js"></script>
-  
+  <div id="head-admin-placeholder"></div>
 </head>
 
 <body>
 
+  <!-- HEADER ADMIN DINAMICO -->
+  <div id="header-admin-placeholder"></div>
 
+  <main class="pagina-standard">
 
+    <h1>Gestione Prodotti</h1>
 
+    <!-- PULSANTE AGGIORNA -->
+    <div style="margin-bottom:20px;">
+      <button id="btn-sync" class="btn-primario">Aggiorna catalogo da Airtable</button>
+    </div>
 
+    <!-- TABELLA PRODOTTI -->
+    <table class="tabella-standard" id="tabella-prodotti">
+      <thead>
+        <tr>
+          <th>Titolo</th>
+          <th>Prezzo</th>
+          <th>Categoria</th>
+          <th>Slug</th>
+          <th>Stato</th>
+          <th>Link</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
 
+    <p id="status" style="margin-top:15px;"></p>
 
+  </main>
 
+  <!-- FOOTER ADMIN DINAMICO -->
+  <div id="footer-admin-placeholder"></div>
 
+  <!-- JS GLOBALI ADMIN -->
+  <script src="loader-admin.js"></script>
+  <script src="seo-admin.js"></script>
+  <script src="structured-data-admin.js"></script>
 
+  <!-- JS SPECIFICO PAGINA -->
+  <script src="js/prodotti.js"></script>
 
-
-
-
-<!-- NAV ADMIN DINAMICO -->
-<div id="nav-admin-placeholder"></div>
-
-
-<main class="pagina-standard" style="margin-top:20px;">
-
-  <h1>Gestione Prodotti</h1>
-
-  <!-- PULSANTE AGGIORNA -->
-  <div style="margin-bottom:20px;">
-    <button id="btn-sync" class="btn-primario">Aggiorna catalogo da Airtable</button>
-  </div>
-
-  <!-- TABELLA PRODOTTI -->
-  <table class="tabella-standard" id="tabella-prodotti">
-    <thead>
-      <tr>
-        <th>Titolo</th>
-        <th>Prezzo</th>
-        <th>Categoria</th>
-        <th>Slug</th>
-        <th>Stato</th>
-        <th>Link</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
-</main>
-
-<!-- FOOTER ADMIN DINAMICO -->
-<div id="footer-admin-placeholder"></div>
-
-
-
-         
-         
-         
-         
-         
-         <script src="tracking.js"></script>
-         
-         
-         
 </body>
 </html>
