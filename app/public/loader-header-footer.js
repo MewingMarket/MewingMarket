@@ -51,6 +51,17 @@ fetch(headerFile)
   .then(html => {
     document.getElementById("header-placeholder").innerHTML = html;
     document.dispatchEvent(new Event("header-loaded"));
+
+    // ---------------------------------------------------------
+    // 2C) CARICA LO SCRIPT DELL’HEADER CORRETTO
+    // ---------------------------------------------------------
+    if (headerFile === "header-shop.html") {
+      const s = document.createElement("script");
+      s.src = "header-shop.js";
+      document.body.appendChild(s);
+    }
+
+    // header-user NON ha JS → NON serve caricare nulla
   });
 
 // ---------------------------------------------------------
@@ -66,6 +77,7 @@ fetch("footer.html")
 
     document.dispatchEvent(new Event("footer-loaded"));
   });
+
 // ---------------------------------------------------------
 // 4) POPUP POST-LOGIN (solo via JS, nessun HTML)
 // ---------------------------------------------------------
