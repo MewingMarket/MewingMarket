@@ -4,7 +4,17 @@
  * Entry point del server — versione stabile per Render
  * =========================================================
  */
+
+// 🔥 CATTURA ERRORI NASCOSTI (fondamentale per Render)
+process.on("uncaughtException", err => {
+  console.error("🔥 UNCAUGHT EXCEPTION:", err);
+});
+process.on("unhandledRejection", err => {
+  console.error("🔥 UNHANDLED REJECTION:", err);
+});
+
 console.log(">> PACKAGE TYPE:", require("../../package.json").type);
+
 const express = require("express");
 const path = require("path");
 const cors = require("cors");
@@ -88,6 +98,12 @@ async function startServer() {
 
   // ⭐ PATCH OBBLIGATORIA PER RENDER
   const PORT = process.env.PORT;
+
+  if (!PORT) {
+    console.error("❌ ERRORE: process.env.PORT è undefined! Render non ha assegnato la porta.");
+  } else {
+    console.log("🔧 Porta assegnata da Render:", PORT);
+  }
 
   app.listen(PORT, () => {
     console.log(`\n🎉 Server pronto! Porta ${PORT}`);
