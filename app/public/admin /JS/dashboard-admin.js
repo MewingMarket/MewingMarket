@@ -1,46 +1,41 @@
 // =========================================================
-// File: app/public/admin/js/dashboard-admin.js
-// Dashboard Admin (nuovo sistema token)
+// DASHBOARD ADMIN – versione blindata e coerente
 // =========================================================
 
-function getAdminToken() {
-  return localStorage.getItem("admin_token");
-}
+// Sanitizzazione
+const clean = (t) =>
+  typeof t === "string"
+    ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
+    : "";
 
-async function adminFetch(url, options = {}) {
-  const token = getAdminToken();
-
-  const headers = Object.assign(
-    {},
-    options.headers || {},
-    { "x-admin-token": token }
-  );
-
-  const res = await fetch(url, { ...options, headers });
-  return res.json();
-}
-
-// ---------------------------------------------------------
+// =========================================================
 // CARICA STATISTICHE
-// ---------------------------------------------------------
+// =========================================================
+
 async function caricaStats() {
   try {
     const data = await adminFetch("/api/admin/stats");
 
     if (!data.success) return;
 
-    document.getElementById("stat-vendite").textContent = data.stats.venditeTotali;
-    document.getElementById("stat-ordini").textContent = data.stats.ordiniTotali;
-    document.getElementById("stat-prodotti").textContent = data.stats.prodottiAttivi;
+    document.getElementById("stat-vendite").textContent =
+      clean(String(data.stats.venditeTotali));
+
+    document.getElementById("stat-ordini").textContent =
+      clean(String(data.stats.ordiniTotali));
+
+    document.getElementById("stat-prodotti").textContent =
+      clean(String(data.stats.prodottiAttivi));
 
   } catch (err) {
     console.error("Errore stats:", err);
   }
 }
 
-// ---------------------------------------------------------
+// =========================================================
 // CARICA ULTIMI ORDINI
-// ---------------------------------------------------------
+// =========================================================
+
 async function caricaUltimiOrdini() {
   try {
     const data = await adminFetch("/api/admin/orders/latest");
@@ -50,13 +45,13 @@ async function caricaUltimiOrdini() {
     const tbody = document.querySelector("#tabella-ultimi-ordini tbody");
     tbody.innerHTML = "";
 
-    data.ordini.forEach(o => {
+    (data.ordini || []).forEach((o) => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td>${o.data}</td>
-        <td>${o.prodotto}</td>
-        <td>${o.prezzo} €</td>
-        <td>${o.email}</td>
+        <td>${clean(o.data)}</td>
+        <td>${clean(o.prodotto)}</td>
+        <td>${clean(String(o.prezzo))} €</td>
+        <td>${clean(o.email)}</td>
       `;
       tbody.appendChild(tr);
     });
@@ -66,16 +61,12 @@ async function caricaUltimiOrdini() {
   }
 }
 
-// ---------------------------------------------------------
-// AVVIO
-// ---------------------------------------------------------
-document.addEventListener("DOMContentLoaded", () => {
-  const token = getAdminToken();
-  if (!token) {
-    window.location.href = "login.html";
-    return;
-  }
+// =========================================================
+// INIT
+// =========================================================
 
+document.addEventListener("DOMContentLoaded", () => {
+  // Controllo token già gestito da loader-admin.js
   caricaStats();
   caricaUltimiOrdini();
 });
