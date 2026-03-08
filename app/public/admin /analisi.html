@@ -3,131 +3,100 @@
 <head>
 
   <!-- HEAD ADMIN DINAMICO -->
-  
-
-  <title>Analisi Performance – Admin MewingMarket</title>
 
   
-  
+  <!-- JS PAGINA -->
+  <script src="js/analisi.js" defer></script>
 
-
-    <script src="/seo.js"></script>
-    <script src="/structured-data.js"></script>
-  
 </head>
 
 <body>
 
+  <!-- NAV ADMIN DINAMICO -->
+  <div id="nav-admin-placeholder"></div>
 
+  <main class="pagina-standard">
 
+    <h1>Analisi Performance</h1>
 
+    <!-- METRICHE PRINCIPALI -->
+    <section class="box-standard">
+      <h2>Panoramica</h2>
 
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>Conversion Rate</h3>
+          <p id="conv-rate">—</p>
+        </div>
 
+        <div class="stat-card">
+          <h3>Traffico Totale</h3>
+          <p id="traffico-totale">—</p>
+        </div>
 
-
-
-
-
-
-
-
-<!-- NAV ADMIN DINAMICO -->
-<div id="nav-admin-placeholder"></div>
-
-
-<main class="pagina-standard" style="margin-top:20px;">
-
-  <h1>Analisi Performance</h1>
-
-  <!-- METRICHE PRINCIPALI -->
-  <section class="box-standard">
-    <h2>Panoramica</h2>
-
-    <div class="stats-grid">
-      <div class="stat-card">
-        <h3>Conversion Rate</h3>
-        <p id="conv-rate">—</p>
+        <div class="stat-card">
+          <h3>CTR Medio</h3>
+          <p id="ctr-medio">—</p>
+        </div>
       </div>
+    </section>
 
-      <div class="stat-card">
-        <h3>Traffico Totale</h3>
-        <p id="traffico-totale">—</p>
-      </div>
+    <!-- ANALISI PER PRODOTTO -->
+    <section class="box-standard">
+      <h2>Analisi per prodotto</h2>
 
-      <div class="stat-card">
-        <h3>CTR Medio</h3>
-        <p id="ctr-medio">—</p>
-      </div>
-    </div>
-  </section>
+      <table class="tabella-standard" id="tabella-analisi-prodotti">
+        <thead>
+          <tr>
+            <th>Prodotto</th>
+            <th>Visite</th>
+            <th>Aggiunte al carrello</th>
+            <th>Vendite</th>
+            <th>Conversione</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
 
-  <!-- ANALISI PER PRODOTTO -->
-  <section class="box-standard" style="margin-top:30px;">
-    <h2>Analisi per prodotto</h2>
+    <!-- ANALISI TRAFFICO -->
+    <section class="box-standard">
+      <h2>Analisi traffico</h2>
 
-    <table class="tabella-standard" id="tabella-analisi-prodotti">
-      <thead>
-        <tr>
-          <th>Prodotto</th>
-          <th>Visite</th>
-          <th>Aggiunte al carrello</th>
-          <th>Vendite</th>
-          <th>Conversione</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </section>
+      <table class="tabella-standard" id="tabella-traffico">
+        <thead>
+          <tr>
+            <th>Origine</th>
+            <th>Visite</th>
+            <th>CTR</th>
+            <th>Conversione</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
 
-  <!-- ANALISI TRAFFICO -->
-  <section class="box-standard" style="margin-top:30px;">
-    <h2>Analisi traffico</h2>
+    <!-- ANALISI UTM -->
+    <section class="box-standard">
+      <h2>Analisi UTM</h2>
 
-    <table class="tabella-standard" id="tabella-traffico">
-      <thead>
-        <tr>
-          <th>Origine</th>
-          <th>Visite</th>
-          <th>CTR</th>
-          <th>Conversione</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </section>
+      <table class="tabella-standard" id="tabella-utm">
+        <thead>
+          <tr>
+            <th>Campagna</th>
+            <th>Visite</th>
+            <th>Vendite</th>
+            <th>Conversione</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
 
-  <!-- ANALISI UTM -->
-  <section class="box-standard" style="margin-top:30px;">
-    <h2>Analisi UTM</h2>
+  </main>
 
-    <table class="tabella-standard" id="tabella-utm">
-      <thead>
-        <tr>
-          <th>Campagna</th>
-          <th>Visite</th>
-          <th>Vendite</th>
-          <th>Conversione</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </section>
+  <!-- FOOTER ADMIN DINAMICO -->
+  <div id="footer-admin-placeholder"></div>
 
-</main>
-
-<!-- FOOTER ADMIN DINAMICO -->
-<div id="footer-admin-placeholder"></div>
-
-
-
-         
-         
-         
-         
-         
-         <script src="tracking.js"></script>
-         
-         
-         
 </body>
 </html>
