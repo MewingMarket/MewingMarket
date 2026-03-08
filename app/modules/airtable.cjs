@@ -1,11 +1,72 @@
+/**
+ * =========================================================
+ * File: app/modules/airtable.cjs
+ * Versione Render‑Friendly (stabile, senza blocchi)
+ * =========================================================
+ */
+
+const fs = require("fs");
+const path = require("path");
+const Airtable = require("airtable");   // ⭐ MANCAVA QUESTA RIGA
+
+const ROOT = path.resolve(__dirname, "..");
+const DATA_DIR = path.join(ROOT, "data");
+const DATA_PATH = path.join(DATA_DIR, "products.json");
+const META_PATH = path.join(DATA_DIR, "airtable-meta.json");
+
+let PRODUCTS_CACHE = [];
+global.catalogReady = false;
+
+/* =========================================================
+   UTILS
+========================================================= */
+function ensureDataDir() {
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    console.log("📁 Cartella /data creata");
+  }
+}
+
+function saveProductsToFile(products) {
+  ensureDataDir();
+  fs.writeFileSync(DATA_PATH, JSON.stringify(products, null, 2));
+  console.log("💾 products.json aggiornato");
+}
+
+function loadProducts() {
+  try {
+    ensureDataDir();
+    if (fs.existsSync(DATA_PATH)) {
+      PRODUCTS_CACHE = JSON.parse(fs.readFileSync(DATA_PATH, "utf8"));
+      console.log("📦 Catalogo caricato da file");
+    }
+  } catch (err) {
+    console.error("❌ Errore loadProducts:", err);
+  }
+  return PRODUCTS_CACHE;
+}
+
+function getProducts() {
+  return PRODUCTS_CACHE;
+}
+
+function loadMeta() {
+  try {
+    if (fs.existsSync(META_PATH)) {
+      return JSON.parse(fs.readFileSync(META_PATH, "utf8"));
+    }
+  } catch {}
+  return { lastSync: "1970-01-01T00:00:00.000Z" };
+}
+
+function saveMeta(meta) {
+  ensureDataDir();
+  fs.writeFileSync(META_PATH, JSON.stringify(meta, null, 2));
+}
+
 /* =========================================================
    SYNC AIRTABLE — VERSIONE RENDER‑FRIENDLY
-   - Nessun eachPage
-   - Nessun blocco
-   - Nessun real‑time
-   - Sync iniziale + sync periodica leggera
 ========================================================= */
-
 async function syncAirtable() {
   const PAT = process.env.AIRTABLE_PAT;
   const BASE = process.env.AIRTABLE_BASE;
@@ -98,8 +159,16 @@ async function syncAirtable() {
 /* =========================================================
    SYNC PERIODICA (senza cron)
 ========================================================= */
-
 setInterval(() => {
   console.log("⏱️ Sync periodica Airtable…");
   syncAirtable();
-}, 5 * 60 * 1000); // ogni 5 minuti
+}, 5 * 60 * 1000);
+
+/* =========================================================
+   EXPORT
+========================================================= */
+module.exports = {
+  loadProducts,
+  getProducts,
+  syncAirtable
+};
