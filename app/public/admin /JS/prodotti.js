@@ -1,12 +1,19 @@
 // =========================================================
-// File: app/public/admin/js/prodotti.js
-// Lista prodotti (versione Airtable)
+// GESTIONE PRODOTTI – versione blindata
 // =========================================================
 
+// Sanitizzazione
+const clean = (t) =>
+  typeof t === "string"
+    ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
+    : t ?? "";
+
+// Elementi DOM
 const tabella = document.querySelector("#tabella-prodotti tbody");
 const statusBox = document.getElementById("status");
 const btnSync = document.getElementById("btn-sync");
 
+// Status
 function setStatus(msg, ok = false) {
   if (!statusBox) return;
   statusBox.textContent = msg;
@@ -14,14 +21,24 @@ function setStatus(msg, ok = false) {
 }
 
 // =========================================================
-// CARICA LISTA PRODOTTI
+// FETCH BLINDATO
 // =========================================================
+
+async function adminGet(url) {
+  const res = await adminFetch(url);
+  if (!res.ok) throw new Error("Errore fetch admin: " + url);
+  return res.json();
+}
+
+// =========================================================
+// 1. CARICA LISTA PRODOTTI
+// =========================================================
+
 async function caricaProdotti() {
   setStatus("Caricamento prodotti...");
 
   try {
-    const res = await fetch("/api/products");
-    const data = await res.json();
+    const data = await adminGet("/api/admin/prodotti/lista");
 
     if (!data.success) {
       setStatus(data.error || "Errore caricamento prodotti");
@@ -32,17 +49,19 @@ async function caricaProdotti() {
 
     tabella.innerHTML = "";
 
-    data.prodotti.forEach(p => {
+    (data.prodotti || []).forEach((p) => {
       const tr = document.createElement("tr");
 
       tr.innerHTML = `
-        <td>${p.titolo || ""}</td>
-        <td>${p.prezzo || 0} €</td>
-        <td>${p.categoria || "-"}</td>
-        <td>${p.slug || ""}</td>
-        <td>${p.stato || "-"}</td>
+        <td>${clean(p.titolo)}</td>
+        <td>${clean(String(p.prezzo))} €</td>
+        <td>${clean(p.categoria || "-")}</td>
+        <td>${clean(p.slug)}</td>
+        <td>${clean(p.stato || "OK")}</td>
         <td>
-          <a href="/admin/prodotto-edit.html?slug=${p.slug}" class="btn-small">Modifica</a>
+          <a href="/admin/prodotto-edit.html?slug=${clean(p.slug)}" class="btn-small">
+            Modifica
+          </a>
         </td>
       `;
 
@@ -50,23 +69,27 @@ async function caricaProdotti() {
     });
 
   } catch (err) {
-    console.error(err);
+    console.error("Errore caricamento prodotti:", err);
     setStatus("Errore di connessione");
   }
 }
 
 // =========================================================
-// SYNC MANUALE DA AIRTABLE
+// 2. SYNC MANUALE DA AIRTABLE
 // =========================================================
+
 btnSync.addEventListener("click", async () => {
   setStatus("Sincronizzazione in corso...");
 
   try {
-    const res = await fetch("/api/products/sync", { method: "POST" });
+    const res = await adminFetch("/api/admin/prodotti/sync", {
+      method: "POST"
+    });
+
     const data = await res.json();
 
     if (!data.success) {
-      setStatus("Errore sincronizzazione");
+      setStatus(data.error || "Errore sincronizzazione");
       return;
     }
 
@@ -74,12 +97,13 @@ btnSync.addEventListener("click", async () => {
     caricaProdotti();
 
   } catch (err) {
-    console.error(err);
+    console.error("Errore sync prodotti:", err);
     setStatus("Errore di connessione");
   }
 });
 
 // =========================================================
-// AVVIO
+// INIT
 // =========================================================
+
 document.addEventListener("DOMContentLoaded", caricaProdotti);
