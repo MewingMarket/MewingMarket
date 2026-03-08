@@ -1,22 +1,27 @@
 // =========================================================
-// File: app/public/admin/js/prodotto-edit.js
-// Gestione creazione/modifica prodotti (Airtable)
+// PRODOTTO EDIT – versione blindata + Airtable
 // =========================================================
 
-const statusBox = document.getElementById("status");
+// Sanitizzazione
+const clean = (t) =>
+  typeof t === "string"
+    ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
+    : t ?? "";
 
+// Status box
+const statusBox = document.getElementById("status");
 function setStatus(msg, ok = false) {
   statusBox.textContent = msg;
   statusBox.style.color = ok ? "green" : "red";
 }
 
 // =========================================================
-// 1. CARICAMENTO PRODOTTO ESISTENTE (per SLUG)
+// 1. CARICA PRODOTTO ESISTENTE (per SLUG)
 // =========================================================
 
 async function caricaProdotto(slug) {
   try {
-    const res = await fetch(`/api/products/${slug}`);
+    const res = await adminFetch(`/api/products/${slug}`);
     const data = await res.json();
 
     if (!data.success) {
@@ -26,15 +31,15 @@ async function caricaProdotto(slug) {
 
     const p = data.prodotto;
 
-    document.getElementById("titolo").value = p.titolo || "";
-    document.getElementById("descrizione").value = p.descrizione || "";
-    document.getElementById("prezzo").value = p.prezzo || "";
-    document.getElementById("slug").value = p.slug || "";
+    document.getElementById("titolo").value = clean(p.titolo);
+    document.getElementById("descrizione").value = clean(p.descrizione);
+    document.getElementById("prezzo").value = clean(p.prezzo);
+    document.getElementById("slug").value = clean(p.slug);
 
-    // Categoria e YouTube non sono gestiti in Airtable
-    document.getElementById("categoria").value = p.categoria || "";
-    document.getElementById("youtube").value = p.youtube_url || "";
+    document.getElementById("categoria").value = clean(p.categoria);
+    document.getElementById("youtube").value = clean(p.youtube_url);
 
+    // Immagine
     if (p.immagine) {
       window.immagineURL = p.immagine;
       const preview = document.getElementById("preview-img");
@@ -42,6 +47,7 @@ async function caricaProdotto(slug) {
       preview.style.display = "block";
     }
 
+    // File prodotto
     if (p.fileProdotto) {
       window.fileProdottoURL = p.fileProdotto;
     }
@@ -80,25 +86,31 @@ document.getElementById("immagine").addEventListener("change", async (e) => {
   const formData = new FormData();
   formData.append("file", file);
 
-  const res = await fetch("/api/upload/immagine", {
-    method: "POST",
-    body: formData
-  });
+  try {
+    const res = await adminFetch("/api/upload/immagine", {
+      method: "POST",
+      body: formData
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  if (!data.success) {
+    if (!data.success) {
+      setStatus("Errore caricamento immagine");
+      return;
+    }
+
+    window.immagineURL = data.url;
+
+    const preview = document.getElementById("preview-img");
+    preview.src = data.url;
+    preview.style.display = "block";
+
+    setStatus("Immagine caricata", true);
+
+  } catch (err) {
+    console.error(err);
     setStatus("Errore caricamento immagine");
-    return;
   }
-
-  window.immagineURL = data.url;
-
-  const preview = document.getElementById("preview-img");
-  preview.src = data.url;
-  preview.style.display = "block";
-
-  setStatus("Immagine caricata", true);
 });
 
 // =========================================================
@@ -114,21 +126,27 @@ document.getElementById("fileProdotto").addEventListener("change", async (e) => 
   const formData = new FormData();
   formData.append("file", file);
 
-  const res = await fetch("/api/upload/file", {
-    method: "POST",
-    body: formData
-  });
+  try {
+    const res = await adminFetch("/api/upload/file", {
+      method: "POST",
+      body: formData
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  if (!data.success) {
+    if (!data.success) {
+      setStatus("Errore caricamento file");
+      return;
+    }
+
+    window.fileProdottoURL = data.url;
+
+    setStatus("File prodotto caricato", true);
+
+  } catch (err) {
+    console.error(err);
     setStatus("Errore caricamento file");
-    return;
   }
-
-  window.fileProdottoURL = data.url;
-
-  setStatus("File prodotto caricato", true);
 });
 
 // =========================================================
@@ -142,38 +160,46 @@ document.getElementById("btn-salva").addEventListener("click", async () => {
 
   const body = {
     slug,
-    titolo: document.getElementById("titolo").value.trim(),
-    descrizione: document.getElementById("descrizione").value.trim(),
+    titolo: clean(document.getElementById("titolo").value),
+    descrizione: clean(document.getElementById("descrizione").value),
     prezzo: parseFloat(document.getElementById("prezzo").value),
     immagine: window.immagineURL || null,
-    fileProdotto: window.fileProdottoURL || null
+    fileProdotto: window.fileProdottoURL || null,
+    categoria: clean(document.getElementById("categoria").value),
+    youtube_url: clean(document.getElementById("youtube").value)
   };
 
-  const res = await fetch("/api/products/save", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
-  });
+  try {
+    const res = await adminFetch("/api/products/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  if (!data.success) {
-    setStatus(data.error || "Errore salvataggio prodotto");
-    return;
-  }
+    if (!data.success) {
+      setStatus(data.error || "Errore salvataggio prodotto");
+      return;
+    }
 
-  setStatus("Prodotto salvato con successo!", true);
+    setStatus("Prodotto salvato con successo!", true);
 
-  // Se è un nuovo prodotto, reindirizza con lo slug corretto
-  if (!slug) {
-    setTimeout(() => {
-      window.location.href = `/admin/prodotto-edit.html?slug=${body.slug}`;
-    }, 800);
+    // Se è un nuovo prodotto → redirect con slug
+    if (!slug) {
+      setTimeout(() => {
+        window.location.href = `/admin/prodotto-edit.html?slug=${body.slug}`;
+      }, 800);
+    }
+
+  } catch (err) {
+    console.error(err);
+    setStatus("Errore durante il salvataggio");
   }
 });
 
 // =========================================================
-// 6. AVVIO
+// 6. INIT
 // =========================================================
 
 document.addEventListener("DOMContentLoaded", () => {
