@@ -1,72 +1,51 @@
-/* LOGIN ADMIN */
+/* =========================================================
+   BASE ADMIN
+========================================================= */
+
 body {
   background:#f7faff;
   font-family:system-ui, sans-serif;
   color:#003366;
+  margin:0;
+  padding:0;
 }
 
-.login-box {
-  max-width:400px;
-  margin:60px auto;
+h1, h2, h3 {
+  color:#003366;
+  margin-top:0;
+}
+
+a {
+  color:#0077ff;
+  text-decoration:none;
+}
+
+a:hover {
+  text-decoration:underline;
+}
+
+/* =========================================================
+   LAYOUT STANDARD PAGINE
+========================================================= */
+
+.pagina-standard {
+  max-width:1200px;
+  margin:40px auto;
+  padding:0 20px;
+}
+
+.box-standard {
   background:white;
-  padding:25px;
+  padding:20px;
   border-radius:12px;
   box-shadow:0 4px 20px rgba(0,0,0,0.06);
-  text-align:center;
+  margin-bottom:30px;
 }
 
-input, button {
-  width:100%;
-  padding:12px;
-  margin-top:10px;
-  border-radius:8px;
-  border:1px solid #cdd7e1;
-  font-size:16px;
-}
+/* =========================================================
+   HEADER ADMIN
+========================================================= */
 
-button {
-  background:#0077ff;
-  color:white;
-  border:none;
-  font-weight:600;
-  cursor:pointer;
-  transition:0.2s;
-}
-
-button:hover {
-  background:#005fe0;
-}
-
-.secondary-btn {
-  background:#e8eef5;
-  color:#003366;
-  border:none;
-  margin-top:10px;
-}
-
-#status {
-  margin-top:15px;
-  font-weight:600;
-}
-/* HEADER ADMIN */
-.admin-header {
-  background:#ffffff;
-  border-bottom:1px solid #d5e1f0;
-  padding:15px 0;
-}
-
-.admin-header-container {
-  max-width:1200px;
-  margin:0 auto;
-  padding:0 20px;
-  display:flex;
-  align-items:center;
-}
-
-.admin-logo img {
-  display:block;
-}
-/* HEADER ADMIN */
 .admin-header {
   background:#ffffff;
   border-bottom:1px solid #d5e1f0;
@@ -84,9 +63,13 @@ button:hover {
 
 .admin-logo img {
   display:block;
+  height:40px;
 }
 
-/* NAV ADMIN */
+/* =========================================================
+   NAV ADMIN
+========================================================= */
+
 .admin-nav ul {
   list-style:none;
   margin:0;
@@ -113,7 +96,11 @@ button:hover {
 .admin-nav a i {
   margin-right:8px;
 }
-/* FOOTER ADMIN */
+
+/* =========================================================
+   FOOTER ADMIN
+========================================================= */
+
 .admin-footer {
   text-align:center;
   padding:25px;
@@ -126,59 +113,115 @@ button:hover {
 
 .admin-footer a {
   color:#0077ff;
-  text-decoration:none;
   font-weight:600;
 }
 
 .admin-footer a:hover {
   text-decoration:underline;
 }
+
+/* =========================================================
+   FORM STANDARD
+========================================================= */
+
 .form-standard input,
+.form-standard textarea,
+.form-standard select {
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  border-radius:8px;
+  border:1px solid #ddd;
+  font-size:16px;
+  background:white;
+}
+
 .form-standard textarea {
-  width: 100%;
-  padding: 12px;
-  margin-top: 10px;
-  border-radius: 8px;
-  border: 1px solid #ddd;
-  font-size: 16px;
+  min-height:120px;
+  resize:vertical;
 }
 
 .preview-img {
-  width: 100px;
-  height: 100px;
-  object-fit: cover;
-  border-radius: 8px;
-  margin-top: 10px;
+  width:100px;
+  height:100px;
+  object-fit:cover;
+  border-radius:8px;
+  margin-top:10px;
 }
-.form-standard input {
-  width: 100%;
-  padding: 12px;
-  margin-top: 10px;
-  border-radius: 8px;
-  border: 1px solid #ddd;
-  font-size: 16px;
+
+/* =========================================================
+   TABELLE STANDARD
+========================================================= */
+
+.tabella-standard {
+  width:100%;
+  border-collapse:collapse;
 }
+
+.tabella-standard th,
+.tabella-standard td {
+  padding:10px;
+  border-bottom:1px solid #cdd7e1;
+  text-align:left;
+}
+
+.tabella-standard th {
+  font-weight:700;
+  background:#eef3f9;
+}
+
+/* =========================================================
+   BOTTONI
+========================================================= */
+
+.btn,
+.btn-primario,
+.btn-secondario,
+.btn-small {
+  display:inline-block;
+  padding:12px 18px;
+  border-radius:8px;
+  font-weight:600;
+  cursor:pointer;
+  border:none;
+  text-decoration:none;
+  transition:0.2s;
+}
+
+.btn,
+.btn-primario {
+  background:#0077ff;
+  color:white;
+}
+
+.btn:hover,
+.btn-primario:hover {
+  background:#005fe0;
+}
+
+.btn-secondario {
+  background:#e8eef5;
+  color:#003366;
+}
+
+.btn-secondario:hover {
+  background:#d7e0eb;
+}
+
+.btn-small {
+  padding:6px 10px;
+  font-size:14px;
+  background:#0077ff;
+  color:white;
+}
+
+.btn-small:hover {
+  background:#005fe0;
+}
+
 /* =========================================================
    DASHBOARD ADMIN
 ========================================================= */
-
-body {
-  background:#f7faff;
-  font-family:system-ui, sans-serif;
-  color:#003366;
-}
-
-h1, h2 {
-  color:#003366;
-}
-
-.box-standard {
-  background:white;
-  padding:20px;
-  border-radius:12px;
-  box-shadow:0 4px 20px rgba(0,0,0,0.06);
-  margin-bottom:30px;
-}
 
 .stats-grid {
   display:grid;
@@ -206,28 +249,16 @@ h1, h2 {
   color:#0077ff;
 }
 
-.tabella-standard {
-  width:100%;
-  border-collapse:collapse;
-}
+/* =========================================================
+   RESPONSIVE
+========================================================= */
 
-.tabella-standard th,
-.tabella-standard td {
-  padding:10px;
-  border-bottom:1px solid #cdd7e1;
-}
+@media (max-width:600px) {
+  .admin-nav ul {
+    gap:10px;
+  }
 
-.btn {
-  display:inline-block;
-  padding:12px 18px;
-  background:#0077ff;
-  color:white;
-  border-radius:8px;
-  text-decoration:none;
-  font-weight:600;
-  margin:5px;
-}
-
-.btn:hover {
-  background:#005fe0;
+  .stat-card p {
+    font-size:18px;
+  }
 }
