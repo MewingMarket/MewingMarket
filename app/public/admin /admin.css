@@ -133,3 +133,20 @@ button:hover {
 .admin-footer a:hover {
   text-decoration:underline;
 }
+.form-standard input,
+.form-standard textarea {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: 16px;
+}
+
+.preview-img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-top: 10px;
+}
