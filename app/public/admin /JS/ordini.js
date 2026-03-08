@@ -1,31 +1,63 @@
-// app/public/admin/js/ordini.js
+// =========================================================
+// ORDINI ADMIN – versione blindata
+// =========================================================
 
-async function caricaOrdini() {
-  const res = await adminFetch("/api/admin/ordini/lista");
-  const data = await res.json();
+// Sanitizzazione
+const clean = (t) =>
+  typeof t === "string"
+    ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
+    : t ?? "";
 
-  if (!data.success) return;
-
-  document.getElementById("ordini-totali").textContent = data.stats.totali;
-  document.getElementById("ordini-completati").textContent = data.stats.completati;
-  document.getElementById("ordini-abbandonati").textContent = data.stats.abbandonati;
-
-  const tbody = document.querySelector("#tabella-ordini tbody");
-  tbody.innerHTML = "";
-
-  data.ordini.forEach(o => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${o.id}</td>
-      <td>${o.prodotto}</td>
-      <td>${o.prezzo}</td>
-      <td>${o.stato}</td>
-      <td>${o.email}</td>
-      <td>${o.origine}</td>
-      <td>${o.data}</td>
-    `;
-    tbody.appendChild(tr);
-  });
+// Wrapper fetch blindato
+async function adminGet(url) {
+  const res = await adminFetch(url);
+  if (!res.ok) throw new Error("Errore fetch admin: " + url);
+  return res.json();
 }
 
+// =========================================================
+// CARICA ORDINI
+// =========================================================
+async function caricaOrdini() {
+  try {
+    const data = await adminGet("/api/admin/ordini/lista");
+
+    if (!data.success) return;
+
+    // METRICHE
+    document.getElementById("ordini-totali").textContent =
+      clean(data.stats?.totali);
+
+    document.getElementById("ordini-completati").textContent =
+      clean(data.stats?.completati);
+
+    document.getElementById("ordini-abbandonati").textContent =
+      clean(data.stats?.abbandonati);
+
+    // TABELLA ORDINI
+    const tbody = document.querySelector("#tabella-ordini tbody");
+    tbody.innerHTML = "";
+
+    (data.ordini || []).forEach((o) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${clean(o.id)}</td>
+        <td>${clean(o.prodotto)}</td>
+        <td>${clean(o.prezzo)}€</td>
+        <td>${clean(o.stato)}</td>
+        <td>${clean(o.email)}</td>
+        <td>${clean(o.origine)}</td>
+        <td>${clean(o.data)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+  } catch (err) {
+    console.error("Errore caricamento ordini:", err);
+  }
+}
+
+// =========================================================
+// INIT
+// =========================================================
 document.addEventListener("DOMContentLoaded", caricaOrdini);
