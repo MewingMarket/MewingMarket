@@ -1,240 +1,91 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <!-- HEAD ADMIN DINAMICO -->
-  
-
-  <title>Dashboard Vendite – MewingMarket</title>
-
-  
-    <script src="/seo.js"></script>
-    <script src="/structured-data.js"></script>
-  
+  <div id="head-admin-placeholder"></div>
 </head>
 
 <body>
 
+  <!-- HEADER ADMIN DINAMICO -->
+  <div id="header-admin-placeholder"></div>
 
+  <main class="pagina-standard">
 
+    <div class="dashboard-header">
+      Dashboard Vendite – MewingMarket
 
+      <button class="btn-secondario" onclick="location.reload()">Aggiorna</button>
+      <button class="btn-secondario" onclick="location.href='../tracking.html'">Tracking</button>
+    </div>
 
+    <div class="dashboard-container">
 
+      <!-- PERFORMANCE PRODOTTI -->
+      <h2>Performance Prodotti</h2>
+      <table class="dashboard-table" id="productsTable">
+        <thead>
+          <tr>
+            <th>Prodotto</th>
+            <th>Vendite</th>
+            <th>Categoria</th>
+            <th>Video</th>
+            <th>Descrizione</th>
+            <th>Qualità</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
 
+      <!-- TUTTE LE VENDITE -->
+      <h2>Tutte le Vendite</h2>
+      <table class="dashboard-table" id="salesTable">
+        <thead>
+          <tr>
+            <th>Prodotto</th>
+            <th>Prezzo</th>
+            <th>Origine</th>
+            <th>UTM</th>
+            <th>Referrer</th>
+            <th>Device</th>
+            <th>Lingua</th>
+            <th>Data</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
 
+      <!-- FEEDBACK -->
+      <h2>Feedback Clienti</h2>
+      <table class="dashboard-table" id="feedbackTable">
+        <thead>
+          <tr>
+            <th>Prodotto</th>
+            <th>Rating</th>
+            <th>Commento</th>
+            <th>Data</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
 
+    </div>
 
+  </main>
 
+  <!-- FOOTER ADMIN DINAMICO -->
+  <div id="footer-admin-placeholder"></div>
 
+  <!-- JS GLOBALI ADMIN -->
+  <script src="loader-admin.js"></script>
+  <script src="seo-admin.js"></script>
+  <script src="structured-data-admin.js"></script>
 
+  <!-- JS SPECIFICO PAGINA -->
+  <script src="js/dashboard-vendite.js"></script>
 
-<!-- NAV ADMIN DINAMICO -->
-<div id="nav-admin-placeholder"></div>
-
-
-<div class="dashboard-header" style="margin-top:20px;">
-  Dashboard Vendite – MewingMarket
-
-  <button style="float:right;background:#fff;color:#000;padding:6px 12px;border-radius:6px;border:none;cursor:pointer;margin-left:10px;"
-          onclick="location.href='../tracking.html'">Tracking</button>
-
-  <button style="float:right;background:#fff;color:#000;padding:6px 12px;border-radius:6px;border:none;cursor:pointer;"
-          onclick="location.reload()">Aggiorna</button>
-</div>
-
-<div class="dashboard-container">
-
-  <!-- PERFORMANCE PRODOTTI -->
-  <h2>Performance Prodotti</h2>
-  <table class="dashboard-table" id="productsTable">
-    <thead>
-      <tr>
-        <th>Prodotto</th>
-        <th>Vendite</th>
-        <th>Categoria</th>
-        <th>Video</th>
-        <th>Descrizione</th>
-        <th>Qualità</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
-  <!-- TUTTE LE VENDITE -->
-  <h2>Tutte le Vendite</h2>
-  <table class="dashboard-table" id="salesTable">
-    <thead>
-      <tr>
-        <th>Prodotto</th>
-        <th>Prezzo</th>
-        <th>Origine</th>
-        <th>UTM</th>
-        <th>Referrer</th>
-        <th>Device</th>
-        <th>Lingua</th>
-        <th>Data</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
-  <!-- FEEDBACK -->
-  <h2>Feedback Clienti</h2>
-  <table class="dashboard-table" id="feedbackTable">
-    <thead>
-      <tr>
-        <th>Prodotto</th>
-        <th>Rating</th>
-        <th>Commento</th>
-        <th>Data</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
-</div>
-
-<!-- FOOTER ADMIN DINAMICO -->
-<div id="footer-admin-placeholder"></div>
-
-
-<script>
-/* =========================================================
-   SANITIZZAZIONE
-========================================================= */
-const clean = (t) =>
-  typeof t === "string"
-    ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
-    : "";
-
-/* =========================================================
-   SECRET (blindato)
-========================================================= */
-const secret = clean(new URLSearchParams(location.search).get("secret") || "");
-
-/* =========================================================
-   FETCH BLINDATI
-========================================================= */
-async function loadSales() {
-  try {
-    const res = await fetch(`/api/sales?secret=${secret}`);
-    if (!res.ok) throw new Error("Errore fetch vendite");
-    return await res.json();
-  } catch (err) {
-    console.error(err);
-    return [];
-  }
-}
-
-async function loadSummary() {
-  try {
-    const res = await fetch(`/api/sales/summary?secret=${secret}`);
-    if (!res.ok) throw new Error("Errore fetch summary");
-    return await res.json();
-  } catch (err) {
-    console.error(err);
-    return {};
-  }
-}
-
-async function loadFeedback() {
-  try {
-    const res = await fetch(`/api/feedback?secret=${secret}`);
-    if (!res.ok) throw new Error("Errore fetch feedback");
-    return await res.json();
-  } catch (err) {
-    console.error(err);
-    return [];
-  }
-}
-
-/* =========================================================
-   RENDER PERFORMANCE PRODOTTI
-========================================================= */
-function renderProducts(summary) {
-  const tbody = document.querySelector("#productsTable tbody");
-  tbody.innerHTML = "";
-
-  Object.values(summary || {}).forEach(p => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${clean(p.titolo)}</td>
-      <td>${clean(String(p.vendite))}</td>
-      <td>${clean(p.categoria)}</td>
-      <td>${p.video ? "✔" : "—"}</td>
-      <td>${p.descrizioneBreve ? "✔" : "—"}</td>
-      <td class="score ${clean(p.score)}">${clean(p.score).toUpperCase()}</td>
-    `;
-    tbody.appendChild(tr);
-  
-}
-
-/* =========================================================
-   RENDER VENDITE
-========================================================= */
-function renderSales(sales) {
-  const tbody = document.querySelector("#salesTable tbody");
-  tbody.innerHTML = "";
-
-  (sales || []).forEach(s => {
-    const f = s.fields || {};
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${clean(f.Prodotto)}</td>
-      <td>${clean(String(f.Prezzo))}</td>
-      <td>${clean(f.Origine)}</td>
-      <td>${clean(f.UTMSource || "")}</td>
-      <td>${clean(f.Referrer || "")}</td>
-      <td>${clean(f.Device || "")}</td>
-      <td>${clean(f.Lingua || "")}</td>
-      <td>${clean(f.Timestamp)}</td>
-    `;
-    tbody.appendChild(tr);
-  
-}
-
-/* =========================================================
-   RENDER FEEDBACK
-========================================================= */
-function renderFeedback(list) {
-  const tbody = document.querySelector("#feedbackTable tbody");
-  tbody.innerHTML = "";
-
-  (list || []).forEach(f => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${clean(f.prodotto)}</td>
-      <td>${clean(String(f.rating))} ⭐</td>
-      <td>${clean(f.comment)}</td>
-      <td>${clean(f.timestamp)}</td>
-    `;
-    tbody.appendChild(tr);
-  
-}
-
-/* =========================================================
-   INIT
-========================================================= */
-(async () => {
-  const sales = await loadSales();
-  const summary = await loadSummary();
-  const feedback = await loadFeedback();
-
-  renderSales(sales);
-  renderProducts(summary);
-  renderFeedback(feedback);
-})();
-</script>
-
-
-         
-         
-         
-         
-         
-         <script src="tracking.js"></script>
-         
-         
-         
 </body>
 </html>
