@@ -158,3 +158,76 @@ button:hover {
   border: 1px solid #ddd;
   font-size: 16px;
 }
+/* =========================================================
+   DASHBOARD ADMIN
+========================================================= */
+
+body {
+  background:#f7faff;
+  font-family:system-ui, sans-serif;
+  color:#003366;
+}
+
+h1, h2 {
+  color:#003366;
+}
+
+.box-standard {
+  background:white;
+  padding:20px;
+  border-radius:12px;
+  box-shadow:0 4px 20px rgba(0,0,0,0.06);
+  margin-bottom:30px;
+}
+
+.stats-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(180px,1fr));
+  gap:20px;
+}
+
+.stat-card {
+  background:#e8eef5;
+  padding:15px;
+  border-radius:10px;
+  text-align:center;
+}
+
+.stat-card h3 {
+  margin:0;
+  font-size:16px;
+  color:#003366;
+}
+
+.stat-card p {
+  font-size:22px;
+  font-weight:700;
+  margin-top:8px;
+  color:#0077ff;
+}
+
+.tabella-standard {
+  width:100%;
+  border-collapse:collapse;
+}
+
+.tabella-standard th,
+.tabella-standard td {
+  padding:10px;
+  border-bottom:1px solid #cdd7e1;
+}
+
+.btn {
+  display:inline-block;
+  padding:12px 18px;
+  background:#0077ff;
+  color:white;
+  border-radius:8px;
+  text-decoration:none;
+  font-weight:600;
+  margin:5px;
+}
+
+.btn:hover {
+  background:#005fe0;
+}
