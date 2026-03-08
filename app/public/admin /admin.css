@@ -48,3 +48,21 @@ button:hover {
   margin-top:15px;
   font-weight:600;
 }
+/* HEADER ADMIN */
+.admin-header {
+  background:#ffffff;
+  border-bottom:1px solid #d5e1f0;
+  padding:15px 0;
+}
+
+.admin-header-container {
+  max-width:1200px;
+  margin:0 auto;
+  padding:0 20px;
+  display:flex;
+  align-items:center;
+}
+
+.admin-logo img {
+  display:block;
+}
