@@ -1,47 +1,80 @@
-// app/public/admin/js/settings.js
+// =========================================================
+// SETTINGS ADMIN – versione blindata
+// =========================================================
 
+// Sanitizzazione
+const clean = (t) =>
+  typeof t === "string"
+    ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
+    : t ?? "";
+
+// Status box
 const statusBox = document.getElementById("status");
-
 function setStatus(msg, ok = false) {
   statusBox.textContent = msg;
   statusBox.style.color = ok ? "green" : "red";
 }
 
+// =========================================================
+// CARICA SETTINGS
+// =========================================================
+
 async function caricaSettings() {
-  const res = await adminFetch("/api/admin/settings/get");
-  const data = await res.json();
+  try {
+    const res = await adminFetch("/api/admin/settings/get");
+    const data = await res.json();
 
-  if (!data.success) return;
+    if (!data.success) return;
 
-  document.getElementById("admin-secret").value = data.settings.adminSecret;
-  document.getElementById("airtable-base").value = data.settings.airtableBase;
-  document.getElementById("airtable-sales").value = data.settings.airtableSales;
-  document.getElementById("airtable-products").value = data.settings.airtableProducts;
+    const s = data.settings;
+
+    document.getElementById("admin-secret").value = clean(s.adminSecret);
+    document.getElementById("airtable-base").value = clean(s.airtableBase);
+    document.getElementById("airtable-sales").value = clean(s.airtableSales);
+    document.getElementById("airtable-products").value = clean(s.airtableProducts);
+
+  } catch (err) {
+    console.error("Errore caricamento settings:", err);
+  }
 }
+
+// =========================================================
+// SALVA SETTINGS
+// =========================================================
 
 document.getElementById("btn-salva").addEventListener("click", async () => {
   setStatus("Salvataggio...");
 
   const body = {
-    adminSecret: document.getElementById("admin-secret").value.trim(),
-    airtableBase: document.getElementById("airtable-base").value.trim(),
-    airtableSales: document.getElementById("airtable-sales").value.trim(),
-    airtableProducts: document.getElementById("airtable-products").value.trim()
+    adminSecret: clean(document.getElementById("admin-secret").value),
+    airtableBase: clean(document.getElementById("airtable-base").value),
+    airtableSales: clean(document.getElementById("airtable-sales").value),
+    airtableProducts: clean(document.getElementById("airtable-products").value)
   };
 
-  const res = await adminFetch("/api/admin/settings/save", {
-    method: "POST",
-    headers: { "Content-Type":"application/json" },
-    body: JSON.stringify(body)
-  });
+  try {
+    const res = await adminFetch("/api/admin/settings/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  if (data.success) {
-    setStatus("Impostazioni salvate", true);
-  } else {
-    setStatus(data.error || "Errore salvataggio");
+    if (data.success) {
+      setStatus("Impostazioni salvate", true);
+    } else {
+      setStatus(data.error || "Errore salvataggio");
+    }
+
+  } catch (err) {
+    console.error("Errore salvataggio settings:", err);
+    setStatus("Errore di connessione");
   }
 });
+
+// =========================================================
+// INIT
+// =========================================================
 
 document.addEventListener("DOMContentLoaded", caricaSettings);
