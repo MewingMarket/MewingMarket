@@ -7,7 +7,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const Airtable = require("airtable");   // ⭐ MANCAVA QUESTA RIGA
+const Airtable = require("airtable");   // ⭐ IMPORT FONDAMENTALE
 
 const ROOT = path.resolve(__dirname, "..");
 const DATA_DIR = path.join(ROOT, "data");
