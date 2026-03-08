@@ -66,3 +66,66 @@ fetch("footer.html")
 
     document.dispatchEvent(new Event("footer-loaded"));
   });
+// ---------------------------------------------------------
+// 4) POPUP POST-LOGIN (solo via JS, nessun HTML)
+// ---------------------------------------------------------
+document.addEventListener("DOMContentLoaded", () => {
+  if (localStorage.getItem("showLoginChoice") === "1") {
+    localStorage.removeItem("showLoginChoice");
+
+    const popup = document.createElement("div");
+    popup.style.position = "fixed";
+    popup.style.inset = "0";
+    popup.style.background = "rgba(0,0,0,0.6)";
+    popup.style.display = "flex";
+    popup.style.justifyContent = "center";
+    popup.style.alignItems = "center";
+    popup.style.zIndex = "9999";
+
+    popup.innerHTML = `
+      <div style="
+        background:white;
+        padding:20px;
+        border-radius:12px;
+        text-align:center;
+        width:80%;
+        max-width:300px;
+      ">
+        <h3>Benvenuto!</h3>
+        <p>Dove vuoi andare?</p>
+
+        <button id="go-dashboard" style="
+          margin-top:10px;
+          width:100%;
+          padding:10px;
+          border:none;
+          border-radius:8px;
+          background:#007bff;
+          color:white;
+          font-size:16px;
+        ">Vai al profilo</button>
+
+        <button id="go-shop" style="
+          margin-top:10px;
+          width:100%;
+          padding:10px;
+          border:none;
+          border-radius:8px;
+          background:#ddd;
+          color:#333;
+          font-size:16px;
+        ">Continua a navigare</button>
+      </div>
+    `;
+
+    document.body.appendChild(popup);
+
+    document.getElementById("go-dashboard").onclick = () => {
+      location.href = "dashboard.html";
+    };
+
+    document.getElementById("go-shop").onclick = () => {
+      popup.remove();
+    };
+  }
+});
