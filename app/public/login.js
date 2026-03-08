@@ -45,6 +45,11 @@ document.addEventListener("DOMContentLoaded", () => {
       localStorage.setItem("utenteEmail", email);
 
       /* =========================================================
+         ATTIVA POPUP POST-LOGIN
+      ========================================================== */
+      localStorage.setItem("showLoginChoice", "1");
+
+      /* =========================================================
          REDIRECT
       ========================================================== */
       const params = new URLSearchParams(window.location.search);
