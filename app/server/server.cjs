@@ -80,14 +80,22 @@ async function startServer() {
   console.log("🚀 Avvio MewingMarket — BOOTSTRAP");
   console.log("====================================\n");
 
-  await require("./startup/bootstrap.cjs")();
-  require("./startup/startup-cron.cjs")();
+  // 🔥 Sync real‑time: bootstrap NON blocca più il server
+  try {
+    await require("./startup/bootstrap.cjs")();
+  } catch (err) {
+    console.error("❌ Errore bootstrap:", err);
+  }
+
+  // ❌ RIMOSSO: niente più cron
+  // require("./startup/startup-cron.cjs")();
 
   const PORT = process.env.PORT || 10000;
 
   app.listen(PORT, () => {
     console.log(`\n🎉 Server pronto! Porta ${PORT}`);
-    console.log("📦 Catalogo caricato");
+    console.log("📦 Catalogo caricato (cache locale)");
+    console.log("⚡ Sync Airtable in real‑time attiva");
     console.log("🤖 Bot operativo");
     console.log("====================================\n");
   });
