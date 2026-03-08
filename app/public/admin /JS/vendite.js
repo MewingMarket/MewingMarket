@@ -1,8 +1,22 @@
 // =========================================================
-// File: app/public/admin/js/vendite.js
-// Dashboard vendite (lettura da Airtable via backend)
+// VENDITE ADMIN – versione blindata
 // =========================================================
 
+// Sanitizzazione
+const clean = (t) =>
+  typeof t === "string"
+    ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
+    : t ?? "";
+
+// Status box
+function setStatus(msg, ok = false) {
+  const el = document.getElementById("status");
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = ok ? "green" : "red";
+}
+
+// Elementi DOM
 const boxTotaleVendite = document.getElementById("totale-vendite");
 const boxTotaleRicavi = document.getElementById("totale-ricavi");
 const boxNumeroOrdini = document.getElementById("numero-ordini");
@@ -10,12 +24,14 @@ const boxConversione = document.getElementById("conversione");
 
 const tabella = document.querySelector("#tabella-vendite tbody");
 
-// Messaggi
-function setStatus(msg, ok = false) {
-  const el = document.getElementById("status");
-  if (!el) return;
-  el.textContent = msg;
-  el.style.color = ok ? "green" : "red";
+// =========================================================
+// FETCH BLINDATO
+// =========================================================
+
+async function adminGet(url) {
+  const res = await adminFetch(url);
+  if (!res.ok) throw new Error("Errore fetch admin: " + url);
+  return res.json();
 }
 
 // =========================================================
@@ -26,24 +42,23 @@ async function caricaVendite() {
   setStatus("Caricamento vendite...");
 
   try {
-    const res = await fetch("/api/vendite/lista");
-    const data = await res.json();
+    const data = await adminGet("/api/admin/vendite/lista");
 
     if (!data.success) {
       setStatus(data.error || "Errore caricamento vendite");
       return;
     }
 
-    setStatus("");
+    setStatus("", true);
 
     // =========================================================
     // 2. AGGIORNA STATISTICHE
     // =========================================================
 
-    boxTotaleVendite.textContent = data.stats.totaleVendite;
-    boxTotaleRicavi.textContent = data.stats.totaleRicavi.toFixed(2) + " €";
-    boxNumeroOrdini.textContent = data.stats.numeroOrdini;
-    boxConversione.textContent = data.stats.conversione + "%";
+    boxTotaleVendite.textContent = clean(data.stats.totaleVendite);
+    boxTotaleRicavi.textContent = clean(data.stats.totaleRicavi.toFixed(2)) + " €";
+    boxNumeroOrdini.textContent = clean(data.stats.numeroOrdini);
+    boxConversione.textContent = clean(data.stats.conversione) + "%";
 
     // =========================================================
     // 3. RIEMPI TABELLA
@@ -51,28 +66,26 @@ async function caricaVendite() {
 
     tabella.innerHTML = "";
 
-    data.vendite.forEach(v => {
+    (data.vendite || []).forEach((v) => {
       const tr = document.createElement("tr");
-
       tr.innerHTML = `
-        <td>${v.data}</td>
-        <td>${v.prodotto}</td>
-        <td>${v.prezzo} €</td>
-        <td>${v.email}</td>
-        <td>${v.metodo}</td>
+        <td>${clean(v.data)}</td>
+        <td>${clean(v.prodotto)}</td>
+        <td>${clean(v.prezzo)} €</td>
+        <td>${clean(v.email)}</td>
+        <td>${clean(v.metodo)}</td>
       `;
-
       tabella.appendChild(tr);
     });
 
   } catch (err) {
-    console.error(err);
+    console.error("Errore vendite:", err);
     setStatus("Errore di connessione");
   }
 }
 
 // =========================================================
-// 4. AVVIO
+// 4. INIT
 // =========================================================
 
 document.addEventListener("DOMContentLoaded", caricaVendite);
