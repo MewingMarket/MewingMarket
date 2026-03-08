@@ -1,8 +1,10 @@
 /**
  * =========================================================
  * File: app/modules/airtable.cjs
- * Versione definitiva:
+ * Versione definitiva blindata:
  * - Sync Airtable → cache + file
+ * - Timeout + retry + paginazione
+ * - Nessuna promise pendente
  * - Usa DescrizioneLunga come descrizione principale
  * - Descrizione breve generata da codice (non da Airtable)
  * - Auto-create prodotto se non esiste
@@ -57,23 +59,76 @@ function getProducts() {
 }
 
 /* =========================================================
-   SYNC AIRTABLE
+   TIMEOUT + RETRY + PAGINAZIONE
+========================================================= */
+
+// Timeout helper
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`Timeout Airtable (${ms}ms)`)), ms)
+    )
+  ]);
+}
+
+// Retry wrapper
+async function retry(fn, retries = 3, delay = 1000) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      console.error(`⚠️ Tentativo ${i + 1} fallito:`, err.message);
+      if (i === retries - 1) throw err;
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+}
+
+/* =========================================================
+   SYNC AIRTABLE — versione blindata
 ========================================================= */
 async function syncAirtable() {
+  const PAT = process.env.AIRTABLE_PAT;
+  const BASE = process.env.AIRTABLE_BASE;
+  const TABLE = process.env.AIRTABLE_TABLE_NAME;
+
+  if (!PAT || !BASE || !TABLE) {
+    console.log("⏭️ Sync Airtable saltato: variabili mancanti");
+    return false;
+  }
+
+  const base = new Airtable({ apiKey: PAT }).base(BASE);
+  const tableName = decodeURIComponent(TABLE);
+
+  async function fetchPage() {
+    return new Promise((resolve, reject) => {
+      const results = [];
+
+      base(tableName)
+        .select({ pageSize: 50 })
+        .eachPage(
+          (records, next) => {
+            results.push(...records);
+            next();
+          },
+          (err) => {
+            if (err) reject(err);
+            else resolve(results);
+          }
+        );
+    });
+  }
+
   try {
-    const PAT = process.env.AIRTABLE_PAT;
-    const BASE = process.env.AIRTABLE_BASE;
-    const TABLE = process.env.AIRTABLE_TABLE_NAME;
+    console.log("📡 Sync Airtable…");
 
-    if (!PAT || !BASE || !TABLE) {
-      console.log("⏭️ Sync Airtable saltato: variabili mancanti");
-      return false;
-    }
-
-    const base = new Airtable({ apiKey: PAT }).base(BASE);
-    const tableName = decodeURIComponent(TABLE);
-
-    const records = await base(tableName).select({}).all();
+    // Timeout + retry + paginazione
+    const records = await retry(
+      () => withTimeout(fetchPage(), 10000),
+      3,
+      1000
+    );
 
     const products = records.map((r) => {
       const f = r.fields;
@@ -117,7 +172,7 @@ async function syncAirtable() {
     return true;
 
   } catch (err) {
-    console.error("❌ Errore syncAirtable:", err);
+    console.error("❌ Errore syncAirtable:", err.message);
     return false;
   }
 }
@@ -212,7 +267,7 @@ async function getSalesByUID(uid) {
       })
       .all();
 
-    return records.map(r => ({
+    return records.map((r) => ({
       id: r.id,
       ...r.fields
     }));
