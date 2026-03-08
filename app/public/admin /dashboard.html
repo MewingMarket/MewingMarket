@@ -1,152 +1,87 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <!-- HEAD ADMIN DINAMICO -->
-  
+  <div id="head-admin-placeholder"></div>
+</head>
 
-  <title>Dashboard Admin – MewingMarket</title>
+<body>
 
-  <style>
-    body {
-      background:#f7faff;
-      font-family:system-ui, sans-serif;
-      color:#003366;
-    }
-    h1, h2 {
-      color:#003366;
-    }
-    .box-standard {
-      background:white;
-      padding:20px;
-      border-radius:12px;
-      box-shadow:0 4px 20px rgba(0,0,0,0.06);
-      margin-bottom:30px;
-    }
-    .stats-grid {
-      display:grid;
-      grid-template-columns:repeat(auto-fit, minmax(180px,1fr));
-      gap:20px;
-    }
-    .stat-card {
-      background:#e8eef5;
-      padding:15px;
-      border-radius:10px;
-      text-align:center;
-    }
-    .stat-card h3 {
-      margin:0;
-      font-size:16px;
-      color:#003366;
-    }
-    .stat-card p {
-      font-size:22px;
-      font-weight:700;
-      margin-top:8px;
-      color:#0077ff;
-    }
-    .tabella-standard {
-      width:100%;
-      border-collapse:collapse;
-    }
-    .tabella-standard th,
-    .tabella-standard td {
-      padding:10px;
-      border-bottom:1px solid #cdd7e1;
-    }
-    .btn {
-      display:inline-block;
-      padding:12px 18px;
-      background:#0077ff;
-      color:white;
-      border-radius:8px;
-      text-decoration:none;
-      font-weight:600;
-      margin:5px;
-    }
-    .btn:hover {
-      background:#005fe0;
-    }
-  </style>
+  <!-- HEADER ADMIN DINAMICO -->
+  <div id="header-admin-placeholder"></div>
 
-  <!-- PATCH: controllo token admin -->
-  
+  <main class="pagina-standard">
 
-<main class="pagina-standard" style="margin-top:20px;">
+    <h1>Dashboard Admin</h1>
 
-  <h1>Dashboard Admin</h1>
+    <!-- METRICHE PRINCIPALI -->
+    <section class="box-standard">
+      <h2>Panoramica</h2>
 
-  <!-- METRICHE PRINCIPALI -->
-  <section class="box-standard">
-    <h2>Panoramica</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>Vendite totali</h3>
+          <p id="stat-vendite">—</p>
+        </div>
 
-    <div class="stats-grid">
-      <div class="stat-card">
-        <h3>Vendite totali</h3>
-        <p id="stat-vendite">—</p>
+        <div class="stat-card">
+          <h3>Ordini totali</h3>
+          <p id="stat-ordini">—</p>
+        </div>
+
+        <div class="stat-card">
+          <h3>Prodotti attivi</h3>
+          <p id="stat-prodotti">—</p>
+        </div>
       </div>
+    </section>
 
-      <div class="stat-card">
-        <h3>Ordini totali</h3>
-        <p id="stat-ordini">—</p>
+    <!-- ULTIMI ORDINI -->
+    <section class="box-standard">
+      <h2>Ultimi ordini</h2>
+
+      <table class="tabella-standard" id="tabella-ultimi-ordini">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Prodotto</th>
+            <th>Prezzo</th>
+            <th>Utente</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- PULSANTI RAPIDI -->
+    <section class="box-standard">
+      <h2>Azioni rapide</h2>
+
+      <div class="quick-actions">
+        <a href="prodotti.html" class="btn">Gestisci prodotti</a>
+        <a href="vendite.html" class="btn">Vedi vendite</a>
+        <a href="ordini.html" class="btn">Vedi ordini</a>
+        <a href="feedback.html" class="btn">Feedback clienti</a>
+        <a href="analisi.html" class="btn">Analisi performance</a>
+        <a href="settings.html" class="btn">Impostazioni</a>
       </div>
+    </section>
 
-      <div class="stat-card">
-        <h3>Prodotti attivi</h3>
-        <p id="stat-prodotti">—</p>
-      </div>
-    </div>
-  </section>
+  </main>
 
-  <!-- ULTIMI ORDINI -->
-  <section class="box-standard">
-    <h2>Ultimi ordini</h2>
+  <!-- FOOTER ADMIN DINAMICO -->
+  <div id="footer-admin-placeholder"></div>
 
-    <table class="tabella-standard" id="tabella-ultimi-ordini">
-      <thead>
-        <tr>
-          <th>Data</th>
-          <th>Prodotto</th>
-          <th>Prezzo</th>
-          <th>Utente</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </section>
+  <!-- JS GLOBALI ADMIN -->
+  <script src="loader-admin.js"></script>
+  <script src="seo-admin.js"></script>
+  <script src="structured-data-admin.js"></script>
 
-  <!-- PULSANTI RAPIDI -->
-  <section class="box-standard">
-    <h2>Azioni rapide</h2>
+  <!-- JS SPECIFICO PAGINA -->
+  <script src="js/dashboard.js"></script>
 
-    <div class="quick-actions">
-      <a href="prodotti.html" class="btn">Gestisci prodotti</a>
-      <a href="vendite.html" class="btn">Vedi vendite</a>
-      <a href="ordini.html" class="btn">Vedi ordini</a>
-      <a href="feedback.html" class="btn">Feedback clienti</a>
-      <a href="analisi.html" class="btn">Analisi performance</a>
-      <a href="settings.html" class="btn">Impostazioni</a>
-    </div>
-  </section>
-
-</main>
-
-<!-- FOOTER ADMIN DINAMICO -->
-<div id="footer-admin-placeholder"></div>
-
-
-<!-- JS DASHBOARD -->
-
-
-
-         
-         
-         
-         
-         
-         <script src="tracking.js"></script>
-         
-         
-         
 </body>
 </html>
