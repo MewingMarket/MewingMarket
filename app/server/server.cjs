@@ -80,17 +80,14 @@ async function startServer() {
   console.log("🚀 Avvio MewingMarket — BOOTSTRAP");
   console.log("====================================\n");
 
-  // 🔥 Sync real‑time: bootstrap NON blocca più il server
   try {
     await require("./startup/bootstrap.cjs")();
   } catch (err) {
     console.error("❌ Errore bootstrap:", err);
   }
 
-  // ❌ RIMOSSO: niente più cron
-  // require("./startup/startup-cron.cjs")();
-
-  const PORT = process.env.PORT || 10000;
+  // ⭐ PATCH OBBLIGATORIA PER RENDER
+  const PORT = process.env.PORT;
 
   app.listen(PORT, () => {
     console.log(`\n🎉 Server pronto! Porta ${PORT}`);
