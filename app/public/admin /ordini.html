@@ -1,101 +1,76 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <!-- HEAD ADMIN DINAMICO -->
-  
-
-  <title>Ordini – Admin MewingMarket</title>
-
-  
-  
-
-
-    <script src="/seo.js"></script>
-    <script src="/structured-data.js"></script>
-  
+  <div id="head-admin-placeholder"></div>
 </head>
 
 <body>
 
+  <!-- HEADER ADMIN DINAMICO -->
+  <div id="header-admin-placeholder"></div>
 
+  <main class="pagina-standard">
 
+    <h1>Ordini</h1>
 
+    <!-- METRICHE -->
+    <section class="box-standard">
+      <h2>Panoramica ordini</h2>
 
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>Ordini totali</h3>
+          <p id="ordini-totali">—</p>
+        </div>
 
+        <div class="stat-card">
+          <h3>Ordini completati</h3>
+          <p id="ordini-completati">—</p>
+        </div>
 
-
-
-
-
-
-
-
-<!-- NAV ADMIN DINAMICO -->
-<div id="nav-admin-placeholder"></div>
-
-
-<main class="pagina-standard" style="margin-top:20px;">
-
-  <h1>Ordini</h1>
-
-  <!-- METRICHE -->
-  <section class="box-standard">
-    <h2>Panoramica ordini</h2>
-
-    <div class="stats-grid">
-      <div class="stat-card">
-        <h3>Ordini totali</h3>
-        <p id="ordini-totali">—</p>
+        <div class="stat-card">
+          <h3>Carrelli abbandonati</h3>
+          <p id="ordini-abbandonati">—</p>
+        </div>
       </div>
+    </section>
 
-      <div class="stat-card">
-        <h3>Ordini completati</h3>
-        <p id="ordini-completati">—</p>
-      </div>
+    <!-- TABELLA ORDINI -->
+    <section class="box-standard" style="margin-top:30px;">
+      <h2>Lista ordini</h2>
 
-      <div class="stat-card">
-        <h3>Carrelli abbandonati</h3>
-        <p id="ordini-abbandonati">—</p>
-      </div>
-    </div>
-  </section>
+      <table class="tabella-standard" id="tabella-ordini">
+        <thead>
+          <tr>
+            <th>ID Ordine</th>
+            <th>Prodotto</th>
+            <th>Prezzo</th>
+            <th>Stato</th>
+            <th>Utente</th>
+            <th>Origine</th>
+            <th>Data</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
 
-  <!-- TABELLA ORDINI -->
-  <section class="box-standard" style="margin-top:30px;">
-    <h2>Lista ordini</h2>
+  </main>
 
-    <table class="tabella-standard" id="tabella-ordini">
-      <thead>
-        <tr>
-          <th>ID Ordine</th>
-          <th>Prodotto</th>
-          <th>Prezzo</th>
-          <th>Stato</th>
-          <th>Utente</th>
-          <th>Origine</th>
-          <th>Data</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </section>
+  <!-- FOOTER ADMIN DINAMICO -->
+  <div id="footer-admin-placeholder"></div>
 
-</main>
+  <!-- JS GLOBALI ADMIN -->
+  <script src="loader-admin.js"></script>
+  <script src="seo-admin.js"></script>
+  <script src="structured-data-admin.js"></script>
 
-<!-- FOOTER ADMIN DINAMICO -->
-<div id="footer-admin-placeholder"></div>
+  <!-- JS SPECIFICO PAGINA -->
+  <script src="js/ordini.js"></script>
 
-
-
-         
-         
-         
-         
-         
-         <script src="tracking.js"></script>
-         
-         
-         
 </body>
 </html>
