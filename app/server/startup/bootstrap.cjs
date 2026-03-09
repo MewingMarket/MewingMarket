@@ -1,11 +1,12 @@
 /**
  * =========================================================
- * BOOTSTRAP REAL‑TIME — nessun timeout, nessun blocco
+ * BOOTSTRAP — versione Render‑Friendly
+ * Nessuna sync Airtable qui dentro.
+ * Nessun blocco prima del listen.
  * =========================================================
  */
 
 const { syncYouTube } = require("../../services/youtube.cjs");
-const { syncAirtable } = require("../../modules/airtable.cjs");
 
 module.exports = async function bootstrap() {
   console.log("\n====================================");
@@ -15,7 +16,7 @@ module.exports = async function bootstrap() {
   global.catalogReady = false;
 
   /* =========================================================
-     1) SYNC YOUTUBE (non bloccante)
+     1) SYNC YOUTUBE (non blocca il server)
   ========================================================== */
   console.log("🎥 Sync YouTube…");
   try {
@@ -26,21 +27,8 @@ module.exports = async function bootstrap() {
   }
 
   /* =========================================================
-     2) SYNC AIRTABLE (real‑time, nessun timeout)
-     - sarà delta‑based nel nuovo airtable.cjs
-     - qui non blocca mai il server
-  ========================================================== */
-  console.log("📡 Sync Airtable…");
-  try {
-    await syncAirtable();
-    console.log("🟢 Airtable completata (catalogReady = true)\n");
-    global.catalogReady = true;
-  } catch (err) {
-    console.error("❌ Errore Airtable:", err?.message || err);
-  }
-
-  /* =========================================================
      BOOTSTRAP COMPLETATO
+     (Airtable verrà eseguito DOPO il listen)
   ========================================================== */
   console.log("====================================");
   console.log("🎉 BOOTSTRAP COMPLETATO");
