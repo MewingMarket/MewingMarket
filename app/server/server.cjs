@@ -151,9 +151,27 @@ console.log(">> ROOT PATH:", ROOT);
     app.listen(PORT, () => {
       console.log(`\n🎉 SERVER LISTENING ON PORT ${PORT}`);
       console.log("📦 Catalogo caricato (cache locale)");
-      console.log("⚡ Sync Airtable in real‑time attiva");
+      console.log("⚡ Server pronto e online");
       console.log("🤖 Bot operativo");
       console.log("====================================\n");
+
+      /**
+       * =========================================================
+       * SYNC AIRTABLE — DOPO IL LISTEN
+       * Nessun timeout, nessun blocco, nessun crash.
+       * =========================================================
+       */
+      setTimeout(async () => {
+        console.log("⏳ Avvio sync Airtable post-listen…");
+
+        try {
+          const { syncAirtable } = require("../modules/airtable.cjs");
+          await syncAirtable();
+          console.log("🟢 Sync Airtable completata (post-listen)");
+        } catch (err) {
+          console.error("❌ Errore sync Airtable post-listen:", err);
+        }
+      }, 3000);
     });
   }
 
