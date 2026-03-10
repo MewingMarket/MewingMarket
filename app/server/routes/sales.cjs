@@ -3,7 +3,7 @@
  * Recupero vendite utente
  */
 
-const { getSalesByUID } = require("../../modules/airtable.cjs");
+const { getSalesByUID } = require("../../modules/airtable-sync.cjs");
 
 module.exports = function (app) {
   app.get("/sales/:uid", async (req, res) => {
