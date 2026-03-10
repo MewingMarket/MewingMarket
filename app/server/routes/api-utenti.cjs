@@ -96,7 +96,7 @@ router.post("/utenti/registrazione", async (req, res) => {
 });
 
 /* =========================================================
-   LOGIN (PATCHATO)
+   LOGIN (PATCHATO DEFINITIVO)
 ========================================================= */
 router.post("/utenti/login", async (req, res) => {
   let { email, password } = req.body || {};
@@ -135,12 +135,13 @@ router.post("/utenti/login", async (req, res) => {
       }
     ]);
 
-    // 🔵 PATCH FONDAMENTALE
+    // 🔵 PATCH FONDAMENTALE — AGGIUNTO RUOLO
     return res.json({
       success: true,
       token,
-      email,          // ← aggiunto
-      utenteEmail: email // ← aggiunto
+      email,
+      utenteEmail: email,
+      ruolo: user.get("ruolo") || "user"
     });
 
   } catch (err) {
