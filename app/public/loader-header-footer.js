@@ -143,11 +143,29 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // ---------------------------------------------------------
-// 5) ATTIVA TRIGGER ADMIN DOPO auth-ready
+// 5) MOSTRA IL PULSANTE ADMIN SOLO QUANDO:
+//    - l'utente è admin
+//    - l'header è stato caricato
 // ---------------------------------------------------------
+
+let headerReady = false;
+let authReady = false;
+
+document.addEventListener("header-loaded", () => {
+  headerReady = true;
+  tryShowAdminButton();
+});
+
 document.addEventListener("auth-ready", () => {
+  authReady = true;
+  tryShowAdminButton();
+});
+
+function tryShowAdminButton() {
+  if (!headerReady || !authReady) return;
+
   if (window.isAdmin) {
     const adminBtn = document.getElementById("admin-trigger");
-    if (adminBtn) adminBtn.style.display = "block";
+    if (adminBtn) adminBtn.style.display = "inline-flex";
   }
-});
+}
