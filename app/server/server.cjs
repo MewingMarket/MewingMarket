@@ -164,7 +164,8 @@ console.log(">> ROOT PATH:", ROOT);
         console.log("⏳ Avvio sync Airtable post-listen…");
 
         try {
-          const { syncAirtable } = require("../modules/airtable-sync.cjs");
+          // ⭐ PERCORSO CORRETTO
+          const { syncAirtable } = require("../../modules/airtable-sync.cjs");
           await syncAirtable();
           console.log("🟢 Sync Airtable completata (post-listen)");
         } catch (err) {
