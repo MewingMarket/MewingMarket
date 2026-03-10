@@ -1,7 +1,8 @@
 /**
  * =========================================================
  * File: app/modules/airtable-sync.cjs
- * Versione DEFINITIVA Render‑Friendly + NO TIMEOUT + NO CATALOGHI VUOTI
+ * Versione DEFINITIVA — Anti Timeout, Anti Catalogo Vuoto,
+ * Una sola sync per processo, Render‑Friendly
  * =========================================================
  */
 
@@ -12,7 +13,6 @@ const Airtable = require("airtable");
 const ROOT = path.resolve(__dirname, "..");
 const DATA_DIR = path.join(ROOT, "data");
 const DATA_PATH = path.join(DATA_DIR, "products.json");
-const META_PATH = path.join(DATA_DIR, "airtable-meta.json");
 
 let PRODUCTS_CACHE = [];
 global.catalogReady = false;
@@ -38,7 +38,7 @@ function loadProducts() {
     ensureDataDir();
     if (fs.existsSync(DATA_PATH)) {
       PRODUCTS_CACHE = JSON.parse(fs.readFileSync(DATA_PATH, "utf8"));
-      console.log("📦 Catalogo caricato da file");
+      console.log("📦 Catalogo caricato (cache locale)");
     }
   } catch (err) {
     console.error("❌ Errore loadProducts:", err);
@@ -50,38 +50,26 @@ function getProducts() {
   return PRODUCTS_CACHE;
 }
 
-function loadMeta() {
-  try {
-    if (fs.existsSync(META_PATH)) {
-      return JSON.parse(fs.readFileSync(META_PATH, "utf8"));
-    }
-  } catch {}
-  return { lastSync: "1970-01-01T00:00:00.000Z" };
-}
-
-function saveMeta(meta) {
-  ensureDataDir();
-  fs.writeFileSync(META_PATH, JSON.stringify(meta, null, 2));
-}
-
 /* =========================================================
-   SYNC AIRTABLE — VERSIONE DEFINITIVA (Render‑Safe)
-   - Esegue UNA SOLA VOLTA
-   - Mai più catalogo vuoto
-   - Mai più timeout
+   SYNC AIRTABLE — UNA SOLA VOLTA PER PROCESSO
+   - Timeout sicuro
+   - Mai sovrascrivere con 0 record
    - Mai più sync multiple
 ========================================================= */
 
 let SYNC_ALREADY_DONE = false;
 
 async function syncAirtable() {
-  try {
-    // Se già fatta → NON rifare
-    if (SYNC_ALREADY_DONE) {
-      console.log("⏭️ Sync Airtable saltata: già eseguita");
-      return true;
-    }
+  // 🔒 Blocco totale: una sola sync per processo
+  if (SYNC_ALREADY_DONE) {
+    console.log("⏭️ Sync Airtable saltata: già eseguita in questo processo");
+    return true;
+  }
 
+  // 🔒 La marchiamo SUBITO come eseguita
+  SYNC_ALREADY_DONE = true;
+
+  try {
     const PAT = process.env.AIRTABLE_PAT;
     const BASE = process.env.AIRTABLE_BASE;
     const TABLE = process.env.AIRTABLE_TABLE_NAME;
@@ -91,7 +79,7 @@ async function syncAirtable() {
       return false;
     }
 
-    console.log("📡 Sync Airtable (una sola volta)…");
+    console.log("📡 Sync Airtable (una sola volta per processo)…");
 
     const base = new Airtable({ apiKey: PAT }).base(BASE);
     const tableName = decodeURIComponent(TABLE);
@@ -158,7 +146,6 @@ async function syncAirtable() {
     saveProductsToFile(products);
 
     global.catalogReady = true;
-    SYNC_ALREADY_DONE = true;
 
     console.log("🟢 Sync Airtable COMPLETATA:", products.length, "prodotti");
     console.log("🛑 Sync Airtable DISATTIVATA per il resto della sessione");
