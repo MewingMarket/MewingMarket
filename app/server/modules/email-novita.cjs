@@ -3,7 +3,7 @@ const path = require("path");
 const { inviaEmailLista } = require("./invia-email-lista.cjs");
 const { LISTA_NEWSLETTER } = require("./liste-brevo.cjs");
 const { SENDER_VENDITE } = require("./email-senders.cjs");
-const { getProducts } = require(path.join(__dirname, "airtable.cjs"));
+const { getProducts } = require(path.join(__dirname, "airtable-sync.cjs"));
 const { safeText, cleanURL } = require(path.join(__dirname, "utils.cjs"));
 
 /* =========================================================
