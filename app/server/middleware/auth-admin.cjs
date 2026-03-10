@@ -14,17 +14,30 @@ module.exports = function (req, res, next) {
     }
 
     // Normalizzazione ruolo
-    const ruoloRaw = req.session.user.ruolo || "";
-    const ruolo = String(ruoloRaw).trim().toLowerCase();
+    const ruoloRaw = String(req.session.user.ruolo || "").trim().toLowerCase();
 
-    // Varianti accettate come admin
-    const isAdmin =
-      ruolo === "admin" ||
-      ruolo === "amministratore" ||
-      ruolo === "administrator";
+    // Mappatura ruoli → normalizzazione totale
+    let ruoloNorm = "user"; // fallback sicuro
 
-    // Controllo ruolo
-    if (!isAdmin) {
+    if (
+      ruoloRaw.includes("admin") ||
+      ruoloRaw.includes("amministrator")
+    ) {
+      ruoloNorm = "admin";
+    } else if (
+      ruoloRaw.includes("user") ||
+      ruoloRaw.includes("utente")
+    ) {
+      ruoloNorm = "user";
+    } else if (
+      ruoloRaw.includes("guest") ||
+      ruoloRaw.includes("ospite")
+    ) {
+      ruoloNorm = "guest";
+    }
+
+    // Controllo ruolo admin
+    if (ruoloNorm !== "admin") {
       return res.status(403).json({
         success: false,
         error: "Non autorizzato"
