@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- CSS SPECIFICO ADMIN -->
+  <link rel="stylesheet" href="dashboard-admin.css">
+</head>
+
+<body class="admin-dashboard-body">
+
+<!-- HEAD ADMIN DINAMICO -->
+<div id="head-admin-placeholder"></div>
+
+<!-- HEADER ADMIN DINAMICO -->
+<div id="header-admin-placeholder"></div>
+
+<main>
+
+  <!-- SIDEBAR ADMIN -->
+  <aside class="sidebar-admin">
+    <h2>Area Admin</h2>
+
+    <div class="admin-meta">
+      <div id="adminEmail"></div>
+      <div id="adminRole"></div>
+    </div>
+
+    <div style="margin-top:16px;">
+      <div class="nav-item-admin" data-panel="profilo">Modifica profilo</div>
+      <div class="nav-item-admin" data-panel="prodotti">Prodotti</div>
+      <div class="nav-item-admin" data-panel="vendite">Vendite</div>
+      <div class="nav-item-admin" data-panel="ordini">Ordini</div>
+      <div class="nav-item-admin" data-panel="feedback">Feedback</div>
+      <div class="nav-item-admin" data-panel="analisi">Analisi</div>
+      <div class="nav-item-admin" data-panel="settings">Impostazioni</div>
+
+      <div class="nav-item-admin danger" id="logout-admin">Logout</div>
+    </div>
+
+    <div class="nav-site">
+      <a href="/">← Torna al sito</a>
+    </div>
+  </aside>
+
+  <!-- CONTENUTO PRINCIPALE -->
+  <section class="content-admin" id="panel-profilo">
+    <h1>Profilo Admin</h1>
+
+    <p class="admin-meta">
+      Email: <span id="adminEmailMain"></span><br>
+      Ruolo: <span id="adminRoleMain"></span>
+    </p>
+
+    <div class="field-group">
+      <h3>Cambia email</h3>
+      <label for="newAdminEmail">Nuova email</label>
+      <input type="email" id="newAdminEmail" placeholder="Nuova email">
+      <label for="passwordAdminEmail">Password attuale</label>
+      <input type="password" id="passwordAdminEmail" placeholder="Password attuale">
+      <button class="btn btn-primary" id="btnAdminCambiaEmail">Aggiorna email</button>
+      <div class="status" id="msgAdminEmail"></div>
+    </div>
+
+    <div class="field-group">
+      <h3>Cambia password</h3>
+      <label for="oldAdminPassword">Password attuale</label>
+      <input type="password" id="oldAdminPassword" placeholder="Password attuale">
+      <label for="newAdminPassword">Nuova password</label>
+      <input type="password" id="newAdminPassword" placeholder="Nuova password">
+      <button class="btn btn-primary" id="btnAdminCambiaPassword">Aggiorna password</button>
+      <div class="status" id="msgAdminPassword"></div>
+    </div>
+  </section>
+
+  <!-- ALTRI PANNELLI (VUOTI PER ORA) -->
+  <section class="content-admin hidden" id="panel-prodotti"><h1>Prodotti</h1></section>
+  <section class="content-admin hidden" id="panel-vendite"><h1>Vendite</h1></section>
+  <section class="content-admin hidden" id="panel-ordini"><h1>Ordini</h1></section>
+  <section class="content-admin hidden" id="panel-feedback"><h1>Feedback</h1></section>
+  <section class="content-admin hidden" id="panel-analisi"><h1>Analisi</h1></section>
+  <section class="content-admin hidden" id="panel-settings"><h1>Impostazioni</h1></section>
+
+</main>
+
+<!-- FOOTER ADMIN DINAMICO -->
+<div id="footer-admin-placeholder"></div>
+
+<!-- JS -->
+<script src="loader-admin.js"></script>
+<script src="dashboard-admin.js"></script>
+
+</body>
+</html>
