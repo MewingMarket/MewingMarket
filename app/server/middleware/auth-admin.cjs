@@ -13,8 +13,18 @@ module.exports = function (req, res, next) {
       });
     }
 
+    // Normalizzazione ruolo
+    const ruoloRaw = req.session.user.ruolo || "";
+    const ruolo = String(ruoloRaw).trim().toLowerCase();
+
+    // Varianti accettate come admin
+    const isAdmin =
+      ruolo === "admin" ||
+      ruolo === "amministratore" ||
+      ruolo === "administrator";
+
     // Controllo ruolo
-    if (req.session.user.ruolo !== "admin") {
+    if (!isAdmin) {
       return res.status(403).json({
         success: false,
         error: "Non autorizzato"
