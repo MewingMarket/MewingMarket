@@ -10,8 +10,8 @@ const Airtable = require("../lib/airtable-wrapper.cjs");
 // ❌ ERA SBAGLIATO:
 // const { getProducts, syncAirtable } = require("../services/airtable.cjs");
 
-// ✅ VERSIONE CORRETTA:
-const { getProducts, syncAirtable } = require("../../modules/airtable.cjs");
+// ✅ VERSIONE CORRETTA PATCHATA:
+const { getProducts, syncAirtable } = require("../../modules/airtable-sync.cjs");
 const router = express.Router();
 
 // ---------------------------------------------------------
