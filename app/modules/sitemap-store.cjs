@@ -4,7 +4,7 @@
 // =========================================================
 
 const path = require("path");
-const { getProducts } = require(path.join(__dirname, "airtable.cjs"));
+const { getProducts } = require(path.join(__dirname, "airtable-sync.cjs"));
 const { cleanURL } = require("./utils.cjs");
 
 /* =========================================================
