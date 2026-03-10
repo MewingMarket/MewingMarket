@@ -1,7 +1,7 @@
 /**
  * =========================================================
  * File: app/modules/airtable-sync.cjs
- * Versione DEFINITIVA Render‑Friendly + LOG DIAGNOSTICI
+ * Versione DEFINITIVA Render‑Friendly + NO TIMEOUT + NO CATALOGHI VUOTI
  * =========================================================
  */
 
@@ -65,36 +65,67 @@ function saveMeta(meta) {
 }
 
 /* =========================================================
-   SYNC AIRTABLE — VERSIONE RENDER‑FRIENDLY
+   SYNC AIRTABLE — VERSIONE DEFINITIVA (Render‑Safe)
+   - Esegue UNA SOLA VOLTA
+   - Mai più catalogo vuoto
+   - Mai più timeout
+   - Mai più sync multiple
 ========================================================= */
+
+let SYNC_ALREADY_DONE = false;
+
 async function syncAirtable() {
   try {
+    // Se già fatta → NON rifare
+    if (SYNC_ALREADY_DONE) {
+      console.log("⏭️ Sync Airtable saltata: già eseguita");
+      return true;
+    }
+
     const PAT = process.env.AIRTABLE_PAT;
     const BASE = process.env.AIRTABLE_BASE;
     const TABLE = process.env.AIRTABLE_TABLE_NAME;
 
     if (!PAT || !BASE || !TABLE) {
-      console.log("⏭️ Sync Airtable saltato: variabili mancanti");
+      console.log("⏭️ Sync Airtable saltata: variabili mancanti");
       return false;
     }
+
+    console.log("📡 Sync Airtable (una sola volta)…");
 
     const base = new Airtable({ apiKey: PAT }).base(BASE);
     const tableName = decodeURIComponent(TABLE);
 
-    console.log("📡 Sync Airtable…");
-
-    // ⭐ LOG DIAGNOSTICI
     console.log("🔍 DEBUG Airtable:");
     console.log("   BASE  =", BASE);
     console.log("   TABLE =", `"${tableName}"`);
     console.log("   PAT   =", PAT ? "OK" : "MISSING");
 
-    // ⭐ LOG per capire se la query parte
     console.log("🔎 Eseguo select().all()…");
 
-    const records = await base(tableName).select({}).all();
+    // Timeout di sicurezza: se Airtable non risponde → NON svuotare il catalogo
+    const timeoutPromise = new Promise((resolve) =>
+      setTimeout(() => resolve("TIMEOUT"), 8000)
+    );
+
+    const airtablePromise = base(tableName).select({}).all();
+
+    const result = await Promise.race([airtablePromise, timeoutPromise]);
+
+    if (result === "TIMEOUT") {
+      console.log("⏭️ Sync Airtable annullata: TIMEOUT (catalogo preservato)");
+      return false;
+    }
+
+    const records = result;
 
     console.log("🔎 Query completata, records:", records.length);
+
+    // Se Airtable risponde vuoto → NON sovrascrivere il catalogo
+    if (!records.length) {
+      console.log("⏭️ Sync Airtable annullata: 0 record (catalogo preservato)");
+      return false;
+    }
 
     const products = records.map((r) => {
       const f = r.fields;
@@ -127,12 +158,16 @@ async function syncAirtable() {
     saveProductsToFile(products);
 
     global.catalogReady = true;
-    console.log("🟢 Sync Airtable OK:", products.length, "prodotti");
+    SYNC_ALREADY_DONE = true;
+
+    console.log("🟢 Sync Airtable COMPLETATA:", products.length, "prodotti");
+    console.log("🛑 Sync Airtable DISATTIVATA per il resto della sessione");
 
     return true;
 
   } catch (err) {
     console.error("❌ Errore syncAirtable:", err);
+    console.log("⏭️ Catalogo preservato (nessuna sovrascrittura)");
     return false;
   }
 }
