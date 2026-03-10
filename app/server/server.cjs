@@ -1,7 +1,7 @@
 /**
  * =========================================================
  * File: app/server/server.cjs
- * Entry point del server — versione ULTRA DEBUG + RALLENTATORE
+ * Entry point del server — versione DEFINITIVA + ANTI TIMEOUT
  * =========================================================
  */
 
@@ -33,20 +33,20 @@ app.disable("x-powered-by");
 const ROOT = path.resolve("app");
 console.log(">> ROOT PATH:", ROOT);
 
-// LOGGING
+// =========================================================
+// AVVIO SEQUENZIALE
+// =========================================================
 (async () => {
   console.log(">> LOADING logging.cjs");
   await wait(300);
   require("./services/logging.cjs");
 
-  // PARSER
   console.log(">> APPLYING PARSER MIDDLEWARE");
   await wait(300);
   app.use(cors({ origin: true, credentials: true }));
   app.use(express.json());
   app.use(cookieParser());
 
-  // MIDDLEWARE GLOBALI
   console.log(">> LOADING cache.cjs");
   await wait(300);
   require("./middleware/cache.cjs")(app);
@@ -59,21 +59,17 @@ console.log(">> ROOT PATH:", ROOT);
   await wait(300);
   require("./middleware/context.cjs")(app);
 
-  /**
-   * =========================================================
-   * STATICI FRONTEND
-   * =========================================================
-   */
+  // =========================================================
+  // STATICI FRONTEND
+  // =========================================================
   console.log(">> REGISTER STATIC ROUTES");
   await wait(300);
   app.use(express.static(path.resolve("app/public")));
   app.use("/data", express.static(path.resolve("app/data")));
 
-  /**
-   * =========================================================
-   * ADMIN
-   * =========================================================
-   */
+  // =========================================================
+  // ADMIN
+  // =========================================================
   console.log(">> REGISTER ADMIN ROUTES");
   await wait(300);
   app.get("/admin/login", (req, res) => {
@@ -81,21 +77,17 @@ console.log(">> ROOT PATH:", ROOT);
   });
   app.use("/admin", express.static(path.resolve("app/public/admin")));
 
-  /**
-   * =========================================================
-   * API
-   * =========================================================
-   */
+  // =========================================================
+  // API
+  // =========================================================
   console.log(">> LOADING router.cjs");
   await wait(300);
   const router = require("./router.cjs");
   app.use("/api", router);
 
-  /**
-   * =========================================================
-   * ROUTE FRONTEND
-   * =========================================================
-   */
+  // =========================================================
+  // ROUTE FRONTEND
+  // =========================================================
   console.log(">> LOADING FRONTEND ROUTES");
   await wait(300);
   require("./routes/chat.cjs")(app);
@@ -114,11 +106,9 @@ console.log(">> ROOT PATH:", ROOT);
   await wait(300);
   require("./routes/system-status.cjs")(app);
 
-  /**
-   * =========================================================
-   * BOOTSTRAP
-   * =========================================================
-   */
+  // =========================================================
+  // BOOTSTRAP
+  // =========================================================
   async function startServer() {
     console.log("\n====================================");
     console.log("🚀 STARTING BOOTSTRAP");
@@ -155,19 +145,21 @@ console.log(">> ROOT PATH:", ROOT);
       console.log("🤖 Bot operativo");
       console.log("====================================\n");
 
-      /**
-       * =========================================================
-       * SYNC AIRTABLE — DOPO IL LISTEN
-       * =========================================================
-       */
+      // =====================================================
+      // SYNC AIRTABLE — UNA SOLA VOLTA PER PROCESSO
+      // =====================================================
       setTimeout(async () => {
         console.log("⏳ Avvio sync Airtable post-listen…");
 
         try {
-          // ⭐ PERCORSO CORRETTO
           const { syncAirtable } = require("../modules/airtable-sync.cjs");
-          await syncAirtable();
-          console.log("🟢 Sync Airtable completata (post-listen)");
+          const ok = await syncAirtable();
+
+          if (ok) {
+            console.log("🟢 Sync Airtable completata (post-listen)");
+          } else {
+            console.log("⏭️ Sync Airtable NON completata (catalogo preservato)");
+          }
         } catch (err) {
           console.error("❌ Errore sync Airtable post-listen:", err);
         }
