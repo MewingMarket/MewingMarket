@@ -17,13 +17,36 @@ function readAuthState() {
   try {
     const token = localStorage.getItem("token");
     const email = localStorage.getItem("email");
-    const ruolo = localStorage.getItem("ruolo");
+    const ruoloRaw = localStorage.getItem("ruolo") || "";
 
     if (token && email) {
       window.isLogged = true;
       window.userEmail = email;
-      window.userRole = ruolo || "user";
-      window.isAdmin = ruolo === "admin";
+
+      // Normalizzazione ruolo
+      const ruolo = String(ruoloRaw).trim().toLowerCase();
+      let ruoloNorm = "user";
+
+      if (
+        ruolo.includes("admin") ||
+        ruolo.includes("amministrator")
+      ) {
+        ruoloNorm = "admin";
+      } else if (
+        ruolo.includes("user") ||
+        ruolo.includes("utente")
+      ) {
+        ruoloNorm = "user";
+      } else if (
+        ruolo.includes("guest") ||
+        ruolo.includes("ospite")
+      ) {
+        ruoloNorm = "guest";
+      }
+
+      window.userRole = ruoloNorm;
+      window.isAdmin = ruoloNorm === "admin";
+
     } else {
       window.isLogged = false;
       window.userEmail = null;
