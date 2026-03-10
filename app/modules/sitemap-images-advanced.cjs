@@ -1,6 +1,6 @@
 // modules/sitemap-images-advanced.cjs — VERSIONE AVANZATA
 
-const { getProducts } = require("./airtable.cjs");
+const { getProducts } = require("./airtable-sync.cjs");
 const { cleanURL, safeText } = require("./utils.cjs");
 
 /* =========================================================
