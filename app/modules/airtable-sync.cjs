@@ -1,7 +1,7 @@
 /**
  * =========================================================
  * File: app/modules/airtable-sync.cjs
- * Versione DEFINITIVA Render‑Friendly
+ * Versione DEFINITIVA Render‑Friendly + LOG DIAGNOSTICI
  * =========================================================
  */
 
@@ -83,7 +83,18 @@ async function syncAirtable() {
 
     console.log("📡 Sync Airtable…");
 
+    // ⭐ LOG DIAGNOSTICI
+    console.log("🔍 DEBUG Airtable:");
+    console.log("   BASE  =", BASE);
+    console.log("   TABLE =", `"${tableName}"`);
+    console.log("   PAT   =", PAT ? "OK" : "MISSING");
+
+    // ⭐ LOG per capire se la query parte
+    console.log("🔎 Eseguo select().all()…");
+
     const records = await base(tableName).select({}).all();
+
+    console.log("🔎 Query completata, records:", records.length);
 
     const products = records.map((r) => {
       const f = r.fields;
