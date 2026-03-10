@@ -11,7 +11,6 @@ fetch("head-admin.html")
     const temp = document.createElement("div");
     temp.innerHTML = html;
 
-    // Inserisce TUTTI i nodi del file head-admin nel <head>
     [...temp.children].forEach(node => document.head.appendChild(node));
 
     document.dispatchEvent(new Event("admin-head-loaded"));
@@ -19,7 +18,7 @@ fetch("head-admin.html")
 
 
 // ---------------------------------------------------------
-// 2) CONTROLLO ACCESSO ADMIN
+// 2) CONTROLLO ACCESSO ADMIN (basato su ruolo normalizzato)
 // ---------------------------------------------------------
 async function checkAdminAccess() {
   try {
@@ -28,16 +27,35 @@ async function checkAdminAccess() {
 
     const user = await res.json();
 
-    // Controllo email admin
-    const adminEmails = ["simone@mewingmarket.it"]; // puoi aggiungerne altre
-    const isAdmin = adminEmails.includes(user.email);
+    // Normalizzazione ruolo
+    const ruoloRaw = String(user.ruolo || "").trim().toLowerCase();
+    let ruoloNorm = "user";
 
-    if (!isAdmin) {
-      window.location.href = "/"; // blocco totale
+    if (
+      ruoloRaw.includes("admin") ||
+      ruoloRaw.includes("amministrator")
+    ) {
+      ruoloNorm = "admin";
+    } else if (
+      ruoloRaw.includes("user") ||
+      ruoloRaw.includes("utente")
+    ) {
+      ruoloNorm = "user";
+    } else if (
+      ruoloRaw.includes("guest") ||
+      ruoloRaw.includes("ospite")
+    ) {
+      ruoloNorm = "guest";
+    }
+
+    // Solo admin può entrare
+    if (ruoloNorm !== "admin") {
+      window.location.href = "/";
       return;
     }
 
     document.dispatchEvent(new Event("admin-auth-ok"));
+
   } catch (err) {
     console.error("Accesso admin negato:", err);
     window.location.href = "/";
