@@ -6,7 +6,7 @@
  * =========================================================
  */
 
-const { getProducts } = require("../../modules/airtable.cjs");
+const { getProducts } = require("../../modules/airtable-sync.cjs");
 
 module.exports = function (app) {
   app.get("/meta/feed", async (req, res) => {
