@@ -158,14 +158,13 @@ console.log(">> ROOT PATH:", ROOT);
       /**
        * =========================================================
        * SYNC AIRTABLE — DOPO IL LISTEN
-       * Nessun timeout, nessun blocco, nessun crash.
        * =========================================================
        */
       setTimeout(async () => {
         console.log("⏳ Avvio sync Airtable post-listen…");
 
         try {
-          const { syncAirtable } = require("../modules/airtable.cjs");
+          const { syncAirtable } = require("../modules/airtable-sync.cjs");
           await syncAirtable();
           console.log("🟢 Sync Airtable completata (post-listen)");
         } catch (err) {
