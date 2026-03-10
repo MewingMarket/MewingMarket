@@ -141,3 +141,13 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 });
+
+// ---------------------------------------------------------
+// 5) ATTIVA TRIGGER ADMIN DOPO auth-ready
+// ---------------------------------------------------------
+document.addEventListener("auth-ready", () => {
+  if (window.isAdmin) {
+    const adminBtn = document.getElementById("admin-trigger");
+    if (adminBtn) adminBtn.style.display = "block";
+  }
+});
