@@ -1,6 +1,6 @@
 /**
  * =========================================================
- * File: app/modules/airtable.cjs
+ * File: app/modules/airtable-sync.cjs
  * Versione DEFINITIVA Render‑Friendly
  * =========================================================
  */
