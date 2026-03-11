@@ -1,21 +1,16 @@
 // =========================================================
 // File: app/server/routes/api-prodotti.cjs
-// Catalogo prodotti — Versione Airtable (completa)
-// Versione definitiva (Airtable nuova SDK, blindata)
+// Catalogo prodotti — Versione FILE + Airtable per admin
 // =========================================================
 
 const express = require("express");
 const Airtable = require("../lib/airtable-wrapper.cjs");
-
-// ❌ ERA SBAGLIATO:
-// const { getProducts, syncAirtable } = require("../services/airtable.cjs");
-
-// ✅ VERSIONE CORRETTA PATCHATA:
 const { getProducts, syncAirtable } = require("../../modules/airtable-sync.cjs");
+
 const router = express.Router();
 
 // ---------------------------------------------------------
-// CONFIG AIRTABLE (nuova SDK, blindata)
+// CONFIG AIRTABLE (per operazioni admin: save/delete/sync)
 // ---------------------------------------------------------
 Airtable.configure({
   apiKey: process.env.AIRTABLE_PAT
@@ -34,14 +29,10 @@ function safeGet(record, field) {
 }
 
 // =========================================================
-// GET — LISTA PRODOTTI
+// GET — LISTA PRODOTTI (SOLO FILE, NESSUNA SYNC)
 // =========================================================
 router.get("/products", async (req, res) => {
   try {
-    if (!global.catalogReady) {
-      await syncAirtable();
-    }
-
     const prodotti = getProducts();
 
     return res.json({
@@ -56,14 +47,10 @@ router.get("/products", async (req, res) => {
 });
 
 // =========================================================
-// GET — SINGOLO PRODOTTO PER SLUG
+// GET — SINGOLO PRODOTTO PER SLUG (SOLO FILE, NESSUNA SYNC)
 // =========================================================
 router.get("/products/:slug", async (req, res) => {
   try {
-    if (!global.catalogReady) {
-      await syncAirtable();
-    }
-
     const prodotti = getProducts();
     const prodotto = prodotti.find(p => p.slug === req.params.slug);
 
@@ -80,7 +67,7 @@ router.get("/products/:slug", async (req, res) => {
 });
 
 // =========================================================
-// POST — CREA O MODIFICA PRODOTTO
+// POST — CREA O MODIFICA PRODOTTO (USA AIRTABLE + SYNC)
 // =========================================================
 router.post("/products/save", async (req, res) => {
   try {
@@ -90,7 +77,6 @@ router.post("/products/save", async (req, res) => {
       return res.json({ success: false, error: "Titolo e slug obbligatori" });
     }
 
-    // Cerca record esistente
     const records = await base(tableName)
       .select({
         filterByFormula: `{slug} = '${data.slug}'`,
@@ -110,13 +96,12 @@ router.post("/products/save", async (req, res) => {
     let record;
 
     if (records.length) {
-      // UPDATE
       record = await base(tableName).update(records[0].id, fields);
     } else {
-      // CREATE
       record = await base(tableName).create(fields);
     }
 
+    // Dopo modifica, aggiorna il file locale
     await syncAirtable();
 
     return res.json({ success: true, id: record.id });
@@ -128,7 +113,7 @@ router.post("/products/save", async (req, res) => {
 });
 
 // =========================================================
-// POST — ELIMINA PRODOTTO
+// POST — ELIMINA PRODOTTO (USA AIRTABLE + SYNC)
 // =========================================================
 router.post("/products/delete", async (req, res) => {
   try {
@@ -140,6 +125,7 @@ router.post("/products/delete", async (req, res) => {
 
     await base(tableName).destroy(id);
 
+    // Dopo delete, aggiorna il file locale
     await syncAirtable();
 
     return res.json({ success: true });
@@ -151,10 +137,12 @@ router.post("/products/delete", async (req, res) => {
 });
 
 // =========================================================
+// POST — SYNC MANUALE (ADMIN) — OPZIONALE
+// =========================================================
 router.post("/products/sync", async (req, res) => {
   try {
-    await syncAirtable();
-    return res.json({ success: true });
+    const ok = await syncAirtable();
+    return res.json({ success: ok });
   } catch (err) {
     console.error("API /products/sync ERROR:", err);
     return res.json({ success: false, error: "Errore sincronizzazione" });
