@@ -54,7 +54,7 @@ function getProducts() {
 }
 
 /* =========================================================
-   SYNC AIRTABLE — SOLO PRODOTTI (CRON)
+   SYNC AIRTABLE — SOLO PRODOTTI (CRON) — VERSIONE PAGINATA
 ========================================================= */
 
 async function syncAirtable() {
@@ -68,40 +68,39 @@ async function syncAirtable() {
       return false;
     }
 
-    console.log("🔄 Sync Airtable (CRON)…");
+    console.log("🔄 Sync Airtable (CRON, paginata)…");
 
     const base = new Airtable({ apiKey: PAT }).base(BASE);
     const tableName = decodeURIComponent(TABLE);
 
-    console.log("🐞 DEBUG Airtable:");
-    console.log("    BASE   =", BASE);
-    console.log("    TABLE  =", `"${tableName}"`);
-    console.log("    PAT    =", PAT ? "OK" : "MISSING");
-    console.log("    Eseguo select().all()…");
+    let allRecords = [];
 
-    // ⬇️ QUI L’UNICA MODIFICA: TIMEOUT PORTATO A 20s
-    const timeoutPromise = new Promise((resolve) =>
-      setTimeout(() => resolve("TIMEOUT"), 20000)
-    );
+    console.log("📄 Inizio lettura paginata…");
 
-    const airtablePromise = base(tableName).select({}).all();
+    await base(tableName)
+      .select({ pageSize: 50 })
+      .eachPage(
+        function page(records, fetchNextPage) {
+          console.log(`📦 Pagina ricevuta: ${records.length} record`);
+          allRecords = allRecords.concat(records);
+          fetchNextPage();
+        },
+        function done(err) {
+          if (err) {
+            console.error("❌ Errore paginazione Airtable:", err);
+            throw err;
+          }
+        }
+      );
 
-    const result = await Promise.race([airtablePromise, timeoutPromise]);
+    console.log("🔎 Totale record letti:", allRecords.length);
 
-    if (result === "TIMEOUT") {
-      console.log("⚠️ Sync Airtable annullata: TIMEOUT");
+    if (!allRecords.length) {
+      console.log("⚠️ Nessun record trovato");
       return false;
     }
 
-    const records = result;
-    console.log("🔎 Query completata, records:", records.length);
-
-    if (!records.length) {
-      console.log("⚠️ Sync Airtable annullata: 0 record");
-      return false;
-    }
-
-    const products = records.map((r) => {
+    const products = allRecords.map((r) => {
       const f = r.fields;
 
       return {
