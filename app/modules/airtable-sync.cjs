@@ -55,15 +55,21 @@ function getProducts() {
 
 /* =========================================================
    SYNC AIRTABLE — SOLO PRODOTTI (CRON) — VERSIONE PAGINATA
+   CON FALLBACK NAME → ID
 ========================================================= */
 
 async function syncAirtable() {
   try {
     const PAT = process.env.AIRTABLE_PAT;
     const BASE = process.env.AIRTABLE_BASE;
-    const TABLE = process.env.AIRTABLE_TABLE_NAME;
 
-    if (!PAT || !BASE || !TABLE) {
+    // Nome tabella (opzionale)
+    const TABLE_NAME = process.env.AIRTABLE_TABLE_NAME;
+
+    // ID tabella (fallback sicuro)
+    const TABLE_ID = process.env.AIRTABLE_TABLE_ID;
+
+    if (!PAT || !BASE || (!TABLE_NAME && !TABLE_ID)) {
       console.log("⏭️ Sync Airtable saltata: variabili mancanti");
       return false;
     }
@@ -71,13 +77,18 @@ async function syncAirtable() {
     console.log("🔄 Sync Airtable (CRON, paginata)…");
 
     const base = new Airtable({ apiKey: PAT }).base(BASE);
-    const tableName = decodeURIComponent(TABLE);
+
+    // Se TABLE_NAME esiste → usa quello
+    // Altrimenti → usa TABLE_ID
+    const tableIdentifier = TABLE_NAME || TABLE_ID;
+
+    console.log("📌 Uso tabella:", tableIdentifier);
 
     let allRecords = [];
 
     console.log("📄 Inizio lettura paginata…");
 
-    await base(tableName)
+    await base(tableIdentifier)
       .select({ pageSize: 50 })
       .eachPage(
         function page(records, fetchNextPage) {
@@ -141,12 +152,14 @@ async function syncAirtable() {
 async function updatePayPal(slug, paypalLink) {
   const PAT = process.env.AIRTABLE_PAT;
   const BASE = process.env.AIRTABLE_BASE;
-  const TABLE = process.env.AIRTABLE_TABLE_NAME;
+
+  const TABLE_NAME = process.env.AIRTABLE_TABLE_NAME;
+  const TABLE_ID = process.env.AIRTABLE_TABLE_ID;
+  const tableIdentifier = TABLE_NAME || TABLE_ID;
 
   const base = new Airtable({ apiKey: PAT }).base(BASE);
-  const tableName = decodeURIComponent(TABLE);
 
-  const records = await base(tableName)
+  const records = await base(tableIdentifier)
     .select({
       filterByFormula: `{Slug} = '${slug}'`,
       maxRecords: 1
@@ -157,7 +170,7 @@ async function updatePayPal(slug, paypalLink) {
 
   const id = records[0].id;
 
-  await base(tableName).update(id, { paypal_link: paypalLink });
+  await base(tableIdentifier).update(id, { paypal_link: paypalLink });
 
   console.log("💰 PayPal link aggiornato per", slug);
 
@@ -167,12 +180,14 @@ async function updatePayPal(slug, paypalLink) {
 async function createProductIfMissing(slug, fields = {}) {
   const PAT = process.env.AIRTABLE_PAT;
   const BASE = process.env.AIRTABLE_BASE;
-  const TABLE = process.env.AIRTABLE_TABLE_NAME;
+
+  const TABLE_NAME = process.env.AIRTABLE_TABLE_NAME;
+  const TABLE_ID = process.env.AIRTABLE_TABLE_ID;
+  const tableIdentifier = TABLE_NAME || TABLE_ID;
 
   const base = new Airtable({ apiKey: PAT }).base(BASE);
-  const tableName = decodeURIComponent(TABLE);
 
-  const records = await base(tableName)
+  const records = await base(tableIdentifier)
     .select({
       filterByFormula: `{Slug} = '${slug}'`,
       maxRecords: 1
@@ -184,7 +199,7 @@ async function createProductIfMissing(slug, fields = {}) {
     return records[0].id;
   }
 
-  const newRecord = await base(tableName).create({
+  const newRecord = await base(tableIdentifier).create({
     Slug: slug,
     ...fields
   });
@@ -205,9 +220,10 @@ async function getSalesByUID(uid) {
     }
 
     const base = new Airtable({ apiKey: PAT }).base(BASE);
-    const tableName = "Vendite";
 
-    const records = await base(tableName)
+    const tableIdentifier = process.env.AIRTABLE_VENDITE_NAME || process.env.AIRTABLE_VENDITE_ID;
+
+    const records = await base(tableIdentifier)
       .select({
         filterByFormula: `{UID} = '${uid}'`
       })
