@@ -1,7 +1,7 @@
 /**
  * =========================================================
  * File: app/modules/airtable-sync.cjs
- * Versione DEFINITIVA — Prodotti (CRON) + Vendite (runtime)
+ * Versione DEFINITIVA — Normalizzazione tabella + Fallback ID
  * =========================================================
  */
 
@@ -54,8 +54,19 @@ function getProducts() {
 }
 
 /* =========================================================
-   SYNC AIRTABLE — SOLO PRODOTTI (CRON) — VERSIONE PAGINATA
-   CON FALLBACK NAME → ID
+   FUNZIONE DI NORMALIZZAZIONE NOME TABELLA
+========================================================= */
+function normalizeName(str) {
+  if (!str) return "";
+  return str
+    .normalize("NFKC")          // normalizza unicode
+    .trim()                     // rimuove spazi
+    .replace(/\s+/g, " ")       // normalizza spazi multipli
+    .toLowerCase();             // case-insensitive
+}
+
+/* =========================================================
+   SYNC AIRTABLE — PRODOTTI (CRON)
 ========================================================= */
 
 async function syncAirtable() {
@@ -63,13 +74,22 @@ async function syncAirtable() {
     const PAT = process.env.AIRTABLE_PAT;
     const BASE = process.env.AIRTABLE_BASE;
 
-    // Nome tabella (opzionale)
-    const TABLE_NAME = process.env.AIRTABLE_TABLE_NAME;
+    const RAW_NAME = process.env.AIRTABLE_TABLE_NAME;
+    const RAW_ID = process.env.AIRTABLE_TABLE_ID;
 
-    // ID tabella (fallback sicuro)
-    const TABLE_ID = process.env.AIRTABLE_TABLE_ID;
+    const NORMALIZED_NAME = normalizeName(RAW_NAME);
+    const EXPECTED_NAME = normalizeName("Catalogo prodotti digitali");
 
-    if (!PAT || !BASE || (!TABLE_NAME && !TABLE_ID)) {
+    // 🔍 DEBUG COMPLETO
+    console.log("===== DEBUG AIRTABLE =====");
+    console.log("📌 BASE ID:", BASE || "(mancante)");
+    console.log("📌 TABLE_NAME (raw):", JSON.stringify(RAW_NAME));
+    console.log("📌 TABLE_NAME (normalized):", NORMALIZED_NAME);
+    console.log("📌 TABLE_NAME (expected):", EXPECTED_NAME);
+    console.log("📌 TABLE_ID:", RAW_ID || "(mancante)");
+    console.log("==========================");
+
+    if (!PAT || !BASE || (!RAW_NAME && !RAW_ID)) {
       console.log("⏭️ Sync Airtable saltata: variabili mancanti");
       return false;
     }
@@ -78,11 +98,18 @@ async function syncAirtable() {
 
     const base = new Airtable({ apiKey: PAT }).base(BASE);
 
-    // Se TABLE_NAME esiste → usa quello
-    // Altrimenti → usa TABLE_ID
-    const tableIdentifier = TABLE_NAME || TABLE_ID;
+    // ⭐ LOGICA DEFINITIVA:
+    // Se il nome normalizzato combacia → usa il nome
+    // Altrimenti → usa l'ID tabella
+    let tableIdentifier;
 
-    console.log("📌 Uso tabella:", tableIdentifier);
+    if (NORMALIZED_NAME === EXPECTED_NAME) {
+      tableIdentifier = RAW_NAME;
+      console.log("📌 Uso NOME tabella (match normalizzato):", RAW_NAME);
+    } else {
+      tableIdentifier = RAW_ID;
+      console.log("📌 Uso ID tabella (fallback):", RAW_ID);
+    }
 
     let allRecords = [];
 
@@ -146,16 +173,21 @@ async function syncAirtable() {
 }
 
 /* =========================================================
-   FUNZIONI VENDITE (runtime, NON CRON)
+   FUNZIONI VENDITE (runtime)
 ========================================================= */
 
 async function updatePayPal(slug, paypalLink) {
   const PAT = process.env.AIRTABLE_PAT;
   const BASE = process.env.AIRTABLE_BASE;
 
-  const TABLE_NAME = process.env.AIRTABLE_TABLE_NAME;
-  const TABLE_ID = process.env.AIRTABLE_TABLE_ID;
-  const tableIdentifier = TABLE_NAME || TABLE_ID;
+  const RAW_NAME = process.env.AIRTABLE_TABLE_NAME;
+  const RAW_ID = process.env.AIRTABLE_TABLE_ID;
+
+  const NORMALIZED_NAME = normalizeName(RAW_NAME);
+  const EXPECTED_NAME = normalizeName("Catalogo prodotti digitali");
+
+  const tableIdentifier =
+    NORMALIZED_NAME === EXPECTED_NAME ? RAW_NAME : RAW_ID;
 
   const base = new Airtable({ apiKey: PAT }).base(BASE);
 
@@ -181,9 +213,14 @@ async function createProductIfMissing(slug, fields = {}) {
   const PAT = process.env.AIRTABLE_PAT;
   const BASE = process.env.AIRTABLE_BASE;
 
-  const TABLE_NAME = process.env.AIRTABLE_TABLE_NAME;
-  const TABLE_ID = process.env.AIRTABLE_TABLE_ID;
-  const tableIdentifier = TABLE_NAME || TABLE_ID;
+  const RAW_NAME = process.env.AIRTABLE_TABLE_NAME;
+  const RAW_ID = process.env.AIRTABLE_TABLE_ID;
+
+  const NORMALIZED_NAME = normalizeName(RAW_NAME);
+  const EXPECTED_NAME = normalizeName("Catalogo prodotti digitali");
+
+  const tableIdentifier =
+    NORMALIZED_NAME === EXPECTED_NAME ? RAW_NAME : RAW_ID;
 
   const base = new Airtable({ apiKey: PAT }).base(BASE);
 
@@ -221,7 +258,9 @@ async function getSalesByUID(uid) {
 
     const base = new Airtable({ apiKey: PAT }).base(BASE);
 
-    const tableIdentifier = process.env.AIRTABLE_VENDITE_NAME || process.env.AIRTABLE_VENDITE_ID;
+    const tableIdentifier =
+      process.env.AIRTABLE_VENDITE_NAME ||
+      process.env.AIRTABLE_VENDITE_ID;
 
     const records = await base(tableIdentifier)
       .select({
