@@ -79,8 +79,9 @@ async function syncAirtable() {
     console.log("    PAT    =", PAT ? "OK" : "MISSING");
     console.log("    Eseguo select().all()…");
 
+    // ⬇️ QUI L’UNICA MODIFICA: TIMEOUT PORTATO A 20s
     const timeoutPromise = new Promise((resolve) =>
-      setTimeout(() => resolve("TIMEOUT"), 8000)
+      setTimeout(() => resolve("TIMEOUT"), 20000)
     );
 
     const airtablePromise = base(tableName).select({}).all();
