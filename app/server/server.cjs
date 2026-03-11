@@ -1,7 +1,7 @@
 /**
  * =========================================================
  * File: app/server/server.cjs
- * Entry point del server — versione DEFINITIVA + ANTI TIMEOUT
+ * Entry point del server — versione DEFINITIVA (NO SYNC)
  * =========================================================
  */
 
@@ -145,25 +145,9 @@ console.log(">> ROOT PATH:", ROOT);
       console.log("🤖 Bot operativo");
       console.log("====================================\n");
 
-      // =====================================================
-      // SYNC AIRTABLE — UNA SOLA VOLTA PER PROCESSO
-      // =====================================================
-      setTimeout(async () => {
-        console.log("⏳ Avvio sync Airtable post-listen…");
-
-        try {
-          const { syncAirtable } = require("../modules/airtable-sync.cjs");
-          const ok = await syncAirtable();
-
-          if (ok) {
-            console.log("🟢 Sync Airtable completata (post-listen)");
-          } else {
-            console.log("⏭️ Sync Airtable NON completata (catalogo preservato)");
-          }
-        } catch (err) {
-          console.error("❌ Errore sync Airtable post-listen:", err);
-        }
-      }, 3000);
+      // 🔥 IMPORTANTE:
+      // Nessuna sync Airtable qui.
+      // Il catalogo viene aggiornato SOLO dal Cron Job.
     });
   }
 
