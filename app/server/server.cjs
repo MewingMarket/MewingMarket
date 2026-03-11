@@ -145,6 +145,24 @@ console.log(">> ROOT PATH:", ROOT);
       console.log("🤖 Bot operativo");
       console.log("====================================\n");
 
+      // =========================================================
+      // SYNC INIZIALE IN BACKGROUND (NON BLOCCA IL SERVER)
+      // =========================================================
+      setTimeout(async () => {
+        try {
+          console.log("⏳ Sync iniziale in background…");
+          const { syncAirtable } = require("../modules/airtable-sync.cjs");
+          const ok = await syncAirtable();
+          if (ok) {
+            console.log("🟢 Sync iniziale completata");
+          } else {
+            console.log("⚠️ Sync iniziale NON completata");
+          }
+        } catch (err) {
+          console.error("❌ Errore sync iniziale:", err);
+        }
+      }, 2000);
+
       // 🔥 IMPORTANTE:
       // Nessuna sync Airtable qui.
       // Il catalogo viene aggiornato SOLO dal Cron Job.
