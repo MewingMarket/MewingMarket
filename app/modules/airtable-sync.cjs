@@ -1,8 +1,7 @@
 /**
  * =========================================================
  * File: app/modules/airtable-sync.cjs
- * Versione CRON — Anti Timeout, Anti Catalogo Vuoto,
- * Nessuna dipendenza dal server, Nessuna sync multipla
+ * Versione DEFINITIVA — Prodotti (CRON) + Vendite (runtime)
  * =========================================================
  */
 
@@ -10,12 +9,15 @@ const fs = require("fs");
 const path = require("path");
 const Airtable = require("airtable");
 
+/* =========================================================
+   PATH FILE LOCALE
+========================================================= */
 const ROOT = path.resolve(__dirname, "..");
 const DATA_DIR = path.join(ROOT, "data");
 const DATA_PATH = path.join(DATA_DIR, "products.json");
 
 /* =========================================================
-   UTILS
+   UTILS FILE
 ========================================================= */
 function ensureDataDir() {
   if (!fs.existsSync(DATA_DIR)) {
@@ -27,20 +29,32 @@ function ensureDataDir() {
 function saveProductsToFile(products) {
   ensureDataDir();
 
-  // Scrittura atomica: prima file temporaneo, poi rename
   const tempPath = DATA_PATH + ".tmp";
-
   fs.writeFileSync(tempPath, JSON.stringify(products, null, 2));
   fs.renameSync(tempPath, DATA_PATH);
 
   console.log("💾 products.json aggiornato (scrittura atomica)");
 }
 
+function loadProducts() {
+  try {
+    ensureDataDir();
+    if (fs.existsSync(DATA_PATH)) {
+      const data = JSON.parse(fs.readFileSync(DATA_PATH, "utf8"));
+      return Array.isArray(data) ? data : [];
+    }
+  } catch (err) {
+    console.error("❌ Errore loadProducts:", err);
+  }
+  return [];
+}
+
+function getProducts() {
+  return loadProducts();
+}
+
 /* =========================================================
-   SYNC AIRTABLE — VERSIONE CRON
-   - Timeout sicuro
-   - Mai sovrascrivere con 0 record
-   - Nessuna dipendenza dal server
+   SYNC AIRTABLE — SOLO PRODOTTI (CRON)
 ========================================================= */
 
 async function syncAirtable() {
@@ -54,19 +68,17 @@ async function syncAirtable() {
       return false;
     }
 
-    console.log("📡 Sync Airtable (CRON)…");
+    console.log("🔄 Sync Airtable (CRON)…");
 
     const base = new Airtable({ apiKey: PAT }).base(BASE);
     const tableName = decodeURIComponent(TABLE);
 
-    console.log("🔍 DEBUG Airtable:");
-    console.log("   BASE  =", BASE);
-    console.log("   TABLE =", `"${tableName}"`);
-    console.log("   PAT   =", PAT ? "OK" : "MISSING");
+    console.log("🐞 DEBUG Airtable:");
+    console.log("    BASE   =", BASE);
+    console.log("    TABLE  =", `"${tableName}"`);
+    console.log("    PAT    =", PAT ? "OK" : "MISSING");
+    console.log("    Eseguo select().all()…");
 
-    console.log("🔎 Eseguo select().all()…");
-
-    // Timeout di sicurezza
     const timeoutPromise = new Promise((resolve) =>
       setTimeout(() => resolve("TIMEOUT"), 8000)
     );
@@ -76,16 +88,15 @@ async function syncAirtable() {
     const result = await Promise.race([airtablePromise, timeoutPromise]);
 
     if (result === "TIMEOUT") {
-      console.log("⏭️ Sync Airtable annullata: TIMEOUT");
+      console.log("⚠️ Sync Airtable annullata: TIMEOUT");
       return false;
     }
 
     const records = result;
-
     console.log("🔎 Query completata, records:", records.length);
 
     if (!records.length) {
-      console.log("⏭️ Sync Airtable annullata: 0 record");
+      console.log("⚠️ Sync Airtable annullata: 0 record");
       return false;
     }
 
@@ -94,17 +105,13 @@ async function syncAirtable() {
 
       return {
         id: r.id,
-        slug: f.slug || f.Slug || "",
-        titolo: f.titolo || f.Titolo || "",
-        prezzo: f.prezzo || f.Prezzo || 0,
-        categoria: f.categoria || f.Categoria || "",
-        paypal_link: f.paypal_link || f.PayPal || "",
-        youtube_url: f.youtube_url || f.YouTube || "",
-        descrizione:
-          f.DescrizioneLunga ||
-          f.descrizione ||
-          f.Descrizione ||
-          "",
+        slug: f.Slug || "",
+        titolo: f.TitoloBreve || "",
+        prezzo: f.Prezzo || 0,
+        categoria: f.Tag || "",
+        paypal_link: f.paypal_link || "",
+        youtube_url: f.youtube_url || "",
+        descrizione: f.DescrizioneLunga || "",
         immagine:
           Array.isArray(f.Immagine) && f.Immagine[0]?.url
             ? f.Immagine[0].url
@@ -119,7 +126,6 @@ async function syncAirtable() {
     saveProductsToFile(products);
 
     console.log("🟢 Sync Airtable COMPLETATA:", products.length, "prodotti");
-
     return true;
 
   } catch (err) {
@@ -129,8 +135,104 @@ async function syncAirtable() {
 }
 
 /* =========================================================
+   FUNZIONI VENDITE (runtime, NON CRON)
+========================================================= */
+
+async function updatePayPal(slug, paypalLink) {
+  const PAT = process.env.AIRTABLE_PAT;
+  const BASE = process.env.AIRTABLE_BASE;
+  const TABLE = process.env.AIRTABLE_TABLE_NAME;
+
+  const base = new Airtable({ apiKey: PAT }).base(BASE);
+  const tableName = decodeURIComponent(TABLE);
+
+  const records = await base(tableName)
+    .select({
+      filterByFormula: `{Slug} = '${slug}'`,
+      maxRecords: 1
+    })
+    .all();
+
+  if (!records.length) return false;
+
+  const id = records[0].id;
+
+  await base(tableName).update(id, { paypal_link: paypalLink });
+
+  console.log("💰 PayPal link aggiornato per", slug);
+
+  return true;
+}
+
+async function createProductIfMissing(slug, fields = {}) {
+  const PAT = process.env.AIRTABLE_PAT;
+  const BASE = process.env.AIRTABLE_BASE;
+  const TABLE = process.env.AIRTABLE_TABLE_NAME;
+
+  const base = new Airtable({ apiKey: PAT }).base(BASE);
+  const tableName = decodeURIComponent(TABLE);
+
+  const records = await base(tableName)
+    .select({
+      filterByFormula: `{Slug} = '${slug}'`,
+      maxRecords: 1
+    })
+    .all();
+
+  if (records.length) {
+    console.log("ℹ️ Prodotto già esistente:", slug);
+    return records[0].id;
+  }
+
+  const newRecord = await base(tableName).create({
+    Slug: slug,
+    ...fields
+  });
+
+  console.log("🆕 Prodotto creato:", slug);
+
+  return newRecord.id;
+}
+
+async function getSalesByUID(uid) {
+  try {
+    const PAT = process.env.AIRTABLE_PAT;
+    const BASE = process.env.AIRTABLE_BASE;
+
+    if (!PAT || !BASE) {
+      console.log("⏭️ getSalesByUID saltato: variabili mancanti");
+      return [];
+    }
+
+    const base = new Airtable({ apiKey: PAT }).base(BASE);
+    const tableName = "Vendite";
+
+    const records = await base(tableName)
+      .select({
+        filterByFormula: `{UID} = '${uid}'`
+      })
+      .all();
+
+    return records.map(r => ({
+      id: r.id,
+      ...r.fields
+    }));
+
+  } catch (err) {
+    console.error("❌ Errore getSalesByUID:", err);
+    return [];
+  }
+}
+
+/* =========================================================
    EXPORT
 ========================================================= */
 module.exports = {
-  syncAirtable
+  syncAirtable,
+  getProducts,
+  loadProducts,
+  updatePayPal,
+  createProductIfMissing,
+  getSalesByUID,
+  mergeProduct: (a, b) => ({ ...a, ...b })
 };
