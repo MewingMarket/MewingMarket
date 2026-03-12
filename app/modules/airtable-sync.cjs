@@ -63,11 +63,7 @@ function getProducts() {
 ========================================================= */
 function normalizeName(str) {
   if (!str) return "";
-  return str
-    .normalize("NFKC")
-    .trim()
-    .replace(/\s+/g, " ")
-    .toLowerCase();
+  return str.normalize("NFKC").trim().replace(/\s+/g, " ").toLowerCase();
 }
 
 /* =========================================================
@@ -129,10 +125,7 @@ function safe(v) {
   if (typeof v === "string" && !isNaN(v.trim())) return Number(v.trim());
 
   if (typeof v === "string") {
-    return v
-      .normalize("NFKC")
-      .trim()
-      .replace(/\s+/g, " ");
+    return v.normalize("NFKC").trim().replace(/\s+/g, " ");
   }
 
   if (Array.isArray(v)) return v.length ? v : [];
@@ -203,18 +196,14 @@ async function syncAirtable() {
 
     console.log("===== DEBUG AIRTABLE =====");
     console.log("📌 BASE ID:", BASE || "(mancante)");
-    console.log("📌 TABLE_NAME (raw):", JSON.stringify(RAW_NAME));
-    console.log("📌 TABLE_NAME (normalized):", NORMALIZED_NAME);
-    console.log("📌 TABLE_NAME (expected):", EXPECTED_NAME);
-    console.log("📌 TABLE_ID:", RAW_ID || "(mancante)");
+    console.log("📌 TABLE_NAME:", RAW_NAME);
+    console.log("📌 TABLE_ID:", RAW_ID);
     console.log("==========================");
 
     if (!PAT || !BASE || (!RAW_NAME && !RAW_ID)) {
       console.log("⏭️ Sync Airtable saltata: variabili mancanti");
       return false;
     }
-
-    console.log("🔄 Sync Airtable (CRON, paginata)…");
 
     const base = new Airtable({ apiKey: PAT }).base(BASE);
 
@@ -225,23 +214,16 @@ async function syncAirtable() {
 
     let allRecords = [];
 
-    console.log("📄 Inizio lettura paginata…");
-
     await base(tableIdentifier)
-      .select({
-        pageSize: 50
-      })
+      .select({ pageSize: 50 })
       .eachPage(
-        function page(records, fetchNextPage) {
+        (records, fetchNextPage) => {
           console.log(`📦 Pagina ricevuta: ${records.length} record`);
           allRecords = allRecords.concat(records);
           fetchNextPage();
         },
-        function done(err) {
-          if (err) {
-            console.error("❌ Errore paginazione Airtable:", err);
-            throw err;
-          }
+        (err) => {
+          if (err) throw err;
         }
       );
 
@@ -251,7 +233,6 @@ async function syncAirtable() {
       console.log("⚠️ Nessun record trovato — uso catalogo locale");
       const local = loadProducts();
       saveProductsToFile(local);
-      console.log("🟢 Sync Airtable COMPLETATA (fallback locale)");
       return true;
     }
 
@@ -313,7 +294,7 @@ async function syncAirtable() {
 
     const local = loadProducts();
     saveProductsToFile(local);
-    console.log("🟢 Sync Airtable COMPLETATA (fallback locale dopo errore)");
+    console.log("🟢 Sync Airtable COMPLETATA (fallback locale)");
     return true;
   }
 }
