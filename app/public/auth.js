@@ -1,5 +1,5 @@
 /* =========================================================
-   AUTH.JS — Stato login globale (versione definitiva)
+   AUTH.JS — Stato login globale (VERSIONE PATCHIATA)
 ========================================================= */
 
 console.log("AUTH JS CARICATO");
@@ -27,20 +27,11 @@ function readAuthState() {
       const ruolo = String(ruoloRaw).trim().toLowerCase();
       let ruoloNorm = "user";
 
-      if (
-        ruolo.includes("admin") ||
-        ruolo.includes("amministrator")
-      ) {
+      if (ruolo.includes("admin") || ruolo.includes("amministrator")) {
         ruoloNorm = "admin";
-      } else if (
-        ruolo.includes("user") ||
-        ruolo.includes("utente")
-      ) {
+      } else if (ruolo.includes("user") || ruolo.includes("utente")) {
         ruoloNorm = "user";
-      } else if (
-        ruolo.includes("guest") ||
-        ruolo.includes("ospite")
-      ) {
+      } else if (ruolo.includes("guest") || ruolo.includes("ospite")) {
         ruoloNorm = "guest";
       }
 
@@ -65,11 +56,12 @@ function readAuthState() {
 }
 
 /* ---------------------------------------------------------
-   Emette auth-ready
+   Emette auth-ready (garantito SEMPRE)
 --------------------------------------------------------- */
 function dispatchAuthReady() {
   const event = new CustomEvent("auth-ready");
 
+  // Se il DOM non è pronto, aspetta
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
       document.dispatchEvent(event);
@@ -77,10 +69,13 @@ function dispatchAuthReady() {
   } else {
     document.dispatchEvent(event);
   }
+
+  // ⭐ PATCH: doppio dispatch per garantire che header-shop.js lo riceva
+  setTimeout(() => document.dispatchEvent(event), 30);
 }
 
 /* ---------------------------------------------------------
-   LOGOUT
+   LOGOUT (PATCH: redirect obbligatorio)
 --------------------------------------------------------- */
 function logout() {
   try {
@@ -90,6 +85,9 @@ function logout() {
   } catch (e) {}
 
   readAuthState();
+
+  // ⭐ PATCH: ricarica la pagina per aggiornare header e stato
+  window.location.href = "index.html";
 }
 
 /* ---------------------------------------------------------
@@ -97,7 +95,7 @@ function logout() {
 --------------------------------------------------------- */
 readAuthState();
 
-// Aggiorna se cambia localStorage
+// Aggiorna se cambia localStorage (multi-tab)
 window.addEventListener("storage", readAuthState);
 
 // Aggiorna quando header è caricato
