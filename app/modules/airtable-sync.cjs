@@ -1,7 +1,7 @@
 /**
  * =========================================================
  * File: app/modules/airtable-sync.cjs
- * Versione DEFINITIVA — Normalizzazione tabella + Fallback ID
+ * Versione DEFINITIVA — Anti-0-record + Normalizzazione totale
  * =========================================================
  */
 
@@ -54,15 +54,25 @@ function getProducts() {
 }
 
 /* =========================================================
-   FUNZIONE DI NORMALIZZAZIONE NOME TABELLA
+   NORMALIZZAZIONE STRINGHE
 ========================================================= */
 function normalizeName(str) {
   if (!str) return "";
   return str
-    .normalize("NFKC")          // normalizza unicode
-    .trim()                     // rimuove spazi
-    .replace(/\s+/g, " ")       // normalizza spazi multipli
-    .toLowerCase();             // case-insensitive
+    .normalize("NFKC")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+}
+
+/* =========================================================
+   SAFE VALUE — ANTI-CAMPI ROTTI
+========================================================= */
+function safe(v) {
+  if (v === undefined || v === null) return "";
+  if (Array.isArray(v)) return v.length ? v : [];
+  if (typeof v === "object") return v;
+  return String(v).trim();
 }
 
 /* =========================================================
@@ -98,25 +108,33 @@ async function syncAirtable() {
 
     const base = new Airtable({ apiKey: PAT }).base(BASE);
 
-    // ⭐ LOGICA DEFINITIVA:
-    // Se il nome normalizzato combacia → usa il nome
-    // Altrimenti → usa l'ID tabella
-    let tableIdentifier;
+    // ⭐ LOGICA DEFINITIVA ANTI-ERRORE
+    let tableIdentifier =
+      NORMALIZED_NAME === EXPECTED_NAME ? RAW_NAME : RAW_ID;
 
-    if (NORMALIZED_NAME === EXPECTED_NAME) {
-      tableIdentifier = RAW_NAME;
-      console.log("📌 Uso NOME tabella (match normalizzato):", RAW_NAME);
-    } else {
-      tableIdentifier = RAW_ID;
-      console.log("📌 Uso ID tabella (fallback):", RAW_ID);
-    }
+    console.log("📌 Uso tabella:", tableIdentifier);
 
     let allRecords = [];
 
     console.log("📄 Inizio lettura paginata…");
 
     await base(tableIdentifier)
-      .select({ pageSize: 50 })
+      .select({
+        pageSize: 50,
+
+        // ⭐ ANTI-0-RECORD: carica SOLO i campi sicuri
+        fields: [
+          "Slug",
+          "TitoloBreve",
+          "Prezzo",
+          "Tag",
+          "paypal_link",
+          "youtube_url",
+          "DescrizioneLunga",
+          "Immagine",
+          "File_consegna"
+        ]
+      })
       .eachPage(
         function page(records, fetchNextPage) {
           console.log(`📦 Pagina ricevuta: ${records.length} record`);
@@ -139,17 +157,17 @@ async function syncAirtable() {
     }
 
     const products = allRecords.map((r) => {
-      const f = r.fields;
+      const f = r.fields || {};
 
       return {
         id: r.id,
-        slug: f.Slug || "",
-        titolo: f.TitoloBreve || "",
-        prezzo: f.Prezzo || 0,
-        categoria: f.Tag || "",
-        paypal_link: f.paypal_link || "",
-        youtube_url: f.youtube_url || "",
-        descrizione: f.DescrizioneLunga || "",
+        slug: safe(f.Slug),
+        titolo: safe(f.TitoloBreve),
+        prezzo: Number(f.Prezzo || 0),
+        categoria: safe(f.Tag),
+        paypal_link: safe(f.paypal_link),
+        youtube_url: safe(f.youtube_url),
+        descrizione: safe(f.DescrizioneLunga),
         immagine:
           Array.isArray(f.Immagine) && f.Immagine[0]?.url
             ? f.Immagine[0].url
