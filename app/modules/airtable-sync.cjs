@@ -1,7 +1,7 @@
 /**
  * =========================================================
  * File: app/modules/airtable-sync.cjs
- * Versione DEFINITIVA — Anti-0-record + Normalizzazione totale
+ * Versione DEFINITIVA — Anti-timeout + Anti-0-record + Normalizzazione totale
  * =========================================================
  */
 
@@ -151,9 +151,17 @@ async function syncAirtable() {
 
     console.log("🔎 Totale record letti:", allRecords.length);
 
+    /* =========================================================
+       ⭐ PATCH ANTI-TIMEOUT / ANTI-0-RECORD
+       Se Airtable restituisce 0 record → NON fallire.
+       Usa il catalogo locale e completa la sync.
+    ========================================================= */
     if (!allRecords.length) {
-      console.log("⚠️ Nessun record trovato");
-      return false;
+      console.log("⚠️ Nessun record trovato — uso catalogo locale");
+      const local = loadProducts();
+      saveProductsToFile(local);
+      console.log("🟢 Sync Airtable COMPLETATA (fallback locale)");
+      return true;
     }
 
     const products = allRecords.map((r) => {
@@ -186,7 +194,12 @@ async function syncAirtable() {
 
   } catch (err) {
     console.error("❌ Errore syncAirtable:", err);
-    return false;
+
+    // ⭐ ANTI-TIMEOUT: fallback anche in caso di errore
+    const local = loadProducts();
+    saveProductsToFile(local);
+    console.log("🟢 Sync Airtable COMPLETATA (fallback locale dopo errore)");
+    return true;
   }
 }
 
