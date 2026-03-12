@@ -1,6 +1,6 @@
 // =========================================================
 // CATALOGO PREMIUM – MewingMarket
-// Versione definitiva: Model A + Carrello Guest + Badge + Filtri
+// Versione definitiva: Model A + Carrello Guest + Badge + Filtri + Categorie JSON
 // =========================================================
 
 /* =========================================================
@@ -112,7 +112,6 @@ function cardHTML(p) {
    7) INIZIALIZZAZIONE CATALOGO
 ========================================================= */
 document.addEventListener("DOMContentLoaded", async () => {
-
   const products = await loadProducts();
   const container = document.getElementById("catalogo");
   const categorieBox = document.getElementById("categorie");
@@ -120,13 +119,32 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (!container || !categorieBox) return;
 
   /* ------------------------------
-     CATEGORIE DINAMICHE
+     CATEGORIE DINAMICHE (da JSON + fallback prodotti)
   ------------------------------ */
-  const categorie = [...new Set(products.map(p => p.categoria || ""))].filter(Boolean);
+  let categorie = [];
+  if (typeof loadCategories === "function") {
+    try {
+      const fromJson = await loadCategories();
+      if (fromJson && fromJson.length) {
+        categorie = fromJson;
+      }
+    } catch (e) {
+      console.error("Errore loadCategories:", e);
+    }
+  }
 
-  categorieBox.innerHTML = categorie.length
-    ? categorie.map(cat => `<button class="btn" data-cat="${clean(cat)}">${clean(cat)}</button>`).join("")
-    : "<p>Nessuna categoria disponibile</p>";
+  // Fallback: se categories.json è vuoto, usa categorie dai prodotti
+  if (!categorie.length) {
+    categorie = [...new Set(products.map(p => p.categoria || ""))].filter(Boolean);
+  }
+
+  if (categorie.length) {
+    categorieBox.innerHTML = categorie
+      .map(cat => `<button class="btn btn-cat-filter" data-cat="${clean(cat)}">${clean(cat)}</button>`)
+      .join("");
+  } else {
+    categorieBox.innerHTML = "<p>Nessuna categoria disponibile</p>";
+  }
 
   /* ------------------------------
      GRID PRODOTTI
@@ -149,8 +167,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   /* ------------------------------
      FILTRO PREZZO
+     (usa SOLO i bottoni filtro, non le card)
   ------------------------------ */
-  document.querySelectorAll("[data-prezzo]").forEach(btn => {
+  document.querySelectorAll(".btn-prezzo-filter").forEach(btn => {
     btn.addEventListener("click", () => {
       const max = Number(btn.dataset.prezzo);
 
@@ -178,7 +197,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   ------------------------------ */
   document.querySelectorAll(".btn-add-cart").forEach(btn => {
     btn.addEventListener("click", () => {
-
       const prodotto = {
         slug: btn.dataset.slug,
         titolo: btn.dataset.title,
@@ -192,7 +210,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         aggiornaBadgeCarrello();
       }
 
-      if (!isLogged()) {
+      if (typeof isLogged === "function" && !isLogged()) {
         alert("Per completare l'acquisto dovrai fare login in checkout.");
       }
     });
