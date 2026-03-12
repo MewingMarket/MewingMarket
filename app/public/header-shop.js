@@ -1,5 +1,5 @@
 /* =========================================================
-   HEADER-SHOP.JS — Gestione login/logout + carrello
+   HEADER-SHOP.JS — Gestione login/logout + carrello (PATCH)
 ========================================================= */
 
 console.log("HEADER SHOP JS CARICATO");
@@ -22,12 +22,10 @@ function updateHeaderUI() {
   });
 
   if (window.isLogged) {
-    // Utente loggato
     navLogin.style.display = "none";
     navRegister.style.display = "none";
     navLogout.style.display = "inline-block";
   } else {
-    // Utente NON loggato
     navLogin.style.display = "inline-block";
     navRegister.style.display = "inline-block";
     navLogout.style.display = "none";
@@ -40,16 +38,16 @@ function updateHeaderUI() {
 navLogout.addEventListener("click", (e) => {
   e.preventDefault();
   console.log("HEADER: Logout cliccato");
-  logout(); // funzione di auth.js
+  logout(); // funzione di auth.js (ora patchata)
 });
 
 /* ---------------------------------------------------------
-   Aggiorna badge carrello
+   Aggiorna badge carrello (PATCH: usa mewing_cart)
 --------------------------------------------------------- */
 function updateCartBadge() {
   try {
-    const cart = JSON.parse(localStorage.getItem("carrello")) || [];
-    const count = cart.length;
+    const cart = JSON.parse(localStorage.getItem("mewing_cart")) || [];
+    const count = cart.reduce((sum, p) => sum + (p.qty || 1), 0);
 
     if (count > 0) {
       cartBadge.textContent = count;
@@ -66,21 +64,17 @@ function updateCartBadge() {
    EVENTI
 --------------------------------------------------------- */
 
-// Quando auth.js ha finito → aggiorna header
+// ⭐ Quando auth.js ha finito → aggiorna header
 document.addEventListener("auth-ready", () => {
   console.log("HEADER: Evento auth-ready ricevuto");
   updateHeaderUI();
   updateCartBadge();
 });
 
-// Se header-shop.js parte DOPO auth.js
-if (window.isLogged !== undefined) {
-  console.log("HEADER: Stato auth già disponibile");
-  updateHeaderUI();
-  updateCartBadge();
-}
+// ⭐ PATCH: ascolta anche gli aggiornamenti del carrello
+document.addEventListener("cart-updated", updateCartBadge);
 
-// Quando cambia il carrello
+// ⭐ PATCH: storage multi-tab
 window.addEventListener("storage", (e) => {
-  if (e.key === "carrello") updateCartBadge();
+  if (e.key === "mewing_cart") updateCartBadge();
 });
