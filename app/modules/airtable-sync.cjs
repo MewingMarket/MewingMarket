@@ -1,7 +1,7 @@
 /**
  * =========================================================
  * File: app/modules/airtable-sync.cjs
- * Versione DEFINITIVA — Anti-timeout + Anti-0-record + Normalizzazione totale
+ * Versione ULTRA — Anti-timeout + Normalizzazione totale + Categorie + Vendite
  * =========================================================
  */
 
@@ -15,6 +15,7 @@ const Airtable = require("airtable");
 const ROOT = path.resolve(__dirname, "..");
 const DATA_DIR = path.join(ROOT, "data");
 const DATA_PATH = path.join(DATA_DIR, "products.json");
+const CATEGORIES_PATH = path.join(DATA_DIR, "categories.json");
 
 /* =========================================================
    UTILS FILE
@@ -28,12 +29,16 @@ function ensureDataDir() {
 
 function saveProductsToFile(products) {
   ensureDataDir();
-
   const tempPath = DATA_PATH + ".tmp";
   fs.writeFileSync(tempPath, JSON.stringify(products, null, 2));
   fs.renameSync(tempPath, DATA_PATH);
-
   console.log("💾 products.json aggiornato (scrittura atomica)");
+}
+
+function saveCategories(categories) {
+  ensureDataDir();
+  fs.writeFileSync(CATEGORIES_PATH, JSON.stringify(categories, null, 2));
+  console.log("📁 categories.json aggiornato");
 }
 
 function loadProducts() {
@@ -66,13 +71,119 @@ function normalizeName(str) {
 }
 
 /* =========================================================
-   SAFE VALUE — ANTI-CAMPI ROTTI
+   NORMALIZZAZIONE NOMI CAMPI
+========================================================= */
+function normalizeFieldName(name) {
+  if (!name) return "";
+  return String(name)
+    .normalize("NFKC")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "")
+    .replace(/_/g, "")
+    .replace(/-/g, "");
+}
+
+const FIELD_MAP = {
+  slug: "Slug",
+  titolo: "TitoloBreve",
+  titolobreve: "TitoloBreve",
+  titolo_breve: "TitoloBreve",
+  prezzo: "Prezzo",
+  costo: "Prezzo",
+  tag: "Tag",
+  categoria: "Tag",
+  paypal: "paypal_link",
+  paypallink: "paypal_link",
+  youtube: "youtube_url",
+  youtubelink: "youtube_url",
+  descrizione: "DescrizioneLunga",
+  descrizionelunga: "DescrizioneLunga",
+  immagine: "Immagine",
+  image: "Immagine",
+  file: "File_consegna",
+  fileconsegna: "File_consegna",
+  file_consegna: "File_consegna"
+};
+
+function getFieldValue(fields, target) {
+  const normalizedTarget = normalizeFieldName(target);
+
+  for (const key of Object.keys(fields)) {
+    const normalizedKey = normalizeFieldName(key);
+
+    if (normalizedKey === normalizedTarget) return fields[key];
+    if (FIELD_MAP[normalizedKey] === target) return fields[key];
+  }
+
+  return "";
+}
+
+/* =========================================================
+   NORMALIZZAZIONE VALORI
 ========================================================= */
 function safe(v) {
   if (v === undefined || v === null) return "";
+
+  if (typeof v === "number") return v;
+  if (typeof v === "string" && !isNaN(v.trim())) return Number(v.trim());
+
+  if (typeof v === "string") {
+    return v
+      .normalize("NFKC")
+      .trim()
+      .replace(/\s+/g, " ");
+  }
+
   if (Array.isArray(v)) return v.length ? v : [];
   if (typeof v === "object") return v;
+
   return String(v).trim();
+}
+
+/* =========================================================
+   AUTO-GENERAZIONE SLUG
+========================================================= */
+function generateSlug(titolo) {
+  return String(titolo || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .substring(0, 80);
+}
+
+/* =========================================================
+   NORMALIZZAZIONE CATEGORIA
+========================================================= */
+function normalizeCategory(cat) {
+  if (!cat) return "";
+  return String(cat)
+    .normalize("NFKC")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g, "")
+    .replace(/\s+/g, " ")
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function autoCategoryFromTitle(titolo) {
+  if (!titolo) return "Generale";
+  const words = String(titolo).split(" ");
+  if (words.length === 1) return words[0];
+  return words.slice(0, 2).join(" ");
+}
+
+/* =========================================================
+   VALIDAZIONE PRODOTTO
+========================================================= */
+function validateProduct(p) {
+  const errors = [];
+  if (!p.titolo) errors.push("Titolo mancante");
+  if (!p.slug) errors.push("Slug mancante");
+  if (p.prezzo < 0) errors.push("Prezzo negativo");
+  return errors;
 }
 
 /* =========================================================
@@ -90,7 +201,6 @@ async function syncAirtable() {
     const NORMALIZED_NAME = normalizeName(RAW_NAME);
     const EXPECTED_NAME = normalizeName("Catalogo prodotti digitali");
 
-    // 🔍 DEBUG COMPLETO
     console.log("===== DEBUG AIRTABLE =====");
     console.log("📌 BASE ID:", BASE || "(mancante)");
     console.log("📌 TABLE_NAME (raw):", JSON.stringify(RAW_NAME));
@@ -108,7 +218,6 @@ async function syncAirtable() {
 
     const base = new Airtable({ apiKey: PAT }).base(BASE);
 
-    // ⭐ LOGICA DEFINITIVA ANTI-ERRORE
     let tableIdentifier =
       NORMALIZED_NAME === EXPECTED_NAME ? RAW_NAME : RAW_ID;
 
@@ -120,20 +229,7 @@ async function syncAirtable() {
 
     await base(tableIdentifier)
       .select({
-        pageSize: 50,
-
-        // ⭐ ANTI-0-RECORD: carica SOLO i campi sicuri
-        fields: [
-          "Slug",
-          "TitoloBreve",
-          "Prezzo",
-          "Tag",
-          "paypal_link",
-          "youtube_url",
-          "DescrizioneLunga",
-          "Immagine",
-          "File_consegna"
-        ]
+        pageSize: 50
       })
       .eachPage(
         function page(records, fetchNextPage) {
@@ -151,11 +247,6 @@ async function syncAirtable() {
 
     console.log("🔎 Totale record letti:", allRecords.length);
 
-    /* =========================================================
-       ⭐ PATCH ANTI-TIMEOUT / ANTI-0-RECORD
-       Se Airtable restituisce 0 record → NON fallire.
-       Usa il catalogo locale e completa la sync.
-    ========================================================= */
     if (!allRecords.length) {
       console.log("⚠️ Nessun record trovato — uso catalogo locale");
       const local = loadProducts();
@@ -167,35 +258,59 @@ async function syncAirtable() {
     const products = allRecords.map((r) => {
       const f = r.fields || {};
 
-      return {
+      let titolo = safe(getFieldValue(f, "TitoloBreve"));
+      let slug = safe(getFieldValue(f, "Slug"));
+      let categoria = safe(getFieldValue(f, "Tag"));
+
+      if (!slug) slug = generateSlug(titolo);
+
+      categoria = normalizeCategory(categoria);
+      if (!categoria) categoria = normalizeCategory(autoCategoryFromTitle(titolo));
+
+      const prodotto = {
         id: r.id,
-        slug: safe(f.Slug),
-        titolo: safe(f.TitoloBreve),
-        prezzo: Number(f.Prezzo || 0),
-        categoria: safe(f.Tag),
-        paypal_link: safe(f.paypal_link),
-        youtube_url: safe(f.youtube_url),
-        descrizione: safe(f.DescrizioneLunga),
-        immagine:
-          Array.isArray(f.Immagine) && f.Immagine[0]?.url
-            ? f.Immagine[0].url
-            : "",
-        fileProdotto:
-          Array.isArray(f.File_consegna) && f.File_consegna[0]?.url
-            ? f.File_consegna[0].url
-            : ""
+        slug,
+        titolo,
+        prezzo: safe(getFieldValue(f, "Prezzo")) || 0,
+        categoria,
+        paypal_link: safe(getFieldValue(f, "paypal_link")),
+        youtube_url: safe(getFieldValue(f, "youtube_url")),
+        descrizione: safe(getFieldValue(f, "DescrizioneLunga")),
+
+        immagine: (() => {
+          const img = safe(getFieldValue(f, "Immagine"));
+          return Array.isArray(img) && img[0]?.url ? img[0].url : "";
+        })(),
+
+        fileProdotto: (() => {
+          const file = safe(getFieldValue(f, "File_consegna"));
+          return Array.isArray(file) && file[0]?.url ? file[0].url : "";
+        })()
       };
+
+      const errors = validateProduct(prodotto);
+      if (errors.length) {
+        console.log("⚠️ Prodotto con problemi:", prodotto.slug, errors);
+      }
+
+      return prodotto;
     });
 
     saveProductsToFile(products);
 
+    const categories = [...new Set(products.map(p => p.categoria))]
+      .filter(Boolean)
+      .sort();
+
+    saveCategories(categories);
+
+    console.log("📚 Categorie generate:", categories);
     console.log("🟢 Sync Airtable COMPLETATA:", products.length, "prodotti");
     return true;
 
   } catch (err) {
     console.error("❌ Errore syncAirtable:", err);
 
-    // ⭐ ANTI-TIMEOUT: fallback anche in caso di errore
     const local = loadProducts();
     saveProductsToFile(local);
     console.log("🟢 Sync Airtable COMPLETATA (fallback locale dopo errore)");
