@@ -1,7 +1,6 @@
 /* =========================================================
    ADMIN PRODOTTI — FILE UNICO
-   Lista + Modifica + Creazione
-   (Patch chirurgica, nessuna logica reinventata)
+   Lista + Modifica + Creazione + Upload
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -22,10 +21,33 @@ document.addEventListener("DOMContentLoaded", () => {
   const fFileProdotto = document.getElementById("fileProdotto");
   const fStatus = document.getElementById("status");
 
-  let prodottoCorrente = null; // null = crea nuovo
+  let prodottoCorrente = null;
 
   /* =========================================================
-     1) CARICA LISTA PRODOTTI
+     UPLOAD GENERICO
+  ========================================================= */
+  async function uploadFile(endpoint, file) {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    console.log("[ADMIN] Upload:", endpoint, file.name);
+
+    const res = await fetch(endpoint, {
+      method: "POST",
+      body: formData
+    });
+
+    const data = await res.json();
+
+    if (!data.success) {
+      throw new Error(data.error || "Errore upload");
+    }
+
+    return data.url;
+  }
+
+  /* =========================================================
+     LISTA PRODOTTI
   ========================================================= */
   async function caricaListaProdotti() {
     console.log("[ADMIN] Carico lista prodotti…");
@@ -55,19 +77,14 @@ document.addEventListener("DOMContentLoaded", () => {
         )
         .join("");
 
-      // Eventi modifica
       document.querySelectorAll(".btn-modifica").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          caricaProdotto(btn.dataset.slug);
-        });
+        btn.addEventListener("click", () => caricaProdotto(btn.dataset.slug));
       });
 
-      // Eventi elimina
       document.querySelectorAll(".btn-elimina").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          eliminaProdotto(btn.dataset.slug);
-        });
+        btn.addEventListener("click", () => eliminaProdotto(btn.dataset.slug));
       });
+
     } catch (err) {
       console.error("[ADMIN] Errore lista:", err);
       listaBox.innerHTML = "<p>Errore caricamento prodotti.</p>";
@@ -75,7 +92,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* =========================================================
-     2) CARICA PRODOTTO PER MODIFICA
+     CARICA PRODOTTO PER EDIT
   ========================================================= */
   async function caricaProdotto(slug) {
     console.log("[ADMIN] Carico prodotto:", slug);
@@ -107,6 +124,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       console.log("[ADMIN] Prodotto caricato:", p);
+
     } catch (err) {
       console.error("[ADMIN] Errore caricamento prodotto:", err);
       fStatus.textContent = "Errore caricamento prodotto.";
@@ -114,7 +132,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* =========================================================
-     3) ELIMINA PRODOTTO
+     ELIMINA PRODOTTO
   ========================================================= */
   async function eliminaProdotto(slug) {
     if (!confirm("Eliminare questo prodotto?")) return;
@@ -123,7 +141,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       const res = await fetch(`/api/products/${slug}`, {
-        method: "DELETE",
+        method: "DELETE"
       });
 
       const data = await res.json();
@@ -134,16 +152,40 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       caricaListaProdotti();
+
     } catch (err) {
       console.error("[ADMIN] Errore eliminazione:", err);
     }
   }
 
   /* =========================================================
-     4) SALVA PRODOTTO (CREA O MODIFICA)
+     SALVA PRODOTTO (CREA O MODIFICA)
   ========================================================= */
   document.getElementById("btn-salva").addEventListener("click", async () => {
     console.log("[ADMIN] Salvataggio prodotto…");
+
+    fStatus.textContent = "Caricamento…";
+
+    let immagineURL = prodottoCorrente?.immagine || "";
+    let fileProdottoURL = prodottoCorrente?.fileProdotto || "";
+
+    if (fImg.files.length > 0) {
+      try {
+        immagineURL = await uploadFile("/api/upload/immagine", fImg.files[0]);
+      } catch (err) {
+        fStatus.textContent = "Errore upload immagine.";
+        return;
+      }
+    }
+
+    if (fFileProdotto.files.length > 0) {
+      try {
+        fileProdottoURL = await uploadFile("/api/upload/file", fFileProdotto.files[0]);
+      } catch (err) {
+        fStatus.textContent = "Errore upload file prodotto.";
+        return;
+      }
+    }
 
     const payload = {
       titolo: fTitolo.value.trim(),
@@ -152,20 +194,17 @@ document.addEventListener("DOMContentLoaded", () => {
       categoria: fCategoria.value.trim(),
       slug: fSlug.value.trim(),
       youtube_url: fYoutube.value.trim(),
+      immagine: immagineURL,
+      fileProdotto: fileProdottoURL
     };
 
-    console.log("[ADMIN] Payload:", payload);
-
-    const metodo = prodottoCorrente ? "PUT" : "POST";
-    const url = prodottoCorrente
-      ? `/api/products/${prodottoCorrente.slug}`
-      : "/api/products";
+    console.log("[ADMIN] Payload finale:", payload);
 
     try {
-      const res = await fetch(url, {
-        method: metodo,
+      const res = await fetch("/api/products/save", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(payload)
       });
 
       const data = await res.json();
@@ -177,6 +216,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       fStatus.textContent = "Prodotto salvato.";
       caricaListaProdotti();
+
     } catch (err) {
       console.error("[ADMIN] Errore salvataggio:", err);
       fStatus.textContent = "Errore salvataggio.";
@@ -184,7 +224,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* =========================================================
-     5) AVVIO
+     AVVIO
   ========================================================= */
   caricaListaProdotti();
 });
