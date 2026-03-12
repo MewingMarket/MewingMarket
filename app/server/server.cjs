@@ -105,7 +105,8 @@ console.log(">> ROOT PATH:", ROOT);
   require("./routes/product-page.cjs")(app);
   await wait(300);
   require("./routes/system-status.cjs")(app);
-
+await wait(300);
+require("./routes/versione.cjs")(app);
   // =========================================================
   // BOOTSTRAP
   // =========================================================
