@@ -34,12 +34,7 @@ function safeGet(record, field) {
 router.get("/products", async (req, res) => {
   try {
     const prodotti = getProducts();
-
-    return res.json({
-      success: true,
-      prodotti
-    });
-
+    return res.json({ success: true, prodotti });
   } catch (err) {
     console.error("API /products ERROR:", err);
     return res.json({ success: false, error: "Errore server" });
@@ -47,7 +42,7 @@ router.get("/products", async (req, res) => {
 });
 
 // =========================================================
-// GET — SINGOLO PRODOTTO PER SLUG (SOLO FILE, NESSUNA SYNC)
+// GET — SINGOLO PRODOTTO PER SLUG (SOLO FILE)
 // =========================================================
 router.get("/products/:slug", async (req, res) => {
   try {
@@ -59,9 +54,27 @@ router.get("/products/:slug", async (req, res) => {
     }
 
     return res.json({ success: true, prodotto });
-
   } catch (err) {
     console.error("API /products/:slug ERROR:", err);
+    return res.json({ success: false, error: "Errore server" });
+  }
+});
+
+// =========================================================
+// PATCH CHIRURGICA — GET PER ID (serve per delete)
+// =========================================================
+router.get("/products/id/:id", async (req, res) => {
+  try {
+    const prodotti = getProducts();
+    const prodotto = prodotti.find(p => p.id === req.params.id);
+
+    if (!prodotto) {
+      return res.json({ success: false, error: "Prodotto non trovato" });
+    }
+
+    return res.json({ success: true, prodotto });
+  } catch (err) {
+    console.error("API /products/id ERROR:", err);
     return res.json({ success: false, error: "Errore server" });
   }
 });
@@ -101,7 +114,6 @@ router.post("/products/save", async (req, res) => {
       record = await base(tableName).create(fields);
     }
 
-    // Dopo modifica, aggiorna il file locale
     await syncAirtable();
 
     return res.json({ success: true, id: record.id });
@@ -113,31 +125,75 @@ router.post("/products/save", async (req, res) => {
 });
 
 // =========================================================
-// POST — ELIMINA PRODOTTO (USA AIRTABLE + SYNC)
+// PATCH CHIRURGICA — PUT /products/:slug
 // =========================================================
-router.post("/products/delete", async (req, res) => {
+router.put("/products/:slug", async (req, res) => {
   try {
-    const { id } = req.body || {};
+    const data = req.body || {};
+    const slug = req.params.slug;
 
-    if (!id) {
-      return res.json({ success: false, error: "ID mancante" });
+    const records = await base(tableName)
+      .select({
+        filterByFormula: `{slug} = '${slug}'`,
+        maxRecords: 1
+      })
+      .all();
+
+    if (!records.length) {
+      return res.json({ success: false, error: "Prodotto non trovato" });
     }
 
-    await base(tableName).destroy(id);
+    const fields = {
+      Titolo: data.titolo,
+      Slug: data.slug,
+      Prezzo: Number(data.prezzo || 0),
+      DescrizioneLunga: data.descrizione || "",
+      Immagine: data.immagine ? [{ url: data.immagine }] : [],
+      File_consegna: data.fileProdotto ? [{ url: data.fileProdotto }] : []
+    };
 
-    // Dopo delete, aggiorna il file locale
+    await base(tableName).update(records[0].id, fields);
     await syncAirtable();
 
     return res.json({ success: true });
 
   } catch (err) {
-    console.error("API /products/delete ERROR:", err);
+    console.error("API PUT /products/:slug ERROR:", err);
     return res.json({ success: false, error: "Errore server" });
   }
 });
 
 // =========================================================
-// POST — SYNC MANUALE (ADMIN) — OPZIONALE
+// PATCH CHIRURGICA — DELETE /products/:slug
+// =========================================================
+router.delete("/products/:slug", async (req, res) => {
+  try {
+    const slug = req.params.slug;
+
+    const records = await base(tableName)
+      .select({
+        filterByFormula: `{slug} = '${slug}'`,
+        maxRecords: 1
+      })
+      .all();
+
+    if (!records.length) {
+      return res.json({ success: false, error: "Prodotto non trovato" });
+    }
+
+    await base(tableName).destroy(records[0].id);
+    await syncAirtable();
+
+    return res.json({ success: true });
+
+  } catch (err) {
+    console.error("API DELETE /products/:slug ERROR:", err);
+    return res.json({ success: false, error: "Errore server" });
+  }
+});
+
+// =========================================================
+// POST — SYNC MANUALE (ADMIN)
 // =========================================================
 router.post("/products/sync", async (req, res) => {
   try {
