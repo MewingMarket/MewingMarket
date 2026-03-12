@@ -2,11 +2,11 @@
  * =========================================================
  * File: app/modules/airtable-sync.cjs
  * Versione ULTRA — Anti-timeout + Normalizzazione totale + Categorie + Vendite
- * VERSIONE BUILD: 2026-03-13-00:10
+ * VERSIONE BUILD: 2026-03-13-00:20 (PATCH FIELDS)
  * =========================================================
  */
 
-console.log("🟦 airtable-sync.cjs VERSIONE: 2026-03-13-00:10");
+console.log("🟦 airtable-sync.cjs VERSIONE: 2026-03-13-00:20 (PATCH FIELDS)");
 
 const fs = require("fs");
 const path = require("path");
@@ -187,7 +187,7 @@ function validateProduct(p) {
 ========================================================= */
 
 async function syncAirtable() {
-  console.log("🟦 SYNC START — VERSIONE: 2026-03-13-00:10");
+  console.log("🟦 SYNC START — VERSIONE: 2026-03-13-00:20 (PATCH FIELDS)");
 
   try {
     const PAT = process.env.AIRTABLE_PAT;
@@ -219,8 +219,22 @@ async function syncAirtable() {
 
     let allRecords = [];
 
+    // 🔥 PATCH: chiediamo SOLO i campi sicuri
     await base(tableIdentifier)
-      .select({ pageSize: 50 })
+      .select({
+        pageSize: 50,
+        fields: [
+          "TitoloBreve",
+          "Slug",
+          "Prezzo",
+          "Tag",
+          "paypal_link",
+          "youtube_url",
+          "DescrizioneLunga",
+          "Immagine",
+          "File_consegna"
+        ]
+      })
       .eachPage(
         (records, fetchNextPage) => {
           console.log(`📦 Pagina ricevuta: ${records.length} record`);
@@ -238,7 +252,7 @@ async function syncAirtable() {
       console.log("⚠️ Nessun record trovato — uso catalogo locale");
       const local = loadProducts();
       saveProductsToFile(local);
-      console.log("🟦 SYNC END (fallback) — VERSIONE: 2026-03-13-00:10");
+      console.log("🟦 SYNC END (fallback) — VERSIONE: 2026-03-13-00:20");
       return true;
     }
 
@@ -293,7 +307,7 @@ async function syncAirtable() {
 
     console.log("📚 Categorie generate:", categories);
     console.log("🟢 Sync Airtable COMPLETATA:", products.length, "prodotti");
-    console.log("🟦 SYNC END — VERSIONE: 2026-03-13-00:10");
+    console.log("🟦 SYNC END — VERSIONE: 2026-03-13-00:20");
     return true;
 
   } catch (err) {
@@ -301,7 +315,7 @@ async function syncAirtable() {
 
     const local = loadProducts();
     saveProductsToFile(local);
-    console.log("🟦 SYNC END (errore + fallback) — VERSIONE: 2026-03-13-00:10");
+    console.log("🟦 SYNC END (errore + fallback) — VERSIONE: 2026-03-13-00:20");
     return true;
   }
 }
