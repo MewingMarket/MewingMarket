@@ -1,6 +1,6 @@
 // =========================================================
 // CATALOGO PREMIUM – MewingMarket
-// Versione definitiva: Model A + Carrello Guest + Badge + Filtri + Categorie JSON
+// Versione definitiva: Categorie JSON + Filtri + Carrello Guest
 // =========================================================
 
 /* =========================================================
@@ -18,7 +18,22 @@ async function loadProducts() {
 }
 
 /* =========================================================
-   2) SANITIZZAZIONE
+   2) CARICA CATEGORIE (categories.json)
+========================================================= */
+async function loadCategories() {
+  try {
+    const res = await fetch("/data/categories.json", { cache: "no-store" });
+    if (!res.ok) throw new Error("categories.json non trovato");
+    const cats = await res.json();
+    return Array.isArray(cats) ? cats : [];
+  } catch (err) {
+    console.warn("Categorie JSON non disponibili:", err);
+    return [];
+  }
+}
+
+/* =========================================================
+   3) SANITIZZAZIONE
 ========================================================= */
 function clean(t) {
   return typeof t === "string"
@@ -31,7 +46,7 @@ function safeURL(u) {
 }
 
 /* =========================================================
-   3) VIDEO YOUTUBE
+   4) VIDEO YOUTUBE
 ========================================================= */
 function renderYouTubeLink(p) {
   const url =
@@ -51,7 +66,7 @@ function renderYouTubeLink(p) {
 }
 
 /* =========================================================
-   4) DESCRIZIONE BREVE
+   5) DESCRIZIONE BREVE
 ========================================================= */
 function getShortDescription(p) {
   if (p.descrizione_breve && p.descrizione_breve.trim() !== "") {
@@ -65,7 +80,7 @@ function getShortDescription(p) {
 }
 
 /* =========================================================
-   5) IMMAGINE
+   6) IMMAGINE
 ========================================================= */
 function getImage(p) {
   if (p.immagine && p.immagine.startsWith("http")) {
@@ -75,7 +90,7 @@ function getImage(p) {
 }
 
 /* =========================================================
-   6) CARD PRODOTTO (VERSIONE PREMIUM)
+   7) CARD PRODOTTO
 ========================================================= */
 function cardHTML(p) {
   const img = getImage(p);
@@ -109,42 +124,28 @@ function cardHTML(p) {
 }
 
 /* =========================================================
-   7) INIZIALIZZAZIONE CATALOGO
+   8) INIZIALIZZAZIONE CATALOGO
 ========================================================= */
 document.addEventListener("DOMContentLoaded", async () => {
+
   const products = await loadProducts();
+  const categoriesFromJson = await loadCategories();
+
   const container = document.getElementById("catalogo");
   const categorieBox = document.getElementById("categorie");
 
   if (!container || !categorieBox) return;
 
   /* ------------------------------
-     CATEGORIE DINAMICHE (da JSON + fallback prodotti)
+     CATEGORIE DINAMICHE
   ------------------------------ */
-  let categorie = [];
-  if (typeof loadCategories === "function") {
-    try {
-      const fromJson = await loadCategories();
-      if (fromJson && fromJson.length) {
-        categorie = fromJson;
-      }
-    } catch (e) {
-      console.error("Errore loadCategories:", e);
-    }
-  }
+  let categorie = categoriesFromJson.length
+    ? categoriesFromJson
+    : [...new Set(products.map(p => p.categoria || ""))].filter(Boolean);
 
-  // Fallback: se categories.json è vuoto, usa categorie dai prodotti
-  if (!categorie.length) {
-    categorie = [...new Set(products.map(p => p.categoria || ""))].filter(Boolean);
-  }
-
-  if (categorie.length) {
-    categorieBox.innerHTML = categorie
-      .map(cat => `<button class="btn btn-cat-filter" data-cat="${clean(cat)}">${clean(cat)}</button>`)
-      .join("");
-  } else {
-    categorieBox.innerHTML = "<p>Nessuna categoria disponibile</p>";
-  }
+  categorieBox.innerHTML = categorie.length
+    ? categorie.map(cat => `<button class="btn btn-cat" data-cat="${clean(cat)}">${clean(cat)}</button>`).join("")
+    : "<p>Nessuna categoria disponibile</p>";
 
   /* ------------------------------
      GRID PRODOTTI
@@ -167,9 +168,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   /* ------------------------------
      FILTRO PREZZO
-     (usa SOLO i bottoni filtro, non le card)
   ------------------------------ */
-  document.querySelectorAll(".btn-prezzo-filter").forEach(btn => {
+  document.querySelectorAll(".filtri-prezzo .btn[data-prezzo]").forEach(btn => {
     btn.addEventListener("click", () => {
       const max = Number(btn.dataset.prezzo);
 
@@ -197,6 +197,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   ------------------------------ */
   document.querySelectorAll(".btn-add-cart").forEach(btn => {
     btn.addEventListener("click", () => {
+
       const prodotto = {
         slug: btn.dataset.slug,
         titolo: btn.dataset.title,
