@@ -1,8 +1,10 @@
 // =========================================================
-// LOADER HEADER + FOOTER + HEAD – MewingMarket
+// LOADER HEADER + FOOTER + HEAD – MewingMarket (PATCH)
 // =========================================================
 
+// ---------------------------------------------------------
 // 1) HEAD
+// ---------------------------------------------------------
 fetch("head.html")
   .then(r => r.text())
   .then(html => {
@@ -46,22 +48,23 @@ let headerFile = "header.html"; // default globale
 if (isShopPage) headerFile = "header-shop.html";
 if (isUserPage) headerFile = "header-user.html";
 
+// ---------------------------------------------------------
+// 2C) CARICA HEADER + EMETTI header-loaded
+// ---------------------------------------------------------
 fetch(headerFile)
   .then(r => r.text())
   .then(html => {
     document.getElementById("header-placeholder").innerHTML = html;
+
+    // ⭐ PATCH: emetti SEMPRE dopo inserimento HTML
     document.dispatchEvent(new Event("header-loaded"));
 
-    // ---------------------------------------------------------
-    // 2C) CARICA LO SCRIPT DELL’HEADER CORRETTO
-    // ---------------------------------------------------------
+    // Carica JS specifico dell’header
     if (headerFile === "header-shop.html") {
       const s = document.createElement("script");
       s.src = "header-shop.js";
       document.body.appendChild(s);
     }
-
-    // header-user NON ha JS → NON serve caricare nulla
   });
 
 // ---------------------------------------------------------
@@ -79,7 +82,7 @@ fetch("footer.html")
   });
 
 // ---------------------------------------------------------
-// 4) POPUP POST-LOGIN (solo via JS, nessun HTML)
+// 4) POPUP POST-LOGIN
 // ---------------------------------------------------------
 document.addEventListener("DOMContentLoaded", () => {
   if (localStorage.getItem("showLoginChoice") === "1") {
@@ -143,9 +146,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // ---------------------------------------------------------
-// 5) MOSTRA IL PULSANTE ADMIN SOLO QUANDO:
-//    - l'utente è admin
-//    - l'header è stato caricato
+// 5) MOSTRA IL PULSANTE ADMIN (PATCH: timing corretto)
 // ---------------------------------------------------------
 
 let headerReady = false;
