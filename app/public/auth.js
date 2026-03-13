@@ -1,5 +1,5 @@
 /* =========================================================
-   AUTH.JS — Stato login globale (VERSIONE PATCHIATA)
+   AUTH.JS — Stato login globale (VERSIONE DEFINITIVA)
 ========================================================= */
 
 console.log("AUTH JS CARICATO");
@@ -15,9 +15,14 @@ window.isAdmin = false;
 --------------------------------------------------------- */
 function readAuthState() {
   try {
-    const token = localStorage.getItem("token");
+    // ⭐ CORREZIONE: il backend usa "session", NON "token"
+    const token = localStorage.getItem("session");
     const email = localStorage.getItem("email");
     const ruoloRaw = localStorage.getItem("ruolo") || "";
+
+    console.log("[AUTH] Lettura token:", token);
+    console.log("[AUTH] Lettura email:", email);
+    console.log("[AUTH] Lettura ruolo:", ruoloRaw);
 
     if (token && email) {
       window.isLogged = true;
@@ -27,18 +32,17 @@ function readAuthState() {
       const ruolo = String(ruoloRaw).trim().toLowerCase();
       let ruoloNorm = "user";
 
-      if (ruolo.includes("admin") || ruolo.includes("amministrator")) {
-        ruoloNorm = "admin";
-      } else if (ruolo.includes("user") || ruolo.includes("utente")) {
-        ruoloNorm = "user";
-      } else if (ruolo.includes("guest") || ruolo.includes("ospite")) {
-        ruoloNorm = "guest";
-      }
+      if (ruolo.includes("admin")) ruoloNorm = "admin";
+      else if (ruolo.includes("user")) ruoloNorm = "user";
+      else ruoloNorm = "guest";
 
       window.userRole = ruoloNorm;
       window.isAdmin = ruoloNorm === "admin";
 
+      console.log("[AUTH] Utente loggato come:", ruoloNorm);
+
     } else {
+      console.log("[AUTH] Nessun token valido → utente NON loggato");
       window.isLogged = false;
       window.userEmail = null;
       window.userRole = null;
@@ -46,6 +50,7 @@ function readAuthState() {
     }
 
   } catch (e) {
+    console.log("[AUTH] Errore lettura stato:", e);
     window.isLogged = false;
     window.userEmail = null;
     window.userRole = null;
@@ -61,7 +66,6 @@ function readAuthState() {
 function dispatchAuthReady() {
   const event = new CustomEvent("auth-ready");
 
-  // Se il DOM non è pronto, aspetta
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
       document.dispatchEvent(event);
@@ -70,23 +74,21 @@ function dispatchAuthReady() {
     document.dispatchEvent(event);
   }
 
-  // ⭐ PATCH: doppio dispatch per garantire che header-shop.js lo riceva
   setTimeout(() => document.dispatchEvent(event), 30);
 }
 
 /* ---------------------------------------------------------
-   LOGOUT (PATCH: redirect obbligatorio)
+   LOGOUT
 --------------------------------------------------------- */
 function logout() {
   try {
-    localStorage.removeItem("token");
+    console.log("[AUTH] Logout → pulizia localStorage");
+    localStorage.removeItem("session");
     localStorage.removeItem("email");
     localStorage.removeItem("ruolo");
   } catch (e) {}
 
   readAuthState();
-
-  // ⭐ PATCH: ricarica la pagina per aggiornare header e stato
   window.location.href = "index.html";
 }
 
@@ -95,10 +97,10 @@ function logout() {
 --------------------------------------------------------- */
 readAuthState();
 
-// Aggiorna se cambia localStorage (multi-tab)
+// Multi-tab
 window.addEventListener("storage", readAuthState);
 
-// Aggiorna quando header è caricato
+// Quando header è caricato
 document.addEventListener("header-loaded", () => {
   readAuthState();
   dispatchAuthReady();
