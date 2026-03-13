@@ -1,5 +1,5 @@
 /* =========================================================
-   LOGIN.JS — Versione definitiva blindata
+   LOGIN.JS — Versione definitiva blindata (PATCH SQL)
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -32,15 +32,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const data = await res.json();
 
+      console.log("[LOGIN] Risposta backend:", data);
+
       if (!data.success) {
         alert(data.error || "Errore login");
         return;
       }
 
-      // Salva stato login
-      localStorage.setItem("token", data.token);
+      // ⭐ PATCH: salva token nella chiave corretta
+      localStorage.setItem("session", data.token);
+
+      // Salva email e ruolo
       localStorage.setItem("email", data.email);
       localStorage.setItem("ruolo", data.ruolo || "user");
+
+      console.log("[LOGIN] Token salvato:", data.token);
+      console.log("[LOGIN] Email salvata:", data.email);
+      console.log("[LOGIN] Ruolo salvato:", data.ruolo);
 
       // Popup post-login
       localStorage.setItem("showLoginChoice", "1");
