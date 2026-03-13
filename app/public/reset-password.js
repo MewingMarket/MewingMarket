@@ -16,6 +16,7 @@ document.getElementById("btnResetPassword").addEventListener("click", async () =
     });
 
     const data = await res.json();
+    console.log("[RESET PASSWORD REQUEST]", data);
 
     if (data.success) {
       msg.textContent = "Email inviata! Controlla la tua casella.";
