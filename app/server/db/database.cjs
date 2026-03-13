@@ -1,12 +1,17 @@
 const Database = require("better-sqlite3");
-const path = require("path");
+const fs = require("fs");
 
-const dbPath = path.resolve("app/server/db/mewingmarket.db");
+// Path persistente su Render Disk
+const dbPath = "/var/data/mewingmarket.db";
+
+// Inizializza DB
 const db = new Database(dbPath);
 
-// Carica lo schema utenti
-const fs = require("fs");
-const schema = fs.readFileSync(path.resolve("app/server/db/utenti.sql"), "utf8");
-db.exec(schema);
+// Carica schema utenti se il DB è nuovo
+const schemaPath = "/project/src/app/server/db/utenti.sql";
+if (fs.existsSync(schemaPath)) {
+  const schema = fs.readFileSync(schemaPath, "utf8");
+  db.exec(schema);
+}
 
 module.exports = db;
