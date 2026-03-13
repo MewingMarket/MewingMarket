@@ -13,8 +13,8 @@ function setMsg(text, ok = false) {
 document.getElementById('reset-btn')?.addEventListener('click', async () => {
   setMsg("Eliminazione account in corso...");
 
-  // TOKEN CORRETTO
-  const token = localStorage.getItem("token");
+  // ⭐ TOKEN CORRETTO
+  const token = localStorage.getItem("session");
   const password = document.getElementById("password")?.value.trim();
 
   if (!token) {
@@ -31,10 +31,9 @@ document.getElementById('reset-btn')?.addEventListener('click', async () => {
     const res = await fetch('/api/utenti/elimina-account', {
       method: 'POST',
       headers: { 
-        'Content-Type': 'application/json',
-        'x-token': token
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ token, password })
+      body: JSON.stringify({ token, password }) // ⭐ SOLO QUI
     });
 
     const data = await res.json().catch(() => null);
@@ -47,14 +46,10 @@ document.getElementById('reset-btn')?.addEventListener('click', async () => {
     if (data.success) {
       setMsg("Account eliminato. Reindirizzamento...", true);
 
-      // Pulizia locale
-      localStorage.removeItem("token");
-      localStorage.removeItem("utenteEmail");
-
-      // Aggiorna footer dinamico se presente
-      if (typeof aggiornaFooterUtente === "function") {
-        aggiornaFooterUtente();
-      }
+      // ⭐ PULIZIA CORRETTA
+      localStorage.removeItem("session");
+      localStorage.removeItem("email");
+      localStorage.removeItem("ruolo");
 
       setTimeout(() => {
         window.location.href = "registrazione.html";
