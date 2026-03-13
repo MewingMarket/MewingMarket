@@ -1,10 +1,10 @@
 // app/server/modules/liste-brevo.cjs
 
 module.exports = {
-  // Newsletter generale (iscrizione/disiscrizione)
+  // Newsletter generale (iscrizione/disiscrizione) +novità 
   LISTA_NEWSLETTER: 8,
 
-  // Registrazione al sito + novità prodotti
+  // Registrazione al sito 
   LISTA_REGISTRATI: 9,
 
   // Reset password / reset email
