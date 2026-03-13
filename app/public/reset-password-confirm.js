@@ -1,3 +1,7 @@
+// =========================================================
+// RESET PASSWORD CONFIRM — Versione compatibile backend SQL
+// =========================================================
+
 // Recupero token dalla URL
 const urlParams = new URLSearchParams(window.location.search);
 const token = urlParams.get("token");
