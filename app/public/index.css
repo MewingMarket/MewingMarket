@@ -209,3 +209,16 @@
     max-width: 300px;
   }
 }
+.btn-admin-header {
+  margin-left: auto;
+  font-weight: 600;
+  color: #007bff;
+  text-decoration: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  transition: 0.2s;
+}
+
+.btn-admin-header:hover {
+  background: #e8f0ff;
+}
