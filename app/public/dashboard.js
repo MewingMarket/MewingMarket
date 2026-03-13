@@ -1,6 +1,6 @@
 /* =========================================================
    FILE: /public/dashboard.js
-   DASHBOARD — Compatibile al 100% con il backend reale
+   DASHBOARD — Compatibile al 100% con il backend reale (SQL)
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -72,7 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // =========================================================
-  // CAMBIO EMAIL — COMPATIBILE CON IL BACKEND
+  // CAMBIO EMAIL — PATCH SQL COMPLETA
   // =========================================================
   document.getElementById("btnCambiaEmail")?.addEventListener("click", async () => {
     const nuova_email = document.getElementById("newEmail").value.trim().toLowerCase();
@@ -88,9 +88,10 @@ document.addEventListener("DOMContentLoaded", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          token,
-          nuova_email,
-          password
+          email,          // PATCH: email inviata
+          password,       // PATCH: password attuale
+          nuova_email,    // nuova email
+          token           // token sessione
         })
       });
 
@@ -101,8 +102,10 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
+      // PATCH: aggiorna email locale
       setEmail(nuova_email);
       refreshUI();
+
       setMsg("msgEmail", "Email aggiornata!", true);
 
     } catch {
@@ -111,13 +114,14 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // =========================================================
-  // CAMBIO PASSWORD — COMPATIBILE CON IL BACKEND
+  // CAMBIO PASSWORD — PATCH SQL COMPLETA
   // =========================================================
   document.getElementById("btnCambiaPassword")?.addEventListener("click", async () => {
+    const password_attuale = document.getElementById("oldPassword").value.trim();
     const nuova_password = document.getElementById("newPassword").value.trim();
 
-    if (!nuova_password) {
-      setMsg("msgPassword", "Inserisci la nuova password.");
+    if (!password_attuale || !nuova_password) {
+      setMsg("msgPassword", "Compila tutti i campi.");
       return;
     }
 
@@ -126,8 +130,10 @@ document.addEventListener("DOMContentLoaded", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          token,
-          nuova_password
+          email,             // PATCH: email inviata
+          password_attuale,  // PATCH: password attuale
+          nuova_password,    // PATCH: nuova password
+          token
         })
       });
 
@@ -146,7 +152,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // =========================================================
-  // ELIMINA ACCOUNT — COMPATIBILE CON IL BACKEND
+  // ELIMINA ACCOUNT — COMPATIBILE CON SQL
   // =========================================================
   document.getElementById("btnEliminaAccount")?.addEventListener("click", async () => {
     const password = document.getElementById("passwordDelete").value.trim();
@@ -165,8 +171,9 @@ document.addEventListener("DOMContentLoaded", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          token,
-          password
+          email,     // PATCH: email inviata
+          password,  // PATCH: password attuale
+          token
         })
       });
 
