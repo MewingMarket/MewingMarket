@@ -1,3 +1,7 @@
+// =========================================================
+// RESET EMAIL CONFIRM — Versione compatibile backend SQL
+// =========================================================
+
 // Recupero token dalla URL
 const urlParams = new URLSearchParams(window.location.search);
 const token = urlParams.get("token");
@@ -35,8 +39,15 @@ document.getElementById("btnConfirmEmail").addEventListener("click", async () =>
     });
 
     const data = await res.json();
+    console.log("[RESET EMAIL CONFIRM]", data);
 
     if (data.success) {
+      // ⭐ PATCH: aggiorna localStorage
+      localStorage.setItem("email", nuova_email);
+
+      // ⭐ PATCH: invalida sessione
+      localStorage.removeItem("session");
+
       msg.textContent = "Email aggiornata correttamente! Verrai reindirizzato al login...";
       msg.className = "ok";
 
