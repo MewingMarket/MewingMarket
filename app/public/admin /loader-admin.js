@@ -1,72 +1,35 @@
-// =========================================================
-// LOADER ADMIN – HEAD + HEADER + FOOTER + ACCESSO
-// =========================================================
+/* =========================================================
+   LOADER ADMIN — Head + Header + Footer + Accesso Admin
+========================================================= */
+
+console.log("[ADMIN] Loader admin avviato");
 
 // ---------------------------------------------------------
-// 1) CARICA HEAD ADMIN (come nel sito pubblico)
+// 1) CARICA HEAD ADMIN
 // ---------------------------------------------------------
 fetch("head-admin.html")
   .then(r => r.text())
   .then(html => {
     const temp = document.createElement("div");
     temp.innerHTML = html;
-
     [...temp.children].forEach(node => document.head.appendChild(node));
-
     document.dispatchEvent(new Event("admin-head-loaded"));
   });
 
-
 // ---------------------------------------------------------
-// 2) CONTROLLO ACCESSO ADMIN (basato su ruolo normalizzato)
+// 2) CONTROLLO ACCESSO ADMIN (basato su auth.js)
 // ---------------------------------------------------------
-async function checkAdminAccess() {
-  try {
-    const res = await fetch("/api/user/me", { credentials: "include" });
-    if (!res.ok) throw new Error("Non loggato");
-
-    const user = await res.json();
-
-    // Normalizzazione ruolo
-    const ruoloRaw = String(user.ruolo || "").trim().toLowerCase();
-    let ruoloNorm = "user";
-
-    if (
-      ruoloRaw.includes("admin") ||
-      ruoloRaw.includes("amministrator")
-    ) {
-      ruoloNorm = "admin";
-    } else if (
-      ruoloRaw.includes("user") ||
-      ruoloRaw.includes("utente")
-    ) {
-      ruoloNorm = "user";
-    } else if (
-      ruoloRaw.includes("guest") ||
-      ruoloRaw.includes("ospite")
-    ) {
-      ruoloNorm = "guest";
-    }
-
-    // Solo admin può entrare
-    if (ruoloNorm !== "admin") {
-      window.location.href = "/";
-      return;
-    }
-
+document.addEventListener("auth-ready", () => {
+  if (!window.isAdmin) {
+    console.warn("[ADMIN] Accesso negato → non sei admin");
+    window.location.href = "index.html";
+  } else {
     document.dispatchEvent(new Event("admin-auth-ok"));
-
-  } catch (err) {
-    console.error("Accesso admin negato:", err);
-    window.location.href = "/";
   }
-}
-
-checkAdminAccess();
-
+});
 
 // ---------------------------------------------------------
-// 3) CARICA HEADER ADMIN (con NAV dentro)
+// 3) CARICA HEADER ADMIN
 // ---------------------------------------------------------
 document.addEventListener("admin-auth-ok", () => {
   fetch("header-admin.html")
@@ -76,7 +39,6 @@ document.addEventListener("admin-auth-ok", () => {
       document.dispatchEvent(new Event("admin-header-loaded"));
     });
 });
-
 
 // ---------------------------------------------------------
 // 4) CARICA FOOTER ADMIN
@@ -92,23 +54,22 @@ fetch("footer-admin.html")
     document.dispatchEvent(new Event("admin-footer-loaded"));
   });
 
-
 // ---------------------------------------------------------
 // 5) LOGOUT ADMIN
 // ---------------------------------------------------------
 document.addEventListener("admin-header-loaded", () => {
   const btn = document.getElementById("logout-admin");
   if (btn) {
-    btn.addEventListener("click", async () => {
-      await fetch("/api/user/logout", { method: "POST", credentials: "include" });
-      window.location.href = "/";
+    btn.addEventListener("click", () => {
+      console.log("[ADMIN] Logout admin");
+      localStorage.clear();
+      window.location.href = "index.html";
     });
   }
 });
 
-
 // ---------------------------------------------------------
-// 6) TITOLO DINAMICO (come nel sito pubblico)
+// 6) TITOLO DINAMICO
 // ---------------------------------------------------------
 document.addEventListener("admin-head-loaded", () => {
   const metaTitle = document.querySelector('meta[id="dynamic-title"]');
