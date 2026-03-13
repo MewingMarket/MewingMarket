@@ -86,6 +86,13 @@ console.log(">> ROOT PATH:", ROOT);
   app.use("/api", router);
 
   // =========================================================
+  // DEBUG DB (HTML)
+  // =========================================================
+  console.log(">> LOADING debug-db.cjs");
+  await wait(300);
+  app.use("/api", require("./routes/debug-db.cjs"));
+
+  // =========================================================
   // ROUTE FRONTEND
   // =========================================================
   console.log(">> LOADING FRONTEND ROUTES");
@@ -105,8 +112,9 @@ console.log(">> ROOT PATH:", ROOT);
   require("./routes/product-page.cjs")(app);
   await wait(300);
   require("./routes/system-status.cjs")(app);
-await wait(300);
-require("./routes/versione.cjs")(app);
+  await wait(300);
+  require("./routes/versione.cjs")(app);
+
   // =========================================================
   // BOOTSTRAP
   // =========================================================
@@ -147,6 +155,19 @@ require("./routes/versione.cjs")(app);
       console.log("====================================\n");
 
       // =========================================================
+      // LOG PERIODICO DEL CONTENUTO DEL DB
+      // =========================================================
+      const db = require("./db/database.cjs");
+      setInterval(() => {
+        try {
+          const utenti = db.prepare("SELECT * FROM utenti").all();
+          console.log("📌 UTENTI NEL DB:", utenti);
+        } catch (err) {
+          console.log("Errore lettura DB:", err.message);
+        }
+      }, 15000);
+
+      // =========================================================
       // SYNC INIZIALE IN BACKGROUND (NON BLOCCA IL SERVER)
       // =========================================================
       setTimeout(async () => {
@@ -163,10 +184,6 @@ require("./routes/versione.cjs")(app);
           console.error("❌ Errore sync iniziale:", err);
         }
       }, 2000);
-
-      // 🔥 IMPORTANTE:
-      // Nessuna sync Airtable qui.
-      // Il catalogo viene aggiornato SOLO dal Cron Job.
     });
   }
 
