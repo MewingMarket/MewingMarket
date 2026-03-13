@@ -1,11 +1,11 @@
 // =========================================================
 // File: app/server/routes/api-utenti.cjs
-// Sistema utenti definitivo + EMAIL integrate + RESET
+// Versione SQL — stessi endpoint, stessi nomi, stessa struttura
 // =========================================================
 
 const express = require("express");
 const crypto = require("crypto");
-const Airtable = require("../lib/airtable-wrapper.cjs");
+const db = require("../db/database.cjs");
 
 // EMAIL MODULES
 const { inviaEmailRegistrazione } = require("../modules/email-registrazione.cjs");
@@ -18,16 +18,6 @@ const { inviaEmailResetPassword } = require("../modules/email-reset-password.cjs
 const { inviaEmailResetEmail } = require("../modules/email-reset-email.cjs");
 
 const router = express.Router();
-Airtable.configure({ apiKey: process.env.AIRTABLE_PAT });
-const base = Airtable.base(process.env.AIRTABLE_BASE);
-
-const TABLE_UTENTI = "Utenti";
-
-// Escape sicuro per Airtable
-function escapeAirtable(value) {
-  if (!value) return "";
-  return String(value).replace(/"/g, '\\"');
-}
 
 // Normalizzazione password
 function normalizePassword(p) {
@@ -39,9 +29,7 @@ function genToken(prefix) {
   return prefix + "_" + crypto.randomBytes(16).toString("hex");
 }
 
-// =========================================================
 // Helper: estrai token da body OPPURE da header
-// =========================================================
 function getToken(req) {
   return (
     normalizePassword(req.body?.token) ||
@@ -52,7 +40,7 @@ function getToken(req) {
 /* =========================================================
    REGISTRAZIONE
 ========================================================= */
-router.post("/utenti/registrazione", async (req, res) => {
+router.post("/utenti/registrazione", (req, res) => {
   let { email, password } = req.body || {};
 
   email = (email || "").trim().toLowerCase();
@@ -63,29 +51,20 @@ router.post("/utenti/registrazione", async (req, res) => {
   }
 
   try {
-    const safeEmail = escapeAirtable(email);
+    const esiste = db.prepare("SELECT id FROM utenti WHERE email = ?").get(email);
 
-    const esiste = await base(TABLE_UTENTI)
-      .select({ filterByFormula: `{email} = "${safeEmail}"` })
-      .firstPage();
-
-    if (esiste.length > 0) {
+    if (esiste) {
       return res.json({ success: false, error: "Email già registrata" });
     }
 
     const token = genToken("tok");
 
-    await base(TABLE_UTENTI).create([
-      {
-        fields: {
-          email,
-          password_hash: String(password),
-          token
-        }
-      }
-    ]);
+    db.prepare(`
+      INSERT INTO utenti (email, password_hash, token)
+      VALUES (?, ?, ?)
+    `).run(email, password, token);
 
-    await inviaEmailRegistrazione({ email });
+    inviaEmailRegistrazione({ email });
 
     return res.json({ success: true, token, email });
 
@@ -96,9 +75,9 @@ router.post("/utenti/registrazione", async (req, res) => {
 });
 
 /* =========================================================
-   LOGIN (PATCHATO DEFINITIVO)
+   LOGIN
 ========================================================= */
-router.post("/utenti/login", async (req, res) => {
+router.post("/utenti/login", (req, res) => {
   let { email, password } = req.body || {};
 
   email = (email || "").trim().toLowerCase();
@@ -109,39 +88,26 @@ router.post("/utenti/login", async (req, res) => {
   }
 
   try {
-    const safeEmail = escapeAirtable(email);
+    const user = db.prepare("SELECT * FROM utenti WHERE email = ?").get(email);
 
-    const records = await base(TABLE_UTENTI)
-      .select({ filterByFormula: `{email} = "${safeEmail}"` })
-      .firstPage();
-
-    if (records.length === 0) {
+    if (!user) {
       return res.json({ success: false, error: "Utente non trovato" });
     }
 
-    const user = records[0];
-    const savedPass = normalizePassword(user.get("password_hash"));
-
-    if (savedPass !== password) {
+    if (normalizePassword(user.password_hash) !== password) {
       return res.json({ success: false, error: "Password errata" });
     }
 
     const token = genToken("tok");
 
-    await base(TABLE_UTENTI).update([
-      {
-        id: user.id,
-        fields: { token }
-      }
-    ]);
+    db.prepare("UPDATE utenti SET token = ? WHERE id = ?").run(token, user.id);
 
-    // 🔵 PATCH FONDAMENTALE — AGGIUNTO RUOLO
     return res.json({
       success: true,
       token,
       email,
       utenteEmail: email,
-      ruolo: user.get("ruolo") || "user"
+      ruolo: user.ruolo || "user"
     });
 
   } catch (err) {
@@ -153,7 +119,7 @@ router.post("/utenti/login", async (req, res) => {
 /* =========================================================
    CAMBIO EMAIL
 ========================================================= */
-router.post("/utenti/cambia-email", async (req, res) => {
+router.post("/utenti/cambia-email", (req, res) => {
   let token = getToken(req);
   let { nuova_email, password } = req.body || {};
 
@@ -165,31 +131,19 @@ router.post("/utenti/cambia-email", async (req, res) => {
   }
 
   try {
-    const safeToken = escapeAirtable(token);
+    const user = db.prepare("SELECT * FROM utenti WHERE token = ?").get(token);
 
-    const records = await base(TABLE_UTENTI)
-      .select({ filterByFormula: `{token} = "${safeToken}"` })
-      .firstPage();
-
-    if (records.length === 0) {
+    if (!user) {
       return res.json({ success: false, error: "Token non valido" });
     }
 
-    const user = records[0];
-    const savedPass = normalizePassword(user.get("password_hash"));
-
-    if (savedPass !== password) {
+    if (normalizePassword(user.password_hash) !== password) {
       return res.json({ success: false, error: "Password errata" });
     }
 
-    await base(TABLE_UTENTI).update([
-      {
-        id: user.id,
-        fields: { email: nuova_email }
-      }
-    ]);
+    db.prepare("UPDATE utenti SET email = ? WHERE id = ?").run(nuova_email, user.id);
 
-    await inviaEmailCambioEmail({ email: nuova_email });
+    inviaEmailCambioEmail({ email: nuova_email });
 
     return res.json({ success: true });
 
@@ -202,7 +156,7 @@ router.post("/utenti/cambia-email", async (req, res) => {
 /* =========================================================
    CAMBIO PASSWORD
 ========================================================= */
-router.post("/utenti/cambia-password", async (req, res) => {
+router.post("/utenti/cambia-password", (req, res) => {
   let token = getToken(req);
   let { nuova_password } = req.body || {};
 
@@ -213,26 +167,16 @@ router.post("/utenti/cambia-password", async (req, res) => {
   }
 
   try {
-    const safeToken = escapeAirtable(token);
+    const user = db.prepare("SELECT * FROM utenti WHERE token = ?").get(token);
 
-    const records = await base(TABLE_UTENTI)
-      .select({ filterByFormula: `{token} = "${safeToken}"` })
-      .firstPage();
-
-    if (records.length === 0) {
+    if (!user) {
       return res.json({ success: false, error: "Token non valido" });
     }
 
-    const user = records[0];
+    db.prepare("UPDATE utenti SET password_hash = ? WHERE id = ?")
+      .run(String(nuova_password), user.id);
 
-    await base(TABLE_UTENTI).update([
-      {
-        id: user.id,
-        fields: { password_hash: String(nuova_password) }
-      }
-    ]);
-
-    await inviaEmailCambioPassword({ email: user.get("email") });
+    inviaEmailCambioPassword({ email: user.email });
 
     return res.json({ success: true });
 
@@ -245,7 +189,7 @@ router.post("/utenti/cambia-password", async (req, res) => {
 /* =========================================================
    ELIMINAZIONE ACCOUNT
 ========================================================= */
-router.post("/utenti/elimina-account", async (req, res) => {
+router.post("/utenti/elimina-account", (req, res) => {
   let token = getToken(req);
   let { password } = req.body || {};
 
@@ -256,26 +200,19 @@ router.post("/utenti/elimina-account", async (req, res) => {
   }
 
   try {
-    const safeToken = escapeAirtable(token);
+    const user = db.prepare("SELECT * FROM utenti WHERE token = ?").get(token);
 
-    const records = await base(TABLE_UTENTI)
-      .select({ filterByFormula: `{token} = "${safeToken}"` })
-      .firstPage();
-
-    if (records.length === 0) {
+    if (!user) {
       return res.json({ success: false, error: "Token non valido" });
     }
 
-    const user = records[0];
-    const savedPass = normalizePassword(user.get("password_hash"));
-
-    if (savedPass !== password) {
+    if (normalizePassword(user.password_hash) !== password) {
       return res.json({ success: false, error: "Password errata" });
     }
 
-    await base(TABLE_UTENTI).destroy(user.id);
+    db.prepare("DELETE FROM utenti WHERE id = ?").run(user.id);
 
-    await inviaEmailEliminazione({ email: user.get("email") });
+    inviaEmailEliminazione({ email: user.email });
 
     return res.json({ success: true });
 
@@ -288,7 +225,7 @@ router.post("/utenti/elimina-account", async (req, res) => {
 /* =========================================================
    RESET PASSWORD — RICHIESTA LINK
 ========================================================= */
-router.post("/utenti/reset-password-request", async (req, res) => {
+router.post("/utenti/reset-password-request", (req, res) => {
   let { email } = req.body || {};
   email = (email || "").trim().toLowerCase();
 
@@ -297,27 +234,18 @@ router.post("/utenti/reset-password-request", async (req, res) => {
   }
 
   try {
-    const safeEmail = escapeAirtable(email);
+    const user = db.prepare("SELECT * FROM utenti WHERE email = ?").get(email);
 
-    const records = await base(TABLE_UTENTI)
-      .select({ filterByFormula: `{email} = "${safeEmail}"` })
-      .firstPage();
-
-    if (records.length === 0) {
+    if (!user) {
       return res.json({ success: false, error: "Email non trovata" });
     }
 
-    const user = records[0];
     const resetToken = genToken("resetpass");
 
-    await base(TABLE_UTENTI).update([
-      {
-        id: user.id,
-        fields: { reset_password_token: resetToken }
-      }
-    ]);
+    db.prepare("UPDATE utenti SET reset_password_token = ? WHERE id = ?")
+      .run(resetToken, user.id);
 
-    await inviaEmailResetPassword({
+    inviaEmailResetPassword({
       email,
       link: `https://mewingmarket.it/reset-password-confirm.html?token=${resetToken}`
     });
@@ -333,7 +261,7 @@ router.post("/utenti/reset-password-request", async (req, res) => {
 /* =========================================================
    RESET PASSWORD — CONFERMA
 ========================================================= */
-router.post("/utenti/reset-password-confirm", async (req, res) => {
+router.post("/utenti/reset-password-confirm", (req, res) => {
   let { token, nuova_password } = req.body || {};
 
   token = (token || "").trim();
@@ -344,27 +272,18 @@ router.post("/utenti/reset-password-confirm", async (req, res) => {
   }
 
   try {
-    const safeToken = escapeAirtable(token);
+    const user = db.prepare("SELECT * FROM utenti WHERE reset_password_token = ?")
+      .get(token);
 
-    const records = await base(TABLE_UTENTI)
-      .select({ filterByFormula: `{reset_password_token} = "${safeToken}"` })
-      .firstPage();
-
-    if (records.length === 0) {
+    if (!user) {
       return res.json({ success: false, error: "Token non valido" });
     }
 
-    const user = records[0];
-
-    await base(TABLE_UTENTI).update([
-      {
-        id: user.id,
-        fields: {
-          password_hash: String(nuova_password),
-          reset_password_token: ""
-        }
-      }
-    ]);
+    db.prepare(`
+      UPDATE utenti
+      SET password_hash = ?, reset_password_token = ''
+      WHERE id = ?
+    `).run(String(nuova_password), user.id);
 
     return res.json({ success: true });
 
@@ -377,7 +296,7 @@ router.post("/utenti/reset-password-confirm", async (req, res) => {
 /* =========================================================
    RESET EMAIL — RICHIESTA LINK
 ========================================================= */
-router.post("/utenti/reset-email-request", async (req, res) => {
+router.post("/utenti/reset-email-request", (req, res) => {
   let { password } = req.body || {};
   password = normalizePassword(password);
 
@@ -386,11 +305,8 @@ router.post("/utenti/reset-email-request", async (req, res) => {
   }
 
   try {
-    const records = await base(TABLE_UTENTI).select().firstPage();
-
-    const user = records.find(
-      r => normalizePassword(r.get("password_hash")) === password
-    );
+    const user = db.prepare("SELECT * FROM utenti WHERE password_hash = ?")
+      .get(password);
 
     if (!user) {
       return res.json({ success: false, error: "Password errata" });
@@ -398,15 +314,11 @@ router.post("/utenti/reset-email-request", async (req, res) => {
 
     const resetToken = genToken("resetemail");
 
-    await base(TABLE_UTENTI).update([
-      {
-        id: user.id,
-        fields: { reset_email_token: resetToken }
-      }
-    ]);
+    db.prepare("UPDATE utenti SET reset_email_token = ? WHERE id = ?")
+      .run(resetToken, user.id);
 
-    await inviaEmailResetEmail({
-      email: user.get("email"),
+    inviaEmailResetEmail({
+      email: user.email,
       link: `https://mewingmarket.it/reset-email-confirm.html?token=${resetToken}`
     });
 
@@ -421,7 +333,7 @@ router.post("/utenti/reset-email-request", async (req, res) => {
 /* =========================================================
    RESET EMAIL — CONFERMA
 ========================================================= */
-router.post("/utenti/reset-email-confirm", async (req, res) => {
+router.post("/utenti/reset-email-confirm", (req, res) => {
   let { token, nuova_email } = req.body || {};
 
   token = (token || "").trim();
@@ -432,27 +344,18 @@ router.post("/utenti/reset-email-confirm", async (req, res) => {
   }
 
   try {
-    const safeToken = escapeAirtable(token);
+    const user = db.prepare("SELECT * FROM utenti WHERE reset_email_token = ?")
+      .get(token);
 
-    const records = await base(TABLE_UTENTI)
-      .select({ filterByFormula: `{reset_email_token} = "${safeToken}"` })
-      .firstPage();
-
-    if (records.length === 0) {
+    if (!user) {
       return res.json({ success: false, error: "Token non valido" });
     }
 
-    const user = records[0];
-
-    await base(TABLE_UTENTI).update([
-      {
-        id: user.id,
-        fields: {
-          email: nuova_email,
-          reset_email_token: ""
-        }
-      }
-    ]);
+    db.prepare(`
+      UPDATE utenti
+      SET email = ?, reset_email_token = ''
+      WHERE id = ?
+    `).run(nuova_email, user.id);
 
     return res.json({ success: true });
 
