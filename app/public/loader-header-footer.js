@@ -2,6 +2,13 @@
 // LOADER HEADER + FOOTER + HEAD – MewingMarket (PATCH)
 // =========================================================
 
+// =========================================================
+// 0) AUTH — deve essere caricato prima di tutto
+// =========================================================
+const authScript = document.createElement("script");
+authScript.src = "auth.js";
+document.head.appendChild(authScript);
+
 // ---------------------------------------------------------
 // 1) HEAD
 // ---------------------------------------------------------
@@ -169,4 +176,4 @@ function tryShowAdminButton() {
     const adminBtn = document.getElementById("admin-trigger");
     if (adminBtn) adminBtn.style.display = "inline-flex";
   }
-}
+      }
