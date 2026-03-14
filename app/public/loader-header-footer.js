@@ -53,7 +53,6 @@ const isUserPage =
 let headerFile = "header.html"; // default
 
 if (isShopPage) headerFile = "header-shop.html";
-// header-user ELIMINATO
 
 // ---------------------------------------------------------
 // 2B) CARICA CARRELLO SOLO NELLE PAGINE SHOP
@@ -108,7 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
 document.addEventListener("auth-ready", () => {
   if (window.isAdmin) {
     const s = document.createElement("script");
-    s.src = "loader-admin.js";
+    s.src = "admin/loader-admin.js";   // ⭐ percorso corretto
     document.body.appendChild(s);
   }
 });
