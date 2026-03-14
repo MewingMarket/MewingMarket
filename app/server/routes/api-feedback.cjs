@@ -1,59 +1,42 @@
-// =========================================================
-// File: app/server/routes/api-feedback.cjs
-// Sistema recensioni utenti — Versione definitiva
-// Airtable nuova SDK + auth-user + struttura reale
-// =========================================================
+/**
+ * =========================================================
+ * File: app/server/routes/api-feedback.cjs
+ * Sistema recensioni utenti — Versione SQL definitiva
+ * =========================================================
+ */
 
 const express = require("express");
-const Airtable = require("../lib/airtable-wrapper.cjs");
+const db = require("../db/database.cjs");
 const authUser = require("../middleware/auth-user.cjs");
 
 const router = express.Router();
 
-// ---------------------------------------------------------
-// CONFIG AIRTABLE
-// ---------------------------------------------------------
-Airtable.configure({
-  apiKey: process.env.AIRTABLE_PAT
-});
-
-const base = Airtable.base(process.env.AIRTABLE_BASE);
-
-const TABLE_FEEDBACK = "Feedback";
-const TABLE_ORDINI = "Ordini";
-
-// Helper sicuro
-function safeGet(record, field) {
+/**
+ * =========================================================
+ * GET /api/recensioni/utente
+ * Restituisce tutte le recensioni dell’utente loggato
+ * =========================================================
+ */
+router.get("/recensioni/utente", authUser, (req, res) => {
   try {
-    return record.get(field) ?? null;
-  } catch {
-    return null;
-  }
-}
+    const userId = req.user.id;
 
-// =========================================================
-// GET /api/recensioni/utente
-// Restituisce tutte le recensioni dell’utente loggato
-// =========================================================
-router.get("/recensioni/utente", authUser, async (req, res) => {
-  try {
-    const email = req.user.email;
+    const stmt = db.prepare(`
+      SELECT 
+        f.id,
+        f.prodotto_id,
+        f.rating,
+        f.commento,
+        f.data,
+        p.slug AS prodotto_slug,
+        p.titolo_breve AS prodotto_titolo
+      FROM feedback f
+      LEFT JOIN prodotti p ON p.id = f.prodotto_id
+      WHERE f.utente_id = ?
+      ORDER BY f.id DESC
+    `);
 
-    const records = await base(TABLE_FEEDBACK)
-      .select({
-        filterByFormula: `{utente} = "${email}"`,
-        sort: [{ field: "data", direction: "desc" }]
-      })
-      .all();
-
-    const recensioni = records.map(r => ({
-      id: r.id,
-      prodotto_slug: safeGet(r, "prodotto_slug"),
-      prodotto_titolo: safeGet(r, "prodotto_titolo"),
-      rating: safeGet(r, "rating"),
-      commento: safeGet(r, "commento"),
-      data: safeGet(r, "data") || r._rawJson.createdTime
-    }));
+    const recensioni = stmt.all(userId);
 
     return res.json({ success: true, recensioni });
 
@@ -63,55 +46,59 @@ router.get("/recensioni/utente", authUser, async (req, res) => {
   }
 });
 
-// =========================================================
-// POST /api/recensioni/crea
-// Crea una nuova recensione (solo se l’utente ha acquistato)
-// =========================================================
-router.post("/recensioni/crea", authUser, async (req, res) => {
+/**
+ * =========================================================
+ * POST /api/recensioni/crea
+ * Crea una nuova recensione (solo se l’utente ha acquistato)
+ * =========================================================
+ */
+router.post("/recensioni/crea", authUser, (req, res) => {
   try {
-    const email = req.user.email;
-    const { slug, titolo, rating, commento } = req.body;
+    const userId = req.user.id;
+    const { prodotto_id, rating, commento } = req.body;
 
-    if (!slug || !rating || !commento) {
+    if (!prodotto_id || !rating || !commento) {
       return res.json({ success: false, error: "Dati mancanti" });
     }
 
     // 1) Verifica che l’utente abbia acquistato il prodotto
-    const ordini = await base(TABLE_ORDINI)
-      .select({
-        filterByFormula: `{utente} = "${email}"`
-      })
-      .all();
+    const stmtOrdini = db.prepare(`
+      SELECT prodotti_json
+      FROM ordini
+      WHERE utente_id = ?
+    `);
+
+    const ordini = stmtOrdini.all(userId);
 
     let haAcquistato = false;
 
-    for (const r of ordini) {
-      let prodotti = [];
-      try {
-        prodotti = JSON.parse(safeGet(r, "prodotti") || "[]");
-      } catch {
-        prodotti = [];
-      }
-
-      if (prodotti.some(p => p.slug === slug)) {
+    for (const o of ordini) {
+      const prodotti = safeParse(o.prodotti_json);
+      if (prodotti.some(p => p.prodotto_id === prodotto_id)) {
         haAcquistato = true;
         break;
       }
     }
 
     if (!haAcquistato) {
-      return res.json({ success: false, error: "Non hai acquistato questo prodotto" });
+      return res.json({
+        success: false,
+        error: "Non hai acquistato questo prodotto"
+      });
     }
 
     // 2) Crea recensione
-    await base(TABLE_FEEDBACK).create({
-      utente: email,
-      prodotto_slug: slug,
-      prodotto_titolo: titolo,
-      rating: Number(rating),
-      commento,
-      data: new Date().toISOString()
-    });
+    const stmtInsert = db.prepare(`
+      INSERT INTO feedback (
+        utente_id,
+        prodotto_id,
+        rating,
+        commento,
+        data
+      ) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `);
+
+    stmtInsert.run(userId, prodotto_id, Number(rating), commento);
 
     return res.json({ success: true });
 
@@ -121,13 +108,15 @@ router.post("/recensioni/crea", authUser, async (req, res) => {
   }
 });
 
-// =========================================================
-// POST /api/recensioni/modifica
-// Modifica una recensione esistente dell’utente
-// =========================================================
-router.post("/recensioni/modifica", authUser, async (req, res) => {
+/**
+ * =========================================================
+ * POST /api/recensioni/modifica
+ * Modifica una recensione esistente dell’utente
+ * =========================================================
+ */
+router.post("/recensioni/modifica", authUser, (req, res) => {
   try {
-    const email = req.user.email;
+    const userId = req.user.id;
     const { id, rating, commento } = req.body;
 
     if (!id || !rating || !commento) {
@@ -135,24 +124,31 @@ router.post("/recensioni/modifica", authUser, async (req, res) => {
     }
 
     // 1) Recupera recensione
-    let record;
-    try {
-      record = await base(TABLE_FEEDBACK).find(id);
-    } catch {
+    const stmtFind = db.prepare(`
+      SELECT utente_id
+      FROM feedback
+      WHERE id = ?
+    `);
+
+    const rec = stmtFind.get(id);
+
+    if (!rec) {
       return res.json({ success: false, error: "Recensione non trovata" });
     }
 
     // 2) Verifica che appartenga all’utente
-    if (safeGet(record, "utente") !== email) {
+    if (rec.utente_id !== userId) {
       return res.json({ success: false, error: "Non autorizzato" });
     }
 
-    // 3) Aggiorna
-    await base(TABLE_FEEDBACK).update(id, {
-      rating: Number(rating),
-      commento,
-      data: new Date().toISOString()
-    });
+    // 3) Aggiorna recensione
+    const stmtUpdate = db.prepare(`
+      UPDATE feedback
+      SET rating = ?, commento = ?, data = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `);
+
+    stmtUpdate.run(Number(rating), commento, id);
 
     return res.json({ success: true });
 
@@ -161,5 +157,16 @@ router.post("/recensioni/modifica", authUser, async (req, res) => {
     return res.json({ success: false, error: "Errore server" });
   }
 });
+
+/**
+ * Helper sicuro per JSON
+ */
+function safeParse(str) {
+  try {
+    return JSON.parse(str);
+  } catch {
+    return [];
+  }
+}
 
 module.exports = router;
