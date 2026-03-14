@@ -10,10 +10,10 @@ const router = express.Router();
 
 // API UTENTE (SQL)
 router.use(require("./routes/api-prodotti.cjs"));
-router.use(require("./routes/api-ordini.cjs"));
+
 router.use(require("./routes/api-upload.cjs"));
 router.use(require("./routes/api-utenti.cjs"));
-router.use(require("./routes/api-ordini-annulla.cjs"));
+
 router.use(require("./routes/api-ordini-utente.cjs"));
 
 
