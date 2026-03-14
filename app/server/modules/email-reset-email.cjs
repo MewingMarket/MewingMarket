@@ -6,17 +6,41 @@ const { SENDER_CREDENZIALI } = require("./email-senders.cjs");
 async function inviaEmailResetEmail({ email, link }) {
   const subject = "Recupera la tua email di accesso";
 
-  // 🔥 NON inviamo più HTML con il link dentro
-  // 🔥 Passiamo il link come parametro a Brevo
+  const html = `
+<!DOCTYPE html>
+<html lang="it">
+<body>
+<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;line-height:1.6;">
+
+  <h2 style="text-align:center;color:#333;">Recupero email</h2>
+
+  <p style="font-size:16px;color:#444;">
+    Hai richiesto di recuperare l’email associata al tuo account.
+  </p>
+
+  <p style="text-align:center;margin:25px 0;">
+    <a href="${link}"
+       data-no-track="true"
+       style="background:#007bff;color:white;padding:12px 20px;border-radius:6px;text-decoration:none;display:inline-block;">
+       Recupera Email
+    </a>
+  </p>
+
+  <p style="font-size:14px;color:#777;">
+    Se non hai richiesto tu questa operazione, ignora questa email.
+  </p>
+
+</div>
+</body>
+</html>
+`;
+
   return inviaEmailLista({
     email,
     listId: LISTA_CREDENZIALI,
     subject,
-    html: null, // ← fondamentale
-    sender: SENDER_CREDENZIALI,
-    params: {
-      link // ← il link vero, con token
-    }
+    html,
+    sender: SENDER_CREDENZIALI
   });
 }
 
