@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS vendite (
-  
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
 
   uid TEXT,
   prodotto_id INTEGER,
