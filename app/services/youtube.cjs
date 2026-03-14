@@ -1,26 +1,15 @@
-// app/services/youtube.cjs — API + RSS + HTML FALLBACK + PROXY + LOG AVANZATI
+/**
+ * =========================================================
+ * File: app/services/youtube.cjs
+ * Sync YouTube → aggiorna campi video nella tabella prodotti
+ * =========================================================
+ */
 
 const axios = require("axios");
 const xml2js = require("xml2js");
-const { updateFromYouTube } = require("../modules/youtube.cjs");
-
-// ❌ RIMOSSO: syncAirtable non deve essere chiamato da YouTube
-// const { syncAirtable } = require("../modules/airtable.cjs");
+const db = require("../db/database.cjs");
 
 const PROXY = "https://corsproxy.io/?";
-
-// Credenziali Airtable (per sicurezza)
-const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
-const AIRTABLE_BASE = process.env.AIRTABLE_BASE;
-const AIRTABLE_TABLE_NAME = process.env.AIRTABLE_TABLE_NAME;
-
-function canUseAirtable() {
-  if (!AIRTABLE_PAT || !AIRTABLE_BASE || !AIRTABLE_TABLE_NAME) {
-    console.log("⏭️ YouTube → Airtable skipped: missing PAT / BASE / TABLE_NAME");
-    return false;
-  }
-  return true;
-}
 
 /* =========================================================
    API YouTube
@@ -35,7 +24,7 @@ async function fetchChannelVideosAPI() {
       return { success: false, videos: [] };
     }
 
-    const url = `https://www.googleapis.com/youtube/v3/search?key=${apiKey}&channelId=${channelId}&part=snippet&order=date&maxResults=10`;
+    const url = `https://www.googleapis.com/youtube/v3/search?key=${apiKey}&channelId=${channelId}&part=snippet&order=date&maxResults=20`;
 
     console.log("🌐 API YouTube →", url);
 
@@ -52,12 +41,10 @@ async function fetchChannelVideosAPI() {
         thumbnail: v.snippet.thumbnails?.high?.url || ""
       }));
 
-    console.log("📥 API YouTube ha trovato:", videos.length, "video");
-
     return { success: true, videos };
 
   } catch (err) {
-    console.error("❌ API YouTube fallita:", err?.response?.data || err?.message);
+    console.error("❌ API YouTube fallita:", err?.message);
     return { success: false, videos: [] };
   }
 }
@@ -72,8 +59,6 @@ async function fetchChannelVideosRSS() {
 
     const url = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
 
-    console.log("🌐 RSS YouTube →", url);
-
     const res = await axios.get(PROXY + encodeURIComponent(url), {
       headers: { "User-Agent": "Mozilla/5.0" }
     });
@@ -84,22 +69,18 @@ async function fetchChannelVideosRSS() {
     const entries = parsed.feed.entry || [];
     const list = Array.isArray(entries) ? entries : [entries];
 
-    const videos = list
-      .filter(e => e?.title)
-      .map(e => {
-        const href = e.link?.$.href || "";
-        const videoId = href.split("v=")[1]?.split("&")[0] || "";
+    const videos = list.map(e => {
+      const href = e.link?.$.href || "";
+      const videoId = href.split("v=")[1]?.split("&")[0] || "";
 
-        return {
-          videoId,
-          url: href,
-          title: e.title || "",
-          description: e["media:group"]?.["media:description"] || "",
-          thumbnail: e["media:group"]?.["media:thumbnail"]?.$.url || ""
-        };
-      });
-
-    console.log("📥 RSS ha trovato:", videos.length, "video");
+      return {
+        videoId,
+        url: href,
+        title: e.title || "",
+        description: e["media:group"]?.["media:description"] || "",
+        thumbnail: e["media:group"]?.["media:thumbnail"]?.$.url || ""
+      };
+    });
 
     return { success: true, videos };
 
@@ -110,7 +91,7 @@ async function fetchChannelVideosRSS() {
 }
 
 /* =========================================================
-   FALLBACK HTML SCRAPING
+   FALLBACK HTML
 ========================================================= */
 async function fetchChannelVideosHTML() {
   try {
@@ -119,8 +100,6 @@ async function fetchChannelVideosHTML() {
 
     const url = `https://www.youtube.com/channel/${channelId}/videos`;
 
-    console.log("🌐 HTML Fallback →", url);
-
     const res = await axios.get(PROXY + encodeURIComponent(url), {
       headers: { "User-Agent": "Mozilla/5.0" }
     });
@@ -128,10 +107,7 @@ async function fetchChannelVideosHTML() {
     const html = res.data;
 
     const match = html.match(/ytInitialData"\]\s*=\s*(\{.*?\});/s);
-    if (!match) {
-      console.log("❌ Nessun ytInitialData trovato.");
-      return { success: false, videos: [] };
-    }
+    if (!match) return { success: false, videos: [] };
 
     const json = JSON.parse(match[1]);
 
@@ -164,60 +140,61 @@ async function fetchChannelVideosHTML() {
       });
     }
 
-    console.log("📥 HTML fallback ha trovato:", videos.length, "video");
-
     return { success: true, videos };
 
   } catch (err) {
-    console.error("❌ Fallback HTML fallito:", err?.message);
+    console.error("❌ HTML fallback fallito:", err?.message);
     return { success: false, videos: [] };
   }
 }
 
 /* =========================================================
-   SYNC COMPLETO YOUTUBE (RESILIENTE)
+   SYNC COMPLETO → aggiorna tabella prodotti
 ========================================================= */
 async function syncYouTube() {
   console.log("⏳ Sync YouTube avviato...");
 
   let result = await fetchChannelVideosAPI();
-
-  if (!result.success || !result.videos.length) {
-    console.log("⚠️ API fallita → uso RSS…");
-    result = await fetchChannelVideosRSS();
-  }
-
-  if (!result.success || !result.videos.length) {
-    console.log("⚠️ RSS fallito → uso HTML fallback…");
-    result = await fetchChannelVideosHTML();
-  }
+  if (!result.success || !result.videos.length) result = await fetchChannelVideosRSS();
+  if (!result.success || !result.videos.length) result = await fetchChannelVideosHTML();
 
   const videos = result.videos || [];
-
   if (!videos.length) {
-    console.log("❌ Nessun video trovato da nessuna fonte.");
+    console.log("❌ Nessun video trovato.");
     return { success: false, count: 0 };
   }
 
+  const stmtFind = db.prepare(`
+    SELECT id FROM prodotti WHERE youtube_video_id = ?
+  `);
+
+  const stmtUpdate = db.prepare(`
+    UPDATE prodotti
+    SET 
+      youtube_url = ?,
+      youtube_title = ?,
+      youtube_thumbnail = ?,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `);
+
   let ok = 0;
 
-  for (const video of videos) {
-    try {
-      if (canUseAirtable()) {
-        await updateFromYouTube(video);
-      } else {
-        console.log("⏭️ Skip updateFromYouTube: Airtable non configurato");
-      }
-      ok++;
-    } catch (err) {
-      console.error("Errore updateFromYouTube:", err);
-    }
+  for (const v of videos) {
+    const prod = stmtFind.get(v.videoId);
+    if (!prod) continue;
+
+    stmtUpdate.run(
+      v.url,
+      v.title,
+      v.thumbnail,
+      prod.id
+    );
+
+    ok++;
   }
 
-  // ❌ RIMOSSO: YouTube NON deve fare sync globale Airtable
-  // await syncAirtable();
-
-  console.log(`🎥 Sync YouTube completato: ${ok}/${videos.length} video aggiornati.`);
+  console.log(`🎥 Sync YouTube completato: ${ok} prodotti aggiornati.`);
 
   return { success: true, count: ok };
 }
