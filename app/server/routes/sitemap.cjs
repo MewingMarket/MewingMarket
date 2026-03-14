@@ -1,19 +1,27 @@
 /**
- * app/server/routes/sitemap.cjs
- * Sitemap dinamica basata sui prodotti
+ * =========================================================
+ * File: app/server/routes/sitemap.cjs
+ * Sitemap dinamica basata sui prodotti (SQL)
+ * =========================================================
  */
 
-// PRODUCTS → percorso corretto (airtable-sync.cjs)
-const { getProducts } = require("../../modules/airtable-sync.cjs");
+const db = require("../db/database.cjs");
 
 module.exports = function (app) {
-  app.get("/sitemap.xml", async (req, res) => {
+  app.get("/sitemap.xml", (req, res) => {
     try {
-      const products = Array.isArray(getProducts()) ? getProducts() : [];
+      // Recupera tutti i prodotti dal DB
+      const stmt = db.prepare(`
+        SELECT slug
+        FROM prodotti
+        ORDER BY id DESC
+      `);
 
-      const urls = products
+      const prodotti = stmt.all();
+
+      const urls = prodotti
         .map((p) => {
-          const slug = p.slug || p.id;
+          const slug = p.slug;
           return `
     <url>
       <loc>https://mewingmarket.com/prodotto/${slug}</loc>
