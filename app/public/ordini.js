@@ -1,8 +1,7 @@
 /* =========================================================
    FILE: /public/ordini.js
    ORDINI PREMIUM — MewingMarket
-   Versione definitiva: lista ordini + annulla ordine
-   (NO download qui — download è in download.html)
+   Versione definitiva SQL-safe + UX migliorata
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -17,7 +16,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   /* =========================================================
      1) Recupera ordini utente
-  ========================================================= */
+  ========================================================== */
   let data;
   try {
     const res = await fetch("/api/ordini/utente", {
@@ -25,9 +24,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         "Authorization": `Bearer ${session}`
       }
     });
+
     data = await res.json();
   } catch (err) {
-    console.error(err);
+    console.error("Errore fetch /ordini/utente:", err);
     body.innerHTML = `<tr><td colspan="5">Errore di connessione.</td></tr>`;
     return;
   }
@@ -38,13 +38,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /* =========================================================
-     2) Render ordini (NO download)
-  ========================================================= */
+     2) Render ordini
+  ========================================================== */
   data.ordini.forEach(o => {
     const tr = document.createElement("tr");
 
     const prodottiHTML = Array.isArray(o.prodotti)
-      ? o.prodotti.map(p => `${p.titolo} (${p.prezzo}€ × ${p.qty || 1})`).join("<br>")
+      ? o.prodotti
+          .map(p => `${p.titolo} (${p.prezzo}€ × ${p.qty || 1})`)
+          .join("<br>")
       : "-";
 
     const annullaBtn =
@@ -65,7 +67,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   /* =========================================================
      3) Annulla ordine
-  ========================================================= */
+  ========================================================== */
   body.addEventListener("click", async e => {
     if (!e.target.classList.contains("btn-annulla")) return;
 
@@ -94,7 +96,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       location.reload();
 
     } catch (err) {
-      console.error(err);
+      console.error("Errore annullamento ordine:", err);
       alert("Errore di connessione.");
     }
   });
