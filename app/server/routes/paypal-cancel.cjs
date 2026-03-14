@@ -1,12 +1,13 @@
 /**
  * =========================================================
  * File: app/server/routes/paypal-cancel.cjs
- * Annulla ordine PayPal (SQL)
+ * Annulla ordine PayPal (SQL) + email annullamento
  * =========================================================
  */
 
 const express = require("express");
 const db = require("../db/database.cjs");
+const { inviaEmailOrdineAnnullato } = require("../modules/email-ordine-annullato.cjs");
 
 const router = express.Router();
 
@@ -25,7 +26,7 @@ router.get("/paypal/cancel-order", (req, res) => {
 
     // Recupera ordine
     const stmtFind = db.prepare(`
-      SELECT id, stato
+      SELECT id, stato, utente_id, prodotti_json, totale_cent
       FROM ordini
       WHERE id = ?
     `);
@@ -61,6 +62,31 @@ router.get("/paypal/cancel-order", (req, res) => {
     `);
 
     stmtUpdate.run(orderId);
+
+    // Recupera email utente
+    const stmtUser = db.prepare(`
+      SELECT email
+      FROM utenti
+      WHERE id = ?
+      LIMIT 1
+    `);
+
+    const utente = stmtUser.get(ordine.utente_id);
+    const emailUtente = utente?.email || "";
+
+    // Invia email annullamento
+    try {
+      inviaEmailOrdineAnnullato({
+        email: emailUtente,
+        ordine: {
+          id: ordine.id,
+          prodotti: JSON.parse(ordine.prodotti_json),
+          totale: ordine.totale_cent / 100
+        }
+      });
+    } catch (err) {
+      console.error("⚠️ Errore invio email annullamento:", err);
+    }
 
     return res.json({
       success: true,
