@@ -2,6 +2,7 @@
  * =========================================================
  * File: app/server/routes/ordini-utente.cjs
  * Restituisce gli ordini dell'utente loggato (SQL)
+ * Compatibile con /public/ordini.js
  * =========================================================
  */
 
@@ -46,15 +47,13 @@ router.get("/ordini/utente", authUser, (req, res) => {
 
     const rows = stmt.all(userId);
 
-    // Formatto per frontend
+    // Formatto per frontend (compatibile con ordini.js)
     const ordini = rows.map(o => ({
       id: o.id,
-      utente_id: o.utente_id,
-      prodotti: safeParse(o.prodotti_json),
-      totale: o.totale_cent / 100,
-      totale_cent: o.totale_cent,
-      data: o.data_ordine,
+      prodotti: safeParse(o.prodotti_json),   // array
+      totale: o.totale_cent / 100,            // euro
       stato: o.stato,
+      data: o.data_ordine,                    // ordini.js usa "data"
       metodo_pagamento: o.metodo_pagamento,
       paypal_transaction_id: o.paypal_transaction_id
     }));
