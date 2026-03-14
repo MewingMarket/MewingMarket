@@ -1,33 +1,50 @@
-// modules/sitemap-video.cjs — VERSIONE AVANZATA
+/**
+ * =========================================================
+ * File: app/modules/sitemap-video.cjs
+ * Google Video Sitemap basata su tabella prodotti (SQL)
+ * =========================================================
+ */
 
-const { getProducts } = require("./airtable-sync.cjs");
-const { cleanURL, safeText } = require("./utils.cjs");
+const db = require("../db/database.cjs");
 
-/* =========================================================
-   GENERA SITEMAP VIDEO AVANZATA (Google Video)
-========================================================= */
+function escapeCDATA(str) {
+  if (!str) return "";
+  return str.replace(/]]>/g, "]]]]><![CDATA[>");
+}
+
 function generateVideoSitemap() {
   try {
-    const products = Array.isArray(getProducts()) ? getProducts() : [];
+    const stmt = db.prepare(`
+      SELECT 
+        youtube_url,
+        youtube_title,
+        youtube_thumbnail,
+        descrizione_breve,
+        descrizione_lunga
+      FROM prodotti
+      WHERE youtube_url IS NOT NULL
+        AND youtube_url != ''
+      ORDER BY id DESC
+    `);
+
+    const rows = stmt.all();
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
     xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
                    xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">\n`;
 
-    products.forEach(p => {
-      const videoUrl = cleanURL(p?.youtube_last_video_url || p?.youtube_url);
-      const thumb = cleanURL(p?.youtube_thumbnail);
-      const title = safeText(p?.youtube_title || p?.titolo || "");
-      const desc = safeText(p?.youtube_description || p?.descrizioneBreve || "");
-
-      if (!videoUrl) return;
+    rows.forEach(p => {
+      const url = p.youtube_url;
+      const thumb = p.youtube_thumbnail || "";
+      const title = escapeCDATA(p.youtube_title || "");
+      const desc = escapeCDATA(p.descrizione_breve || p.descrizione_lunga || "");
 
       xml += `
   <url>
-    <loc>${videoUrl}</loc>
+    <loc>${url}</loc>
     <video:video>
-      <video:content_loc>${videoUrl}</video:content_loc>
-      <video:player_loc>${videoUrl}</video:player_loc>
+      <video:content_loc>${url}</video:content_loc>
+      <video:player_loc>${url}</video:player_loc>
       <video:title><![CDATA[${title}]]></video:title>
       <video:description><![CDATA[${desc}]]></video:description>
       ${thumb ? `<video:thumbnail_loc>${thumb}</video:thumbnail_loc>` : ""}
@@ -40,7 +57,7 @@ function generateVideoSitemap() {
     return xml;
 
   } catch (err) {
-    console.error("Errore generateVideoSitemap:", err);
+    console.error("❌ Errore generateVideoSitemap:", err);
     return `<?xml version="1.0" encoding="UTF-8"?><urlset></urlset>`;
   }
 }
