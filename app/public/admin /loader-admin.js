@@ -7,7 +7,7 @@ console.log("[ADMIN] Loader admin avviato");
 // ---------------------------------------------------------
 // 1) CARICA HEAD ADMIN
 // ---------------------------------------------------------
-fetch("admin/head-admin.html")
+fetch("head-admin.html")
   .then(r => r.text())
   .then(html => {
     const temp = document.createElement("div");
@@ -22,7 +22,7 @@ fetch("admin/head-admin.html")
 document.addEventListener("auth-ready", () => {
   if (!window.isAdmin) {
     console.warn("[ADMIN] Accesso negato → non sei admin");
-    window.location.href = "index.html";
+    window.location.href = "../index.html";
   } else {
     document.dispatchEvent(new Event("admin-auth-ok"));
   }
@@ -32,7 +32,7 @@ document.addEventListener("auth-ready", () => {
 // 3) CARICA HEADER ADMIN
 // ---------------------------------------------------------
 document.addEventListener("admin-auth-ok", () => {
-  fetch("admin/header-admin.html")
+  fetch("header-admin.html")
     .then(r => r.text())
     .then(html => {
       document.getElementById("header-admin-placeholder").innerHTML = html;
@@ -43,7 +43,7 @@ document.addEventListener("admin-auth-ok", () => {
 // ---------------------------------------------------------
 // 4) CARICA FOOTER ADMIN
 // ---------------------------------------------------------
-fetch("admin/footer-admin.html")
+fetch("footer-admin.html")
   .then(r => r.text())
   .then(html => {
     document.getElementById("footer-admin-placeholder").innerHTML = html;
@@ -63,7 +63,7 @@ document.addEventListener("admin-header-loaded", () => {
     btn.addEventListener("click", () => {
       console.log("[ADMIN] Logout admin");
       localStorage.clear();
-      window.location.href = "index.html";
+      window.location.href = "../index.html";
     });
   }
 });
