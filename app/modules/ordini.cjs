@@ -1,113 +1,133 @@
 /**
  * =========================================================
  * File: app/modules/ordini.cjs
- * Gestione ordini (Airtable) — Model A
+ * Gestione ordini — Versione SQL definitiva
  * =========================================================
  */
 
-const fs = require("fs");
-const path = require("path");
-const Airtable = require("airtable");
-
-const ROOT = path.resolve(__dirname, "..");
-const DATA_DIR = path.join(ROOT, "data");
-const ORDERS_PATH = path.join(DATA_DIR, "orders.json");
-
-const base = new Airtable({ apiKey: process.env.AIRTABLE_PAT })
-  .base(process.env.AIRTABLE_BASE);
-
-const TABLE = "Ordini";
+const db = require("../db/database.cjs");
 
 /* =========================================================
-   FALLBACK LOCALE
-========================================================= */
-function loadOrders() {
-  try {
-    if (!fs.existsSync(ORDERS_PATH)) return [];
-    return JSON.parse(fs.readFileSync(ORDERS_PATH, "utf8"));
-  } catch {
-    return [];
-  }
-}
-
-function saveOrders(orders) {
-  try {
-    fs.writeFileSync(ORDERS_PATH, JSON.stringify(orders, null, 2));
-  } catch (err) {
-    console.error("❌ Errore salvataggio orders.json:", err);
-  }
-}
-
-/* =========================================================
-   CREA ORDINE IN AIRTABLE (MODEL A)
+   CREA ORDINE (SQL)
+   - uid: ID PayPal o sessione
+   - email: email utente
+   - prodotti: array multiprodotto
+   - totale: totale in €
+   - metodo: PayPal / Stripe / altro
 ========================================================= */
 async function createOrder({ uid, email, prodotti, totale, metodo = "PayPal" }) {
   try {
-    const record = await base(TABLE).create({
-      id_ordine: Date.now(), // ID univoco
-      utente: email,
-      prodotti: JSON.stringify(prodotti),
-      totale,
-      data: new Date().toISOString(),
-      stato: "completato",
-      metodo_pagamento: metodo
-    });
+    // 1) Trova utente
+    const utente = db
+      .prepare("SELECT id FROM utenti WHERE email = ?")
+      .get(email);
 
-    return record.id;
+    if (!utente) {
+      throw new Error("Utente non trovato");
+    }
+
+    // 2) Inserisci ordine
+    const result = db.prepare(`
+      INSERT INTO ordini (
+        utente_id,
+        prodotti_json,
+        totale_cent,
+        stato,
+        metodo_pagamento,
+        paypal_transaction_id
+      ) VALUES (?, ?, ?, ?, ?, ?)
+    `).run(
+      utente.id,
+      JSON.stringify(prodotti),
+      Math.round(totale * 100),
+      "completato",
+      metodo,
+      uid
+    );
+
+    return result.lastInsertRowid;
 
   } catch (err) {
-    console.error("❌ Errore createOrder:", err);
+    console.error("❌ Errore createOrder (SQL):", err);
     throw err;
   }
 }
 
 /* =========================================================
-   LISTA ORDINI
+   LISTA ORDINI (SQL)
 ========================================================= */
 async function getAllOrders() {
   try {
-    const records = await base(TABLE).select().all();
+    const rows = db.prepare(`
+      SELECT o.*, u.email AS utente_email
+      FROM ordini o
+      LEFT JOIN utenti u ON u.id = o.utente_id
+      ORDER BY o.id DESC
+    `).all();
 
-    return records.map(r => {
-      let prodotti = [];
-      try {
-        prodotti = JSON.parse(r.get("prodotti") || "[]");
-      } catch {}
-
-      return {
-        id: r.id,
-        id_ordine: r.get("id_ordine"),
-        utente: r.get("utente"),
-        prodotti,
-        totale: r.get("totale"),
-        data: r.get("data"),
-        stato: r.get("stato"),
-        metodo_pagamento: r.get("metodo_pagamento"),
-        paypal_transaction_id: r.get("paypal_transaction_id")
-      };
-    });
+    return rows.map(r => ({
+      id: r.id,
+      id_ordine: r.id, // compatibilità con vecchia UI
+      utente: r.utente_email,
+      prodotti: JSON.parse(r.prodotti_json || "[]"),
+      totale: r.totale_cent / 100,
+      data: r.data_ordine,
+      stato: r.stato,
+      metodo_pagamento: r.metodo_pagamento,
+      paypal_transaction_id: r.paypal_transaction_id
+    }));
 
   } catch (err) {
-    console.error("❌ Errore getAllOrders:", err);
+    console.error("❌ Errore getAllOrders (SQL):", err);
     return [];
   }
 }
 
 /* =========================================================
-   AGGIORNA ORDINE
+   AGGIORNA ORDINE (SQL)
 ========================================================= */
 async function updateOrder(id, fields) {
   try {
-    return await base(TABLE).update(id, fields);
+    const allowed = [
+      "stato",
+      "metodo_pagamento",
+      "paypal_transaction_id",
+      "prodotti_json",
+      "totale_cent"
+    ];
+
+    const updates = [];
+    const values = [];
+
+    for (const key of Object.keys(fields)) {
+      if (allowed.includes(key)) {
+        updates.push(`${key} = ?`);
+        values.push(fields[key]);
+      }
+    }
+
+    if (!updates.length) return false;
+
+    values.push(id);
+
+    db.prepare(`
+      UPDATE ordini
+      SET ${updates.join(", ")},
+          data_ordine = data_ordine
+      WHERE id = ?
+    `).run(values);
+
+    return true;
+
   } catch (err) {
-    console.error("❌ Errore updateOrder:", err);
+    console.error("❌ Errore updateOrder (SQL):", err);
     throw err;
   }
 }
 
 module.exports = {
-  loadOrders,
-  saveOrders,
+  loadOrders: () => [], // mantenuto per compatibilità, non usato più
+  saveOrders: () => {}, // mantenuto per compatibilità, non usato più
   createOrder,
   getAllOrders,
   updateOrder
