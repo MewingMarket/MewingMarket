@@ -1,9 +1,15 @@
 // =========================================================
-// HOME PREMIUM — MewingMarket
-// Versione: Model A + Slider + Novità (SENZA CARRELLO)
+// HOME PREMIUM — MewingMarket (SQL READY)
+// Versione: Slider + Novità (SENZA CARRELLO)
 // =========================================================
 
 document.addEventListener("DOMContentLoaded", async () => {
+
+  // ------------------------------
+  // Nascondi badge carrello in home
+  // ------------------------------
+  const badge = document.getElementById("cart-badge");
+  if (badge) badge.style.display = "none";
 
   // ------------------------------
   // Sanitizzazione
@@ -19,13 +25,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       : "";
 
   function getShortDescription(p) {
-    if (p.descrizione_breve && p.descrizione_breve.trim() !== "") {
-      return clean(p.descrizione_breve);
-    }
-
     const full = p.descrizione || "";
     const short = full.length > 120 ? full.slice(0, 120) + "…" : full;
-
     return clean(short);
   }
 
