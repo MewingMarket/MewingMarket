@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- HEAD ADMIN DINAMICO -->
+  <div id="head-admin-placeholder"></div>
+</head>
+
+<body>
+
+  <!-- HEADER ADMIN DINAMICO -->
+  <div id="header-admin-placeholder"></div>
+
+  <main class="pagina-standard">
+
+    <h1>Dashboard Vendite</h1>
+
+    <!-- KPI PRINCIPALI -->
+    <section class="box-standard">
+      <h2>Panoramica vendite</h2>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>Vendite totali</h3>
+          <p id="kpi-vendite">—</p>
+        </div>
+
+        <div class="stat-card">
+          <h3>Revenue totale</h3>
+          <p id="kpi-revenue">—</p>
+        </div>
+
+        <div class="stat-card">
+          <h3>Prodotti venduti</h3>
+          <p id="kpi-prodotti">—</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- GRAFICO VENDITE -->
+    <section class="box-standard">
+      <h2>Vendite ultimi 30 giorni</h2>
+      <canvas id="grafico-vendite" height="120"></canvas>
+    </section>
+
+    <!-- TOP PRODOTTI -->
+    <section class="box-standard">
+      <h2>Top prodotti</h2>
+
+      <table class="tabella-standard" id="tabella-top-prodotti">
+        <thead>
+          <tr>
+            <th>Prodotto</th>
+            <th>Vendite</th>
+            <th>Revenue</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- PERFORMANCE UTM -->
+    <section class="box-standard">
+      <h2>Performance UTM</h2>
+
+      <table class="tabella-standard" id="tabella-utm">
+        <thead>
+          <tr>
+            <th>Source</th>
+            <th>Medium</th>
+            <th>Campaign</th>
+            <th>Vendite</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+  </main>
+
+  <!-- FOOTER ADMIN DINAMICO -->
+  <div id="footer-admin-placeholder"></div>
+
+  <!-- JS GLOBALI ADMIN -->
+  <script src="loader-admin.js"></script>
+
+  <!-- JS SPECIFICO PAGINA -->
+  <script src="dashboard-vendite.js"></script>
+
+</body>
+</html>
