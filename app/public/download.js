@@ -1,7 +1,7 @@
 /* =========================================================
    FILE: /public/download.js
    DOWNLOAD PREMIUM — MewingMarket
-   Versione corretta: sessione unificata + download sicuri
+   Versione SQL-safe + compatibile con ordini-utente.cjs
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   /* =========================================================
      1) Recupera ordini dell’utente
-  ========================================================= */
+  ========================================================== */
   let data;
   try {
     const res = await fetch("/api/ordini/utente", {
@@ -27,7 +27,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
     data = await res.json();
   } catch (err) {
-    console.error(err);
+    console.error("Errore fetch /ordini/utente:", err);
     body.innerHTML = `<tr><td colspan="3">Errore di connessione.</td></tr>`;
     return;
   }
@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   /* =========================================================
      2) Estrai tutti i prodotti acquistati
-  ========================================================= */
+  ========================================================== */
   const prodotti = [];
 
   data.ordini.forEach(o => {
@@ -61,7 +61,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   /* =========================================================
      3) Mostra prodotti + link download sicuro
-  ========================================================= */
+  ========================================================== */
   prodotti.forEach(p => {
     const tr = document.createElement("tr");
 
