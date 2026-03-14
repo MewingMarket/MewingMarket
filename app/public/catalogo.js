@@ -1,6 +1,6 @@
 // =========================================================
 // CATALOGO PREMIUM – MewingMarket
-// Versione definitiva: Categorie JSON + Filtri + Carrello Guest
+// Versione SQL definitiva: Categorie JSON + Filtri + Carrello Guest
 // =========================================================
 
 /* =========================================================
@@ -69,13 +69,8 @@ function renderYouTubeLink(p) {
    5) DESCRIZIONE BREVE
 ========================================================= */
 function getShortDescription(p) {
-  if (p.descrizione_breve && p.descrizione_breve.trim() !== "") {
-    return clean(p.descrizione_breve);
-  }
-
   const full = p.descrizione || "";
   const short = full.length > 120 ? full.slice(0, 120) + "…" : full;
-
   return clean(short);
 }
 
