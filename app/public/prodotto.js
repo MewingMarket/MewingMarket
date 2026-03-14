@@ -1,6 +1,6 @@
 // =========================================================
-// PRODOTTO PREMIUM – MewingMarket
-// Versione definitiva: Model A + Carrello Guest + Badge + Checkout Premium
+// PRODOTTO PREMIUM – MewingMarket (SQL READY)
+// Versione definitiva: SQL + YouTube + Correlati + Carrello Premium
 // =========================================================
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -67,7 +67,11 @@ document.addEventListener("DOMContentLoaded", async () => {
      3) HERO
   ========================================================= */
   document.getElementById("product-title").innerText = clean(p.titolo);
-  document.getElementById("product-subtitle").innerText = clean(p.titolo_breve || "");
+
+  // SQL non ha più titolo_breve → lo generiamo noi
+  const subtitle = p.titolo.split(" ").slice(0, 3).join(" ");
+  document.getElementById("product-subtitle").innerText = clean(subtitle);
+
   document.getElementById("product-price").innerText = p.prezzo ? `${p.prezzo}€` : "";
 
   const img = p.immagine || "/placeholder.webp";
@@ -77,7 +81,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   /* =========================================================
      4) VIDEO YOUTUBE
   ========================================================= */
-  const ytURL = safeURL(p.youtube_url || "");
+  const ytURL =
+    safeURL(p.youtube_url) ||
+    safeURL(p.youtube_last_video_url) ||
+    "";
+
   const videoId = extractYouTubeId(ytURL);
 
   if (videoId) {
@@ -91,7 +99,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   /* =========================================================
      5) DESCRIZIONE
   ========================================================= */
-  document.getElementById("product-description").innerHTML = clean(p.descrizione || "");
+  document.getElementById("product-description").textContent =
+    p.descrizione || "";
 
   /* =========================================================
      6) ACQUISTA ORA — checkout single
@@ -130,17 +139,19 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   /* =========================================================
-     8) CORRELATI
+     8) CORRELATI (SQL READY)
+     /api/products NON supporta ?categoria=
+     → li filtriamo lato client
   ========================================================= */
   try {
-    const res = await fetch(`/api/products?categoria=${encodeURIComponent(p.categoria)}`);
+    const res = await fetch(`/api/products`, { cache: "no-store" });
     const data = await res.json();
 
     const relatedBox = document.getElementById("related");
 
     if (data.success && Array.isArray(data.prodotti)) {
       const correlati = data.prodotti
-        .filter((x) => x.slug !== p.slug)
+        .filter((x) => x.slug !== p.slug && x.categoria === p.categoria)
         .slice(0, 4);
 
       relatedBox.innerHTML = correlati.length
