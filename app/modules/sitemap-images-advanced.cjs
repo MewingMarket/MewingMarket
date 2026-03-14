@@ -1,52 +1,64 @@
-// modules/sitemap-images-advanced.cjs — VERSIONE AVANZATA
+/**
+ * =========================================================
+ * File: app/modules/sitemap-images-advanced.cjs
+ * Google Image Sitemap avanzata basata su tabella prodotti (SQL)
+ * =========================================================
+ */
 
-const { getProducts } = require("./airtable-sync.cjs");
-const { cleanURL, safeText } = require("./utils.cjs");
+const db = require("../db/database.cjs");
 
-/* =========================================================
-   GENERA SITEMAP IMMAGINI AVANZATA
-========================================================= */
+function escapeCDATA(str) {
+  if (!str) return "";
+  return str.replace(/]]>/g, "]]]]><![CDATA[>");
+}
+
 function generateAdvancedImagesSitemap() {
   try {
-    const products = Array.isArray(getProducts()) ? getProducts() : [];
+    const stmt = db.prepare(`
+      SELECT 
+        slug,
+        titolo_breve,
+        descrizione_breve,
+        descrizione_lunga,
+        immagine_url,
+        youtube_thumbnail,
+        youtube_title
+      FROM prodotti
+      ORDER BY id DESC
+    `);
+
+    const rows = stmt.all();
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
     xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
                    xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n`;
 
-    products.forEach(p => {
-      const productUrl = cleanURL(`https://www.mewingmarket.it/prodotto.html?slug=${p.slug}`);
-      if (!productUrl) return;
+    rows.forEach(p => {
+      const productUrl = `https://mewingmarket.com/prodotto/${p.slug}`;
 
       xml += `
   <url>
     <loc>${productUrl}</loc>
 `;
 
-      // Immagine principale Payhip
-      if (p.Immagine && Array.isArray(p.Immagine) && p.Immagine[0]?.url) {
-        const img = cleanURL(p.Immagine[0].url);
-        if (img) {
-          xml += `
+      // Immagine principale del prodotto
+      if (p.immagine_url) {
+        xml += `
     <image:image>
-      <image:loc>${img}</image:loc>
-      <image:title><![CDATA[${safeText(p.titolo || "")}]]></image:title>
-      <image:caption><![CDATA[${safeText(p.descrizioneBreve || "")}]]></image:caption>
+      <image:loc>${p.immagine_url}</image:loc>
+      <image:title><![CDATA[${escapeCDATA(p.titolo_breve || "")}]]></image:title>
+      <image:caption><![CDATA[${escapeCDATA(p.descrizione_breve || p.descrizione_lunga || "")}]]></image:caption>
     </image:image>`;
-        }
       }
 
       // Thumbnail YouTube
       if (p.youtube_thumbnail) {
-        const ytImg = cleanURL(p.youtube_thumbnail);
-        if (ytImg) {
-          xml += `
+        xml += `
     <image:image>
-      <image:loc>${ytImg}</image:loc>
-      <image:title><![CDATA[${safeText(p.youtube_title || p.titolo || "")}]]></image:title>
-      <image:caption><![CDATA[${safeText(p.youtube_description || "")}]]></image:caption>
+      <image:loc>${p.youtube_thumbnail}</image:loc>
+      <image:title><![CDATA[${escapeCDATA(p.youtube_title || p.titolo_breve || "")}]]></image:title>
+      <image:caption><![CDATA[${escapeCDATA(p.descrizione_breve || p.descrizione_lunga || "")}]]></image:caption>
     </image:image>`;
-        }
       }
 
       xml += `
@@ -57,7 +69,7 @@ function generateAdvancedImagesSitemap() {
     return xml;
 
   } catch (err) {
-    console.error("Errore generateAdvancedImagesSitemap:", err);
+    console.error("❌ Errore generateAdvancedImagesSitemap:", err);
     return `<?xml version="1.0" encoding="UTF-8"?><urlset></urlset>`;
   }
 }
