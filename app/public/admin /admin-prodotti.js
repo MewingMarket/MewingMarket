@@ -1,5 +1,5 @@
 /* =========================================================
-   ADMIN PRODOTTI — FILE UNICO
+   ADMIN PRODOTTI — FILE UNICO (PATCH SQL)
    Lista + Modifica + Creazione + Upload
 ========================================================= */
 
@@ -13,7 +13,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const fTitolo = document.getElementById("titolo");
   const fDescrizione = document.getElementById("descrizione");
   const fPrezzo = document.getElementById("prezzo");
-  const fCategoria = document.getElementById("categoria");
   const fSlug = document.getElementById("slug");
   const fYoutube = document.getElementById("youtube");
   const fImg = document.getElementById("immagine");
@@ -114,7 +113,6 @@ document.addEventListener("DOMContentLoaded", () => {
       fTitolo.value = p.titolo || "";
       fDescrizione.value = p.descrizione || "";
       fPrezzo.value = p.prezzo || "";
-      fCategoria.value = p.categoria || "";
       fSlug.value = p.slug || "";
       fYoutube.value = p.youtube_url || "";
 
@@ -191,7 +189,6 @@ document.addEventListener("DOMContentLoaded", () => {
       titolo: fTitolo.value.trim(),
       descrizione: fDescrizione.value.trim(),
       prezzo: parseFloat(fPrezzo.value),
-      categoria: fCategoria.value.trim(),
       slug: fSlug.value.trim(),
       youtube_url: fYoutube.value.trim(),
       immagine: immagineURL,
