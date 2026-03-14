@@ -1,6 +1,6 @@
 // =========================================================
-// CHECKOUT PREMIUM – MewingMarket
-// Versione definitiva: login check + single/multi + qty + totale
+// CHECKOUT PREMIUM – MewingMarket (SQL READY)
+// Versione definitiva: login check + multi/single + qty + totale + ordini SQL
 // =========================================================
 
 /* =========================================================
@@ -135,26 +135,14 @@ function renderMultiCheckout() {
 function bindQtyButtons() {
   document.querySelectorAll(".qty-plus").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const slug = btn.dataset.slug;
-      const items = Cart.get();
-      const p = items.find((x) => x.slug === slug);
-      if (!p) return;
-
-      p.qty++;
-      Cart.save(items);
+      Cart.updateQty(btn.dataset.slug, +1);
       renderMultiCheckout();
     });
   });
 
   document.querySelectorAll(".qty-minus").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const slug = btn.dataset.slug;
-      const items = Cart.get();
-      const p = items.find((x) => x.slug === slug);
-      if (!p) return;
-
-      p.qty = Math.max(1, p.qty - 1);
-      Cart.save(items);
+      Cart.updateQty(btn.dataset.slug, -1);
       renderMultiCheckout();
     });
   });
@@ -166,8 +154,7 @@ function bindQtyButtons() {
 function bindRemoveButtons() {
   document.querySelectorAll(".btn-remove").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const slug = btn.dataset.slug;
-      Cart.remove(slug);
+      Cart.remove(btn.dataset.slug);
       renderMultiCheckout();
       aggiornaBadgeCarrello();
     });
@@ -175,20 +162,45 @@ function bindRemoveButtons() {
 }
 
 /* =========================================================
-   7) PAGAMENTO (FAKE / API READY)
+   7) PAGAMENTO (SQL + API ORDINI)
 ========================================================= */
-function pagaOrdine(items) {
+async function pagaOrdine(items) {
   if (!items || !items.length) {
     alert("Nessun prodotto da acquistare.");
     return;
   }
 
-  // Qui integrerai PayPal / Stripe / API backend
-  alert("Ordine completato! Riceverai una email con i dettagli.");
+  const email = getUserEmail(); // funzione già esistente nel tuo sistema
+  const prodotti = Cart.getForCheckout();
+  const totale = Cart.total();
 
-  Cart.clear();
-  aggiornaBadgeCarrello();
+  try {
+    const res = await fetch("/api/ordini/crea", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        prodotti,
+        totale,
+        metodo: "PayPal"
+      })
+    });
 
-  // PATCH: redirect corretto
-  window.location.href = "thankyou.html";
+    const data = await res.json();
+
+    if (!data.success) {
+      alert("Errore durante la creazione dell'ordine.");
+      return;
+    }
+
+    // Ordine salvato correttamente
+    Cart.clear();
+    aggiornaBadgeCarrello();
+
+    window.location.href = "thankyou.html";
+
+  } catch (err) {
+    console.error("Errore pagamento:", err);
+    alert("Errore durante il pagamento.");
+  }
 }
