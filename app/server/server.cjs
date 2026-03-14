@@ -103,10 +103,9 @@ console.log(">> ROOT PATH:", ROOT);
   await wait(300);
   require("./routes/newsletter.cjs")(app);
   await wait(300);
-  require("./routes/sitemap.cjs")(app);
-  await wait(300);
-  require("./routes/sales.cjs")(app);
-  await wait(300);
+  
+  
+  
   require("./routes/meta-feed.cjs")(app);
   await wait(300);
   require("./routes/product-page.cjs")(app);
