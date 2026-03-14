@@ -1,29 +1,43 @@
 /**
  * =========================================================
  * File: app/server/routes/meta-feed.cjs
- * Feed prodotti per Meta / Facebook / Instagram
- * Versione patchata per nuovo store interno
+ * Feed prodotti per Meta / Facebook / Instagram (SQL)
  * =========================================================
  */
 
-const { getProducts } = require("../../modules/airtable-sync.cjs");
+const db = require("../db/database.cjs");
 
 module.exports = function (app) {
-  app.get("/meta/feed", async (req, res) => {
+  app.get("/meta/feed", (req, res) => {
     try {
-      const products = Array.isArray(getProducts()) ? getProducts() : [];
+      // Recupera prodotti dal DB
+      const stmt = db.prepare(`
+        SELECT 
+          id,
+          slug,
+          titolo_breve,
+          descrizione,
+          immagine,
+          prezzo_cent
+        FROM prodotti
+        ORDER BY id DESC
+      `);
 
-      const feed = products.map((p) => ({
+      const prodotti = stmt.all();
+
+      // Costruzione feed Meta
+      const feed = prodotti.map((p) => ({
         id: p.id,
-        title: p.titolo || "",
+        title: p.titolo_breve || "",
         description: p.descrizione || "",
-        url: `https://mewingmarket.com/prodotto/${p.slug || p.id}`,
+        url: `https://mewingmarket.com/prodotto/${p.slug}`,
         image_url: p.immagine || "",
-        price: p.prezzo || 0,
+        price: (p.prezzo_cent / 100).toFixed(2),
         currency: "EUR",
         availability: "in stock"
       }));
 
+      // Log interno
       if (typeof global.logEvent === "function") {
         global.logEvent("meta_feed_generated", { count: feed.length });
       }
