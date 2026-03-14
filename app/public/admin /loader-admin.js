@@ -7,7 +7,7 @@ console.log("[ADMIN] Loader admin avviato");
 // ---------------------------------------------------------
 // 1) CARICA HEAD ADMIN
 // ---------------------------------------------------------
-fetch("head-admin.html")
+fetch("admin/head-admin.html")
   .then(r => r.text())
   .then(html => {
     const temp = document.createElement("div");
@@ -32,7 +32,7 @@ document.addEventListener("auth-ready", () => {
 // 3) CARICA HEADER ADMIN
 // ---------------------------------------------------------
 document.addEventListener("admin-auth-ok", () => {
-  fetch("header-admin.html")
+  fetch("admin/header-admin.html")
     .then(r => r.text())
     .then(html => {
       document.getElementById("header-admin-placeholder").innerHTML = html;
@@ -43,7 +43,7 @@ document.addEventListener("admin-auth-ok", () => {
 // ---------------------------------------------------------
 // 4) CARICA FOOTER ADMIN
 // ---------------------------------------------------------
-fetch("footer-admin.html")
+fetch("admin/footer-admin.html")
   .then(r => r.text())
   .then(html => {
     document.getElementById("footer-admin-placeholder").innerHTML = html;
