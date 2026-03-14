@@ -29,7 +29,9 @@ router.get("/paypal/complete-order", async (req, res) => {
       return res.json({ success: false, error: "OrderId mancante" });
     }
 
+    // =========================================================
     // 1) RECUPERA ORDINE DAL DB
+    // =========================================================
     const stmtFind = db.prepare(`
       SELECT *
       FROM ordini
@@ -48,16 +50,37 @@ router.get("/paypal/complete-order", async (req, res) => {
       return res.json({ success: false, error: "Transazione PayPal mancante" });
     }
 
-    // Se già completato → non toccare
+    // =========================================================
+    // 2) RECUPERA EMAIL UTENTE DAL DB (NO req.user)
+    // =========================================================
+    const stmtUser = db.prepare(`
+      SELECT email
+      FROM utenti
+      WHERE id = ?
+      LIMIT 1
+    `);
+
+    const utente = stmtUser.get(ordine.utente_id);
+    const emailUtente = utente?.email || "";
+
+    // =========================================================
+    // 3) SE GIÀ COMPLETATO → NON DUPLICARE
+    // =========================================================
     if (ordine.stato === "completato") {
       return res.json({
         success: true,
-        order: ordine,
+        order: {
+          ...ordine,
+          prodotti: safeParse(ordine.prodotti_json),
+          totale: ordine.totale_cent / 100
+        },
         message: "Ordine già completato"
       });
     }
 
-    // 2) CATTURA PAGAMENTO PAYPAL
+    // =========================================================
+    // 4) CATTURA PAGAMENTO PAYPAL
+    // =========================================================
     const captureRes = await fetch(
       `https://api-m.paypal.com/v2/checkout/orders/${paypalId}/capture`,
       {
@@ -73,16 +96,18 @@ router.get("/paypal/complete-order", async (req, res) => {
 
     const captureData = await captureRes.json().catch(() => null);
 
-    if (!captureData || !captureData.status) {
+    if (!captureData || captureData.status !== "COMPLETED") {
       return res.json({
         success: false,
-        error: "Errore cattura PayPal"
+        error: "Pagamento non completato"
       });
     }
 
     const paypalCaptureId = captureData.id || null;
 
-    // 3) AGGIORNA ORDINE → COMPLETATO
+    // =========================================================
+    // 5) AGGIORNA ORDINE → COMPLETATO
+    // =========================================================
     const stmtUpdate = db.prepare(`
       UPDATE ordini
       SET stato = 'completato',
@@ -93,7 +118,9 @@ router.get("/paypal/complete-order", async (req, res) => {
 
     stmtUpdate.run(orderId);
 
-    // 4) PREPARA ORDINE PER EMAIL E FRONTEND
+    // =========================================================
+    // 6) PREPARA ORDINE PER EMAIL E FRONTEND
+    // =========================================================
     const prodotti = safeParse(ordine.prodotti_json);
 
     const ordineFinale = {
@@ -109,7 +136,9 @@ router.get("/paypal/complete-order", async (req, res) => {
       paypal_capture_id: paypalCaptureId
     };
 
-    // 5) SALVA VENDITE (una riga per prodotto)
+    // =========================================================
+    // 7) SALVA VENDITE (una riga per prodotto)
+    // =========================================================
     const stmtVendita = db.prepare(`
       INSERT INTO vendite (
         uid,
@@ -136,38 +165,48 @@ router.get("/paypal/complete-order", async (req, res) => {
       );
     }
 
-    // 6) TRACKING GA4
+    // =========================================================
+    // 8) TRACKING GA4
+    // =========================================================
     trackGA4("ordine_completato", {
       ordine_id: ordine.id,
       totale: ordineFinale.totale
     });
 
-    // 7) LOG EVENTO INTERNO
+    // =========================================================
+    // 9) LOG EVENTO INTERNO
+    // =========================================================
     if (typeof global.logEvent === "function") {
       global.logEvent("ordine_completato", ordineFinale);
     }
 
-    // 8) AGGIUNGI UTENTE ALLA LISTA CLIENTI
+    // =========================================================
+    // 10) AGGIUNGI UTENTE ALLA LISTA CLIENTI
+    // =========================================================
     try {
       await inviaEmailLista({
-        email: req.user?.email || "",
+        email: emailUtente,
         listId: LISTA_CLIENTI
       });
     } catch (err) {
       console.error("⚠️ Errore aggiunta lista clienti:", err);
     }
 
-    // 9) INVIA EMAIL DI CONFERMA ORDINE
+    // =========================================================
+    // 11) INVIA EMAIL DI CONFERMA ORDINE
+    // =========================================================
     try {
       await inviaEmailAcquisto({
-        email: req.user?.email || "",
+        email: emailUtente,
         ordine: ordineFinale
       });
     } catch (err) {
       console.error("❌ Errore invio email ordine:", err);
     }
 
-    // 10) RITORNA ORDINE AL FRONTEND
+    // =========================================================
+    // 12) RITORNA ORDINE AL FRONTEND
+    // =========================================================
     return res.json({
       success: true,
       order: ordineFinale
