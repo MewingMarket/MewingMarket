@@ -1,25 +1,31 @@
-// modules/sitemap-youtube.cjs — VERSIONE BLINDATA
+/**
+ * =========================================================
+ * File: app/modules/sitemap-youtube.cjs
+ * Sitemap YouTube basata su tabella prodotti (SQL)
+ * =========================================================
+ */
 
-const { getProducts } = require("./airtable-sync.cjs");
-const { cleanURL, safeText } = require("./utils.cjs");
+const db = require("../db/database.cjs");
 
-/* =========================================================
-   GENERA SITEMAP YOUTUBE (blindata)
-========================================================= */
 function generateYouTubeSitemap() {
   try {
-    const products = Array.isArray(getProducts()) ? getProducts() : [];
+    const stmt = db.prepare(`
+      SELECT youtube_url
+      FROM prodotti
+      WHERE youtube_url IS NOT NULL
+        AND youtube_url != ''
+      ORDER BY id DESC
+    `);
+
+    const rows = stmt.all();
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
     xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
 
-    products.forEach(p => {
-      const url = cleanURL(p?.youtube_last_video_url || p?.youtube_url);
-      if (!url) return;
-
+    rows.forEach(r => {
       xml += `
   <url>
-    <loc>${url}</loc>
+    <loc>${r.youtube_url}</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>`;
@@ -29,7 +35,7 @@ function generateYouTubeSitemap() {
     return xml;
 
   } catch (err) {
-    console.error("Errore generateYouTubeSitemap:", err);
+    console.error("❌ Errore generateYouTubeSitemap:", err);
     return `<?xml version="1.0" encoding="UTF-8"?><urlset></urlset>`;
   }
 }
