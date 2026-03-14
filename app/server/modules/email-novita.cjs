@@ -1,36 +1,37 @@
-// app/server/modules/email-novita.cjs
-const path = require("path");
+/**
+ * =========================================================
+ * File: app/server/modules/email-novita.cjs
+ * Newsletter “Novità” basata su tabella prodotti (SQL)
+ * =========================================================
+ */
+
+const db = require("../db/database.cjs");
 const { inviaEmailLista } = require("./invia-email-lista.cjs");
 const { LISTA_NEWSLETTER } = require("./liste-brevo.cjs");
 const { SENDER_VENDITE } = require("./email-senders.cjs");
-const { getProducts } = require(path.join(__dirname, "airtable-sync.cjs"));
-const { safeText, cleanURL } = require(path.join(__dirname, "utils.cjs"));
 
 /* =========================================================
-   FUNZIONI DI SICUREZZA
+   UTILS
 ========================================================= */
-function safeProducts() {
-  try {
-    const p = getProducts();
-    return Array.isArray(p) ? p : [];
-  } catch (err) {
-    console.error("email-novita: errore getProducts:", err);
-    return [];
-  }
-}
-
 function safeString(v) {
   return typeof v === "string" ? v : (v == null ? "" : String(v));
+}
+
+function escapeHTML(str) {
+  return safeString(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 /* =========================================================
    GENERA HTML NEWSLETTER NOVITÀ
 ========================================================= */
-function generateNovitaHTML(latest) {
-  const titolo = safeString(latest.titoloBreve || latest.titolo);
-  const descrizione = safeString(latest.descrizioneBreve || latest.descrizione || "");
-  const immagine = cleanURL(latest.immagine);
-  const link = cleanURL(latest.linkPayhip);
+function generateNovitaHTML(prod) {
+  const titolo = escapeHTML(prod.titolo_breve || "");
+  const descrizione = escapeHTML(prod.descrizione_breve || prod.descrizione_lunga || "");
+  const immagine = prod.immagine_url || "";
+  const link = `https://mewingmarket.com/prodotto/${prod.slug}`;
 
   return `
 <html lang="it">
@@ -53,15 +54,15 @@ function generateNovitaHTML(latest) {
     Per questo oggi ti presento qualcosa che può davvero spostarti in avanti.
   </p>
 
-  <h2 style="text-align:center; color:#333; margin-top:35px;">🔥 È arrivato “${safeText(titolo)}”</h2>
+  <h2 style="text-align:center; color:#333; margin-top:35px;">🔥 È arrivato “${titolo}”</h2>
 
   <p style="font-size:16px; color:#444;">
-    ${safeText(descrizione)}
+    ${descrizione}
   </p>
 
   <div style="text-align:center; margin:25px 0;">
     <img src="${immagine}" 
-         alt="${safeText(titolo)}" 
+         alt="${titolo}" 
          style="max-width:100%; border-radius:6px;">
   </div>
 
@@ -76,7 +77,7 @@ function generateNovitaHTML(latest) {
 
   <p style="font-size:14px; color:#777; text-align:center;">
     Se non vuoi più ricevere email, puoi disiscriverti qui:<br>
-    <a href="https://mewingmarket.it/disiscriviti.html" style="color:#999; text-decoration:underline;">Disiscriviti</a>
+    <a href="https://mewingmarket.com/disiscriviti.html" style="color:#999; text-decoration:underline;">Disiscriviti</a>
   </p>
 
 </div>
@@ -90,8 +91,15 @@ function generateNovitaHTML(latest) {
 ========================================================= */
 async function inviaEmailNovita({ email }) {
   try {
-    const products = safeProducts();
-    const latest = products.length ? products[products.length - 1] : null;
+    // Recupera l’ultimo prodotto inserito
+    const stmt = db.prepare(`
+      SELECT *
+      FROM prodotti
+      ORDER BY id DESC
+      LIMIT 1
+    `);
+
+    const latest = stmt.get();
 
     if (!latest) {
       return inviaEmailLista({
@@ -103,7 +111,7 @@ async function inviaEmailNovita({ email }) {
       });
     }
 
-    const titolo = safeString(latest.titoloBreve || latest.titolo);
+    const titolo = safeString(latest.titolo_breve || "");
     const oggetto = `✨ Novità: è arrivato “${titolo}”`;
     const html = generateNovitaHTML(latest);
 
@@ -116,7 +124,7 @@ async function inviaEmailNovita({ email }) {
     });
 
   } catch (err) {
-    console.error("email-novita: errore invio:", err);
+    console.error("❌ email-novita: errore invio:", err);
   }
 }
 
