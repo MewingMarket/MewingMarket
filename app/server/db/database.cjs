@@ -8,16 +8,23 @@ const dbPath = "/var/data/mewingmarket.db";
 // Inizializza DB
 const db = new Database(dbPath);
 
-// Path assoluto allo schema SQL dentro il progetto
-const schemaPath = path.join(__dirname, "utenti.sql");
+// Directory dove tieni TUTTI gli schema SQL
+const schemaDir = __dirname;
 
-// Se il DB è nuovo (file appena creato), crea la tabella
-if (fs.existsSync(schemaPath)) {
-  const schema = fs.readFileSync(schemaPath, "utf8");
-  db.exec(schema);
-  console.log("📌 Schema utenti creato o già esistente.");
-} else {
-  console.log("⚠️ File utenti.sql NON trovato:", schemaPath);
-}
+// Carica automaticamente TUTTI i file .sql presenti nella cartella
+const files = fs.readdirSync(schemaDir).filter(f => f.endsWith(".sql"));
+
+console.log("📦 Schema trovati:", files);
+
+files.forEach(file => {
+  const full = path.join(schemaDir, file);
+  try {
+    const sql = fs.readFileSync(full, "utf8");
+    db.exec(sql);
+    console.log("✅ Schema caricato:", file);
+  } catch (err) {
+    console.error("❌ Errore caricando schema", file, err);
+  }
+});
 
 module.exports = db;
