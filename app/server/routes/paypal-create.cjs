@@ -1,42 +1,26 @@
-// =========================================================
-// File: app/server/routes/api-paypal-create.cjs
-// Crea ordine PayPal (solo utenti loggati) + Airtable
-// Versione definitiva (Airtable nuova SDK, blindata)
-// =========================================================
+/**
+ * =========================================================
+ * File: app/server/routes/paypal-create.cjs
+ * Crea ordine PayPal (SQL) + salva ordine in DB
+ * =========================================================
+ */
 
 const express = require("express");
-const Airtable = require("../lib/airtable-wrapper.cjs");
 const fetch = require("node-fetch");
+const db = require("../db/database.cjs");
 const authUser = require("../middleware/auth-user.cjs");
 
 const router = express.Router();
 
-// ---------------------------------------------------------
-// CONFIG AIRTABLE (nuova SDK, blindata)
-// ---------------------------------------------------------
-Airtable.configure({
-  apiKey: process.env.AIRTABLE_PAT
-});
-
-const base = Airtable.base(process.env.AIRTABLE_BASE);
-const TABLE = "Ordini";
-
-// Helper sicuro
-function safeGet(record, field) {
-  try {
-    return record.get(field) ?? null;
-  } catch {
-    return null;
-  }
-}
-
-// =========================================================
-// POST /api/paypal/create-order
-// Protetto da auth-user
-// =========================================================
+/**
+ * =========================================================
+ * POST /api/paypal/create-order
+ * Protetto da auth-user
+ * =========================================================
+ */
 router.post("/paypal/create-order", authUser, async (req, res) => {
   try {
-    const { email, prodotti, totale, mode } = req.body || {};
+    const { email, prodotti, totale } = req.body || {};
 
     if (!email || !Array.isArray(prodotti) || prodotti.length === 0) {
       return res.json({ success: false, error: "Dati ordine mancanti" });
@@ -45,22 +29,30 @@ router.post("/paypal/create-order", authUser, async (req, res) => {
     // MODEL A → prendiamo solo il primo prodotto
     const prodotto = prodotti[0];
 
-    // =========================================================
-    // 1) CREA ORDINE IN AIRTABLE (stato: in_attesa_pagamento)
-    // =========================================================
-    const ordineId = Date.now(); // ID univoco locale
+    const totaleCent = Number(totale || prodotto.prezzo_cent || 0);
+    const totaleEuro = (totaleCent / 100).toFixed(2);
 
-    const record = await base(TABLE).create({
-      id_ordine: ordineId,
-      utente: email,
-      prodotti: JSON.stringify(prodotti),
-      totale: Number(totale || prodotto.prezzo || 0),
-      data: new Date().toISOString(),
-      stato: "in_attesa_pagamento",
-      metodo_pagamento: "PayPal"
-    });
+    // =========================================================
+    // 1) CREA ORDINE NEL DB (stato: in_attesa_pagamento)
+    // =========================================================
+    const stmtInsert = db.prepare(`
+      INSERT INTO ordini (
+        utente_id,
+        prodotti_json,
+        totale_cent,
+        stato,
+        metodo_pagamento,
+        data_ordine
+      ) VALUES (?, ?, ?, 'in_attesa_pagamento', 'PayPal', CURRENT_TIMESTAMP)
+    `);
 
-    const airtableId = record.id;
+    const result = stmtInsert.run(
+      req.user.id,
+      JSON.stringify(prodotti),
+      totaleCent
+    );
+
+    const ordineId = result.lastInsertRowid;
 
     // =========================================================
     // 2) CREA ORDINE PAYPAL (MODEL A)
@@ -79,16 +71,16 @@ router.post("/paypal/create-order", authUser, async (req, res) => {
           intent: "CAPTURE",
           purchase_units: [
             {
-              reference_id: airtableId,
+              reference_id: String(ordineId),
               amount: {
                 currency_code: "EUR",
-                value: Number(totale || prodotto.prezzo || 0).toFixed(2)
+                value: totaleEuro
               }
             }
           ],
           application_context: {
-            return_url: `${process.env.SITE_URL}/thankyou.html?orderId=${airtableId}`,
-            cancel_url: `${process.env.SITE_URL}/cancel.html?orderId=${airtableId}`
+            return_url: `${process.env.SITE_URL}/thankyou.html?orderId=${ordineId}`,
+            cancel_url: `${process.env.SITE_URL}/cancel.html?orderId=${ordineId}`
           }
         })
       }
@@ -103,12 +95,18 @@ router.post("/paypal/create-order", authUser, async (req, res) => {
       });
     }
 
+    const paypalTransactionId = paypalData.id;
+
     // =========================================================
-    // 3) SALVA TRANSACTION ID PAYPAL IN AIRTABLE
+    // 3) SALVA TRANSACTION ID PAYPAL NEL DB
     // =========================================================
-    await base(TABLE).update(airtableId, {
-      paypal_transaction_id: paypalData.id
-    });
+    const stmtUpdate = db.prepare(`
+      UPDATE ordini
+      SET paypal_transaction_id = ?
+      WHERE id = ?
+    `);
+
+    stmtUpdate.run(paypalTransactionId, ordineId);
 
     // =========================================================
     // 4) TROVA LINK APPROVAL PAYPAL
