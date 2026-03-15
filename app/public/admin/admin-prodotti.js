@@ -1,5 +1,5 @@
 /* =========================================================
-   ADMIN PRODOTTI — FILE UNICO (PATCH SQL)
+   ADMIN PRODOTTI — FILE UNICO (PATCH SQL, ID-BASED)
    Lista + Modifica + Creazione + Upload
 ========================================================= */
 
@@ -13,10 +13,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const fTitolo = document.getElementById("titolo");
   const fDescrizione = document.getElementById("descrizione");
   const fPrezzo = document.getElementById("prezzo");
-  const fSlug = document.getElementById("slug");
-  const fYoutube = document.getElementById("youtube");
+
   const fImg = document.getElementById("immagine");
+  const fImgUrl = document.getElementById("immagine-url");
   const fPreview = document.getElementById("preview-img");
+
   const fFileProdotto = document.getElementById("fileProdotto");
   const fStatus = document.getElementById("status");
 
@@ -60,16 +61,21 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
+      if (!Array.isArray(data.prodotti) || data.prodotti.length === 0) {
+        listaBox.innerHTML = "<p>Nessun prodotto presente.</p>";
+        return;
+      }
+
       listaBox.innerHTML = data.prodotti
         .map(
           (p) => `
         <div class="admin-card">
           <img src="${p.immagine || "/placeholder.webp"}" alt="${p.titolo}">
           <div class="admin-card-info">
-            <h3>${p.titolo}</h3>
+            <h3>${p.titolo_breve || p.titolo}</h3>
             <p>${p.prezzo}€</p>
-            <button class="btn-modifica" data-slug="${p.slug}">Modifica</button>
-            <button class="btn-elimina" data-slug="${p.slug}">Elimina</button>
+            <button class="btn-modifica" data-id="${p.id}">Modifica</button>
+            <button class="btn-elimina" data-id="${p.id}">Elimina</button>
           </div>
         </div>
       `
@@ -77,11 +83,11 @@ document.addEventListener("DOMContentLoaded", () => {
         .join("");
 
       document.querySelectorAll(".btn-modifica").forEach((btn) => {
-        btn.addEventListener("click", () => caricaProdotto(btn.dataset.slug));
+        btn.addEventListener("click", () => caricaProdotto(btn.dataset.id));
       });
 
       document.querySelectorAll(".btn-elimina").forEach((btn) => {
-        btn.addEventListener("click", () => eliminaProdotto(btn.dataset.slug));
+        btn.addEventListener("click", () => eliminaProdotto(btn.dataset.id));
       });
 
     } catch (err) {
@@ -91,13 +97,13 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* =========================================================
-     CARICA PRODOTTO PER EDIT
+     CARICA PRODOTTO PER EDIT (ID)
   ========================================================= */
-  async function caricaProdotto(slug) {
-    console.log("[ADMIN] Carico prodotto:", slug);
+  async function caricaProdotto(id) {
+    console.log("[ADMIN] Carico prodotto:", id);
 
     try {
-      const res = await fetch(`/api/products/${slug}`);
+      const res = await fetch(`/api/products/${id}`);
       const data = await res.json();
 
       if (!data.success) {
@@ -111,15 +117,20 @@ document.addEventListener("DOMContentLoaded", () => {
       titoloForm.textContent = "Modifica prodotto";
 
       fTitolo.value = p.titolo || "";
-      fDescrizione.value = p.descrizione || "";
+      fDescrizione.value = p.descrizione_lunga || "";
       fPrezzo.value = p.prezzo || "";
-      fSlug.value = p.slug || "";
-      fYoutube.value = p.youtube_url || "";
+
+      fImg.value = "";
+      fImgUrl.value = p.immagine || "";
 
       if (p.immagine) {
         fPreview.src = p.immagine;
         fPreview.style.display = "block";
+      } else {
+        fPreview.style.display = "none";
       }
+
+      fFileProdotto.value = "";
 
       console.log("[ADMIN] Prodotto caricato:", p);
 
@@ -130,15 +141,15 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* =========================================================
-     ELIMINA PRODOTTO
+     ELIMINA PRODOTTO (ID)
   ========================================================= */
-  async function eliminaProdotto(slug) {
+  async function eliminaProdotto(id) {
     if (!confirm("Eliminare questo prodotto?")) return;
 
-    console.log("[ADMIN] Elimino prodotto:", slug);
+    console.log("[ADMIN] Elimino prodotto:", id);
 
     try {
-      const res = await fetch(`/api/products/${slug}`, {
+      const res = await fetch(`/api/products/${id}`, {
         method: "DELETE"
       });
 
@@ -148,6 +159,12 @@ document.addEventListener("DOMContentLoaded", () => {
         alert("Errore eliminazione prodotto.");
         return;
       }
+
+      prodottoCorrente = null;
+      titoloForm.textContent = "Crea / Modifica prodotto";
+      document.getElementById("form-prodotto").reset();
+      fPreview.style.display = "none";
+      fStatus.textContent = "Prodotto eliminato.";
 
       caricaListaProdotti();
 
@@ -167,7 +184,12 @@ document.addEventListener("DOMContentLoaded", () => {
     let immagineURL = prodottoCorrente?.immagine || "";
     let fileProdottoURL = prodottoCorrente?.fileProdotto || "";
 
-    if (fImg.files.length > 0) {
+    // 1) URL immagine da campo testo ha priorità
+    const urlDiretto = fImgUrl.value.trim();
+    if (urlDiretto) {
+      immagineURL = urlDiretto;
+    } else if (fImg.files.length > 0) {
+      // 2) upload immagine
       try {
         immagineURL = await uploadFile("/api/upload/immagine", fImg.files[0]);
       } catch (err) {
@@ -176,6 +198,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
+    // File prodotto (opzionale)
     if (fFileProdotto.files.length > 0) {
       try {
         fileProdottoURL = await uploadFile("/api/upload/file", fFileProdotto.files[0]);
@@ -186,11 +209,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const payload = {
+      id: prodottoCorrente?.id || null,
       titolo: fTitolo.value.trim(),
-      descrizione: fDescrizione.value.trim(),
+      descrizione_lunga: fDescrizione.value.trim(),
       prezzo: parseFloat(fPrezzo.value),
-      slug: fSlug.value.trim(),
-      youtube_url: fYoutube.value.trim(),
       immagine: immagineURL,
       fileProdotto: fileProdottoURL
     };
@@ -211,8 +233,21 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
+      const p = data.prodotto;
+      prodottoCorrente = p;
+
       fStatus.textContent = "Prodotto salvato.";
+
+      // Aggiorna preview immagine
+      if (p.immagine) {
+        fPreview.src = p.immagine;
+        fPreview.style.display = "block";
+      }
+
+      // Aggiorna lista prodotti
       caricaListaProdotti();
+
+      titoloForm.textContent = "Modifica prodotto";
 
     } catch (err) {
       console.error("[ADMIN] Errore salvataggio:", err);
