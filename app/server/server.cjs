@@ -103,9 +103,6 @@ console.log(">> ROOT PATH:", ROOT);
   await wait(300);
   require("./routes/newsletter.cjs")(app);
   await wait(300);
-  
-  
-  
   require("./routes/meta-feed.cjs")(app);
   await wait(300);
   require("./routes/product-page.cjs")(app);
@@ -167,21 +164,10 @@ console.log(">> ROOT PATH:", ROOT);
       }, 15000);
 
       // =========================================================
-      // SYNC INIZIALE IN BACKGROUND (NON BLOCCA IL SERVER)
+      // SYNC INIZIALE IN BACKGROUND — RIMOSSO AIRTABLE
       // =========================================================
       setTimeout(async () => {
-        try {
-          console.log("⏳ Sync iniziale in background…");
-          const { syncAirtable } = require("../modules/airtable-sync.cjs");
-          const ok = await syncAirtable();
-          if (ok) {
-            console.log("🟢 Sync iniziale completata");
-          } else {
-            console.log("⚠️ Sync iniziale NON completata");
-          }
-        } catch (err) {
-          console.error("❌ Errore sync iniziale:", err);
-        }
+        console.log("⏳ Sync iniziale in background… (Airtable disabilitato)");
       }, 2000);
     });
   }
