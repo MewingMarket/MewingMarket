@@ -182,6 +182,7 @@ async function syncYouTube() {
     SET 
       youtube_url = ?,
       youtube_title = ?,
+      youtube_description = ?,
       youtube_thumbnail = ?,
       updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
@@ -216,6 +217,7 @@ async function syncYouTube() {
     stmtUpdate.run(
       v.url,
       v.title,
+      v.description,
       v.thumbnail,
       prod.id
     );
