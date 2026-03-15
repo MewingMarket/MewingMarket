@@ -1,6 +1,6 @@
 // =========================================================
-// PRODOTTO PREMIUM – MewingMarket (SQL READY)
-// Versione definitiva: SQL + YouTube + Correlati + Carrello Premium
+// PRODOTTO PREMIUM – MewingMarket (SQL READY, ID-BASED)
+// Versione: SQL + YouTube + Correlati + Carrello Premium
 // =========================================================
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -32,13 +32,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
 
   /* =========================================================
-     1) SLUG
+     1) ID
   ========================================================= */
   const urlParams = new URLSearchParams(window.location.search);
-  const slug = urlParams.get("slug");
+  const id = urlParams.get("id");
 
-  if (!slug) {
-    document.getElementById("product-title").innerText = "Slug mancante";
+  if (!id) {
+    document.getElementById("product-title").innerText = "ID mancante";
     return;
   }
 
@@ -47,7 +47,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   ========================================================= */
   let p;
   try {
-    const res = await fetch(`/api/products/${slug}`, { cache: "no-store" });
+    const res = await fetch(`/api/products/${id}`, { cache: "no-store" });
     const data = await res.json();
 
     if (!data.success) {
@@ -68,8 +68,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   ========================================================= */
   document.getElementById("product-title").innerText = clean(p.titolo);
 
-  // SQL non ha più titolo_breve → lo generiamo noi
-  const subtitle = p.titolo.split(" ").slice(0, 3).join(" ");
+  const subtitle = (p.titolo || "").split(" ").slice(0, 3).join(" ");
   document.getElementById("product-subtitle").innerText = clean(subtitle);
 
   document.getElementById("product-price").innerText = p.prezzo ? `${p.prezzo}€` : "";
@@ -81,12 +80,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   /* =========================================================
      4) VIDEO YOUTUBE
   ========================================================= */
-  const ytURL =
-    safeURL(p.youtube_url) ||
-    safeURL(p.youtube_last_video_url) ||
-    "";
-
-  const videoId = extractYouTubeId(ytURL);
+  const ytURL = safeURL(p.youtube_url);
+  const videoId = extractYouTubeId(ytURL || p.youtube_video_id);
 
   if (videoId) {
     const videoSection = document.getElementById("video-section");
@@ -100,23 +95,27 @@ document.addEventListener("DOMContentLoaded", async () => {
      5) DESCRIZIONE
   ========================================================= */
   document.getElementById("product-description").textContent =
-    p.descrizione || "";
+    p.descrizione_lunga || "";
 
   /* =========================================================
      6) ACQUISTA ORA — checkout single
   ========================================================= */
   document.getElementById("btn-acquista").addEventListener("click", () => {
 
-    aggiungiAlCarrello({
-      slug: p.slug,
-      titolo: p.titolo,
-      prezzo: p.prezzo,
-      immagine: p.immagine
-    });
+    if (typeof aggiungiAlCarrello === "function") {
+      aggiungiAlCarrello({
+        id: p.id,
+        titolo: p.titolo,
+        prezzo: p.prezzo,
+        immagine: p.immagine
+      });
+    }
 
-    aggiornaBadgeCarrello();
+    if (typeof aggiornaBadgeCarrello === "function") {
+      aggiornaBadgeCarrello();
+    }
 
-    window.location.href = `checkout.html?slug=${p.slug}`;
+    window.location.href = `checkout.html?id=${p.id}`;
   });
 
   /* =========================================================
@@ -124,24 +123,41 @@ document.addEventListener("DOMContentLoaded", async () => {
   ========================================================= */
   document.getElementById("btn-carrello").addEventListener("click", () => {
 
-    aggiungiAlCarrello({
-      slug: p.slug,
-      titolo: p.titolo,
-      prezzo: p.prezzo,
-      immagine: p.immagine
-    });
+    if (typeof aggiungiAlCarrello === "function") {
+      aggiungiAlCarrello({
+        id: p.id,
+        titolo: p.titolo,
+        prezzo: p.prezzo,
+        immagine: p.immagine
+      });
+    }
 
-    aggiornaBadgeCarrello();
+    if (typeof aggiornaBadgeCarrello === "function") {
+      aggiornaBadgeCarrello();
+    }
 
-    if (!isLogged()) {
+    if (typeof isLogged === "function" && !isLogged()) {
       alert("Per completare l'acquisto dovrai fare login in checkout.");
     }
   });
 
   /* =========================================================
-     8) CORRELATI (SQL READY)
-     /api/products NON supporta ?categoria=
-     → li filtriamo lato client
+     8) RIMUOVI DAL CARRELLO
+  ========================================================= */
+  const btnRemove = document.getElementById("btn-remove-cart");
+  if (btnRemove) {
+    btnRemove.addEventListener("click", () => {
+      if (typeof rimuoviDalCarrello === "function") {
+        rimuoviDalCarrello(p.id);
+      }
+      if (typeof aggiornaBadgeCarrello === "function") {
+        aggiornaBadgeCarrello();
+      }
+    });
+  }
+
+  /* =========================================================
+     9) CORRELATI (filtrati lato client)
   ========================================================= */
   try {
     const res = await fetch(`/api/products`, { cache: "no-store" });
@@ -151,7 +167,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (data.success && Array.isArray(data.prodotti)) {
       const correlati = data.prodotti
-        .filter((x) => x.slug !== p.slug && x.categoria === p.categoria)
+        .filter((x) => x.id !== p.id && x.categoria === p.categoria)
         .slice(0, 4);
 
       relatedBox.innerHTML = correlati.length
@@ -160,8 +176,8 @@ document.addEventListener("DOMContentLoaded", async () => {
               (c) => `
             <div class="product-card">
               <img src="${c.immagine || "/placeholder.webp"}" alt="${clean(c.titolo)}">
-              <h3>${clean(c.titolo)}</h3>
-              <a href="prodotto.html?slug=${clean(c.slug)}" class="btn">Scopri</a>
+              <h3>${clean(c.titolo_breve || c.titolo)}</h3>
+              <a href="prodotto.html?id=${encodeURIComponent(c.id)}" class="btn">Scopri</a>
             </div>
           `
             )
@@ -173,7 +189,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /* =========================================================
-     9) BADGE ALL'AVVIO
+     10) BADGE ALL'AVVIO
   ========================================================= */
   if (typeof aggiornaBadgeCarrello === "function") {
     aggiornaBadgeCarrello();
