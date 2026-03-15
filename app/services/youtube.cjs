@@ -7,7 +7,8 @@
 
 const axios = require("axios");
 const xml2js = require("xml2js");
-const db = require("../db/database.cjs");
+const path = require("path");
+const db = require(path.join(__dirname, "../server/db/database.cjs"));
 
 const PROXY = "https://corsproxy.io/?";
 
