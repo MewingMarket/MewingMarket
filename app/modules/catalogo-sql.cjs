@@ -57,18 +57,15 @@ function generateCategory(titolo, descrizione) {
 
   const text = `${titolo} ${descrizione}`.toLowerCase();
 
-  // match categorie esistenti
   for (const cat of categories) {
     if (text.includes(cat.toLowerCase())) {
       return cat;
     }
   }
 
-  // fallback: prime 2 parole del titolo
   const words = titolo.split(" ");
   const fallback = words.slice(0, 2).join(" ");
 
-  // aggiungi nuova categoria se non esiste
   if (!categories.includes(fallback)) {
     categories.push(fallback);
     categories.sort();
@@ -76,6 +73,27 @@ function generateCategory(titolo, descrizione) {
   }
 
   return fallback;
+}
+
+// =========================================================
+// ESTRAI ID VIDEO YOUTUBE
+// =========================================================
+function extractVideoId(url) {
+  if (!url) return null;
+
+  const patterns = [
+    /v=([^&]+)/,
+    /youtu\.be\/([^?]+)/,
+    /shorts\/([^?]+)/,
+    /embed\/([^?]+)/
+  ];
+
+  for (const p of patterns) {
+    const match = url.match(p);
+    if (match) return match[1];
+  }
+
+  return null;
 }
 
 // =========================================================
@@ -93,7 +111,8 @@ function normalizeProduct(row) {
     fileProdotto: row.file_consegna_url,
     youtube_url: row.youtube_url,
     youtube_title: row.youtube_title,
-    youtube_thumbnail: row.youtube_thumbnail
+    youtube_thumbnail: row.youtube_thumbnail,
+    youtube_video_id: row.youtube_video_id
   };
 }
 
@@ -128,6 +147,8 @@ function saveProduct(data) {
   const slug = data.slug || generateSlug(data.titolo);
   const categoria = generateCategory(data.titolo, data.descrizione);
 
+  const youtubeVideoId = extractVideoId(data.youtube_url);
+
   const existing = db.prepare("SELECT id FROM prodotti WHERE slug = ?").get(slug);
 
   if (existing) {
@@ -140,6 +161,7 @@ function saveProduct(data) {
         immagine_url = ?,
         file_consegna_url = ?,
         youtube_url = ?,
+        youtube_video_id = COALESCE(?, youtube_video_id),
         updated_at = CURRENT_TIMESTAMP
       WHERE slug = ?
     `).run(
@@ -150,6 +172,7 @@ function saveProduct(data) {
       data.immagine,
       data.fileProdotto,
       data.youtube_url,
+      youtubeVideoId,
       slug
     );
 
@@ -159,8 +182,9 @@ function saveProduct(data) {
   const result = db.prepare(`
     INSERT INTO prodotti (
       titolo_breve, slug, prezzo_cent, descrizione_lunga,
-      categoria, immagine_url, file_consegna_url, youtube_url
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      categoria, immagine_url, file_consegna_url,
+      youtube_url, youtube_video_id
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     data.titolo,
     slug,
@@ -169,7 +193,8 @@ function saveProduct(data) {
     categoria,
     data.immagine,
     data.fileProdotto,
-    data.youtube_url
+    data.youtube_url,
+    youtubeVideoId
   );
 
   return { id: result.lastInsertRowid };
