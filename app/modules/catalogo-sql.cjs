@@ -5,7 +5,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const db = require("./server/db/database.cjs");
+const db = require("../server/db/database.cjs");
 
 // Path categories.json
 const ROOT = path.resolve(__dirname, "..");
