@@ -1,6 +1,6 @@
 // =========================================================
 // CATALOGO PREMIUM – MewingMarket
-// Versione SQL definitiva: Categorie JSON + Filtri + Carrello Guest
+// Versione SQL definitiva: Categorie JSON + Filtri + Carrello Guest (ID-based)
 // =========================================================
 
 /* =========================================================
@@ -49,13 +49,8 @@ function safeURL(u) {
    4) VIDEO YOUTUBE
 ========================================================= */
 function renderYouTubeLink(p) {
-  const url =
-    safeURL(p.youtube_url) ||
-    safeURL(p.youtube_last_video_url) ||
-    "";
-
+  const url = safeURL(p.youtube_url);
   if (!url) return "";
-
   return `
     <div class="video-link">
       <a href="${url}" target="_blank" rel="noopener noreferrer">
@@ -69,7 +64,8 @@ function renderYouTubeLink(p) {
    5) DESCRIZIONE BREVE
 ========================================================= */
 function getShortDescription(p) {
-  const full = p.descrizione || "";
+  if (p.descrizione_breve) return clean(p.descrizione_breve);
+  const full = p.descrizione_lunga || "";
   const short = full.length > 120 ? full.slice(0, 120) + "…" : full;
   return clean(short);
 }
@@ -89,29 +85,35 @@ function getImage(p) {
 ========================================================= */
 function cardHTML(p) {
   const img = getImage(p);
-  const titolo = clean(p.titolo || "");
+  const titoloBreve = clean(p.titolo_breve || p.titolo || "");
   const descrizione = getShortDescription(p);
   const prezzo = Number(p.prezzo) || 0;
-  const slug = clean(p.slug || "");
   const categoria = clean(p.categoria || "");
+  const id = p.id;
 
   return `
-    <div class="product-card" data-cat="${categoria}" data-prezzo="${prezzo}">
-      <img src="${img}" alt="${titolo}" loading="lazy">
-      <h2>${titolo}</h2>
+    <div class="product-card" data-cat="${categoria}" data-prezzo="${prezzo}" data-id="${id}">
+      <img src="${img}" alt="${titoloBreve}" loading="lazy">
+      <h2>${titoloBreve}</h2>
       <p>${descrizione}</p>
       <p class="prezzo">€${prezzo}</p>
 
       ${renderYouTubeLink(p)}
 
       <div class="card-buttons">
-        <a href="prodotto.html?slug=${slug}" class="btn">Scopri di più</a>
+        <a href="prodotto.html?id=${encodeURIComponent(id)}" class="btn">Scopri di più</a>
+
         <button class="btn-secondario btn-add-cart" 
-          data-slug="${slug}" 
-          data-title="${titolo}" 
+          data-id="${id}" 
+          data-title="${titoloBreve}" 
           data-price="${prezzo}" 
           data-img="${img}">
           Aggiungi al carrello
+        </button>
+
+        <button class="btn-secondario btn-remove-cart"
+          data-id="${id}">
+          Rimuovi dal carrello
         </button>
       </div>
     </div>
@@ -188,19 +190,21 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /* ------------------------------
-     AGGIUNTA AL CARRELLO
+     AGGIUNTA / RIMOZIONE CARRELLO
   ------------------------------ */
   document.querySelectorAll(".btn-add-cart").forEach(btn => {
     btn.addEventListener("click", () => {
 
       const prodotto = {
-        slug: btn.dataset.slug,
+        id: Number(btn.dataset.id),
         titolo: btn.dataset.title,
         prezzo: Number(btn.dataset.price),
         immagine: btn.dataset.img
       };
 
-      aggiungiAlCarrello(prodotto);
+      if (typeof aggiungiAlCarrello === "function") {
+        aggiungiAlCarrello(prodotto);
+      }
 
       if (typeof aggiornaBadgeCarrello === "function") {
         aggiornaBadgeCarrello();
@@ -208,6 +212,20 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       if (typeof isLogged === "function" && !isLogged()) {
         alert("Per completare l'acquisto dovrai fare login in checkout.");
+      }
+    });
+  });
+
+  document.querySelectorAll(".btn-remove-cart").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = Number(btn.dataset.id);
+
+      if (typeof rimuoviDalCarrello === "function") {
+        rimuoviDalCarrello(id);
+      }
+
+      if (typeof aggiornaBadgeCarrello === "function") {
+        aggiornaBadgeCarrello();
       }
     });
   });
