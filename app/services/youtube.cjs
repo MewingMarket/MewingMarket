@@ -13,6 +13,33 @@ const db = require(path.join(__dirname, "../server/db/database.cjs"));
 const PROXY = "https://corsproxy.io/?";
 
 /* =========================================================
+   FUNZIONE: Estrae ID da qualsiasi URL YouTube
+========================================================= */
+function extractVideoId(url) {
+  if (!url) return null;
+
+  // Formati supportati:
+  // https://www.youtube.com/watch?v=ID
+  // https://youtu.be/ID
+  // https://www.youtube.com/shorts/ID
+  // https://youtube.com/embed/ID
+
+  const patterns = [
+    /v=([^&]+)/,                // watch?v=ID
+    /youtu\.be\/([^?]+)/,       // youtu.be/ID
+    /shorts\/([^?]+)/,          // shorts/ID
+    /embed\/([^?]+)/            // embed/ID
+  ];
+
+  for (const p of patterns) {
+    const match = url.match(p);
+    if (match) return match[1];
+  }
+
+  return null;
+}
+
+/* =========================================================
    API YouTube
 ========================================================= */
 async function fetchChannelVideosAPI() {
@@ -51,120 +78,20 @@ async function fetchChannelVideosAPI() {
 }
 
 /* =========================================================
-   RSS YouTube
-========================================================= */
-async function fetchChannelVideosRSS() {
-  try {
-    const channelId = process.env.YOUTUBE_CHANNEL_ID;
-    if (!channelId) return { success: false, videos: [] };
-
-    const url = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
-
-    const res = await axios.get(PROXY + encodeURIComponent(url), {
-      headers: { "User-Agent": "Mozilla/5.0" }
-    });
-
-    const xml = res.data;
-    const parsed = await xml2js.parseStringPromise(xml, { explicitArray: false });
-
-    const entries = parsed.feed.entry || [];
-    const list = Array.isArray(entries) ? entries : [entries];
-
-    const videos = list.map(e => {
-      const href = e.link?.$.href || "";
-      const videoId = href.split("v=")[1]?.split("&")[0] || "";
-
-      return {
-        videoId,
-        url: href,
-        title: e.title || "",
-        description: e["media:group"]?.["media:description"] || "",
-        thumbnail: e["media:group"]?.["media:thumbnail"]?.$.url || ""
-      };
-    });
-
-    return { success: true, videos };
-
-  } catch (err) {
-    console.error("❌ RSS YouTube fallito:", err?.message);
-    return { success: false, videos: [] };
-  }
-}
-
-/* =========================================================
-   FALLBACK HTML
-========================================================= */
-async function fetchChannelVideosHTML() {
-  try {
-    const channelId = process.env.YOUTUBE_CHANNEL_ID;
-    if (!channelId) return { success: false, videos: [] };
-
-    const url = `https://www.youtube.com/channel/${channelId}/videos`;
-
-    const res = await axios.get(PROXY + encodeURIComponent(url), {
-      headers: { "User-Agent": "Mozilla/5.0" }
-    });
-
-    const html = res.data;
-
-    const match = html.match(/ytInitialData"\]\s*=\s*(\{.*?\});/s);
-    if (!match) return { success: false, videos: [] };
-
-    const json = JSON.parse(match[1]);
-
-    const tabs = json.contents?.twoColumnBrowseResultsRenderer?.tabs;
-    if (!tabs) return { success: false, videos: [] };
-
-    const videoTab = tabs.find(t => t.tabRenderer?.title === "Videos");
-    if (!videoTab) return { success: false, videos: [] };
-
-    const items =
-      videoTab.tabRenderer?.content?.richGridRenderer?.contents || [];
-
-    const videos = [];
-
-    for (const item of items) {
-      const video = item.richItemRenderer?.content?.videoRenderer;
-      if (!video) continue;
-
-      const videoId = video.videoId;
-      const title = video.title?.runs?.[0]?.text || "";
-      const thumbnail =
-        video.thumbnail?.thumbnails?.[video.thumbnail.thumbnails.length - 1]?.url;
-
-      videos.push({
-        videoId,
-        url: `https://www.youtube.com/watch?v=${videoId}`,
-        title,
-        description: "",
-        thumbnail
-      });
-    }
-
-    return { success: true, videos };
-
-  } catch (err) {
-    console.error("❌ HTML fallback fallito:", err?.message);
-    return { success: false, videos: [] };
-  }
-}
-
-/* =========================================================
    SYNC COMPLETO → aggiorna tabella prodotti
 ========================================================= */
 async function syncYouTube() {
   console.log("⏳ Sync YouTube avviato...");
 
   let result = await fetchChannelVideosAPI();
-  if (!result.success || !result.videos.length) result = await fetchChannelVideosRSS();
-  if (!result.success || !result.videos.length) result = await fetchChannelVideosHTML();
-
-  const videos = result.videos || [];
-  if (!videos.length) {
-    console.log("❌ Nessun video trovato.");
+  if (!result.success || !result.videos.length) {
+    console.log("❌ Nessun video trovato via API.");
     return { success: false, count: 0 };
   }
 
+  const videos = result.videos;
+
+  // Prepara statement SQL
   const stmtFind = db.prepare(`
     SELECT id FROM prodotti WHERE youtube_video_id = ?
   `);
@@ -179,8 +106,29 @@ async function syncYouTube() {
     WHERE id = ?
   `);
 
+  const stmtFixMissing = db.prepare(`
+    UPDATE prodotti
+    SET youtube_video_id = ?
+    WHERE id = ?
+  `);
+
   let ok = 0;
 
+  // Recupera tutti i prodotti
+  const prodotti = db.prepare("SELECT id, youtube_url, youtube_video_id FROM prodotti").all();
+
+  // 1) Prima fase: estrai ID mancanti
+  for (const p of prodotti) {
+    if (!p.youtube_video_id && p.youtube_url) {
+      const extracted = extractVideoId(p.youtube_url);
+      if (extracted) {
+        stmtFixMissing.run(extracted, p.id);
+        console.log(`🔧 Aggiunto youtube_video_id per prodotto ${p.id}: ${extracted}`);
+      }
+    }
+  }
+
+  // 2) Seconda fase: aggiorna i prodotti con video trovati
   for (const v of videos) {
     const prod = stmtFind.get(v.videoId);
     if (!prod) continue;
