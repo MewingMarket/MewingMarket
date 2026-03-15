@@ -1,7 +1,7 @@
 /**
  * =========================================================
  * File: app/server/server.cjs
- * Entry point del server — versione DEFINITIVA (NO SYNC)
+ * Entry point del server — versione DEFINITIVA (NO SYNC API)
  * =========================================================
  */
 
@@ -151,23 +151,65 @@ console.log(">> ROOT PATH:", ROOT);
       console.log("====================================\n");
 
       // =========================================================
-      // LOG PERIODICO DEL CONTENUTO DEL DB
+      // LOG PERIODICO DI TUTTE LE TABELLE
       // =========================================================
       const db = require("./db/database.cjs");
-      setInterval(() => {
-        try {
-          const utenti = db.prepare("SELECT * FROM utenti").all();
-          console.log("📌 UTENTI NEL DB:", utenti);
-        } catch (err) {
-          console.log("Errore lettura DB:", err.message);
+
+      const TABLES = [
+        "prodotti",
+        "utenti",
+        "ordini",
+        "vendite"
+      ];
+
+      function normalizeRow(row) {
+        if (!row) return row;
+        const out = {};
+        for (const k of Object.keys(row)) {
+          out[k] = row[k] === null ? null : row[k];
         }
+        return out;
+      }
+
+      setInterval(() => {
+        console.log("\n====================================");
+        console.log("📊 LOG PERIODICO DB");
+        console.log("====================================");
+
+        for (const table of TABLES) {
+          try {
+            const rows = db.prepare(`SELECT * FROM ${table}`).all();
+            const normalized = rows.map(normalizeRow);
+
+            console.log(`\n📌 TABELLA: ${table}`);
+            console.log(`   Conteggio: ${rows.length}`);
+            console.log(`   Contenuto normalizzato:`);
+
+            if (rows.length === 0) {
+              console.log("   → (vuota)");
+            } else {
+              console.log(normalized);
+            }
+
+          } catch (err) {
+            console.log(`❌ Errore lettura tabella ${table}:`, err.message);
+          }
+        }
+
+        console.log("====================================\n");
       }, 15000);
 
       // =========================================================
-      // SYNC INIZIALE IN BACKGROUND — RIMOSSO AIRTABLE
+      // SYNC INIZIALE (YouTube scraping)
       // =========================================================
       setTimeout(async () => {
-        console.log("⏳ Sync iniziale in background… (Airtable disabilitato)");
+        console.log("⏳ Sync iniziale YouTube (scraping)...");
+        try {
+          const { syncYouTube } = require("./services/youtube.cjs");
+          await syncYouTube();
+        } catch (err) {
+          console.error("❌ Errore sync YouTube:", err.message);
+        }
       }, 2000);
     });
   }
