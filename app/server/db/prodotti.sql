@@ -1,22 +1,25 @@
 CREATE TABLE IF NOT EXISTS prodotti (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-  -- Titolo completo (quello che inserisci nel form)
+  -- Titolo completo (inserito nel form)
   titolo TEXT NOT NULL,
 
-  -- Titolo breve (generato automaticamente dal backend)
+  -- Titolo breve (generato automaticamente)
   titolo_breve TEXT,
 
   -- Prezzo in centesimi (es. 990 = 9,90€)
   prezzo_cent INTEGER NOT NULL,
 
-  -- Descrizione breve (generata automaticamente dal backend)
+  -- Descrizione breve (generata automaticamente)
   descrizione_breve TEXT,
 
-  -- Descrizione lunga (quella che inserisci nel form)
+  -- Descrizione lunga (inserita nel form)
   descrizione_lunga TEXT,
 
-  -- Campi YouTube (aggiornati in automatico da youtube.cjs)
+  -- Categoria automatica (generata da titolo + descrizione)
+  categoria TEXT,
+
+  -- Campi YouTube (aggiornati automaticamente da youtube.cjs)
   youtube_url TEXT,
   youtube_title TEXT,
   youtube_thumbnail TEXT,
