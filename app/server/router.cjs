@@ -22,7 +22,7 @@ router.use(require("./routes/paypal-complete.cjs"));
 router.use(require("./routes/paypal-cancel.cjs"));
 
 // ADMIN API (NUOVE)
-router.use(require("./routes/api-admin-analytics.cjs"));
+router.use(require("./routes/admin-analytics.cjs"));         // 🔥 PATCH QUI
 router.use(require("./routes/vendite-admin.cjs"));           // ✔ aggiunto
 
 module.exports = router;
