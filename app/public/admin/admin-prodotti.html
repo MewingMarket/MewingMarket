@@ -39,30 +39,35 @@
 
       <div class="form-standard">
 
+        <!-- TITOLO -->
         <label>Titolo</label>
         <input type="text" id="titolo">
 
+        <!-- DESCRIZIONE LUNGA -->
         <label>Descrizione</label>
         <textarea id="descrizione"></textarea>
 
+        <!-- PREZZO -->
         <label>Prezzo (€)</label>
         <input type="number" id="prezzo" step="0.01">
 
-        <!-- CATEGORIA RIMOSSA -->
+        <!-- SLUG RIMOSSO -->
+        <!-- YOUTUBE RIMOSSO -->
 
-        <label>Slug (URL)</label>
-        <input type="text" id="slug">
-
-        <label>Video YouTube (ID o URL)</label>
-        <input type="text" id="youtube">
-
+        <!-- IMMAGINE -->
         <label>Immagine prodotto</label>
         <input type="file" id="immagine" accept="image/*">
+
+        <!-- URL immagine (imgbb o altro) -->
+        <input type="url" id="immagine-url" placeholder="oppure incolla URL immagine">
+
         <img id="preview-img" class="preview-img" style="display:none;">
 
+        <!-- FILE PRODOTTO -->
         <label>File prodotto (PDF / ZIP / altro)</label>
         <input type="file" id="fileProdotto">
 
+        <!-- SALVA -->
         <button id="btn-salva" class="btn-primario">Salva prodotto</button>
 
         <p id="status" style="margin-top:15px;"></p>
