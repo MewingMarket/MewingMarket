@@ -80,7 +80,7 @@ function makeDescrizioneBreve(descrizione) {
 }
 
 // =========================================================
-– NORMALIZZA PRODOTTO PER FRONTEND
+// NORMALIZZA PRODOTTO PER FRONTEND
 // =========================================================
 function normalizeProduct(row) {
   return {
