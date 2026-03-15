@@ -2,6 +2,7 @@
  * =========================================================
  * File: app/services/youtube.cjs
  * Sync YouTube → aggiorna campi video nella tabella prodotti
+ * SOLO SCRAPING (RSS + HTML) — NESSUNA API
  * =========================================================
  */
 
@@ -18,17 +19,11 @@ const PROXY = "https://corsproxy.io/?";
 function extractVideoId(url) {
   if (!url) return null;
 
-  // Formati supportati:
-  // https://www.youtube.com/watch?v=ID
-  // https://youtu.be/ID
-  // https://www.youtube.com/shorts/ID
-  // https://youtube.com/embed/ID
-
   const patterns = [
-    /v=([^&]+)/,                // watch?v=ID
-    /youtu\.be\/([^?]+)/,       // youtu.be/ID
-    /shorts\/([^?]+)/,          // shorts/ID
-    /embed\/([^?]+)/            // embed/ID
+    /v=([^&]+)/,
+    /youtu\.be\/([^?]+)/,
+    /shorts\/([^?]+)/,
+    /embed\/([^?]+)/
   ];
 
   for (const p of patterns) {
@@ -40,39 +35,77 @@ function extractVideoId(url) {
 }
 
 /* =========================================================
-   API YouTube
+   SCRAPING RSS (feed ufficiale YouTube)
 ========================================================= */
-async function fetchChannelVideosAPI() {
+async function fetchChannelVideosRSS() {
   try {
     const channelId = process.env.YOUTUBE_CHANNEL_ID;
-    const apiKey = process.env.YOUTUBE_API_KEY;
-
-    if (!channelId || !apiKey) {
-      console.error("❌ API YouTube: variabili ambiente mancanti.");
+    if (!channelId) {
+      console.error("❌ RSS: manca YOUTUBE_CHANNEL_ID");
       return { success: false, videos: [] };
     }
 
-    const url = `https://www.googleapis.com/youtube/v3/search?key=${apiKey}&channelId=${channelId}&part=snippet&order=date&maxResults=20`;
-
-    console.log("🌐 API YouTube →", url);
+    const url = `${PROXY}https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+    console.log("🌐 RSS YouTube →", url);
 
     const res = await axios.get(url);
-    const items = res.data?.items || [];
+    const parsed = await xml2js.parseStringPromise(res.data);
 
-    const videos = items
-      .filter(v => v.id?.videoId)
-      .map(v => ({
-        videoId: v.id.videoId,
-        url: `https://www.youtube.com/watch?v=${v.id.videoId}`,
-        title: v.snippet.title || "",
-        description: v.snippet.description || "",
-        thumbnail: v.snippet.thumbnails?.high?.url || ""
-      }));
+    const entries = parsed.feed.entry || [];
+
+    const videos = entries.map(e => ({
+      videoId: e["yt:videoId"][0],
+      url: e.link[0].$.href,
+      title: e.title[0],
+      description: e["media:group"]?.[0]?.["media:description"]?.[0] || "",
+      thumbnail: e["media:group"]?.[0]?.["media:thumbnail"]?.[0]?.$.url || ""
+    }));
 
     return { success: true, videos };
 
   } catch (err) {
-    console.error("❌ API YouTube fallita:", err?.message);
+    console.error("❌ RSS YouTube fallito:", err?.message);
+    return { success: false, videos: [] };
+  }
+}
+
+/* =========================================================
+   SCRAPING HTML (fallback finale)
+========================================================= */
+async function fetchChannelVideosHTML() {
+  try {
+    const channelId = process.env.YOUTUBE_CHANNEL_ID;
+    if (!channelId) {
+      console.error("❌ HTML: manca YOUTUBE_CHANNEL_ID");
+      return { success: false, videos: [] };
+    }
+
+    const url = `${PROXY}https://www.youtube.com/channel/${channelId}/videos`;
+    console.log("🌐 HTML YouTube →", url);
+
+    const res = await axios.get(url);
+    const html = res.data;
+
+    const regex = /"videoId":"(.*?)"/g;
+    const ids = new Set();
+    let match;
+
+    while ((match = regex.exec(html)) !== null) {
+      ids.add(match[1]);
+    }
+
+    const videos = [...ids].map(id => ({
+      videoId: id,
+      url: `https://www.youtube.com/watch?v=${id}`,
+      title: "",
+      description: "",
+      thumbnail: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
+    }));
+
+    return { success: true, videos };
+
+  } catch (err) {
+    console.error("❌ HTML YouTube fallito:", err?.message);
     return { success: false, videos: [] };
   }
 }
@@ -83,15 +116,22 @@ async function fetchChannelVideosAPI() {
 async function syncYouTube() {
   console.log("⏳ Sync YouTube avviato...");
 
-  let result = await fetchChannelVideosAPI();
+  // 1) RSS
+  let result = await fetchChannelVideosRSS();
+
+  // 2) Fallback HTML
   if (!result.success || !result.videos.length) {
-    console.log("❌ Nessun video trovato via API.");
+    console.log("⚠️ RSS vuoto → provo HTML...");
+    result = await fetchChannelVideosHTML();
+  }
+
+  if (!result.success || !result.videos.length) {
+    console.log("❌ Nessun video trovato via scraping.");
     return { success: false, count: 0 };
   }
 
   const videos = result.videos;
 
-  // Prepara statement SQL
   const stmtFind = db.prepare(`
     SELECT id FROM prodotti WHERE youtube_video_id = ?
   `);
@@ -114,10 +154,9 @@ async function syncYouTube() {
 
   let ok = 0;
 
-  // Recupera tutti i prodotti
   const prodotti = db.prepare("SELECT id, youtube_url, youtube_video_id FROM prodotti").all();
 
-  // 1) Prima fase: estrai ID mancanti
+  // 1) Estrai ID mancanti
   for (const p of prodotti) {
     if (!p.youtube_video_id && p.youtube_url) {
       const extracted = extractVideoId(p.youtube_url);
@@ -128,7 +167,7 @@ async function syncYouTube() {
     }
   }
 
-  // 2) Seconda fase: aggiorna i prodotti con video trovati
+  // 2) Aggiorna prodotti
   for (const v of videos) {
     const prod = stmtFind.get(v.videoId);
     if (!prod) continue;
