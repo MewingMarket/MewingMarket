@@ -35,6 +35,29 @@ function extractVideoId(url) {
 }
 
 /* =========================================================
+   CONTROLLO TABELLA E COLONNE
+========================================================= */
+function tableHasColumn(table, column) {
+  try {
+    const info = db.prepare(`PRAGMA table_info(${table})`).all();
+    return info.some(c => c.name === column);
+  } catch {
+    return false;
+  }
+}
+
+function tableExists(table) {
+  try {
+    const row = db.prepare(
+      `SELECT name FROM sqlite_master WHERE type='table' AND name=?`
+    ).get(table);
+    return !!row;
+  } catch {
+    return false;
+  }
+}
+
+/* =========================================================
    SCRAPING RSS (feed ufficiale YouTube)
 ========================================================= */
 async function fetchChannelVideosRSS() {
@@ -115,6 +138,24 @@ async function fetchChannelVideosHTML() {
 ========================================================= */
 async function syncYouTube() {
   console.log("⏳ Sync YouTube avviato...");
+
+  // 🔒 Controllo tabella
+  if (!tableExists("prodotti")) {
+    console.error("❌ ERRORE: tabella 'prodotti' non trovata.");
+    return { success: false, count: 0 };
+  }
+
+  // 🔒 Controllo colonna id
+  if (!tableHasColumn("prodotti", "id")) {
+    console.error("❌ ERRORE: la tabella 'prodotti' non ha colonna 'id'.");
+    return { success: false, count: 0 };
+  }
+
+  // 🔒 Controllo colonna youtube_video_id
+  if (!tableHasColumn("prodotti", "youtube_video_id")) {
+    console.error("❌ ERRORE: manca colonna youtube_video_id.");
+    return { success: false, count: 0 };
+  }
 
   // 1) RSS
   let result = await fetchChannelVideosRSS();
