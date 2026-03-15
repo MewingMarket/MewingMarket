@@ -1,99 +1,24 @@
 // =========================================================
 // File: app/modules/catalogo-sql.cjs
-// Catalogo prodotti — Versione SQL definitiva
+// Catalogo prodotti — Versione SQL definitiva (ID-based)
 // =========================================================
 
 const fs = require("fs");
 const path = require("path");
 const db = require(path.join(__dirname, "../server/db/database.cjs"));
 
-// Path categories.json
-const ROOT = path.resolve(__dirname, "..");
-const DATA_DIR = path.join(ROOT, "data");
-const CATEGORIES_PATH = path.join(DATA_DIR, "categories.json");
-
 // =========================================================
-// UTILS
+// UTILS — GENERA TITOLO BREVE E DESCRIZIONE BREVE
 // =========================================================
-function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
+function makeTitoloBreve(titolo) {
+  if (!titolo) return "";
+  return titolo.split(" ").slice(0, 6).join(" ");
 }
 
-function saveCategories(categories) {
-  ensureDataDir();
-  fs.writeFileSync(CATEGORIES_PATH, JSON.stringify(categories, null, 2));
-}
-
-function loadCategories() {
-  try {
-    ensureDataDir();
-    if (fs.existsSync(CATEGORIES_PATH)) {
-      return JSON.parse(fs.readFileSync(CATEGORIES_PATH, "utf8"));
-    }
-  } catch {}
-  return [];
-}
-
-// =========================================================
-// GENERA SLUG
-// =========================================================
-function generateSlug(titolo) {
-  return String(titolo || "")
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .substring(0, 80);
-}
-
-// =========================================================
-// GENERA CATEGORIA AUTOMATICA
-// =========================================================
-function generateCategory(titolo, descrizione) {
-  const categories = loadCategories();
-
-  const text = `${titolo} ${descrizione}`.toLowerCase();
-
-  for (const cat of categories) {
-    if (text.includes(cat.toLowerCase())) {
-      return cat;
-    }
-  }
-
-  const words = titolo.split(" ");
-  const fallback = words.slice(0, 2).join(" ");
-
-  if (!categories.includes(fallback)) {
-    categories.push(fallback);
-    categories.sort();
-    saveCategories(categories);
-  }
-
-  return fallback;
-}
-
-// =========================================================
-// ESTRAI ID VIDEO YOUTUBE
-// =========================================================
-function extractVideoId(url) {
-  if (!url) return null;
-
-  const patterns = [
-    /v=([^&]+)/,
-    /youtu\.be\/([^?]+)/,
-    /shorts\/([^?]+)/,
-    /embed\/([^?]+)/
-  ];
-
-  for (const p of patterns) {
-    const match = url.match(p);
-    if (match) return match[1];
-  }
-
-  return null;
+function makeDescrizioneBreve(descrizione) {
+  if (!descrizione) return "";
+  const t = descrizione.trim();
+  return t.length > 160 ? t.slice(0, 160) + "…" : t;
 }
 
 // =========================================================
@@ -102,17 +27,26 @@ function extractVideoId(url) {
 function normalizeProduct(row) {
   return {
     id: row.id,
-    titolo: row.titolo_breve,
-    descrizione: row.descrizione_lunga,
+
+    titolo: row.titolo,
+    titolo_breve: row.titolo_breve,
+
+    descrizione_breve: row.descrizione_breve,
+    descrizione_lunga: row.descrizione_lunga,
+
     prezzo: row.prezzo_cent / 100,
-    categoria: row.categoria,
-    slug: row.slug,
+
     immagine: row.immagine_url,
     fileProdotto: row.file_consegna_url,
+
     youtube_url: row.youtube_url,
     youtube_title: row.youtube_title,
     youtube_thumbnail: row.youtube_thumbnail,
-    youtube_video_id: row.youtube_video_id
+    youtube_description: row.youtube_description,
+    youtube_video_id: row.youtube_video_id,
+
+    created_at: row.created_at,
+    updated_at: row.updated_at
   };
 }
 
@@ -120,124 +54,143 @@ function normalizeProduct(row) {
 // GET ALL PRODUCTS
 // =========================================================
 function getAllProducts() {
-  const rows = db.prepare("SELECT * FROM prodotti ORDER BY id DESC").all();
-  return rows.map(normalizeProduct);
-}
+  const rows = db.prepare(`
+    SELECT *
+    FROM prodotti
+    ORDER BY created_at DESC, id DESC
+  `).all();
 
-// =========================================================
-// GET PRODUCT BY SLUG
-// =========================================================
-function getProductBySlug(slug) {
-  const row = db.prepare("SELECT * FROM prodotti WHERE slug = ?").get(slug);
-  return row ? normalizeProduct(row) : null;
+  return rows.map(normalizeProduct);
 }
 
 // =========================================================
 // GET PRODUCT BY ID
 // =========================================================
 function getProductById(id) {
-  const row = db.prepare("SELECT * FROM prodotti WHERE id = ?").get(id);
+  const row = db.prepare(`
+    SELECT *
+    FROM prodotti
+    WHERE id = ?
+  `).get(id);
+
   return row ? normalizeProduct(row) : null;
 }
 
 // =========================================================
 // SAVE PRODUCT (CREATE OR UPDATE)
+// data: { id?, titolo, descrizione_lunga, prezzo, immagine, fileProdotto }
 // =========================================================
 function saveProduct(data) {
-  const slug = data.slug || generateSlug(data.titolo);
-  const categoria = generateCategory(data.titolo, data.descrizione);
+  const titolo = (data.titolo || "").trim();
+  const descrizione_lunga = (data.descrizione_lunga || "").trim();
+  const prezzoNum = Number(data.prezzo) || 0;
+  const prezzo_cent = Math.round(prezzoNum * 100);
 
-  const youtubeVideoId = extractVideoId(data.youtube_url);
+  const immagine_url = (data.immagine || "").trim() || null;
+  const file_consegna_url = (data.fileProdotto || "").trim() || null;
 
-  const existing = db.prepare("SELECT id FROM prodotti WHERE slug = ?").get(slug);
-
-  if (existing) {
-    db.prepare(`
-      UPDATE prodotti SET
-        titolo_breve = ?,
-        descrizione_lunga = ?,
-        prezzo_cent = ?,
-        categoria = ?,
-        immagine_url = ?,
-        file_consegna_url = ?,
-        youtube_url = ?,
-        youtube_video_id = COALESCE(?, youtube_video_id),
-        updated_at = CURRENT_TIMESTAMP
-      WHERE slug = ?
-    `).run(
-      data.titolo,
-      data.descrizione,
-      Math.round(data.prezzo * 100),
-      categoria,
-      data.immagine,
-      data.fileProdotto,
-      data.youtube_url,
-      youtubeVideoId,
-      slug
-    );
-
-    return { id: existing.id };
+  if (!titolo || !prezzo_cent) {
+    throw new Error("Titolo e prezzo sono obbligatori");
   }
 
-  const result = db.prepare(`
+  const titolo_breve = makeTitoloBreve(titolo);
+  const descrizione_breve = makeDescrizioneBreve(descrizione_lunga);
+
+  const now = new Date().toISOString();
+
+  // UPDATE
+  if (data.id) {
+    db.prepare(`
+      UPDATE prodotti SET
+        titolo = ?,
+        titolo_breve = ?,
+        prezzo_cent = ?,
+        descrizione_breve = ?,
+        descrizione_lunga = ?,
+        immagine_url = ?,
+        file_consegna_url = ?,
+        updated_at = ?
+      WHERE id = ?
+    `).run(
+      titolo,
+      titolo_breve,
+      prezzo_cent,
+      descrizione_breve,
+      descrizione_lunga,
+      immagine_url,
+      file_consegna_url,
+      now,
+      data.id
+    );
+
+    return getProductById(data.id);
+  }
+
+  // CREATE
+  const info = db.prepare(`
     INSERT INTO prodotti (
-      titolo_breve, slug, prezzo_cent, descrizione_lunga,
-      categoria, immagine_url, file_consegna_url,
-      youtube_url, youtube_video_id
+      titolo,
+      titolo_breve,
+      prezzo_cent,
+      descrizione_breve,
+      descrizione_lunga,
+      immagine_url,
+      file_consegna_url,
+      created_at,
+      updated_at
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
-    data.titolo,
-    slug,
-    Math.round(data.prezzo * 100),
-    data.descrizione,
-    categoria,
-    data.immagine,
-    data.fileProdotto,
-    data.youtube_url,
-    youtubeVideoId
+    titolo,
+    titolo_breve,
+    prezzo_cent,
+    descrizione_breve,
+    descrizione_lunga,
+    immagine_url,
+    file_consegna_url,
+    now,
+    now
   );
 
-  return { id: result.lastInsertRowid };
+  return getProductById(info.lastInsertRowid);
 }
 
 // =========================================================
-// DELETE PRODUCT
+// DELETE PRODUCT (ID)
 // =========================================================
-function deleteProduct(slug) {
-  const result = db.prepare("DELETE FROM prodotti WHERE slug = ?").run(slug);
+function deleteProduct(id) {
+  const result = db.prepare(`
+    DELETE FROM prodotti
+    WHERE id = ?
+  `).run(id);
+
   return result.changes > 0;
 }
 
 // =========================================================
-// UPDATE YOUTUBE FIELDS
+// UPDATE YOUTUBE FIELDS (solo youtube.cjs la usa)
 // =========================================================
 function updateProductYouTubeFields(id, fields) {
-  const stmt = db.prepare(`
+  db.prepare(`
     UPDATE prodotti SET
       youtube_url = COALESCE(?, youtube_url),
       youtube_title = COALESCE(?, youtube_title),
       youtube_description = COALESCE(?, youtube_description),
       youtube_thumbnail = COALESCE(?, youtube_thumbnail),
-      youtube_last_video_url = COALESCE(?, youtube_last_video_url),
-      youtube_last_video_title = COALESCE(?, youtube_last_video_title),
+      youtube_video_id = COALESCE(?, youtube_video_id),
       updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
-  `);
-
-  stmt.run(
+  `).run(
     fields.youtube_url,
     fields.youtube_title,
     fields.youtube_description,
     fields.youtube_thumbnail,
-    fields.youtube_last_video_url,
-    fields.youtube_last_video_title,
+    fields.youtube_video_id,
     id
   );
 }
 
 module.exports = {
   getAllProducts,
-  getProductBySlug,
   getProductById,
   saveProduct,
   deleteProduct,
