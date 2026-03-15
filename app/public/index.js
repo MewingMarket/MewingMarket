@@ -1,5 +1,5 @@
 // =========================================================
-// HOME PREMIUM — MewingMarket (SQL READY)
+// HOME PREMIUM — MewingMarket (SQL READY, ID-BASED)
 // Versione: Slider + Novità (SENZA CARRELLO)
 // =========================================================
 
@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       : "";
 
   function getShortDescription(p) {
-    const full = p.descrizione || "";
+    const full = p.descrizione_breve || p.descrizione_lunga || "";
     const short = full.length > 120 ? full.slice(0, 120) + "…" : full;
     return clean(short);
   }
@@ -101,7 +101,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const titolo = clean(p.titolo || "Prodotto");
       const descrizione = getShortDescription(p);
       const prezzo = p.prezzo ? clean(String(p.prezzo)) + " €" : "";
-      const slug = clean(p.slug || "");
+      const id = p.id;
 
       const card = document.createElement("article");
       card.className = "product-card";
@@ -113,7 +113,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         <p class="price">${prezzo}</p>
 
         <div class="card-buttons">
-          <a href="prodotto.html?slug=${encodeURIComponent(slug)}" class="btn">
+          <a href="prodotto.html?id=${encodeURIComponent(id)}" class="btn">
             Scopri
           </a>
         </div>
