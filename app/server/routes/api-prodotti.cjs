@@ -1,6 +1,6 @@
 // =========================================================
 // File: app/server/routes/api-prodotti.cjs
-// Catalogo prodotti — Versione SQL definitiva
+// Catalogo prodotti — Versione SQL definitiva (ID-based)
 // =========================================================
 
 const express = require("express");
@@ -22,27 +22,9 @@ router.get("/products", async (req, res) => {
 });
 
 // =========================================================
-// GET — SINGOLO PRODOTTO PER SLUG (SQL)
+// GET — SINGOLO PRODOTTO PER ID (SQL)
 // =========================================================
-router.get("/products/:slug", async (req, res) => {
-  try {
-    const prodotto = await catalogo.getProductBySlug(req.params.slug);
-
-    if (!prodotto) {
-      return res.json({ success: false, error: "Prodotto non trovato" });
-    }
-
-    return res.json({ success: true, prodotto });
-  } catch (err) {
-    console.error("API /products/:slug ERROR:", err);
-    return res.json({ success: false, error: "Errore server" });
-  }
-});
-
-// =========================================================
-// GET — PRODOTTO PER ID (SQL) — serve per delete
-// =========================================================
-router.get("/products/id/:id", async (req, res) => {
+router.get("/products/:id", async (req, res) => {
   try {
     const prodotto = await catalogo.getProductById(req.params.id);
 
@@ -52,25 +34,26 @@ router.get("/products/id/:id", async (req, res) => {
 
     return res.json({ success: true, prodotto });
   } catch (err) {
-    console.error("API /products/id ERROR:", err);
+    console.error("API /products/:id ERROR:", err);
     return res.json({ success: false, error: "Errore server" });
   }
 });
 
 // =========================================================
 // POST — CREA O MODIFICA PRODOTTO (SQL)
+// body: { id?, titolo, descrizione_lunga, prezzo, immagine, fileProdotto }
 // =========================================================
 router.post("/products/save", async (req, res) => {
   try {
     const data = req.body || {};
 
-    if (!data.titolo || !data.slug) {
-      return res.json({ success: false, error: "Titolo e slug obbligatori" });
+    if (!data.titolo || !data.prezzo) {
+      return res.json({ success: false, error: "Titolo e prezzo obbligatori" });
     }
 
-    const result = await catalogo.saveProduct(data);
+    const prodotto = await catalogo.saveProduct(data);
 
-    return res.json({ success: true, id: result.id });
+    return res.json({ success: true, prodotto });
 
   } catch (err) {
     console.error("API /products/save ERROR:", err);
@@ -79,11 +62,11 @@ router.post("/products/save", async (req, res) => {
 });
 
 // =========================================================
-// DELETE — ELIMINA PRODOTTO (SQL)
+// DELETE — ELIMINA PRODOTTO (SQL) PER ID
 // =========================================================
-router.delete("/products/:slug", async (req, res) => {
+router.delete("/products/:id", async (req, res) => {
   try {
-    const ok = await catalogo.deleteProduct(req.params.slug);
+    const ok = await catalogo.deleteProduct(req.params.id);
 
     if (!ok) {
       return res.json({ success: false, error: "Prodotto non trovato" });
@@ -92,7 +75,7 @@ router.delete("/products/:slug", async (req, res) => {
     return res.json({ success: true });
 
   } catch (err) {
-    console.error("API DELETE /products/:slug ERROR:", err);
+    console.error("API DELETE /products/:id ERROR:", err);
     return res.json({ success: false, error: "Errore server" });
   }
 });
