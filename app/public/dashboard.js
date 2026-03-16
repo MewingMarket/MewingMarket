@@ -5,46 +5,47 @@
 
 console.log("[DASHBOARD] Caricato");
 
+// =========================================================
 // SESSIONE
-function getToken() {
+// =========================================================
+
+function getSession() {
   return localStorage.getItem("session") || "";
 }
 
-function setToken(t) {
-  if (t) {
-    console.log("[DASHBOARD] Salvo nuovo token:", t);
-    localStorage.setItem("session", t);
-  }
+function getEmail() {
+  return localStorage.getItem("utenteEmail") || "";
 }
 
 function setEmail(e) {
   if (e) {
-    console.log("[DASHBOARD] Salvo nuova email:", e);
-    localStorage.setItem("email", e);
+    localStorage.setItem("utenteEmail", e);
   }
 }
 
-let email = localStorage.getItem("email");
-let token = getToken();
+let session = getSession();
+let email = getEmail();
 
-console.log("[DASHBOARD] Token iniziale:", token);
-console.log("[DASHBOARD] Email iniziale:", email);
+console.log("[DASHBOARD] Session:", session);
+console.log("[DASHBOARD] Email:", email);
 
 // LOGIN CHECK
-if (!token || !email) {
-  console.log("[DASHBOARD] Nessun token/email → redirect login");
+if (!session || !email) {
   window.location.href = "login.html?redirect=dashboard.html";
   return;
 }
 
+// =========================================================
 // UI
+// =========================================================
+
 const userEmailEl = document.getElementById("userEmail");
 const usernameEl = document.getElementById("username");
 const sidebarEmail = document.getElementById("sidebarEmail");
 const sidebarUsername = document.getElementById("sidebarUsername");
 
 function refreshUI() {
-  email = localStorage.getItem("email");
+  email = getEmail();
   const username = email.split("@")[0];
 
   if (userEmailEl) userEmailEl.textContent = email;
@@ -52,7 +53,7 @@ function refreshUI() {
   if (sidebarEmail) sidebarEmail.textContent = email;
   if (sidebarUsername) sidebarUsername.textContent = "@" + username;
 
-  console.log("[DASHBOARD] UI aggiornata per:", email);
+  console.log("[DASHBOARD] UI aggiornata:", email);
 }
 
 refreshUI();
@@ -65,9 +66,10 @@ function setMsg(id, text, ok = false) {
   el.classList.add(ok ? "ok" : "err");
 }
 
-/* =========================================================
-   NAVIGAZIONE
-========================================================= */
+// =========================================================
+// NAVIGAZIONE
+// =========================================================
+
 document.getElementById("nav-download")?.addEventListener("click", () => {
   window.location.href = "download.html";
 });
@@ -77,18 +79,14 @@ document.getElementById("nav-ordini")?.addEventListener("click", () => {
 });
 
 document.getElementById("nav-logout")?.addEventListener("click", () => {
-  console.log("[DASHBOARD] Logout manuale");
   localStorage.clear();
   window.location.href = "index.html";
 });
 
-document.getElementById("nav-elimina")?.addEventListener("click", () => {
-  document.getElementById("passwordDelete")?.focus();
-});
+// =========================================================
+// CAMBIO EMAIL — SQL READY
+// =========================================================
 
-/* =========================================================
-   CAMBIO EMAIL — VERSIONE SQL CORRETTA
-========================================================= */
 document.getElementById("btnCambiaEmail")?.addEventListener("click", async () => {
   const nuova_email = document.getElementById("newEmail").value.trim().toLowerCase();
   const password = document.getElementById("passwordEmail").value.trim();
@@ -98,21 +96,18 @@ document.getElementById("btnCambiaEmail")?.addEventListener("click", async () =>
     return;
   }
 
-  console.log("[DASHBOARD] Cambio email → invio dati");
-
   try {
-    const res = await fetch("/api/utenti/cambia-email", {
+    const res = await fetch("/api/auth/change-email", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        nuova_email,
-        password,
-        token
-      })
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${session}`
+      },
+      body: JSON.stringify({ nuova_email, password })
     });
 
     const data = await res.json();
-    console.log("[DASHBOARD] Risposta cambio email:", data);
+    console.log("[DASHBOARD] Cambio email:", data);
 
     if (!data.success) {
       setMsg("msgEmail", data.error || "Errore.");
@@ -121,18 +116,18 @@ document.getElementById("btnCambiaEmail")?.addEventListener("click", async () =>
 
     setEmail(nuova_email);
     refreshUI();
-
     setMsg("msgEmail", "Email aggiornata!", true);
 
   } catch (err) {
-    console.log("[DASHBOARD] Errore cambio email:", err);
+    console.error(err);
     setMsg("msgEmail", "Errore di connessione.");
   }
 });
 
-/* =========================================================
-   CAMBIO PASSWORD — VERSIONE SQL CORRETTA
-========================================================= */
+// =========================================================
+// CAMBIO PASSWORD — SQL READY
+// =========================================================
+
 document.getElementById("btnCambiaPassword")?.addEventListener("click", async () => {
   const password_attuale = document.getElementById("oldPassword").value.trim();
   const nuova_password = document.getElementById("newPassword").value.trim();
@@ -142,21 +137,18 @@ document.getElementById("btnCambiaPassword")?.addEventListener("click", async ()
     return;
   }
 
-  console.log("[DASHBOARD] Cambio password → invio dati");
-
   try {
-    const res = await fetch("/api/utenti/cambia-password", {
+    const res = await fetch("/api/auth/change-password", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        password: password_attuale,
-        nuova_password,
-        token
-      })
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${session}`
+      },
+      body: JSON.stringify({ password_attuale, nuova_password })
     });
 
     const data = await res.json();
-    console.log("[DASHBOARD] Risposta cambio password:", data);
+    console.log("[DASHBOARD] Cambio password:", data);
 
     if (!data.success) {
       setMsg("msgPassword", data.error || "Errore.");
@@ -166,14 +158,15 @@ document.getElementById("btnCambiaPassword")?.addEventListener("click", async ()
     setMsg("msgPassword", "Password aggiornata!", true);
 
   } catch (err) {
-    console.log("[DASHBOARD] Errore cambio password:", err);
+    console.error(err);
     setMsg("msgPassword", "Errore di connessione.");
   }
 });
 
-/* =========================================================
-   ELIMINA ACCOUNT — VERSIONE SQL CORRETTA
-========================================================= */
+// =========================================================
+// ELIMINA ACCOUNT — SQL READY
+// =========================================================
+
 document.getElementById("btnEliminaAccount")?.addEventListener("click", async () => {
   const password = document.getElementById("passwordDelete").value.trim();
 
@@ -186,20 +179,18 @@ document.getElementById("btnEliminaAccount")?.addEventListener("click", async ()
     return;
   }
 
-  console.log("[DASHBOARD] Eliminazione account → invio dati");
-
   try {
-    const res = await fetch("/api/utenti/elimina-account", {
+    const res = await fetch("/api/auth/delete-account", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        password,
-        token
-      })
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${session}`
+      },
+      body: JSON.stringify({ password })
     });
 
     const data = await res.json();
-    console.log("[DASHBOARD] Risposta eliminazione:", data);
+    console.log("[DASHBOARD] Eliminazione account:", data);
 
     if (!data.success) {
       setMsg("msgElimina", data.error || "Errore.");
@@ -214,7 +205,7 @@ document.getElementById("btnEliminaAccount")?.addEventListener("click", async ()
     }, 1000);
 
   } catch (err) {
-    console.log("[DASHBOARD] Errore eliminazione:", err);
+    console.error(err);
     setMsg("msgElimina", "Errore di connessione.");
   }
 });
