@@ -2,7 +2,7 @@
  * =========================================================
  * File: app/services/youtube.cjs
  * Sync YouTube → aggiorna campi video nella tabella prodotti
- * SOLO SCRAPING (RSS + HTML) — NESSUNA API
+ * + Aggiorna JSON mirror (products.json + youtube.json + catalog.json)
  * =========================================================
  */
 
@@ -10,6 +10,7 @@ const axios = require("axios");
 const xml2js = require("xml2js");
 const path = require("path");
 const db = require(path.join(__dirname, "../server/db/database.cjs"));
+const jsonGen = require("../server/modules/generatore-json.cjs");
 
 const PROXY = "https://corsproxy.io/?";
 
@@ -134,7 +135,7 @@ async function fetchChannelVideosHTML() {
 }
 
 /* =========================================================
-   SYNC COMPLETO → aggiorna tabella prodotti
+   SYNC COMPLETO → aggiorna tabella prodotti + JSON mirror
 ========================================================= */
 async function syncYouTube() {
   console.log("⏳ Sync YouTube avviato...");
@@ -226,6 +227,16 @@ async function syncYouTube() {
   }
 
   console.log(`🎥 Sync YouTube completato: ${ok} prodotti aggiornati.`);
+
+  // 🔥 MIRROR JSON AUTOMATICO
+  try {
+    await jsonGen.exportYouTube();
+    await jsonGen.exportProducts();
+    await jsonGen.exportCatalog();
+    console.log("💾 JSON YouTube + prodotti + catalogo aggiornati.");
+  } catch (err) {
+    console.error("⚠️ Errore aggiornamento JSON:", err);
+  }
 
   return { success: true, count: ok };
 }
