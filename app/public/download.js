@@ -1,7 +1,6 @@
 /* =========================================================
    FILE: /public/download.js
-   DOWNLOAD PREMIUM — MewingMarket
-   Versione SQL-safe + compatibile con ordini-utente.cjs
+   DOWNLOAD PREMIUM — SQL READY + ID-based + secure
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -38,7 +37,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /* =========================================================
-     2) Estrai tutti i prodotti acquistati
+     2) Estrai tutti i prodotti acquistati (ID-based)
   ========================================================== */
   const prodotti = [];
 
@@ -47,7 +46,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       o.prodotti.forEach(p => {
         prodotti.push({
           titolo: p.titolo,
-          slug: p.slug,
+          prodotto_id: p.prodotto_id,
           data: o.data
         });
       });
@@ -60,7 +59,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /* =========================================================
-     3) Mostra prodotti + link download sicuro
+     3) Mostra prodotti + link download sicuro (ID + token)
   ========================================================== */
   prodotti.forEach(p => {
     const tr = document.createElement("tr");
@@ -69,7 +68,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       <td>${p.titolo}</td>
       <td>${new Date(p.data).toLocaleDateString("it-IT")}</td>
       <td>
-        <a class="btn-download" href="/api/vendite/download/${p.slug}">
+        <a class="btn-download" 
+           href="/api/vendite/download/${p.prodotto_id}?session=${session}">
           Scarica
         </a>
       </td>
