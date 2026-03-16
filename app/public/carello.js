@@ -142,6 +142,10 @@ function aggiungiAlCarrello(prodotto) {
   Cart.add(prodotto);
 }
 
+function rimuoviDalCarrello(id) {
+  Cart.remove(id);
+}
+
 function aggiornaBadgeCarrello() {
   const badge = document.getElementById("cart-badge");
   if (!badge) return;
