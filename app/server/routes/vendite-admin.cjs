@@ -1,15 +1,19 @@
 /**
  * =========================================================
  * File: app/server/routes/vendite-admin.cjs
- * Lista vendite per Dashboard Admin (SQL)
+ * Lista vendite per Dashboard Admin (JSON mirror)
  * =========================================================
  */
 
 const express = require("express");
-const db = require("../db/database.cjs");
+const fs = require("fs");
+const path = require("path");
 const authUser = require("../middleware/auth-user.cjs");
 
 const router = express.Router();
+
+// Percorso JSON mirror
+const SALES_JSON = path.join(__dirname, "../../public/data/sales.json");
 
 /**
  * =========================================================
@@ -24,28 +28,17 @@ router.get("/admin/vendite", authUser, (req, res) => {
       return res.json({ success: false, error: "Accesso negato" });
     }
 
-    const stmt = db.prepare(`
-      SELECT 
-        v.id,
-        v.uid,
-        v.prodotto_id,
-        v.prezzo_cent,
-        v.origine,
-        v.utm_source,
-        v.utm_campaign,
-        v.utm_medium,
-        v.referrer,
-        v.created_at,
-        p.titolo_breve AS prodotto_titolo
-      FROM vendite v
-      LEFT JOIN prodotti p ON p.id = v.prodotto_id
-      ORDER BY v.id DESC
-    `);
+    // Se il JSON non esiste → nessuna vendita
+    if (!fs.existsSync(SALES_JSON)) {
+      return res.json({
+        success: true,
+        vendite: []
+      });
+    }
 
-    const vendite = stmt.all().map(v => ({
-      ...v,
-      prezzo_euro: (v.prezzo_cent / 100).toFixed(2)
-    }));
+    // Legge vendite dal mirror JSON
+    const raw = fs.readFileSync(SALES_JSON, "utf8");
+    const vendite = JSON.parse(raw);
 
     return res.json({
       success: true,
