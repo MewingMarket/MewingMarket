@@ -1,6 +1,6 @@
 /* =========================================================
    FILE: /public/carrello.js
-   CARRELLO PREMIUM — MODELLO COMANDA RISTORANTE (SQL READY)
+   CARRELLO SQL-READY — MODELLO DEFINITIVO
 ========================================================= */
 
 const Cart = {
@@ -28,18 +28,26 @@ const Cart = {
 
   /* -----------------------------------------
      AGGIUNGI PRODOTTO (qty++)
+     prodotto deve contenere:
+     - id
+     - slug
+     - titolo
+     - prezzo_cent
+     - immagine
   ----------------------------------------- */
   add(product) {
     const items = this.get();
-    const existing = items.find(p => p.slug === product.slug);
+    const existing = items.find(p => p.id === product.id);
 
     if (existing) {
       existing.qty = (existing.qty || 1) + 1;
     } else {
       items.push({
+        id: product.id,
         slug: product.slug,
         titolo: product.titolo,
-        prezzo: Number(product.prezzo),
+        prezzo_cent: product.prezzo_cent,
+        prezzo: product.prezzo_cent / 100,
         immagine: product.immagine,
         qty: 1
       });
@@ -51,23 +59,23 @@ const Cart = {
   /* -----------------------------------------
      RIMUOVI PRODOTTO COMPLETAMENTE
   ----------------------------------------- */
-  remove(slug) {
-    const items = this.get().filter(p => p.slug !== slug);
+  remove(id) {
+    const items = this.get().filter(p => p.id !== id);
     this.save(items);
   },
 
   /* -----------------------------------------
      CAMBIA QUANTITÀ (+1 / -1)
   ----------------------------------------- */
-  updateQty(slug, delta) {
+  updateQty(id, delta) {
     const items = this.get();
-    const p = items.find(i => i.slug === slug);
+    const p = items.find(i => i.id === id);
     if (!p) return;
 
     p.qty = (p.qty || 1) + delta;
 
     if (p.qty <= 0) {
-      this.remove(slug);
+      this.remove(id);
       return;
     }
 
@@ -77,9 +85,9 @@ const Cart = {
   /* -----------------------------------------
      SET QUANTITÀ DIRETTA
   ----------------------------------------- */
-  setQty(slug, qty) {
+  setQty(id, qty) {
     const items = this.get();
-    const p = items.find(i => i.slug === slug);
+    const p = items.find(i => i.id === id);
     if (!p) return;
 
     p.qty = Math.max(1, Number(qty) || 1);
@@ -97,7 +105,7 @@ const Cart = {
      TOTALE €
   ----------------------------------------- */
   total() {
-    return this.get().reduce((sum, p) => sum + p.prezzo * (p.qty || 1), 0);
+    return this.get().reduce((sum, p) => sum + (p.prezzo_cent * p.qty), 0) / 100;
   },
 
   /* -----------------------------------------
@@ -109,15 +117,15 @@ const Cart = {
 
   /* -----------------------------------------
      PAYLOAD PER CHECKOUT SQL
-     (compatibile con ordini-sql.cjs)
+     Compatibile con paypal-create.cjs
   ----------------------------------------- */
   getForCheckout() {
     return this.get().map(p => ({
-      slug: p.slug,
-      titolo: p.titolo,
+      prodotto_id: p.id,
+      prezzo_cent: p.prezzo_cent,
       qty: p.qty,
-      prezzo: p.prezzo,
-      totale: p.prezzo * p.qty
+      titolo: p.titolo,
+      immagine: p.immagine
     }));
   }
 };
