@@ -1,11 +1,12 @@
 /**
  * =========================================================
  * File: app/modules/ordini.cjs
- * Gestione ordini — Versione SQL definitiva
+ * Gestione ordini — Versione SQL definitiva + JSON mirror
  * =========================================================
  */
 
 const db = require("../db/database.cjs");
+const jsonGen = require("../modules/generatore-json.cjs");
 
 /* =========================================================
    CREA ORDINE (SQL)
@@ -45,7 +46,16 @@ async function createOrder({ uid, email, prodotti, totale, metodo = "PayPal" }) 
       uid
     );
 
-    return result.lastInsertRowid;
+    const orderId = result.lastInsertRowid;
+
+    // 🔥 Aggiorna JSON mirror ordini
+    try {
+      await jsonGen.exportOrders();
+    } catch (err) {
+      console.error("⚠️ Errore exportOrders JSON:", err);
+    }
+
+    return orderId;
 
   } catch (err) {
     console.error("❌ Errore createOrder (SQL):", err);
@@ -116,6 +126,13 @@ async function updateOrder(id, fields) {
           data_ordine = data_ordine
       WHERE id = ?
     `).run(values);
+
+    // 🔥 Aggiorna JSON mirror ordini
+    try {
+      await jsonGen.exportOrders();
+    } catch (err) {
+      console.error("⚠️ Errore exportOrders JSON:", err);
+    }
 
     return true;
 
