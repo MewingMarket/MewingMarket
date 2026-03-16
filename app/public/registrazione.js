@@ -1,6 +1,16 @@
+// =========================================================
+// REGISTER — MewingMarket (SQL READY)
+// Crea utente SQL + login automatico + redirect
+// =========================================================
+
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("register-form");
   const statusBox = document.getElementById("status");
+
+  if (!form) return;
+
+  const params = new URLSearchParams(window.location.search);
+  const redirect = params.get("redirect") || "dashboard.html";
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -34,8 +44,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      // INVIO AL BACKEND
-      const res = await fetch("/api/utenti/registrazione", {
+      // INVIO AL BACKEND SQL
+      const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })
@@ -48,12 +58,13 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // SUCCESSO → SALVA TOKEN (corretto)
+      // SUCCESSO → SALVA SESSIONE (token + email)
       if (data.token) {
-        localStorage.setItem("token", data.token);
+        localStorage.setItem("session", data.token);
+        localStorage.setItem("utenteEmail", email);
       }
 
-      // Aggiorna footer dinamico (se presente)
+      // Aggiorna eventuale UI utente
       if (typeof aggiornaFooterUtente === "function") {
         aggiornaFooterUtente();
       }
@@ -62,8 +73,8 @@ document.addEventListener("DOMContentLoaded", () => {
       statusBox.textContent = "Registrazione completata! Reindirizzamento...";
 
       setTimeout(() => {
-        window.location.href = "dashboard.html";
-      }, 1000);
+        window.location.href = redirect;
+      }, 800);
 
     } catch (err) {
       console.error(err);
