@@ -7,8 +7,8 @@
 const express = require("express");
 const router = express.Router();
 
-const catalogo = require("../../modules/catalogo-sql.cjs");
 
+const catalogo = require("../modules/catalogo-sql.cjs");
 // PATCH: nome corretto del generatore
 const jsonGen = require("../modules/generatore-json.cjs");
 
