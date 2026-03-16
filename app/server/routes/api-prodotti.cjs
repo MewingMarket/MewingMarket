@@ -7,7 +7,7 @@
 const express = require("express");
 const router = express.Router();
 
-const catalogo = require("../../modules/catalogo-sql.cjs");
+const catalogo = require("../modules/catalogo-sql.cjs");
 
 const generatore = require("../modules/generatore-json.cjs");
 // =========================================================
