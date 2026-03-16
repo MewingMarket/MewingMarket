@@ -33,7 +33,7 @@ document.getElementById("btnConfirmReset").addEventListener("click", async () =>
   }
 
   try {
-    const res = await fetch("/api/utenti/reset-password-confirm", {
+    const res = await fetch("/api/auth/reset-password-confirm", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token, nuova_password })
@@ -56,6 +56,7 @@ document.getElementById("btnConfirmReset").addEventListener("click", async () =>
     }
 
   } catch (err) {
+    console.error(err);
     msg.textContent = "Errore di connessione.";
     msg.className = "err";
   }
