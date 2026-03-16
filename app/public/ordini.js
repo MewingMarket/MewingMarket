@@ -38,16 +38,21 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /* =========================================================
-     2) Render ordini
+     2) Render ordini (SQL READY)
   ========================================================== */
   data.ordini.forEach(o => {
     const tr = document.createElement("tr");
 
     const prodottiHTML = Array.isArray(o.prodotti)
       ? o.prodotti
-          .map(p => `${p.titolo} (${p.prezzo}€ × ${p.qty || 1})`)
+          .map(p => {
+            const prezzo = (p.prezzo_cent / 100).toFixed(2);
+            return `${p.titolo} (${prezzo}€ × ${p.qty || 1})`;
+          })
           .join("<br>")
       : "-";
+
+    const totaleEuro = (o.totale_cent / 100).toFixed(2);
 
     const annullaBtn =
       o.stato === "completato" || o.stato === "annullato"
@@ -57,7 +62,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     tr.innerHTML = `
       <td>${new Date(o.data).toLocaleDateString("it-IT")}</td>
       <td>${prodottiHTML}</td>
-      <td>${o.totale}€</td>
+      <td>${totaleEuro}€</td>
       <td>${o.stato}</td>
       <td>${annullaBtn}</td>
     `;
@@ -66,7 +71,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   /* =========================================================
-     3) Annulla ordine
+     3) Annulla ordine (SQL READY)
   ========================================================== */
   body.addEventListener("click", async e => {
     if (!e.target.classList.contains("btn-annulla")) return;
