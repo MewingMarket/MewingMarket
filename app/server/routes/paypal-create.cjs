@@ -1,7 +1,7 @@
 /**
  * =========================================================
  * File: app/server/routes/paypal-create.cjs
- * Crea ordine PayPal (SQL) + salva ordine in DB
+ * Crea ordine PayPal (SQL) + salva ordine in DB + JSON mirror
  * =========================================================
  */
 
@@ -9,6 +9,7 @@ const express = require("express");
 const fetch = require("node-fetch");
 const db = require("../db/database.cjs");
 const authUser = require("../middleware/auth-user.cjs");
+const jsonGen = require("../modules/generatore-json.cjs");
 
 const router = express.Router();
 
@@ -29,7 +30,8 @@ router.post("/paypal/create-order", authUser, async (req, res) => {
     // MODEL A → prendiamo solo il primo prodotto
     const prodotto = prodotti[0];
 
-    const totaleCent = Number(totale || prodotto.prezzo_cent || 0);
+    // totale arriva in EURO → convertiamo in centesimi
+    const totaleCent = Math.round(Number(totale) * 100);
     const totaleEuro = (totaleCent / 100).toFixed(2);
 
     // =========================================================
@@ -53,6 +55,13 @@ router.post("/paypal/create-order", authUser, async (req, res) => {
     );
 
     const ordineId = result.lastInsertRowid;
+
+    // 🔥 Aggiorna JSON mirror ordini
+    try {
+      await jsonGen.exportOrders();
+    } catch (err) {
+      console.error("⚠️ Errore exportOrders JSON:", err);
+    }
 
     // =========================================================
     // 2) CREA ORDINE PAYPAL (MODEL A)
@@ -107,6 +116,13 @@ router.post("/paypal/create-order", authUser, async (req, res) => {
     `);
 
     stmtUpdate.run(paypalTransactionId, ordineId);
+
+    // 🔥 Aggiorna JSON mirror ordini
+    try {
+      await jsonGen.exportOrders();
+    } catch (err) {
+      console.error("⚠️ Errore exportOrders JSON:", err);
+    }
 
     // =========================================================
     // 4) TROVA LINK APPROVAL PAYPAL
