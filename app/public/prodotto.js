@@ -71,7 +71,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   const subtitle = (p.titolo || "").split(" ").slice(0, 3).join(" ");
   document.getElementById("product-subtitle").innerText = clean(subtitle);
 
-  document.getElementById("product-price").innerText = p.prezzo ? `${p.prezzo}€` : "";
+  const prezzo_cent = Number(p.prezzo_cent) || 0;
+  const prezzo = prezzo_cent / 100;
+
+  document.getElementById("product-price").innerText = `${prezzo}€`;
 
   const img = p.immagine || "/placeholder.webp";
   document.getElementById("product-image").src = img;
@@ -105,8 +108,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (typeof aggiungiAlCarrello === "function") {
       aggiungiAlCarrello({
         id: p.id,
+        slug: p.slug,
         titolo: p.titolo,
-        prezzo: p.prezzo,
+        prezzo_cent: prezzo_cent,
+        prezzo: prezzo,
         immagine: p.immagine
       });
     }
@@ -126,8 +131,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (typeof aggiungiAlCarrello === "function") {
       aggiungiAlCarrello({
         id: p.id,
+        slug: p.slug,
         titolo: p.titolo,
-        prezzo: p.prezzo,
+        prezzo_cent: prezzo_cent,
+        prezzo: prezzo,
         immagine: p.immagine
       });
     }
