@@ -1,27 +1,34 @@
+// =========================================================
+// RESET EMAIL REQUEST — Versione compatibile backend SQL
+// =========================================================
+
 document.getElementById("btnResetEmail").addEventListener("click", async () => {
   const password = document.getElementById("resetPass").value.trim();
   const msg = document.getElementById("msgResetEmail");
-  const token = localStorage.getItem("session"); // ⭐ PATCH
 
+  const session = localStorage.getItem("session"); // token JWT
+
+  // Validazione password
   if (!password) {
     msg.textContent = "Inserisci la password.";
     msg.className = "err";
     return;
   }
 
-  if (!token) {
-    msg.textContent = "Token mancante. Devi rifare il login.";
+  // Validazione sessione
+  if (!session) {
+    msg.textContent = "Sessione mancante. Devi rifare il login.";
     msg.className = "err";
     return;
   }
 
   try {
-    const res = await fetch("/api/utenti/reset-email-request", {
+    const res = await fetch("/api/auth/reset-email-request", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         password,
-        token   // ⭐ PATCH: invio token al backend
+        session   // ⭐ invio token al backend SQL
       })
     });
 
@@ -36,7 +43,8 @@ document.getElementById("btnResetEmail").addEventListener("click", async () => {
       msg.className = "err";
     }
 
-  } catch {
+  } catch (err) {
+    console.error(err);
     msg.textContent = "Errore di connessione.";
     msg.className = "err";
   }
