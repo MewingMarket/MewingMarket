@@ -8,8 +8,8 @@ const express = require("express");
 const router = express.Router();
 
 const catalogo = require("../../modules/catalogo-sql.cjs");
-const jsonGen = require("../../modules/generatore-json.cjs");
 
+const generatore = require("../modules/generatore-json.cjs");
 // =========================================================
 // GET — LISTA PRODOTTI (SQL)
 // =========================================================
