@@ -1,12 +1,14 @@
 // =========================================================
 // File: app/server/routes/api-prodotti.cjs
 // Catalogo prodotti — Versione SQL definitiva (ID-based)
+// Con mirroring JSON automatico
 // =========================================================
 
 const express = require("express");
 const router = express.Router();
 
 const catalogo = require("../../modules/catalogo-sql.cjs");
+const jsonGen = require("../../modules/generatore-json.cjs");
 
 // =========================================================
 // GET — LISTA PRODOTTI (SQL)
@@ -55,7 +57,13 @@ router.post("/prodotti", async (req, res) => {
     data.immagine = data.immagine || null;
     data.fileProdotto = data.fileProdotto || null;
 
+    // Salva nel DB
     const prodotto = await catalogo.saveProduct(data);
+
+    // 🔥 MIRROR JSON AUTOMATICO
+    await jsonGen.exportProducts();
+    await jsonGen.exportCategories();
+    await jsonGen.exportCatalog();
 
     return res.json(prodotto);
 
@@ -75,6 +83,11 @@ router.delete("/prodotti/:id", async (req, res) => {
     if (!ok) {
       return res.status(404).json({ error: "Prodotto non trovato" });
     }
+
+    // 🔥 MIRROR JSON AUTOMATICO
+    await jsonGen.exportProducts();
+    await jsonGen.exportCategories();
+    await jsonGen.exportCatalog();
 
     return res.json({ ok: true });
 
