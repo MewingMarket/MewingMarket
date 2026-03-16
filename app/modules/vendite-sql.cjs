@@ -1,29 +1,43 @@
 // =========================================================
 // File: app/modules/vendite-sql.cjs
-// Vendite — Versione SQL definitiva
+// Vendite — Versione SQL definitiva + JSON mirror
 // =========================================================
 
 const db = require("../db/database.cjs");
+const jsonGen = require("../modules/generatore-json.cjs");
 
 // =========================================================
 // REGISTRA VENDITA
 // =========================================================
-function registraVendita({ uid, prodotto_id, prezzo_cent, origine, utm_source, utm_campaign, utm_medium, referrer }) {
-  db.prepare(`
-    INSERT INTO vendite (
-      uid, prodotto_id, prezzo_cent, origine,
-      utm_source, utm_campaign, utm_medium, referrer
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
-    uid,
-    prodotto_id,
-    prezzo_cent,
-    origine,
-    utm_source,
-    utm_campaign,
-    utm_medium,
-    referrer
-  );
+async function registraVendita({ uid, prodotto_id, prezzo_cent, origine, utm_source, utm_campaign, utm_medium, referrer }) {
+  try {
+    db.prepare(`
+      INSERT INTO vendite (
+        uid, prodotto_id, prezzo_cent, origine,
+        utm_source, utm_campaign, utm_medium, referrer
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      uid,
+      prodotto_id,
+      prezzo_cent,
+      origine,
+      utm_source,
+      utm_campaign,
+      utm_medium,
+      referrer
+    );
+
+    // 🔥 Aggiorna JSON mirror vendite
+    try {
+      await jsonGen.exportSales();
+    } catch (err) {
+      console.error("⚠️ Errore exportSales JSON:", err);
+    }
+
+  } catch (err) {
+    console.error("❌ Errore registraVendita (SQL):", err);
+    throw err;
+  }
 }
 
 // =========================================================
