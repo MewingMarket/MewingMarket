@@ -1,7 +1,7 @@
 /**
  * =========================================================
  * File: app/server/routes/api-vendite-download.cjs
- * Download sicuro dei prodotti acquistati (SQL)
+ * Download sicuro dei prodotti acquistati (SQL + persistente)
  * =========================================================
  */
 
@@ -11,6 +11,9 @@ const db = require("../db/database.cjs");
 const authUser = require("../middleware/auth-user.cjs");
 
 const router = express.Router();
+
+// Percorso persistente dei file prodotto
+const FILES_DIR = "/var/data/uploads/files";
 
 /**
  * =========================================================
@@ -59,7 +62,7 @@ router.get("/vendite/download/:slug", authUser, (req, res) => {
 
     // 2) Trova il file reale del prodotto
     const stmtProd = db.prepare(`
-      SELECT file_path
+      SELECT fileProdotto
       FROM prodotti
       WHERE slug = ?
       LIMIT 1
@@ -67,14 +70,15 @@ router.get("/vendite/download/:slug", authUser, (req, res) => {
 
     const prodotto = stmtProd.get(slug);
 
-    if (!prodotto || !prodotto.file_path) {
+    if (!prodotto || !prodotto.fileProdotto) {
       return res.status(404).json({
         success: false,
         error: "File non trovato"
       });
     }
 
-    const filePath = path.resolve("app/data/files", prodotto.file_path);
+    // Percorso persistente
+    const filePath = path.join(FILES_DIR, prodotto.fileProdotto);
 
     // 3) Invia il file in download
     return res.download(filePath, err => {
