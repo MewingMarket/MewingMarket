@@ -1,15 +1,19 @@
 /**
  * =========================================================
  * File: app/server/routes/ordini-admin.cjs
- * Lista ordini per Dashboard Admin (SQL)
+ * Lista ordini per Dashboard Admin (JSON mirror)
  * =========================================================
  */
 
 const express = require("express");
-const db = require("../db/database.cjs");
+const fs = require("fs");
+const path = require("path");
 const authUser = require("../middleware/auth-user.cjs");
 
 const router = express.Router();
+
+// Percorso JSON mirror
+const ORDERS_JSON = path.join(__dirname, "../../public/data/orders.json");
 
 /**
  * =========================================================
@@ -24,29 +28,16 @@ router.get("/admin/ordini", authUser, (req, res) => {
       return res.json({ success: false, error: "Accesso negato" });
     }
 
-    // Query ordini
-    const stmt = db.prepare(`
-      SELECT 
-        id,
-        utente_id,
-        prodotti_json,
-        totale_cent,
-        stato,
-        metodo_pagamento,
-        paypal_transaction_id,
-        data_ordine
-      FROM ordini
-      ORDER BY id DESC
-    `);
+    // Legge il JSON mirror
+    if (!fs.existsSync(ORDERS_JSON)) {
+      return res.json({
+        success: true,
+        ordini: []
+      });
+    }
 
-    const rows = stmt.all();
-
-    // Parsing prodotti_json
-    const ordini = rows.map(o => ({
-      ...o,
-      prodotti: safeParse(o.prodotti_json),
-      totale_euro: (o.totale_cent / 100).toFixed(2)
-    }));
+    const raw = fs.readFileSync(ORDERS_JSON, "utf8");
+    const ordini = JSON.parse(raw);
 
     return res.json({
       success: true,
@@ -58,16 +49,5 @@ router.get("/admin/ordini", authUser, (req, res) => {
     return res.json({ success: false, error: "Errore server" });
   }
 });
-
-/**
- * Helper sicuro per JSON
- */
-function safeParse(str) {
-  try {
-    return JSON.parse(str);
-  } catch {
-    return [];
-  }
-}
 
 module.exports = router;
