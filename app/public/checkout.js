@@ -1,6 +1,6 @@
 // =========================================================
-// CHECKOUT PREMIUM – MewingMarket (SQL READY)
-// Versione definitiva: login check + multi/single + qty + totale + ordini SQL
+// CHECKOUT PREMIUM – MewingMarket (SQL + PAYPAL READY)
+// Versione definitiva: login check + multi/single + qty + totale + PayPal
 // =========================================================
 
 /* =========================================================
@@ -9,10 +9,10 @@
 document.addEventListener("DOMContentLoaded", () => {
   if (!isLogged()) {
     const params = new URLSearchParams(window.location.search);
-    const slug = params.get("slug");
+    const id = params.get("id");
 
-    const redirectURL = slug
-      ? `login.html?redirect=checkout.html?slug=${slug}`
+    const redirectURL = id
+      ? `login.html?redirect=checkout.html?id=${id}`
       : `login.html?redirect=checkout.html`;
 
     window.location.href = redirectURL;
@@ -49,6 +49,8 @@ function renderSingleCheckout() {
     return;
   }
 
+  const prezzo = prodotto.prezzo_cent / 100;
+
   document.getElementById("checkout-container").innerHTML = `
     <h2>Checkout — Acquisto Singolo</h2>
 
@@ -56,15 +58,15 @@ function renderSingleCheckout() {
       <img src="${prodotto.immagine}" alt="${prodotto.titolo}">
       <div>
         <h3>${prodotto.titolo}</h3>
-        <p>Prezzo: €${prodotto.prezzo}</p>
+        <p>Prezzo: €${prezzo}</p>
       </div>
     </div>
 
     <div class="checkout-totale">
-      <h3>Totale: €${prodotto.prezzo}</h3>
+      <h3>Totale: €${prezzo}</h3>
     </div>
 
-    <button id="btn-paga" class="btn-primario">Paga ora</button>
+    <button id="btn-paga" class="btn-primario">Paga con PayPal</button>
   `;
 
   document.getElementById("btn-paga").addEventListener("click", () => {
@@ -90,21 +92,23 @@ function renderMultiCheckout() {
   `;
 
   items.forEach((p) => {
+    const prezzo = p.prezzo_cent / 100;
+
     html += `
-      <div class="checkout-item" data-slug="${p.slug}">
+      <div class="checkout-item" data-id="${p.id}">
         <img src="${p.immagine}" alt="${p.titolo}">
         <div class="info">
           <h3>${p.titolo}</h3>
-          <p>Prezzo: €${p.prezzo}</p>
+          <p>Prezzo: €${prezzo}</p>
 
           <div class="qty-box">
-            <button class="qty-minus" data-slug="${p.slug}">-</button>
+            <button class="qty-minus" data-id="${p.id}">-</button>
             <span class="qty">${p.qty}</span>
-            <button class="qty-plus" data-slug="${p.slug}">+</button>
+            <button class="qty-plus" data-id="${p.id}">+</button>
           </div>
         </div>
 
-        <button class="btn-remove" data-slug="${p.slug}">Rimuovi</button>
+        <button class="btn-remove" data-id="${p.id}">Rimuovi</button>
       </div>
     `;
   });
@@ -116,7 +120,7 @@ function renderMultiCheckout() {
       <h3>Totale: €${Cart.total()}</h3>
     </div>
 
-    <button id="btn-paga" class="btn-primario">Paga ora</button>
+    <button id="btn-paga" class="btn-primario">Paga con PayPal</button>
   `;
 
   document.getElementById("checkout-container").innerHTML = html;
@@ -135,14 +139,14 @@ function renderMultiCheckout() {
 function bindQtyButtons() {
   document.querySelectorAll(".qty-plus").forEach((btn) => {
     btn.addEventListener("click", () => {
-      Cart.updateQty(btn.dataset.slug, +1);
+      Cart.updateQty(Number(btn.dataset.id), +1);
       renderMultiCheckout();
     });
   });
 
   document.querySelectorAll(".qty-minus").forEach((btn) => {
     btn.addEventListener("click", () => {
-      Cart.updateQty(btn.dataset.slug, -1);
+      Cart.updateQty(Number(btn.dataset.id), -1);
       renderMultiCheckout();
     });
   });
@@ -154,7 +158,7 @@ function bindQtyButtons() {
 function bindRemoveButtons() {
   document.querySelectorAll(".btn-remove").forEach((btn) => {
     btn.addEventListener("click", () => {
-      Cart.remove(btn.dataset.slug);
+      Cart.remove(Number(btn.dataset.id));
       renderMultiCheckout();
       aggiornaBadgeCarrello();
     });
@@ -162,7 +166,7 @@ function bindRemoveButtons() {
 }
 
 /* =========================================================
-   7) PAGAMENTO (SQL + API ORDINI)
+   7) PAGAMENTO (SQL + PAYPAL)
 ========================================================= */
 async function pagaOrdine(items) {
   if (!items || !items.length) {
@@ -170,34 +174,30 @@ async function pagaOrdine(items) {
     return;
   }
 
-  const email = getUserEmail(); // funzione già esistente nel tuo sistema
+  const email = getUserEmail();
   const prodotti = Cart.getForCheckout();
-  const totale = Cart.total();
+  const totale = Cart.total(); // EURO
 
   try {
-    const res = await fetch("/api/ordini/crea", {
+    const res = await fetch("/api/paypal/create-order", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         email,
         prodotti,
-        totale,
-        metodo: "PayPal"
+        totale
       })
     });
 
     const data = await res.json();
 
-    if (!data.success) {
-      alert("Errore durante la creazione dell'ordine.");
+    if (!data.success || !data.paypalUrl) {
+      alert("Errore durante la creazione dell'ordine PayPal.");
       return;
     }
 
-    // Ordine salvato correttamente
-    Cart.clear();
-    aggiornaBadgeCarrello();
-
-    window.location.href = "thankyou.html";
+    // Redirect PayPal
+    window.location.href = data.paypalUrl;
 
   } catch (err) {
     console.error("Errore pagamento:", err);
