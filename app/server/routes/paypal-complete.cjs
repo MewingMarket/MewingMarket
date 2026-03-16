@@ -1,7 +1,7 @@
 /**
  * =========================================================
  * File: app/server/routes/paypal-complete.cjs
- * Completa ordine PayPal (SQL) + email + tracking + vendite
+ * Completa ordine PayPal (SQL) + email + tracking + vendite + JSON mirror
  * =========================================================
  */
 
@@ -13,6 +13,7 @@ const { inviaEmailAcquisto } = require("../modules/email-acquisto.cjs");
 const { inviaEmailLista } = require("../modules/invia-email-lista.cjs");
 const { LISTA_CLIENTI } = require("../modules/liste-brevo.cjs");
 const { trackGA4 } = require("../services/ga4.cjs");
+const jsonGen = require("../modules/generatore-json.cjs");
 
 const router = express.Router();
 
@@ -118,6 +119,13 @@ router.get("/paypal/complete-order", async (req, res) => {
 
     stmtUpdate.run(orderId);
 
+    // 🔥 Aggiorna JSON mirror ordini
+    try {
+      await jsonGen.exportOrders();
+    } catch (err) {
+      console.error("⚠️ Errore exportOrders JSON:", err);
+    }
+
     // =========================================================
     // 6) PREPARA ORDINE PER EMAIL E FRONTEND
     // =========================================================
@@ -163,6 +171,13 @@ router.get("/paypal/complete-order", async (req, res) => {
         null,
         null
       );
+    }
+
+    // 🔥 Aggiorna JSON mirror vendite
+    try {
+      await jsonGen.exportSales();
+    } catch (err) {
+      console.error("⚠️ Errore exportSales JSON:", err);
     }
 
     // =========================================================
