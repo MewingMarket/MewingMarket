@@ -32,7 +32,7 @@ document.getElementById("btnConfirmEmail").addEventListener("click", async () =>
   }
 
   try {
-    const res = await fetch("/api/utenti/reset-email-confirm", {
+    const res = await fetch("/api/auth/reset-email-confirm", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token, nuova_email })
@@ -42,10 +42,11 @@ document.getElementById("btnConfirmEmail").addEventListener("click", async () =>
     console.log("[RESET EMAIL CONFIRM]", data);
 
     if (data.success) {
-      // ⭐ PATCH: aggiorna localStorage
-      localStorage.setItem("email", nuova_email);
 
-      // ⭐ PATCH: invalida sessione
+      // ⭐ Aggiorna email utente
+      localStorage.setItem("utenteEmail", nuova_email);
+
+      // ⭐ Invalida sessione (obbligatorio)
       localStorage.removeItem("session");
 
       msg.textContent = "Email aggiornata correttamente! Verrai reindirizzato al login...";
@@ -62,6 +63,7 @@ document.getElementById("btnConfirmEmail").addEventListener("click", async () =>
     }
 
   } catch (err) {
+    console.error(err);
     msg.textContent = "Errore di connessione.";
     msg.className = "err";
   }
