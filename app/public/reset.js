@@ -13,11 +13,10 @@ function setMsg(text, ok = false) {
 document.getElementById('reset-btn')?.addEventListener('click', async () => {
   setMsg("Eliminazione account in corso...");
 
-  // ⭐ TOKEN CORRETTO
-  const token = localStorage.getItem("session");
+  const session = localStorage.getItem("session");
   const password = document.getElementById("password")?.value.trim();
 
-  if (!token) {
+  if (!session) {
     setMsg("Devi effettuare il login");
     return;
   }
@@ -28,12 +27,13 @@ document.getElementById('reset-btn')?.addEventListener('click', async () => {
   }
 
   try {
-    const res = await fetch('/api/utenti/elimina-account', {
+    const res = await fetch('/api/auth/delete-account', {
       method: 'POST',
       headers: { 
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session}`
       },
-      body: JSON.stringify({ token, password }) // ⭐ SOLO QUI
+      body: JSON.stringify({ password })
     });
 
     const data = await res.json().catch(() => null);
@@ -48,8 +48,7 @@ document.getElementById('reset-btn')?.addEventListener('click', async () => {
 
       // ⭐ PULIZIA CORRETTA
       localStorage.removeItem("session");
-      localStorage.removeItem("email");
-      localStorage.removeItem("ruolo");
+      localStorage.removeItem("utenteEmail");
 
       setTimeout(() => {
         window.location.href = "registrazione.html";
