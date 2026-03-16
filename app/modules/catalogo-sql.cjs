@@ -3,67 +3,8 @@
 // Catalogo prodotti — Versione SQL definitiva (ID-based)
 // =========================================================
 
-const fs = require("fs");
 const path = require("path");
 const db = require(path.join(__dirname, "../server/db/database.cjs"));
-
-// =========================================================
-// PATH categories.json
-// =========================================================
-const ROOT = path.resolve(__dirname, "..");
-const DATA_DIR = path.join(ROOT, "data");
-const CATEGORIES_PATH = path.join(DATA_DIR, "categories.json");
-
-// =========================================================
-// UTILS — DIRECTORY
-// =========================================================
-function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-}
-
-function saveCategories(categories) {
-  ensureDataDir();
-  fs.writeFileSync(CATEGORIES_PATH, JSON.stringify(categories, null, 2));
-}
-
-function loadCategories() {
-  try {
-    ensureDataDir();
-    if (fs.existsSync(CATEGORIES_PATH)) {
-      return JSON.parse(fs.readFileSync(CATEGORIES_PATH, "utf8"));
-    }
-  } catch {}
-  return [];
-}
-
-// =========================================================
-// GENERA CATEGORIA AUTOMATICA
-// =========================================================
-function generateCategory(titolo, descrizione) {
-  const categories = loadCategories();
-
-  const text = `${titolo} ${descrizione}`.toLowerCase();
-
-  // match diretto
-  for (const cat of categories) {
-    if (text.includes(cat.toLowerCase())) {
-      return cat;
-    }
-  }
-
-  // fallback: prime due parole del titolo
-  const fallback = titolo.split(" ").slice(0, 2).join(" ");
-
-  if (!categories.includes(fallback)) {
-    categories.push(fallback);
-    categories.sort();
-    saveCategories(categories);
-  }
-
-  return fallback;
-}
 
 // =========================================================
 // GENERA TITOLO BREVE E DESCRIZIONE BREVE
@@ -148,15 +89,14 @@ function saveProduct(data) {
   const immagine_url = (data.immagine || "").trim() || null;
   const file_consegna_url = (data.fileProdotto || "").trim() || null;
 
+  const categoria = (data.categoria || "").trim() || null;
+
   if (!titolo || !prezzo_cent) {
     throw new Error("Titolo e prezzo sono obbligatori");
   }
 
   const titolo_breve = makeTitoloBreve(titolo);
   const descrizione_breve = makeDescrizioneBreve(descrizione_lunga);
-
-  // categoria automatica
-  const categoria = generateCategory(titolo, descrizione_lunga);
 
   const now = new Date().toISOString();
 
@@ -233,7 +173,7 @@ function deleteProduct(id) {
 }
 
 // =========================================================
-// UPDATE YOUTUBE FIELDS (solo youtube.cjs la usa)
+// UPDATE YOUTUBE FIELDS
 // =========================================================
 function updateProductYouTubeFields(id, fields) {
   db.prepare(`
