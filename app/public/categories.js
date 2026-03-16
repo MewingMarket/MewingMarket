@@ -11,7 +11,10 @@ async function loadCategories() {
     }
 
     const categories = await res.json();
-    return Array.isArray(categories) ? categories : [];
+
+    return Array.isArray(categories)
+      ? categories.filter(Boolean).sort()
+      : [];
 
   } catch (err) {
     console.error("Errore caricamento categorie:", err);
