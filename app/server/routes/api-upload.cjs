@@ -1,6 +1,6 @@
 // =========================================================
 // File: app/server/routes/api-upload.cjs
-// Upload immagini + file prodotto (salvataggio locale)
+// Upload immagini + file prodotto (persistente su Render)
 // =========================================================
 
 const express = require("express");
@@ -9,8 +9,10 @@ const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
 
-// Percorsi cartelle upload
-const uploadBase = path.join(__dirname, "..", "uploads");
+// =========================================================
+// CARTELLE PERSISTENTI SU RENDER
+// =========================================================
+const uploadBase = "/var/data/uploads";
 const uploadImages = path.join(uploadBase, "images");
 const uploadFiles = path.join(uploadBase, "files");
 
@@ -18,7 +20,9 @@ const uploadFiles = path.join(uploadBase, "files");
 fs.mkdirSync(uploadImages, { recursive: true });
 fs.mkdirSync(uploadFiles, { recursive: true });
 
-// Storage dinamico
+// =========================================================
+// STORAGE MULTER
+// =========================================================
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     if (req.uploadType === "image") cb(null, uploadImages);
