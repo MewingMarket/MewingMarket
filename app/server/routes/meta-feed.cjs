@@ -1,34 +1,31 @@
 /**
  * =========================================================
  * File: app/server/routes/meta-feed.cjs
- * Feed prodotti per Meta / Facebook / Instagram (SQL)
+ * Feed prodotti per Meta / Facebook / Instagram (JSON mirror)
  * =========================================================
  */
 
-const db = require("../db/database.cjs");
+const fs = require("fs");
+const path = require("path");
 
 module.exports = function (app) {
   app.get("/meta/feed", (req, res) => {
     try {
-      // Recupera prodotti dal DB
-      const stmt = db.prepare(`
-        SELECT 
-          id,
-          slug,
-          titolo_breve,
-          descrizione,
-          immagine,
-          prezzo_cent
-        FROM prodotti
-        ORDER BY id DESC
-      `);
+      const PRODUCTS_JSON = path.join(__dirname, "../../public/data/products.json");
 
-      const prodotti = stmt.all();
+      // Se il JSON non esiste → feed vuoto
+      if (!fs.existsSync(PRODUCTS_JSON)) {
+        return res.json([]);
+      }
+
+      // Legge prodotti dal mirror JSON
+      const raw = fs.readFileSync(PRODUCTS_JSON, "utf8");
+      const prodotti = JSON.parse(raw);
 
       // Costruzione feed Meta
       const feed = prodotti.map((p) => ({
         id: p.id,
-        title: p.titolo_breve || "",
+        title: p.titolo_breve || p.titolo || "",
         description: p.descrizione || "",
         url: `https://mewingmarket.com/prodotto/${p.slug}`,
         image_url: p.immagine || "",
