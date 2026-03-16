@@ -1,5 +1,5 @@
 /* =========================================================
-   ADMIN PRODOTTI — FILE UNICO (PATCH SQL, ID-BASED)
+   ADMIN PRODOTTI — VERSIONE SQL DEFINITIVA
    Lista + Modifica + Creazione + Upload
 ========================================================= */
 
@@ -47,26 +47,21 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* =========================================================
-     LISTA PRODOTTI
+     LISTA PRODOTTI (SQL)
   ========================================================= */
   async function caricaListaProdotti() {
     console.log("[ADMIN] Carico lista prodotti…");
 
     try {
-      const res = await fetch("/api/products");
-      const data = await res.json();
+      const res = await fetch("/api/prodotti");
+      const prodotti = await res.json();
 
-      if (!data.success) {
-        listaBox.innerHTML = "<p>Errore caricamento prodotti.</p>";
-        return;
-      }
-
-      if (!Array.isArray(data.prodotti) || data.prodotti.length === 0) {
+      if (!Array.isArray(prodotti) || prodotti.length === 0) {
         listaBox.innerHTML = "<p>Nessun prodotto presente.</p>";
         return;
       }
 
-      listaBox.innerHTML = data.prodotti
+      listaBox.innerHTML = prodotti
         .map(
           (p) => `
         <div class="admin-card">
@@ -97,21 +92,20 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* =========================================================
-     CARICA PRODOTTO PER EDIT (ID)
+     CARICA PRODOTTO PER EDIT (SQL)
   ========================================================= */
   async function caricaProdotto(id) {
     console.log("[ADMIN] Carico prodotto:", id);
 
     try {
-      const res = await fetch(`/api/products/${id}`);
-      const data = await res.json();
+      const res = await fetch(`/api/prodotti/${id}`);
+      const p = await res.json();
 
-      if (!data.success) {
+      if (!p) {
         fStatus.textContent = "Errore caricamento prodotto.";
         return;
       }
 
-      const p = data.prodotto;
       prodottoCorrente = p;
 
       titoloForm.textContent = "Modifica prodotto";
@@ -141,7 +135,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* =========================================================
-     ELIMINA PRODOTTO (ID)
+     ELIMINA PRODOTTO (SQL)
   ========================================================= */
   async function eliminaProdotto(id) {
     if (!confirm("Eliminare questo prodotto?")) return;
@@ -149,13 +143,13 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("[ADMIN] Elimino prodotto:", id);
 
     try {
-      const res = await fetch(`/api/products/${id}`, {
+      const res = await fetch(`/api/prodotti/${id}`, {
         method: "DELETE"
       });
 
       const data = await res.json();
 
-      if (!data.success) {
+      if (!data || !data.ok) {
         alert("Errore eliminazione prodotto.");
         return;
       }
@@ -174,7 +168,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* =========================================================
-     SALVA PRODOTTO (CREA O MODIFICA)
+     SALVA PRODOTTO (SQL)
   ========================================================= */
   document.getElementById("btn-salva").addEventListener("click", async () => {
     console.log("[ADMIN] Salvataggio prodotto…");
@@ -189,7 +183,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (urlDiretto) {
       immagineURL = urlDiretto;
     } else if (fImg.files.length > 0) {
-      // 2) upload immagine
       try {
         immagineURL = await uploadFile("/api/upload/immagine", fImg.files[0]);
       } catch (err) {
@@ -220,33 +213,29 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("[ADMIN] Payload finale:", payload);
 
     try {
-      const res = await fetch("/api/products/save", {
+      const res = await fetch("/api/prodotti", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
 
-      const data = await res.json();
+      const p = await res.json();
 
-      if (!data.success) {
-        fStatus.textContent = data.error || "Errore salvataggio.";
+      if (!p) {
+        fStatus.textContent = "Errore salvataggio.";
         return;
       }
 
-      const p = data.prodotto;
       prodottoCorrente = p;
 
       fStatus.textContent = "Prodotto salvato.";
 
-      // Aggiorna preview immagine
       if (p.immagine) {
         fPreview.src = p.immagine;
         fPreview.style.display = "block";
       }
 
-      // Aggiorna lista prodotti
       caricaListaProdotti();
-
       titoloForm.textContent = "Modifica prodotto";
 
     } catch (err) {
