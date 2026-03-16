@@ -2,7 +2,7 @@
  * =========================================================
  * File: app/server/routes/ordini-utente.cjs
  * Restituisce gli ordini dell'utente loggato (SQL)
- * + Annulla ordine (SQL)
+ * + Annulla ordine (SQL) + JSON mirror ordini
  * Compatibile con /public/ordini.js
  * =========================================================
  */
@@ -11,6 +11,7 @@ const express = require("express");
 const db = require("../db/database.cjs");
 const authUser = require("../middleware/auth-user.cjs");
 const { inviaEmailOrdineAnnullato } = require("../modules/email-ordine-annullato.cjs");
+const jsonGen = require("../modules/generatore-json.cjs");
 
 const router = express.Router();
 
@@ -78,7 +79,7 @@ router.get("/ordini/utente", authUser, (req, res) => {
  * Protetto da auth-user
  * =========================================================
  */
-router.post("/ordini/annulla/:id", authUser, (req, res) => {
+router.post("/ordini/annulla/:id", authUser, async (req, res) => {
   try {
     const ordineId = req.params.id;
     const userId = req.user.id;
@@ -161,6 +162,13 @@ router.post("/ordini/annulla/:id", authUser, (req, res) => {
       });
     } catch (err) {
       console.error("⚠️ Errore invio email annullamento:", err);
+    }
+
+    // 🔥 Aggiorna JSON mirror ordini (per admin)
+    try {
+      await jsonGen.exportOrders();
+    } catch (err) {
+      console.error("⚠️ Errore exportOrders JSON:", err);
     }
 
     return res.json({
