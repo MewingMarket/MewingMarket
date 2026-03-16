@@ -1,13 +1,14 @@
 /**
  * =========================================================
  * File: app/server/routes/paypal-cancel.cjs
- * Annulla ordine PayPal (SQL) + email annullamento
+ * Annulla ordine PayPal (SQL) + email annullamento + JSON mirror
  * =========================================================
  */
 
 const express = require("express");
 const db = require("../db/database.cjs");
 const { inviaEmailOrdineAnnullato } = require("../modules/email-ordine-annullato.cjs");
+const jsonGen = require("../modules/generatore-json.cjs");
 
 const router = express.Router();
 
@@ -16,7 +17,7 @@ const router = express.Router();
  * GET /api/paypal/cancel-order?orderId=xxxx
  * =========================================================
  */
-router.get("/paypal/cancel-order", (req, res) => {
+router.get("/paypal/cancel-order", async (req, res) => {
   try {
     const orderId = req.query.orderId;
 
@@ -62,6 +63,13 @@ router.get("/paypal/cancel-order", (req, res) => {
     `);
 
     stmtUpdate.run(orderId);
+
+    // 🔥 Aggiorna JSON mirror ordini
+    try {
+      await jsonGen.exportOrders();
+    } catch (err) {
+      console.error("⚠️ Errore exportOrders JSON:", err);
+    }
 
     // Recupera email utente
     const stmtUser = db.prepare(`
