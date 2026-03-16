@@ -100,7 +100,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       const img = getImage(p);
       const titolo = clean(p.titolo || "Prodotto");
       const descrizione = getShortDescription(p);
-      const prezzo = p.prezzo ? clean(String(p.prezzo)) + " €" : "";
+
+      const prezzo_cent = Number(p.prezzo_cent) || 0;
+      const prezzo = (prezzo_cent / 100).toFixed(2);
+
       const id = p.id;
 
       const card = document.createElement("article");
@@ -110,7 +113,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         <img src="${img}" alt="${titolo}" loading="lazy">
         <h3>${titolo}</h3>
         <p>${descrizione}</p>
-        <p class="price">${prezzo}</p>
+        <p class="price">€${prezzo}</p>
 
         <div class="card-buttons">
           <a href="prodotto.html?id=${encodeURIComponent(id)}" class="btn">
