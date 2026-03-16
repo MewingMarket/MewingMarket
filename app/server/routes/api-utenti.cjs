@@ -1,11 +1,12 @@
 // =========================================================
 // File: app/server/routes/api-utenti.cjs
-// Versione SQL — stessi endpoint, stessi nomi, stessa struttura
+// Versione SQL + JSON mirror + hashing password
 // =========================================================
 
 const express = require("express");
 const crypto = require("crypto");
 const db = require("../db/database.cjs");
+const jsonGen = require("../modules/generatore-json.cjs");
 
 // EMAIL MODULES
 const { inviaEmailRegistrazione } = require("../modules/email-registrazione.cjs");
@@ -24,6 +25,11 @@ function normalizePassword(p) {
   return String(p || "").trim();
 }
 
+// Hash password (gestito solo dal sito, mai dall’utente)
+function hash(p) {
+  return crypto.createHash("sha256").update(String(p)).digest("hex");
+}
+
 // Genera token
 function genToken(prefix) {
   return prefix + "_" + crypto.randomBytes(16).toString("hex");
@@ -40,7 +46,7 @@ function getToken(req) {
 /* =========================================================
    REGISTRAZIONE
 ========================================================= */
-router.post("/utenti/registrazione", (req, res) => {
+router.post("/utenti/registrazione", async (req, res) => {
   let { email, password } = req.body || {};
 
   email = (email || "").trim().toLowerCase();
@@ -58,13 +64,17 @@ router.post("/utenti/registrazione", (req, res) => {
     }
 
     const token = genToken("tok");
+    const passwordHash = hash(password);
 
     db.prepare(`
       INSERT INTO utenti (email, password_hash, token)
       VALUES (?, ?, ?)
-    `).run(email, password, token);
+    `).run(email, passwordHash, token);
 
     inviaEmailRegistrazione({ email });
+
+    // JSON mirror
+    await jsonGen.exportUsers();
 
     return res.json({ success: true, token, email });
 
@@ -94,7 +104,9 @@ router.post("/utenti/login", (req, res) => {
       return res.json({ success: false, error: "Utente non trovato" });
     }
 
-    if (normalizePassword(user.password_hash) !== password) {
+    const passwordHash = hash(password);
+
+    if (normalizePassword(user.password_hash) !== passwordHash) {
       return res.json({ success: false, error: "Password errata" });
     }
 
@@ -119,7 +131,7 @@ router.post("/utenti/login", (req, res) => {
 /* =========================================================
    CAMBIO EMAIL
 ========================================================= */
-router.post("/utenti/cambia-email", (req, res) => {
+router.post("/utenti/cambia-email", async (req, res) => {
   let token = getToken(req);
   let { nuova_email, password } = req.body || {};
 
@@ -137,13 +149,18 @@ router.post("/utenti/cambia-email", (req, res) => {
       return res.json({ success: false, error: "Token non valido" });
     }
 
-    if (normalizePassword(user.password_hash) !== password) {
+    const passwordHash = hash(password);
+
+    if (normalizePassword(user.password_hash) !== passwordHash) {
       return res.json({ success: false, error: "Password errata" });
     }
 
     db.prepare("UPDATE utenti SET email = ? WHERE id = ?").run(nuova_email, user.id);
 
     inviaEmailCambioEmail({ email: nuova_email });
+
+    // JSON mirror
+    await jsonGen.exportUsers();
 
     return res.json({ success: true });
 
@@ -156,7 +173,7 @@ router.post("/utenti/cambia-email", (req, res) => {
 /* =========================================================
    CAMBIO PASSWORD
 ========================================================= */
-router.post("/utenti/cambia-password", (req, res) => {
+router.post("/utenti/cambia-password", async (req, res) => {
   let token = getToken(req);
   let { nuova_password } = req.body || {};
 
@@ -173,8 +190,10 @@ router.post("/utenti/cambia-password", (req, res) => {
       return res.json({ success: false, error: "Token non valido" });
     }
 
+    const newHash = hash(nuova_password);
+
     db.prepare("UPDATE utenti SET password_hash = ? WHERE id = ?")
-      .run(String(nuova_password), user.id);
+      .run(String(newHash), user.id);
 
     inviaEmailCambioPassword({ email: user.email });
 
@@ -189,7 +208,7 @@ router.post("/utenti/cambia-password", (req, res) => {
 /* =========================================================
    ELIMINAZIONE ACCOUNT
 ========================================================= */
-router.post("/utenti/elimina-account", (req, res) => {
+router.post("/utenti/elimina-account", async (req, res) => {
   let token = getToken(req);
   let { password } = req.body || {};
 
@@ -206,13 +225,18 @@ router.post("/utenti/elimina-account", (req, res) => {
       return res.json({ success: false, error: "Token non valido" });
     }
 
-    if (normalizePassword(user.password_hash) !== password) {
+    const passwordHash = hash(password);
+
+    if (normalizePassword(user.password_hash) !== passwordHash) {
       return res.json({ success: false, error: "Password errata" });
     }
 
     db.prepare("DELETE FROM utenti WHERE id = ?").run(user.id);
 
     inviaEmailEliminazione({ email: user.email });
+
+    // JSON mirror
+    await jsonGen.exportUsers();
 
     return res.json({ success: true });
 
@@ -279,11 +303,13 @@ router.post("/utenti/reset-password-confirm", (req, res) => {
       return res.json({ success: false, error: "Token non valido" });
     }
 
+    const newHash = hash(nuova_password);
+
     db.prepare(`
       UPDATE utenti
       SET password_hash = ?, reset_password_token = ''
       WHERE id = ?
-    `).run(String(nuova_password), user.id);
+    `).run(String(newHash), user.id);
 
     return res.json({ success: true });
 
@@ -295,20 +321,28 @@ router.post("/utenti/reset-password-confirm", (req, res) => {
 
 /* =========================================================
    RESET EMAIL — RICHIESTA LINK
+   (versione sicura: serve token + password)
 ========================================================= */
 router.post("/utenti/reset-email-request", (req, res) => {
+  let token = getToken(req);
   let { password } = req.body || {};
+
   password = normalizePassword(password);
 
-  if (!password) {
-    return res.json({ success: false, error: "Password mancante" });
+  if (!token || !password) {
+    return res.json({ success: false, error: "Dati mancanti" });
   }
 
   try {
-    const user = db.prepare("SELECT * FROM utenti WHERE password_hash = ?")
-      .get(password);
+    const user = db.prepare("SELECT * FROM utenti WHERE token = ?").get(token);
 
     if (!user) {
+      return res.json({ success: false, error: "Token non valido" });
+    }
+
+    const passwordHash = hash(password);
+
+    if (normalizePassword(user.password_hash) !== passwordHash) {
       return res.json({ success: false, error: "Password errata" });
     }
 
