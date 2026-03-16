@@ -1,8 +1,7 @@
 /* =========================================================
    FILE: /public/thankyou.js
    THANK YOU PAGE — MewingMarket
-   Versione Premium: verifica ordine, mostra riepilogo,
-   svuota carrello, aggiorna badge, UX pulita
+   Versione SQL READY + PayPal + Download sicuro
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -19,7 +18,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   /* =========================================================
      1) VERIFICA ORDINE (complete-order)
-  ========================================================= */
+  ========================================================== */
   try {
     const res = await fetch(`/api/paypal/complete-order?orderId=${orderId}`);
     const data = await res.json();
@@ -46,39 +45,44 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /* =========================================================
-     2) RENDER RIEPILOGO
-  ========================================================= */
+     2) RENDER RIEPILOGO (SQL READY)
+  ========================================================== */
   const prodEl = document.getElementById("prod");
   const priceEl = document.getElementById("price");
   const dateEl = document.getElementById("date");
 
   if (ordine.prodotti.length === 1) {
     const p = ordine.prodotti[0];
+    const prezzo = (p.prezzo_cent / 100) * (p.qty || 1);
     prodEl.textContent = p.titolo;
-    priceEl.textContent = (p.prezzo * (p.qty || 1)).toFixed(2);
+    priceEl.textContent = prezzo.toFixed(2);
   } else {
     prodEl.textContent = `${ordine.prodotti.length} prodotti`;
-    priceEl.textContent = ordine.totale;
+    priceEl.textContent = (ordine.totale_cent / 100).toFixed(2);
   }
 
   // Lista prodotti
   const listEl = document.getElementById("prod-list");
   listEl.innerHTML = ordine.prodotti
-    .map(p => `<li>${p.titolo} — ${(p.prezzo * (p.qty || 1)).toFixed(2)}€</li>`)
+    .map(p => {
+      const prezzo = (p.prezzo_cent / 100) * (p.qty || 1);
+      return `<li>${p.titolo} — ${prezzo.toFixed(2)}€</li>`;
+    })
     .join("");
 
   dateEl.textContent = new Date().toLocaleDateString("it-IT");
 
   /* =========================================================
-     3) DOWNLOAD (solo se completato)
-     Backend usa "completato", NON "COMPLETED"
-  ========================================================= */
+     3) DOWNLOAD (ID-based + token)
+  ========================================================== */
   const dlBox = document.getElementById("download-box");
+  const session = localStorage.getItem("session");
 
   if (ordine.stato === "completato") {
     dlBox.innerHTML = ordine.prodotti
       .map(p => `
-        <a class="btn-download" href="/api/vendite/download/${p.slug}">
+        <a class="btn-download" 
+           href="/api/vendite/download/${p.prodotto_id}?session=${session}">
           Scarica ${p.titolo}
         </a>
       `)
@@ -89,13 +93,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   /* =========================================================
      4) SVUOTA CARRELLO + BADGE
-  ========================================================= */
+  ========================================================== */
   Cart.clear();
   if (typeof aggiornaBadgeCarrello === "function") aggiornaBadgeCarrello();
 
   /* =========================================================
      5) FEEDBACK
-  ========================================================= */
+  ========================================================== */
   const fbBtn = document.getElementById("feedbackBtn");
   if (fbBtn) {
     fbBtn.addEventListener("click", () => {
@@ -105,11 +109,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   /* =========================================================
      6) TRACKING EVENTO
-  ========================================================= */
+  ========================================================== */
   if (window.trackEvent) {
     trackEvent("order_completed", {
       orderId,
-      totale: ordine.totale,
+      totale: ordine.totale_cent / 100,
       prodotti: ordine.prodotti.length
     });
   }
