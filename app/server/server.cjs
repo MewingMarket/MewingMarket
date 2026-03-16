@@ -142,7 +142,7 @@ console.log(">> ROOT PATH:", ROOT);
 
     console.log(">> CALLING app.listen…");
     await wait(300);
-
+require("./startup/cron-youtube.cjs")();
     app.listen(PORT, () => {
       console.log(`\n🎉 SERVER LISTENING ON PORT ${PORT}`);
       console.log("📦 Catalogo caricato (cache locale)");
