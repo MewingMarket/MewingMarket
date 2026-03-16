@@ -87,9 +87,13 @@ function cardHTML(p) {
   const img = getImage(p);
   const titoloBreve = clean(p.titolo_breve || p.titolo || "");
   const descrizione = getShortDescription(p);
-  const prezzo = Number(p.prezzo) || 0;
+
+  const prezzo_cent = Number(p.prezzo_cent) || 0;
+  const prezzo = prezzo_cent / 100;
+
   const categoria = clean(p.categoria || "");
   const id = p.id;
+  const slug = p.slug || "";
 
   return `
     <div class="product-card" data-cat="${categoria}" data-prezzo="${prezzo}" data-id="${id}">
@@ -105,8 +109,9 @@ function cardHTML(p) {
 
         <button class="btn-secondario btn-add-cart" 
           data-id="${id}" 
+          data-slug="${slug}"
           data-title="${titoloBreve}" 
-          data-price="${prezzo}" 
+          data-price-cent="${prezzo_cent}"
           data-img="${img}">
           Aggiungi al carrello
         </button>
@@ -197,8 +202,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const prodotto = {
         id: Number(btn.dataset.id),
+        slug: btn.dataset.slug,
         titolo: btn.dataset.title,
-        prezzo: Number(btn.dataset.price),
+        prezzo_cent: Number(btn.dataset.priceCent),
+        prezzo: Number(btn.dataset.priceCent) / 100,
         immagine: btn.dataset.img
       };
 
