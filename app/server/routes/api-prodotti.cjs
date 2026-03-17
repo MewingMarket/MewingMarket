@@ -11,7 +11,7 @@ const router = express.Router();
 const catalogo = require("../modules/catalogo-sql.cjs");
 // PATCH: nome corretto del generatore
 const jsonGen = require("../modules/generatore-json.cjs");
-
+console.log("🔥 API-PRODOTTI VERSIONE LIVE — BUILD:", new Date().toISOString());
 // =========================================================
 // GET — LISTA PRODOTTI (SQL)
 // =========================================================
