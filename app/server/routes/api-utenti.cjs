@@ -6,7 +6,7 @@
 const express = require("express");
 const crypto = require("crypto");
 const db = require("../db/database.cjs");
-const jsonGen = require(".../modules/generatore-json.cjs");
+const jsonGen = require("../modules/generatore-json.cjs");
 
 // EMAIL MODULES
 const { inviaEmailRegistrazione } = require("../modules/email-registrazione.cjs");
