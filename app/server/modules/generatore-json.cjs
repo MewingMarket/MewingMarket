@@ -7,7 +7,11 @@
 
 const fs = require("fs");
 const path = require("path");
-const catalogo = require("./catalogo-sql.cjs");
+
+// PATCH: catalogo si trova in app/modules/
+const catalogo = require("../../modules/catalogo-sql.cjs");
+
+// db è già nella posizione corretta
 const db = require("../db/database.cjs");
 
 // Directory output JSON
