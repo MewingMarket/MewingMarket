@@ -9,7 +9,7 @@ const express = require("express");
 const router = express.Router();
 
 // API UTENTE (SQL)
-router.use(require("./routes/api-prodotti.cjs"));
+router.use(require("./routes/api-prodotti-new.cjs"));
 router.use(require("./routes/api-upload.cjs"));
 router.use(require("./routes/api-utenti.cjs"));
 router.use(require("./routes/ordini-utente.cjs"));          // ✔ nome reale

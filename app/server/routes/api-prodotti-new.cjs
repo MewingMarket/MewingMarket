@@ -7,16 +7,17 @@
 const express = require("express");
 const router = express.Router();
 
+// PATCH: catalogo sta in app/modules/
 const catalogo = require("../../modules/catalogo-sql.cjs");
 
-const generatore = require(".../modules/generatore-json.cjs");
+const generatore = require("../modules/generatore-json.cjs");
 // =========================================================
 // GET — LISTA PRODOTTI (SQL)
 // =========================================================
 router.get("/prodotti", async (req, res) => {
   try {
     const prodotti = await catalogo.getAllProducts();
-    return res.json(prodotti); // array diretto
+    return res.json(prodotti);
   } catch (err) {
     console.error("API /prodotti ERROR:", err);
     return res.status(500).json({ error: "Errore server" });
@@ -43,7 +44,6 @@ router.get("/prodotti/:id", async (req, res) => {
 
 // =========================================================
 // POST — CREA O MODIFICA PRODOTTO (SQL)
-// body: { id?, titolo, descrizione_lunga, prezzo, immagine, fileProdotto }
 // =========================================================
 router.post("/prodotti", async (req, res) => {
   try {
@@ -53,14 +53,12 @@ router.post("/prodotti", async (req, res) => {
       return res.status(400).json({ error: "Titolo e prezzo obbligatori" });
     }
 
-    // Normalizzazione campi per catalogo-sql.cjs
     data.immagine = data.immagine || null;
     data.fileProdotto = data.fileProdotto || null;
 
-    // Salva nel DB
     const prodotto = await catalogo.saveProduct(data);
 
-    // 🔥 MIRROR JSON AUTOMATICO
+    // MIRROR JSON
     await jsonGen.exportProducts();
     await jsonGen.exportCategories();
     await jsonGen.exportCatalog();
@@ -74,7 +72,7 @@ router.post("/prodotti", async (req, res) => {
 });
 
 // =========================================================
-// DELETE — ELIMINA PRODOTTO (SQL) PER ID
+// DELETE — ELIMINA PRODOTTO (SQL)
 // =========================================================
 router.delete("/prodotti/:id", async (req, res) => {
   try {
@@ -84,7 +82,7 @@ router.delete("/prodotti/:id", async (req, res) => {
       return res.status(404).json({ error: "Prodotto non trovato" });
     }
 
-    // 🔥 MIRROR JSON AUTOMATICO
+    // MIRROR JSON
     await jsonGen.exportProducts();
     await jsonGen.exportCategories();
     await jsonGen.exportCatalog();
