@@ -7,11 +7,14 @@
 const express = require("express");
 const router = express.Router();
 
+// PATCH: catalogo sta in app/modules/
+const catalogo = require("../../modules/catalogo-sql.cjs");
 
-const catalogo = require("../modules/catalogo-sql.cjs");
-// PATCH: nome corretto del generatore
+// PATCH: generatore-json è già in app/server/modules/
 const jsonGen = require("../modules/generatore-json.cjs");
+
 console.log("🔥 API-PRODOTTI VERSIONE LIVE — BUILD:", new Date().toISOString());
+
 // =========================================================
 // GET — LISTA PRODOTTI (SQL)
 // =========================================================
