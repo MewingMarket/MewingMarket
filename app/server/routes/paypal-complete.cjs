@@ -13,7 +13,7 @@ const { inviaEmailAcquisto } = require("../modules/email-acquisto.cjs");
 const { inviaEmailLista } = require("../modules/invia-email-lista.cjs");
 const { LISTA_CLIENTI } = require("../modules/liste-brevo.cjs");
 const { trackGA4 } = require("../services/ga4.cjs");
-const jsonGen = require(".../modules/generatore-json.cjs");
+const jsonGen = require("../modules/generatore-json.cjs");
 
 const router = express.Router();
 
