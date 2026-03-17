@@ -11,7 +11,9 @@ const express = require("express");
 const db = require("../db/database.cjs");
 const authUser = require("../middleware/auth-user.cjs");
 const { inviaEmailOrdineAnnullato } = require("../modules/email-ordine-annullato.cjs");
-const jsonGen = require(".../modules/generatore-json.cjs");
+
+// PATCH: percorso corretto del generatore JSON
+const jsonGen = require("../modules/generatore-json.cjs");
 
 const router = express.Router();
 
