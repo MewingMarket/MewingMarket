@@ -14,7 +14,7 @@ process.on("unhandledRejection", err => {
 });
 
 // 🔧 Funzione per rallentare i log
-const wait = (ms) => new Promise(res => setTimeout(res, ms));
+const wait = (ms) => new Promise(res => res(ms));
 
 console.log(">> SERVER STARTING…");
 console.log(">> PACKAGE TYPE:", require("../../package.json").type);
@@ -157,7 +157,8 @@ console.log(">> ROOT PATH:", ROOT);
       setTimeout(async () => {
         console.log("⏳ Sync iniziale JSON (persistente → app/data)...");
         try {
-          const jsonGen = require("../modules/generatore-json.cjs");
+          // 🔥 PATCH PATH
+          const jsonGen = require("./modules/generatore-json.cjs");
           await jsonGen.exportAll();
           console.log("✅ Sync JSON completato");
         } catch (err) {
@@ -220,7 +221,8 @@ console.log(">> ROOT PATH:", ROOT);
       setTimeout(async () => {
         console.log("⏳ Sync iniziale YouTube (scraping)...");
         try {
-          const { syncYouTube } = require("./services/youtube.cjs");
+          // 🔥 PATCH PATH
+          const { syncYouTube } = require("../services/youtube.cjs");
           await syncYouTube();
         } catch (err) {
           console.error("❌ Errore sync YouTube:", err.message);
