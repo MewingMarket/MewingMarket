@@ -45,7 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       // INVIO AL BACKEND SQL
-      const res = await fetch("/api/auth/register", {
+      const res = await fetch("/api/utenti/registrazione", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })
@@ -61,7 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // SUCCESSO → SALVA SESSIONE (token + email)
       if (data.token) {
         localStorage.setItem("session", data.token);
-        localStorage.setItem("utenteEmail", email);
+        localStorage.setItem("email", email);
       }
 
       // Aggiorna eventuale UI utente
