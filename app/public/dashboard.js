@@ -14,12 +14,12 @@ function getSession() {
 }
 
 function getEmail() {
-  return localStorage.getItem("utenteEmail") || "";
+  return localStorage.getItem("email") || "";
 }
 
 function setEmail(e) {
   if (e) {
-    localStorage.setItem("utenteEmail", e);
+    localStorage.setItem("email", e);
   }
 }
 
@@ -97,11 +97,11 @@ document.getElementById("btnCambiaEmail")?.addEventListener("click", async () =>
   }
 
   try {
-    const res = await fetch("/api/auth/change-email", {
+    const res = await fetch("/api/utenti/cambia-email", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${session}`
+        "x-token": session
       },
       body: JSON.stringify({ nuova_email, password })
     });
@@ -138,11 +138,11 @@ document.getElementById("btnCambiaPassword")?.addEventListener("click", async ()
   }
 
   try {
-    const res = await fetch("/api/auth/change-password", {
+    const res = await fetch("/api/utenti/cambia-password", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${session}`
+        "x-token": session
       },
       body: JSON.stringify({ password_attuale, nuova_password })
     });
@@ -180,11 +180,11 @@ document.getElementById("btnEliminaAccount")?.addEventListener("click", async ()
   }
 
   try {
-    const res = await fetch("/api/auth/delete-account", {
+    const res = await fetch("/api/utenti/elimina-account", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${session}`
+        "x-token": session
       },
       body: JSON.stringify({ password })
     });
