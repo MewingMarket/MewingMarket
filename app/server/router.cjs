@@ -8,21 +8,41 @@
 const express = require("express");
 const router = express.Router();
 
-// API UTENTE (SQL)
+// ===============================
+// 1) ROTTE PUBBLICHE (NO TOKEN)
+// ===============================
+const apiUtenti = require("./routes/api-utenti.cjs");
+
+// Registrazione e login devono essere pubbliche
+router.post("/utenti/registrazione", apiUtenti);
+router.post("/utenti/login", apiUtenti);
+
+// ===============================
+// 2) MIDDLEWARE USER (TOKEN OBBLIGATORIO)
+// ===============================
+router.use(require("./middleware/auth-user.cjs"));
+
+// ===============================
+// 3) ROTTE UTENTE PROTETTE
+// ===============================
 router.use(require("./routes/api-prodotti-new.cjs"));
 router.use(require("./routes/api-upload.cjs"));
-router.use(require("./routes/api-utenti.cjs"));
-router.use(require("./routes/ordini-utente.cjs"));          // ✔ nome reale
+router.use(require("./routes/ordini-utente.cjs"));
 router.use(require("./routes/api-feedback.cjs"));
-router.use(require("./routes/api-vendite-download.cjs"));   // ✔ aggiunto
+router.use(require("./routes/api-vendite-download.cjs"));
 
-// PAYPAL (nomi reali)
+// ===============================
+// 4) PAYPAL
+// ===============================
 router.use(require("./routes/paypal-create.cjs"));
 router.use(require("./routes/paypal-complete.cjs"));
 router.use(require("./routes/paypal-cancel.cjs"));
 
-// ADMIN API (NUOVE)
-router.use(require("./routes/admin-analytics.cjs"));         // 🔥 PATCH QUI
-router.use(require("./routes/vendite-admin.cjs"));           // ✔ aggiunto
+// ===============================
+// 5) ADMIN (protette da auth-admin)
+// ===============================
+router.use(require("./middleware/auth-admin.cjs"));
+router.use(require("./routes/admin-analytics.cjs"));
+router.use(require("./routes/vendite-admin.cjs"));
 
 module.exports = router;
