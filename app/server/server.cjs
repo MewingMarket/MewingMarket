@@ -23,6 +23,7 @@ const express = require("express");
 const path = require("path");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
+const crypto = require("crypto");
 
 console.log(">> EXPRESS LOADED");
 
@@ -152,12 +153,11 @@ console.log(">> ROOT PATH:", ROOT);
       console.log("====================================\n");
 
       // =========================================================
-      // 🔥 PATCH: SYNC JSON PERSISTENTI → app/data
+      // 🔥 SYNC JSON INIZIALE
       // =========================================================
       setTimeout(async () => {
         console.log("⏳ Sync iniziale JSON (persistente → app/data)...");
         try {
-          // 🔥 PATCH PATH
           const jsonGen = require("./modules/generatore-json.cjs");
           await jsonGen.exportAll();
           console.log("✅ Sync JSON completato");
@@ -167,16 +167,11 @@ console.log(">> ROOT PATH:", ROOT);
       }, 1000);
 
       // =========================================================
-      // LOG PERIODICO DI TUTTE LE TABELLE
+      // LOG A — LOG INIZIALE UNA SOLA VOLTA
       // =========================================================
       const db = require("./db/database.cjs");
 
-      const TABLES = [
-        "prodotti",
-        "utenti",
-        "ordini",
-        "vendite"
-      ];
+      const TABLES = ["prodotti", "utenti", "ordini", "vendite"];
 
       function normalizeRow(row) {
         if (!row) return row;
@@ -187,43 +182,73 @@ console.log(">> ROOT PATH:", ROOT);
         return out;
       }
 
-      setInterval(() => {
-        console.log("\n====================================");
-        console.log("📊 LOG PERIODICO DB");
-        console.log("====================================");
+      console.log("\n====================================");
+      console.log("📊 LOG INIZIALE DB");
+      console.log("====================================");
 
+      for (const table of TABLES) {
+        try {
+          const rows = db.prepare(`SELECT * FROM ${table}`).all();
+          const normalized = rows.map(normalizeRow);
+
+          console.log(`\n📌 TABELLA: ${table}`);
+          console.log(`   Conteggio: ${rows.length}`);
+          console.log("   Contenuto normalizzato:");
+          console.log(rows.length === 0 ? "   → (vuota)" : normalized);
+
+        } catch (err) {
+          console.log(`❌ Errore lettura tabella ${table}:`, err.message);
+        }
+      }
+
+      console.log("====================================\n");
+
+      // =========================================================
+      // LOG B — LOG INTELLIGENTE SOLO SU AGGIORNAMENTO
+      // =========================================================
+      function hashRows(rows) {
+        return crypto.createHash("md5").update(JSON.stringify(rows)).digest("hex");
+      }
+
+      let lastHashes = {};
+
+      async function logIfChanged() {
         for (const table of TABLES) {
           try {
             const rows = db.prepare(`SELECT * FROM ${table}`).all();
-            const normalized = rows.map(normalizeRow);
+            const hash = hashRows(rows);
 
-            console.log(`\n📌 TABELLA: ${table}`);
-            console.log(`   Conteggio: ${rows.length}`);
-            console.log(`   Contenuto normalizzato:`);
+            if (lastHashes[table] !== hash) {
+              lastHashes[table] = hash;
 
-            if (rows.length === 0) {
-              console.log("   → (vuota)");
-            } else {
-              console.log(normalized);
+              console.log("\n====================================");
+              console.log(`📌 AGGIORNAMENTO: ${table}`);
+              console.log("====================================");
+
+              console.log(`Conteggio: ${rows.length}`);
+              console.log("Contenuto normalizzato:");
+              console.log(rows.length === 0 ? "→ (vuota)" : rows.map(normalizeRow));
+
+              console.log("====================================\n");
             }
 
           } catch (err) {
-            console.log(`❌ Errore lettura tabella ${table}:`, err.message);
+            console.log(`❌ ERRORE CRITICO (${table}):`, err.message);
           }
         }
+      }
 
-        console.log("====================================\n");
-      }, 15000);
+      setInterval(logIfChanged, 5000);
 
       // =========================================================
-      // SYNC INIZIALE (YouTube scraping)
+      // SYNC INIZIALE YOUTUBE
       // =========================================================
       setTimeout(async () => {
         console.log("⏳ Sync iniziale YouTube (scraping)...");
         try {
-          // 🔥 PATCH PATH
           const { syncYouTube } = require("../services/youtube.cjs");
           await syncYouTube();
+          console.log("✅ Sync YouTube completata");
         } catch (err) {
           console.error("❌ Errore sync YouTube:", err.message);
         }
