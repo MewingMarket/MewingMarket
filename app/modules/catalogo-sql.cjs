@@ -21,7 +21,7 @@ function makeDescrizioneBreve(descrizione) {
 }
 
 // =========================================================
-// NORMALIZZA PRODOTTO PER FRONTEND
+/* NORMALIZZA PRODOTTO PER FRONTEND */
 // =========================================================
 function normalizeProduct(row) {
   return {
@@ -75,6 +75,20 @@ function getProductById(id) {
   `).get(id);
 
   return row ? normalizeProduct(row) : null;
+}
+
+// =========================================================
+// GET ALL CATEGORIES (DISTINCT, ORDINATE)
+// =========================================================
+function getAllCategories() {
+  const rows = db.prepare(`
+    SELECT DISTINCT categoria
+    FROM prodotti
+    WHERE categoria IS NOT NULL AND TRIM(categoria) <> ''
+    ORDER BY categoria COLLATE NOCASE ASC
+  `).all();
+
+  return rows.map(r => r.categoria);
 }
 
 // =========================================================
@@ -198,6 +212,7 @@ function updateProductYouTubeFields(id, fields) {
 module.exports = {
   getAllProducts,
   getProductById,
+  getAllCategories,
   saveProduct,
   deleteProduct,
   updateProductYouTubeFields
