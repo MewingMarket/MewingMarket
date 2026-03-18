@@ -1,5 +1,6 @@
 // =========================================================
 // Eliminazione Account – MewingMarket (VERSIONE DEFINITIVA)
+// Compatibile con backend SQL
 // =========================================================
 
 const msg = document.getElementById('status');
@@ -27,11 +28,11 @@ document.getElementById('reset-btn')?.addEventListener('click', async () => {
   }
 
   try {
-    const res = await fetch('/api/auth/delete-account', {
+    const res = await fetch('/api/utenti/elimina-account', {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session}`
+        'x-token': session
       },
       body: JSON.stringify({ password })
     });
@@ -48,7 +49,7 @@ document.getElementById('reset-btn')?.addEventListener('click', async () => {
 
       // ⭐ PULIZIA CORRETTA
       localStorage.removeItem("session");
-      localStorage.removeItem("utenteEmail");
+      localStorage.removeItem("email");
 
       setTimeout(() => {
         window.location.href = "registrazione.html";
