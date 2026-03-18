@@ -32,7 +32,7 @@ document.getElementById("btnConfirmEmail").addEventListener("click", async () =>
   }
 
   try {
-    const res = await fetch("/api/auth/reset-email-confirm", {
+    const res = await fetch("/api/utenti/reset-email-confirm", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token, nuova_email })
@@ -44,7 +44,7 @@ document.getElementById("btnConfirmEmail").addEventListener("click", async () =>
     if (data.success) {
 
       // ⭐ Aggiorna email utente
-      localStorage.setItem("utenteEmail", nuova_email);
+      localStorage.setItem("email", nuova_email);
 
       // ⭐ Invalida sessione (obbligatorio)
       localStorage.removeItem("session");
