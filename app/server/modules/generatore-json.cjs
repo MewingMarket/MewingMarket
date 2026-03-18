@@ -34,81 +34,145 @@ const PUBLIC_DIR = path.join(__dirname, "../../public/data");
 // Helper: salva JSON in persistente + copia nel public
 // ---------------------------------------------------------
 function saveJSON(filename, data) {
-  const json = JSON.stringify(data, null, 2);
+  try {
+    const json = JSON.stringify(data, null, 2);
 
-  // Persistente
-  fs.writeFileSync(path.join(DISK_DIR, filename), json, "utf8");
+    // Persistente
+    fs.writeFileSync(path.join(DISK_DIR, filename), json, "utf8");
 
-  // Copia volatile per il frontend
-  fs.writeFileSync(path.join(PUBLIC_DIR, filename), json, "utf8");
+    // Copia volatile per il frontend
+    fs.writeFileSync(path.join(PUBLIC_DIR, filename), json, "utf8");
 
-  console.log("💾 JSON aggiornato:", filename);
+    console.log(`💾 JSON aggiornato: ${filename}`);
+  } catch (err) {
+    console.error(`❌ ERRORE CRITICO salvataggio JSON (${filename}):`, err.message);
+  }
 }
 
 // ---------------------------------------------------------
 // 1) Prodotti
 // ---------------------------------------------------------
 async function exportProducts() {
-  const prodotti = await catalogo.getAllProducts();
-  saveJSON("products.json", prodotti);
+  try {
+    const prodotti = await catalogo.getAllProducts();
+    saveJSON("products.json", prodotti);
+    console.log("✅ Prodotti esportati");
+  } catch (err) {
+    console.error("❌ Errore exportProducts:", err.message);
+  }
 }
 
 // ---------------------------------------------------------
 // 2) Categorie
 // ---------------------------------------------------------
 async function exportCategories() {
-  const categorie = await catalogo.getAllCategories();
-  saveJSON("categories.json", categorie);
+  try {
+    const categorie = await catalogo.getAllCategories();
+    saveJSON("categories.json", categorie);
+    console.log("✅ Categorie esportate");
+  } catch (err) {
+    console.error("❌ Errore exportCategories:", err.message);
+  }
 }
 
 // ---------------------------------------------------------
-// 3) YouTube cache
+// 3) YouTube — estratto direttamente dai prodotti
 // ---------------------------------------------------------
 async function exportYouTube() {
-  const rows = db.prepare("SELECT * FROM youtube_cache").all();
-  saveJSON("youtube.json", rows);
+  try {
+    const prodotti = await catalogo.getAllProducts();
+
+    const youtube = prodotti
+      .filter(p => p.youtube_video_id)
+      .map(p => ({
+        id: p.id,
+        video_id: p.youtube_video_id,
+        url: p.youtube_url,
+        title: p.youtube_title,
+        description: p.youtube_description,
+        thumbnail: p.youtube_thumbnail
+      }));
+
+    saveJSON("youtube.json", youtube);
+    console.log("🎥 YouTube esportato");
+  } catch (err) {
+    console.error("❌ Errore exportYouTube:", err.message);
+  }
 }
 
 // ---------------------------------------------------------
 // 4) Ordini
 // ---------------------------------------------------------
 async function exportOrders() {
-  const rows = db.prepare("SELECT * FROM ordini ORDER BY id DESC").all();
-  saveJSON("orders.json", rows);
+  try {
+    const rows = db.prepare("SELECT * FROM ordini ORDER BY id DESC").all();
+    saveJSON("orders.json", rows);
+    console.log("📦 Ordini esportati");
+  } catch (err) {
+    console.error("❌ Errore exportOrders:", err.message);
+  }
 }
 
 // ---------------------------------------------------------
 // 5) Vendite
 // ---------------------------------------------------------
 async function exportSales() {
-  const rows = db.prepare("SELECT * FROM vendite ORDER BY id DESC").all();
-  saveJSON("sales.json", rows);
+  try {
+    const rows = db.prepare("SELECT * FROM vendite ORDER BY id DESC").all();
+    saveJSON("sales.json", rows);
+    console.log("💰 Vendite esportate");
+  } catch (err) {
+    console.error("❌ Errore exportSales:", err.message);
+  }
 }
 
 // ---------------------------------------------------------
 // 6) Utenti
 // ---------------------------------------------------------
 async function exportUsers() {
-  const rows = db.prepare("SELECT id, email, created_at FROM utenti").all();
-  saveJSON("users.json", rows);
+  try {
+    const rows = db.prepare("SELECT id, email, created_at FROM utenti").all();
+    saveJSON("users.json", rows);
+    console.log("👤 Utenti esportati");
+  } catch (err) {
+    console.error("❌ Errore exportUsers:", err.message);
+  }
 }
 
 // ---------------------------------------------------------
 // 7) Catalogo completo
 // ---------------------------------------------------------
 async function exportCatalog() {
-  const prodotti = await catalogo.getAllProducts();
-  const categorie = await catalogo.getAllCategories();
-  const youtube = db.prepare("SELECT * FROM youtube_cache").all();
+  try {
+    const prodotti = await catalogo.getAllProducts();
+    const categorie = await catalogo.getAllCategories();
 
-  const catalogoCompleto = { prodotti, categorie, youtube };
-  saveJSON("catalog.json", catalogoCompleto);
+    const youtube = prodotti
+      .filter(p => p.youtube_video_id)
+      .map(p => ({
+        id: p.id,
+        video_id: p.youtube_video_id,
+        url: p.youtube_url,
+        title: p.youtube_title,
+        description: p.youtube_description,
+        thumbnail: p.youtube_thumbnail
+      }));
+
+    const catalogoCompleto = { prodotti, categorie, youtube };
+    saveJSON("catalog.json", catalogoCompleto);
+
+    console.log("📚 Catalogo completo esportato");
+  } catch (err) {
+    console.error("❌ Errore exportCatalog:", err.message);
+  }
 }
 
 // ---------------------------------------------------------
 // 8) Esporta tutto
 // ---------------------------------------------------------
 async function exportAll() {
+  console.log("⏳ Rigenerazione JSON…");
+
   await exportProducts();
   await exportCategories();
   await exportYouTube();
