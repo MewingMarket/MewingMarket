@@ -6,7 +6,7 @@ document.getElementById("btnResetEmail").addEventListener("click", async () => {
   const password = document.getElementById("resetPass").value.trim();
   const msg = document.getElementById("msgResetEmail");
 
-  const session = localStorage.getItem("session"); // token JWT
+  const session = localStorage.getItem("session"); // token SQL
 
   // Validazione password
   if (!password) {
@@ -23,13 +23,13 @@ document.getElementById("btnResetEmail").addEventListener("click", async () => {
   }
 
   try {
-    const res = await fetch("/api/auth/reset-email-request", {
+    const res = await fetch("/api/utenti/reset-email-request", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        password,
-        session   // ⭐ invio token al backend SQL
-      })
+      headers: {
+        "Content-Type": "application/json",
+        "x-token": session   // ⭐ token corretto per backend SQL
+      },
+      body: JSON.stringify({ password })
     });
 
     const data = await res.json();
