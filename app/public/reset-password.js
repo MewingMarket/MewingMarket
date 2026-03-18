@@ -20,7 +20,7 @@ document.getElementById("btnResetPassword").addEventListener("click", async () =
   }
 
   try {
-    const res = await fetch("/api/auth/reset-password-request", {
+    const res = await fetch("/api/utenti/reset-password-request", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email })
