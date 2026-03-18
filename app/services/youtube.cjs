@@ -233,7 +233,8 @@ async function syncYouTube() {
     await jsonGen.exportYouTube();
     await jsonGen.exportProducts();
     await jsonGen.exportCatalog();
-    console.log("💾 JSON YouTube + prodotti + catalogo aggiornati.");
+    await jsonGen.exportCategories(); // 👉 aggiunta per tenere aggiornato categories.json
+    console.log("💾 JSON YouTube + prodotti + catalogo + categorie aggiornati.");
   } catch (err) {
     console.error("⚠️ Errore aggiornamento JSON:", err);
   }
