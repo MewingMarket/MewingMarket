@@ -1,6 +1,4 @@
-DROP TABLE IF EXISTS prodotti;
-
-CREATE TABLE prodotti (
+CREATE TABLE IF NOT EXISTS prodotti (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   titolo TEXT NOT NULL,
   titolo_breve TEXT,
