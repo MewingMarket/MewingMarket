@@ -1,34 +1,47 @@
 /**
  * =========================================================
  * GENERATORE JSON — Mirror del database SQL
- * Crea i file statici in /app/public/data/
+ * Persistente su /var/data/json + copia in /app/public/data
  * =========================================================
  */
 
 const fs = require("fs");
 const path = require("path");
 
-// PATCH: catalogo si trova in app/modules/
+// Catalogo SQL
 const catalogo = require("../../modules/catalogo-sql.cjs");
-
-// db è già nella posizione corretta
 const db = require("../db/database.cjs");
 
-// Directory output JSON
-const DATA_DIR = path.join(__dirname, "../../public/data");
+// ---------------------------------------------------------
+// Percorsi
+// ---------------------------------------------------------
 
-// Assicura che la cartella esista
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  console.log("📁 Creata cartella data:", DATA_DIR);
-}
+// 1) Persistente (Render Disk)
+const DISK_DIR = "/var/data/json";
+
+// 2) Copia per il frontend (volatile)
+const PUBLIC_DIR = path.join(__dirname, "../../public/data");
+
+// Crea entrambe le cartelle se mancano
+[DISK_DIR, PUBLIC_DIR].forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+    console.log("📁 Creata cartella:", dir);
+  }
+});
 
 // ---------------------------------------------------------
-// Helper: salva JSON
+// Helper: salva JSON in persistente + copia nel public
 // ---------------------------------------------------------
 function saveJSON(filename, data) {
-  const full = path.join(DATA_DIR, filename);
-  fs.writeFileSync(full, JSON.stringify(data, null, 2), "utf8");
+  const json = JSON.stringify(data, null, 2);
+
+  // Persistente
+  fs.writeFileSync(path.join(DISK_DIR, filename), json, "utf8");
+
+  // Copia volatile per il frontend
+  fs.writeFileSync(path.join(PUBLIC_DIR, filename), json, "utf8");
+
   console.log("💾 JSON aggiornato:", filename);
 }
 
@@ -81,19 +94,14 @@ async function exportUsers() {
 }
 
 // ---------------------------------------------------------
-// 7) Catalogo completo (prodotti + youtube + categorie)
+// 7) Catalogo completo
 // ---------------------------------------------------------
 async function exportCatalog() {
   const prodotti = await catalogo.getAllProducts();
   const categorie = await catalogo.getAllCategories();
   const youtube = db.prepare("SELECT * FROM youtube_cache").all();
 
-  const catalogoCompleto = {
-    prodotti,
-    categorie,
-    youtube
-  };
-
+  const catalogoCompleto = { prodotti, categorie, youtube };
   saveJSON("catalog.json", catalogoCompleto);
 }
 
@@ -108,7 +116,8 @@ async function exportAll() {
   await exportSales();
   await exportUsers();
   await exportCatalog();
-  console.log("✅ Tutti i JSON rigenerati");
+
+  console.log("✅ Tutti i JSON rigenerati (persistente + public)");
 }
 
 module.exports = {
