@@ -142,13 +142,28 @@ console.log(">> ROOT PATH:", ROOT);
 
     console.log(">> CALLING app.listen…");
     await wait(300);
-require("./startup/cron-youtube.cjs")();
+    require("./startup/cron-youtube.cjs")();
+
     app.listen(PORT, () => {
       console.log(`\n🎉 SERVER LISTENING ON PORT ${PORT}`);
       console.log("📦 Catalogo caricato (cache locale)");
       console.log("⚡ Server pronto e online");
       console.log("🤖 Bot operativo");
       console.log("====================================\n");
+
+      // =========================================================
+      // 🔥 PATCH: SYNC JSON PERSISTENTI → app/data
+      // =========================================================
+      setTimeout(async () => {
+        console.log("⏳ Sync iniziale JSON (persistente → app/data)...");
+        try {
+          const jsonGen = require("../modules/generatore-json.cjs");
+          await jsonGen.exportAll();
+          console.log("✅ Sync JSON completato");
+        } catch (err) {
+          console.error("❌ Errore sync JSON:", err.message);
+        }
+      }, 1000);
 
       // =========================================================
       // LOG PERIODICO DI TUTTE LE TABELLE
