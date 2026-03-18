@@ -14,6 +14,13 @@ const jsonGen = require("../server/modules/generatore-json.cjs");
 
 const PROXY = "https://corsproxy.io/?";
 
+// =========================================================
+// ID CANALE + FALLBACK
+// =========================================================
+const CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID || "UCojPlWkEtJmoG6Lsbx66Mtg";
+const CHANNEL_USERNAME = "mewingmarket2";
+const CHANNEL_URL = "https://www.youtube.com/@mewingmarket2";
+
 /* =========================================================
    FUNZIONE: Estrae ID da qualsiasi URL YouTube
 ========================================================= */
@@ -33,6 +40,21 @@ function extractVideoId(url) {
   }
 
   return null;
+}
+
+/* =========================================================
+   FUNZIONE: fuzzy match semplice
+========================================================= */
+function fuzzyMatch(a, b) {
+  if (!a || !b) return false;
+  a = a.toLowerCase();
+  b = b.toLowerCase();
+  return (
+    a.includes(b) ||
+    b.includes(a) ||
+    a.replace(/\s+/g, "").includes(b.replace(/\s+/g, "")) ||
+    b.replace(/\s+/g, "").includes(a.replace(/\s+/g, ""))
+  );
 }
 
 /* =========================================================
@@ -59,16 +81,10 @@ function tableExists(table) {
 }
 
 /* =========================================================
-   SCRAPING RSS (feed ufficiale YouTube)
+   SCRAPING RSS
 ========================================================= */
-async function fetchChannelVideosRSS() {
+async function fetchChannelVideosRSS(channelId) {
   try {
-    const channelId = process.env.YOUTUBE_CHANNEL_ID;
-    if (!channelId) {
-      console.error("❌ RSS: manca YOUTUBE_CHANNEL_ID");
-      return { success: false, videos: [] };
-    }
-
     const url = `${PROXY}https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
     console.log("🌐 RSS YouTube →", url);
 
@@ -82,7 +98,8 @@ async function fetchChannelVideosRSS() {
       url: e.link[0].$.href,
       title: e.title[0],
       description: e["media:group"]?.[0]?.["media:description"]?.[0] || "",
-      thumbnail: e["media:group"]?.[0]?.["media:thumbnail"]?.[0]?.$.url || ""
+      thumbnail: e["media:group"]?.[0]?.["media:thumbnail"]?.[0]?.$.url || "",
+      published: e.published?.[0] || null
     }));
 
     return { success: true, videos };
@@ -94,16 +111,10 @@ async function fetchChannelVideosRSS() {
 }
 
 /* =========================================================
-   SCRAPING HTML (fallback finale)
+   SCRAPING HTML
 ========================================================= */
-async function fetchChannelVideosHTML() {
+async function fetchChannelVideosHTML(channelId) {
   try {
-    const channelId = process.env.YOUTUBE_CHANNEL_ID;
-    if (!channelId) {
-      console.error("❌ HTML: manca YOUTUBE_CHANNEL_ID");
-      return { success: false, videos: [] };
-    }
-
     const url = `${PROXY}https://www.youtube.com/channel/${channelId}/videos`;
     console.log("🌐 HTML YouTube →", url);
 
@@ -123,7 +134,8 @@ async function fetchChannelVideosHTML() {
       url: `https://www.youtube.com/watch?v=${id}`,
       title: "",
       description: "",
-      thumbnail: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
+      thumbnail: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+      published: null
     }));
 
     return { success: true, videos };
@@ -135,36 +147,107 @@ async function fetchChannelVideosHTML() {
 }
 
 /* =========================================================
-   SYNC COMPLETO → aggiorna tabella prodotti + JSON mirror
+   FALLBACK: Username
+========================================================= */
+async function fetchByUsername(username) {
+  try {
+    const url = `${PROXY}https://www.youtube.com/@${username}/videos`;
+    console.log("🌐 HTML Username →", url);
+
+    const res = await axios.get(url);
+    const html = res.data;
+
+    const regex = /"videoId":"(.*?)"/g;
+    const ids = new Set();
+    let match;
+
+    while ((match = regex.exec(html)) !== null) {
+      ids.add(match[1]);
+    }
+
+    const videos = [...ids].map(id => ({
+      videoId: id,
+      url: `https://www.youtube.com/watch?v=${id}`,
+      title: "",
+      description: "",
+      thumbnail: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+      published: null
+    }));
+
+    return { success: true, videos };
+
+  } catch (err) {
+    console.error("❌ HTML Username fallito:", err?.message);
+    return { success: false, videos: [] };
+  }
+}
+
+/* =========================================================
+   FALLBACK: Ricerca fuzzy
+========================================================= */
+async function fetchBySearchTerm(term) {
+  try {
+    const url = `${PROXY}https://www.youtube.com/results?search_query=${encodeURIComponent(term)}`;
+    console.log("🌐 Ricerca YouTube →", url);
+
+    const res = await axios.get(url);
+    const html = res.data;
+
+    const regex = /"videoId":"(.*?)"/g;
+    const ids = new Set();
+    let match;
+
+    while ((match = regex.exec(html)) !== null) {
+      ids.add(match[1]);
+    }
+
+    const videos = [...ids].map(id => ({
+      videoId: id,
+      url: `https://www.youtube.com/watch?v=${id}`,
+      title: "",
+      description: "",
+      thumbnail: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+      published: null
+    }));
+
+    return { success: true, videos };
+
+  } catch (err) {
+    console.error("❌ Ricerca YouTube fallita:", err?.message);
+    return { success: false, videos: [] };
+  }
+}
+
+/* =========================================================
+   SYNC COMPLETO
 ========================================================= */
 async function syncYouTube() {
   console.log("⏳ Sync YouTube avviato...");
 
-  // 🔒 Controllo tabella
   if (!tableExists("prodotti")) {
     console.error("❌ ERRORE: tabella 'prodotti' non trovata.");
     return { success: false, count: 0 };
   }
 
-  // 🔒 Controllo colonna id
-  if (!tableHasColumn("prodotti", "id")) {
-    console.error("❌ ERRORE: la tabella 'prodotti' non ha colonna 'id'.");
-    return { success: false, count: 0 };
-  }
-
-  // 🔒 Controllo colonna youtube_video_id
-  if (!tableHasColumn("prodotti", "youtube_video_id")) {
-    console.error("❌ ERRORE: manca colonna youtube_video_id.");
-    return { success: false, count: 0 };
-  }
-
-  // 1) RSS
-  let result = await fetchChannelVideosRSS();
+  // 1) Tentativo con ID canale
+  let result = await fetchChannelVideosRSS(CHANNEL_ID);
 
   // 2) Fallback HTML
   if (!result.success || !result.videos.length) {
     console.log("⚠️ RSS vuoto → provo HTML...");
-    result = await fetchChannelVideosHTML();
+    result = await fetchChannelVideosHTML(CHANNEL_ID);
+  }
+
+  // 3) Fallback username
+  if (!result.success || !result.videos.length) {
+    console.log("⚠️ HTML vuoto → provo username...");
+    result = await fetchByUsername(CHANNEL_USERNAME);
+  }
+
+  // 4) Fallback ricerca fuzzy
+  if (!result.success || !result.videos.length) {
+    console.log("⚠️ Username vuoto → provo ricerca fuzzy...");
+    result = await fetchBySearchTerm("mewingmarket2");
   }
 
   if (!result.success || !result.videos.length) {
@@ -172,10 +255,17 @@ async function syncYouTube() {
     return { success: false, count: 0 };
   }
 
+  // Ordina per data (se disponibile)
+  result.videos.sort((a, b) => {
+    if (!a.published || !b.published) return 0;
+    return new Date(b.published) - new Date(a.published);
+  });
+
   const videos = result.videos;
 
   const stmtFind = db.prepare(`
-    SELECT id FROM prodotti WHERE youtube_video_id = ?
+    SELECT id, titolo, descrizione_lunga
+    FROM prodotti
   `);
 
   const stmtUpdate = db.prepare(`
@@ -185,42 +275,49 @@ async function syncYouTube() {
       youtube_title = ?,
       youtube_description = ?,
       youtube_thumbnail = ?,
+      youtube_video_id = ?,
       updated_at = CURRENT_TIMESTAMP
-    WHERE id = ?
-  `);
-
-  const stmtFixMissing = db.prepare(`
-    UPDATE prodotti
-    SET youtube_video_id = ?
     WHERE id = ?
   `);
 
   let ok = 0;
 
-  const prodotti = db.prepare("SELECT id, youtube_url, youtube_video_id FROM prodotti").all();
+  const prodotti = stmtFind.all();
 
-  // 1) Estrai ID mancanti
   for (const p of prodotti) {
-    if (!p.youtube_video_id && p.youtube_url) {
-      const extracted = extractVideoId(p.youtube_url);
-      if (extracted) {
-        stmtFixMissing.run(extracted, p.id);
-        console.log(`🔧 Aggiunto youtube_video_id per prodotto ${p.id}: ${extracted}`);
-      }
-    }
-  }
+    let matched = null;
 
-  // 2) Aggiorna prodotti
-  for (const v of videos) {
-    const prod = stmtFind.get(v.videoId);
-    if (!prod) continue;
+    // 1) match diretto su videoId
+    matched = videos.find(v => v.videoId === p.youtube_video_id);
+
+    // 2) match fuzzy su titolo
+    if (!matched) {
+      matched = videos.find(v => fuzzyMatch(v.title, p.titolo));
+    }
+
+    // 3) match fuzzy su descrizione
+    if (!matched) {
+      matched = videos.find(v => fuzzyMatch(v.description, p.descrizione_lunga));
+    }
+
+    // 4) match su parole chiave
+    if (!matched) {
+      matched = videos.find(v =>
+        fuzzyMatch(v.title, "mewing") ||
+        fuzzyMatch(v.title, "market") ||
+        fuzzyMatch(v.title, "business")
+      );
+    }
+
+    if (!matched) continue;
 
     stmtUpdate.run(
-      v.url,
-      v.title,
-      v.description,
-      v.thumbnail,
-      prod.id
+      matched.url,
+      matched.title,
+      matched.description,
+      matched.thumbnail,
+      matched.videoId,
+      p.id
     );
 
     ok++;
@@ -233,7 +330,7 @@ async function syncYouTube() {
     await jsonGen.exportYouTube();
     await jsonGen.exportProducts();
     await jsonGen.exportCatalog();
-    await jsonGen.exportCategories(); // 👉 aggiunta per tenere aggiornato categories.json
+    await jsonGen.exportCategories();
     console.log("💾 JSON YouTube + prodotti + catalogo + categorie aggiornati.");
   } catch (err) {
     console.error("⚠️ Errore aggiornamento JSON:", err);
