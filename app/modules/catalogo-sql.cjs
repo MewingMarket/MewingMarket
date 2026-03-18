@@ -21,7 +21,7 @@ function makeDescrizioneBreve(descrizione) {
 }
 
 // =========================================================
-/* NORMALIZZA PRODOTTO PER FRONTEND */
+// NORMALIZZA PRODOTTO PER FRONTEND
 // =========================================================
 function normalizeProduct(row) {
   return {
@@ -33,6 +33,8 @@ function normalizeProduct(row) {
     descrizione_breve: row.descrizione_breve,
     descrizione_lunga: row.descrizione_lunga,
 
+    // 🔥 PATCH: esponiamo sia prezzo che prezzo_cent
+    prezzo_cent: row.prezzo_cent,
     prezzo: row.prezzo_cent / 100,
 
     categoria: row.categoria,
