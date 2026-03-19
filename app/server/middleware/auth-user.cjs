@@ -1,64 +1,76 @@
 // =========================================================
-// File: app/server/middleware/auth-user.cjs
-// Middleware USER definitivo (token SQL, senza rompere il DB)
+// AUTH-USER.CJS — Versione SUPER-PERMISSIVA (DEFINITIVA)
 // =========================================================
 
-const db = require("../db/database.cjs");
-
-module.exports = function (req, res, next) {
+module.exports = function authUser(req, res, next) {
   try {
-    // ROTTA PUBBLICA: /api/products (catalogo frontend)
-    // NON deve essere bloccata se manca il token
-    const path = (req.path || "").toLowerCase();
-    const method = (req.method || "GET").toUpperCase();
+    const publicPaths = [
+      "/", "/index", "/index.html",
+      "/catalogo", "/catalogo.html",
+      "/prodotto", "/prodotto.html",
+      "/categories", "/categories.html",
+      "/checkout", "/checkout.html",
+      "/login", "/login.html",
+      "/registrazione", "/registrazione.html",
+      "/reset-password-request", "/reset-password-confirm",
+      "/reset-email-request", "/reset-email-confirm",
+      "/api/utenti/login",
+      "/api/utenti/registrazione",
+      "/api/utenti/reset-password-request",
+      "/api/utenti/reset-password-confirm",
+      "/api/utenti/reset-email-request",
+      "/api/utenti/reset-email-confirm",
+      "/api/products",
+      "/api/paypal/create-order",
+      "/api/paypal/execute-order",
+      "/seo", "/tracking", "/structured-data"
+    ];
 
-    const isPublicProducts =
-      method === "GET" &&
-      (path === "/products" || path.startsWith("/products/"));
+    const path = req.path.toLowerCase();
 
-    if (isPublicProducts) {
+    // -----------------------------------------------------
+    // 1) ROTTE PUBBLICHE — MAI BLOCCATE
+    // -----------------------------------------------------
+    if (publicPaths.some(p => path.startsWith(p))) {
       return next();
     }
 
-    // Per tutte le altre route protette → serve token
-    const tokenRaw = req.headers["x-token"];
-
-    // Normalizzazione token (senza lowercase, per non rompere il DB)
-    const token = String(tokenRaw || "").trim();
-
-    // Token mancante o non valido
-    if (!token || !token.startsWith("tok_")) {
-      return res.status(401).json({
-        success: false,
-        error: "Non autorizzato"
-      });
+    // -----------------------------------------------------
+    // 2) LETTURA TOKEN
+    // -----------------------------------------------------
+    const token = req.headers["x-token"];
+    if (!token) {
+      return res.status(401).json({ error: "Token mancante" });
     }
 
-    // Verifica che il token esista nel DB (utente reale)
-    const user = db
-      .prepare("SELECT id, email, ruolo FROM utenti WHERE token = ?")
-      .get(token);
+    // -----------------------------------------------------
+    // 3) VERIFICA TOKEN (SQL)
+    // -----------------------------------------------------
+    req.db.get(
+      "SELECT email, ruolo FROM utenti WHERE sessione = ? LIMIT 1",
+      [token],
+      (err, row) => {
+        if (err) {
+          console.error("AUTH SQL ERROR:", err);
+          return res.status(500).json({ error: "Errore server" });
+        }
 
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        error: "Token non valido"
-      });
-    }
+        if (!row) {
+          return res.status(401).json({ error: "Sessione non valida" });
+        }
 
-    // Salva info utente sulla request
-    req.userToken = token;
-    req.userId = user.id;
-    req.userEmail = user.email;
-    req.userRoleRaw = user.ruolo || "user";
+        // Utente autenticato
+        req.user = {
+          email: row.email,
+          ruolo: row.ruolo
+        };
 
-    next();
+        next();
+      }
+    );
 
   } catch (err) {
-    console.error("❌ auth-user:", err);
-    return res.status(500).json({
-      success: false,
-      error: "Errore server"
-    });
+    console.error("AUTH-USER ERROR:", err);
+    return res.status(500).json({ error: "Errore server" });
   }
 };
