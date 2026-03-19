@@ -1,206 +1,90 @@
 // =========================================================
-// CHECKOUT PREMIUM – MewingMarket (SQL + PAYPAL READY)
-// Versione definitiva: login check + multi/single + qty + totale + PayPal
+// CHECKOUT.JS — Versione DEFINITIVA
+// Sincronizzato con auth-ready + carrello + SQL
 // =========================================================
 
-/* =========================================================
-   1) LOGIN CHECK
-========================================================= */
-document.addEventListener("DOMContentLoaded", () => {
-  if (!isLogged()) {
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get("id");
+console.log("[CHECKOUT] Caricato");
 
-    const redirectURL = id
-      ? `login.html?redirect=checkout.html?id=${id}`
-      : `login.html?redirect=checkout.html`;
+// Attende auth-ready PRIMA di iniziare
+document.addEventListener("auth-ready", initCheckout);
 
-    window.location.href = redirectURL;
-    return;
-  }
-
-  initCheckout();
-});
-
-/* =========================================================
-   2) INIZIALIZZAZIONE CHECKOUT
-========================================================= */
 function initCheckout() {
-  const mode = getCheckoutMode(); // single | multi
+  console.log("[CHECKOUT] initCheckout()");
 
-  if (mode === "single") {
-    renderSingleCheckout();
-  } else {
-    renderMultiCheckout();
-  }
-
-  aggiornaBadgeCarrello();
-}
-
-/* =========================================================
-   3) CHECKOUT SINGOLO PRODOTTO
-========================================================= */
-function renderSingleCheckout() {
-  const prodotto = getSingleProduct();
-
-  if (!prodotto) {
-    document.getElementById("checkout-container").innerHTML =
-      "<p>Prodotto non trovato nel carrello.</p>";
+  // -------------------------------------------------------
+  // 1) Verifica login
+  // -------------------------------------------------------
+  if (!window.isLogged) {
+    console.warn("[CHECKOUT] Utente non loggato → redirect login");
+    window.location.href = "login.html";
     return;
   }
 
-  const prezzo = prodotto.prezzo_cent / 100;
+  // -------------------------------------------------------
+  // 2) Carica carrello
+  // -------------------------------------------------------
+  const cart = JSON.parse(localStorage.getItem("carrello") || "[]");
 
-  document.getElementById("checkout-container").innerHTML = `
-    <h2>Checkout — Acquisto Singolo</h2>
-
-    <div class="checkout-item">
-      <img src="${prodotto.immagine}" alt="${prodotto.titolo}">
-      <div>
-        <h3>${prodotto.titolo}</h3>
-        <p>Prezzo: €${prezzo}</p>
-      </div>
-    </div>
-
-    <div class="checkout-totale">
-      <h3>Totale: €${prezzo}</h3>
-    </div>
-
-    <button id="btn-paga" class="btn-primario">Paga con PayPal</button>
-  `;
-
-  document.getElementById("btn-paga").addEventListener("click", () => {
-    pagaOrdine([prodotto]);
-  });
-}
-
-/* =========================================================
-   4) CHECKOUT MULTIPLO (CARRELLO)
-========================================================= */
-function renderMultiCheckout() {
-  const items = Cart.get();
-
-  if (!items.length) {
-    document.getElementById("checkout-container").innerHTML =
-      "<p>Il carrello è vuoto.</p>";
+  if (!Array.isArray(cart) || cart.length === 0) {
+    console.warn("[CHECKOUT] Carrello vuoto → redirect catalogo");
+    window.location.href = "catalogo.html";
     return;
   }
 
-  let html = `
-    <h2>Checkout — Carrello</h2>
-    <div class="checkout-list">
-  `;
+  // -------------------------------------------------------
+  // 3) Calcolo totale
+  // -------------------------------------------------------
+  let totaleCent = 0;
 
-  items.forEach((p) => {
-    const prezzo = p.prezzo_cent / 100;
-
-    html += `
-      <div class="checkout-item" data-id="${p.id}">
-        <img src="${p.immagine}" alt="${p.titolo}">
-        <div class="info">
-          <h3>${p.titolo}</h3>
-          <p>Prezzo: €${prezzo}</p>
-
-          <div class="qty-box">
-            <button class="qty-minus" data-id="${p.id}">-</button>
-            <span class="qty">${p.qty}</span>
-            <button class="qty-plus" data-id="${p.id}">+</button>
-          </div>
-        </div>
-
-        <button class="btn-remove" data-id="${p.id}">Rimuovi</button>
-      </div>
-    `;
+  cart.forEach((item) => {
+    const prezzo = Number(item.prezzo_cent) || 0;
+    totaleCent += prezzo;
   });
 
-  html += `</div>`;
+  const totaleEuro = (totaleCent / 100).toFixed(2);
 
-  html += `
-    <div class="checkout-totale">
-      <h3>Totale: €${Cart.total()}</h3>
-    </div>
-
-    <button id="btn-paga" class="btn-primario">Paga con PayPal</button>
-  `;
-
-  document.getElementById("checkout-container").innerHTML = html;
-
-  bindQtyButtons();
-  bindRemoveButtons();
-
-  document.getElementById("btn-paga").addEventListener("click", () => {
-    pagaOrdine(items);
-  });
-}
-
-/* =========================================================
-   5) QUANTITÀ (+ / -)
-========================================================= */
-function bindQtyButtons() {
-  document.querySelectorAll(".qty-plus").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      Cart.updateQty(Number(btn.dataset.id), +1);
-      renderMultiCheckout();
-    });
-  });
-
-  document.querySelectorAll(".qty-minus").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      Cart.updateQty(Number(btn.dataset.id), -1);
-      renderMultiCheckout();
-    });
-  });
-}
-
-/* =========================================================
-   6) RIMOZIONE PRODOTTO
-========================================================= */
-function bindRemoveButtons() {
-  document.querySelectorAll(".btn-remove").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      Cart.remove(Number(btn.dataset.id));
-      renderMultiCheckout();
-      aggiornaBadgeCarrello();
-    });
-  });
-}
-
-/* =========================================================
-   7) PAGAMENTO (SQL + PAYPAL)
-========================================================= */
-async function pagaOrdine(items) {
-  if (!items || !items.length) {
-    alert("Nessun prodotto da acquistare.");
-    return;
+  const totalEl = document.getElementById("checkout-total");
+  if (totalEl) {
+    totalEl.textContent = "€" + totaleEuro;
   }
 
-  const email = getUserEmail();
-  const prodotti = Cart.getForCheckout();
-  const totale = Cart.total(); // EURO
+  console.log("[CHECKOUT] Totale:", totaleEuro);
 
-  try {
-    const res = await fetch("/api/paypal/create-order", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email,
-        prodotti,
-        totale
-      })
-    });
+  // -------------------------------------------------------
+  // 4) Bottone acquista
+  // -------------------------------------------------------
+  const btn = document.getElementById("btnCheckout");
+  if (!btn) return;
 
-    const data = await res.json();
+  btn.onclick = async () => {
+    btn.disabled = true;
 
-    if (!data.success || !data.paypalUrl) {
-      alert("Errore durante la creazione dell'ordine PayPal.");
-      return;
+    try {
+      console.log("[CHECKOUT] Creazione ordine PayPal…");
+
+      const res = await fetch("/api/paypal/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ carrello: cart })
+      });
+
+      const data = await res.json().catch(() => ({}));
+      console.log("[CHECKOUT] Risposta create-order:", data);
+
+      if (!data.success || !data.id) {
+        alert("Errore nella creazione dell'ordine.");
+        btn.disabled = false;
+        return;
+      }
+
+      // Redirect PayPal
+      window.location.href = data.approvalUrl;
+
+    } catch (err) {
+      console.error("[CHECKOUT] Errore:", err);
+      alert("Errore di connessione.");
+    } finally {
+      btn.disabled = false;
     }
-
-    // Redirect PayPal
-    window.location.href = data.paypalUrl;
-
-  } catch (err) {
-    console.error("Errore pagamento:", err);
-    alert("Errore durante il pagamento.");
-  }
+  };
 }
