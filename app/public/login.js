@@ -23,6 +23,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const email = emailEl.value.trim().toLowerCase();
     const password = passEl.value.trim();
 
+    if (!email || !password) {
+      alert("Inserisci email e password.");
+      return;
+    }
+
+    // PATCH: blocco doppio submit
+    if (form.dataset.lock === "1") return;
+    form.dataset.lock = "1";
+
     try {
       const res = await fetch("/api/utenti/login", {
         method: "POST",
@@ -30,12 +39,13 @@ document.addEventListener("DOMContentLoaded", () => {
         body: JSON.stringify({ email, password })
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       console.log("[LOGIN] Risposta backend:", data);
 
       if (!data.success) {
         alert(data.error || "Errore login");
+        form.dataset.lock = "0";
         return;
       }
 
@@ -62,6 +72,8 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) {
       console.error("❌ Errore login:", err);
       alert("Errore di connessione al server");
+    } finally {
+      form.dataset.lock = "0";
     }
   });
 });
