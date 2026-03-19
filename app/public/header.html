@@ -1,20 +1,50 @@
-<!-- HEADER GENERICO – STRUTTURA PULITA E DINAMICA -->
+<!-- =========================================================
+     HEADER UNICO — Versione DEFINITIVA (2026)
+     Usato per homepage + shop + dashboard + admin
+     Gestito da header.js
+========================================================= -->
 
-<div class="site-header">
-  <div class="header-container">
+<link rel="stylesheet" href="header-shop.css">
 
-    <!-- LOGO -->
+<div class="shop-header">
+  <div class="shop-header-inner">
+
+    <!-- LOGO (versione da mantenere) -->
     <a href="index.html" class="logo">
       <img src="logo.png" alt="MewingMarket" width="180" loading="lazy">
     </a>
 
-    <!-- PULSANTE ADMIN (invisibile finché non sei admin) -->
-    <a id="admin-trigger"
-       href="admin.html"
-       class="btn-admin-header"
-       style="display:none;">
-      <i class="fa-solid fa-shield-halved"></i> Admin
-    </a>
+    <!-- NAVIGAZIONE DINAMICA -->
+    <nav class="main-nav">
+
+      <!-- Catalogo -->
+      <a href="catalogo.html" id="nav-catalogo">Catalogo</a>
+
+      <!-- Login / Registrazione -->
+      <a href="login.html" id="nav-login">Login</a>
+      <a href="registrazione.html" id="nav-register">Registrati</a>
+
+      <!-- Profilo (solo user) -->
+      <a href="dashboard.html" id="nav-profilo" style="display:none;">Profilo</a>
+
+      <!-- Logout -->
+      <a href="#" id="nav-logout" style="display:none;">Logout</a>
+
+      <!-- Admin -->
+      <a href="dashboard-admin-profilo.html"
+         id="admin-trigger"
+         class="btn-admin-header"
+         style="display:none;">
+        <i class="fa-solid fa-shield-halved"></i> Admin
+      </a>
+
+      <!-- Carrello -->
+      <div id="cart-wrapper">
+        <span id="cart-icon">🛒</span>
+        <span id="cart-badge" style="display:none;">0</span>
+      </div>
+
+    </nav>
 
   </div>
 </div>
