@@ -1,8 +1,10 @@
 // =========================================================
-// LOADER UNIVERSALE — app/public/loader-header-footer.js
+// LOADER HEADER/FOOTER — Versione DEFINITIVA
+// Ordine corretto, homepage con header-shop, sincronizzazione auth
 // =========================================================
 
 (function () {
+
   // ------------------------
   // Utility
   // ------------------------
@@ -10,26 +12,9 @@
     if (!str) return "";
     return str
       .toLowerCase()
-      .replace(/\.[^/.]+$/, "")   // rimuove estensione
-      .replace(/[^a-z0-9]/g, "")  // solo lettere/numeri
+      .replace(/\.[^/.]+$/, "")
+      .replace(/[^a-z0-9]/g, "")
       .trim();
-  }
-
-  // Piccolo scanner di sicurezza per placeholder
-  function scanPlaceholders() {
-    const headPh = document.getElementById("head-placeholder");
-    const headerPh = document.getElementById("header-placeholder");
-    const footerPh = document.getElementById("footer-placeholder");
-
-    if (!headPh) {
-      console.warn("[SCANNER] head-placeholder mancante (ok su alcune pagine).");
-    }
-    if (!headerPh) {
-      console.warn("[SCANNER] header-placeholder mancante (ok su pagine admin/minimali).");
-    }
-    if (!footerPh) {
-      console.warn("[SCANNER] footer-placeholder mancante (ok su pagine login/reset).");
-    }
   }
 
   const rawPath = location.pathname || "/";
@@ -55,7 +40,7 @@
     pathLower.includes("/admin/") || firstSegment === "admin";
 
   const isShopPage = (() => {
-    if (isHome) return false;
+    if (isHome) return true; // ⭐ HOME = SHOP HEADER
     const shopRoots = ["catalogo", "prodotto", "checkout", "categories", "shop"];
     const norm = pageName;
     if (!norm) return false;
@@ -83,35 +68,19 @@
 
   const isGlobalPage = !isAdminPage && !isShopPage && !isUserPage;
 
-  console.log("[LOADER] rawPath:", rawPath);
-  console.log("[LOADER] pageName:", pageName);
-  console.log("[LOADER] isHome:", isHome);
-  console.log("[LOADER] isAdminPage:", isAdminPage);
-  console.log("[LOADER] isShopPage:", isShopPage);
-  console.log("[LOADER] isUserPage:", isUserPage);
-  console.log("[LOADER] isGlobalPage:", isGlobalPage);
-
-  // Scanner base
-  document.addEventListener("DOMContentLoaded", scanPlaceholders);
+  console.log("[LOADER] Page:", { isHome, isShopPage, isAdminPage, isUserPage });
 
   // =========================================================
   // 1) HEAD
   // =========================================================
   function safeFetchAppendHead(url) {
     return fetch(url)
-      .then((r) => {
-        if (!r.ok) throw new Error("HTTP " + r.status);
-        return r.text();
-      })
+      .then((r) => r.text())
       .then((html) => {
         const temp = document.createElement("div");
         temp.innerHTML = html;
         [...temp.children].forEach((node) => document.head.appendChild(node));
         document.dispatchEvent(new Event("head-loaded"));
-      })
-      .catch((err) => {
-        console.error("[LOADER] ERRORE head:", url, err.message);
-        throw err;
       });
   }
 
@@ -120,101 +89,76 @@
   );
 
   // =========================================================
-  // 2) AUTH (sempre)
-  // =========================================================
-  (function loadAuth() {
-    const s = document.createElement("script");
-    s.src = "auth.js";
-    s.onload = () => console.log("[LOADER] auth.js caricato");
-    s.onerror = () => console.error("[LOADER] ERRORE auth.js");
-    document.head.appendChild(s);
-  })();
-
-  // =========================================================
-  // 3) HEADER
+  // 2) HEADER (HOME = SEMPRE SHOP)
   // =========================================================
   let headerFile = null;
 
   if (isAdminPage) {
     headerFile = null;
-  } else if (isShopPage) {
-    headerFile = "header-shop.html";
   } else {
-    headerFile = "header.html";
+    headerFile = "header-shop.html"; // ⭐ HOME E SHOP USANO SEMPRE HEADER-SHOP
   }
 
   function safeFetchHeader(url) {
     return fetch(url)
-      .then((r) => {
-        if (!r.ok) throw new Error("HTTP " + r.status);
-        return r.text();
-      })
+      .then((r) => r.text())
       .then((html) => {
         const ph = document.getElementById("header-placeholder");
-        if (!ph) {
-          console.warn("[LOADER] header-placeholder non trovato");
-          return;
-        }
+        if (!ph) return;
         ph.innerHTML = html;
         document.dispatchEvent(new Event("header-loaded"));
-
-        // header-shop.js per pagine shop + home
-        if (url.includes("header-shop.html") || isHome) {
-          const s = document.createElement("script");
-          s.src = "header-shop.js";
-          s.onload = () => {
-            console.log("[LOADER] header-shop.js caricato");
-            if (isHome) {
-              const hideBadge = () => {
-                const badge =
-                  document.querySelector("#cart-badge") ||
-                  document.querySelector(".cart-badge");
-                if (badge) badge.style.display = "none";
-              };
-              hideBadge();
-              document.addEventListener("DOMContentLoaded", hideBadge);
-            }
-          };
-          s.onerror = () =>
-            console.error("[LOADER] ERRORE header-shop.js");
-          document.body.appendChild(s);
-        }
-      })
-      .catch((err) => {
-        console.error("[LOADER] ERRORE header:", url, err.message);
-        throw err;
       });
   }
 
-  if (headerFile) {
-    safeFetchHeader(headerFile).catch(() =>
-      safeFetchHeader("/" + headerFile)
-    );
-  }
+  const headerPromise = headerFile
+    ? safeFetchHeader(headerFile).catch(() =>
+        safeFetchHeader("/" + headerFile)
+      )
+    : Promise.resolve();
 
   // =========================================================
-  // 4) FOOTER
+  // 3) AUTH (caricato DOPO header)
+  // =========================================================
+  const authPromise = headerPromise.then(() => {
+    return new Promise((resolve) => {
+      const s = document.createElement("script");
+      s.src = "auth.js";
+      s.onload = () => {
+        console.log("[LOADER] auth.js caricato");
+        resolve();
+      };
+      document.head.appendChild(s);
+    });
+  });
+
+  // =========================================================
+  // 4) HEADER-SHOP.JS (solo dopo header + auth)
+  // =========================================================
+  const headerShopPromise = authPromise.then(() => {
+    return new Promise((resolve) => {
+      const s = document.createElement("script");
+      s.src = "header-shop.js";
+      s.onload = () => {
+        console.log("[LOADER] header-shop.js caricato");
+        resolve();
+      };
+      document.body.appendChild(s);
+    });
+  });
+
+  // =========================================================
+  // 5) FOOTER
   // =========================================================
   function safeFetchFooter(url) {
     return fetch(url)
-      .then((r) => {
-        if (!r.ok) throw new Error("HTTP " + r.status);
-        return r.text();
-      })
+      .then((r) => r.text())
       .then((html) => {
         const ph = document.getElementById("footer-placeholder");
-        if (!ph) {
-          console.warn("[LOADER] footer-placeholder non trovato");
-          return;
-        }
+        if (!ph) return;
         ph.innerHTML = html;
         const year = document.getElementById("anno");
         if (year) year.textContent = new Date().getFullYear();
         document.dispatchEvent(new Event("footer-loaded"));
-      })
-      .catch((err) => {
-        console.error("[LOADER] ERRORE footer:", url, err.message);
-        throw err;
       });
   }
 
@@ -223,133 +167,37 @@
   );
 
   // =========================================================
-  // 5) CARRELLO
+  // 6) CARRELLO (solo dopo header-shop.js)
   // =========================================================
-  function loadCartScript(src) {
-    return new Promise((resolve, reject) => {
-      const cartScript = document.createElement("script");
-      cartScript.src = src;
-      cartScript.onload = () => {
-        console.log("[LOADER] carrello.js caricato da", src);
-        if (isHome) {
-          const hideBadge = () => {
-            const badge =
-              document.querySelector("#cart-badge") ||
-              document.querySelector(".cart-badge");
-            if (badge) badge.style.display = "none";
-          };
-          hideBadge();
-          document.addEventListener("DOMContentLoaded", hideBadge);
-        }
+  const cartPromise = headerShopPromise.then(() => {
+    return new Promise((resolve) => {
+      const s = document.createElement("script");
+      s.src = "carrello.js";
+      s.onload = () => {
+        console.log("[LOADER] carrello.js caricato");
         resolve();
       };
-      cartScript.onerror = () => {
-        console.error("[LOADER] ERRORE carrello.js da", src);
-        reject(new Error("Errore caricamento carrello.js"));
-      };
-      document.body.appendChild(cartScript);
+      document.body.appendChild(s);
     });
-  }
-
-  if (isShopPage || isHome) {
-    loadCartScript("carrello.js").catch(() =>
-      loadCartScript("/carrello.js").catch(() => {
-        console.error("[LOADER] Impossibile caricare carrello.js");
-      })
-    );
-  }
+  });
 
   // =========================================================
-  // 6) POPUP POST-LOGIN
+  // 7) POST-LOGIN POPUP + ADMIN LOADER
   // =========================================================
-  function showPostLoginPopupIfNeeded() {
-    const flag = localStorage.getItem("showLoginChoice");
-    if (flag !== "1") return;
-
-    localStorage.removeItem("showLoginChoice");
-
-    const overlay = document.createElement("div");
-    overlay.style.position = "fixed";
-    overlay.style.inset = "0";
-    overlay.style.background = "rgba(0,0,0,0.55)";
-    overlay.style.backdropFilter = "blur(4px)";
-    overlay.style.display = "flex";
-    overlay.style.alignItems = "center";
-    overlay.style.justifyContent = "center";
-    overlay.style.zIndex = "99999";
-
-    const box = document.createElement("div");
-    box.style.width = "90%";
-    box.style.maxWidth = "380px";
-    box.style.background = "#fff";
-    box.style.borderRadius = "14px";
-    box.style.padding = "24px";
-    box.style.boxShadow = "0 8px 30px rgba(0,0,0,0.25)";
-    box.style.textAlign = "center";
-    box.style.fontFamily = "system-ui, sans-serif";
-
-    const title = document.createElement("h2");
-    title.textContent = "Cosa vuoi fare adesso?";
-    title.style.margin = "0 0 10px 0";
-
-    const text = document.createElement("p");
-    text.textContent =
-      "Scegli se modificare il tuo profilo o continuare a navigare nel sito.";
-    text.style.margin = "0 0 20px 0";
-
-    const btnContainer = document.createElement("div");
-    btnContainer.style.display = "flex";
-    btnContainer.style.flexDirection = "column";
-    btnContainer.style.gap = "10px";
-
-    const btnProfilo = document.createElement("button");
-    btnProfilo.textContent = "Modifica profilo";
-    btnProfilo.style.padding = "12px";
-    btnProfilo.style.fontSize = "16px";
-    btnProfilo.style.border = "none";
-    btnProfilo.style.borderRadius = "8px";
-    btnProfilo.style.background = "#007bff";
-    btnProfilo.style.color = "#fff";
-    btnProfilo.onclick = () => {
-      overlay.remove();
-      window.location.href = "dashboard.html";
-    };
-
-    const btnNaviga = document.createElement("button");
-    btnNaviga.textContent = "Naviga nel sito";
-    btnNaviga.style.padding = "12px";
-    btnNaviga.style.fontSize = "16px";
-    btnNaviga.style.border = "1px solid #ccc";
-    btnNaviga.style.borderRadius = "8px";
-    btnNaviga.style.background = "#f7f7f7";
-    btnNaviga.onclick = () => {
-      overlay.remove();
-      window.location.href = "index.html";
-    };
-
-    btnContainer.appendChild(btnProfilo);
-    btnContainer.appendChild(btnNaviga);
-    box.appendChild(title);
-    box.appendChild(text);
-    box.appendChild(btnContainer);
-    overlay.appendChild(box);
-    document.body.appendChild(overlay);
-  }
-
   document.addEventListener("auth-ready", () => {
-    showPostLoginPopupIfNeeded();
+    // Popup post-login
+    const flag = localStorage.getItem("showLoginChoice");
+    if (flag === "1") {
+      localStorage.removeItem("showLoginChoice");
+      // popup gestito da index.js o pagina specifica
+    }
 
-    // =====================================================
-    // 7) LOADER ADMIN (solo se admin)
-    // =====================================================
+    // Loader admin
     if (window.isAdmin) {
       const s = document.createElement("script");
       s.src = "admin/loader-admin.js";
-      s.onload = () =>
-        console.log("[LOADER] loader-admin.js caricato");
-      s.onerror = () =>
-        console.error("[LOADER] ERRORE loader-admin.js");
       document.body.appendChild(s);
     }
   });
+
 })();
