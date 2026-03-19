@@ -1,14 +1,30 @@
 // =========================================================
 // File: app/server/middleware/auth-user.cjs
-// Middleware USER definitivo (normalizzazione token + ruolo)
+// Middleware USER definitivo (token SQL, senza rompere il DB)
 // =========================================================
+
+const db = require("../db/database.cjs");
 
 module.exports = function (req, res, next) {
   try {
-    let tokenRaw = req.headers["x-token"];
+    // ROTTA PUBBLICA: /api/products (catalogo frontend)
+    // NON deve essere bloccata se manca il token
+    const path = (req.path || "").toLowerCase();
+    const method = (req.method || "GET").toUpperCase();
 
-    // Normalizzazione token
-    const token = String(tokenRaw || "").trim().toLowerCase();
+    const isPublicProducts =
+      method === "GET" &&
+      (path === "/products" || path.startsWith("/products/"));
+
+    if (isPublicProducts) {
+      return next();
+    }
+
+    // Per tutte le altre route protette → serve token
+    const tokenRaw = req.headers["x-token"];
+
+    // Normalizzazione token (senza lowercase, per non rompere il DB)
+    const token = String(tokenRaw || "").trim();
 
     // Token mancante o non valido
     if (!token || !token.startsWith("tok_")) {
@@ -18,8 +34,23 @@ module.exports = function (req, res, next) {
       });
     }
 
-    // Salva token normalizzato
+    // Verifica che il token esista nel DB (utente reale)
+    const user = db
+      .prepare("SELECT id, email, ruolo FROM utenti WHERE token = ?")
+      .get(token);
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        error: "Token non valido"
+      });
+    }
+
+    // Salva info utente sulla request
     req.userToken = token;
+    req.userId = user.id;
+    req.userEmail = user.email;
+    req.userRoleRaw = user.ruolo || "user";
 
     next();
 
