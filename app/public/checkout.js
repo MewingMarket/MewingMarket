@@ -1,6 +1,6 @@
 // =========================================================
-// CHECKOUT.JS — Versione DEFINITIVA
-// Sincronizzato con auth-ready + carrello + SQL
+// CHECKOUT.JS — Versione DEFINITIVA (PATCH 2026)
+// Sincronizzato con auth-ready + Cart + SQL
 // =========================================================
 
 console.log("[CHECKOUT] Caricato");
@@ -21,9 +21,9 @@ function initCheckout() {
   }
 
   // -------------------------------------------------------
-  // 2) Carica carrello
+  // 2) Carica carrello dal modello Cart
   // -------------------------------------------------------
-  const cart = JSON.parse(localStorage.getItem("carrello") || "[]");
+  const cart = (typeof Cart !== "undefined") ? Cart.get() : [];
 
   if (!Array.isArray(cart) || cart.length === 0) {
     console.warn("[CHECKOUT] Carrello vuoto → redirect catalogo");
@@ -32,13 +32,14 @@ function initCheckout() {
   }
 
   // -------------------------------------------------------
-  // 3) Calcolo totale
+  // 3) Calcolo totale (qty inclusa)
   // -------------------------------------------------------
   let totaleCent = 0;
 
   cart.forEach((item) => {
     const prezzo = Number(item.prezzo_cent) || 0;
-    totaleCent += prezzo;
+    const qty = Number(item.qty) || 1;
+    totaleCent += prezzo * qty;
   });
 
   const totaleEuro = (totaleCent / 100).toFixed(2);
@@ -62,10 +63,14 @@ function initCheckout() {
     try {
       console.log("[CHECKOUT] Creazione ordine PayPal…");
 
+      const payload = (typeof Cart !== "undefined")
+        ? Cart.getForCheckout()
+        : [];
+
       const res = await fetch("/api/paypal/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ carrello: cart })
+        body: JSON.stringify({ carrello: payload })
       });
 
       const data = await res.json().catch(() => ({}));
