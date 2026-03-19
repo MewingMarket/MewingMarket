@@ -1,6 +1,6 @@
 // =========================================================
-// LOADER HEADER/FOOTER — Versione DEFINITIVA
-// Ordine corretto, homepage con header-shop, sincronizzazione auth
+// LOADER HEADER/FOOTER — Versione DEFINITIVA (2026)
+// Carica: head → header.html → auth.js → header.js → carrello.js → footer
 // =========================================================
 
 (function () {
@@ -40,7 +40,7 @@
     pathLower.includes("/admin/") || firstSegment === "admin";
 
   const isShopPage = (() => {
-    if (isHome) return true; // ⭐ HOME = SHOP HEADER
+    if (isHome) return true;
     const shopRoots = ["catalogo", "prodotto", "checkout", "categories", "shop"];
     const norm = pageName;
     if (!norm) return false;
@@ -68,7 +68,7 @@
 
   const isGlobalPage = !isAdminPage && !isShopPage && !isUserPage;
 
-  console.log("[LOADER] Page:", { isHome, isShopPage, isAdminPage, isUserPage });
+  console.log("[LOADER] Page:", { isHome, isShopPage, isAdminPage, isUserPage, isGlobalPage });
 
   // =========================================================
   // 1) HEAD
@@ -89,14 +89,12 @@
   );
 
   // =========================================================
-  // 2) HEADER (HOME = SEMPRE SHOP)
+  // 2) HEADER (UNICO)
   // =========================================================
   let headerFile = null;
 
-  if (isAdminPage) {
-    headerFile = null;
-  } else {
-    headerFile = "header-shop.html"; // ⭐ HOME E SHOP USANO SEMPRE HEADER-SHOP
+  if (!isAdminPage) {
+    headerFile = "header.html"; // ⭐ unico header
   }
 
   function safeFetchHeader(url) {
@@ -132,14 +130,14 @@
   });
 
   // =========================================================
-  // 4) HEADER-SHOP.JS (solo dopo header + auth)
+  // 4) HEADER.JS (dinamico)
   // =========================================================
-  const headerShopPromise = authPromise.then(() => {
+  const headerLogicPromise = authPromise.then(() => {
     return new Promise((resolve) => {
       const s = document.createElement("script");
-      s.src = "header-shop.js";
+      s.src = "header.js";
       s.onload = () => {
-        console.log("[LOADER] header-shop.js caricato");
+        console.log("[LOADER] header.js caricato");
         resolve();
       };
       document.body.appendChild(s);
@@ -167,9 +165,9 @@
   );
 
   // =========================================================
-  // 6) CARRELLO (solo dopo header-shop.js)
+  // 6) CARRELLO (solo dopo header.js)
   // =========================================================
-  const cartPromise = headerShopPromise.then(() => {
+  const cartPromise = headerLogicPromise.then(() => {
     return new Promise((resolve) => {
       const s = document.createElement("script");
       s.src = "carrello.js";
@@ -182,17 +180,9 @@
   });
 
   // =========================================================
-  // 7) POST-LOGIN POPUP + ADMIN LOADER
+  // 7) ADMIN LOADER
   // =========================================================
   document.addEventListener("auth-ready", () => {
-    // Popup post-login
-    const flag = localStorage.getItem("showLoginChoice");
-    if (flag === "1") {
-      localStorage.removeItem("showLoginChoice");
-      // popup gestito da index.js o pagina specifica
-    }
-
-    // Loader admin
     if (window.isAdmin) {
       const s = document.createElement("script");
       s.src = "admin/loader-admin.js";
