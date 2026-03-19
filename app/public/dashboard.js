@@ -1,239 +1,156 @@
-/* =========================================================
-   FILE: /public/dashboard.js
-   DASHBOARD — Versione DEFINITIVA per backend SQL
-========================================================= */
+// =========================================================
+// DASHBOARD.JS — Versione DEFINITIVA
+// Sincronizzato con auth-ready + SQL + token
+// =========================================================
 
 console.log("[DASHBOARD] Caricato");
 
-// =========================================================
-// SESSIONE
-// =========================================================
+// Attende auth-ready PRIMA di iniziare
+document.addEventListener("auth-ready", initDashboard);
 
-function getSession() {
-  return localStorage.getItem("session") || "";
-}
+async function initDashboard() {
+  console.log("[DASHBOARD] initDashboard()");
 
-function getEmail() {
-  return localStorage.getItem("email") || "";
-}
-
-function setEmail(e) {
-  if (e) {
-    localStorage.setItem("email", e);
-  }
-}
-
-let session = getSession();
-let email = getEmail();
-
-console.log("[DASHBOARD] Session:", session);
-console.log("[DASHBOARD] Email:", email);
-
-// LOGIN CHECK
-if (!session || !email) {
-  window.location.href = "login.html?redirect=dashboard.html";
-  throw new Error("Sessione mancante");
-}
-
-// =========================================================
-// UI
-// =========================================================
-
-const userEmailEl = document.getElementById("userEmail");
-const usernameEl = document.getElementById("username");
-const sidebarEmail = document.getElementById("sidebarEmail");
-const sidebarUsername = document.getElementById("sidebarUsername");
-
-function refreshUI() {
-  email = getEmail();
-  const username = email.split("@")[0];
-
-  if (userEmailEl) userEmailEl.textContent = email;
-  if (usernameEl) usernameEl.textContent = username;
-  if (sidebarEmail) sidebarEmail.textContent = email;
-  if (sidebarUsername) sidebarUsername.textContent = "@" + username;
-
-  console.log("[DASHBOARD] UI aggiornata:", email);
-}
-
-refreshUI();
-
-function setMsg(id, text, ok = false) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.textContent = text;
-  el.classList.remove("ok", "err");
-  el.classList.add(ok ? "ok" : "err");
-}
-
-// =========================================================
-// NAVIGAZIONE
-// =========================================================
-
-document.getElementById("nav-download")?.addEventListener("click", () => {
-  window.location.href = "download.html";
-});
-
-document.getElementById("nav-ordini")?.addEventListener("click", () => {
-  window.location.href = "ordini.html";
-});
-
-document.getElementById("nav-logout")?.addEventListener("click", () => {
-  localStorage.clear();
-  window.location.href = "index.html";
-});
-
-// =========================================================
-// CAMBIO EMAIL — SQL READY + PATCH
-// =========================================================
-
-document.getElementById("btnCambiaEmail")?.addEventListener("click", async () => {
-  const nuova_email = document.getElementById("newEmail").value.trim().toLowerCase();
-  const password = document.getElementById("passwordEmail").value.trim();
-
-  if (!nuova_email || !password) {
-    setMsg("msgEmail", "Compila tutti i campi.");
+  // -------------------------------------------------------
+  // 1) Verifica login
+  // -------------------------------------------------------
+  if (!window.isLogged) {
+    console.warn("[DASHBOARD] Utente non loggato → redirect login");
+    window.location.href = "login.html";
     return;
   }
 
-  if (!nuova_email.includes("@") || !nuova_email.includes(".")) {
-    setMsg("msgEmail", "Inserisci un'email valida.");
-    return;
-  }
-
+  // -------------------------------------------------------
+  // 2) Carica dati utente
+  // -------------------------------------------------------
   try {
-    const res = await fetch("/api/utenti/cambia-email", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-token": session
-      },
-      body: JSON.stringify({ nuova_email, password })
+    const res = await fetch("/api/utenti/me", {
+      method: "GET",
+      headers: { "Content-Type": "application/json" }
     });
 
     const data = await res.json().catch(() => ({}));
-    console.log("[DASHBOARD] Cambio email:", data);
+    console.log("[DASHBOARD] /me:", data);
 
-    if (res.status === 401) {
+    if (res.status === 401 || !data.success) {
+      console.warn("[DASHBOARD] Sessione non valida → logout");
       localStorage.clear();
-      window.location.href = "login.html?expired=1";
+      window.location.href = "login.html";
       return;
     }
 
-    if (!data.success) {
-      setMsg("msgEmail", data.error || "Errore.");
-      return;
-    }
-
-    setEmail(nuova_email);
-    refreshUI();
-    setMsg("msgEmail", "Email aggiornata!", true);
+    // Aggiorna UI
+    updateUserUI(data.utente);
 
   } catch (err) {
-    console.error(err);
-    setMsg("msgEmail", "Errore di connessione.");
-  }
-});
-
-// =========================================================
-// CAMBIO PASSWORD — SQL READY + PATCH
-// =========================================================
-
-document.getElementById("btnCambiaPassword")?.addEventListener("click", async () => {
-  const password_attuale = document.getElementById("oldPassword").value.trim();
-  const nuova_password = document.getElementById("newPassword").value.trim();
-
-  if (!password_attuale || !nuova_password) {
-    setMsg("msgPassword", "Compila tutti i campi.");
-    return;
+    console.error("[DASHBOARD] Errore caricamento utente:", err);
+    alert("Errore di connessione.");
   }
 
-  if (nuova_password.length < 8) {
-    setMsg("msgPassword", "La password deve avere almeno 8 caratteri.");
-    return;
-  }
-
+  // -------------------------------------------------------
+  // 3) Carica ordini
+  // -------------------------------------------------------
   try {
-    const res = await fetch("/api/utenti/cambia-password", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-token": session
-      },
-      body: JSON.stringify({ password_attuale, nuova_password })
+    const res = await fetch("/api/ordini/miei", {
+      method: "GET",
+      headers: { "Content-Type": "application/json" }
     });
 
     const data = await res.json().catch(() => ({}));
-    console.log("[DASHBOARD] Cambio password:", data);
+    console.log("[DASHBOARD] /ordini/miei:", data);
 
-    if (res.status === 401) {
-      localStorage.clear();
-      window.location.href = "login.html?expired=1";
-      return;
-    }
+    if (res.status === 401) return; // già gestito sopra
 
-    if (!data.success) {
-      setMsg("msgPassword", data.error || "Errore.");
-      return;
-    }
-
-    setMsg("msgPassword", "Password aggiornata!", true);
+    updateOrdersUI(data.ordini || []);
 
   } catch (err) {
-    console.error(err);
-    setMsg("msgPassword", "Errore di connessione.");
-  }
-});
-
-// =========================================================
-// ELIMINA ACCOUNT — SQL READY + PATCH
-// =========================================================
-
-document.getElementById("btnEliminaAccount")?.addEventListener("click", async () => {
-  const password = document.getElementById("passwordDelete").value.trim();
-
-  if (!password) {
-    setMsg("msgElimina", "Inserisci la password.");
-    return;
+    console.error("[DASHBOARD] Errore ordini:", err);
   }
 
-  if (!confirm("Sei sicuro di voler eliminare definitivamente il tuo account?")) {
-    return;
-  }
-
+  // -------------------------------------------------------
+  // 4) Carica download
+  // -------------------------------------------------------
   try {
-    const res = await fetch("/api/utenti/elimina-account", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-token": session
-      },
-      body: JSON.stringify({ password })
+    const res = await fetch("/api/download/miei", {
+      method: "GET",
+      headers: { "Content-Type": "application/json" }
     });
 
     const data = await res.json().catch(() => ({}));
-    console.log("[DASHBOARD] Eliminazione account:", data);
+    console.log("[DASHBOARD] /download/miei:", data);
 
-    if (res.status === 401) {
-      localStorage.clear();
-      window.location.href = "login.html?expired=1";
-      return;
-    }
+    if (res.status === 401) return;
 
-    if (!data.success) {
-      setMsg("msgElimina", data.error || "Errore.");
-      return;
-    }
-
-    localStorage.clear();
-    setMsg("msgElimina", "Account eliminato.", true);
-
-    setTimeout(() => {
-      window.location.href = "registrazione.html";
-    }, 1000);
+    updateDownloadsUI(data.download || []);
 
   } catch (err) {
-    console.error(err);
-    setMsg("msgElimina", "Errore di connessione.");
+    console.error("[DASHBOARD] Errore download:", err);
   }
-});
+}
+
+// =========================================================
+// UI FUNCTIONS
+// =========================================================
+
+function updateUserUI(user) {
+  if (!user) return;
+
+  const elEmail = document.getElementById("user-email");
+  const elRuolo = document.getElementById("user-role");
+
+  if (elEmail) elEmail.textContent = user.email || "";
+  if (elRuolo) elRuolo.textContent = user.ruolo || "user";
+
+  // Aggiorna localStorage se necessario
+  if (user.email) localStorage.setItem("email", user.email);
+  if (user.ruolo) localStorage.setItem("ruolo", user.ruolo);
+}
+
+function updateOrdersUI(ordini) {
+  const container = document.getElementById("orders-list");
+  if (!container) return;
+
+  if (!ordini.length) {
+    container.innerHTML = "<p>Nessun ordine disponibile.</p>";
+    return;
+  }
+
+  container.innerHTML = "";
+
+  ordini.forEach((o) => {
+    const div = document.createElement("div");
+    div.className = "order-item";
+
+    div.innerHTML = `
+      <p><strong>ID ordine:</strong> ${o.id}</p>
+      <p><strong>Data:</strong> ${o.data}</p>
+      <p><strong>Totale:</strong> €${(o.totale_cent / 100).toFixed(2)}</p>
+    `;
+
+    container.appendChild(div);
+  });
+}
+
+function updateDownloadsUI(downloads) {
+  const container = document.getElementById("downloads-list");
+  if (!container) return;
+
+  if (!downloads.length) {
+    container.innerHTML = "<p>Nessun download disponibile.</p>";
+    return;
+  }
+
+  container.innerHTML = "";
+
+  downloads.forEach((d) => {
+    const div = document.createElement("div");
+    div.className = "download-item";
+
+    div.innerHTML = `
+      <p><strong>${d.titolo}</strong></p>
+      <a href="${d.url}" class="btn" download>Scarica</a>
+    `;
+
+    container.appendChild(div);
+  });
+}
