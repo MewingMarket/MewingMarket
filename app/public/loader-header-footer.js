@@ -15,6 +15,23 @@
       .trim();
   }
 
+  // Piccolo scanner di sicurezza per placeholder
+  function scanPlaceholders() {
+    const headPh = document.getElementById("head-placeholder");
+    const headerPh = document.getElementById("header-placeholder");
+    const footerPh = document.getElementById("footer-placeholder");
+
+    if (!headPh) {
+      console.warn("[SCANNER] head-placeholder mancante (ok su alcune pagine).");
+    }
+    if (!headerPh) {
+      console.warn("[SCANNER] header-placeholder mancante (ok su pagine admin/minimali).");
+    }
+    if (!footerPh) {
+      console.warn("[SCANNER] footer-placeholder mancante (ok su pagine login/reset).");
+    }
+  }
+
   const rawPath = location.pathname || "/";
   const pathLower = rawPath.toLowerCase();
 
@@ -74,6 +91,9 @@
   console.log("[LOADER] isUserPage:", isUserPage);
   console.log("[LOADER] isGlobalPage:", isGlobalPage);
 
+  // Scanner base
+  document.addEventListener("DOMContentLoaded", scanPlaceholders);
+
   // =========================================================
   // 1) HEAD
   // =========================================================
@@ -88,6 +108,10 @@
         temp.innerHTML = html;
         [...temp.children].forEach((node) => document.head.appendChild(node));
         document.dispatchEvent(new Event("head-loaded"));
+      })
+      .catch((err) => {
+        console.error("[LOADER] ERRORE head:", url, err.message);
+        throw err;
       });
   }
 
@@ -155,6 +179,10 @@
             console.error("[LOADER] ERRORE header-shop.js");
           document.body.appendChild(s);
         }
+      })
+      .catch((err) => {
+        console.error("[LOADER] ERRORE header:", url, err.message);
+        throw err;
       });
   }
 
@@ -183,6 +211,10 @@
         const year = document.getElementById("anno");
         if (year) year.textContent = new Date().getFullYear();
         document.dispatchEvent(new Event("footer-loaded"));
+      })
+      .catch((err) => {
+        console.error("[LOADER] ERRORE footer:", url, err.message);
+        throw err;
       });
   }
 
