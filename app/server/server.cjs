@@ -2,7 +2,7 @@
  * =========================================================
  * File: app/server/server.cjs
  * Entry point del server — versione DEFINITIVA (NO SYNC API)
- * Patch B — Blindatura totale (SOFT)
+ * Patch B — Blindatura totale (SOFT + LOGGER AVANZATO)
  * =========================================================
  */
 
@@ -85,10 +85,77 @@ const wait = (ms) => new Promise(res => res(ms));
   app.use(cookieParser());
 
   // =========================================================
-  // LOGGER UNIVERSALE REQUEST
+  // ⭐ LOGGER AVANZATO — SOLO SU ENDPOINT CRITICI
+  // =========================================================
+  const SENSITIVE_ENDPOINTS = [
+    "/api/utenti/login",
+    "/api/utenti/registrazione",
+    "/api/utenti/cambia-email",
+    "/api/utenti/cambia-password",
+    "/api/utenti/elimina-account",
+    "/api/utenti/reset-password-request",
+    "/api/utenti/reset-password-confirm",
+    "/api/utenti/reset-email-request",
+    "/api/utenti/reset-email-confirm",
+    "/api/dashboard"
+  ];
+
+  app.use((req, res, next) => {
+    const isSensitive = SENSITIVE_ENDPOINTS.some(ep => req.url.startsWith(ep));
+    if (!isSensitive) return next();
+
+    const sessionID = crypto.randomBytes(4).toString("hex");
+    const start = Date.now();
+
+    const originalSend = res.send;
+    res.send = function (body) {
+      const duration = Date.now() - start;
+
+      try {
+        let payload = req.body || {};
+        let responseBody = {};
+
+        // Oscura password
+        for (const key of Object.keys(payload)) {
+          if (key.toLowerCase().includes("password")) {
+            payload[key] = "******";
+          }
+        }
+
+        try {
+          responseBody = JSON.parse(body);
+        } catch {
+          responseBody = body;
+        }
+
+        console.log("\n====================================");
+        console.log("🔥 ACTION LOGGER");
+        console.log("SessionID:", sessionID);
+        console.log("Endpoint:", req.method, req.url);
+        console.log("User:", req.headers["x-token"] ? "autenticato" : "anonimo");
+        console.log("Payload:", payload);
+        console.log("Status:", res.statusCode);
+        console.log("Risposta:", responseBody);
+        console.log("Durata:", duration + "ms");
+        console.log("====================================\n");
+
+      } catch (err) {
+        console.error("Errore logger avanzato:", err);
+      }
+
+      return originalSend.call(this, body);
+    };
+
+    next();
+  });
+
+  // =========================================================
+  // LOGGER UNIVERSALE REQUEST (MINIMO, NON INTASA)
   // =========================================================
   app.use((req, res, next) => {
-    log(`📥 ${req.method} ${req.url}`);
+    if (req.url.startsWith("/api")) {
+      log(`📥 API: ${req.method} ${req.url}`);
+    }
     next();
   });
 
