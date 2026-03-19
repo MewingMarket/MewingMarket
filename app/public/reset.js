@@ -1,17 +1,19 @@
 // =========================================================
 // Eliminazione Account – MewingMarket (VERSIONE DEFINITIVA)
 // Compatibile con backend SQL
+// + patch: doppio click, 401, messaggi
 // =========================================================
 
-const msg = document.getElementById('status');
+const msg = document.getElementById("status");
+const btnElimina = document.getElementById("reset-btn");
 
 function setMsg(text, ok = false) {
   if (!msg) return;
   msg.textContent = text;
-  msg.style.color = ok ? '#4ade80' : '#f97373';
+  msg.style.color = ok ? "#4ade80" : "#f97373";
 }
 
-document.getElementById('reset-btn')?.addEventListener('click', async () => {
+btnElimina?.addEventListener("click", async () => {
   setMsg("Eliminazione account in corso...");
 
   const session = localStorage.getItem("session");
@@ -27,17 +29,25 @@ document.getElementById('reset-btn')?.addEventListener('click', async () => {
     return;
   }
 
+  if (btnElimina.disabled) return;
+  btnElimina.disabled = true;
+
   try {
-    const res = await fetch('/api/utenti/elimina-account', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'x-token': session
+    const res = await fetch("/api/utenti/elimina-account", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-token": session
       },
       body: JSON.stringify({ password })
     });
 
     const data = await res.json().catch(() => null);
+
+    if (res.status === 401) {
+      setMsg("Sessione scaduta o non valida. Effettua di nuovo il login.");
+      return;
+    }
 
     if (!data) {
       setMsg("Errore del server");
@@ -50,6 +60,7 @@ document.getElementById('reset-btn')?.addEventListener('click', async () => {
       // ⭐ PULIZIA CORRETTA
       localStorage.removeItem("session");
       localStorage.removeItem("email");
+      localStorage.removeItem("ruolo");
 
       setTimeout(() => {
         window.location.href = "registrazione.html";
@@ -62,5 +73,7 @@ document.getElementById('reset-btn')?.addEventListener('click', async () => {
   } catch (err) {
     console.error(err);
     setMsg("Errore di connessione");
+  } finally {
+    btnElimina.disabled = false;
   }
 });
