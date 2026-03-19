@@ -1,5 +1,5 @@
 // =========================================================
-// HEADER-SHOP.JS — Versione DEFINITIVA (2026)
+// HEADER JS — Versione DEFINITIVA (2026)
 // Gestisce header dinamico per homepage + shop
 // =========================================================
 
