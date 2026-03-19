@@ -1,29 +1,30 @@
 // =========================================================
-// RESET EMAIL REQUEST — Versione compatibile backend SQL
-// + patch: doppio click, 401, messaggi
+// RESET EMAIL REQUEST — Versione DEFINITIVA
+// Compatibile SQL + auth.js + nessun blocco
 // =========================================================
+
+console.log("[RESET-EMAIL-REQ] Caricato");
 
 const btnResetEmail = document.getElementById("btnResetEmail");
 const msgResetEmail = document.getElementById("msgResetEmail");
 
 btnResetEmail?.addEventListener("click", async () => {
-  const password = document.getElementById("resetPass")?.value.trim();
+  const email = document.getElementById("resetEmail")?.value.trim().toLowerCase();
   const msg = msgResetEmail;
-
-  const session = localStorage.getItem("session"); // token SQL
 
   if (!msg) return;
 
-  // Validazione password
-  if (!password) {
-    msg.textContent = "Inserisci la password.";
+  // -------------------------------------------------------
+  // Validazione email
+  // -------------------------------------------------------
+  if (!email) {
+    msg.textContent = "Inserisci la tua email.";
     msg.className = "err";
     return;
   }
 
-  // Validazione sessione
-  if (!session) {
-    msg.textContent = "Sessione mancante. Devi rifare il login.";
+  if (!email.includes("@") || !email.includes(".")) {
+    msg.textContent = "Inserisci un'email valida.";
     msg.className = "err";
     return;
   }
@@ -33,23 +34,16 @@ btnResetEmail?.addEventListener("click", async () => {
   btnResetEmail.disabled = true;
 
   try {
+    console.log("[RESET-EMAIL-REQ] Invio richiesta…");
+
     const res = await fetch("/api/utenti/reset-email-request", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-token": session
-      },
-      body: JSON.stringify({ password })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
     });
 
     const data = await res.json().catch(() => ({}));
-    console.log("[RESET EMAIL REQUEST]", data);
-
-    if (res.status === 401) {
-      msg.textContent = "Sessione scaduta. Effettua di nuovo il login.";
-      msg.className = "err";
-      return;
-    }
+    console.log("[RESET-EMAIL-REQ] Risposta:", data);
 
     if (data.success) {
       msg.textContent = "Email inviata! Controlla la tua casella.";
@@ -60,7 +54,7 @@ btnResetEmail?.addEventListener("click", async () => {
     }
 
   } catch (err) {
-    console.error(err);
+    console.error("[RESET-EMAIL-REQ] Errore:", err);
     msg.textContent = "Errore di connessione.";
     msg.className = "err";
   } finally {
