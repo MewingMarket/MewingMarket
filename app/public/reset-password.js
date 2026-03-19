@@ -1,7 +1,9 @@
 // =========================================================
-// RESET PASSWORD REQUEST — Versione compatibile backend SQL
-// + patch: doppio click, messaggi più chiari
+// RESET PASSWORD REQUEST — Versione DEFINITIVA
+// Compatibile SQL + auth.js + nessun blocco
 // =========================================================
+
+console.log("[RESET-PASS-REQ] Caricato");
 
 const btnResetPassword = document.getElementById("btnResetPassword");
 const msgResetPassword = document.getElementById("msgResetPassword");
@@ -12,7 +14,9 @@ btnResetPassword?.addEventListener("click", async () => {
 
   if (!msg) return;
 
+  // -------------------------------------------------------
   // Validazione email
+  // -------------------------------------------------------
   if (!email) {
     msg.textContent = "Inserisci la tua email.";
     msg.className = "err";
@@ -25,10 +29,13 @@ btnResetPassword?.addEventListener("click", async () => {
     return;
   }
 
+  // Protezione doppio click
   if (btnResetPassword.disabled) return;
   btnResetPassword.disabled = true;
 
   try {
+    console.log("[RESET-PASS-REQ] Invio richiesta…");
+
     const res = await fetch("/api/utenti/reset-password-request", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -36,7 +43,7 @@ btnResetPassword?.addEventListener("click", async () => {
     });
 
     const data = await res.json().catch(() => ({}));
-    console.log("[RESET PASSWORD REQUEST]", data);
+    console.log("[RESET-PASS-REQ] Risposta:", data);
 
     if (data.success) {
       msg.textContent = "Email inviata! Controlla la tua casella.";
@@ -47,7 +54,7 @@ btnResetPassword?.addEventListener("click", async () => {
     }
 
   } catch (err) {
-    console.error(err);
+    console.error("[RESET-PASS-REQ] Errore:", err);
     msg.textContent = "Errore di connessione.";
     msg.className = "err";
   } finally {
