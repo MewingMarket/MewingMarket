@@ -1,7 +1,9 @@
 // =========================================================
-// RESET PASSWORD CONFIRM — Versione compatibile backend SQL
-// + patch: doppio click, messaggi
+// RESET PASSWORD CONFIRM — Versione DEFINITIVA
+// Compatibile SQL + auth.js + nessun blocco
 // =========================================================
+
+console.log("[RESET-PASS-CONFIRM] Caricato");
 
 // Recupero token dalla URL
 const urlParams = new URLSearchParams(window.location.search);
@@ -10,7 +12,6 @@ const token = urlParams.get("token");
 const btnConfirmReset = document.getElementById("btnConfirmReset");
 const msgConfirmReset = document.getElementById("msgConfirmReset");
 
-// Bottone conferma reset password
 btnConfirmReset?.addEventListener("click", async () => {
   const nuova_password = document.getElementById("newPassword")?.value.trim();
   const conferma = document.getElementById("confirmPassword")?.value.trim();
@@ -18,7 +19,9 @@ btnConfirmReset?.addEventListener("click", async () => {
 
   if (!msg) return;
 
+  // -------------------------------------------------------
   // Validazione campi
+  // -------------------------------------------------------
   if (!nuova_password || !conferma) {
     msg.textContent = "Compila tutti i campi.";
     msg.className = "err";
@@ -37,17 +40,22 @@ btnConfirmReset?.addEventListener("click", async () => {
     return;
   }
 
+  // -------------------------------------------------------
   // Validazione token
+  // -------------------------------------------------------
   if (!token) {
     msg.textContent = "Token mancante o non valido.";
     msg.className = "err";
     return;
   }
 
+  // Protezione doppio click
   if (btnConfirmReset.disabled) return;
   btnConfirmReset.disabled = true;
 
   try {
+    console.log("[RESET-PASS-CONFIRM] Invio conferma reset…");
+
     const res = await fetch("/api/utenti/reset-password-confirm", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -55,10 +63,10 @@ btnConfirmReset?.addEventListener("click", async () => {
     });
 
     const data = await res.json().catch(() => ({}));
-    console.log("[RESET PASSWORD CONFIRM]", data);
+    console.log("[RESET-PASS-CONFIRM] Risposta:", data);
 
     if (data.success) {
-      msg.textContent = "Password aggiornata! Verrai reindirizzato al login...";
+      msg.textContent = "Password aggiornata! Verrai reindirizzato al login…";
       msg.className = "ok";
 
       setTimeout(() => {
@@ -72,7 +80,7 @@ btnConfirmReset?.addEventListener("click", async () => {
     }
 
   } catch (err) {
-    console.error(err);
+    console.error("[RESET-PASS-CONFIRM] Errore:", err);
     msg.textContent = "Errore di connessione.";
     msg.className = "err";
   } finally {
