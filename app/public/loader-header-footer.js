@@ -38,7 +38,7 @@
     pathLower.includes("/admin/") || firstSegment === "admin";
 
   const isShopPage = (() => {
-    if (isHome) return false; // home la forziamo global
+    if (isHome) return false;
     const shopRoots = ["catalogo", "prodotto", "checkout", "categories", "shop"];
     const norm = pageName;
     if (!norm) return false;
@@ -96,7 +96,7 @@
   );
 
   // =========================================================
-  // 2) AUTH (sempre, così non sbagliamo mai)
+  // 2) AUTH (sempre)
   // =========================================================
   (function loadAuth() {
     const s = document.createElement("script");
@@ -116,7 +116,6 @@
   } else if (isShopPage) {
     headerFile = "header-shop.html";
   } else {
-    // global + home
     headerFile = "header.html";
   }
 
@@ -135,15 +134,13 @@
         ph.innerHTML = html;
         document.dispatchEvent(new Event("header-loaded"));
 
-        // header-shop.js: lo carichiamo su pagine shop
-        // e anche su home (ma con badge nascosto)
+        // header-shop.js per pagine shop + home
         if (url.includes("header-shop.html") || isHome) {
           const s = document.createElement("script");
           s.src = "header-shop.js";
           s.onload = () => {
             console.log("[LOADER] header-shop.js caricato");
             if (isHome) {
-              // nascondi badge carrello in home
               const hideBadge = () => {
                 const badge =
                   document.querySelector("#cart-badge") ||
@@ -194,7 +191,7 @@
   );
 
   // =========================================================
-  // 5) CARRELLO (shop + home, ma invisibile in home)
+  // 5) CARRELLO
   // =========================================================
   function loadCartScript(src) {
     return new Promise((resolve, reject) => {
@@ -223,13 +220,15 @@
   }
 
   if (isShopPage || isHome) {
-    loadCartScript("carrello.js").catch(() => loadCartScript("/carrello.js").catch(() => {
-      console.error("[LOADER] Impossibile caricare carrello.js");
-    }));
+    loadCartScript("carrello.js").catch(() =>
+      loadCartScript("/carrello.js").catch(() => {
+        console.error("[LOADER] Impossibile caricare carrello.js");
+      })
+    );
   }
 
   // =========================================================
-  // 6) POPUP POST-LOGIN (profilo / naviga)
+  // 6) POPUP POST-LOGIN
   // =========================================================
   function showPostLoginPopupIfNeeded() {
     const flag = localStorage.getItem("showLoginChoice");
