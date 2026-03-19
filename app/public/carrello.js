@@ -28,12 +28,6 @@ const Cart = {
 
   /* -----------------------------------------
      AGGIUNGI PRODOTTO (qty++)
-     prodotto deve contenere:
-     - id
-     - slug
-     - titolo
-     - prezzo_cent
-     - immagine
   ----------------------------------------- */
   add(product) {
     const items = this.get();
@@ -117,7 +111,6 @@ const Cart = {
 
   /* -----------------------------------------
      PAYLOAD PER CHECKOUT SQL
-     Compatibile con paypal-create.cjs
   ----------------------------------------- */
   getForCheckout() {
     return this.get().map(p => ({
@@ -148,11 +141,22 @@ function rimuoviDalCarrello(id) {
 
 function aggiornaBadgeCarrello() {
   const badge = document.getElementById("cart-badge");
-  if (!badge) return;
+  if (!badge) return; // ⭐ evita errori su pagine senza badge
 
   const count = Cart.count();
   badge.textContent = count;
+
+  if (count > 0) {
+    badge.style.display = "inline-block";
+  } else {
+    badge.style.display = "none";
+  }
 }
 
+// Aggiorna badge quando:
+// - il carrello cambia
+// - l’header viene caricato
+// - l’utente fa login/logout
 document.addEventListener("cart-updated", aggiornaBadgeCarrello);
 document.addEventListener("header-loaded", aggiornaBadgeCarrello);
+document.addEventListener("auth-ready", aggiornaBadgeCarrello);
