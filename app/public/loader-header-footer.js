@@ -196,25 +196,36 @@
   // =========================================================
   // 5) CARRELLO (shop + home, ma invisibile in home)
   // =========================================================
+  function loadCartScript(src) {
+    return new Promise((resolve, reject) => {
+      const cartScript = document.createElement("script");
+      cartScript.src = src;
+      cartScript.onload = () => {
+        console.log("[LOADER] carrello.js caricato da", src);
+        if (isHome) {
+          const hideBadge = () => {
+            const badge =
+              document.querySelector("#cart-badge") ||
+              document.querySelector(".cart-badge");
+            if (badge) badge.style.display = "none";
+          };
+          hideBadge();
+          document.addEventListener("DOMContentLoaded", hideBadge);
+        }
+        resolve();
+      };
+      cartScript.onerror = () => {
+        console.error("[LOADER] ERRORE carrello.js da", src);
+        reject(new Error("Errore caricamento carrello.js"));
+      };
+      document.body.appendChild(cartScript);
+    });
+  }
+
   if (isShopPage || isHome) {
-    const cartScript = document.createElement("script");
-    cartScript.src = "carrello.js";
-    cartScript.onload = () => {
-      console.log("[LOADER] carrello.js caricato");
-      if (isHome) {
-        const hideBadge = () => {
-          const badge =
-            document.querySelector("#cart-badge") ||
-            document.querySelector(".cart-badge");
-          if (badge) badge.style.display = "none";
-        };
-        hideBadge();
-        document.addEventListener("DOMContentLoaded", hideBadge);
-      }
-    };
-    cartScript.onerror = () =>
-      console.error("[LOADER] ERRORE carrello.js");
-    document.head.appendChild(cartScript);
+    loadCartScript("carrello.js").catch(() => loadCartScript("/carrello.js").catch(() => {
+      console.error("[LOADER] Impossibile caricare carrello.js");
+    }));
   }
 
   // =========================================================
