@@ -1,12 +1,29 @@
 // =========================================================
 // File: app/server/middleware/auth-admin.cjs
-// Middleware ADMIN definitivo (basato su Airtable + sessione)
+// Middleware ADMIN definitivo (SQL + token)
 // =========================================================
+
+const db = require("../db/database.cjs");
 
 module.exports = function (req, res, next) {
   try {
-    // Nessuna sessione → non loggato
-    if (!req.session || !req.session.user) {
+    // Legge token dall'header (come il resto del sito)
+    const tokenRaw = req.headers["x-token"];
+    const token = String(tokenRaw || "").trim();
+
+    if (!token || !token.startsWith("tok_")) {
+      return res.status(401).json({
+        success: false,
+        error: "Non loggato"
+      });
+    }
+
+    // Cerca utente nel DB
+    const user = db
+      .prepare("SELECT id, email, ruolo FROM utenti WHERE token = ?")
+      .get(token);
+
+    if (!user) {
       return res.status(401).json({
         success: false,
         error: "Non loggato"
@@ -14,9 +31,8 @@ module.exports = function (req, res, next) {
     }
 
     // Normalizzazione ruolo
-    const ruoloRaw = String(req.session.user.ruolo || "").trim().toLowerCase();
+    const ruoloRaw = String(user.ruolo || "").trim().toLowerCase();
 
-    // Mappatura ruoli → normalizzazione totale
     let ruoloNorm = "user"; // fallback sicuro
 
     if (
@@ -43,6 +59,11 @@ module.exports = function (req, res, next) {
         error: "Non autorizzato"
       });
     }
+
+    // Salva info utente admin sulla request
+    req.userId = user.id;
+    req.userEmail = user.email;
+    req.userRole = ruoloNorm;
 
     next();
 
