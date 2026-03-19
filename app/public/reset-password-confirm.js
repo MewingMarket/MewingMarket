@@ -1,16 +1,22 @@
 // =========================================================
 // RESET PASSWORD CONFIRM — Versione compatibile backend SQL
+// + patch: doppio click, messaggi
 // =========================================================
 
 // Recupero token dalla URL
 const urlParams = new URLSearchParams(window.location.search);
 const token = urlParams.get("token");
 
+const btnConfirmReset = document.getElementById("btnConfirmReset");
+const msgConfirmReset = document.getElementById("msgConfirmReset");
+
 // Bottone conferma reset password
-document.getElementById("btnConfirmReset").addEventListener("click", async () => {
-  const nuova_password = document.getElementById("newPassword").value.trim();
-  const conferma = document.getElementById("confirmPassword").value.trim();
-  const msg = document.getElementById("msgConfirmReset");
+btnConfirmReset?.addEventListener("click", async () => {
+  const nuova_password = document.getElementById("newPassword")?.value.trim();
+  const conferma = document.getElementById("confirmPassword")?.value.trim();
+  const msg = msgConfirmReset;
+
+  if (!msg) return;
 
   // Validazione campi
   if (!nuova_password || !conferma) {
@@ -25,12 +31,21 @@ document.getElementById("btnConfirmReset").addEventListener("click", async () =>
     return;
   }
 
+  if (nuova_password.length < 8) {
+    msg.textContent = "La password deve avere almeno 8 caratteri.";
+    msg.className = "err";
+    return;
+  }
+
   // Validazione token
   if (!token) {
     msg.textContent = "Token mancante o non valido.";
     msg.className = "err";
     return;
   }
+
+  if (btnConfirmReset.disabled) return;
+  btnConfirmReset.disabled = true;
 
   try {
     const res = await fetch("/api/utenti/reset-password-confirm", {
@@ -39,7 +54,8 @@ document.getElementById("btnConfirmReset").addEventListener("click", async () =>
       body: JSON.stringify({ token, nuova_password })
     });
 
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
+    console.log("[RESET PASSWORD CONFIRM]", data);
 
     if (data.success) {
       msg.textContent = "Password aggiornata! Verrai reindirizzato al login...";
@@ -51,7 +67,7 @@ document.getElementById("btnConfirmReset").addEventListener("click", async () =>
 
       return;
     } else {
-      msg.textContent = data.error || "Errore.";
+      msg.textContent = data.error || "Errore durante la conferma del reset.";
       msg.className = "err";
     }
 
@@ -59,5 +75,7 @@ document.getElementById("btnConfirmReset").addEventListener("click", async () =>
     console.error(err);
     msg.textContent = "Errore di connessione.";
     msg.className = "err";
+  } finally {
+    btnConfirmReset.disabled = false;
   }
 });
