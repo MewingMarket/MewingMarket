@@ -1,9 +1,9 @@
 // =========================================================
-// HEADER JS — Versione DEFINITIVA (2026)
-// Gestisce header dinamico per homepage + shop
+// HEADER.JS — Versione DEFINITIVA (2026)
+// Gestisce homepage + shop + dashboard + admin + pagine globali
 // =========================================================
 
-console.log("[HEADER-SHOP] Caricato");
+console.log("[HEADER] Caricato");
 
 // Attende che header e auth siano pronti
 Promise.all([
@@ -16,46 +16,84 @@ Promise.all([
     else document.addEventListener("auth-ready", resolve);
   })
 ]).then(() => {
-  console.log("[HEADER-SHOP] Inizializzazione…");
+  console.log("[HEADER] Inizializzazione…");
 
   const path = location.pathname.toLowerCase();
+
   const isHome =
     path === "/" ||
     path.endsWith("/index.html") ||
     path.endsWith("/index");
 
+  const isShop =
+    path.includes("catalogo") ||
+    path.includes("prodotto") ||
+    path.includes("checkout") ||
+    path.includes("categories") ||
+    path.includes("shop");
+
+  const isUser =
+    path.includes("dashboard") ||
+    path.includes("ordini") ||
+    path.includes("download") ||
+    path.includes("profilo");
+
+  const isAdminPage =
+    path.includes("/admin/") ||
+    path.includes("dashboard-admin");
+
+  const isGlobal = !isHome && !isShop && !isUser && !isAdminPage;
+
   // Elementi DOM
+  const navCatalogo = document.getElementById("nav-catalogo");
   const navLogin = document.getElementById("nav-login");
   const navRegister = document.getElementById("nav-register");
+  const navProfilo = document.getElementById("nav-profilo");
   const navLogout = document.getElementById("nav-logout");
   const adminTrigger = document.getElementById("admin-trigger");
   const cartWrapper = document.getElementById("cart-wrapper");
   const cartBadge = document.getElementById("cart-badge");
 
   // Sicurezza
-  if (!navLogin || !navRegister || !navLogout || !adminTrigger) {
-    console.warn("[HEADER-SHOP] Elementi non trovati");
+  if (!navCatalogo || !navLogin || !navRegister || !navProfilo || !navLogout || !adminTrigger) {
+    console.warn("[HEADER] Elementi non trovati");
+    return;
+  }
+
+  // ============================================================
+  // 0) PAGINE GLOBALI → SOLO LOGO
+  // ============================================================
+  if (isGlobal) {
+    console.log("[HEADER] Pagina globale → solo logo");
+
+    navCatalogo.style.display = "none";
+    navLogin.style.display = "none";
+    navRegister.style.display = "none";
+    navProfilo.style.display = "none";
+    navLogout.style.display = "none";
+    adminTrigger.style.display = "none";
+    cartWrapper.style.display = "none";
+
     return;
   }
 
   // Reset base
+  navCatalogo.style.display = "inline-block";
   navLogin.style.display = "inline-block";
   navRegister.style.display = "inline-block";
+  navProfilo.style.display = "none";
   navLogout.style.display = "none";
   adminTrigger.style.display = "none";
+  cartWrapper.style.display = "flex";
 
   // ============================================================
   // 1) GUEST
   // ============================================================
   if (!window.isLogged) {
-    console.log("[HEADER-SHOP] Guest");
+    console.log("[HEADER] Guest");
 
     if (isHome) {
-      // Homepage guest → niente carrello
       cartWrapper.style.display = "none";
-    } else {
-      // Shop guest → carrello visibile
-      cartWrapper.style.display = "flex";
     }
 
     return;
@@ -64,14 +102,12 @@ Promise.all([
   // ============================================================
   // 2) USER LOGGATO
   // ============================================================
-  console.log("[HEADER-SHOP] User loggato:", window.userEmail);
+  console.log("[HEADER] User loggato:", window.userEmail);
 
-  // Nascondi login/registrazione
   navLogin.style.display = "none";
   navRegister.style.display = "none";
-
-  // Mostra logout
   navLogout.style.display = "inline-block";
+
   navLogout.onclick = () => {
     localStorage.clear();
     window.location.href = "index.html";
@@ -80,12 +116,9 @@ Promise.all([
   // Homepage → Profilo
   if (isHome) {
     cartWrapper.style.display = "none";
-
-    navLogin.textContent = "Profilo";
-    navLogin.href = "dashboard.html";
-    navLogin.style.display = "inline-block";
+    navProfilo.style.display = "inline-block";
   } else {
-    // Shop → carrello visibile
+    navProfilo.style.display = "inline-block";
     cartWrapper.style.display = "flex";
   }
 
@@ -93,12 +126,11 @@ Promise.all([
   // 3) ADMIN
   // ============================================================
   if (window.isAdmin) {
-    console.log("[HEADER-SHOP] Admin attivo");
+    console.log("[HEADER] Admin attivo");
 
     adminTrigger.style.display = "inline-block";
 
     if (isHome) {
-      // Homepage admin → niente carrello
       cartWrapper.style.display = "none";
     }
   }
@@ -135,5 +167,5 @@ Promise.all([
     }
   });
 
-  console.log("[HEADER-SHOP] Pronto.");
+  console.log("[HEADER] Pronto.");
 });
