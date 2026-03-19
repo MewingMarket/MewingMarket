@@ -1,5 +1,5 @@
 // =========================================================
-// AUTH.JS — Versione DEFINITIVA (wrapper fetch + auth-ready)
+// AUTH.JS — Versione DEFINITIVA (senza check-session)
 // =========================================================
 
 console.log("[AUTH] Caricato");
@@ -15,7 +15,6 @@ console.log("[AUTH] Caricato");
 
     options.headers = options.headers || {};
 
-    // Aggiunge token solo se esiste
     if (token) {
       options.headers["x-token"] = token;
     }
@@ -32,7 +31,7 @@ window.isAdmin = false;
 window.userEmail = "";
 
 // ---------------------------------------------------------
-// Funzione per leggere sessione
+// Carica sessione da localStorage
 // ---------------------------------------------------------
 function loadSession() {
   const session = localStorage.getItem("session") || "";
@@ -43,7 +42,7 @@ function loadSession() {
   window.isLogged = Boolean(session && email);
   window.isAdmin = ruolo === "admin";
 
-  console.log("[AUTH] Stato:", {
+  console.log("[AUTH] Stato (solo localStorage):", {
     session,
     email,
     ruolo,
@@ -53,41 +52,15 @@ function loadSession() {
 }
 
 // ---------------------------------------------------------
-// Inizializzazione
+// Inizializzazione SENZA check-session
 // ---------------------------------------------------------
 async function initAuth() {
+  // Legge solo dal localStorage
   loadSession();
 
-  // Se non loggato → auth-ready immediato
-  if (!window.isLogged) {
-    document.dispatchEvent(new Event("auth-ready"));
-    return;
-  }
-
-  // Se loggato → verifica sessione con backend
-  try {
-    const res = await fetch("/api/utenti/check-session", {
-      method: "GET"
-    });
-
-    const data = await res.json().catch(() => ({}));
-
-    if (!data.success) {
-      console.warn("[AUTH] Sessione non valida, logout forzato");
-      localStorage.clear();
-      window.isLogged = false;
-      window.isAdmin = false;
-      window.userEmail = "";
-    } else {
-      // Aggiorna ruolo se backend lo conferma
-      if (data.ruolo) {
-        localStorage.setItem("ruolo", data.ruolo);
-        window.isAdmin = data.ruolo === "admin";
-      }
-    }
-  } catch (err) {
-    console.error("[AUTH] Errore verifica sessione:", err);
-  }
+  // Nessun controllo remoto → nessun logout forzato
+  // Nessun 404 → nessun errore
+  // Nessun 401 → nessuna confusione
 
   // Evento finale
   document.dispatchEvent(new Event("auth-ready"));
