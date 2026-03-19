@@ -32,7 +32,7 @@ console.log("[DASHBOARD] Email:", email);
 // LOGIN CHECK
 if (!session || !email) {
   window.location.href = "login.html?redirect=dashboard.html";
-  return;
+  throw new Error("Sessione mancante");
 }
 
 // =========================================================
@@ -84,7 +84,7 @@ document.getElementById("nav-logout")?.addEventListener("click", () => {
 });
 
 // =========================================================
-// CAMBIO EMAIL — SQL READY
+// CAMBIO EMAIL — SQL READY + PATCH
 // =========================================================
 
 document.getElementById("btnCambiaEmail")?.addEventListener("click", async () => {
@@ -93,6 +93,11 @@ document.getElementById("btnCambiaEmail")?.addEventListener("click", async () =>
 
   if (!nuova_email || !password) {
     setMsg("msgEmail", "Compila tutti i campi.");
+    return;
+  }
+
+  if (!nuova_email.includes("@") || !nuova_email.includes(".")) {
+    setMsg("msgEmail", "Inserisci un'email valida.");
     return;
   }
 
@@ -106,8 +111,14 @@ document.getElementById("btnCambiaEmail")?.addEventListener("click", async () =>
       body: JSON.stringify({ nuova_email, password })
     });
 
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     console.log("[DASHBOARD] Cambio email:", data);
+
+    if (res.status === 401) {
+      localStorage.clear();
+      window.location.href = "login.html?expired=1";
+      return;
+    }
 
     if (!data.success) {
       setMsg("msgEmail", data.error || "Errore.");
@@ -125,7 +136,7 @@ document.getElementById("btnCambiaEmail")?.addEventListener("click", async () =>
 });
 
 // =========================================================
-// CAMBIO PASSWORD — SQL READY
+// CAMBIO PASSWORD — SQL READY + PATCH
 // =========================================================
 
 document.getElementById("btnCambiaPassword")?.addEventListener("click", async () => {
@@ -134,6 +145,11 @@ document.getElementById("btnCambiaPassword")?.addEventListener("click", async ()
 
   if (!password_attuale || !nuova_password) {
     setMsg("msgPassword", "Compila tutti i campi.");
+    return;
+  }
+
+  if (nuova_password.length < 8) {
+    setMsg("msgPassword", "La password deve avere almeno 8 caratteri.");
     return;
   }
 
@@ -147,8 +163,14 @@ document.getElementById("btnCambiaPassword")?.addEventListener("click", async ()
       body: JSON.stringify({ password_attuale, nuova_password })
     });
 
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     console.log("[DASHBOARD] Cambio password:", data);
+
+    if (res.status === 401) {
+      localStorage.clear();
+      window.location.href = "login.html?expired=1";
+      return;
+    }
 
     if (!data.success) {
       setMsg("msgPassword", data.error || "Errore.");
@@ -164,7 +186,7 @@ document.getElementById("btnCambiaPassword")?.addEventListener("click", async ()
 });
 
 // =========================================================
-// ELIMINA ACCOUNT — SQL READY
+// ELIMINA ACCOUNT — SQL READY + PATCH
 // =========================================================
 
 document.getElementById("btnEliminaAccount")?.addEventListener("click", async () => {
@@ -189,8 +211,14 @@ document.getElementById("btnEliminaAccount")?.addEventListener("click", async ()
       body: JSON.stringify({ password })
     });
 
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     console.log("[DASHBOARD] Eliminazione account:", data);
+
+    if (res.status === 401) {
+      localStorage.clear();
+      window.location.href = "login.html?expired=1";
+      return;
+    }
 
     if (!data.success) {
       setMsg("msgElimina", data.error || "Errore.");
