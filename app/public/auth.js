@@ -8,10 +8,12 @@ window.isAdmin = false;
 
 /* ---------------------------------------------------------
    SALVATAGGIO DOPO LOGIN
+   (token, email, ruolo arrivano dal backend SQL)
 --------------------------------------------------------- */
 window.saveLoginState = function(token, email, ruolo) {
   console.log("[AUTH] Salvataggio stato login:", { token, email, ruolo });
 
+  // Salvataggio coerente con backend SQL
   localStorage.setItem("session", token);
   localStorage.setItem("email", email);
   localStorage.setItem("ruolo", ruolo);
@@ -36,6 +38,8 @@ function readAuthState() {
 
       const ruolo = ruoloRaw.trim().toLowerCase();
       window.userRole = ruolo;
+
+      // Compatibilità SQL: ruolo = "admin" oppure "user"
       window.isAdmin = ruolo === "admin";
 
       console.log("[AUTH] Utente loggato come:", ruolo);
@@ -60,7 +64,7 @@ function readAuthState() {
 }
 
 /* ---------------------------------------------------------
-   Emette auth-ready
+   Emette auth-ready (fondamentale per loader)
 --------------------------------------------------------- */
 function dispatchAuthReady() {
   const event = new CustomEvent("auth-ready");
@@ -84,5 +88,9 @@ function logout() {
    Inizializzazione
 --------------------------------------------------------- */
 readAuthState();
+
+// Aggiorna stato se cambia localStorage (multi-tab)
 window.addEventListener("storage", readAuthState);
+
+// Aggiorna stato quando header è pronto
 document.addEventListener("header-loaded", readAuthState);
