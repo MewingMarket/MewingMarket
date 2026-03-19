@@ -1,67 +1,75 @@
-/* =========================================================
-   HEADER-SHOP.JS — Gestione login/logout + carrello (DEFINITIVO)
-========================================================= */
+// =========================================================
+// HEADER-SHOP.JS — Versione DEFINITIVA
+// Sincronizzato con loader + auth-ready
+// =========================================================
 
-console.log("HEADER SHOP JS CARICATO");
+console.log("[HEADER-SHOP] Caricato");
 
-/* ---------------------------------------------------------
-   Riferimenti DOM (con fallback)
---------------------------------------------------------- */
-const navLogin    = document.getElementById("nav-login");
-const navRegister = document.getElementById("nav-register");
-const navLogout   = document.getElementById("nav-logout");
-const cartBadge   = document.getElementById("cart-badge");
-
-/* ---------------------------------------------------------
-   Aggiorna la UI in base allo stato login
---------------------------------------------------------- */
-function updateHeaderUI() {
-  console.log("HEADER: updateHeaderUI()", {
-    isLogged: window.isLogged,
-    email: window.userEmail
-  });
-
-  if (!navLogin || !navRegister || !navLogout) {
-    console.warn("[HEADER] Elementi login/logout non trovati");
-    return;
-  }
-
-  if (window.isLogged) {
-    navLogin.style.display = "none";
-    navRegister.style.display = "none";
-    navLogout.style.display = "inline-block";
-  } else {
-    navLogin.style.display = "inline-block";
-    navRegister.style.display = "inline-block";
-    navLogout.style.display = "none";
-  }
-}
-
-/* ---------------------------------------------------------
-   Logout
---------------------------------------------------------- */
-if (navLogout) {
-  navLogout.addEventListener("click", (e) => {
-    e.preventDefault();
-    console.log("HEADER: Logout cliccato");
-
-    if (typeof logout === "function") {
-      logout(); // definita in auth.js
+// Attende che header e auth siano pronti
+Promise.all([
+  new Promise(resolve => {
+    if (document.getElementById("header-placeholder")) {
+      resolve();
     } else {
-      console.warn("HEADER: logout() non è definita");
+      document.addEventListener("header-loaded", resolve);
     }
-  });
-}
+  }),
+  new Promise(resolve => {
+    if (window.isLogged !== undefined) {
+      resolve();
+    } else {
+      document.addEventListener("auth-ready", resolve);
+    }
+  })
+]).then(() => {
+  console.log("[HEADER-SHOP] Inizializzazione…");
 
-/* ---------------------------------------------------------
-   Aggiorna badge carrello (usa mewing_cart)
---------------------------------------------------------- */
-function updateCartBadge() {
-  if (!cartBadge) return;
+  // Elementi
+  const navLogin = document.getElementById("nav-login");
+  const navRegister = document.getElementById("nav-register");
+  const navLogout = document.getElementById("nav-logout");
+  const adminTrigger = document.getElementById("admin-trigger");
+  const cartBadge = document.getElementById("cart-badge");
 
-  try {
-    const cart = JSON.parse(localStorage.getItem("mewing_cart")) || [];
-    const count = cart.reduce((sum, p) => sum + (p.qty || 1), 0);
+  // -------------------------------------------------------
+  // LOGIN / LOGOUT
+  // -------------------------------------------------------
+  if (window.isLogged) {
+    if (navLogin) navLogin.style.display = "none";
+    if (navRegister) navRegister.style.display = "none";
+
+    if (navLogout) {
+      navLogout.style.display = "inline-block";
+      navLogout.onclick = () => {
+        localStorage.clear();
+        window.location.href = "index.html";
+      };
+    }
+  } else {
+    if (navLogin) navLogin.style.display = "inline-block";
+    if (navRegister) navRegister.style.display = "inline-block";
+    if (navLogout) navLogout.style.display = "none";
+  }
+
+  // -------------------------------------------------------
+  // ADMIN
+  // -------------------------------------------------------
+  if (adminTrigger) {
+    if (window.isAdmin) {
+      adminTrigger.style.display = "inline-block";
+    } else {
+      adminTrigger.style.display = "none";
+    }
+  }
+
+  // -------------------------------------------------------
+  // BADGE CARRELLO
+  // -------------------------------------------------------
+  function updateBadge() {
+    if (!cartBadge) return;
+
+    const cart = JSON.parse(localStorage.getItem("carrello") || "[]");
+    const count = cart.length;
 
     if (count > 0) {
       cartBadge.textContent = count;
@@ -69,37 +77,10 @@ function updateCartBadge() {
     } else {
       cartBadge.style.display = "none";
     }
-  } catch (e) {
-    console.warn("[HEADER] Errore lettura carrello:", e);
-    cartBadge.style.display = "none";
   }
-}
 
-/* ---------------------------------------------------------
-   EVENTI
---------------------------------------------------------- */
+  updateBadge();
+  window.addEventListener("cart-updated", updateBadge);
 
-// Quando auth.js ha finito → aggiorna header + badge
-document.addEventListener("auth-ready", () => {
-  console.log("HEADER: Evento auth-ready ricevuto");
-  updateHeaderUI();
-  updateCartBadge();
-});
-
-// Quando il loader ha caricato l’header → aggiorna UI
-document.addEventListener("header-loaded", () => {
-  console.log("HEADER: Evento header-loaded ricevuto");
-  updateHeaderUI();
-  updateCartBadge();
-});
-
-// Ascolta aggiornamenti del carrello
-document.addEventListener("cart-updated", updateCartBadge);
-
-// Storage multi-tab
-window.addEventListener("storage", (e) => {
-  if (e.key === "mewing_cart") updateCartBadge();
-  if (e.key === "session" || e.key === "email" || e.key === "ruolo") {
-    updateHeaderUI();
-  }
+  console.log("[HEADER-SHOP] Pronto.");
 });
