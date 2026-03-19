@@ -1,6 +1,11 @@
 // =========================================================
 // REGISTER — MewingMarket (SQL READY)
 // Crea utente SQL + login automatico + redirect
+// Versione DEFINITIVA con patch:
+// - doppio click
+// - gestione 401
+// - messaggi chiari
+// - fallback sicuri
 // =========================================================
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -14,6 +19,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
+
+    if (!statusBox) return;
 
     statusBox.style.color = "#d00";
     statusBox.textContent = "Registrazione in corso...";
@@ -33,8 +40,8 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    if (password.length < 6) {
-      statusBox.textContent = "La password deve contenere almeno 6 caratteri.";
+    if (password.length < 8) {
+      statusBox.textContent = "La password deve contenere almeno 8 caratteri.";
       return;
     }
 
@@ -42,6 +49,10 @@ document.addEventListener("DOMContentLoaded", () => {
       statusBox.textContent = "Le password non coincidono.";
       return;
     }
+
+    // Protezione doppio click
+    if (form.dataset.lock === "1") return;
+    form.dataset.lock = "1";
 
     try {
       // INVIO AL BACKEND SQL
@@ -51,10 +62,20 @@ document.addEventListener("DOMContentLoaded", () => {
         body: JSON.stringify({ email, password })
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      console.log("[REGISTER]", data);
+
+      // Email già registrata → suggerire login
+      if (data.error === "Email già registrata") {
+        statusBox.textContent = "Email già registrata. Effettua il login.";
+        statusBox.style.color = "#d00";
+        form.dataset.lock = "0";
+        return;
+      }
 
       if (!data.success) {
         statusBox.textContent = data.error || "Errore durante la registrazione.";
+        form.dataset.lock = "0";
         return;
       }
 
@@ -62,11 +83,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (data.token) {
         localStorage.setItem("session", data.token);
         localStorage.setItem("email", email);
-      }
-
-      // Aggiorna eventuale UI utente
-      if (typeof aggiornaFooterUtente === "function") {
-        aggiornaFooterUtente();
+        localStorage.setItem("ruolo", "user");
       }
 
       statusBox.style.color = "green";
@@ -79,6 +96,8 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) {
       console.error(err);
       statusBox.textContent = "Errore di connessione.";
+    } finally {
+      form.dataset.lock = "0";
     }
   });
 });
