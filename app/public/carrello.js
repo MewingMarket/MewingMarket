@@ -1,6 +1,6 @@
 /* =========================================================
    FILE: /public/carrello.js
-   CARRELLO SQL-READY — MODELLO DEFINITIVO
+   CARRELLO SQL-READY — MODELLO DEFINITIVO (PATCH 2026)
 ========================================================= */
 
 const Cart = {
@@ -139,10 +139,30 @@ function rimuoviDalCarrello(id) {
   Cart.remove(id);
 }
 
+/* =========================================================
+   BADGE CARRELLO — LOGICA DEFINITIVA
+========================================================= */
 function aggiornaBadgeCarrello() {
   const badge = document.getElementById("cart-badge");
-  if (!badge) return; // ⭐ evita errori su pagine senza badge
+  if (!badge) return;
 
+  // ------------------------------
+  // 1) Homepage → badge SEMPRE nascosto
+  // ------------------------------
+  const path = location.pathname.toLowerCase();
+  const isHome =
+    path === "/" ||
+    path.endsWith("/index.html") ||
+    path.endsWith("/index");
+
+  if (isHome) {
+    badge.style.display = "none";
+    return;
+  }
+
+  // ------------------------------
+  // 2) Shop → badge visibile solo se count > 0
+  // ------------------------------
   const count = Cart.count();
   badge.textContent = count;
 
@@ -153,10 +173,19 @@ function aggiornaBadgeCarrello() {
   }
 }
 
-// Aggiorna badge quando:
-// - il carrello cambia
-// - l’header viene caricato
-// - l’utente fa login/logout
+/* =========================================================
+   CLICK SU CARRELLO → CHECKOUT
+========================================================= */
+document.addEventListener("click", (e) => {
+  const id = e.target.id;
+  if (id === "cart-icon" || id === "cart-badge") {
+    window.location.href = "checkout.html";
+  }
+});
+
+/* =========================================================
+   EVENTI
+========================================================= */
 document.addEventListener("cart-updated", aggiornaBadgeCarrello);
 document.addEventListener("header-loaded", aggiornaBadgeCarrello);
 document.addEventListener("auth-ready", aggiornaBadgeCarrello);
