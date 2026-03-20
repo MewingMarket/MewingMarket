@@ -1,5 +1,5 @@
 // =========================================================
-// AUTH-USER.CJS — Versione SUPER-PERMISSIVA (DEFINITIVA)
+// AUTH-USER.CJS — Versione DEFINITIVA (2026)
 // =========================================================
 
 module.exports = function authUser(req, res, next) {
@@ -9,20 +9,28 @@ module.exports = function authUser(req, res, next) {
       "/catalogo", "/catalogo.html",
       "/prodotto", "/prodotto.html",
       "/categories", "/categories.html",
-      "/checkout", "/checkout.html",
       "/login", "/login.html",
       "/registrazione", "/registrazione.html",
-      "/reset-password-request", "/reset-password-confirm",
-      "/reset-email-request", "/reset-email-confirm",
-      "/api/utenti/login",
-      "/api/utenti/registrazione",
+
+      // RESET PASSWORD (PUBLIC)
+      "/reset-password", "/reset-password.html",
+      "/reset-password-request", "/reset-password-request.html",
+      "/reset-password-confirm", "/reset-password-confirm.html",
       "/api/utenti/reset-password-request",
       "/api/utenti/reset-password-confirm",
+
+      // RESET EMAIL (PUBLIC)
+      "/reset-email", "/reset-email.html",
+      "/reset-email-request", "/reset-email-request.html",
+      "/reset-email-confirm", "/reset-email-confirm.html",
       "/api/utenti/reset-email-request",
       "/api/utenti/reset-email-confirm",
-      "/api/products",
-      "/api/paypal/create-order",
-      "/api/paypal/execute-order",
+
+      // LOGIN & REGISTRAZIONE (PUBLIC)
+      "/api/utenti/login",
+      "/api/utenti/registrazione",
+
+      // SEO & TRACKING (PUBLIC)
       "/seo", "/tracking", "/structured-data"
     ];
 
@@ -36,9 +44,14 @@ module.exports = function authUser(req, res, next) {
     }
 
     // -----------------------------------------------------
-    // 2) LETTURA TOKEN
+    // 2) LETTURA TOKEN (STANDARD)
     // -----------------------------------------------------
-    const token = req.headers["x-token"];
+    const authHeader = req.headers["authorization"];
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Token mancante" });
+    }
+
+    const token = authHeader.replace("Bearer ", "").trim();
     if (!token) {
       return res.status(401).json({ error: "Token mancante" });
     }
