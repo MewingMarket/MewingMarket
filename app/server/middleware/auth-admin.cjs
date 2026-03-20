@@ -1,26 +1,32 @@
 // =========================================================
 // File: app/server/middleware/auth-admin.cjs
-// Middleware ADMIN definitivo (SQL + token)
+// Middleware ADMIN definitivo (SQL + token standard)
 // =========================================================
 
 const db = require("../db/database.cjs");
 
 module.exports = function (req, res, next) {
   try {
-    // Legge token dall'header (come il resto del sito)
-    const tokenRaw = req.headers["x-token"];
-    const token = String(tokenRaw || "").trim();
-
-    if (!token || !token.startsWith("tok_")) {
+    // Legge token dallo stesso header usato dal resto del sito
+    const authHeader = req.headers["authorization"];
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({
         success: false,
         error: "Non loggato"
       });
     }
 
-    // Cerca utente nel DB
+    const token = authHeader.replace("Bearer ", "").trim();
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        error: "Non loggato"
+      });
+    }
+
+    // Cerca utente nel DB (stessa colonna usata per la sessione)
     const user = db
-      .prepare("SELECT id, email, ruolo FROM utenti WHERE token = ?")
+      .prepare("SELECT id, email, ruolo FROM utenti WHERE sessione = ?")
       .get(token);
 
     if (!user) {
@@ -32,23 +38,11 @@ module.exports = function (req, res, next) {
 
     // Normalizzazione ruolo
     const ruoloRaw = String(user.ruolo || "").trim().toLowerCase();
+    let ruoloNorm = "user";
 
-    let ruoloNorm = "user"; // fallback sicuro
-
-    if (
-      ruoloRaw.includes("admin") ||
-      ruoloRaw.includes("amministrator")
-    ) {
+    if (ruoloRaw.includes("admin") || ruoloRaw.includes("amministrator")) {
       ruoloNorm = "admin";
-    } else if (
-      ruoloRaw.includes("user") ||
-      ruoloRaw.includes("utente")
-    ) {
-      ruoloNorm = "user";
-    } else if (
-      ruoloRaw.includes("guest") ||
-      ruoloRaw.includes("ospite")
-    ) {
+    } else if (ruoloRaw.includes("guest") || ruoloRaw.includes("ospite")) {
       ruoloNorm = "guest";
     }
 
