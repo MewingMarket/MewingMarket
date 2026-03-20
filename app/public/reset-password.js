@@ -1,9 +1,9 @@
 // =========================================================
-// RESET PASSWORD REQUEST — Versione DEFINITIVA
-// Compatibile SQL + auth.js + nessun blocco
+// RESET PASSWORD REQUEST — Versione DEFINITIVA (2026)
+// Public route — nessun token richiesto
 // =========================================================
 
-console.log("[RESET-PASS-REQ] Caricato");
+console.log("[RESET-PASSWORD-REQ] Caricato");
 
 const btnResetPassword = document.getElementById("btnResetPassword");
 const msgResetPassword = document.getElementById("msgResetPassword");
@@ -34,7 +34,7 @@ btnResetPassword?.addEventListener("click", async () => {
   btnResetPassword.disabled = true;
 
   try {
-    console.log("[RESET-PASS-REQ] Invio richiesta…");
+    console.log("[RESET-PASSWORD-REQ] Invio richiesta…");
 
     const res = await fetch("/api/utenti/reset-password-request", {
       method: "POST",
@@ -43,7 +43,7 @@ btnResetPassword?.addEventListener("click", async () => {
     });
 
     const data = await res.json().catch(() => ({}));
-    console.log("[RESET-PASS-REQ] Risposta:", data);
+    console.log("[RESET-PASSWORD-REQ] Risposta:", data);
 
     if (data.success) {
       msg.textContent = "Email inviata! Controlla la tua casella.";
@@ -54,7 +54,7 @@ btnResetPassword?.addEventListener("click", async () => {
     }
 
   } catch (err) {
-    console.error("[RESET-PASS-REQ] Errore:", err);
+    console.error("[RESET-PASSWORD-REQ] Errore:", err);
     msg.textContent = "Errore di connessione.";
     msg.className = "err";
   } finally {
