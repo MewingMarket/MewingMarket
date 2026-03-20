@@ -1,6 +1,6 @@
 // =========================================================
-// DASHBOARD.JS — Versione DEFINITIVA
-// Sincronizzato con auth-ready + SQL + token
+// DASHBOARD.JS — Versione DEFINITIVA (2026)
+// Sincronizzato con auth-ready + token + SQL
 // =========================================================
 
 console.log("[DASHBOARD] Caricato");
@@ -20,13 +20,25 @@ async function initDashboard() {
     return;
   }
 
+  const token = localStorage.getItem("token");
+  if (!token) {
+    console.warn("[DASHBOARD] Nessun token → redirect login");
+    window.location.href = "login.html";
+    return;
+  }
+
+  const authHeaders = {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer " + token
+  };
+
   // -------------------------------------------------------
   // 2) Carica dati utente
   // -------------------------------------------------------
   try {
     const res = await fetch("/api/utenti/me", {
       method: "GET",
-      headers: { "Content-Type": "application/json" }
+      headers: authHeaders
     });
 
     const data = await res.json().catch(() => ({}));
@@ -39,7 +51,6 @@ async function initDashboard() {
       return;
     }
 
-    // Aggiorna UI
     updateUserUI(data.utente);
 
   } catch (err) {
@@ -53,15 +64,15 @@ async function initDashboard() {
   try {
     const res = await fetch("/api/ordini/miei", {
       method: "GET",
-      headers: { "Content-Type": "application/json" }
+      headers: authHeaders
     });
 
     const data = await res.json().catch(() => ({}));
     console.log("[DASHBOARD] /ordini/miei:", data);
 
-    if (res.status === 401) return; // già gestito sopra
-
-    updateOrdersUI(data.ordini || []);
+    if (res.status !== 401) {
+      updateOrdersUI(data.ordini || []);
+    }
 
   } catch (err) {
     console.error("[DASHBOARD] Errore ordini:", err);
@@ -73,15 +84,15 @@ async function initDashboard() {
   try {
     const res = await fetch("/api/download/miei", {
       method: "GET",
-      headers: { "Content-Type": "application/json" }
+      headers: authHeaders
     });
 
     const data = await res.json().catch(() => ({}));
     console.log("[DASHBOARD] /download/miei:", data);
 
-    if (res.status === 401) return;
-
-    updateDownloadsUI(data.download || []);
+    if (res.status !== 401) {
+      updateDownloadsUI(data.download || []);
+    }
 
   } catch (err) {
     console.error("[DASHBOARD] Errore download:", err);
@@ -101,9 +112,8 @@ function updateUserUI(user) {
   if (elEmail) elEmail.textContent = user.email || "";
   if (elRuolo) elRuolo.textContent = user.ruolo || "user";
 
-  // Aggiorna localStorage se necessario
-  if (user.email) localStorage.setItem("email", user.email);
-  if (user.ruolo) localStorage.setItem("ruolo", user.ruolo);
+  localStorage.setItem("email", user.email || "");
+  localStorage.setItem("ruolo", user.ruolo || "user");
 }
 
 function updateOrdersUI(ordini) {
