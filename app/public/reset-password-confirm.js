@@ -19,9 +19,7 @@ btnConfirmReset?.addEventListener("click", async () => {
 
   if (!msg) return;
 
-  // -------------------------------------------------------
   // Validazione campi
-  // -------------------------------------------------------
   if (!nuova_password || !conferma) {
     msg.textContent = "Compila tutti i campi.";
     msg.className = "err";
@@ -40,9 +38,7 @@ btnConfirmReset?.addEventListener("click", async () => {
     return;
   }
 
-  // -------------------------------------------------------
   // Validazione token
-  // -------------------------------------------------------
   if (!token) {
     msg.textContent = "Token mancante o non valido.";
     msg.className = "err";
