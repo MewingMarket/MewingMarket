@@ -1,17 +1,14 @@
 // =========================================================
-// AUTH-USER.CJS — Versione DEFINITIVA 2026.3
-// Con LOG DIAGNOSTICI per capire il path reale
+// AUTH-USER.CJS — Versione DEFINITIVA 2026.4
+// Supporta automaticamente API e non-API
 // =========================================================
 
 module.exports = function authUser(req, res, next) {
   try {
-    // -----------------------------------------------------
-    // LOG DIAGNOSTICI — QUI VEDIAMO LA VERITÀ
-    // -----------------------------------------------------
+    // LOG DIAGNOSTICI
     console.log("AUTH DEBUG → req.path:", req.path);
     console.log("AUTH DEBUG → req.url:", req.url);
     console.log("AUTH DEBUG → headers.authorization:", req.headers["authorization"]);
-    console.log("AUTH DEBUG → headers:", req.headers);
 
     // Normalizzazione path
     let path = req.path.toLowerCase().trim();
@@ -21,8 +18,8 @@ module.exports = function authUser(req, res, next) {
       path = path.slice(0, -1);
     }
 
-    // Rotte PUBLIC
-    const publicPaths = [
+    // Rotte PUBLIC (solo nomi base)
+    const publicBase = [
       "/", "/index", "/index.html",
       "/catalogo", "/catalogo.html",
       "/prodotto", "/prodotto.html",
@@ -32,34 +29,34 @@ module.exports = function authUser(req, res, next) {
 
       // RESET PASSWORD
       "/reset-password", "/reset-password.html",
-      "/reset-password-request", "/reset-password-request.html",
-      "/reset-password-confirm", "/reset-password-confirm.html",
-      "/api/utenti/reset-password-request",
-      "/api/utenti/reset-password-confirm",
+      "/reset-password-request",
+      "/reset-password-confirm",
 
       // RESET EMAIL
       "/reset-email", "/reset-email.html",
-      "/reset-email-request", "/reset-email-request.html",
-      "/reset-email-confirm", "/reset-email-confirm.html",
-      "/api/utenti/reset-email-request",
-      "/api/utenti/reset-email-confirm",
+      "/reset-email-request",
+      "/reset-email-confirm",
 
       // LOGIN & REGISTRAZIONE
-      "/api/utenti/login",
-      "/api/utenti/registrazione",
+      "/login", "/registrazione",
 
       // SEO & TRACKING
       "/seo", "/tracking", "/structured-data"
     ];
 
     // -----------------------------------------------------
-    // 1) ROTTE PUBBLICHE — MAI BLOCCATE
+    // 1) MATCH AUTOMATICO API + NON API
     // -----------------------------------------------------
-    const isPublic = publicPaths.some(p =>
-      path === p ||
-      path.startsWith(p + "/") ||
-      req.url.toLowerCase().startsWith(p + "?")
-    );
+    const isPublic = publicBase.some(base => {
+      return (
+        path === base ||
+        path === "/api" + base ||
+        path.startsWith(base + "/") ||
+        path.startsWith("/api" + base + "/") ||
+        req.url.toLowerCase().startsWith(base + "?") ||
+        req.url.toLowerCase().startsWith("/api" + base + "?")
+      );
+    });
 
     if (isPublic) {
       console.log("AUTH DEBUG → PUBLIC MATCH:", path);
