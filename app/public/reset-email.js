@@ -30,14 +30,20 @@ btnResetEmail?.addEventListener("click", async () => {
   try {
     console.log("[RESET-EMAIL-REQ] Invio richiesta…");
 
-    const token = localStorage.getItem("sessione") || "";
+    const token = localStorage.getItem("sessione");
+
+    // Costruzione header corretta
+    const headers = {
+      "Content-Type": "application/json"
+    };
+
+    if (token && token.trim() !== "") {
+      headers["Authorization"] = "Bearer " + token;
+    }
 
     const res = await fetch("/api/utenti/reset-email-request", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + token
-      },
+      headers,
       body: JSON.stringify({ password })
     });
 
