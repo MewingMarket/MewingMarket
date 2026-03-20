@@ -1,6 +1,6 @@
 // =========================================================
 // RESET EMAIL REQUEST — Versione DEFINITIVA (2026)
-// Public route — nessun token richiesto
+// Private route — richiede token + password
 // =========================================================
 
 console.log("[RESET-EMAIL-REQ] Caricato");
@@ -9,22 +9,16 @@ const btnResetEmail = document.getElementById("btnResetEmail");
 const msgResetEmail = document.getElementById("msgResetEmail");
 
 btnResetEmail?.addEventListener("click", async () => {
-  const email = document.getElementById("email")?.value.trim().toLowerCase();
+  const password = document.getElementById("password")?.value.trim();
   const msg = msgResetEmail;
 
   if (!msg) return;
 
   // -------------------------------------------------------
-  // Validazione email
+  // Validazione password
   // -------------------------------------------------------
-  if (!email) {
-    msg.textContent = "Inserisci la tua email.";
-    msg.className = "err";
-    return;
-  }
-
-  if (!email.includes("@") || !email.includes(".")) {
-    msg.textContent = "Inserisci un'email valida.";
+  if (!password) {
+    msg.textContent = "Inserisci la tua password.";
     msg.className = "err";
     return;
   }
@@ -36,10 +30,15 @@ btnResetEmail?.addEventListener("click", async () => {
   try {
     console.log("[RESET-EMAIL-REQ] Invio richiesta…");
 
+    const token = localStorage.getItem("sessione") || "";
+
     const res = await fetch("/api/utenti/reset-email-request", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email })
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + token
+      },
+      body: JSON.stringify({ password })
     });
 
     const data = await res.json().catch(() => ({}));
