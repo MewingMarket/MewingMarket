@@ -1,6 +1,6 @@
 // =========================================================
-// RESET EMAIL REQUEST — Versione DEFINITIVA
-// Compatibile SQL + auth.js + nessun blocco
+// RESET EMAIL REQUEST — Versione DEFINITIVA (2026)
+// Public route — nessun token richiesto
 // =========================================================
 
 console.log("[RESET-EMAIL-REQ] Caricato");
@@ -9,7 +9,7 @@ const btnResetEmail = document.getElementById("btnResetEmail");
 const msgResetEmail = document.getElementById("msgResetEmail");
 
 btnResetEmail?.addEventListener("click", async () => {
-  const email = document.getElementById("resetEmail")?.value.trim().toLowerCase();
+  const email = document.getElementById("email")?.value.trim().toLowerCase();
   const msg = msgResetEmail;
 
   if (!msg) return;
