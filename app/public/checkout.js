@@ -1,6 +1,6 @@
 // =========================================================
-// CHECKOUT.JS — Versione DEFINITIVA (PATCH 2026)
-// Sincronizzato con auth-ready + Cart + SQL
+// CHECKOUT.JS — Versione DEFINITIVA (2026)
+// Sincronizzato con auth-ready + token + Cart
 // =========================================================
 
 console.log("[CHECKOUT] Caricato");
@@ -20,8 +20,20 @@ function initCheckout() {
     return;
   }
 
+  const token = localStorage.getItem("token");
+  if (!token) {
+    console.warn("[CHECKOUT] Nessun token → redirect login");
+    window.location.href = "login.html";
+    return;
+  }
+
+  const authHeaders = {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer " + token
+  };
+
   // -------------------------------------------------------
-  // 2) Carica carrello dal modello Cart
+  // 2) Carica carrello
   // -------------------------------------------------------
   const cart = (typeof Cart !== "undefined") ? Cart.get() : [];
 
@@ -32,7 +44,7 @@ function initCheckout() {
   }
 
   // -------------------------------------------------------
-  // 3) Calcolo totale (qty inclusa)
+  // 3) Calcolo totale
   // -------------------------------------------------------
   let totaleCent = 0;
 
@@ -44,10 +56,11 @@ function initCheckout() {
 
   const totaleEuro = (totaleCent / 100).toFixed(2);
 
-  const totalEl = document.getElementById("checkout-total");
-  if (totalEl) {
-    totalEl.textContent = "€" + totaleEuro;
-  }
+  const elTotale = document.getElementById("totale");
+  const elDaPagare = document.getElementById("da-pagare");
+
+  if (elTotale) elTotale.textContent = totaleEuro;
+  if (elDaPagare) elDaPagare.textContent = totaleEuro;
 
   console.log("[CHECKOUT] Totale:", totaleEuro);
 
@@ -69,7 +82,7 @@ function initCheckout() {
 
       const res = await fetch("/api/paypal/create-order", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders,
         body: JSON.stringify({ carrello: payload })
       });
 
