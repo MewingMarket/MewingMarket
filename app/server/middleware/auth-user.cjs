@@ -1,6 +1,6 @@
 // =========================================================
-// AUTH-USER.CJS — Versione DEFINITIVA 2026.4
-// Supporta automaticamente API e non-API
+// AUTH-USER.CJS — Versione DEFINITIVA 2026.5
+// Supporta automaticamente API e non-API + rotte /utenti
 // =========================================================
 
 module.exports = function authUser(req, res, next) {
@@ -18,7 +18,9 @@ module.exports = function authUser(req, res, next) {
       path = path.slice(0, -1);
     }
 
-    // Rotte PUBLIC (solo nomi base)
+    // =====================================================
+    // ROTTE PUBLIC — SOLO NOMI BASE (senza /api)
+    // =====================================================
     const publicBase = [
       "/", "/index", "/index.html",
       "/catalogo", "/catalogo.html",
@@ -31,11 +33,15 @@ module.exports = function authUser(req, res, next) {
       "/reset-password", "/reset-password.html",
       "/reset-password-request",
       "/reset-password-confirm",
+      "/utenti/reset-password-request",
+      "/utenti/reset-password-confirm",
 
       // RESET EMAIL
       "/reset-email", "/reset-email.html",
       "/reset-email-request",
       "/reset-email-confirm",
+      "/utenti/reset-email-request",
+      "/utenti/reset-email-confirm",
 
       // LOGIN & REGISTRAZIONE
       "/login", "/registrazione",
@@ -44,17 +50,17 @@ module.exports = function authUser(req, res, next) {
       "/seo", "/tracking", "/structured-data"
     ];
 
-    // -----------------------------------------------------
-    // 1) MATCH AUTOMATICO API + NON API
-    // -----------------------------------------------------
+    // =====================================================
+    // MATCH AUTOMATICO API + NON API
+    // =====================================================
     const isPublic = publicBase.some(base => {
       return (
-        path === base ||
-        path === "/api" + base ||
-        path.startsWith(base + "/") ||
-        path.startsWith("/api" + base + "/") ||
-        req.url.toLowerCase().startsWith(base + "?") ||
-        req.url.toLowerCase().startsWith("/api" + base + "?")
+        path === base ||                     // /reset-password-request
+        path === "/api" + base ||            // /api/reset-password-request
+        path.startsWith(base + "/") ||       // /reset-password-request/qualcosa
+        path.startsWith("/api" + base + "/") || // /api/reset-password-request/qualcosa
+        req.url.toLowerCase().startsWith(base + "?") || // /reset-password-request?x=1
+        req.url.toLowerCase().startsWith("/api" + base + "?") // /api/reset-password-request?x=1
       );
     });
 
@@ -63,9 +69,9 @@ module.exports = function authUser(req, res, next) {
       return next();
     }
 
-    // -----------------------------------------------------
-    // 2) LETTURA TOKEN
-    // -----------------------------------------------------
+    // =====================================================
+    // TOKEN RICHIESTO PER TUTTE LE ALTRE ROTTE
+    // =====================================================
     const authHeader = req.headers["authorization"];
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       console.log("AUTH DEBUG → BLOCCO: Token mancante");
@@ -78,9 +84,9 @@ module.exports = function authUser(req, res, next) {
       return res.status(401).json({ error: "Token mancante" });
     }
 
-    // -----------------------------------------------------
-    // 3) VERIFICA TOKEN (SQL)
-    // -----------------------------------------------------
+    // =====================================================
+    // VERIFICA TOKEN (SQL)
+    // =====================================================
     req.db.get(
       "SELECT email, ruolo FROM utenti WHERE sessione = ? LIMIT 1",
       [token],
