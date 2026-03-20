@@ -1,6 +1,6 @@
 // =========================================================
-// RESET PASSWORD CONFIRM — Versione DEFINITIVA
-// Compatibile SQL + auth.js + nessun blocco
+// RESET PASSWORD CONFIRM — Versione DEFINITIVA (2026)
+// Public route — nessun token auth richiesto
 // =========================================================
 
 console.log("[RESET-PASS-CONFIRM] Caricato");
@@ -74,10 +74,10 @@ btnConfirmReset?.addEventListener("click", async () => {
       }, 2000);
 
       return;
-    } else {
-      msg.textContent = data.error || "Errore durante la conferma del reset.";
-      msg.className = "err";
     }
+
+    msg.textContent = data.error || "Errore durante la conferma del reset.";
+    msg.className = "err";
 
   } catch (err) {
     console.error("[RESET-PASS-CONFIRM] Errore:", err);
