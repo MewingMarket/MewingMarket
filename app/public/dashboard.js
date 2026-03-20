@@ -1,26 +1,23 @@
 // =========================================================
-// DASHBOARD.JS — Versione DEFINITIVA (2026)
-// Sincronizzato con auth-ready + token + SQL
+// DASHBOARD.JS — Versione PATCHATA (2026.5)
+// Compatibile con auth-user + api-utenti.cjs
 // =========================================================
 
 console.log("[DASHBOARD] Caricato");
 
-// Attende auth-ready PRIMA di iniziare
 document.addEventListener("auth-ready", initDashboard);
 
 async function initDashboard() {
   console.log("[DASHBOARD] initDashboard()");
 
-  // -------------------------------------------------------
   // 1) Verifica login
-  // -------------------------------------------------------
   if (!window.isLogged) {
     console.warn("[DASHBOARD] Utente non loggato → redirect login");
     window.location.href = "login.html";
     return;
   }
 
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem("sessione"); // PATCH
   if (!token) {
     console.warn("[DASHBOARD] Nessun token → redirect login");
     window.location.href = "login.html";
@@ -32,11 +29,9 @@ async function initDashboard() {
     "Authorization": "Bearer " + token
   };
 
-  // -------------------------------------------------------
-  // 2) Carica dati utente
-  // -------------------------------------------------------
+  // 2) Carica dati utente (PATCH: endpoint corretto)
   try {
-    const res = await fetch("/api/utenti/me", {
+    const res = await fetch("/utenti/me", {  // PATCH
       method: "GET",
       headers: authHeaders
     });
@@ -58,9 +53,7 @@ async function initDashboard() {
     alert("Errore di connessione.");
   }
 
-  // -------------------------------------------------------
-  // 3) Carica ordini
-  // -------------------------------------------------------
+  // 3) Ordini (solo se implementati)
   try {
     const res = await fetch("/api/ordini/miei", {
       method: "GET",
@@ -78,9 +71,7 @@ async function initDashboard() {
     console.error("[DASHBOARD] Errore ordini:", err);
   }
 
-  // -------------------------------------------------------
-  // 4) Carica download
-  // -------------------------------------------------------
+  // 4) Download (solo se implementati)
   try {
     const res = await fetch("/api/download/miei", {
       method: "GET",
@@ -97,70 +88,4 @@ async function initDashboard() {
   } catch (err) {
     console.error("[DASHBOARD] Errore download:", err);
   }
-}
-
-// =========================================================
-// UI FUNCTIONS
-// =========================================================
-
-function updateUserUI(user) {
-  if (!user) return;
-
-  const elEmail = document.getElementById("user-email");
-  const elRuolo = document.getElementById("user-role");
-
-  if (elEmail) elEmail.textContent = user.email || "";
-  if (elRuolo) elRuolo.textContent = user.ruolo || "user";
-
-  localStorage.setItem("email", user.email || "");
-  localStorage.setItem("ruolo", user.ruolo || "user");
-}
-
-function updateOrdersUI(ordini) {
-  const container = document.getElementById("orders-list");
-  if (!container) return;
-
-  if (!ordini.length) {
-    container.innerHTML = "<p>Nessun ordine disponibile.</p>";
-    return;
-  }
-
-  container.innerHTML = "";
-
-  ordini.forEach((o) => {
-    const div = document.createElement("div");
-    div.className = "order-item";
-
-    div.innerHTML = `
-      <p><strong>ID ordine:</strong> ${o.id}</p>
-      <p><strong>Data:</strong> ${o.data}</p>
-      <p><strong>Totale:</strong> €${(o.totale_cent / 100).toFixed(2)}</p>
-    `;
-
-    container.appendChild(div);
-  });
-}
-
-function updateDownloadsUI(downloads) {
-  const container = document.getElementById("downloads-list");
-  if (!container) return;
-
-  if (!downloads.length) {
-    container.innerHTML = "<p>Nessun download disponibile.</p>";
-    return;
-  }
-
-  container.innerHTML = "";
-
-  downloads.forEach((d) => {
-    const div = document.createElement("div");
-    div.className = "download-item";
-
-    div.innerHTML = `
-      <p><strong>${d.titolo}</strong></p>
-      <a href="${d.url}" class="btn" download>Scarica</a>
-    `;
-
-    container.appendChild(div);
-  });
 }
