@@ -1,6 +1,6 @@
 // =========================================================
 // File: app/server/routes/api-utenti.cjs
-// Versione SQL + JSON mirror + hashing password
+// Versione SQL + JSON mirror + hashing password (2026)
 // =========================================================
 
 const express = require("express");
@@ -25,7 +25,7 @@ function normalizePassword(p) {
   return String(p || "").trim();
 }
 
-// Hash password (gestito solo dal sito, mai dall’utente)
+// Hash password
 function hash(p) {
   return crypto.createHash("sha256").update(String(p)).digest("hex");
 }
@@ -35,12 +35,11 @@ function genToken(prefix) {
   return prefix + "_" + crypto.randomBytes(16).toString("hex");
 }
 
-// Helper: estrai token da body OPPURE da header
-function getToken(req) {
-  return (
-    normalizePassword(req.body?.token) ||
-    normalizePassword(req.headers["x-token"])
-  );
+// Estrae token sessione da Authorization
+function getSessionToken(req) {
+  const h = req.headers["authorization"];
+  if (!h || !h.startsWith("Bearer ")) return "";
+  return h.replace("Bearer ", "").trim();
 }
 
 /* =========================================================
@@ -63,20 +62,19 @@ router.post("/utenti/registrazione", async (req, res) => {
       return res.json({ success: false, error: "Email già registrata" });
     }
 
-    const token = genToken("tok");
+    const sessione = genToken("tok");
     const passwordHash = hash(password);
 
     db.prepare(`
-      INSERT INTO utenti (email, password_hash, token)
+      INSERT INTO utenti (email, password_hash, sessione)
       VALUES (?, ?, ?)
-    `).run(email, passwordHash, token);
+    `).run(email, passwordHash, sessione);
 
     inviaEmailRegistrazione({ email });
 
-    // JSON mirror
     await jsonGen.exportUsers();
 
-    return res.json({ success: true, token, email });
+    return res.json({ success: true, token: sessione, email });
 
   } catch (err) {
     console.error("❌ Registrazione:", err);
@@ -110,15 +108,14 @@ router.post("/utenti/login", (req, res) => {
       return res.json({ success: false, error: "Password errata" });
     }
 
-    const token = genToken("tok");
+    const sessione = genToken("tok");
 
-    db.prepare("UPDATE utenti SET token = ? WHERE id = ?").run(token, user.id);
+    db.prepare("UPDATE utenti SET sessione = ? WHERE id = ?").run(sessione, user.id);
 
     return res.json({
       success: true,
-      token,
+      token: sessione,
       email,
-      utenteEmail: email,
       ruolo: user.ruolo || "user"
     });
 
@@ -129,24 +126,24 @@ router.post("/utenti/login", (req, res) => {
 });
 
 /* =========================================================
-   CAMBIO EMAIL
+   CAMBIO EMAIL (PRIVATO)
 ========================================================= */
 router.post("/utenti/cambia-email", async (req, res) => {
-  let token = getToken(req);
+  const sessione = getSessionToken(req);
   let { nuova_email, password } = req.body || {};
 
   nuova_email = (nuova_email || "").trim().toLowerCase();
   password = normalizePassword(password);
 
-  if (!token || !nuova_email || !password) {
+  if (!sessione || !nuova_email || !password) {
     return res.json({ success: false, error: "Dati mancanti" });
   }
 
   try {
-    const user = db.prepare("SELECT * FROM utenti WHERE token = ?").get(token);
+    const user = db.prepare("SELECT * FROM utenti WHERE sessione = ?").get(sessione);
 
     if (!user) {
-      return res.json({ success: false, error: "Token non valido" });
+      return res.json({ success: false, error: "Sessione non valida" });
     }
 
     const passwordHash = hash(password);
@@ -155,11 +152,15 @@ router.post("/utenti/cambia-email", async (req, res) => {
       return res.json({ success: false, error: "Password errata" });
     }
 
+    const esiste = db.prepare("SELECT id FROM utenti WHERE email = ?").get(nuova_email);
+    if (esiste) {
+      return res.json({ success: false, error: "Email già in uso" });
+    }
+
     db.prepare("UPDATE utenti SET email = ? WHERE id = ?").run(nuova_email, user.id);
 
     inviaEmailCambioEmail({ email: nuova_email });
 
-    // JSON mirror
     await jsonGen.exportUsers();
 
     return res.json({ success: true });
@@ -171,29 +172,32 @@ router.post("/utenti/cambia-email", async (req, res) => {
 });
 
 /* =========================================================
-   CAMBIO PASSWORD
+   CAMBIO PASSWORD (PRIVATO)
 ========================================================= */
 router.post("/utenti/cambia-password", async (req, res) => {
-  let token = getToken(req);
+  const sessione = getSessionToken(req);
   let { nuova_password } = req.body || {};
 
   nuova_password = normalizePassword(nuova_password);
 
-  if (!token || !nuova_password) {
+  if (!sessione || !nuova_password) {
     return res.json({ success: false, error: "Dati mancanti" });
   }
 
   try {
-    const user = db.prepare("SELECT * FROM utenti WHERE token = ?").get(token);
+    const user = db.prepare("SELECT * FROM utenti WHERE sessione = ?").get(sessione);
 
     if (!user) {
-      return res.json({ success: false, error: "Token non valido" });
+      return res.json({ success: false, error: "Sessione non valida" });
     }
 
     const newHash = hash(nuova_password);
 
-    db.prepare("UPDATE utenti SET password_hash = ? WHERE id = ?")
-      .run(String(newHash), user.id);
+    db.prepare(`
+      UPDATE utenti
+      SET password_hash = ?
+      WHERE id = ?
+    `).run(newHash, user.id);
 
     inviaEmailCambioPassword({ email: user.email });
 
@@ -206,23 +210,23 @@ router.post("/utenti/cambia-password", async (req, res) => {
 });
 
 /* =========================================================
-   ELIMINAZIONE ACCOUNT
+   ELIMINAZIONE ACCOUNT (PRIVATO)
 ========================================================= */
 router.post("/utenti/elimina-account", async (req, res) => {
-  let token = getToken(req);
+  const sessione = getSessionToken(req);
   let { password } = req.body || {};
 
   password = normalizePassword(password);
 
-  if (!token || !password) {
+  if (!sessione || !password) {
     return res.json({ success: false, error: "Dati mancanti" });
   }
 
   try {
-    const user = db.prepare("SELECT * FROM utenti WHERE token = ?").get(token);
+    const user = db.prepare("SELECT * FROM utenti WHERE sessione = ?").get(sessione);
 
     if (!user) {
-      return res.json({ success: false, error: "Token non valido" });
+      return res.json({ success: false, error: "Sessione non valida" });
     }
 
     const passwordHash = hash(password);
@@ -235,7 +239,6 @@ router.post("/utenti/elimina-account", async (req, res) => {
 
     inviaEmailEliminazione({ email: user.email });
 
-    // JSON mirror
     await jsonGen.exportUsers();
 
     return res.json({ success: true });
@@ -247,7 +250,7 @@ router.post("/utenti/elimina-account", async (req, res) => {
 });
 
 /* =========================================================
-   RESET PASSWORD — RICHIESTA LINK
+   RESET PASSWORD — RICHIESTA LINK (PUBLIC)
 ========================================================= */
 router.post("/utenti/reset-password-request", (req, res) => {
   let { email } = req.body || {};
@@ -258,7 +261,7 @@ router.post("/utenti/reset-password-request", (req, res) => {
   }
 
   try {
-    const user = db.prepare("SELECT * FROM utenti WHERE email = ?").get(email);
+    const user = db.prepare("SELECT id FROM utenti WHERE email = ?").get(email);
 
     if (!user) {
       return res.json({ success: false, error: "Email non trovata" });
@@ -266,8 +269,11 @@ router.post("/utenti/reset-password-request", (req, res) => {
 
     const resetToken = genToken("resetpass");
 
-    db.prepare("UPDATE utenti SET reset_password_token = ? WHERE id = ?")
-      .run(resetToken, user.id);
+    db.prepare(`
+      UPDATE utenti
+      SET reset_password_token = ?
+      WHERE id = ?
+    `).run(resetToken, user.id);
 
     inviaEmailResetPassword({
       email,
@@ -283,7 +289,7 @@ router.post("/utenti/reset-password-request", (req, res) => {
 });
 
 /* =========================================================
-   RESET PASSWORD — CONFERMA
+   RESET PASSWORD — CONFERMA (PUBLIC)
 ========================================================= */
 router.post("/utenti/reset-password-confirm", (req, res) => {
   let { token, nuova_password } = req.body || {};
@@ -296,8 +302,9 @@ router.post("/utenti/reset-password-confirm", (req, res) => {
   }
 
   try {
-    const user = db.prepare("SELECT * FROM utenti WHERE reset_password_token = ?")
-      .get(token);
+    const user = db.prepare(`
+      SELECT id FROM utenti WHERE reset_password_token = ?
+    `).get(token);
 
     if (!user) {
       return res.json({ success: false, error: "Token non valido" });
@@ -307,9 +314,9 @@ router.post("/utenti/reset-password-confirm", (req, res) => {
 
     db.prepare(`
       UPDATE utenti
-      SET password_hash = ?, reset_password_token = ''
+      SET password_hash = ?, reset_password_token = '', sessione = ''
       WHERE id = ?
-    `).run(String(newHash), user.id);
+    `).run(newHash, user.id);
 
     return res.json({ success: true });
 
@@ -320,39 +327,33 @@ router.post("/utenti/reset-password-confirm", (req, res) => {
 });
 
 /* =========================================================
-   RESET EMAIL — RICHIESTA LINK
-   (versione sicura: serve token + password)
+   RESET EMAIL — RICHIESTA LINK (PUBLIC)
 ========================================================= */
 router.post("/utenti/reset-email-request", (req, res) => {
-  let token = getToken(req);
-  let { password } = req.body || {};
+  let { email } = req.body || {};
+  email = (email || "").trim().toLowerCase();
 
-  password = normalizePassword(password);
-
-  if (!token || !password) {
-    return res.json({ success: false, error: "Dati mancanti" });
+  if (!email) {
+    return res.json({ success: false, error: "Email mancante" });
   }
 
   try {
-    const user = db.prepare("SELECT * FROM utenti WHERE token = ?").get(token);
+    const user = db.prepare("SELECT id FROM utenti WHERE email = ?").get(email);
 
     if (!user) {
-      return res.json({ success: false, error: "Token non valido" });
-    }
-
-    const passwordHash = hash(password);
-
-    if (normalizePassword(user.password_hash) !== passwordHash) {
-      return res.json({ success: false, error: "Password errata" });
+      return res.json({ success: false, error: "Email non trovata" });
     }
 
     const resetToken = genToken("resetemail");
 
-    db.prepare("UPDATE utenti SET reset_email_token = ? WHERE id = ?")
-      .run(resetToken, user.id);
+    db.prepare(`
+      UPDATE utenti
+      SET reset_email_token = ?
+      WHERE id = ?
+    `).run(resetToken, user.id);
 
     inviaEmailResetEmail({
-      email: user.email,
+      email,
       link: `https://mewingmarket.it/reset-email-confirm.html?token=${resetToken}`
     });
 
@@ -365,7 +366,7 @@ router.post("/utenti/reset-email-request", (req, res) => {
 });
 
 /* =========================================================
-   RESET EMAIL — CONFERMA
+   RESET EMAIL — CONFERMA (PUBLIC)
 ========================================================= */
 router.post("/utenti/reset-email-confirm", (req, res) => {
   let { token, nuova_email } = req.body || {};
@@ -378,16 +379,25 @@ router.post("/utenti/reset-email-confirm", (req, res) => {
   }
 
   try {
-    const user = db.prepare("SELECT * FROM utenti WHERE reset_email_token = ?")
-      .get(token);
+    const user = db.prepare(`
+      SELECT id FROM utenti WHERE reset_email_token = ?
+    `).get(token);
 
     if (!user) {
       return res.json({ success: false, error: "Token non valido" });
     }
 
+    const esiste = db.prepare(`
+      SELECT id FROM utenti WHERE email = ?
+    `).get(nuova_email);
+
+    if (esiste) {
+      return res.json({ success: false, error: "Email già in uso" });
+    }
+
     db.prepare(`
       UPDATE utenti
-      SET email = ?, reset_email_token = ''
+      SET email = ?, reset_email_token = '', sessione = ''
       WHERE id = ?
     `).run(nuova_email, user.id);
 
