@@ -1,6 +1,6 @@
 // =========================================================
-// RESET EMAIL CONFIRM — Versione DEFINITIVA
-// Compatibile SQL + auth.js + nessun blocco
+// RESET EMAIL CONFIRM — Versione DEFINITIVA (2026)
+// Public route — nessun token auth richiesto
 // =========================================================
 
 console.log("[RESET-EMAIL-CONFIRM] Caricato");
@@ -70,10 +70,11 @@ btnConfirmEmail?.addEventListener("click", async () => {
       }, 2000);
 
       return;
-    } else {
-      msg.textContent = data.error || "Errore durante la conferma del reset email.";
-      msg.className = "err";
     }
+
+    // Errore backend
+    msg.textContent = data.error || "Errore durante la conferma del reset email.";
+    msg.className = "err";
 
   } catch (err) {
     console.error("[RESET-EMAIL-CONFIRM] Errore:", err);
