@@ -1,10 +1,18 @@
 // =========================================================
-// AUTH-USER.CJS — Versione DEFINITIVA 2026.2
-// Ultra-robusta: gestisce slash, querystring, varianti path
+// AUTH-USER.CJS — Versione DEFINITIVA 2026.3
+// Con LOG DIAGNOSTICI per capire il path reale
 // =========================================================
 
 module.exports = function authUser(req, res, next) {
   try {
+    // -----------------------------------------------------
+    // LOG DIAGNOSTICI — QUI VEDIAMO LA VERITÀ
+    // -----------------------------------------------------
+    console.log("AUTH DEBUG → req.path:", req.path);
+    console.log("AUTH DEBUG → req.url:", req.url);
+    console.log("AUTH DEBUG → headers.authorization:", req.headers["authorization"]);
+    console.log("AUTH DEBUG → headers:", req.headers);
+
     // Normalizzazione path
     let path = req.path.toLowerCase().trim();
 
@@ -54,6 +62,7 @@ module.exports = function authUser(req, res, next) {
     );
 
     if (isPublic) {
+      console.log("AUTH DEBUG → PUBLIC MATCH:", path);
       return next();
     }
 
@@ -62,11 +71,13 @@ module.exports = function authUser(req, res, next) {
     // -----------------------------------------------------
     const authHeader = req.headers["authorization"];
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      console.log("AUTH DEBUG → BLOCCO: Token mancante");
       return res.status(401).json({ error: "Token mancante" });
     }
 
     const token = authHeader.replace("Bearer ", "").trim();
     if (!token) {
+      console.log("AUTH DEBUG → BLOCCO: Token vuoto");
       return res.status(401).json({ error: "Token mancante" });
     }
 
@@ -83,6 +94,7 @@ module.exports = function authUser(req, res, next) {
         }
 
         if (!row) {
+          console.log("AUTH DEBUG → BLOCCO: Sessione non valida");
           return res.status(401).json({ error: "Sessione non valida" });
         }
 
@@ -91,6 +103,7 @@ module.exports = function authUser(req, res, next) {
           ruolo: row.ruolo
         };
 
+        console.log("AUTH DEBUG → UTENTE OK:", req.user.email, req.user.ruolo);
         next();
       }
     );
