@@ -14,9 +14,7 @@ btnResetPassword?.addEventListener("click", async () => {
 
   if (!msg) return;
 
-  // -------------------------------------------------------
   // Validazione email
-  // -------------------------------------------------------
   if (!email) {
     msg.textContent = "Inserisci la tua email.";
     msg.className = "err";
