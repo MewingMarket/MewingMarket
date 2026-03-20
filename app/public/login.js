@@ -28,7 +28,6 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // PATCH: blocco doppio submit
     if (form.dataset.lock === "1") return;
     form.dataset.lock = "1";
 
@@ -50,7 +49,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       // ⭐ PATCH: salva token nella chiave corretta
-      localStorage.setItem("session", data.token);
+      localStorage.setItem("sessione", data.token);
 
       // Salva email e ruolo
       localStorage.setItem("email", data.email);
@@ -60,10 +59,8 @@ document.addEventListener("DOMContentLoaded", () => {
       console.log("[LOGIN] Email salvata:", data.email);
       console.log("[LOGIN] Ruolo salvato:", data.ruolo);
 
-      // Popup post-login
       localStorage.setItem("showLoginChoice", "1");
 
-      // Redirect
       const params = new URLSearchParams(location.search);
       const redirect = params.get("redirect");
 
