@@ -1,11 +1,6 @@
 // =========================================================
 // REGISTER — MewingMarket (SQL READY)
-// Crea utente SQL + login automatico + redirect
-// Versione DEFINITIVA con patch:
-// - doppio click
-// - gestione 401
-// - messaggi chiari
-// - fallback sicuri
+// Versione DEFINITIVA PATCHATA (2026.5)
 // =========================================================
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -55,7 +50,6 @@ document.addEventListener("DOMContentLoaded", () => {
     form.dataset.lock = "1";
 
     try {
-      // INVIO AL BACKEND SQL
       const res = await fetch("/api/utenti/registrazione", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -65,7 +59,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await res.json().catch(() => ({}));
       console.log("[REGISTER]", data);
 
-      // Email già registrata → suggerire login
       if (data.error === "Email già registrata") {
         statusBox.textContent = "Email già registrata. Effettua il login.";
         statusBox.style.color = "#d00";
@@ -79,9 +72,9 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // SUCCESSO → SALVA SESSIONE (token + email)
+      // ⭐ PATCH: salva token nella chiave corretta
       if (data.token) {
-        localStorage.setItem("session", data.token);
+        localStorage.setItem("sessione", data.token);
         localStorage.setItem("email", email);
         localStorage.setItem("ruolo", "user");
       }
