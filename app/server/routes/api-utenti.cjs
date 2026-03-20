@@ -327,23 +327,34 @@ router.post("/utenti/reset-password-confirm", (req, res) => {
 });
 
 /* =========================================================
-   RESET EMAIL — RICHIESTA LINK (PUBLIC)
+   RESET EMAIL — RICHIESTA LINK (PRIVATE, PATCH 2026)
 ========================================================= */
 router.post("/utenti/reset-email-request", (req, res) => {
-  let { email } = req.body || {};
-  email = (email || "").trim().toLowerCase();
+  const sessione = getSessionToken(req);
+  let { password } = req.body || {};
 
-  if (!email) {
-    return res.json({ success: false, error: "Email mancante" });
+  password = normalizePassword(password);
+
+  if (!sessione || !password) {
+    return res.json({ success: false, error: "Dati mancanti" });
   }
 
   try {
-    const user = db.prepare("SELECT id FROM utenti WHERE email = ?").get(email);
+    // Recupero utente tramite sessione
+    const user = db.prepare("SELECT * FROM utenti WHERE sessione = ?").get(sessione);
 
     if (!user) {
-      return res.json({ success: false, error: "Email non trovata" });
+      return res.json({ success: false, error: "Sessione non valida" });
     }
 
+    // Verifica password
+    const passwordHash = hash(password);
+
+    if (normalizePassword(user.password_hash) !== passwordHash) {
+      return res.json({ success: false, error: "Password errata" });
+    }
+
+    // Genera token reset email
     const resetToken = genToken("resetemail");
 
     db.prepare(`
@@ -352,8 +363,9 @@ router.post("/utenti/reset-email-request", (req, res) => {
       WHERE id = ?
     `).run(resetToken, user.id);
 
+    // Invia email alla vecchia email
     inviaEmailResetEmail({
-      email,
+      email: user.email,
       link: `https://mewingmarket.it/reset-email-confirm.html?token=${resetToken}`
     });
 
