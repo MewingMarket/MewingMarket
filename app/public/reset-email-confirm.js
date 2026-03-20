@@ -18,9 +18,7 @@ btnConfirmEmail?.addEventListener("click", async () => {
 
   if (!msg) return;
 
-  // -------------------------------------------------------
   // Validazione email
-  // -------------------------------------------------------
   if (!nuova_email) {
     msg.textContent = "Inserisci la nuova email.";
     msg.className = "err";
@@ -33,9 +31,7 @@ btnConfirmEmail?.addEventListener("click", async () => {
     return;
   }
 
-  // -------------------------------------------------------
   // Validazione token
-  // -------------------------------------------------------
   if (!token) {
     msg.textContent = "Token mancante o non valido.";
     msg.className = "err";
@@ -63,7 +59,9 @@ btnConfirmEmail?.addEventListener("click", async () => {
       msg.className = "ok";
 
       // Logout forzato per sicurezza
-      localStorage.clear();
+      localStorage.removeItem("sessione");
+      localStorage.removeItem("email");
+      localStorage.removeItem("ruolo");
 
       setTimeout(() => {
         window.location.href = "login.html";
@@ -72,7 +70,6 @@ btnConfirmEmail?.addEventListener("click", async () => {
       return;
     }
 
-    // Errore backend
     msg.textContent = data.error || "Errore durante la conferma del reset email.";
     msg.className = "err";
 
