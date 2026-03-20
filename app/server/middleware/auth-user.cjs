@@ -1,5 +1,5 @@
 // =========================================================
-// AUTH-USER.CJS — Versione DEFINITIVA (2026)
+// AUTH-USER.CJS — Versione DEFINITIVA 2026.2
 // Ultra-robusta: gestisce slash, querystring, varianti path
 // =========================================================
 
@@ -8,12 +8,12 @@ module.exports = function authUser(req, res, next) {
     // Normalizzazione path
     let path = req.path.toLowerCase().trim();
 
-    // Rimuove eventuale slash finale (tranne "/")
+    // Rimuove slash finale (tranne "/")
     if (path.length > 1 && path.endsWith("/")) {
       path = path.slice(0, -1);
     }
 
-    // Rotte PUBLIC (sempre accessibili)
+    // Rotte PUBLIC
     const publicPaths = [
       "/", "/index", "/index.html",
       "/catalogo", "/catalogo.html",
@@ -48,7 +48,9 @@ module.exports = function authUser(req, res, next) {
     // 1) ROTTE PUBBLICHE — MAI BLOCCATE
     // -----------------------------------------------------
     const isPublic = publicPaths.some(p =>
-      path === p || path.startsWith(p + "/")
+      path === p ||
+      path.startsWith(p + "/") ||
+      req.url.toLowerCase().startsWith(p + "?")
     );
 
     if (isPublic) {
