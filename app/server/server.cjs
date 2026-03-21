@@ -3,6 +3,7 @@
  * File: app/server/server.cjs
  * Entry point del server — versione DEFINITIVA (NO SYNC API)
  * Patch B — Blindatura totale (SOFT + LOGGER AVANZATO)
+ * Patch DB — app.set("db", db) per auth-user
  * =========================================================
  */
 
@@ -85,6 +86,13 @@ const wait = (ms) => new Promise(res => res(ms));
   app.use(cookieParser());
 
   // =========================================================
+  // ⭐ PATCH DB — RENDIAMO IL DB DISPONIBILE A TUTTI I MIDDLEWARE
+  // =========================================================
+  const db = require("./db/database.cjs");
+  app.set("db", db);
+  log(">> DB REGISTRATO SU app.set('db')");
+
+  // =========================================================
   // ⭐ LOGGER AVANZATO — SOLO SU ENDPOINT CRITICI
   // =========================================================
   const SENSITIVE_ENDPOINTS = [
@@ -115,7 +123,6 @@ const wait = (ms) => new Promise(res => res(ms));
         let payload = req.body || {};
         let responseBody = {};
 
-        // Oscura password
         for (const key of Object.keys(payload)) {
           if (key.toLowerCase().includes("password")) {
             payload[key] = "******";
@@ -150,7 +157,7 @@ const wait = (ms) => new Promise(res => res(ms));
   });
 
   // =========================================================
-  // LOGGER UNIVERSALE REQUEST (MINIMO, NON INTASA)
+  // LOGGER UNIVERSALE REQUEST
   // =========================================================
   app.use((req, res, next) => {
     if (req.url.startsWith("/api")) {
@@ -198,7 +205,7 @@ const wait = (ms) => new Promise(res => res(ms));
   app.use("/api", router);
 
   // =========================================================
-  // DEBUG DB (HTML)
+  // DEBUG DB
   // =========================================================
   log(">> LOADING debug-db.cjs");
   await wait(200);
@@ -289,7 +296,6 @@ const wait = (ms) => new Promise(res => res(ms));
         }
       }
 
-      // MONITOR CAMBIAMENTI
       function hashRows(rows) {
         return crypto.createHash("md5").update(JSON.stringify(rows)).digest("hex");
       }
