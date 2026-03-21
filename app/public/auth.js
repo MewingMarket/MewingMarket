@@ -1,11 +1,11 @@
 // =========================================================
-// AUTH.JS — Versione DEFINITIVA (senza check-session)
+// AUTH.JS — Versione DEFINITIVA (con Authorization Bearer)
 // =========================================================
 
 console.log("[AUTH] Caricato");
 
 // ---------------------------------------------------------
-// Wrapper fetch: aggiunge automaticamente x-token
+// Wrapper fetch: aggiunge automaticamente Authorization Bearer
 // ---------------------------------------------------------
 (function () {
   const originalFetch = window.fetch;
@@ -16,7 +16,7 @@ console.log("[AUTH] Caricato");
     options.headers = options.headers || {};
 
     if (token) {
-      options.headers["x-token"] = token;
+      options.headers["Authorization"] = "Bearer " + token;
     }
 
     return originalFetch(url, options);
@@ -55,12 +55,7 @@ function loadSession() {
 // Inizializzazione SENZA check-session
 // ---------------------------------------------------------
 async function initAuth() {
-  // Legge solo dal localStorage
   loadSession();
-
-  // Nessun controllo remoto → nessun logout forzato
-  // Nessun 404 → nessun errore
-  // Nessun 401 → nessuna confusione
 
   // Evento finale
   document.dispatchEvent(new Event("auth-ready"));
