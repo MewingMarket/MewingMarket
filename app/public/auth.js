@@ -1,5 +1,6 @@
 // =========================================================
-// AUTH.JS — Versione FUNZIONANTE (2026)
+// AUTH.JS — Persistenza Totale (2026)
+// Rimani loggato finché non clicchi Logout
 // =========================================================
 
 console.log("[AUTH] Caricato");
@@ -11,7 +12,7 @@ console.log("[AUTH] Caricato");
   const originalFetch = window.fetch;
 
   window.fetch = function (url, options = {}) {
-    const token = localStorage.getItem("token"); // ⭐ PATCH
+    const token = localStorage.getItem("token"); // ⭐ token definitivo
 
     options.headers = options.headers || {};
 
@@ -31,19 +32,20 @@ window.isAdmin = false;
 window.userEmail = "";
 
 // ---------------------------------------------------------
-// 3) Carica sessione da localStorage
+// 3) Carica sessione da localStorage (persistenza totale)
 // ---------------------------------------------------------
 function loadSession() {
-  const session = localStorage.getItem("token") || ""; // ⭐ PATCH
+  const token = localStorage.getItem("token") || "";   // ⭐ token vero
   const email = localStorage.getItem("email") || "";
   const ruolo = localStorage.getItem("ruolo") || "";
 
+  // Se c’è token → sei loggato
+  window.isLogged = Boolean(token);
   window.userEmail = email;
-  window.isLogged = Boolean(session && email);
   window.isAdmin = ruolo === "admin";
 
-  console.log("[AUTH] Stato (solo localStorage):", {
-    session,
+  console.log("[AUTH] Stato persistente:", {
+    token,
     email,
     ruolo,
     isLogged: window.isLogged,
@@ -52,12 +54,12 @@ function loadSession() {
 }
 
 // ---------------------------------------------------------
-// 4) Inizializzazione SENZA check-session
+// 4) Inizializzazione (senza check remoto)
 // ---------------------------------------------------------
-async function initAuth() {
+function initAuth() {
   loadSession();
 
-  // Evento finale → sblocca header.js
+  // Sblocca header.js
   document.dispatchEvent(new Event("auth-ready"));
 }
 
