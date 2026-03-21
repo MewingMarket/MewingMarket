@@ -1,6 +1,7 @@
 // =========================================================
-// RESET PASSWORD CONFIRM — Versione DEFINITIVA (2026)
+// RESET PASSWORD CONFIRM — Versione DEFINITIVA (2026.10)
 // Public route — nessun token auth richiesto
+// Compatibile con auth.js + sessionState
 // =========================================================
 
 console.log("[RESET-PASS-CONFIRM] Caricato");
@@ -64,6 +65,14 @@ btnConfirmReset?.addEventListener("click", async () => {
     if (data.success) {
       msg.textContent = "Password aggiornata! Verrai reindirizzato al login…";
       msg.className = "ok";
+
+      // =====================================================
+      // ⭐ PATCH 2026.10 — Reset sessione dopo cambio password
+      // =====================================================
+      localStorage.removeItem("token");
+      localStorage.removeItem("email");
+      localStorage.removeItem("ruolo");
+      localStorage.setItem("sessionState", "0");
 
       setTimeout(() => {
         window.location.href = "login.html";
