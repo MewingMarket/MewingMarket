@@ -1,14 +1,10 @@
 // =========================================================
-// RESET EMAIL CONFIRM — Versione DEFINITIVA (2026.10)
-// Public route — nessun token auth richiesto
-// Compatibile con auth.js + sessionState
+// RESET EMAIL CONFIRM — Versione ZERO-INPUT (2026.20)
+// Public route — nessun token richiesto
+// Flusso: conferma → update email → redirect dashboard
 // =========================================================
 
-console.log("[RESET-EMAIL-CONFIRM] Caricato");
-
-// Recupero token dalla URL
-const urlParams = new URLSearchParams(window.location.search);
-const token = urlParams.get("token");
+console.log("[RESET-EMAIL-CONFIRM] Versione ZERO-INPUT caricata");
 
 const btnConfirmEmail = document.getElementById("btnConfirmEmail");
 const msgConfirmEmail = document.getElementById("msgConfirmEmail");
@@ -32,49 +28,29 @@ btnConfirmEmail?.addEventListener("click", async () => {
     return;
   }
 
-  // Validazione token
-  if (!token) {
-    msg.textContent = "Token mancante o non valido.";
-    msg.className = "err";
-    return;
-  }
-
   // Protezione doppio click
   if (btnConfirmEmail.disabled) return;
   btnConfirmEmail.disabled = true;
 
   try {
-    console.log("[RESET-EMAIL-CONFIRM] Invio conferma reset email…");
+    console.log("[RESET-EMAIL-CONFIRM] Invio conferma ZERO-INPUT…");
 
     const res = await fetch("/api/utenti/reset-email-confirm", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, nuova_email })
+      body: JSON.stringify({ nuova_email })   // ZERO-TOKEN
     });
 
     const data = await res.json().catch(() => ({}));
     console.log("[RESET-EMAIL-CONFIRM] Risposta:", data);
 
     if (data.success) {
-      msg.textContent = "Email aggiornata! Verrai reindirizzato al login…";
-      msg.className = "ok";
-
-      // =====================================================
-      // ⭐ PATCH 2026.10 — Logout pulito + sessionState = 0
-      // =====================================================
-      localStorage.removeItem("token");
-      localStorage.removeItem("email");
-      localStorage.removeItem("ruolo");
-      localStorage.setItem("sessionState", "0");
-
-      setTimeout(() => {
-        window.location.href = "login.html";
-      }, 2000);
-
+      // Redirect immediato alla dashboard
+      window.location.href = "dashboard.html";
       return;
     }
 
-    msg.textContent = data.error || "Errore durante la conferma del reset email.";
+    msg.textContent = data.error || "Errore durante la conferma del cambio email.";
     msg.className = "err";
 
   } catch (err) {
