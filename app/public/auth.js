@@ -1,6 +1,7 @@
 // =========================================================
 // AUTH.JS — Persistenza Totale (2026)
 // Rimani loggato finché non clicchi Logout
+// Token sempre inviato correttamente
 // =========================================================
 
 console.log("[AUTH] Caricato");
@@ -12,7 +13,7 @@ console.log("[AUTH] Caricato");
   const originalFetch = window.fetch;
 
   window.fetch = function (url, options = {}) {
-    const token = localStorage.getItem("token"); // ⭐ token definitivo
+    const token = localStorage.getItem("token"); // ⭐ token corretto
 
     options.headers = options.headers || {};
 
