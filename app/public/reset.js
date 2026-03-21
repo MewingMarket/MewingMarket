@@ -1,7 +1,6 @@
 // =========================================================
 // Eliminazione Account – MewingMarket (VERSIONE DEFINITIVA)
-// Compatibile con backend SQL
-// + patch: doppio click, 401, messaggi
+// Compatibile con backend SQL + auth-user
 // =========================================================
 
 const msg = document.getElementById("status");
@@ -16,10 +15,11 @@ function setMsg(text, ok = false) {
 btnElimina?.addEventListener("click", async () => {
   setMsg("Eliminazione account in corso...");
 
-  const session = localStorage.getItem("session");
+  // ⭐ PATCH: token corretto
+  const sessione = localStorage.getItem("sessione");
   const password = document.getElementById("password")?.value.trim();
 
-  if (!session) {
+  if (!sessione) {
     setMsg("Devi effettuare il login");
     return;
   }
@@ -37,7 +37,9 @@ btnElimina?.addEventListener("click", async () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-token": session
+
+        // ⭐ PATCH: header corretto
+        "Authorization": "Bearer " + sessione
       },
       body: JSON.stringify({ password })
     });
@@ -58,7 +60,7 @@ btnElimina?.addEventListener("click", async () => {
       setMsg("Account eliminato. Reindirizzamento...", true);
 
       // ⭐ PULIZIA CORRETTA
-      localStorage.removeItem("session");
+      localStorage.removeItem("sessione");
       localStorage.removeItem("email");
       localStorage.removeItem("ruolo");
 
