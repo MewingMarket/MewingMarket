@@ -7,13 +7,27 @@
 console.log("[AUTH] Caricato");
 
 // ---------------------------------------------------------
+// 0) Reset automatico post-deploy (email fantasma)
+// ---------------------------------------------------------
+(function () {
+  const token = localStorage.getItem("token");
+  const email = localStorage.getItem("email");
+
+  if (!token && email) {
+    console.log("[AUTH] Reset automatico post-deploy");
+    localStorage.removeItem("email");
+    localStorage.removeItem("ruolo");
+  }
+})();
+
+// ---------------------------------------------------------
 // 1) Wrapper fetch: aggiunge automaticamente Authorization Bearer
 // ---------------------------------------------------------
 (function () {
   const originalFetch = window.fetch;
 
   window.fetch = function (url, options = {}) {
-    const token = localStorage.getItem("token"); // ⭐ token corretto
+    const token = localStorage.getItem("token");
 
     options.headers = options.headers || {};
 
@@ -36,11 +50,10 @@ window.userEmail = "";
 // 3) Carica sessione da localStorage (persistenza totale)
 // ---------------------------------------------------------
 function loadSession() {
-  const token = localStorage.getItem("token") || "";   // ⭐ token vero
+  const token = localStorage.getItem("token") || "";
   const email = localStorage.getItem("email") || "";
   const ruolo = localStorage.getItem("ruolo") || "";
 
-  // Se c’è token → sei loggato
   window.isLogged = Boolean(token);
   window.userEmail = email;
   window.isAdmin = ruolo === "admin";
@@ -55,16 +68,11 @@ function loadSession() {
 }
 
 // ---------------------------------------------------------
-// 4) Inizializzazione (senza check remoto)
+// 4) Inizializzazione
 // ---------------------------------------------------------
 function initAuth() {
   loadSession();
-
-  // Sblocca header.js
   document.dispatchEvent(new Event("auth-ready"));
 }
 
-// ---------------------------------------------------------
-// 5) Avvio
-// ---------------------------------------------------------
 initAuth();
