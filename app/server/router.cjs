@@ -11,11 +11,7 @@ const router = express.Router();
 // ===============================
 // 1) ROTTE PUBBLICHE (NO TOKEN)
 // ===============================
-const apiUtenti = require("./routes/api-utenti.cjs");
-
-// Registrazione e login devono essere pubbliche
-router.post("/utenti/registrazione", apiUtenti);
-router.post("/utenti/login", apiUtenti);
+router.use("/utenti", require("./routes/api-utenti.cjs")); // login, registrazione, reset
 
 // ===============================
 // 2) MIDDLEWARE USER (TOKEN OBBLIGATORIO)
@@ -32,7 +28,7 @@ router.use(require("./routes/api-feedback.cjs"));
 router.use(require("./routes/api-vendite-download.cjs"));
 
 // ===============================
-// 4) PAYPAL
+// 4) PAYPAL (PUBLIC)
 // ===============================
 router.use(require("./routes/paypal-create.cjs"));
 router.use(require("./routes/paypal-complete.cjs"));
@@ -41,8 +37,10 @@ router.use(require("./routes/paypal-cancel.cjs"));
 // ===============================
 // 5) ADMIN (protette da auth-admin)
 // ===============================
-router.use(require("./middleware/auth-admin.cjs"));
-router.use(require("./routes/admin-analytics.cjs"));
-router.use(require("./routes/vendite-admin.cjs"));
+const authAdmin = require("./middleware/auth-admin.cjs");
+
+router.use("/admin", authAdmin);
+router.use("/admin", require("./routes/admin-analytics.cjs"));
+router.use("/admin", require("./routes/vendite-admin.cjs"));
 
 module.exports = router;
