@@ -58,8 +58,8 @@ btnConfirmEmail?.addEventListener("click", async () => {
       msg.textContent = "Email aggiornata! Verrai reindirizzato al login…";
       msg.className = "ok";
 
-      // Logout forzato per sicurezza
-      localStorage.removeItem("sessione");
+      // ⭐ PATCH: logout corretto
+      localStorage.removeItem("token");
       localStorage.removeItem("email");
       localStorage.removeItem("ruolo");
 
