@@ -1,60 +1,43 @@
 // =========================================================
-// RESET PASSWORD REQUEST — Versione DEFINITIVA (2026.10)
-// Public route — nessun token richiesto
-// Compatibile con auth.js + sessionState
+// RESET PASSWORD REQUEST — Versione ZERO-INPUT (2026.20)
+// Public route — nessun token, nessun input richiesto
+// Flusso: request → redirect immediato a confirm
 // =========================================================
 
-console.log("[RESET-PASSWORD-REQ] Caricato");
-
-// ⭐ PATCH 2026.10 — Entrata in flusso sensibile
-// (reset password = sessionState 2)
-localStorage.setItem("sessionState", "2");
+console.log("[RESET-PASSWORD-REQ] Versione ZERO-INPUT caricata");
 
 const btnResetPassword = document.getElementById("btnResetPassword");
 const msgResetPassword = document.getElementById("msgResetPassword");
 
 btnResetPassword?.addEventListener("click", async () => {
-  const email = document.getElementById("resetEmail")?.value.trim().toLowerCase();
   const msg = msgResetPassword;
 
   if (!msg) return;
-
-  // Validazione email
- 	if (!email) {
-    msg.textContent = "Inserisci la tua email.";
-    msg.className = "err";
-    return;
-  }
-
-  if (!email.includes("@") || !email.includes(".")) {
-    msg.textContent = "Inserisci un'email valida.";
-    msg.className = "err";
-    return;
-  }
 
   // Protezione doppio click
   if (btnResetPassword.disabled) return;
   btnResetPassword.disabled = true;
 
   try {
-    console.log("[RESET-PASSWORD-REQ] Invio richiesta…");
+    console.log("[RESET-PASSWORD-REQ] Invio richiesta ZERO-INPUT…");
 
     const res = await fetch("/api/utenti/reset-password-request", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email })
+      body: JSON.stringify({})   // ZERO-INPUT
     });
 
     const data = await res.json().catch(() => ({}));
     console.log("[RESET-PASSWORD-REQ] Risposta:", data);
 
     if (data.success) {
-      msg.textContent = "Email inviata! Controlla la tua casella.";
-      msg.className = "ok";
-    } else {
-      msg.textContent = data.error || "Errore durante la richiesta di reset password.";
-      msg.className = "err";
+      // Redirect immediato alla pagina di conferma
+      window.location.href = "reset-password-confirm.html";
+      return;
     }
+
+    msg.textContent = data.error || "Errore durante la richiesta di reset password.";
+    msg.className = "err";
 
   } catch (err) {
     console.error("[RESET-PASSWORD-REQ] Errore:", err);
