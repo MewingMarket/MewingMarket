@@ -1,6 +1,6 @@
 // =========================================================
 // LOADER HEADER/FOOTER — Versione DEFINITIVA (2026)
-// Carica: head → header.html → auth.js → header.js → carrello.js → footer
+// Carica: auth.js → head → header.html → header.js → carrello.js → footer
 // =========================================================
 
 (function () {
@@ -71,6 +71,19 @@
   console.log("[LOADER] Page:", { isHome, isShopPage, isAdminPage, isUserPage, isGlobalPage });
 
   // =========================================================
+  // 0) AUTH — deve essere caricato PRIMA DI TUTTO
+  // =========================================================
+  const authPromise = new Promise((resolve) => {
+    const s = document.createElement("script");
+    s.src = "auth.js";
+    s.onload = () => {
+      console.log("[LOADER] auth.js caricato (PRIMA DI TUTTO)");
+      resolve();
+    };
+    document.head.appendChild(s);
+  });
+
+  // =========================================================
   // 1) HEAD
   // =========================================================
   function safeFetchAppendHead(url) {
@@ -84,8 +97,10 @@
       });
   }
 
-  safeFetchAppendHead("head.html").catch(() =>
-    safeFetchAppendHead("/head.html")
+  const headPromise = authPromise.then(() =>
+    safeFetchAppendHead("head.html").catch(() =>
+      safeFetchAppendHead("/head.html")
+    )
   );
 
   // =========================================================
@@ -108,31 +123,18 @@
       });
   }
 
-  const headerPromise = headerFile
-    ? safeFetchHeader(headerFile).catch(() =>
-        safeFetchHeader("/" + headerFile)
-      )
-    : Promise.resolve();
+  const headerPromise = headPromise.then(() =>
+    headerFile
+      ? safeFetchHeader(headerFile).catch(() =>
+          safeFetchHeader("/" + headerFile)
+        )
+      : Promise.resolve()
+  );
 
   // =========================================================
-  // 3) AUTH (caricato DOPO header)
+  // 3) HEADER.JS (dinamico) — dopo auth + header
   // =========================================================
-  const authPromise = headerPromise.then(() => {
-    return new Promise((resolve) => {
-      const s = document.createElement("script");
-      s.src = "auth.js";
-      s.onload = () => {
-        console.log("[LOADER] auth.js caricato");
-        resolve();
-      };
-      document.head.appendChild(s);
-    });
-  });
-
-  // =========================================================
-  // 4) HEADER.JS (dinamico)
-  // =========================================================
-  const headerLogicPromise = authPromise.then(() => {
+  const headerLogicPromise = headerPromise.then(() => {
     return new Promise((resolve) => {
       const s = document.createElement("script");
       s.src = "header.js";
@@ -145,7 +147,7 @@
   });
 
   // =========================================================
-  // 5) FOOTER
+  // 4) FOOTER
   // =========================================================
   function safeFetchFooter(url) {
     return fetch(url)
@@ -165,7 +167,7 @@
   );
 
   // =========================================================
-  // 6) CARRELLO (solo dopo header.js)
+  // 5) CARRELLO (solo dopo header.js)
   // =========================================================
   const cartPromise = headerLogicPromise.then(() => {
     return new Promise((resolve) => {
@@ -180,7 +182,7 @@
   });
 
   // =========================================================
-  // 7) ADMIN LOADER
+  // 6) ADMIN LOADER
   // =========================================================
   document.addEventListener("auth-ready", () => {
     if (window.isAdmin) {
