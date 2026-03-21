@@ -43,9 +43,9 @@ function getSessionToken(req) {
 }
 
 /* =========================================================
-   REGISTRAZIONE
+   REGISTRAZIONE (PUBLIC)
 ========================================================= */
-router.post("/utenti/registrazione", async (req, res) => {
+router.post("/registrazione", async (req, res) => {
   let { email, password } = req.body || {};
 
   email = (email || "").trim().toLowerCase();
@@ -83,9 +83,9 @@ router.post("/utenti/registrazione", async (req, res) => {
 });
 
 /* =========================================================
-   LOGIN
+   LOGIN (PUBLIC)
 ========================================================= */
-router.post("/utenti/login", (req, res) => {
+router.post("/login", (req, res) => {
   let { email, password } = req.body || {};
 
   email = (email || "").trim().toLowerCase();
@@ -126,9 +126,9 @@ router.post("/utenti/login", (req, res) => {
 });
 
 /* =========================================================
-   CAMBIO EMAIL (PRIVATO)
+   CAMBIO EMAIL (PRIVATE)
 ========================================================= */
-router.post("/utenti/cambia-email", async (req, res) => {
+router.post("/cambia-email", async (req, res) => {
   const sessione = getSessionToken(req);
   let { nuova_email, password } = req.body || {};
 
@@ -172,9 +172,9 @@ router.post("/utenti/cambia-email", async (req, res) => {
 });
 
 /* =========================================================
-   CAMBIO PASSWORD (PRIVATO)
+   CAMBIO PASSWORD (PRIVATE)
 ========================================================= */
-router.post("/utenti/cambia-password", async (req, res) => {
+router.post("/cambia-password", async (req, res) => {
   const sessione = getSessionToken(req);
   let { nuova_password } = req.body || {};
 
@@ -210,9 +210,9 @@ router.post("/utenti/cambia-password", async (req, res) => {
 });
 
 /* =========================================================
-   ELIMINAZIONE ACCOUNT (PRIVATO)
+   ELIMINAZIONE ACCOUNT (PRIVATE)
 ========================================================= */
-router.post("/utenti/elimina-account", async (req, res) => {
+router.post("/elimina-account", async (req, res) => {
   const sessione = getSessionToken(req);
   let { password } = req.body || {};
 
@@ -252,7 +252,7 @@ router.post("/utenti/elimina-account", async (req, res) => {
 /* =========================================================
    RESET PASSWORD — RICHIESTA LINK (PUBLIC)
 ========================================================= */
-router.post("/utenti/reset-password-request", (req, res) => {
+router.post("/reset-password-request", (req, res) => {
   let { email } = req.body || {};
   email = (email || "").trim().toLowerCase();
 
@@ -291,7 +291,7 @@ router.post("/utenti/reset-password-request", (req, res) => {
 /* =========================================================
    RESET PASSWORD — CONFERMA (PUBLIC)
 ========================================================= */
-router.post("/utenti/reset-password-confirm", (req, res) => {
+router.post("/reset-password-confirm", (req, res) => {
   let { token, nuova_password } = req.body || {};
 
   token = (token || "").trim();
@@ -327,9 +327,9 @@ router.post("/utenti/reset-password-confirm", (req, res) => {
 });
 
 /* =========================================================
-   RESET EMAIL — RICHIESTA LINK (PRIVATE, PATCH 2026)
+   RESET EMAIL — RICHIESTA LINK (PRIVATE)
 ========================================================= */
-router.post("/utenti/reset-email-request", (req, res) => {
+router.post("/reset-email-request", (req, res) => {
   const sessione = getSessionToken(req);
   let { password } = req.body || {};
 
@@ -340,21 +340,18 @@ router.post("/utenti/reset-email-request", (req, res) => {
   }
 
   try {
-    // Recupero utente tramite sessione
     const user = db.prepare("SELECT * FROM utenti WHERE sessione = ?").get(sessione);
 
     if (!user) {
       return res.json({ success: false, error: "Sessione non valida" });
     }
 
-    // Verifica password
     const passwordHash = hash(password);
 
     if (normalizePassword(user.password_hash) !== passwordHash) {
       return res.json({ success: false, error: "Password errata" });
     }
 
-    // Genera token reset email
     const resetToken = genToken("resetemail");
 
     db.prepare(`
@@ -363,7 +360,6 @@ router.post("/utenti/reset-email-request", (req, res) => {
       WHERE id = ?
     `).run(resetToken, user.id);
 
-    // Invia email alla vecchia email
     inviaEmailResetEmail({
       email: user.email,
       link: `https://mewingmarket.it/reset-email-confirm.html?token=${resetToken}`
@@ -380,7 +376,7 @@ router.post("/utenti/reset-email-request", (req, res) => {
 /* =========================================================
    RESET EMAIL — CONFERMA (PUBLIC)
 ========================================================= */
-router.post("/utenti/reset-email-confirm", (req, res) => {
+router.post("/reset-email-confirm", (req, res) => {
   let { token, nuova_email } = req.body || {};
 
   token = (token || "").trim();
