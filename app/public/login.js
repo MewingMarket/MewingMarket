@@ -1,5 +1,6 @@
 /* =========================================================
-   LOGIN.JS — Versione definitiva blindata
+   LOGIN.JS — Versione definitiva blindata (2026.10)
+   Compatibile con auth.js + sessionState
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -38,11 +39,24 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // ⭐ SALVATAGGIO CORRETTO
+      // =====================================================
+      // ⭐ SALVATAGGIO CORRETTO (token + email + ruolo)
+      // =====================================================
       localStorage.setItem("token", data.token);
       localStorage.setItem("email", data.email);
       localStorage.setItem("ruolo", data.ruolo || "user");
 
+      // =====================================================
+      // ⭐ PATCH 2026.10 — Sessione attiva
+      // =====================================================
+      // 0 = anonimo
+      // 1 = loggato
+      // 2 = flusso sensibile (reset, registrazione, ecc.)
+      localStorage.setItem("sessionState", "1");
+
+      // =====================================================
+      // ⭐ Redirect intelligente
+      // =====================================================
       const params = new URLSearchParams(location.search);
       const redirect = params.get("redirect");
 
