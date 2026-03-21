@@ -1,6 +1,6 @@
 // =========================================================
 // RESET EMAIL REQUEST — Versione DEFINITIVA (2026)
-// Private route — richiede token + password
+// PUBLIC route — password + token locale
 // =========================================================
 
 console.log("[RESET-EMAIL-REQ] Caricato");
@@ -26,10 +26,9 @@ btnResetEmail?.addEventListener("click", async () => {
   try {
     console.log("[RESET-EMAIL-REQ] Invio richiesta…");
 
-    // ⭐ PATCH: token corretto
+    // ⭐ Token locale (NON Authorization)
     const token = localStorage.getItem("token");
 
-    // ⭐ NON sovrascrivere Authorization
     const headers = {
       "Content-Type": "application/json"
     };
@@ -37,7 +36,10 @@ btnResetEmail?.addEventListener("click", async () => {
     const res = await fetch("/api/utenti/reset-email-request", {
       method: "POST",
       headers,
-      body: JSON.stringify({ password })
+      body: JSON.stringify({
+        password,
+        token   // ⭐ PATCH: ora lo inviamo davvero
+      })
     });
 
     const data = await res.json().catch(() => ({}));
