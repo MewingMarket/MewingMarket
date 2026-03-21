@@ -1,21 +1,13 @@
 /* =========================================================
-   LOGIN.JS — Versione definitiva blindata (PATCH SQL)
+   LOGIN.JS — Versione definitiva blindata
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("login-form");
-  if (!form) {
-    console.error("❌ login-form non trovato nel DOM");
-    return;
-  }
+  if (!form) return;
 
   const emailEl = document.getElementById("email");
   const passEl = document.getElementById("password");
-
-  if (!emailEl || !passEl) {
-    console.error("❌ Campi email/password non trovati nel DOM");
-    return;
-  }
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -40,26 +32,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const data = await res.json().catch(() => ({}));
 
-      console.log("[LOGIN] Risposta backend:", data);
-
       if (!data.success) {
         alert(data.error || "Errore login");
         form.dataset.lock = "0";
         return;
       }
 
-      // ⭐ PATCH: salva token nella chiave corretta
+      // ⭐ SALVATAGGIO CORRETTO
       localStorage.setItem("token", data.token);
-
-      // Salva email e ruolo
       localStorage.setItem("email", data.email);
       localStorage.setItem("ruolo", data.ruolo || "user");
-
-      console.log("[LOGIN] Token salvato:", data.token);
-      console.log("[LOGIN] Email salvata:", data.email);
-      console.log("[LOGIN] Ruolo salvato:", data.ruolo);
-
-      localStorage.setItem("showLoginChoice", "1");
 
       const params = new URLSearchParams(location.search);
       const redirect = params.get("redirect");
@@ -67,7 +49,6 @@ document.addEventListener("DOMContentLoaded", () => {
       location.href = redirect || "index.html";
 
     } catch (err) {
-      console.error("❌ Errore login:", err);
       alert("Errore di connessione al server");
     } finally {
       form.dataset.lock = "0";
