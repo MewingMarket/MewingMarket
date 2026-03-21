@@ -1,6 +1,6 @@
 // =========================================================
-// Eliminazione Account – MewingMarket (VERSIONE DEFINITIVA)
-// Compatibile con backend SQL + auth-user
+// Eliminazione Account – MewingMarket (VERSIONE 2026.10)
+// Compatibile con backend SQL + auth.js + sessionState
 // =========================================================
 
 const msg = document.getElementById("status");
@@ -15,11 +15,13 @@ function setMsg(text, ok = false) {
 btnElimina?.addEventListener("click", async () => {
   setMsg("Eliminazione account in corso...");
 
-  // ⭐ PATCH: token corretto
-  const sessione = localStorage.getItem("sessione");
+  // =====================================================
+  // ⭐ PATCH 2026.10 — Token corretto + sessionState
+  // =====================================================
+  const token = localStorage.getItem("token");
   const password = document.getElementById("password")?.value.trim();
 
-  if (!sessione) {
+  if (!token) {
     setMsg("Devi effettuare il login");
     return;
   }
@@ -29,6 +31,9 @@ btnElimina?.addEventListener("click", async () => {
     return;
   }
 
+  // L’utente è in un flusso sensibile
+  localStorage.setItem("sessionState", "2");
+
   if (btnElimina.disabled) return;
   btnElimina.disabled = true;
 
@@ -37,9 +42,8 @@ btnElimina?.addEventListener("click", async () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-
-        // ⭐ PATCH: header corretto
-        "Authorization": "Bearer " + sessione
+        // ⭐ Authorization gestito da auth.js, ma qui lo forziamo per sicurezza
+        "Authorization": "Bearer " + token
       },
       body: JSON.stringify({ password })
     });
@@ -59,10 +63,13 @@ btnElimina?.addEventListener("click", async () => {
     if (data.success) {
       setMsg("Account eliminato. Reindirizzamento...", true);
 
-      // ⭐ PULIZIA CORRETTA
-      localStorage.removeItem("sessione");
+      // =====================================================
+      // ⭐ PATCH 2026.10 — Logout pulito + sessionState = 0
+      // =====================================================
+      localStorage.removeItem("token");
       localStorage.removeItem("email");
       localStorage.removeItem("ruolo");
+      localStorage.setItem("sessionState", "0");
 
       setTimeout(() => {
         window.location.href = "registrazione.html";
