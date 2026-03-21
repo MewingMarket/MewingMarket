@@ -1,6 +1,7 @@
 // =========================================================
 // REGISTER — MewingMarket (SQL READY)
-// Versione DEFINITIVA PATCHATA (2026.5)
+// Versione DEFINITIVA PATCHATA (2026.10)
+// Compatibile con auth.js + sessionState
 // =========================================================
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -11,6 +12,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const params = new URLSearchParams(window.location.search);
   const redirect = params.get("redirect") || "dashboard.html";
+
+  // ⭐ PATCH 2026.10 — Entrata in flusso sensibile
+  // (registrazione = sessionState 2)
+  localStorage.setItem("sessionState", "2");
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -72,11 +77,16 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // ⭐ PATCH: salva token nella chiave corretta
+      // =====================================================
+      // ⭐ PATCH 2026.10 — Salvataggio corretto token/email/ruolo
+      // =====================================================
       if (data.token) {
-        localStorage.setItem("sessione", data.token);
+        localStorage.setItem("token", data.token);   // ← CORRETTO
         localStorage.setItem("email", email);
         localStorage.setItem("ruolo", "user");
+
+        // ⭐ Dopo registrazione → sessione attiva
+        localStorage.setItem("sessionState", "1");
       }
 
       statusBox.style.color = "green";
