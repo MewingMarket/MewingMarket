@@ -48,13 +48,15 @@ const ROOT = path.resolve("app");
 log(">> ROOT PATH:", ROOT);
 
 // =========================================================
-// 🛡 ANTI-DOPPIO BOOTSTRAP (BUG RENDER)
+// 🛡 RIMOSSA PROTEZIONE ANTI-DOPPIO BOOTSTRAP
+// (Blocca i deploy su Render)
 // =========================================================
-if (global.__server_started) {
-  logErr("⚠️ SERVER GIÀ AVVIATO — Render doppio processo evitato");
-  return;
-}
-global.__server_started = true;
+// ❌ RIMOSSO:
+// if (global.__server_started) {
+//   logErr("⚠️ SERVER GIÀ AVVIATO — Render doppio processo evitato");
+//   return;
+// }
+// global.__server_started = true;
 
 // =========================================================
 // 🩺 HEALTH CHECK
