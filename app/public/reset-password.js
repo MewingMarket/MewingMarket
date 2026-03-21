@@ -1,9 +1,14 @@
 // =========================================================
-// RESET PASSWORD REQUEST — Versione DEFINITIVA (2026)
+// RESET PASSWORD REQUEST — Versione DEFINITIVA (2026.10)
 // Public route — nessun token richiesto
+// Compatibile con auth.js + sessionState
 // =========================================================
 
 console.log("[RESET-PASSWORD-REQ] Caricato");
+
+// ⭐ PATCH 2026.10 — Entrata in flusso sensibile
+// (reset password = sessionState 2)
+localStorage.setItem("sessionState", "2");
 
 const btnResetPassword = document.getElementById("btnResetPassword");
 const msgResetPassword = document.getElementById("msgResetPassword");
@@ -15,7 +20,7 @@ btnResetPassword?.addEventListener("click", async () => {
   if (!msg) return;
 
   // Validazione email
-  if (!email) {
+ 	if (!email) {
     msg.textContent = "Inserisci la tua email.";
     msg.className = "err";
     return;
