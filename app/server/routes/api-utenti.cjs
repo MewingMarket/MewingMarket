@@ -119,6 +119,26 @@ router.post("/login", (req, res) => {
       ruolo: user.ruolo || "user"
     });
 
+ " });
+    }
+
+    const passwordHash = hash(password);
+
+    if (normalizePassword(user.password_hash) !== passwordHash) {
+      return res.json({ success: false, error: "Password errata" });
+    }
+
+    const sessione = genToken("tok");
+
+    db.prepare("UPDATE utenti SET sessione = ? WHERE id = ?").run(sessione, user.id);
+
+    return res.json({
+      success: true,
+      token: sessione,
+      email,
+      ruolo: user.ruolo || "user"
+    });
+
   } catch (err) {
     console.error("❌ Login:", err);
     return res.json({ success: false, error: "Errore server" });
@@ -327,20 +347,23 @@ router.post("/reset-password-confirm", (req, res) => {
 });
 
 /* =========================================================
-   RESET EMAIL — RICHIESTA LINK (PRIVATE)
+   RESET EMAIL — RICHIESTA LINK (PUBLIC + PASSWORD + TOKEN)
 ========================================================= */
 router.post("/reset-email-request", (req, res) => {
-  const sessione = getSessionToken(req);
-  let { password } = req.body || {};
+  let { password, token } = req.body || {};
 
   password = normalizePassword(password);
+  token = (token || "").trim();
 
-  if (!sessione || !password) {
+  if (!password || !token) {
     return res.json({ success: false, error: "Dati mancanti" });
   }
 
   try {
-    const user = db.prepare("SELECT * FROM utenti WHERE sessione = ?").get(sessione);
+    // Identifica l’utente tramite token salvato nel browser
+    const user = db.prepare(`
+      SELECT * FROM utenti WHERE sessione = ?
+    `).get(token);
 
     if (!user) {
       return res.json({ success: false, error: "Sessione non valida" });
