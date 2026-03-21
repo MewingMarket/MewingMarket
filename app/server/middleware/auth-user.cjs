@@ -1,13 +1,12 @@
 // =========================================================
-// AUTH-USER.CJS — Versione PERFETTA 2026.7
-// Non rompe le balle alle rotte pubbliche
+// AUTH-USER.CJS — Versione PERFETTA 2026.8
+// Intelligente, stabile, compatibile con reset email PUBLIC
 // =========================================================
 
 module.exports = function authUser(req, res, next) {
   try {
     const path = req.path.toLowerCase();
 
-    // LOG DIAGNOSTICI
     console.log("AUTH DEBUG → req.path:", path);
     console.log("AUTH DEBUG → headers.authorization:", req.headers["authorization"]);
 
@@ -94,9 +93,15 @@ module.exports = function authUser(req, res, next) {
     }
 
     // =====================================================
-    // VERIFICA TOKEN SQL
+    // VERIFICA TOKEN SQL — FIX: db sempre disponibile
     // =====================================================
-    req.db.get(
+    const db = req.db || req.app.get("db");
+    if (!db) {
+      console.error("AUTH ERROR → db mancante");
+      return res.status(500).json({ error: "Errore server" });
+    }
+
+    db.get(
       "SELECT email, ruolo FROM utenti WHERE sessione = ? LIMIT 1",
       [token],
       (err, row) => {
