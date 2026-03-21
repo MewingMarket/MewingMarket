@@ -1,6 +1,7 @@
 // =========================================================
-// RESET EMAIL CONFIRM — Versione DEFINITIVA (2026)
+// RESET EMAIL CONFIRM — Versione DEFINITIVA (2026.10)
 // Public route — nessun token auth richiesto
+// Compatibile con auth.js + sessionState
 // =========================================================
 
 console.log("[RESET-EMAIL-CONFIRM] Caricato");
@@ -58,10 +59,13 @@ btnConfirmEmail?.addEventListener("click", async () => {
       msg.textContent = "Email aggiornata! Verrai reindirizzato al login…";
       msg.className = "ok";
 
-      // ⭐ PATCH: logout corretto
+      // =====================================================
+      // ⭐ PATCH 2026.10 — Logout pulito + sessionState = 0
+      // =====================================================
       localStorage.removeItem("token");
       localStorage.removeItem("email");
       localStorage.removeItem("ruolo");
+      localStorage.setItem("sessionState", "0");
 
       setTimeout(() => {
         window.location.href = "login.html";
