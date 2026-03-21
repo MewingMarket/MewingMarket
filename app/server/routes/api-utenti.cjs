@@ -1,41 +1,37 @@
-// =========================================================
-// File: app/server/routes/api-utenti.cjs
-// Versione SQL + JSON mirror + hashing password (2026)
-// =========================================================
+/* =========================================================
+   File: app/server/routes/api-utenti.cjs
+   Versione: 2026.9 — SQL + JSON mirror + hashing password
+   Patch: Reset email PUBLIC (password + token locale)
+   Stato: VERSIONE DEFINITIVA E STABILE
+========================================================= */
 
 const express = require("express");
 const crypto = require("crypto");
 const db = require("../db/database.cjs");
 const jsonGen = require("../modules/generatore-json.cjs");
 
-// EMAIL MODULES
 const { inviaEmailRegistrazione } = require("../modules/email-registrazione.cjs");
 const { inviaEmailCambioEmail } = require("../modules/email-cambio-email.cjs");
 const { inviaEmailCambioPassword } = require("../modules/email-cambio-password.cjs");
 const { inviaEmailEliminazione } = require("../modules/email-eliminazione.cjs");
 
-// NUOVI MODULI RESET
 const { inviaEmailResetPassword } = require("../modules/email-reset-password.cjs");
 const { inviaEmailResetEmail } = require("../modules/email-reset-email.cjs");
 
 const router = express.Router();
 
-// Normalizzazione password
 function normalizePassword(p) {
   return String(p || "").trim();
 }
 
-// Hash password
 function hash(p) {
   return crypto.createHash("sha256").update(String(p)).digest("hex");
 }
 
-// Genera token
 function genToken(prefix) {
   return prefix + "_" + crypto.randomBytes(16).toString("hex");
 }
 
-// Estrae token sessione da Authorization
 function getSessionToken(req) {
   const h = req.headers["authorization"];
   if (!h || !h.startsWith("Bearer ")) return "";
@@ -59,16 +55,14 @@ router.post("/registrazione", async (req, res) => {
     const esiste = db.prepare("SELECT id FROM utenti WHERE email = ?").get(email);
 
     if (esiste) {
-      return res.json({ success: false, error: "Email già registrata" });
+      return res.json({ success: false, error: "Email gia registrata" });
     }
 
     const sessione = genToken("tok");
     const passwordHash = hash(password);
 
-    db.prepare(`
-      INSERT INTO utenti (email, password_hash, sessione)
-      VALUES (?, ?, ?)
-    `).run(email, passwordHash, sessione);
+    db.prepare("INSERT INTO utenti (email, password_hash, sessione) VALUES (?, ?, ?)")
+      .run(email, passwordHash, sessione);
 
     inviaEmailRegistrazione({ email });
 
@@ -77,7 +71,7 @@ router.post("/registrazione", async (req, res) => {
     return res.json({ success: true, token: sessione, email });
 
   } catch (err) {
-    console.error("❌ Registrazione:", err);
+    console.error("Registrazione:", err);
     return res.json({ success: false, error: "Errore server" });
   }
 });
@@ -119,28 +113,8 @@ router.post("/login", (req, res) => {
       ruolo: user.ruolo || "user"
     });
 
- " });
-    }
-
-    const passwordHash = hash(password);
-
-    if (normalizePassword(user.password_hash) !== passwordHash) {
-      return res.json({ success: false, error: "Password errata" });
-    }
-
-    const sessione = genToken("tok");
-
-    db.prepare("UPDATE utenti SET sessione = ? WHERE id = ?").run(sessione, user.id);
-
-    return res.json({
-      success: true,
-      token: sessione,
-      email,
-      ruolo: user.ruolo || "user"
-    });
-
   } catch (err) {
-    console.error("❌ Login:", err);
+    console.error("Login:", err);
     return res.json({ success: false, error: "Errore server" });
   }
 });
@@ -174,7 +148,7 @@ router.post("/cambia-email", async (req, res) => {
 
     const esiste = db.prepare("SELECT id FROM utenti WHERE email = ?").get(nuova_email);
     if (esiste) {
-      return res.json({ success: false, error: "Email già in uso" });
+      return res.json({ success: false, error: "Email gia in uso" });
     }
 
     db.prepare("UPDATE utenti SET email = ? WHERE id = ?").run(nuova_email, user.id);
@@ -186,7 +160,7 @@ router.post("/cambia-email", async (req, res) => {
     return res.json({ success: true });
 
   } catch (err) {
-    console.error("❌ Cambio email:", err);
+    console.error("Cambio email:", err);
     return res.json({ success: false, error: "Errore server" });
   }
 });
@@ -213,18 +187,14 @@ router.post("/cambia-password", async (req, res) => {
 
     const newHash = hash(nuova_password);
 
-    db.prepare(`
-      UPDATE utenti
-      SET password_hash = ?
-      WHERE id = ?
-    `).run(newHash, user.id);
+    db.prepare("UPDATE utenti SET password_hash = ? WHERE id = ?").run(newHash, user.id);
 
     inviaEmailCambioPassword({ email: user.email });
 
     return res.json({ success: true });
 
   } catch (err) {
-    console.error("❌ Cambio password:", err);
+    console.error("Cambio password:", err);
     return res.json({ success: false, error: "Errore server" });
   }
 });
@@ -264,13 +234,13 @@ router.post("/elimina-account", async (req, res) => {
     return res.json({ success: true });
 
   } catch (err) {
-    console.error("❌ Eliminazione account:", err);
+    console.error("Eliminazione account:", err);
     return res.json({ success: false, error: "Errore server" });
   }
 });
 
 /* =========================================================
-   RESET PASSWORD — RICHIESTA LINK (PUBLIC)
+   RESET PASSWORD REQUEST (PUBLIC)
 ========================================================= */
 router.post("/reset-password-request", (req, res) => {
   let { email } = req.body || {};
@@ -289,27 +259,24 @@ router.post("/reset-password-request", (req, res) => {
 
     const resetToken = genToken("resetpass");
 
-    db.prepare(`
-      UPDATE utenti
-      SET reset_password_token = ?
-      WHERE id = ?
-    `).run(resetToken, user.id);
+    db.prepare("UPDATE utenti SET reset_password_token = ? WHERE id = ?")
+      .run(resetToken, user.id);
 
     inviaEmailResetPassword({
-      email,
-      link: `https://mewingmarket.it/reset-password-confirm.html?token=${resetToken}`
+      email: email,
+      link: "https://mewingmarket.it/reset-password-confirm.html?token=" + resetToken
     });
 
     return res.json({ success: true });
 
   } catch (err) {
-    console.error("❌ Reset password request:", err);
+    console.error("Reset password request:", err);
     return res.json({ success: false, error: "Errore server" });
   }
 });
 
 /* =========================================================
-   RESET PASSWORD — CONFERMA (PUBLIC)
+   RESET PASSWORD CONFIRM (PUBLIC)
 ========================================================= */
 router.post("/reset-password-confirm", (req, res) => {
   let { token, nuova_password } = req.body || {};
@@ -322,9 +289,8 @@ router.post("/reset-password-confirm", (req, res) => {
   }
 
   try {
-    const user = db.prepare(`
-      SELECT id FROM utenti WHERE reset_password_token = ?
-    `).get(token);
+    const user = db.prepare("SELECT id FROM utenti WHERE reset_password_token = ?")
+      .get(token);
 
     if (!user) {
       return res.json({ success: false, error: "Token non valido" });
@@ -332,22 +298,19 @@ router.post("/reset-password-confirm", (req, res) => {
 
     const newHash = hash(nuova_password);
 
-    db.prepare(`
-      UPDATE utenti
-      SET password_hash = ?, reset_password_token = '', sessione = ''
-      WHERE id = ?
-    `).run(newHash, user.id);
+    db.prepare("UPDATE utenti SET password_hash = ?, reset_password_token = '', sessione = '' WHERE id = ?")
+      .run(newHash, user.id);
 
     return res.json({ success: true });
 
   } catch (err) {
-    console.error("❌ Reset password confirm:", err);
+    console.error("Reset password confirm:", err);
     return res.json({ success: false, error: "Errore server" });
   }
 });
 
 /* =========================================================
-   RESET EMAIL — RICHIESTA LINK (PUBLIC + PASSWORD + TOKEN)
+   RESET EMAIL REQUEST (PUBLIC + PASSWORD + TOKEN)
 ========================================================= */
 router.post("/reset-email-request", (req, res) => {
   let { password, token } = req.body || {};
@@ -360,10 +323,7 @@ router.post("/reset-email-request", (req, res) => {
   }
 
   try {
-    // Identifica l’utente tramite token salvato nel browser
-    const user = db.prepare(`
-      SELECT * FROM utenti WHERE sessione = ?
-    `).get(token);
+    const user = db.prepare("SELECT * FROM utenti WHERE sessione = ?").get(token);
 
     if (!user) {
       return res.json({ success: false, error: "Sessione non valida" });
@@ -377,27 +337,24 @@ router.post("/reset-email-request", (req, res) => {
 
     const resetToken = genToken("resetemail");
 
-    db.prepare(`
-      UPDATE utenti
-      SET reset_email_token = ?
-      WHERE id = ?
-    `).run(resetToken, user.id);
+    db.prepare("UPDATE utenti SET reset_email_token = ? WHERE id = ?")
+      .run(resetToken, user.id);
 
     inviaEmailResetEmail({
       email: user.email,
-      link: `https://mewingmarket.it/reset-email-confirm.html?token=${resetToken}`
+      link: "https://mewingmarket.it/reset-email-confirm.html?token=" + resetToken
     });
 
     return res.json({ success: true });
 
   } catch (err) {
-    console.error("❌ Reset email request:", err);
+    console.error("Reset email request:", err);
     return res.json({ success: false, error: "Errore server" });
   }
 });
 
 /* =========================================================
-   RESET EMAIL — CONFERMA (PUBLIC)
+   RESET EMAIL CONFIRM (PUBLIC)
 ========================================================= */
 router.post("/reset-email-confirm", (req, res) => {
   let { token, nuova_email } = req.body || {};
@@ -410,32 +367,27 @@ router.post("/reset-email-confirm", (req, res) => {
   }
 
   try {
-    const user = db.prepare(`
-      SELECT id FROM utenti WHERE reset_email_token = ?
-    `).get(token);
+    const user = db.prepare("SELECT id FROM utenti WHERE reset_email_token = ?")
+      .get(token);
 
     if (!user) {
       return res.json({ success: false, error: "Token non valido" });
     }
 
-    const esiste = db.prepare(`
-      SELECT id FROM utenti WHERE email = ?
-    `).get(nuova_email);
+    const esiste = db.prepare("SELECT id FROM utenti WHERE email = ?")
+      .get(nuova_email);
 
     if (esiste) {
-      return res.json({ success: false, error: "Email già in uso" });
+      return res.json({ success: false, error: "Email gia in uso" });
     }
 
-    db.prepare(`
-      UPDATE utenti
-      SET email = ?, reset_email_token = '', sessione = ''
-      WHERE id = ?
-    `).run(nuova_email, user.id);
+    db.prepare("UPDATE utenti SET email = ?, reset_email_token = '', sessione = '' WHERE id = ?")
+      .run(nuova_email, user.id);
 
     return res.json({ success: true });
 
   } catch (err) {
-    console.error("❌ Reset email confirm:", err);
+    console.error("Reset email confirm:", err);
     return res.json({ success: false, error: "Errore server" });
   }
 });
