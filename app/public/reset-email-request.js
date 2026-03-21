@@ -2,8 +2,7 @@
 // RESET EMAIL REQUEST — Versione DEFINITIVA (2026)
 // PUBLIC route — password + token locale
 // =========================================================
-
-console.log("[RESET-EMAIL-REQ] Caricato");
+console.log("[RESET-EMAIL-REQ] VERSIONE 2026.9");
 
 const btnResetEmail = document.getElementById("btnResetEmail");
 const msgResetEmail = document.getElementById("msgResetEmail");
