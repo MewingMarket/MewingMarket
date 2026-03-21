@@ -1,17 +1,17 @@
 // =========================================================
-// AUTH.JS — Versione DEFINITIVA (con Authorization Bearer)
+// AUTH.JS — Versione FUNZIONANTE (2026)
 // =========================================================
 
 console.log("[AUTH] Caricato");
 
 // ---------------------------------------------------------
-// Wrapper fetch: aggiunge automaticamente Authorization Bearer
+// 1) Wrapper fetch: aggiunge automaticamente Authorization Bearer
 // ---------------------------------------------------------
 (function () {
   const originalFetch = window.fetch;
 
   window.fetch = function (url, options = {}) {
-    const token = localStorage.getItem("session");
+    const token = localStorage.getItem("token"); // ⭐ PATCH
 
     options.headers = options.headers || {};
 
@@ -24,17 +24,17 @@ console.log("[AUTH] Caricato");
 })();
 
 // ---------------------------------------------------------
-// Stato globale utente
+// 2) Stato globale utente
 // ---------------------------------------------------------
 window.isLogged = false;
 window.isAdmin = false;
 window.userEmail = "";
 
 // ---------------------------------------------------------
-// Carica sessione da localStorage
+// 3) Carica sessione da localStorage
 // ---------------------------------------------------------
 function loadSession() {
-  const session = localStorage.getItem("session") || "";
+  const session = localStorage.getItem("token") || ""; // ⭐ PATCH
   const email = localStorage.getItem("email") || "";
   const ruolo = localStorage.getItem("ruolo") || "";
 
@@ -52,16 +52,16 @@ function loadSession() {
 }
 
 // ---------------------------------------------------------
-// Inizializzazione SENZA check-session
+// 4) Inizializzazione SENZA check-session
 // ---------------------------------------------------------
 async function initAuth() {
   loadSession();
 
-  // Evento finale
+  // Evento finale → sblocca header.js
   document.dispatchEvent(new Event("auth-ready"));
 }
 
 // ---------------------------------------------------------
-// Avvio
+// 5) Avvio
 // ---------------------------------------------------------
 initAuth();
