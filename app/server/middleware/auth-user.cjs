@@ -1,7 +1,6 @@
 // =========================================================
-// AUTH-USER.CJS — Versione PERFETTA 2026.9
-// Compatibile better-sqlite3 (NO CALLBACKS)
-// Stabile, intelligente, compatibile con reset email PUBLIC
+// AUTH-USER.CJS — Versione PERFETTA 2026.10
+// Compatibile better-sqlite3 + nuovo sistema a stati
 // =========================================================
 
 module.exports = function authUser(req, res, next) {
