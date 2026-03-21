@@ -1,6 +1,7 @@
 // =========================================================
-// AUTH-USER.CJS — Versione PERFETTA 2026.8
-// Intelligente, stabile, compatibile con reset email PUBLIC
+// AUTH-USER.CJS — Versione PERFETTA 2026.9
+// Compatibile better-sqlite3 (NO CALLBACKS)
+// Stabile, intelligente, compatibile con reset email PUBLIC
 // =========================================================
 
 module.exports = function authUser(req, res, next) {
@@ -93,7 +94,7 @@ module.exports = function authUser(req, res, next) {
     }
 
     // =====================================================
-    // VERIFICA TOKEN SQL — FIX: db sempre disponibile
+    // VERIFICA TOKEN SQL — VERSIONE CORRETTA better-sqlite3
     // =====================================================
     const db = req.db || req.app.get("db");
     if (!db) {
@@ -101,25 +102,25 @@ module.exports = function authUser(req, res, next) {
       return res.status(500).json({ error: "Errore server" });
     }
 
-    db.get(
-      "SELECT email, ruolo FROM utenti WHERE sessione = ? LIMIT 1",
-      [token],
-      (err, row) => {
-        if (err) {
-          console.error("AUTH SQL ERROR:", err);
-          return res.status(500).json({ error: "Errore server" });
-        }
+    let row;
+    try {
+      row = db.prepare(
+        "SELECT email, ruolo FROM utenti WHERE sessione = ? LIMIT 1"
+      ).get(token);
+    } catch (err) {
+      console.error("AUTH SQL ERROR:", err);
+      return res.status(500).json({ error: "Errore server" });
+    }
 
-        if (!row) {
-          console.log("AUTH DEBUG → BLOCCO: Sessione non valida");
-          return res.status(401).json({ error: "Sessione non valida" });
-        }
+    if (!row) {
+      console.log("AUTH DEBUG → BLOCCO: Sessione non valida");
+      return res.status(401).json({ error: "Sessione non valida" });
+    }
 
-        req.user = { email: row.email, ruolo: row.ruolo };
-        console.log("AUTH DEBUG → UTENTE OK:", req.user.email, req.user.ruolo);
-        next();
-      }
-    );
+    req.user = { email: row.email, ruolo: row.ruolo };
+    console.log("AUTH DEBUG → UTENTE OK:", req.user.email, req.user.ruolo);
+
+    next();
 
   } catch (err) {
     console.error("AUTH-USER ERROR:", err);
