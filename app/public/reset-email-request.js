@@ -1,8 +1,14 @@
 // =========================================================
-// RESET EMAIL REQUEST — Versione DEFINITIVA (2026)
+// RESET EMAIL REQUEST — Versione DEFINITIVA (2026.10)
 // PUBLIC route — password + token locale
+// Compatibile con auth.js + sessionState
 // =========================================================
-console.log("[RESET-EMAIL-REQ] VERSIONE 2026.9");
+
+console.log("[RESET-EMAIL-REQ] VERSIONE 2026.10");
+
+// ⭐ PATCH 2026.10 — Entrata in flusso sensibile
+// (reset email = sessionState 2)
+localStorage.setItem("sessionState", "2");
 
 const btnResetEmail = document.getElementById("btnResetEmail");
 const msgResetEmail = document.getElementById("msgResetEmail");
