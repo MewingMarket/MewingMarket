@@ -14,32 +14,25 @@ btnResetEmail?.addEventListener("click", async () => {
 
   if (!msg) return;
 
-  // -------------------------------------------------------
-  // Validazione password
-  // -------------------------------------------------------
   if (!password) {
     msg.textContent = "Inserisci la tua password.";
     msg.className = "err";
     return;
   }
 
-  // Protezione doppio click
   if (btnResetEmail.disabled) return;
   btnResetEmail.disabled = true;
 
   try {
     console.log("[RESET-EMAIL-REQ] Invio richiesta…");
 
-    const token = localStorage.getItem("sessione");
+    // ⭐ PATCH: token corretto
+    const token = localStorage.getItem("token");
 
-    // Costruzione header corretta
+    // ⭐ NON sovrascrivere Authorization
     const headers = {
       "Content-Type": "application/json"
     };
-
-    if (token && token.trim() !== "") {
-      headers["Authorization"] = "Bearer " + token;
-    }
 
     const res = await fetch("/api/utenti/reset-email-request", {
       method: "POST",
