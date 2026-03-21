@@ -17,21 +17,22 @@ async function initDashboard() {
     return;
   }
 
-  const token = localStorage.getItem("sessione"); // PATCH
+  // ⭐ PATCH: token corretto
+  const token = localStorage.getItem("token");
   if (!token) {
     console.warn("[DASHBOARD] Nessun token → redirect login");
     window.location.href = "login.html";
     return;
   }
 
+  // ⭐ PATCH: NON sovrascrivere Authorization
   const authHeaders = {
-    "Content-Type": "application/json",
-    "Authorization": "Bearer " + token
+    "Content-Type": "application/json"
   };
 
-  // 2) Carica dati utente (PATCH: endpoint corretto)
+  // 2) Carica dati utente — endpoint corretto
   try {
-    const res = await fetch("/utenti/me", {  // PATCH
+    const res = await fetch("/api/utenti/me", {
       method: "GET",
       headers: authHeaders
     });
@@ -41,7 +42,9 @@ async function initDashboard() {
 
     if (res.status === 401 || !data.success) {
       console.warn("[DASHBOARD] Sessione non valida → logout");
-      localStorage.clear();
+      localStorage.removeItem("token");
+      localStorage.removeItem("email");
+      localStorage.removeItem("ruolo");
       window.location.href = "login.html";
       return;
     }
@@ -53,7 +56,7 @@ async function initDashboard() {
     alert("Errore di connessione.");
   }
 
-  // 3) Ordini (solo se implementati)
+  // 3) Ordini
   try {
     const res = await fetch("/api/ordini/miei", {
       method: "GET",
@@ -71,7 +74,7 @@ async function initDashboard() {
     console.error("[DASHBOARD] Errore ordini:", err);
   }
 
-  // 4) Download (solo se implementati)
+  // 4) Download
   try {
     const res = await fetch("/api/download/miei", {
       method: "GET",
