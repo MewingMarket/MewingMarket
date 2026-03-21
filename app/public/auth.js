@@ -1,34 +1,37 @@
 // =========================================================
-// AUTH.JS — Persistenza Totale (2026)
-// Rimani loggato finché non clicchi Logout
-// Token sempre inviato correttamente
+// AUTH.JS — Persistenza Intelligente (2026.10)
+// Stato di sessione + versione deploy
 // =========================================================
 
 console.log("[AUTH] Caricato");
 
+const APP_VERSION = "2026.10";
+
 // ---------------------------------------------------------
-// 0) Reset automatico post-deploy (email fantasma)
+// 0) Gestione versione deploy (reset controllato, non a caso)
 // ---------------------------------------------------------
 (function () {
-  const token = localStorage.getItem("token");
-  const email = localStorage.getItem("email");
+  const storedVersion = localStorage.getItem("appVersion");
 
-  if (!token && email) {
-    console.log("[AUTH] Reset automatico post-deploy");
+  if (storedVersion !== APP_VERSION) {
+    console.log("[AUTH] Nuova versione rilevata:", APP_VERSION, "(prima:", storedVersion, ")");
+    // Reset CONSAPEVOLE: nessuna sessione attiva dopo il deploy
+    localStorage.removeItem("token");
     localStorage.removeItem("email");
     localStorage.removeItem("ruolo");
+    localStorage.setItem("sessionState", "0");
+    localStorage.setItem("appVersion", APP_VERSION);
   }
 })();
 
 // ---------------------------------------------------------
-// 1) Wrapper fetch: aggiunge automaticamente Authorization Bearer
+// 1) Wrapper fetch: Authorization Bearer automatico
 // ---------------------------------------------------------
 (function () {
   const originalFetch = window.fetch;
 
   window.fetch = function (url, options = {}) {
     const token = localStorage.getItem("token");
-
     options.headers = options.headers || {};
 
     if (token) {
@@ -45,23 +48,27 @@ console.log("[AUTH] Caricato");
 window.isLogged = false;
 window.isAdmin = false;
 window.userEmail = "";
+window.sessionState = 0; // 0=nessuna, 1=loggato, 2=flusso sensibile
 
 // ---------------------------------------------------------
-// 3) Carica sessione da localStorage (persistenza totale)
+// 3) Carica sessione da localStorage
 // ---------------------------------------------------------
 function loadSession() {
   const token = localStorage.getItem("token") || "";
   const email = localStorage.getItem("email") || "";
   const ruolo = localStorage.getItem("ruolo") || "";
+  const state = parseInt(localStorage.getItem("sessionState") || "0", 10);
 
   window.isLogged = Boolean(token);
   window.userEmail = email;
   window.isAdmin = ruolo === "admin";
+  window.sessionState = state;
 
   console.log("[AUTH] Stato persistente:", {
-    token,
+    token: token ? "(presente)" : "(vuoto)",
     email,
     ruolo,
+    sessionState: window.sessionState,
     isLogged: window.isLogged,
     isAdmin: window.isAdmin
   });
