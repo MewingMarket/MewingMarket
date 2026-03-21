@@ -1,5 +1,5 @@
 // =========================================================
-// AUTH-USER.CJS — Versione PERFETTA 2026.6
+// AUTH-USER.CJS — Versione PERFETTA 2026.7
 // Non rompe le balle alle rotte pubbliche
 // =========================================================
 
@@ -23,6 +23,12 @@ module.exports = function authUser(req, res, next) {
       "/categories", "/categories.html",
       "/login", "/login.html",
       "/registrazione", "/registrazione.html",
+
+      // Login & Registrazione (PUBLIC)
+      "/utenti/login",
+      "/utenti/registrazione",
+      "/api/utenti/login",
+      "/api/utenti/registrazione",
 
       // Catalogo API (PUBLIC)
       "/products",
