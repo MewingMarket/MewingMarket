@@ -49,7 +49,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       // ⭐ PATCH: salva token nella chiave corretta
-      localStorage.setItem("sessione", data.token);
+      localStorage.setItem("token", data.token);
 
       // Salva email e ruolo
       localStorage.setItem("email", data.email);
