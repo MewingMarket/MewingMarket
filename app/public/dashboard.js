@@ -1,5 +1,5 @@
 // =========================================================
-// DASHBOARD.JS — Versione PATCHATA (2026.5)
+// DASHBOARD.JS — Versione PATCHATA (2026.9)
 // Compatibile con auth-user + api-utenti.cjs
 // =========================================================
 
@@ -25,9 +25,10 @@ async function initDashboard() {
     return;
   }
 
-  // ⭐ PATCH: NON sovrascrivere Authorization
+  // ⭐ PATCH: Authorization corretto
   const authHeaders = {
-    "Content-Type": "application/json"
+    "Content-Type": "application/json",
+    "Authorization": "Bearer " + token
   };
 
   // 2) Carica dati utente — endpoint corretto
@@ -49,6 +50,7 @@ async function initDashboard() {
       return;
     }
 
+    // ⭐ PATCH: aggiorna UI con email e ruolo
     updateUserUI(data.utente);
 
   } catch (err) {
