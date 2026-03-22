@@ -16,7 +16,21 @@ btnConfirmReset?.addEventListener("click", async () => {
 
   if (!msg) return;
 
-  // Validazione campi
+  // -------------------------------------------------------
+  // 1) Codice dalla query string
+  // -------------------------------------------------------
+  const params = new URLSearchParams(window.location.search);
+  const codice = params.get("code");
+
+  if (!codice) {
+    msg.textContent = "Codice di conferma mancante o non valido.";
+    msg.className = "err";
+    return;
+  }
+
+  // -------------------------------------------------------
+  // 2) Validazione campi
+  // -------------------------------------------------------
   if (!nuova_password || !conferma) {
     msg.textContent = "Compila tutti i campi.";
     msg.className = "err";
@@ -45,14 +59,16 @@ btnConfirmReset?.addEventListener("click", async () => {
     const res = await fetch("/api/utenti/reset-password-confirm", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nuova_password })
+      body: JSON.stringify({
+        nuova_password,
+        codice
+      })
     });
 
     const data = await res.json().catch(() => ({}));
     console.log("[RESET-PASS-CONFIRM] Risposta:", data);
 
     if (data.success) {
-      // Redirect immediato al login (pre-login flow)
       window.location.href = "login.html";
       return;
     }
