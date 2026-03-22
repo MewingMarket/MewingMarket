@@ -22,17 +22,33 @@
     <h2>Area utente</h2>
 
     <div class="user-meta">
-      <!-- 🔥 EMAIL → CODICE FISCALE -->
       <div id="sidebarCF"></div>
       <div id="sidebarUsername"></div>
     </div>
 
     <div style="margin-top:16px;">
+
+      <!-- Modifica profilo (rimane interno alla dashboard) -->
       <div class="nav-item" id="nav-profilo">Modifica profilo</div>
-      <div class="nav-item" id="nav-download">Download</div>
-      <div class="nav-item" id="nav-ordini">I miei ordini</div>
+
+      <!-- ⭐ Download collegato -->
+      <a href="download.html" class="nav-item" id="nav-download">
+        Download
+      </a>
+
+      <!-- ⭐ I miei ordini collegato -->
+      <a href="ordini.html" class="nav-item" id="nav-ordini">
+        I miei ordini
+      </a>
+
+      <!-- Logout gestito da header.js -->
       <div class="nav-item" id="nav-logout">Logout</div>
-      <div class="nav-item danger" id="nav-elimina">Elimina account</div>
+
+      <!-- ⭐ Elimina account collegato -->
+      <a href="elimina-account.html" class="nav-item danger" id="nav-elimina">
+        Elimina account
+      </a>
+
     </div>
 
     <div class="nav-site">
@@ -44,7 +60,6 @@
     <h1>Profilo utente</h1>
 
     <p class="user-meta">
-      <!-- 🔥 EMAIL → CODICE FISCALE -->
       Codice fiscale: <span id="userCF"></span><br>
       Username: <span id="username"></span>
     </p>
@@ -69,14 +84,7 @@
       <div class="status" id="msgPassword"></div>
     </div>
 
-    <div class="field-group">
-      <h3>Elimina account</h3>
-      <p>Questa azione è irreversibile. Tutti i tuoi dati verranno eliminati.</p>
-      <label for="passwordDelete">Conferma password</label>
-      <input type="password" id="passwordDelete" placeholder="Password per confermare">
-      <button class="btn btn-danger" id="btnEliminaAccount">Elimina account</button>
-      <div class="status" id="msgElimina"></div>
-    </div>
+    <!-- ⭐ BLOCCO ELIMINA ACCOUNT RIMOSSO QUI -->
   </section>
 
 </main>
