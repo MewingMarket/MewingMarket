@@ -28,9 +28,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const email = form.email.value.trim().toLowerCase();
     const password = form.password.value.trim();
     const confirmPassword = form.confirmPassword.value.trim();
+    const codice_fiscale = form.codice_fiscale.value.trim().toUpperCase();
 
     // VALIDAZIONI BASE
-    if (!email || !password || !confirmPassword) {
+    if (!email || !password || !confirmPassword || !codice_fiscale) {
       statusBox.textContent = "Compila tutti i campi.";
       return;
     }
@@ -50,6 +51,11 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    if (codice_fiscale.length !== 16) {
+      statusBox.textContent = "Il codice fiscale deve contenere 16 caratteri.";
+      return;
+    }
+
     // Protezione doppio click
     if (form.dataset.lock === "1") return;
     form.dataset.lock = "1";
@@ -58,13 +64,13 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch("/api/utenti/registrazione", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password, codice_fiscale })
       });
 
       const data = await res.json().catch(() => ({}));
       console.log("[REGISTER]", data);
 
-      if (data.error === "Email già registrata") {
+      if (data.error === "Email gia registrata") {
         statusBox.textContent = "Email già registrata. Effettua il login.";
         statusBox.style.color = "#d00";
         form.dataset.lock = "0";
