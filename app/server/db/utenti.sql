@@ -6,5 +6,6 @@ CREATE TABLE IF NOT EXISTS utenti (
   sessione TEXT,
   reset_password_token TEXT,
   reset_email_token TEXT,
+  codice_fiscale TEXT,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
