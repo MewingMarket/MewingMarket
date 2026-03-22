@@ -16,7 +16,7 @@ btnConfirmEmail?.addEventListener("click", async () => {
   if (!msg) return;
 
   // -------------------------------------------------------
-  // 1) Leggi codice dalla query string
+  // 1) Codice dalla query string
   // -------------------------------------------------------
   const params = new URLSearchParams(window.location.search);
   const codice = params.get("code");
@@ -28,7 +28,18 @@ btnConfirmEmail?.addEventListener("click", async () => {
   }
 
   // -------------------------------------------------------
-  // 2) Validazione email
+  // 2) Codice fiscale (obbligatorio)
+  // -------------------------------------------------------
+  const codice_fiscale = localStorage.getItem("codice_fiscale");
+
+  if (!codice_fiscale) {
+    msg.textContent = "Codice fiscale mancante. Effettua di nuovo il login.";
+    msg.className = "err";
+    return;
+  }
+
+  // -------------------------------------------------------
+  // 3) Validazione email
   // -------------------------------------------------------
   if (!nuova_email) {
     msg.textContent = "Inserisci la nuova email.";
@@ -52,7 +63,11 @@ btnConfirmEmail?.addEventListener("click", async () => {
     const res = await fetch("/api/utenti/reset-email-confirm", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nuova_email, codice })
+      body: JSON.stringify({
+        nuova_email,
+        codice,
+        codice_fiscale
+      })
     });
 
     const data = await res.json().catch(() => ({}));
