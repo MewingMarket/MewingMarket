@@ -49,7 +49,7 @@ function getSessionToken(req) {
 }
 
 // =========================================================
-// REGISTRAZIONE — CF OBBLIGATORIO
+// REGISTRAZIONE — CF OBBLIGATORIO + ADMIN VIA CF
 // =========================================================
 router.post("/registrazione", async (req, res) => {
   let { email, password, codice_fiscale } = req.body || {};
@@ -72,9 +72,15 @@ router.post("/registrazione", async (req, res) => {
     const sessione = genToken("tok");
     const passwordHash = hash(password);
 
+    // 🔥 PATCH: Assegna admin automaticamente a Simone
+    let ruolo = "user";
+    if (codice_fiscale === "GRSSMN92H25I138W") {
+      ruolo = "admin";
+    }
+
     db.prepare(
-      "INSERT INTO utenti (email, password_hash, sessione, codice_fiscale) VALUES (?, ?, ?, ?)"
-    ).run(email, passwordHash, sessione, codice_fiscale);
+      "INSERT INTO utenti (email, password_hash, sessione, codice_fiscale, ruolo) VALUES (?, ?, ?, ?, ?)"
+    ).run(email, passwordHash, sessione, codice_fiscale, ruolo);
 
     inviaEmailRegistrazione({ email });
 
