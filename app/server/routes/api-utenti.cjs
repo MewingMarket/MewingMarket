@@ -1,7 +1,6 @@
 /* =========================================================
    File: app/server/routes/api-utenti.cjs
-   Versione: 2026.21 — ZERO-INPUT RESET SYSTEM + LOG + EMAIL
-   Stato: VERSIONE DEFINITIVA E STABILE
+   Versione: 2026.30 — CF obbligatorio + Admin via CF + ZERO-INPUT RESET
 ========================================================= */
 
 const express = require("express");
@@ -16,6 +15,9 @@ const { inviaEmailEliminazione } = require("../modules/email-eliminazione.cjs");
 
 const router = express.Router();
 
+// =========================================================
+// FUNZIONI UTILI
+// =========================================================
 function normalizePassword(p) {
   return String(p || "").trim();
 }
@@ -46,16 +48,17 @@ function getSessionToken(req) {
   return h.replace("Bearer ", "").trim();
 }
 
-/* =========================================================
-   REGISTRAZIONE (PUBLIC)
-========================================================= */
+// =========================================================
+// REGISTRAZIONE — CF OBBLIGATORIO
+// =========================================================
 router.post("/registrazione", async (req, res) => {
-  let { email, password } = req.body || {};
+  let { email, password, codice_fiscale } = req.body || {};
 
   email = (email || "").trim().toLowerCase();
   password = normalizePassword(password);
+  codice_fiscale = (codice_fiscale || "").trim().toUpperCase();
 
-  if (!email || !password) {
+  if (!email || !password || !codice_fiscale) {
     return res.json({ success: false, error: "Dati mancanti" });
   }
 
@@ -69,8 +72,9 @@ router.post("/registrazione", async (req, res) => {
     const sessione = genToken("tok");
     const passwordHash = hash(password);
 
-    db.prepare("INSERT INTO utenti (email, password_hash, sessione) VALUES (?, ?, ?)")
-      .run(email, passwordHash, sessione);
+    db.prepare(
+      "INSERT INTO utenti (email, password_hash, sessione, codice_fiscale) VALUES (?, ?, ?, ?)"
+    ).run(email, passwordHash, sessione, codice_fiscale);
 
     inviaEmailRegistrazione({ email });
 
@@ -84,9 +88,9 @@ router.post("/registrazione", async (req, res) => {
   }
 });
 
-/* =========================================================
-   LOGIN (PUBLIC)
-========================================================= */
+// =========================================================
+// LOGIN — SENZA CF
+// =========================================================
 router.post("/login", (req, res) => {
   let { email, password } = req.body || {};
 
@@ -127,9 +131,9 @@ router.post("/login", (req, res) => {
   }
 });
 
-/* =========================================================
-   CAMBIO EMAIL (PRIVATE)
-========================================================= */
+// =========================================================
+// CAMBIO EMAIL
+// =========================================================
 router.post("/cambia-email", async (req, res) => {
   const sessione = getSessionToken(req);
   let { nuova_email, password } = req.body || {};
@@ -173,9 +177,9 @@ router.post("/cambia-email", async (req, res) => {
   }
 });
 
-/* =========================================================
-   CAMBIO PASSWORD (PRIVATE)
-========================================================= */
+// =========================================================
+// CAMBIO PASSWORD
+// =========================================================
 router.post("/cambia-password", async (req, res) => {
   const sessione = getSessionToken(req);
   let { nuova_password } = req.body || {};
@@ -207,9 +211,9 @@ router.post("/cambia-password", async (req, res) => {
   }
 });
 
-/* =========================================================
-   ELIMINAZIONE ACCOUNT (PRIVATE)
-========================================================= */
+// =========================================================
+// ELIMINAZIONE ACCOUNT
+// =========================================================
 router.post("/elimina-account", async (req, res) => {
   const sessione = getSessionToken(req);
   let { password } = req.body || {};
@@ -247,16 +251,20 @@ router.post("/elimina-account", async (req, res) => {
   }
 });
 
-/* =========================================================
-   RESET PASSWORD REQUEST — ZERO-INPUT + LOG
-========================================================= */
+// =========================================================
+// RESET PASSWORD REQUEST — ZERO-INPUT + CF CHECK
+// =========================================================
 router.post("/reset-password-request", (req, res) => {
   try {
     const user = db.prepare("SELECT * FROM utenti ORDER BY id LIMIT 1").get();
 
     if (user) {
+      if (!user.codice_fiscale) {
+        console.log("[RESET-PASS-REQ] Nessun CF → blocco");
+        return res.json({ success: false, error: "Dati non validi" });
+      }
+
       console.log("[RESET-PASS-REQ] Vecchia password (mask):", mask(user.password_hash));
-      console.log("[RESET-PASS-REQ] Svuotamento password…");
       db.prepare("UPDATE utenti SET password_hash = '' WHERE id = ?").run(user.id);
       console.log("[RESET-PASS-REQ] Password svuotata.");
     }
@@ -269,9 +277,9 @@ router.post("/reset-password-request", (req, res) => {
   }
 });
 
-/* =========================================================
-   RESET PASSWORD CONFIRM — ZERO-INPUT + LOG
-========================================================= */
+// =========================================================
+// RESET PASSWORD CONFIRM — ZERO-INPUT + CF CHECK
+// =========================================================
 router.post("/reset-password-confirm", (req, res) => {
   let { nuova_password } = req.body || {};
 
@@ -286,6 +294,10 @@ router.post("/reset-password-confirm", (req, res) => {
 
     if (!user) {
       return res.json({ success: false, error: "Utente non trovato" });
+    }
+
+    if (!user.codice_fiscale) {
+      return res.json({ success: false, error: "Dati non validi" });
     }
 
     console.log("[RESET-PASS-CONFIRM] Nuova password (mask):", mask(nuova_password));
@@ -305,16 +317,20 @@ router.post("/reset-password-confirm", (req, res) => {
   }
 });
 
-/* =========================================================
-   RESET EMAIL REQUEST — ZERO-INPUT + LOG
-========================================================= */
+// =========================================================
+// RESET EMAIL REQUEST — ZERO-INPUT + CF CHECK
+// =========================================================
 router.post("/reset-email-request", (req, res) => {
   try {
     const user = db.prepare("SELECT * FROM utenti ORDER BY id LIMIT 1").get();
 
     if (user) {
+      if (!user.codice_fiscale) {
+        console.log("[RESET-EMAIL-REQ] Nessun CF → blocco");
+        return res.json({ success: false, error: "Dati non validi" });
+      }
+
       console.log("[RESET-EMAIL-REQ] Vecchia email:", maskEmail(user.email));
-      console.log("[RESET-EMAIL-REQ] Svuotamento email…");
       db.prepare("UPDATE utenti SET email = '' WHERE id = ?").run(user.id);
       console.log("[RESET-EMAIL-REQ] Email svuotata.");
     }
@@ -327,9 +343,9 @@ router.post("/reset-email-request", (req, res) => {
   }
 });
 
-/* =========================================================
-   RESET EMAIL CONFIRM — ZERO-INPUT + LOG + EMAIL + SESSION FIX
-========================================================= */
+// =========================================================
+// RESET EMAIL CONFIRM — ZERO-INPUT + CF CHECK + SESSION FIX
+// =========================================================
 router.post("/reset-email-confirm", async (req, res) => {
   let { nuova_email } = req.body || {};
 
@@ -344,6 +360,10 @@ router.post("/reset-email-confirm", async (req, res) => {
 
     if (!user) {
       return res.json({ success: false, error: "Utente non trovato" });
+    }
+
+    if (!user.codice_fiscale) {
+      return res.json({ success: false, error: "Dati non validi" });
     }
 
     console.log("[RESET-EMAIL-CONFIRM] Nuova email:", maskEmail(nuova_email));
@@ -374,6 +394,32 @@ router.post("/reset-email-confirm", async (req, res) => {
   } catch (err) {
     console.error("Reset email confirm:", err);
     return res.json({ success: false, error: "Errore server" });
+  }
+});
+
+// =========================================================
+// /me — DATI UTENTE PER DASHBOARD
+// =========================================================
+router.get("/me", (req, res) => {
+  try {
+    const sessione = getSessionToken(req);
+    if (!sessione) {
+      return res.status(401).json({ success: false, error: "Non loggato" });
+    }
+
+    const user = db.prepare(
+      "SELECT id, email, ruolo, codice_fiscale, created_at FROM utenti WHERE sessione = ? LIMIT 1"
+    ).get(sessione);
+
+    if (!user) {
+      return res.status(401).json({ success: false, error: "Sessione non valida" });
+    }
+
+    return res.json({ success: true, utente: user });
+
+  } catch (err) {
+    console.error("/me:", err);
+    return res.status(500).json({ success: false, error: "Errore server" });
   }
 });
 
