@@ -1,6 +1,7 @@
 /* =========================================================
    FILE: /public/download.js
-   DOWNLOAD PREMIUM — SQL READY + ID-based + secure
+   DOWNLOAD PREMIUM — Versione 2026.30
+   SQL READY + ID-based + metadata + fallback
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -37,7 +38,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /* =========================================================
-     2) Estrai tutti i prodotti acquistati (ID-based)
+     2) Estrai prodotti acquistati (ID-based + metadata)
   ========================================================== */
   const prodotti = [];
 
@@ -45,9 +46,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (Array.isArray(o.prodotti)) {
       o.prodotti.forEach(p => {
         prodotti.push({
-          titolo: p.titolo,
           prodotto_id: p.prodotto_id,
-          data: o.data
+          titolo: p.titolo || p.titolo_breve || "Prodotto digitale",
+          data: o.data,
+          file_consegna_url: p.file_consegna_url || null
         });
       });
     }
@@ -59,9 +61,22 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /* =========================================================
-     3) Mostra prodotti + link download sicuro (ID + token)
+     3) Rimuovi duplicati (stesso prodotto acquistato più volte)
   ========================================================== */
+  const unici = [];
+  const visti = new Set();
+
   prodotti.forEach(p => {
+    if (!visti.has(p.prodotto_id)) {
+      visti.add(p.prodotto_id);
+      unici.push(p);
+    }
+  });
+
+  /* =========================================================
+     4) Mostra prodotti + link download sicuro (ID + token)
+  ========================================================== */
+  unici.forEach(p => {
     const tr = document.createElement("tr");
 
     tr.innerHTML = `
