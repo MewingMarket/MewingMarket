@@ -28,18 +28,7 @@ btnConfirmEmail?.addEventListener("click", async () => {
   }
 
   // -------------------------------------------------------
-  // 2) Codice fiscale (obbligatorio)
-  // -------------------------------------------------------
-  const codice_fiscale = localStorage.getItem("codice_fiscale");
-
-  if (!codice_fiscale) {
-    msg.textContent = "Codice fiscale mancante. Effettua di nuovo il login.";
-    msg.className = "err";
-    return;
-  }
-
-  // -------------------------------------------------------
-  // 3) Validazione email
+  // 2) Validazione email
   // -------------------------------------------------------
   if (!nuova_email) {
     msg.textContent = "Inserisci la nuova email.";
@@ -53,7 +42,6 @@ btnConfirmEmail?.addEventListener("click", async () => {
     return;
   }
 
-  // Protezione doppio click
   if (btnConfirmEmail.disabled) return;
   btnConfirmEmail.disabled = true;
 
@@ -65,8 +53,7 @@ btnConfirmEmail?.addEventListener("click", async () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         nuova_email,
-        codice,
-        codice_fiscale
+        codice
       })
     });
 
@@ -74,13 +61,11 @@ btnConfirmEmail?.addEventListener("click", async () => {
     console.log("[RESET-EMAIL-CONFIRM] Risposta:", data);
 
     if (data.success) {
-      // Il backend restituisce token + email SOLO nel reset email
       if (data.token && data.email) {
         localStorage.setItem("token", data.token);
         localStorage.setItem("email", data.email);
       }
 
-      // Redirect immediato al login (pre-login flow)
       window.location.href = "login.html";
       return;
     }
