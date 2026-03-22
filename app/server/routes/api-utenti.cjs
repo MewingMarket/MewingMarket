@@ -315,6 +315,9 @@ router.post("/reset-password-confirm", (req, res) => {
 
     console.log("[RESET-PASS-CONFIRM] Password aggiornata.");
 
+    // ⭐ PATCH: Email conferma reset password
+    inviaEmailCambioPassword({ email: user.email });
+
     return res.json({ success: true });
 
   } catch (err) {
