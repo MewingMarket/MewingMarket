@@ -102,6 +102,29 @@ async function initDashboard() {
 }
 
 // =========================================================
+// AGGIORNA UI UTENTE — VERSIONE CF
+// =========================================================
+function updateUserUI(utente) {
+  if (!utente) return;
+
+  // 🔥 Mostra CF invece dell’email
+  const cf = utente.codice_fiscale || "";
+
+  const sidebarCF = document.getElementById("sidebarCF");
+  const userCF = document.getElementById("userCF");
+
+  if (sidebarCF) sidebarCF.textContent = cf;
+  if (userCF) userCF.textContent = cf;
+
+  // Username (se lo usi)
+  const username = document.getElementById("username");
+  const sidebarUsername = document.getElementById("sidebarUsername");
+
+  if (username) username.textContent = utente.username || "";
+  if (sidebarUsername) sidebarUsername.textContent = utente.username || "";
+}
+
+// =========================================================
 // LOGOUT PULITO (senza cancellazioni impulsive)
 // =========================================================
 function logoutAndRedirect() {
