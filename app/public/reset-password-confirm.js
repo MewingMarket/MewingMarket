@@ -1,7 +1,7 @@
 // =========================================================
-// RESET PASSWORD CONFIRM — Versione ZERO-INPUT (2026.20)
+// RESET PASSWORD CONFIRM — Versione ZERO-INPUT (2026.21)
 // Public route — nessun token richiesto
-// Flusso: conferma → update password → redirect dashboard
+// Flusso: conferma → update password → redirect login
 // =========================================================
 
 console.log("[RESET-PASS-CONFIRM] Versione ZERO-INPUT caricata");
@@ -45,15 +45,15 @@ btnConfirmReset?.addEventListener("click", async () => {
     const res = await fetch("/api/utenti/reset-password-confirm", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nuova_password })   // ZERO-TOKEN
+      body: JSON.stringify({ nuova_password })
     });
 
     const data = await res.json().catch(() => ({}));
     console.log("[RESET-PASS-CONFIRM] Risposta:", data);
 
     if (data.success) {
-      // Redirect immediato alla dashboard
-      window.location.href = "dashboard.html";
+      // Redirect immediato al login (pre-login flow)
+      window.location.href = "login.html";
       return;
     }
 
