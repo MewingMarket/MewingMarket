@@ -1,6 +1,6 @@
 // =========================================================
-// AUTH-USER.CJS — Versione PERFETTA 2026.10
-// Compatibile better-sqlite3 + nuovo sistema a stati
+// AUTH-USER.CJS — Versione 2026.30
+// Compatibile better-sqlite3 + sessioni SQL + CF
 // =========================================================
 
 module.exports = function authUser(req, res, next) {
@@ -104,7 +104,7 @@ module.exports = function authUser(req, res, next) {
     let row;
     try {
       row = db.prepare(
-        "SELECT email, ruolo FROM utenti WHERE sessione = ? LIMIT 1"
+        "SELECT email, ruolo, codice_fiscale FROM utenti WHERE sessione = ? LIMIT 1"
       ).get(token);
     } catch (err) {
       console.error("AUTH SQL ERROR:", err);
@@ -116,7 +116,12 @@ module.exports = function authUser(req, res, next) {
       return res.status(401).json({ error: "Sessione non valida" });
     }
 
-    req.user = { email: row.email, ruolo: row.ruolo };
+    req.user = {
+      email: row.email,
+      ruolo: row.ruolo,
+      codice_fiscale: row.codice_fiscale
+    };
+
     console.log("AUTH DEBUG → UTENTE OK:", req.user.email, req.user.ruolo);
 
     next();
