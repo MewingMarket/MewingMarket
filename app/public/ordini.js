@@ -1,7 +1,7 @@
 /* =========================================================
    FILE: /public/ordini.js
-   ORDINI PREMIUM — MewingMarket
-   Versione definitiva SQL-safe + UX migliorata
+   ORDINI PREMIUM — Versione 2026.30
+   SQL READY + ID-based + metadata + UX migliorata
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -38,7 +38,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /* =========================================================
-     2) Render ordini (SQL READY)
+     2) Render ordini (ID-based + metadata)
   ========================================================== */
   data.ordini.forEach(o => {
     const tr = document.createElement("tr");
@@ -47,7 +47,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       ? o.prodotti
           .map(p => {
             const prezzo = (p.prezzo_cent / 100).toFixed(2);
-            return `${p.titolo} (${prezzo}€ × ${p.qty || 1})`;
+            const titolo = p.titolo || p.titolo_breve || "Prodotto digitale";
+            return `${titolo} (${prezzo}€ × ${p.qty || 1})`;
           })
           .join("<br>")
       : "-";
