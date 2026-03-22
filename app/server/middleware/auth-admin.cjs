@@ -1,16 +1,16 @@
 // =========================================================
 // File: app/server/middleware/auth-admin.cjs
-// Middleware ADMIN definitivo (SQL + token standard)
-// Con LOG DIAGNOSTICI (2026.10)
+// Middleware ADMIN definitivo (SQL + CF Simone)
+// Versione: 2026.30 — Admin via codice fiscale
 // =========================================================
 
 const db = require("../db/database.cjs");
 
+// CF di Simone = admin assoluto
+const CF_ADMIN = "GRSSMN92H25I138W";
+
 module.exports = function (req, res, next) {
   try {
-    // -----------------------------------------------------
-    // LOG DIAGNOSTICI — VISUALIZZIAMO TUTTO
-    // -----------------------------------------------------
     console.log("ADMIN DEBUG → req.path:", req.path);
     console.log("ADMIN DEBUG → req.url:", req.url);
     console.log("ADMIN DEBUG → headers.authorization:", req.headers["authorization"]);
@@ -40,7 +40,7 @@ module.exports = function (req, res, next) {
     // 2) VERIFICA TOKEN NEL DB
     // -----------------------------------------------------
     const user = db
-      .prepare("SELECT id, email, ruolo FROM utenti WHERE sessione = ? LIMIT 1")
+      .prepare("SELECT id, email, ruolo, codice_fiscale FROM utenti WHERE sessione = ? LIMIT 1")
       .get(token);
 
     if (!user) {
@@ -52,21 +52,27 @@ module.exports = function (req, res, next) {
     }
 
     // -----------------------------------------------------
-    // 3) NORMALIZZAZIONE RUOLO
+    // 3) ADMIN VIA CODICE FISCALE
     // -----------------------------------------------------
-    const ruoloRaw = String(user.ruolo || "").trim().toLowerCase();
+    const cf = String(user.codice_fiscale || "").trim().toUpperCase();
     let ruoloNorm = "user";
 
-    if (ruoloRaw.includes("admin") || ruoloRaw.includes("amministrator")) {
+    if (cf === CF_ADMIN) {
       ruoloNorm = "admin";
-    } else if (ruoloRaw.includes("guest") || ruoloRaw.includes("ospite")) {
-      ruoloNorm = "guest";
+    } else {
+      // fallback opzionale (non necessario, ma non fa male)
+      const ruoloRaw = String(user.ruolo || "").trim().toLowerCase();
+      if (ruoloRaw.includes("admin") || ruoloRaw.includes("amministrator")) {
+        ruoloNorm = "admin";
+      } else if (ruoloRaw.includes("guest") || ruoloRaw.includes("ospite")) {
+        ruoloNorm = "guest";
+      }
     }
 
-    console.log("ADMIN DEBUG → Ruolo normalizzato:", ruoloNorm);
+    console.log("ADMIN DEBUG → Ruolo normalizzato:", ruoloNorm, "CF:", cf);
 
     // -----------------------------------------------------
-    // 4) CONTROLLO RUOLO ADMIN
+    // 4) BLOCCO SE NON ADMIN
     // -----------------------------------------------------
     if (ruoloNorm !== "admin") {
       console.log("ADMIN DEBUG → BLOCCO: Utente non admin");
