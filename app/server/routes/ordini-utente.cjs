@@ -3,7 +3,7 @@
  * File: app/server/routes/ordini-utente.cjs
  * Restituisce gli ordini dell'utente loggato (SQL)
  * + Annulla ordine (SQL) + JSON mirror ordini
- * Compatibile con /public/ordini.js
+ * Versione 2026.30 — Allineata a tabella prodotti (ID-based)
  * =========================================================
  */
 
@@ -12,7 +12,7 @@ const db = require("../db/database.cjs");
 const authUser = require("../middleware/auth-user.cjs");
 const { inviaEmailOrdineAnnullato } = require("../modules/email-ordine-annullato.cjs");
 
-// PATCH: percorso corretto del generatore JSON
+// Percorso corretto generatore JSON
 const jsonGen = require("../modules/generatore-json.cjs");
 
 const router = express.Router();
@@ -20,7 +20,7 @@ const router = express.Router();
 /**
  * =========================================================
  * GET /api/ordini/utente
- * Protetto da auth-user
+ * Restituisce ordini + prodotti con metadata completi
  * =========================================================
  */
 router.get("/ordini/utente", authUser, (req, res) => {
@@ -51,15 +51,45 @@ router.get("/ordini/utente", authUser, (req, res) => {
 
     const rows = stmt.all(userId);
 
-    const ordini = rows.map(o => ({
-      id: o.id,
-      prodotti: safeParse(o.prodotti_json),
-      totale: o.totale_cent / 100,
-      stato: o.stato,
-      data: o.data_ordine,
-      metodo_pagamento: o.metodo_pagamento,
-      paypal_transaction_id: o.paypal_transaction_id
-    }));
+    // =========================================================
+    // Arricchimento prodotti: titolo, descrizioni, file_consegna_url
+    // =========================================================
+    const ordini = rows.map(o => {
+      const prodotti = safeParse(o.prodotti_json).map(p => {
+        const prod = db.prepare(`
+          SELECT 
+            titolo,
+            titolo_breve,
+            descrizione_lunga,
+            descrizione_breve,
+            file_consegna_url
+          FROM prodotti
+          WHERE id = ?
+          LIMIT 1
+        `).get(p.prodotto_id);
+
+        return {
+          prodotto_id: p.prodotto_id,
+          qty: p.qty || 1,
+          prezzo_cent: p.prezzo_cent,
+          titolo: prod?.titolo || prod?.titolo_breve || "Prodotto digitale",
+          titolo_breve: prod?.titolo_breve || "",
+          descrizione_lunga: prod?.descrizione_lunga || prod?.descrizione_breve || "",
+          file_consegna_url: prod?.file_consegna_url || null
+        };
+      });
+
+      return {
+        id: o.id,
+        prodotti,
+        totale_cent: o.totale_cent,
+        totale: o.totale_cent / 100,
+        stato: o.stato,
+        data: o.data_ordine,
+        metodo_pagamento: o.metodo_pagamento,
+        paypal_transaction_id: o.paypal_transaction_id
+      };
+    });
 
     return res.json({
       success: true,
@@ -78,7 +108,6 @@ router.get("/ordini/utente", authUser, (req, res) => {
 /**
  * =========================================================
  * POST /api/ordini/annulla/:id
- * Protetto da auth-user
  * =========================================================
  */
 router.post("/ordini/annulla/:id", authUser, async (req, res) => {
@@ -166,7 +195,7 @@ router.post("/ordini/annulla/:id", authUser, async (req, res) => {
       console.error("⚠️ Errore invio email annullamento:", err);
     }
 
-    // 🔥 Aggiorna JSON mirror ordini (per admin)
+    // Aggiorna JSON mirror ordini (per admin)
     try {
       await jsonGen.exportOrders();
     } catch (err) {
