@@ -10,94 +10,92 @@
 
 <body class="dashboard-body">
 
-<!-- HEAD DINAMICO -->
-<div id="head-placeholder"></div>
+  <!-- HEAD DINAMICO -->
+  <div id="head-placeholder"></div>
 
-<!-- HEADER DINAMICO -->
-<div id="header-placeholder"></div>
+  <!-- HEADER DINAMICO -->
+  <div id="header-placeholder"></div>
 
-<main>
+  <main>
 
-  <aside class="sidebar">
-    <h2>Area utente</h2>
+    <aside class="sidebar">
+      <h2>Area utente</h2>
 
-    <div class="user-meta">
-      <div id="sidebarCF"></div>
-      <div id="sidebarUsername"></div>
-    </div>
+      <div class="user-meta">
+        <div id="sidebarCF"></div>
+        <div id="sidebarUsername"></div>
+      </div>
 
-    <div style="margin-top:16px;">
+      <div style="margin-top:16px;">
 
-      <!-- Modifica profilo (rimane interno alla dashboard) -->
-      <div class="nav-item" id="nav-profilo">Modifica profilo</div>
+        <!-- Modifica profilo (solo interno dashboard) -->
+        <div class="nav-item" id="sidebar-nav-profilo">Modifica profilo</div>
 
-      <!-- ⭐ Download collegato -->
-      <a href="download.html" class="nav-item" id="nav-download">
-        Download
-      </a>
+        <!-- Download -->
+        <a href="download.html" class="nav-item" id="sidebar-nav-download">
+          Download
+        </a>
 
-      <!-- ⭐ I miei ordini collegato -->
-      <a href="ordini.html" class="nav-item" id="nav-ordini">
-        I miei ordini
-      </a>
+        <!-- I miei ordini -->
+        <a href="ordini.html" class="nav-item" id="sidebar-nav-ordini">
+          I miei ordini
+        </a>
 
-      <!-- Logout gestito da header.js -->
-      <div class="nav-item" id="nav-logout">Logout</div>
+        <!-- Logout (gestito da dashboard/profilo se serve) -->
+        <div class="nav-item" id="sidebar-nav-logout">Logout</div>
 
-      <!-- ⭐ Elimina account collegato -->
-      <a href="reset.html" class="nav-item danger" id="nav-elimina">
-        Elimina account
-      </a>
+        <!-- Elimina account -->
+        <a href="reset.html" class="nav-item danger" id="sidebar-nav-elimina">
+          Elimina account
+        </a>
 
-    </div>
+      </div>
 
-    <div class="nav-site">
-      <a href="/">← Torna al sito</a>
-    </div>
-  </aside>
+      <div class="nav-site">
+        <a href="/">← Torna al sito</a>
+      </div>
+    </aside>
 
-  <section class="content" id="content-profilo">
-    <h1>Profilo utente</h1>
+    <section class="content" id="content-profilo">
+      <h1>Profilo utente</h1>
 
-    <p class="user-meta">
-      Codice fiscale: <span id="userCF"></span><br>
-      Username: <span id="username"></span>
-    </p>
+      <p class="user-meta">
+        Codice fiscale: <span id="userCF"></span><br>
+        Username: <span id="username"></span>
+      </p>
 
-    <div class="field-group">
-      <h3>Cambia email</h3>
-      <label for="newEmail">Nuova email</label>
-      <input type="email" id="newEmail" placeholder="Nuova email">
-      <label for="passwordEmail">Password attuale</label>
-      <input type="password" id="passwordEmail" placeholder="Password attuale">
-      <button class="btn btn-primary" id="btnCambiaEmail">Aggiorna email</button>
-      <div class="status" id="msgEmail"></div>
-    </div>
+      <div class="field-group">
+        <h3>Cambia email</h3>
+        <label for="newEmail">Nuova email</label>
+        <input type="email" id="newEmail" placeholder="Nuova email">
+        <label for="passwordEmail">Password attuale</label>
+        <input type="password" id="passwordEmail" placeholder="Password attuale">
+        <button class="btn btn-primary" id="btnCambiaEmail">Aggiorna email</button>
+        <div class="status" id="msgEmail"></div>
+      </div>
 
-    <div class="field-group">
-      <h3>Cambia password</h3>
-      <label for="oldPassword">Password attuale</label>
-      <input type="password" id="oldPassword" placeholder="Password attuale">
-      <label for="newPassword">Nuova password</label>
-      <input type="password" id="newPassword" placeholder="Nuova password">
-      <button class="btn btn-primary" id="btnCambiaPassword">Aggiorna password</button>
-      <div class="status" id="msgPassword"></div>
-    </div>
+      <div class="field-group">
+        <h3>Cambia password</h3>
+        <label for="oldPassword">Password attuale</label>
+        <input type="password" id="oldPassword" placeholder="Password attuale">
+        <label for="newPassword">Nuova password</label>
+        <input type="password" id="newPassword" placeholder="Nuova password">
+        <button class="btn btn-primary" id="btnCambiaPassword">Aggiorna password</button>
+        <div class="status" id="msgPassword"></div>
+      </div>
+    </section>
 
-    <!-- ⭐ BLOCCO ELIMINA ACCOUNT RIMOSSO QUI -->
-  </section>
+  </main>
 
-</main>
+  <!-- FOOTER DINAMICO -->
+  <div id="footer-placeholder"></div>
 
-<!-- FOOTER DINAMICO -->
-<div id="footer-placeholder"></div>
-
-<!-- JS GLOBALI -->
-<script src="loader-header-footer.js"></script>
-<script src="dashboard.js"></script>
-<script src="seo.js"></script>
-<script src="structured-data.js"></script>
-<script src="tracking.js"></script>
-<script src="profilo.js"></script>
+  <!-- JS GLOBALI -->
+  <script src="loader-header-footer.js"></script>
+  <script src="dashboard.js"></script>
+  <script src="seo.js"></script>
+  <script src="structured-data.js"></script>
+  <script src="tracking.js"></script>
+  <script src="profilo.js"></script>
 </body>
 </html>
