@@ -1,7 +1,8 @@
 /**
  * =========================================================
  * File: app/server/routes/api-vendite-download.cjs
- * Download sicuro dei prodotti acquistati (SQL + persistente)
+ * Download sicuro dei prodotti acquistati (ID-based)
+ * Compatibile con tabella prodotti 2026
  * =========================================================
  */
 
@@ -17,19 +18,19 @@ const FILES_DIR = "/var/data/uploads/files";
 
 /**
  * =========================================================
- * GET /api/vendite/download/:slug
+ * GET /api/vendite/download/:id
  * Protetto da auth-user
  * =========================================================
  */
-router.get("/vendite/download/:slug", authUser, (req, res) => {
+router.get("/vendite/download/:id", authUser, (req, res) => {
   try {
     const userId = req.user.id;
-    const slug = req.params.slug;
+    const prodottoId = parseInt(req.params.id, 10);
 
-    if (!slug) {
+    if (!prodottoId) {
       return res.status(400).json({
         success: false,
-        error: "Slug mancante"
+        error: "ID prodotto mancante"
       });
     }
 
@@ -47,7 +48,7 @@ router.get("/vendite/download/:slug", authUser, (req, res) => {
 
     for (const o of ordini) {
       const prodotti = safeParse(o.prodotti_json);
-      if (prodotti.some(p => p.slug === slug)) {
+      if (prodotti.some(p => p.prodotto_id === prodottoId)) {
         trovato = true;
         break;
       }
@@ -62,26 +63,35 @@ router.get("/vendite/download/:slug", authUser, (req, res) => {
 
     // 2) Trova il file reale del prodotto
     const stmtProd = db.prepare(`
-      SELECT fileProdotto
+      SELECT 
+        titolo,
+        titolo_breve,
+        descrizione_lunga,
+        descrizione_breve,
+        file_consegna_url
       FROM prodotti
-      WHERE slug = ?
+      WHERE id = ?
       LIMIT 1
     `);
 
-    const prodotto = stmtProd.get(slug);
+    const prodotto = stmtProd.get(prodottoId);
 
-    if (!prodotto || !prodotto.fileProdotto) {
+    if (!prodotto || !prodotto.file_consegna_url) {
       return res.status(404).json({
         success: false,
         error: "File non trovato"
       });
     }
 
+    // Fallback automatici
+    const titolo = prodotto.titolo || prodotto.titolo_breve || "Prodotto digitale";
+    const descrizione = prodotto.descrizione_lunga || prodotto.descrizione_breve || "";
+
     // Percorso persistente
-    const filePath = path.join(FILES_DIR, prodotto.fileProdotto);
+    const filePath = path.join(FILES_DIR, prodotto.file_consegna_url);
 
     // 3) Invia il file in download
-    return res.download(filePath, err => {
+    return res.download(filePath, titolo + ".pdf", err => {
       if (err) {
         console.error("❌ Errore download:", err);
         return res.status(500).json({
