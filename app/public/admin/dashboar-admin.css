@@ -1,0 +1,263 @@
+/* =========================================================
+   ADMIN — STILE IDENTICO ALLA DASHBOARD UTENTE
+   Versione 2026.40
+========================================================= */
+
+/* BASE */
+body.dashboard-body {
+  background:#f7faff;
+  font-family:system-ui, sans-serif;
+  color:#003366;
+  margin:0;
+  padding:0;
+}
+
+h1, h2, h3 {
+  color:#003366;
+  margin-top:0;
+}
+
+a {
+  color:#0077ff;
+  text-decoration:none;
+}
+
+a:hover {
+  text-decoration:underline;
+}
+
+/* =========================================================
+   LAYOUT: SIDEBAR + CONTENT (identico alla dashboard utente)
+========================================================= */
+
+main {
+  display:flex;
+  max-width:1200px;
+  margin:40px auto;
+  padding:0 20px;
+  gap:30px;
+}
+
+/* SIDEBAR */
+.sidebar {
+  width:260px;
+  background:white;
+  padding:20px;
+  border-radius:12px;
+  box-shadow:0 4px 20px rgba(0,0,0,0.06);
+  height:fit-content;
+}
+
+.sidebar h2 {
+  margin-bottom:10px;
+  font-size:20px;
+}
+
+.user-meta {
+  font-size:14px;
+  color:#003366;
+  margin-bottom:20px;
+}
+
+.nav-item {
+  padding:10px 12px;
+  border-radius:8px;
+  margin-bottom:8px;
+  cursor:pointer;
+  font-weight:600;
+  color:#003366;
+  transition:0.2s;
+}
+
+.nav-item:hover {
+  background:#e8eef5;
+}
+
+.nav-item.active {
+  background:#dbe7f7;
+}
+
+.nav-item.danger {
+  color:#c9302c;
+}
+
+.nav-item.danger:hover {
+  background:#ffe5e5;
+}
+
+.nav-site {
+  margin-top:20px;
+  font-size:14px;
+}
+
+/* CONTENT */
+.content {
+  flex:1;
+  background:white;
+  padding:25px;
+  border-radius:12px;
+  box-shadow:0 4px 20px rgba(0,0,0,0.06);
+}
+
+.hidden {
+  display:none;
+}
+
+/* =========================================================
+   FORM (identico alla dashboard utente)
+========================================================= */
+
+.field-group {
+  margin-bottom:30px;
+}
+
+.field-group input {
+  width:100%;
+  padding:12px;
+  border-radius:8px;
+  border:1px solid #d5e1f0;
+  margin-top:8px;
+  font-size:16px;
+}
+
+.btn {
+  background:#0077ff;
+  color:white;
+  padding:12px 18px;
+  border-radius:8px;
+  border:none;
+  cursor:pointer;
+  font-weight:600;
+  transition:0.2s;
+}
+
+.btn:hover {
+  background:#005fe0;
+}
+
+.status {
+  margin-top:10px;
+  font-size:14px;
+}
+
+/* =========================================================
+   CARD STATISTICHE ADMIN
+========================================================= */
+
+.stats-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(180px,1fr));
+  gap:20px;
+}
+
+.stat-card {
+  background:#e8eef5;
+  padding:15px;
+  border-radius:10px;
+  text-align:center;
+}
+
+.stat-card h3 {
+  margin:0;
+  font-size:16px;
+  color:#003366;
+}
+
+.stat-card p {
+  font-size:22px;
+  font-weight:700;
+  margin-top:8px;
+  color:#0077ff;
+}
+
+/* =========================================================
+   CARD PRODOTTI ADMIN
+========================================================= */
+
+.admin-card {
+  display:flex;
+  gap:15px;
+  padding:15px;
+  border:1px solid #d5e1f0;
+  border-radius:10px;
+  background:white;
+  margin-bottom:15px;
+}
+
+.admin-card img {
+  width:90px;
+  height:90px;
+  object-fit:cover;
+  border-radius:8px;
+}
+
+.admin-card-info h3 {
+  margin:0 0 5px 0;
+  font-size:18px;
+  color:#003366;
+}
+
+.btn-modifica,
+.btn-elimina {
+  display:inline-block;
+  padding:6px 12px;
+  margin-right:8px;
+  border-radius:6px;
+  cursor:pointer;
+  border:none;
+  font-size:14px;
+  font-weight:600;
+}
+
+.btn-modifica {
+  background:#0077ff;
+  color:white;
+}
+
+.btn-modifica:hover {
+  background:#005fe0;
+}
+
+.btn-elimina {
+  background:#d9534f;
+  color:white;
+}
+
+.btn-elimina:hover {
+  background:#c9302c;
+}
+
+/* =========================================================
+   TABELLE ADMIN
+========================================================= */
+
+.tabella-standard {
+  width:100%;
+  border-collapse:collapse;
+}
+
+.tabella-standard th,
+.tabella-standard td {
+  padding:10px;
+  border-bottom:1px solid #cdd7e1;
+  text-align:left;
+}
+
+.tabella-standard th {
+  font-weight:700;
+  background:#eef3f9;
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width:800px) {
+  main {
+    flex-direction:column;
+  }
+
+  .sidebar {
+    width:100%;
+  }
+}
