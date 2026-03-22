@@ -1,5 +1,5 @@
 // =========================================================
-// DASHBOARD.JS — Versione PATCHATA (2026.10)
+// DASHBOARD.JS — Versione FINALE (2026.10)
 // Compatibile con auth-user + api-utenti.cjs + sessionState
 // =========================================================
 
@@ -45,13 +45,12 @@ async function initDashboard() {
     console.log("[DASHBOARD] /me:", data);
 
     // Sessione scaduta o token invalido
-    if (res.status === 401 || !data.success) {
+    if (res.status === 401 || !data.success || !data.utente) {
       console.warn("[DASHBOARD] Sessione non valida → logout");
       logoutAndRedirect();
       return;
     }
 
-    // Aggiorna UI
     updateUserUI(data.utente);
 
   } catch (err) {
@@ -61,27 +60,37 @@ async function initDashboard() {
   }
 
   // -------------------------------------------------------
-  // 4) Ordini
+  // 4) Ordini — usa /api/ordini/utente (backend reale)
   // -------------------------------------------------------
   try {
-    const res = await fetch("/api/ordini/miei", {
+    const res = await fetch("/api/ordini/utente", {
       method: "GET",
       headers: authHeaders
     });
 
     const data = await res.json().catch(() => ({}));
-    console.log("[DASHBOARD] /ordini/miei:", data);
+    console.log("[DASHBOARD] /ordini/utente:", data);
 
-    if (res.status !== 401) {
-      updateOrdersUI(data.ordini || []);
+    if (res.status === 401) {
+      console.warn("[DASHBOARD] 401 su ordini → logout");
+      logoutAndRedirect();
+      return;
+    }
+
+    if (data && Array.isArray(data.ordini)) {
+      updateOrdersUI(data.ordini);
+    } else {
+      updateOrdersUI([]);
     }
 
   } catch (err) {
     console.error("[DASHBOARD] Errore ordini:", err);
+    updateOrdersUI([]);
   }
 
   // -------------------------------------------------------
-  // 5) Download
+  // 5) Download — lasciato pronto per /api/download/miei
+  //    (se la route non esiste, non blocca la dashboard)
   // -------------------------------------------------------
   try {
     const res = await fetch("/api/download/miei", {
@@ -92,22 +101,32 @@ async function initDashboard() {
     const data = await res.json().catch(() => ({}));
     console.log("[DASHBOARD] /download/miei:", data);
 
-    if (res.status !== 401) {
-      updateDownloadsUI(data.download || []);
+    if (res.status === 401) {
+      console.warn("[DASHBOARD] 401 su download → logout");
+      logoutAndRedirect();
+      return;
+    }
+
+    if (data && Array.isArray(data.download)) {
+      updateDownloadsUI(data.download);
+    } else {
+      updateDownloadsUI([]);
     }
 
   } catch (err) {
     console.error("[DASHBOARD] Errore download:", err);
+    if (typeof updateDownloadsUI === "function") {
+      updateDownloadsUI([]);
+    }
   }
 }
 
 // =========================================================
-// AGGIORNA UI UTENTE — VERSIONE CF
+// AGGIORNA UI UTENTE — CF al centro
 // =========================================================
 function updateUserUI(utente) {
   if (!utente) return;
 
-  // 🔥 Mostra CF invece dell’email
   const cf = utente.codice_fiscale || "";
 
   const sidebarCF = document.getElementById("sidebarCF");
@@ -116,7 +135,6 @@ function updateUserUI(utente) {
   if (sidebarCF) sidebarCF.textContent = cf;
   if (userCF) userCF.textContent = cf;
 
-  // Username (se lo usi)
   const username = document.getElementById("username");
   const sidebarUsername = document.getElementById("sidebarUsername");
 
@@ -125,7 +143,7 @@ function updateUserUI(utente) {
 }
 
 // =========================================================
-// LOGOUT PULITO (senza cancellazioni impulsive)
+// LOGOUT PULITO
 // =========================================================
 function logoutAndRedirect() {
   localStorage.removeItem("token");
