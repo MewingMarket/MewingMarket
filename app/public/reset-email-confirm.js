@@ -1,7 +1,7 @@
 // =========================================================
-// RESET EMAIL CONFIRM — Versione ZERO-INPUT (2026.20)
+// RESET EMAIL CONFIRM — Versione ZERO-INPUT (2026.21)
 // Public route — nessun token richiesto
-// Flusso: conferma → update email → redirect dashboard
+// Flusso: conferma → update email → redirect login
 // =========================================================
 
 console.log("[RESET-EMAIL-CONFIRM] Versione ZERO-INPUT caricata");
@@ -38,15 +38,21 @@ btnConfirmEmail?.addEventListener("click", async () => {
     const res = await fetch("/api/utenti/reset-email-confirm", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nuova_email })   // ZERO-TOKEN
+      body: JSON.stringify({ nuova_email })
     });
 
     const data = await res.json().catch(() => ({}));
     console.log("[RESET-EMAIL-CONFIRM] Risposta:", data);
 
     if (data.success) {
-      // Redirect immediato alla dashboard
-      window.location.href = "dashboard.html";
+      // Il backend restituisce token + email SOLO nel reset email
+      if (data.token && data.email) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("email", data.email);
+      }
+
+      // Redirect immediato al login (pre-login flow)
+      window.location.href = "login.html";
       return;
     }
 
