@@ -60,6 +60,14 @@ btnElimina?.addEventListener("click", async () => {
       return;
     }
 
+    // =====================================================
+    // ⭐ Password errata (allineato al backend)
+    // =====================================================
+    if (data.error === "Password errata") {
+      setMsg("Password errata. Riprova.");
+      return;
+    }
+
     if (data.success) {
       setMsg("Account eliminato. Reindirizzamento...", true);
 
