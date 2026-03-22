@@ -1,6 +1,6 @@
 /* =========================================================
    File: app/server/routes/api-utenti.cjs
-   Versione: 2026.20 — ZERO-INPUT RESET SYSTEM
+   Versione: 2026.21 — ZERO-INPUT RESET SYSTEM + LOG + EMAIL
    Stato: VERSIONE DEFINITIVA E STABILE
 ========================================================= */
 
@@ -18,6 +18,18 @@ const router = express.Router();
 
 function normalizePassword(p) {
   return String(p || "").trim();
+}
+
+function mask(str) {
+  if (!str) return "";
+  if (str.length <= 2) return str[0] + "*";
+  return str.substring(0, 2) + "*".repeat(str.length - 2);
+}
+
+function maskEmail(email) {
+  if (!email) return "";
+  const [user, domain] = email.split("@");
+  return user.substring(0, 3) + "*".repeat(Math.max(1, user.length - 3)) + "@" + domain;
 }
 
 function hash(p) {
@@ -236,11 +248,21 @@ router.post("/elimina-account", async (req, res) => {
 });
 
 /* =========================================================
-   RESET PASSWORD REQUEST — ZERO-INPUT (PUBLIC)
+   RESET PASSWORD REQUEST — ZERO-INPUT + LOG
 ========================================================= */
 router.post("/reset-password-request", (req, res) => {
   try {
+    const user = db.prepare("SELECT * FROM utenti ORDER BY id LIMIT 1").get();
+
+    if (user) {
+      console.log("[RESET-PASS-REQ] Vecchia password (mask):", mask(user.password_hash));
+      console.log("[RESET-PASS-REQ] Svuotamento password…");
+      db.prepare("UPDATE utenti SET password_hash = '' WHERE id = ?").run(user.id);
+      console.log("[RESET-PASS-REQ] Password svuotata.");
+    }
+
     return res.json({ success: true });
+
   } catch (err) {
     console.error("Reset password request:", err);
     return res.json({ success: false, error: "Errore server" });
@@ -248,7 +270,7 @@ router.post("/reset-password-request", (req, res) => {
 });
 
 /* =========================================================
-   RESET PASSWORD CONFIRM — ZERO-INPUT (PUBLIC)
+   RESET PASSWORD CONFIRM — ZERO-INPUT + LOG
 ========================================================= */
 router.post("/reset-password-confirm", (req, res) => {
   let { nuova_password } = req.body || {};
@@ -266,10 +288,14 @@ router.post("/reset-password-confirm", (req, res) => {
       return res.json({ success: false, error: "Utente non trovato" });
     }
 
+    console.log("[RESET-PASS-CONFIRM] Nuova password (mask):", mask(nuova_password));
+
     const newHash = hash(nuova_password);
 
     db.prepare("UPDATE utenti SET password_hash = ? WHERE id = ?")
       .run(newHash, user.id);
+
+    console.log("[RESET-PASS-CONFIRM] Password aggiornata.");
 
     return res.json({ success: true });
 
@@ -280,11 +306,21 @@ router.post("/reset-password-confirm", (req, res) => {
 });
 
 /* =========================================================
-   RESET EMAIL REQUEST — ZERO-INPUT (PUBLIC)
+   RESET EMAIL REQUEST — ZERO-INPUT + LOG
 ========================================================= */
 router.post("/reset-email-request", (req, res) => {
   try {
+    const user = db.prepare("SELECT * FROM utenti ORDER BY id LIMIT 1").get();
+
+    if (user) {
+      console.log("[RESET-EMAIL-REQ] Vecchia email:", maskEmail(user.email));
+      console.log("[RESET-EMAIL-REQ] Svuotamento email…");
+      db.prepare("UPDATE utenti SET email = '' WHERE id = ?").run(user.id);
+      console.log("[RESET-EMAIL-REQ] Email svuotata.");
+    }
+
     return res.json({ success: true });
+
   } catch (err) {
     console.error("Reset email request:", err);
     return res.json({ success: false, error: "Errore server" });
@@ -292,7 +328,7 @@ router.post("/reset-email-request", (req, res) => {
 });
 
 /* =========================================================
-   RESET EMAIL CONFIRM — ZERO-INPUT (PUBLIC)
+   RESET EMAIL CONFIRM — ZERO-INPUT + LOG + EMAIL + SESSION FIX
 ========================================================= */
 router.post("/reset-email-confirm", async (req, res) => {
   let { nuova_email } = req.body || {};
@@ -310,6 +346,8 @@ router.post("/reset-email-confirm", async (req, res) => {
       return res.json({ success: false, error: "Utente non trovato" });
     }
 
+    console.log("[RESET-EMAIL-CONFIRM] Nuova email:", maskEmail(nuova_email));
+
     const esiste = db.prepare("SELECT id FROM utenti WHERE email = ?")
       .get(nuova_email);
 
@@ -317,10 +355,21 @@ router.post("/reset-email-confirm", async (req, res) => {
       return res.json({ success: false, error: "Email gia in uso" });
     }
 
-    db.prepare("UPDATE utenti SET email = ? WHERE id = ?")
-      .run(nuova_email, user.id);
+    const newSession = genToken("tok");
 
-    return res.json({ success: true });
+    db.prepare("UPDATE utenti SET email = ?, sessione = ? WHERE id = ?")
+      .run(nuova_email, newSession, user.id);
+
+    console.log("[RESET-EMAIL-CONFIRM] Email aggiornata.");
+    console.log("[RESET-EMAIL-CONFIRM] Nuova sessione:", newSession.substring(0, 6) + "****");
+
+    inviaEmailCambioEmail({ email: nuova_email });
+
+    return res.json({
+      success: true,
+      token: newSession,
+      email: nuova_email
+    });
 
   } catch (err) {
     console.error("Reset email confirm:", err);
