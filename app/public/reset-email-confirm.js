@@ -15,7 +15,21 @@ btnConfirmEmail?.addEventListener("click", async () => {
 
   if (!msg) return;
 
-  // Validazione email
+  // -------------------------------------------------------
+  // 1) Leggi codice dalla query string
+  // -------------------------------------------------------
+  const params = new URLSearchParams(window.location.search);
+  const codice = params.get("code");
+
+  if (!codice) {
+    msg.textContent = "Codice di conferma mancante o non valido.";
+    msg.className = "err";
+    return;
+  }
+
+  // -------------------------------------------------------
+  // 2) Validazione email
+  // -------------------------------------------------------
   if (!nuova_email) {
     msg.textContent = "Inserisci la nuova email.";
     msg.className = "err";
@@ -38,7 +52,7 @@ btnConfirmEmail?.addEventListener("click", async () => {
     const res = await fetch("/api/utenti/reset-email-confirm", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nuova_email })
+      body: JSON.stringify({ nuova_email, codice })
     });
 
     const data = await res.json().catch(() => ({}));
