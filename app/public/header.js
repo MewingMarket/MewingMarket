@@ -1,5 +1,5 @@
 // =========================================================
-// HEADER.JS — Versione DEFINITIVA (2026)
+// HEADER.JS — Versione DEFINITIVA (2026.40)
 // Gestisce homepage + shop + dashboard + admin + pagine globali
 // =========================================================
 
@@ -20,6 +20,9 @@ Promise.all([
 
   const path = location.pathname.toLowerCase();
 
+  // ============================================================
+  // CLASSIFICAZIONE PAGINE
+  // ============================================================
   const isHome =
     path === "/" ||
     path.endsWith("/index.html") ||
@@ -36,7 +39,10 @@ Promise.all([
     path.includes("dashboard") ||
     path.includes("ordini") ||
     path.includes("download") ||
-    path.includes("profilo");
+    path.includes("profilo") ||
+    path.includes("reset") ||
+    path.includes("eliminaaccount") ||
+    path.includes("thankyou");
 
   const isAdminPage =
     path.includes("/admin/") ||
@@ -44,7 +50,9 @@ Promise.all([
 
   const isGlobal = !isHome && !isShop && !isUser && !isAdminPage;
 
-  // Elementi DOM
+  // ============================================================
+  // ELEMENTI DOM
+  // ============================================================
   const navCatalogo = document.getElementById("nav-catalogo");
   const navLogin = document.getElementById("nav-login");
   const navRegister = document.getElementById("nav-register");
@@ -54,7 +62,6 @@ Promise.all([
   const cartWrapper = document.getElementById("cart-wrapper");
   const cartBadge = document.getElementById("cart-badge");
 
-  // Sicurezza
   if (!navCatalogo || !navLogin || !navRegister || !navProfilo || !navLogout || !adminTrigger) {
     console.warn("[HEADER] Elementi non trovati");
     return;
@@ -130,13 +137,25 @@ Promise.all([
 
     adminTrigger.style.display = "inline-block";
 
+    // Admin → niente carrello in homepage
     if (isHome) {
       cartWrapper.style.display = "none";
     }
+
+    // Admin → nascondi "Profilo"
+    navProfilo.style.display = "none";
   }
 
   // ============================================================
-  // 4) BADGE CARRELLO (usa mewing_cart)
+  // 4) PAGINE UTENTE → NASCONDI CARRELLO
+  // ============================================================
+  if (isUser) {
+    console.log("[HEADER] Pagina utente → nascondo carrello");
+    cartWrapper.style.display = "none";
+  }
+
+  // ============================================================
+  // 5) BADGE CARRELLO (solo shop)
   // ============================================================
   function updateBadge() {
     if (!cartBadge) return;
@@ -144,7 +163,7 @@ Promise.all([
     const cart = JSON.parse(localStorage.getItem("mewing_cart") || "[]");
     const count = cart.reduce((sum, p) => sum + (p.qty || 1), 0);
 
-    if (isHome) {
+    if (isHome || isUser) {
       cartBadge.style.display = "none";
       return;
     }
