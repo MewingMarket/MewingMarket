@@ -1,108 +1,105 @@
 /* =========================================================
-   DASHBOARD ADMIN — Versione 2026.50
-   Struttura semplice: header + pagina + footer
+   DASHBOARD ADMIN — Versione 2026.60
+   Gestione profilo admin (email + password)
 ========================================================= */
 
-document.addEventListener("DOMContentLoaded", () => {
+// Sanitizzazione sicura
+const clean = (t) =>
+  typeof t === "string"
+    ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
+    : t ?? "";
 
-  /* =========================================================
-     1) Protezione accesso admin
-  ========================================================== */
-  const token = localStorage.getItem("token");
-  const ruolo = localStorage.getItem("ruolo");
-  const email = localStorage.getItem("email");
+/* =========================================================
+   INIT — Avvio solo dopo caricamento header/footer/head
+========================================================= */
+document.addEventListener("admin-header-loaded", () => {
+  console.log("[ADMIN] Dashboard profilo inizializzata");
 
-  if (!token || ruolo !== "admin") {
-    window.location.href = "../index.html";
-    return;
-  }
+  popolaDatiAdmin();
+  setupCambioEmail();
+  setupCambioPassword();
+});
 
-  /* =========================================================
-     2) Popola dati admin nella pagina
-  ========================================================== */
+/* =========================================================
+   1) Popola dati admin nella pagina
+========================================================= */
+function popolaDatiAdmin() {
+  const email = localStorage.getItem("email") || "—";
+
   const emailSpan = document.getElementById("adminEmailMain");
   const ruoloSpan = document.getElementById("adminRoleMain");
 
-  if (emailSpan) emailSpan.textContent = email;
+  if (emailSpan) emailSpan.textContent = clean(email);
   if (ruoloSpan) ruoloSpan.textContent = "Admin";
+}
 
-  /* =========================================================
-     3) Logout admin
-  ========================================================== */
-  const logoutBtn = document.getElementById("logout-admin");
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", () => {
-      localStorage.clear();
-      window.location.href = "../index.html";
-    });
-  }
+/* =========================================================
+   2) Cambia email admin
+========================================================= */
+function setupCambioEmail() {
+  const btn = document.getElementById("btnAdminCambiaEmail");
+  if (!btn) return;
 
-  /* =========================================================
-     4) Cambia email admin
-  ========================================================== */
-  const btnEmail = document.getElementById("btnAdminCambiaEmail");
-  if (btnEmail) {
-    btnEmail.addEventListener("click", async () => {
-      const nuova = document.getElementById("newAdminEmail").value.trim();
-      const pass = document.getElementById("passwordAdminEmail").value.trim();
-      const msg = document.getElementById("msgAdminEmail");
+  btn.addEventListener("click", async () => {
+    const nuova = clean(document.getElementById("newAdminEmail").value);
+    const pass = clean(document.getElementById("passwordAdminEmail").value);
+    const msg = document.getElementById("msgAdminEmail");
 
-      if (!nuova || !pass) {
-        msg.textContent = "Compila tutti i campi.";
-        return;
+    if (!nuova || !pass) {
+      msg.textContent = "Compila tutti i campi.";
+      return;
+    }
+
+    try {
+      const res = await adminFetch("/api/admin/cambia-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nuova, pass })
+      });
+
+      const data = await res.json();
+      msg.textContent = data.message || data.error;
+
+      if (data.success) {
+        localStorage.setItem("email", nuova);
+        popolaDatiAdmin();
       }
 
-      try {
-        const res = await fetch("/api/admin/cambia-email", {
-          method: "POST",
-          headers: {
-            "Authorization": "Bearer " + token,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ nuova, pass })
-        });
+    } catch (err) {
+      msg.textContent = "Errore di connessione.";
+    }
+  });
+}
 
-        const data = await res.json();
-        msg.textContent = data.message || data.error;
+/* =========================================================
+   3) Cambia password admin
+========================================================= */
+function setupCambioPassword() {
+  const btn = document.getElementById("btnAdminCambiaPassword");
+  if (!btn) return;
 
-      } catch (err) {
-        msg.textContent = "Errore di connessione.";
-      }
-    });
-  }
+  btn.addEventListener("click", async () => {
+    const oldP = clean(document.getElementById("oldAdminPassword").value);
+    const newP = clean(document.getElementById("newAdminPassword").value);
+    const msg = document.getElementById("msgAdminPassword");
 
-  /* =========================================================
-     5) Cambia password admin
-  ========================================================== */
-  const btnPass = document.getElementById("btnAdminCambiaPassword");
-  if (btnPass) {
-    btnPass.addEventListener("click", async () => {
-      const oldP = document.getElementById("oldAdminPassword").value.trim();
-      const newP = document.getElementById("newAdminPassword").value.trim();
-      const msg = document.getElementById("msgAdminPassword");
+    if (!oldP || !newP) {
+      msg.textContent = "Compila tutti i campi.";
+      return;
+    }
 
-      if (!oldP || !newP) {
-        msg.textContent = "Compila tutti i campi.";
-        return;
-      }
+    try {
+      const res = await adminFetch("/api/admin/cambia-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ oldP, newP })
+      });
 
-      try {
-        const res = await fetch("/api/admin/cambia-password", {
-          method: "POST",
-          headers: {
-            "Authorization": "Bearer " + token,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ oldP, newP })
-        });
+      const data = await res.json();
+      msg.textContent = data.message || data.error;
 
-        const data = await res.json();
-        msg.textContent = data.message || data.error;
-
-      } catch (err) {
-        msg.textContent = "Errore di connessione.";
-      }
-    });
-  }
-
-});
+    } catch (err) {
+      msg.textContent = "Errore di connessione.";
+    }
+  });
+}
