@@ -1,8 +1,8 @@
 // =========================================================
-// FEEDBACK ADMIN – versione blindata
+// FEEDBACK ADMIN — Versione 2026.60 (compatibile loader-admin)
 // =========================================================
 
-// Sanitizzazione
+// Sanitizzazione sicura
 const clean = (t) =>
   typeof t === "string"
     ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
@@ -19,6 +19,8 @@ async function adminGet(url) {
 // CARICA FEEDBACK
 // =========================================================
 async function caricaFeedback() {
+  console.log("[ADMIN] Caricamento feedback…");
+
   try {
     const data = await adminGet("/api/admin/feedback/lista");
 
@@ -37,12 +39,14 @@ async function caricaFeedback() {
       tbody.appendChild(tr);
     });
 
+    console.log("[ADMIN] Feedback caricati");
+
   } catch (err) {
-    console.error("Errore caricamento feedback:", err);
+    console.error("[ADMIN] Errore caricamento feedback:", err);
   }
 }
 
 // =========================================================
-// INIT
+// INIT — Avvio solo dopo caricamento header/footer/head
 // =========================================================
-document.addEventListener("DOMContentLoaded", caricaFeedback);
+document.addEventListener("admin-header-loaded", caricaFeedback);
