@@ -349,3 +349,6 @@ a:hover {
     padding:0 15px;
   }
 }
+.admin-nav a i {
+  margin-right: 6px;
+}
