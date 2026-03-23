@@ -5,9 +5,6 @@
 
 (function () {
 
-  // ------------------------
-  // Utility
-  // ------------------------
   function normalize(str) {
     if (!str) return "";
     return str
@@ -75,7 +72,7 @@
   // =========================================================
   const authPromise = new Promise((resolve) => {
     const s = document.createElement("script");
-    s.src = "auth.js";
+    s.src = "/auth.js"; // ⭐ FIX CRITICO
     s.onload = () => {
       console.log("[LOADER] auth.js caricato (PRIMA DI TUTTO)");
       resolve();
@@ -109,7 +106,7 @@
   let headerFile = null;
 
   if (!isAdminPage) {
-    headerFile = "header.html"; // ⭐ unico header
+    headerFile = "header.html";
   }
 
   function safeFetchHeader(url) {
@@ -132,7 +129,7 @@
   );
 
   // =========================================================
-  // 3) HEADER.JS (dinamico) — dopo auth + header
+  // 3) HEADER.JS
   // =========================================================
   const headerLogicPromise = headerPromise.then(() => {
     return new Promise((resolve) => {
@@ -167,7 +164,7 @@
   );
 
   // =========================================================
-  // 5) CARRELLO (solo dopo header.js)
+  // 5) CARRELLO
   // =========================================================
   const cartPromise = headerLogicPromise.then(() => {
     return new Promise((resolve) => {
@@ -187,7 +184,7 @@
   document.addEventListener("auth-ready", () => {
     if (window.isAdmin) {
       const s = document.createElement("script");
-      s.src = "admin/loader-admin.js";
+      s.src = "/admin/loader-admin.js"; // ⭐ percorso assoluto
       document.body.appendChild(s);
     }
   });
