@@ -1,9 +1,10 @@
 /* =========================================================
-   ADMIN — STILE IDENTICO ALLA DASHBOARD UTENTE
-   Versione 2026.40
+   ADMIN — CSS UNICO (2026.50)
+   Base + Header + Footer + Pagine + Prodotti + Tabelle
 ========================================================= */
 
 /* BASE */
+body,
 body.dashboard-body {
   background:#f7faff;
   font-family:system-ui, sans-serif;
@@ -27,112 +28,131 @@ a:hover {
 }
 
 /* =========================================================
-   LAYOUT: SIDEBAR + CONTENT (identico alla dashboard utente)
+   LAYOUT STANDARD PAGINE
 ========================================================= */
 
-main {
-  display:flex;
+.pagina-standard {
   max-width:1200px;
   margin:40px auto;
   padding:0 20px;
-  gap:30px;
 }
 
-/* SIDEBAR */
-.sidebar {
-  width:260px;
+.box-standard {
   background:white;
   padding:20px;
   border-radius:12px;
   box-shadow:0 4px 20px rgba(0,0,0,0.06);
-  height:fit-content;
-}
-
-.sidebar h2 {
-  margin-bottom:10px;
-  font-size:20px;
-}
-
-.user-meta {
-  font-size:14px;
-  color:#003366;
-  margin-bottom:20px;
-}
-
-.nav-item {
-  padding:10px 12px;
-  border-radius:8px;
-  margin-bottom:8px;
-  cursor:pointer;
-  font-weight:600;
-  color:#003366;
-  transition:0.2s;
-}
-
-.nav-item:hover {
-  background:#e8eef5;
-}
-
-.nav-item.active {
-  background:#dbe7f7;
-}
-
-.nav-item.danger {
-  color:#c9302c;
-}
-
-.nav-item.danger:hover {
-  background:#ffe5e5;
-}
-
-.nav-site {
-  margin-top:20px;
-  font-size:14px;
-}
-
-/* CONTENT */
-.content {
-  flex:1;
-  background:white;
-  padding:25px;
-  border-radius:12px;
-  box-shadow:0 4px 20px rgba(0,0,0,0.06);
-}
-
-.hidden {
-  display:none;
+  margin-bottom:30px;
 }
 
 /* =========================================================
-   FORM (identico alla dashboard utente)
+   HEADER ADMIN
+========================================================= */
+
+.admin-header {
+  background:#ffffff;
+  border-bottom:1px solid #d5e1f0;
+  padding:20px 0;
+}
+
+.admin-header-container {
+  max-width:1200px;
+  margin:0 auto;
+  padding:0 20px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.admin-logo a,
+.admin-logo {
+  font-weight:700;
+  font-size:18px;
+  color:#003366;
+  text-decoration:none;
+}
+
+.admin-logo a:hover {
+  text-decoration:none;
+}
+
+/* =========================================================
+   NAV ADMIN
+========================================================= */
+
+.admin-nav ul {
+  list-style:none;
+  margin:0;
+  padding:0;
+  display:flex;
+  flex-wrap:wrap;
+  gap:20px;
+}
+
+.admin-nav a {
+  color:#003366;
+  text-decoration:none;
+  font-size:16px;
+  font-weight:600;
+  padding:8px 12px;
+  border-radius:6px;
+  transition:0.2s;
+}
+
+.admin-nav a:hover {
+  background:#e8eef5;
+}
+
+/* =========================================================
+   FOOTER ADMIN
+========================================================= */
+
+.admin-footer {
+  text-align:center;
+  padding:25px;
+  margin-top:40px;
+  color:#003366;
+  font-size:14px;
+  background:#f0f4fa;
+  border-top:1px solid #d5e1f0;
+}
+
+.admin-footer a {
+  color:#0077ff;
+  font-weight:600;
+}
+
+.admin-footer a:hover {
+  text-decoration:underline;
+}
+
+/* =========================================================
+   FORM STANDARD
 ========================================================= */
 
 .field-group {
   margin-bottom:30px;
 }
 
-.field-group input {
+.field-group input,
+.field-group textarea,
+.field-group select,
+.form-standard input,
+.form-standard textarea,
+.form-standard select {
   width:100%;
   padding:12px;
+  margin-top:10px;
   border-radius:8px;
   border:1px solid #d5e1f0;
-  margin-top:8px;
   font-size:16px;
+  background:white;
 }
 
-.btn {
-  background:#0077ff;
-  color:white;
-  padding:12px 18px;
-  border-radius:8px;
-  border:none;
-  cursor:pointer;
-  font-weight:600;
-  transition:0.2s;
-}
-
-.btn:hover {
-  background:#005fe0;
+.form-standard textarea,
+.field-group textarea {
+  min-height:120px;
+  resize:vertical;
 }
 
 .status {
@@ -141,7 +161,56 @@ main {
 }
 
 /* =========================================================
-   CARD STATISTICHE ADMIN
+   BOTTONI
+========================================================= */
+
+.btn,
+.btn-primario,
+.btn-secondario,
+.btn-small {
+  display:inline-block;
+  padding:12px 18px;
+  border-radius:8px;
+  font-weight:600;
+  cursor:pointer;
+  border:none;
+  text-decoration:none;
+  transition:0.2s;
+}
+
+.btn,
+.btn-primario {
+  background:#0077ff;
+  color:white;
+}
+
+.btn:hover,
+.btn-primario:hover {
+  background:#005fe0;
+}
+
+.btn-secondario {
+  background:#e8eef5;
+  color:#003366;
+}
+
+.btn-secondario:hover {
+  background:#d7e0eb;
+}
+
+.btn-small {
+  padding:6px 10px;
+  font-size:14px;
+  background:#0077ff;
+  color:white;
+}
+
+.btn-small:hover {
+  background:#005fe0;
+}
+
+/* =========================================================
+   DASHBOARD / STATISTICHE
 ========================================================= */
 
 .stats-grid {
@@ -227,6 +296,14 @@ main {
   background:#c9302c;
 }
 
+.preview-img {
+  width:150px;
+  height:auto;
+  margin-top:10px;
+  border-radius:6px;
+  display:block;
+}
+
 /* =========================================================
    TABELLE ADMIN
 ========================================================= */
@@ -253,11 +330,22 @@ main {
 ========================================================= */
 
 @media (max-width:800px) {
-  main {
+  .admin-header-container {
     flex-direction:column;
+    align-items:flex-start;
+    gap:10px;
   }
 
-  .sidebar {
-    width:100%;
+  .admin-nav ul {
+    gap:10px;
+  }
+
+  .stat-card p {
+    font-size:18px;
+  }
+
+  .pagina-standard {
+    margin:20px auto;
+    padding:0 15px;
   }
 }
