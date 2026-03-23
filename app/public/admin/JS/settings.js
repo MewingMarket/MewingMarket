@@ -1,8 +1,8 @@
 // =========================================================
-// SETTINGS ADMIN – versione blindata
+// SETTINGS ADMIN — Versione 2026.60 (compatibile loader-admin)
 // =========================================================
 
-// Sanitizzazione
+// Sanitizzazione sicura
 const clean = (t) =>
   typeof t === "string"
     ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
@@ -20,11 +20,16 @@ function setStatus(msg, ok = false) {
 // =========================================================
 
 async function caricaSettings() {
+  console.log("[ADMIN] Caricamento settings…");
+
   try {
     const res = await adminFetch("/api/admin/settings/get");
     const data = await res.json();
 
-    if (!data.success) return;
+    if (!data.success) {
+      console.warn("[ADMIN] Nessun dato settings:", data.error);
+      return;
+    }
 
     const s = data.settings;
 
@@ -33,8 +38,10 @@ async function caricaSettings() {
     document.getElementById("airtable-sales").value = clean(s.airtableSales);
     document.getElementById("airtable-products").value = clean(s.airtableProducts);
 
+    console.log("[ADMIN] Settings caricati");
+
   } catch (err) {
-    console.error("Errore caricamento settings:", err);
+    console.error("[ADMIN] Errore caricamento settings:", err);
   }
 }
 
@@ -68,13 +75,13 @@ document.getElementById("btn-salva").addEventListener("click", async () => {
     }
 
   } catch (err) {
-    console.error("Errore salvataggio settings:", err);
+    console.error("[ADMIN] Errore salvataggio settings:", err);
     setStatus("Errore di connessione");
   }
 });
 
 // =========================================================
-// INIT
+// INIT — Avvio solo dopo caricamento header/footer/head
 // =========================================================
 
-document.addEventListener("DOMContentLoaded", caricaSettings);
+document.addEventListener("admin-header-loaded", caricaSettings);
