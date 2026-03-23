@@ -2,38 +2,16 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- CSS UNICO ADMIN -->
-  <link rel="stylesheet" href="dashboard-admin.css">
+  <!-- HEAD ADMIN DINAMICO -->
+  <div id="head-admin-placeholder"></div>
 </head>
 
-<body class="dashboard-body">
+<body>
 
-  <!-- HEADER ADMIN SEMPLICE -->
-  <header class="admin-header">
-    <div class="admin-header-container">
-
-      <!-- LOGO / TITOLO -->
-      <div class="admin-logo">
-        <a href="dashboard-admin-profilo.html">MewingMarket — Area Admin</a>
-      </div>
-
-      <!-- NAV ADMIN -->
-      <nav class="admin-nav">
-        <ul>
-          <li><a href="dashboard-admin-profilo.html">Profilo</a></li>
-          <li><a href="admin-prodotti.html">Prodotti</a></li>
-          <li><a href="dashboard-vendite.html">Dashboard vendite</a></li>
-          <li><a href="ordini.html">Ordini</a></li>
-          <li><a href="feedback.html">Feedback</a></li>
-          <li><a href="settings.html">Impostazioni</a></li>
-          <li><a href="#" id="logout-admin">Logout</a></li>
-        </ul>
-      </nav>
-
-    </div>
-  </header>
+  <!-- HEADER ADMIN DINAMICO -->
+  <div id="header-admin-placeholder"></div>
 
   <main class="pagina-standard">
 
@@ -68,12 +46,11 @@
 
   </main>
 
-  <!-- FOOTER ADMIN SEMPLICE -->
-  <footer class="admin-footer">
-    <p>© 2026 MewingMarket — Area Admin · <a href="../index.html">Torna al sito principale</a></p>
-  </footer>
+  <!-- FOOTER ADMIN DINAMICO -->
+  <div id="footer-admin-placeholder"></div>
 
-  <!-- JS -->
+  <!-- JS GLOBALI ADMIN -->
+  <script src="loader-admin.js"></script>
   <script src="dashboard-admin.js"></script>
 
 </body>
