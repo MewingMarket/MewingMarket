@@ -1,13 +1,13 @@
 /* =========================================================
-   LOADER ADMIN — Versione 2026.80 (FINALE)
-   Carica: head-admin → verifica admin → header-admin → footer-admin
-   Auth.js viene caricato dal LOADER GLOBALE (non qui)
+   LOADER ADMIN — Versione 2026.90
+   Carica: head-admin → header-admin → footer-admin
+   Nessun controllo admin (gestito da auth.js + loader globale)
 ========================================================= */
 
 console.log("[ADMIN] Loader admin avviato");
 
 /* ---------------------------------------------------------
-   1) CARICA HEAD ADMIN (CSS + FontAwesome)
+   1) CARICA HEAD ADMIN
 --------------------------------------------------------- */
 const headPromise = fetch("/admin/head-admin.html")
   .then(r => r.text())
@@ -22,28 +22,9 @@ const headPromise = fetch("/admin/head-admin.html")
   });
 
 /* ---------------------------------------------------------
-   2) CONTROLLO ACCESSO ADMIN
-   (auth.js — caricato dal loader globale — deve settare window.isAdmin)
+   2) CARICA HEADER ADMIN
 --------------------------------------------------------- */
-const authCheckPromise = headPromise.then(() => {
-  return new Promise((resolve) => {
-    document.addEventListener("auth-ready", () => {
-      if (!window.isAdmin) {
-        console.warn("[ADMIN] Accesso negato → non sei admin");
-        window.location.href = "/index.html";
-      } else {
-        console.log("[ADMIN] Accesso admin confermato");
-        document.dispatchEvent(new Event("admin-auth-ok"));
-        resolve();
-      }
-    });
-  });
-});
-
-/* ---------------------------------------------------------
-   3) CARICA HEADER ADMIN
---------------------------------------------------------- */
-const headerPromise = authCheckPromise.then(() => {
+const headerPromise = headPromise.then(() => {
   return fetch("/admin/header-admin.html")
     .then(r => r.text())
     .then(html => {
@@ -56,7 +37,7 @@ const headerPromise = authCheckPromise.then(() => {
 });
 
 /* ---------------------------------------------------------
-   4) CARICA FOOTER ADMIN
+   3) CARICA FOOTER ADMIN
 --------------------------------------------------------- */
 const footerPromise = headerPromise.then(() => {
   return fetch("/admin/footer-admin.html")
@@ -74,7 +55,7 @@ const footerPromise = headerPromise.then(() => {
 });
 
 /* ---------------------------------------------------------
-   5) LOGOUT ADMIN
+   4) LOGOUT ADMIN
 --------------------------------------------------------- */
 footerPromise.then(() => {
   const btn = document.getElementById("logout-admin");
@@ -88,7 +69,7 @@ footerPromise.then(() => {
 });
 
 /* ---------------------------------------------------------
-   6) TITOLO DINAMICO
+   5) TITOLO DINAMICO
 --------------------------------------------------------- */
 document.addEventListener("admin-head-loaded", () => {
   const metaTitle = document.querySelector('meta[id="dynamic-title"]');
