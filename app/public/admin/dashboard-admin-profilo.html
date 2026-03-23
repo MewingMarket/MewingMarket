@@ -10,64 +10,71 @@
 
 <body class="dashboard-body">
 
-<!-- HEAD DINAMICO -->
-<div id="head-placeholder"></div>
+  <!-- HEADER ADMIN SEMPLICE -->
+  <header class="admin-header">
+    <div class="admin-header-container">
 
-<!-- HEADER DINAMICO -->
-<div id="header-placeholder"></div>
+      <!-- LOGO / TITOLO -->
+      <div class="admin-logo">
+        <a href="dashboard-admin-profilo.html">MewingMarket — Area Admin</a>
+      </div>
 
-<main>
+      <!-- NAV ADMIN -->
+      <nav class="admin-nav">
+        <ul>
+          <li><a href="dashboard-admin-profilo.html">Profilo</a></li>
+          <li><a href="admin-prodotti.html">Prodotti</a></li>
+          <li><a href="dashboard-vendite.html">Dashboard vendite</a></li>
+          <li><a href="ordini.html">Ordini</a></li>
+          <li><a href="feedback.html">Feedback</a></li>
+          <li><a href="settings.html">Impostazioni</a></li>
+          <li><a href="#" id="logout-admin">Logout</a></li>
+        </ul>
+      </nav>
 
-  <!-- SIDEBAR ADMIN -->
-  <aside class="sidebar">
-    <h2>Area Admin</h2>
-
-    <div class="user-meta">
-      <div id="adminEmail"></div>
-      <div id="adminRole"></div>
     </div>
-  </aside>
+  </header>
 
-  <!-- PANEL PROFILO -->
-  <section class="content" id="panel-profilo">
-    <h1>Profilo Admin</h1>
+  <main class="pagina-standard">
 
-    <p class="user-meta">
-      Email: <span id="adminEmailMain"></span><br>
-      Ruolo: <span id="adminRoleMain"></span>
-    </p>
+    <section class="box-standard">
+      <h1>Profilo Admin</h1>
 
-    <div class="field-group">
-      <h3>Cambia email</h3>
-      <label for="newAdminEmail">Nuova email</label>
-      <input type="email" id="newAdminEmail" placeholder="Nuova email">
-      <label for="passwordAdminEmail">Password attuale</label>
-      <input type="password" id="passwordAdminEmail" placeholder="Password attuale">
-      <button class="btn" id="btnAdminCambiaEmail">Aggiorna email</button>
-      <div class="status" id="msgAdminEmail"></div>
-    </div>
+      <p class="user-meta">
+        Email: <span id="adminEmailMain"></span><br>
+        Ruolo: <span id="adminRoleMain"></span>
+      </p>
 
-    <div class="field-group">
-      <h3>Cambia password</h3>
-      <label for="oldAdminPassword">Password attuale</label>
-      <input type="password" id="oldAdminPassword" placeholder="Password attuale">
-      <label for="newAdminPassword">Nuova password</label>
-      <input type="password" id="newAdminPassword" placeholder="Nuova password">
-      <button class="btn" id="btnAdminCambiaPassword">Aggiorna password</button>
-      <div class="status" id="msgAdminPassword"></div>
-    </div>
-  </section>
+      <div class="field-group">
+        <h3>Cambia email</h3>
+        <label for="newAdminEmail">Nuova email</label>
+        <input type="email" id="newAdminEmail" placeholder="Nuova email">
+        <label for="passwordAdminEmail">Password attuale</label>
+        <input type="password" id="passwordAdminEmail" placeholder="Password attuale">
+        <button class="btn" id="btnAdminCambiaEmail">Aggiorna email</button>
+        <div class="status" id="msgAdminEmail"></div>
+      </div>
 
+      <div class="field-group">
+        <h3>Cambia password</h3>
+        <label for="oldAdminPassword">Password attuale</label>
+        <input type="password" id="oldAdminPassword" placeholder="Password attuale">
+        <label for="newAdminPassword">Nuova password</label>
+        <input type="password" id="newAdminPassword" placeholder="Nuova password">
+        <button class="btn" id="btnAdminCambiaPassword">Aggiorna password</button>
+        <div class="status" id="msgAdminPassword"></div>
+      </div>
+    </section>
 
+  </main>
 
-</main>
+  <!-- FOOTER ADMIN SEMPLICE -->
+  <footer class="admin-footer">
+    <p>© 2026 MewingMarket — Area Admin · <a href="../index.html">Torna al sito principale</a></p>
+  </footer>
 
-<!-- FOOTER DINAMICO -->
-<div id="footer-placeholder"></div>
-
-<!-- JS -->
-<script src="../loader-header-footer.js"></script>
-<script src="dashboard-admin.js"></script>
+  <!-- JS -->
+  <script src="dashboard-admin.js"></script>
 
 </body>
 </html>
