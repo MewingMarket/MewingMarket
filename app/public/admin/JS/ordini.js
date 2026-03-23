@@ -1,8 +1,8 @@
 // =========================================================
-// ORDINI ADMIN – versione blindata
+// ORDINI ADMIN — Versione 2026.60 (compatibile loader-admin)
 // =========================================================
 
-// Sanitizzazione
+// Sanitizzazione sicura
 const clean = (t) =>
   typeof t === "string"
     ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
@@ -19,10 +19,15 @@ async function adminGet(url) {
 // CARICA ORDINI
 // =========================================================
 async function caricaOrdini() {
+  console.log("[ADMIN] Caricamento ordini…");
+
   try {
     const data = await adminGet("/api/admin/ordini/lista");
 
-    if (!data.success) return;
+    if (!data.success) {
+      console.warn("[ADMIN] Nessun dato ordini:", data.error);
+      return;
+    }
 
     // METRICHE
     document.getElementById("ordini-totali").textContent =
@@ -40,6 +45,7 @@ async function caricaOrdini() {
 
     (data.ordini || []).forEach((o) => {
       const tr = document.createElement("tr");
+
       tr.innerHTML = `
         <td>${clean(o.id)}</td>
         <td>${clean(o.prodotto)}</td>
@@ -49,15 +55,18 @@ async function caricaOrdini() {
         <td>${clean(o.origine)}</td>
         <td>${clean(o.data)}</td>
       `;
+
       tbody.appendChild(tr);
     });
 
+    console.log("[ADMIN] Ordini caricati");
+
   } catch (err) {
-    console.error("Errore caricamento ordini:", err);
+    console.error("[ADMIN] Errore caricamento ordini:", err);
   }
 }
 
 // =========================================================
-// INIT
+// INIT — Avvio solo dopo caricamento header/footer/head
 // =========================================================
-document.addEventListener("DOMContentLoaded", caricaOrdini);
+document.addEventListener("admin-header-loaded", caricaOrdini);
