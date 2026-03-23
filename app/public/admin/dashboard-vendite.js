@@ -2,16 +2,20 @@
  * =========================================================
  * File: dashboard-vendite.js
  * Dashboard vendite (frontend admin)
+ * Versione 2026.60 — Compatibile con loader-admin
  * =========================================================
  */
 
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener("admin-header-loaded", async () => {
+  // Aspettiamo che header/footer/head siano caricati
+  console.log("[ADMIN] Dashboard vendite: inizializzazione");
+
   try {
     const res = await fetch("/admin/analytics");
     const data = await res.json();
 
     if (!data.success) {
-      console.error("Errore analytics:", data.error);
+      console.error("[ADMIN] Errore analytics:", data.error);
       return;
     }
 
@@ -21,7 +25,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     popolaGrafico(data.venditeGiornaliere);
 
   } catch (err) {
-    console.error("dashboard-vendite.js error:", err);
+    console.error("[ADMIN] dashboard-vendite.js error:", err);
   }
 });
 
@@ -84,6 +88,11 @@ function popolaUTM(lista) {
 ========================================================= */
 function popolaGrafico(vendite) {
   const ctx = document.getElementById("grafico-vendite");
+
+  if (!ctx) {
+    console.error("[ADMIN] Canvas grafico non trovato");
+    return;
+  }
 
   const labels = vendite.map(v => v.data);
   const valori = vendite.map(v => v.totale);
