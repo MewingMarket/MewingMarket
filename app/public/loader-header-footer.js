@@ -1,5 +1,5 @@
 // =========================================================
-// LOADER HEADER/FOOTER — Versione DEFINITIVA (2026)
+// LOADER HEADER/FOOTER — Versione DEFINITIVA (2026 + PATCH DEPLOY)
 // Carica: auth.js → head → header.html → header.js → carrello.js → footer
 // =========================================================
 
@@ -78,6 +78,24 @@
       resolve();
     };
     document.head.appendChild(s);
+  });
+
+  // =========================================================
+  // PATCH — Logout automatico da deploy
+  // =========================================================
+  let autoLogoutTriggered = false;
+
+  document.addEventListener("auto-logout", () => {
+    console.log("[LOADER] Logout automatico rilevato → reset header");
+
+    autoLogoutTriggered = true;
+
+    // Ricarica header pubblico
+    const ph = document.getElementById("header-placeholder");
+    if (ph) ph.innerHTML = "";
+
+    // Notifica header.js
+    document.dispatchEvent(new Event("header-reset"));
   });
 
   // =========================================================
@@ -179,9 +197,14 @@
   });
 
   // =========================================================
-  // 6) ADMIN LOADER
+  // 6) ADMIN LOADER — PATCHATO
   // =========================================================
   document.addEventListener("auth-ready", () => {
+    if (autoLogoutTriggered) {
+      console.log("[LOADER] Admin loader BLOCCATO (logout automatico)");
+      return;
+    }
+
     if (window.isAdmin) {
       const s = document.createElement("script");
       s.src = "/admin/loader-admin.js"; // ⭐ percorso assoluto
