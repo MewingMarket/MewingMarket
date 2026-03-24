@@ -1,6 +1,6 @@
 // =========================================================
-// AUTH.JS — Persistenza Intelligente (2026.10)
-// Stato di sessione + versione deploy
+// AUTH.JS — Persistenza Intelligente (2026.10 + PATCH DEPLOY)
+// Stato di sessione + versione deploy + logoutReason
 // =========================================================
 
 console.log("[AUTH] Caricato");
@@ -8,18 +8,24 @@ console.log("[AUTH] Caricato");
 const APP_VERSION = "2026.10";
 
 // ---------------------------------------------------------
-// 0) Gestione versione deploy (reset controllato, non a caso)
+// 0) Gestione versione deploy (reset controllato)
 // ---------------------------------------------------------
 (function () {
   const storedVersion = localStorage.getItem("appVersion");
 
   if (storedVersion !== APP_VERSION) {
     console.log("[AUTH] Nuova versione rilevata:", APP_VERSION, "(prima:", storedVersion, ")");
-    // Reset CONSAPEVOLE: nessuna sessione attiva dopo il deploy
+
+    // PATCH → logout automatico
+    localStorage.setItem("logoutReason", "deploy");
+
+    // Reset sessione
     localStorage.removeItem("token");
     localStorage.removeItem("email");
     localStorage.removeItem("ruolo");
     localStorage.setItem("sessionState", "0");
+
+    // Aggiorna versione
     localStorage.setItem("appVersion", APP_VERSION);
   }
 })();
@@ -75,10 +81,24 @@ function loadSession() {
 }
 
 // ---------------------------------------------------------
-// 4) Inizializzazione
+// 4) Inizializzazione + PATCH logout automatico
 // ---------------------------------------------------------
 function initAuth() {
   loadSession();
+
+  // PATCH → rileva logout automatico da deploy
+  const reason = localStorage.getItem("logoutReason");
+
+  if (reason === "deploy") {
+    console.log("[AUTH] Logout automatico per nuovo deploy");
+
+    // Notifica globale
+    document.dispatchEvent(new Event("auto-logout"));
+
+    // Rimuovi flag
+    localStorage.removeItem("logoutReason");
+  }
+
   document.dispatchEvent(new Event("auth-ready"));
 }
 
