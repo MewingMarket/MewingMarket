@@ -90,11 +90,9 @@
 
     autoLogoutTriggered = true;
 
-    // Ricarica header pubblico
     const ph = document.getElementById("header-placeholder");
     if (ph) ph.innerHTML = "";
 
-    // Notifica header.js
     document.dispatchEvent(new Event("header-reset"));
   });
 
@@ -197,7 +195,7 @@
   });
 
   // =========================================================
-  // 6) ADMIN LOADER — PATCHATO
+  // 6) ADMIN LOADER — PATCH FINALE
   // =========================================================
   document.addEventListener("auth-ready", () => {
     if (autoLogoutTriggered) {
@@ -205,11 +203,20 @@
       return;
     }
 
-    if (window.isAdmin) {
-      const s = document.createElement("script");
-      s.src = "/admin/loader-admin.js"; // ⭐ percorso assoluto
-      document.body.appendChild(s);
-    }
+    // Carica admin SOLO dopo che header.js ha finito
+    headerLogicPromise.then(() => {
+      if (autoLogoutTriggered) {
+        console.log("[LOADER] Admin loader BLOCCATO (logout automatico, post-header)");
+        return;
+      }
+
+      if (window.isAdmin) {
+        console.log("[LOADER] Carico admin (utente admin reale)");
+        const s = document.createElement("script");
+        s.src = "/admin/loader-admin.js";
+        document.body.appendChild(s);
+      }
+    });
   });
 
 })();
