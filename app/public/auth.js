@@ -19,11 +19,16 @@ const APP_VERSION = "2026.10";
     // PATCH → logout automatico
     localStorage.setItem("logoutReason", "deploy");
 
-    // Reset sessione
+    // Reset sessione (storage)
     localStorage.removeItem("token");
     localStorage.removeItem("email");
     localStorage.removeItem("ruolo");
     localStorage.setItem("sessionState", "0");
+
+    // ⭐ PATCH CRITICA — reset RAM (evita rilog automatico)
+    window.isLogged = false;
+    window.isAdmin = false;
+    window.userEmail = "";
 
     // Aggiorna versione
     localStorage.setItem("appVersion", APP_VERSION);
