@@ -5,13 +5,8 @@
 
 console.log("[HEADER] Caricato");
 
-// ⭐ CONTROLLO FINALE — se non sei loggato o non sei admin, blocca qualsiasi reiniezione admin
-if (!window.isLogged || !window.isAdmin) {
-  console.log("[HEADER] Stato iniziale NON admin → forzo header guest");
-  document.addEventListener("header-loaded", () => {
-    forceGuestHeader();
-  });
-}
+// ❌ RIMOSSO IL CONTROLLO SBAGLIATO
+// Non dobbiamo MAI valutare isLogged/isAdmin PRIMA di auth-ready
 
 // =========================================================
 // PATCH — Reset header dopo deploy
