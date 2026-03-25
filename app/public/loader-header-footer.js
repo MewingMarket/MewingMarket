@@ -117,7 +117,7 @@
   );
 
   // =========================================================
-  // 2) HEADER (UNICO)
+  // 2) HEADER (UNICO, NON SU ADMIN)
   // =========================================================
   let headerFile = null;
 
@@ -145,22 +145,26 @@
   );
 
   // =========================================================
-  // 3) HEADER.JS
+  // 3) HEADER.JS — SOLO SE NON ADMIN
   // =========================================================
-  const headerLogicPromise = headerPromise.then(() => {
-    return new Promise((resolve) => {
-      const s = document.createElement("script");
-      s.src = "header.js";
-      s.onload = () => {
-        console.log("[LOADER] header.js caricato");
-        resolve();
-      };
-      document.body.appendChild(s);
+  let headerLogicPromise = Promise.resolve();
+
+  if (!isAdminPage) {
+    headerLogicPromise = headerPromise.then(() => {
+      return new Promise((resolve) => {
+        const s = document.createElement("script");
+        s.src = "header.js";
+        s.onload = () => {
+          console.log("[LOADER] header.js caricato");
+          resolve();
+        };
+        document.body.appendChild(s);
+      });
     });
-  });
+  }
 
   // =========================================================
-  // 4) FOOTER
+  // 4) FOOTER (PUBBLICO)
   // =========================================================
   function safeFetchFooter(url) {
     return fetch(url)
@@ -180,19 +184,23 @@
   );
 
   // =========================================================
-  // 5) CARRELLO
+  // 5) CARRELLO — SOLO SE NON ADMIN
   // =========================================================
-  const cartPromise = headerLogicPromise.then(() => {
-    return new Promise((resolve) => {
-      const s = document.createElement("script");
-      s.src = "carrello.js";
-      s.onload = () => {
-        console.log("[LOADER] carrello.js caricato");
-        resolve();
-      };
-      document.body.appendChild(s);
+  let cartPromise = Promise.resolve();
+
+  if (!isAdminPage) {
+    cartPromise = headerLogicPromise.then(() => {
+      return new Promise((resolve) => {
+        const s = document.createElement("script");
+        s.src = "carrello.js";
+        s.onload = () => {
+          console.log("[LOADER] carrello.js caricato");
+          resolve();
+        };
+        document.body.appendChild(s);
+      });
     });
-  });
+  }
 
   // =========================================================
   // 6) ADMIN LOADER — PATCH FINALE
@@ -203,14 +211,13 @@
       return;
     }
 
-    // Carica admin SOLO dopo che header.js ha finito
+    // Su admin non serve aspettare header.js, ma teniamo la stessa catena
     headerLogicPromise.then(() => {
       if (autoLogoutTriggered) {
         console.log("[LOADER] Admin loader BLOCCATO (logout automatico, post-header)");
         return;
       }
 
-      // ⭐ CONTROLLO FINALE — evita rilog automatico anche se RAM era sporca
       if (window.isAdmin === true && autoLogoutTriggered === false) {
         console.log("[LOADER] Carico admin (utente admin reale, stato verificato post-header)");
         const s = document.createElement("script");
