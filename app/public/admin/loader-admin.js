@@ -6,11 +6,17 @@
 
 console.log("[ADMIN] Loader admin avviato");
 
+// ⭐ CONTROLLO FINALE — se non sei admin, blocca tutto
+if (!window.isAdmin) {
+  console.log("[ADMIN] Blocco immediato: utente NON admin");
+  var adminAbort = true;
+} else {
+  var adminAbort = false;
+}
+
 // =========================================================
 // PATCH — Se arriva logout automatico → blocca tutto
 // =========================================================
-let adminAbort = false;
-
 document.addEventListener("auto-logout", () => {
   console.log("[ADMIN] Logout automatico → blocco loader admin");
   adminAbort = true;
