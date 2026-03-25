@@ -210,11 +210,14 @@
         return;
       }
 
-      if (window.isAdmin) {
-        console.log("[LOADER] Carico admin (utente admin reale)");
+      // ⭐ CONTROLLO FINALE — evita rilog automatico anche se RAM era sporca
+      if (window.isAdmin === true && autoLogoutTriggered === false) {
+        console.log("[LOADER] Carico admin (utente admin reale, stato verificato post-header)");
         const s = document.createElement("script");
         s.src = "/admin/loader-admin.js";
         document.body.appendChild(s);
+      } else {
+        console.log("[LOADER] Admin NON caricato (stato finale non admin)");
       }
     });
   });
