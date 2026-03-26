@@ -24,10 +24,16 @@ async function adminFetch(url, options = {}) {
 
   const res = await fetch(url, { ...options, headers });
 
-  // Se non autorizzato → redirect login admin
+  // PATCH: niente login admin → usa login normale
   if (res.status === 401 || res.status === 403) {
-    console.warn("[ADMIN] Accesso negato → redirect login");
-    window.location.href = "/admin/login.html";
+    console.warn("[ADMIN] Accesso negato → token non valido");
+
+    // Logout pulito
+    localStorage.removeItem("token");
+    localStorage.removeItem("email");
+
+    // Redirect al login normale
+    window.location.href = "/login.html";
     return;
   }
 
