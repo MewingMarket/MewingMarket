@@ -2,6 +2,7 @@
  * =========================================================
  * File: app/server/modules/email-novita.cjs
  * Newsletter “Novità” basata su tabella prodotti (SQL)
+ * PATCH 2026 — ID-based + link corretto prodotto.html?id=
  * =========================================================
  */
 
@@ -26,12 +27,22 @@ function escapeHTML(str) {
 
 /* =========================================================
    GENERA HTML NEWSLETTER NOVITÀ
+   PATCH: link ID-based → prodotto.html?id=<ID>
 ========================================================= */
 function generateNovitaHTML(prod) {
-  const titolo = escapeHTML(prod.titolo_breve || "");
-  const descrizione = escapeHTML(prod.descrizione_breve || prod.descrizione_lunga || "");
-  const immagine = prod.immagine_url || "";
-  const link = `https://mewingmarket.com/prodotto/${prod.slug}`;
+  const titolo = escapeHTML(prod.titolo_breve || prod.titolo || "");
+  const descrizione = escapeHTML(
+    prod.descrizione_breve || prod.descrizione_lunga || ""
+  );
+
+  // PATCH: immagine sicura
+  const immagine = safeString(prod.immagine_url || "");
+
+  // ❌ PRIMA (ROTTO, slug non esiste):
+  // const link = `https://mewingmarket.com/prodotto/${prod.slug}`;
+
+  // ✅ ORA (ID-based, coerente con tutto il sistema):
+  const link = `https://mewingmarket.com/prodotto.html?id=${prod.id}`;
 
   return `
 <html lang="it">
@@ -60,11 +71,17 @@ function generateNovitaHTML(prod) {
     ${descrizione}
   </p>
 
+  ${
+    immagine
+      ? `
   <div style="text-align:center; margin:25px 0;">
     <img src="${immagine}" 
          alt="${titolo}" 
          style="max-width:100%; border-radius:6px;">
   </div>
+  `
+      : ""
+  }
 
   <p style="text-align:center;">
     <a href="${link}?utm_source=brevo&utm_campaign=novita&utm_medium=email" 
@@ -111,7 +128,7 @@ async function inviaEmailNovita({ email }) {
       });
     }
 
-    const titolo = safeString(latest.titolo_breve || "");
+    const titolo = safeString(latest.titolo_breve || latest.titolo || "");
     const oggetto = `✨ Novità: è arrivato “${titolo}”`;
     const html = generateNovitaHTML(latest);
 
