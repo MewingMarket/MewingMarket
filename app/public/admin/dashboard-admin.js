@@ -1,6 +1,7 @@
 /* =========================================================
-   DASHBOARD ADMIN — Versione 2026.60
+   DASHBOARD ADMIN — Versione 2026.70
    Gestione profilo admin (email + password)
+   PATCH: adminFetch integrato nel file
 ========================================================= */
 
 // Sanitizzazione sicura
@@ -8,6 +9,30 @@ const clean = (t) =>
   typeof t === "string"
     ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
     : t ?? "";
+
+/* =========================================================
+   PATCH — adminFetch integrato
+   Usa fetch normale ma aggiunge token + controlli admin
+========================================================= */
+async function adminFetch(url, options = {}) {
+  const token = localStorage.getItem("token");
+
+  const headers = {
+    ...(options.headers || {}),
+    Authorization: token ? `Bearer ${token}` : ""
+  };
+
+  const res = await fetch(url, { ...options, headers });
+
+  // Se non autorizzato → redirect login admin
+  if (res.status === 401 || res.status === 403) {
+    console.warn("[ADMIN] Accesso negato → redirect login");
+    window.location.href = "/admin/login.html";
+    return;
+  }
+
+  return res;
+}
 
 /* =========================================================
    INIT — Avvio solo dopo caricamento header/footer/head
