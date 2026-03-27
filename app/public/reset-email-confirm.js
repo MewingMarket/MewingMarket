@@ -1,6 +1,6 @@
 // =========================================================
-// RESET EMAIL CONFIRM — Versione ZERO-INPUT (2026.50)
-// PATCH: sessionState = 1 + CF da localStorage
+// RESET EMAIL CONFIRM — Versione ZERO-INPUT (2026.60)
+// PATCH: nuova sessione + token/email + sessionState = 1
 // =========================================================
 
 console.log("[RESET-EMAIL-CONFIRM] Versione ZERO-INPUT caricata");
@@ -10,7 +10,7 @@ const msgConfirmEmail = document.getElementById("msgConfirmEmail");
 
 btnConfirmEmail?.addEventListener("click", async () => {
   const nuova_email = document.getElementById("newEmail")?.value.trim().toLowerCase();
-  const codice_fiscale = localStorage.getItem("cf_reset"); // <-- ZERO-INPUT
+  const codice_fiscale = localStorage.getItem("cf_reset"); // ZERO-INPUT
   const msg = msgConfirmEmail;
 
   if (!msg) return;
@@ -49,12 +49,17 @@ btnConfirmEmail?.addEventListener("click", async () => {
     console.log("[RESET-EMAIL-CONFIRM] Risposta:", data);
 
     if (data.success) {
-      // pulizia
+
+      // 🔥 PULIZIA CF
       localStorage.removeItem("cf_reset");
 
+      // 🔥 FIX CHECKOUT — salviamo token + email + sessionState
       if (data.token && data.email) {
         localStorage.setItem("token", data.token);
         localStorage.setItem("email", data.email);
+        localStorage.setItem("sessionState", "1");
+      } else {
+        // fallback (non dovrebbe servire)
         localStorage.setItem("sessionState", "1");
       }
 
