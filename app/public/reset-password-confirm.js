@@ -1,7 +1,6 @@
 // =========================================================
 // RESET PASSWORD CONFIRM — Versione ZERO-INPUT (2026.30)
-// Public route — nessun token richiesto
-// Flusso: conferma → update password → redirect login
+// PATCH: sessionState = 1
 // =========================================================
 
 console.log("[RESET-PASS-CONFIRM] Versione ZERO-INPUT caricata");
@@ -16,9 +15,6 @@ btnConfirmReset?.addEventListener("click", async () => {
 
   if (!msg) return;
 
-  // -------------------------------------------------------
-  // 1) Validazione campi
-  // -------------------------------------------------------
   if (!nuova_password || !conferma) {
     msg.textContent = "Compila tutti i campi.";
     msg.className = "err";
@@ -37,7 +33,6 @@ btnConfirmReset?.addEventListener("click", async () => {
     return;
   }
 
-  // Protezione doppio click
   if (btnConfirmReset.disabled) return;
   btnConfirmReset.disabled = true;
 
@@ -54,6 +49,7 @@ btnConfirmReset?.addEventListener("click", async () => {
     console.log("[RESET-PASS-CONFIRM] Risposta:", data);
 
     if (data.success) {
+      localStorage.setItem("sessionState", "1");
       window.location.href = "login.html";
       return;
     }
