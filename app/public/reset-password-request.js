@@ -1,6 +1,5 @@
 // =========================================================
-// RESET PASSWORD REQUEST — Versione CF (2026.21)
-// Public route — richiede codice fiscale
+// RESET PASSWORD REQUEST — Versione CF (2026.21) — PATCH
 // =========================================================
 
 console.log("[RESET-PASSWORD-REQ] Versione CF caricata");
