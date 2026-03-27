@@ -1,6 +1,6 @@
 // =========================================================
-// RESET EMAIL CONFIRM — Versione ZERO-INPUT (2026.40)
-// PATCH: sessionState = 1 + INVIO CF
+// RESET EMAIL CONFIRM — Versione ZERO-INPUT (2026.50)
+// PATCH: sessionState = 1 + CF da localStorage
 // =========================================================
 
 console.log("[RESET-EMAIL-CONFIRM] Versione ZERO-INPUT caricata");
@@ -10,25 +10,25 @@ const msgConfirmEmail = document.getElementById("msgConfirmEmail");
 
 btnConfirmEmail?.addEventListener("click", async () => {
   const nuova_email = document.getElementById("newEmail")?.value.trim().toLowerCase();
-  const codice_fiscale = document.getElementById("cf")?.value.trim().toUpperCase();
+  const codice_fiscale = localStorage.getItem("cf_reset"); // <-- ZERO-INPUT
   const msg = msgConfirmEmail;
 
   if (!msg) return;
 
-  if (!nuova_email || !codice_fiscale) {
-    msg.textContent = "Compila tutti i campi.";
-    msg.className = "err";
-    return;
-  }
-
-  if (codice_fiscale.length !== 16) {
-    msg.textContent = "Codice fiscale non valido.";
+  if (!nuova_email) {
+    msg.textContent = "Inserisci la nuova email.";
     msg.className = "err";
     return;
   }
 
   if (!nuova_email.includes("@") || !nuova_email.includes(".")) {
     msg.textContent = "Inserisci un'email valida.";
+    msg.className = "err";
+    return;
+  }
+
+  if (!codice_fiscale || codice_fiscale.length !== 16) {
+    msg.textContent = "Errore interno: codice fiscale mancante.";
     msg.className = "err";
     return;
   }
@@ -49,6 +49,9 @@ btnConfirmEmail?.addEventListener("click", async () => {
     console.log("[RESET-EMAIL-CONFIRM] Risposta:", data);
 
     if (data.success) {
+      // pulizia
+      localStorage.removeItem("cf_reset");
+
       if (data.token && data.email) {
         localStorage.setItem("token", data.token);
         localStorage.setItem("email", data.email);
