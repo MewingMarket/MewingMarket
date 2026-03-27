@@ -1,6 +1,6 @@
 // =========================================================
-// RESET PASSWORD CONFIRM — Versione ZERO-INPUT (2026.50)
-// PATCH: sessionState = 1 + CF da localStorage
+// RESET PASSWORD CONFIRM — Versione ZERO-INPUT (2026.60)
+// PATCH: nuova sessione + token/email + sessionState = 1
 // =========================================================
 
 console.log("[RESET-PASS-CONFIRM] Versione ZERO-INPUT caricata");
@@ -11,7 +11,7 @@ const msgConfirmReset = document.getElementById("msgConfirmReset");
 btnConfirmReset?.addEventListener("click", async () => {
   const nuova_password = document.getElementById("newPassword")?.value.trim();
   const conferma = document.getElementById("confirmPassword")?.value.trim();
-  const codice_fiscale = localStorage.getItem("cf_reset"); // <-- ZERO-INPUT
+  const codice_fiscale = localStorage.getItem("cf_reset"); // ZERO-INPUT
   const msg = msgConfirmReset;
 
   if (!msg) return;
@@ -56,10 +56,20 @@ btnConfirmReset?.addEventListener("click", async () => {
     console.log("[RESET-PASS-CONFIRM] Risposta:", data);
 
     if (data.success) {
-      // pulizia
+
+      // 🔥 PULIZIA CF
       localStorage.removeItem("cf_reset");
 
-      localStorage.setItem("sessionState", "1");
+      // 🔥 FIX CHECKOUT — salviamo token + email + sessionState
+      if (data.token && data.email) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("email", data.email);
+        localStorage.setItem("sessionState", "1");
+      } else {
+        // fallback (non dovrebbe servire)
+        localStorage.setItem("sessionState", "1");
+      }
+
       window.location.href = "login.html";
       return;
     }
