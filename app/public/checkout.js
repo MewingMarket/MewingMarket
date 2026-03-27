@@ -1,6 +1,6 @@
 // =========================================================
 // CHECKOUT.JS — Versione DEFINITIVA (2026)
-// Sincronizzato con auth-ready + token + Cart
+// Compatibile con auth-ready + Cart SQL-ready
 // =========================================================
 
 console.log("[CHECKOUT] Caricato");
@@ -8,13 +8,13 @@ console.log("[CHECKOUT] Caricato");
 // Attende auth-ready PRIMA di iniziare
 document.addEventListener("auth-ready", initCheckout);
 
-function initCheckout() {
+async function initCheckout() {
   console.log("[CHECKOUT] initCheckout()");
 
   // -------------------------------------------------------
   // 1) Verifica login
   // -------------------------------------------------------
-  if (!window.isLogged) {
+  if (typeof isLogged !== "function" || !isLogged()) {
     console.warn("[CHECKOUT] Utente non loggato → redirect login");
     window.location.href = "login.html";
     return;
@@ -44,14 +44,33 @@ function initCheckout() {
   }
 
   // -------------------------------------------------------
-  // 3) Calcolo totale
+  // 3) Rendering prodotti
+  // -------------------------------------------------------
+  const container = document.getElementById("checkout-container");
+  container.innerHTML = cart.map(item => {
+    const prezzo = (item.prezzo_cent / 100).toFixed(2);
+    const subtotal = ((item.prezzo_cent * item.qty) / 100).toFixed(2);
+
+    return `
+      <div class="checkout-item">
+        <img src="${item.immagine}" alt="${item.titolo}">
+        <div class="info">
+          <h3>${item.titolo}</h3>
+          <p>Prezzo: €${prezzo}</p>
+          <p>Quantità: ${item.qty}</p>
+          <p>Subtotale: €${subtotal}</p>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  // -------------------------------------------------------
+  // 4) Calcolo totale
   // -------------------------------------------------------
   let totaleCent = 0;
 
   cart.forEach((item) => {
-    const prezzo = Number(item.prezzo_cent) || 0;
-    const qty = Number(item.qty) || 1;
-    totaleCent += prezzo * qty;
+    totaleCent += item.prezzo_cent * item.qty;
   });
 
   const totaleEuro = (totaleCent / 100).toFixed(2);
@@ -65,7 +84,7 @@ function initCheckout() {
   console.log("[CHECKOUT] Totale:", totaleEuro);
 
   // -------------------------------------------------------
-  // 4) Bottone acquista
+  // 5) Bottone acquista (PayPal fase 3)
   // -------------------------------------------------------
   const btn = document.getElementById("btnCheckout");
   if (!btn) return;
@@ -76,9 +95,7 @@ function initCheckout() {
     try {
       console.log("[CHECKOUT] Creazione ordine PayPal…");
 
-      const payload = (typeof Cart !== "undefined")
-        ? Cart.getForCheckout()
-        : [];
+      const payload = Cart.getForCheckout();
 
       const res = await fetch("/api/paypal/create-order", {
         method: "POST",
