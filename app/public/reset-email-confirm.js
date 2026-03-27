@@ -1,7 +1,6 @@
 // =========================================================
 // RESET EMAIL CONFIRM — Versione ZERO-INPUT (2026.30)
-// Public route — nessun token richiesto
-// Flusso: conferma → update email → redirect login
+// PATCH: sessionState = 1
 // =========================================================
 
 console.log("[RESET-EMAIL-CONFIRM] Versione ZERO-INPUT caricata");
@@ -15,9 +14,6 @@ btnConfirmEmail?.addEventListener("click", async () => {
 
   if (!msg) return;
 
-  // -------------------------------------------------------
-  // 1) Validazione email
-  // -------------------------------------------------------
   if (!nuova_email) {
     msg.textContent = "Inserisci la nuova email.";
     msg.className = "err";
@@ -49,6 +45,7 @@ btnConfirmEmail?.addEventListener("click", async () => {
       if (data.token && data.email) {
         localStorage.setItem("token", data.token);
         localStorage.setItem("email", data.email);
+        localStorage.setItem("sessionState", "1");
       }
 
       window.location.href = "login.html";
