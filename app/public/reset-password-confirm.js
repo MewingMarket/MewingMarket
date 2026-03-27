@@ -1,6 +1,6 @@
 // =========================================================
-// RESET PASSWORD CONFIRM — Versione ZERO-INPUT (2026.40)
-// PATCH: sessionState = 1 + INVIO CF
+// RESET PASSWORD CONFIRM — Versione ZERO-INPUT (2026.50)
+// PATCH: sessionState = 1 + CF da localStorage
 // =========================================================
 
 console.log("[RESET-PASS-CONFIRM] Versione ZERO-INPUT caricata");
@@ -11,19 +11,19 @@ const msgConfirmReset = document.getElementById("msgConfirmReset");
 btnConfirmReset?.addEventListener("click", async () => {
   const nuova_password = document.getElementById("newPassword")?.value.trim();
   const conferma = document.getElementById("confirmPassword")?.value.trim();
-  const codice_fiscale = document.getElementById("cf")?.value.trim().toUpperCase();
+  const codice_fiscale = localStorage.getItem("cf_reset"); // <-- ZERO-INPUT
   const msg = msgConfirmReset;
 
   if (!msg) return;
 
-  if (!nuova_password || !conferma || !codice_fiscale) {
+  if (!nuova_password || !conferma) {
     msg.textContent = "Compila tutti i campi.";
     msg.className = "err";
     return;
   }
 
-  if (codice_fiscale.length !== 16) {
-    msg.textContent = "Codice fiscale non valido.";
+  if (!codice_fiscale || codice_fiscale.length !== 16) {
+    msg.textContent = "Errore interno: codice fiscale mancante.";
     msg.className = "err";
     return;
   }
@@ -56,6 +56,9 @@ btnConfirmReset?.addEventListener("click", async () => {
     console.log("[RESET-PASS-CONFIRM] Risposta:", data);
 
     if (data.success) {
+      // pulizia
+      localStorage.removeItem("cf_reset");
+
       localStorage.setItem("sessionState", "1");
       window.location.href = "login.html";
       return;
