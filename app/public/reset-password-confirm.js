@@ -1,6 +1,6 @@
 // =========================================================
-// RESET PASSWORD CONFIRM — Versione ZERO-INPUT (2026.30)
-// PATCH: sessionState = 1
+// RESET PASSWORD CONFIRM — Versione ZERO-INPUT (2026.40)
+// PATCH: sessionState = 1 + INVIO CF
 // =========================================================
 
 console.log("[RESET-PASS-CONFIRM] Versione ZERO-INPUT caricata");
@@ -11,12 +11,19 @@ const msgConfirmReset = document.getElementById("msgConfirmReset");
 btnConfirmReset?.addEventListener("click", async () => {
   const nuova_password = document.getElementById("newPassword")?.value.trim();
   const conferma = document.getElementById("confirmPassword")?.value.trim();
+  const codice_fiscale = document.getElementById("cf")?.value.trim().toUpperCase();
   const msg = msgConfirmReset;
 
   if (!msg) return;
 
-  if (!nuova_password || !conferma) {
+  if (!nuova_password || !conferma || !codice_fiscale) {
     msg.textContent = "Compila tutti i campi.";
+    msg.className = "err";
+    return;
+  }
+
+  if (codice_fiscale.length !== 16) {
+    msg.textContent = "Codice fiscale non valido.";
     msg.className = "err";
     return;
   }
@@ -42,7 +49,7 @@ btnConfirmReset?.addEventListener("click", async () => {
     const res = await fetch("/api/utenti/reset-password-confirm", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nuova_password })
+      body: JSON.stringify({ nuova_password, codice_fiscale })
     });
 
     const data = await res.json().catch(() => ({}));
