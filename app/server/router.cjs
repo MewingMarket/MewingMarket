@@ -45,6 +45,10 @@ router.use(require("./routes/paypal-cancel.cjs"));
 const authAdmin = require("./middleware/auth-admin.cjs");
 
 router.use("/admin", authAdmin);
+
+// ⭐⭐⭐ PATCH CRITICA — AGGIUNTA LA ROUTE MANCANTE ⭐⭐⭐
+router.use("/admin", require("./routes/api-admin.cjs"));
+
 router.use("/admin", require("./routes/admin-analytics.cjs"));
 router.use("/admin", require("./routes/vendite-admin.cjs"));
 
