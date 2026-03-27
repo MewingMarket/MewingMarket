@@ -1,6 +1,7 @@
 /* =========================================================
    File: app/server/routes/api-utenti.cjs
    Versione: 2026.30 — CF obbligatorio + Admin via CF + ZERO-INPUT RESET
+   PATCH 2026.40 — Reset basato su CF, mai più ORDER BY id
 ========================================================= */
 
 const express = require("express");
@@ -72,7 +73,6 @@ router.post("/registrazione", async (req, res) => {
     const sessione = genToken("tok");
     const passwordHash = hash(password);
 
-    // 🔥 PATCH: Assegna admin automaticamente a Simone
     let ruolo = "user";
     if (codice_fiscale === "GRSSMN92H25I138W") {
       ruolo = "admin";
@@ -134,10 +134,8 @@ router.post("/login", (req, res) => {
   } catch (err) {
     console.error("Login:", err);
     return res.json({ success: false, error: "Errore server" });
-  }
-});
-
-// =========================================================
+  } 
+}); // =========================================================
 // CAMBIO EMAIL
 // =========================================================
 router.post("/cambia-email", async (req, res) => {
@@ -255,25 +253,32 @@ router.post("/elimina-account", async (req, res) => {
     console.error("Eliminazione account:", err);
     return res.json({ success: false, error: "Errore server" });
   }
-});
-
-// =========================================================
-// RESET PASSWORD REQUEST — ZERO-INPUT + CF CHECK
+}); // =========================================================
+// RESET PASSWORD REQUEST — ZERO-INPUT + CF CHECK (PATCH 2026.40)
 // =========================================================
 router.post("/reset-password-request", (req, res) => {
+  let { codice_fiscale } = req.body || {};
+  codice_fiscale = (codice_fiscale || "").trim().toUpperCase();
+
+  if (!codice_fiscale || codice_fiscale.length !== 16) {
+    return res.json({ success: false, error: "Codice fiscale non valido" });
+  }
+
   try {
-    const user = db.prepare("SELECT * FROM utenti ORDER BY id LIMIT 1").get();
+    const user = db.prepare(
+      "SELECT * FROM utenti WHERE codice_fiscale = ? LIMIT 1"
+    ).get(codice_fiscale);
 
-    if (user) {
-      if (!user.codice_fiscale) {
-        console.log("[RESET-PASS-REQ] Nessun CF → blocco");
-        return res.json({ success: false, error: "Dati non validi" });
-      }
-
-      console.log("[RESET-PASS-REQ] Vecchia password (mask):", mask(user.password_hash));
-      db.prepare("UPDATE utenti SET password_hash = '' WHERE id = ?").run(user.id);
-      console.log("[RESET-PASS-REQ] Password svuotata.");
+    if (!user) {
+      return res.json({ success: false, error: "Utente non trovato" });
     }
+
+    console.log("[RESET-PASS-REQ] Vecchia password (mask):", mask(user.password_hash));
+
+    db.prepare("UPDATE utenti SET password_hash = '' WHERE id = ?")
+      .run(user.id);
+
+    console.log("[RESET-PASS-REQ] Password svuotata.");
 
     return res.json({ success: true });
 
@@ -284,26 +289,25 @@ router.post("/reset-password-request", (req, res) => {
 });
 
 // =========================================================
-// RESET PASSWORD CONFIRM — ZERO-INPUT + CF CHECK
+// RESET PASSWORD CONFIRM — ZERO-INPUT + CF CHECK (PATCH 2026.40)
 // =========================================================
 router.post("/reset-password-confirm", (req, res) => {
-  let { nuova_password } = req.body || {};
+  let { nuova_password, codice_fiscale } = req.body || {};
 
   nuova_password = normalizePassword(nuova_password);
+  codice_fiscale = (codice_fiscale || "").trim().toUpperCase();
 
-  if (!nuova_password) {
+  if (!nuova_password || !codice_fiscale) {
     return res.json({ success: false, error: "Dati mancanti" });
   }
 
   try {
-    const user = db.prepare("SELECT * FROM utenti ORDER BY id LIMIT 1").get();
+    const user = db.prepare(
+      "SELECT * FROM utenti WHERE codice_fiscale = ? LIMIT 1"
+    ).get(codice_fiscale);
 
     if (!user) {
       return res.json({ success: false, error: "Utente non trovato" });
-    }
-
-    if (!user.codice_fiscale) {
-      return res.json({ success: false, error: "Dati non validi" });
     }
 
     console.log("[RESET-PASS-CONFIRM] Nuova password (mask):", mask(nuova_password));
@@ -315,7 +319,6 @@ router.post("/reset-password-confirm", (req, res) => {
 
     console.log("[RESET-PASS-CONFIRM] Password aggiornata.");
 
-    // ⭐ PATCH: Email conferma reset password
     inviaEmailCambioPassword({ email: user.email });
 
     return res.json({ success: true });
@@ -327,22 +330,31 @@ router.post("/reset-password-confirm", (req, res) => {
 });
 
 // =========================================================
-// RESET EMAIL REQUEST — ZERO-INPUT + CF CHECK
+// RESET EMAIL REQUEST — ZERO-INPUT + CF CHECK (PATCH 2026.40)
 // =========================================================
 router.post("/reset-email-request", (req, res) => {
+  let { codice_fiscale } = req.body || {};
+  codice_fiscale = (codice_fiscale || "").trim().toUpperCase();
+
+  if (!codice_fiscale || codice_fiscale.length !== 16) {
+    return res.json({ success: false, error: "Codice fiscale non valido" });
+  }
+
   try {
-    const user = db.prepare("SELECT * FROM utenti ORDER BY id LIMIT 1").get();
+    const user = db.prepare(
+      "SELECT * FROM utenti WHERE codice_fiscale = ? LIMIT 1"
+    ).get(codice_fiscale);
 
-    if (user) {
-      if (!user.codice_fiscale) {
-        console.log("[RESET-EMAIL-REQ] Nessun CF → blocco");
-        return res.json({ success: false, error: "Dati non validi" });
-      }
-
-      console.log("[RESET-EMAIL-REQ] Vecchia email:", maskEmail(user.email));
-      db.prepare("UPDATE utenti SET email = '' WHERE id = ?").run(user.id);
-      console.log("[RESET-EMAIL-REQ] Email svuotata.");
+    if (!user) {
+      return res.json({ success: false, error: "Utente non trovato" });
     }
+
+    console.log("[RESET-EMAIL-REQ] Vecchia email:", maskEmail(user.email));
+
+    db.prepare("UPDATE utenti SET email = '' WHERE id = ?")
+      .run(user.id);
+
+    console.log("[RESET-EMAIL-REQ] Email svuotata.");
 
     return res.json({ success: true });
 
@@ -353,26 +365,25 @@ router.post("/reset-email-request", (req, res) => {
 });
 
 // =========================================================
-// RESET EMAIL CONFIRM — ZERO-INPUT + CF CHECK + SESSION FIX
+// RESET EMAIL CONFIRM — ZERO-INPUT + CF CHECK + SESSION FIX (PATCH 2026.40)
 // =========================================================
 router.post("/reset-email-confirm", async (req, res) => {
-  let { nuova_email } = req.body || {};
+  let { nuova_email, codice_fiscale } = req.body || {};
 
   nuova_email = (nuova_email || "").trim().toLowerCase();
+  codice_fiscale = (codice_fiscale || "").trim().toUpperCase();
 
-  if (!nuova_email) {
+  if (!nuova_email || !codice_fiscale) {
     return res.json({ success: false, error: "Dati mancanti" });
   }
 
   try {
-    const user = db.prepare("SELECT * FROM utenti ORDER BY id LIMIT 1").get();
+    const user = db.prepare(
+      "SELECT * FROM utenti WHERE codice_fiscale = ? LIMIT 1"
+    ).get(codice_fiscale);
 
     if (!user) {
       return res.json({ success: false, error: "Utente non trovato" });
-    }
-
-    if (!user.codice_fiscale) {
-      return res.json({ success: false, error: "Dati non validi" });
     }
 
     console.log("[RESET-EMAIL-CONFIRM] Nuova email:", maskEmail(nuova_email));
@@ -404,9 +415,7 @@ router.post("/reset-email-confirm", async (req, res) => {
     console.error("Reset email confirm:", err);
     return res.json({ success: false, error: "Errore server" });
   }
-});
-
-// =========================================================
+}); // =========================================================
 // /me — DATI UTENTE PER DASHBOARD
 // =========================================================
 router.get("/me", (req, res) => {
