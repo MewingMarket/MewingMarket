@@ -38,6 +38,10 @@ btnResetEmail?.addEventListener("click", async () => {
     console.log("[RESET-EMAIL-REQ] Risposta:", data);
 
     if (data.success) {
+
+      // 🔥 QUESTA È LA RIGA CHE MANCAVA
+      localStorage.setItem("cf_reset", codice_fiscale);
+
       window.location.href = "reset-email-confirm.html";
       return;
     }
