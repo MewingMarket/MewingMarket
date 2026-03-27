@@ -1,6 +1,5 @@
 // =========================================================
-// RESET EMAIL REQUEST — Versione CF (2026.21)
-// Public route — richiede codice fiscale
+// RESET EMAIL REQUEST — Versione CF (2026.21) — PATCH
 // =========================================================
 
 console.log("[RESET-EMAIL-REQ] Versione CF caricata");
