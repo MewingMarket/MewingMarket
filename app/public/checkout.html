@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- CSS SPECIFICI PAGINA -->
+  <!-- CSS -->
   <link rel="stylesheet" href="header-shop.css">
   <link rel="stylesheet" href="checkout.css">
 </head>
@@ -21,25 +21,31 @@
 
   <h1>Checkout</h1>
 
+  <!-- STATISTICHE -->
   <div id="stats" class="box-standard">
     <p><strong>Totale carrello:</strong> <span id="totale"></span>€</p>
     <p><strong>Da pagare:</strong> <span id="da-pagare"></span>€</p>
   </div>
 
-  <div id="checkout-container"></div>
+  <!-- LISTA PRODOTTI -->
+  <div id="checkout-container" class="checkout-list"></div>
+
+  <!-- CTA -->
+  <div class="checkout-cta">
+    <button id="btnCheckout" class="btn-primario">Procedi al pagamento</button>
+  </div>
 
 </main>
 
 <!-- FOOTER DINAMICO -->
 <div id="footer-placeholder"></div>
 
-
-
 <!-- JS SPECIFICO -->
 <script src="checkout.js"></script>
 
 <!-- GLOBALI -->
 <script src="loader-header-footer.js"></script>
+<script src="auth.js"></script>
 <script src="seo.js"></script>
 <script src="structured-data.js"></script>
 <script src="tracking.js"></script>
