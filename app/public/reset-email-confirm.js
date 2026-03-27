@@ -1,6 +1,6 @@
 // =========================================================
-// RESET EMAIL CONFIRM — Versione ZERO-INPUT (2026.30)
-// PATCH: sessionState = 1
+// RESET EMAIL CONFIRM — Versione ZERO-INPUT (2026.40)
+// PATCH: sessionState = 1 + INVIO CF
 // =========================================================
 
 console.log("[RESET-EMAIL-CONFIRM] Versione ZERO-INPUT caricata");
@@ -10,12 +10,19 @@ const msgConfirmEmail = document.getElementById("msgConfirmEmail");
 
 btnConfirmEmail?.addEventListener("click", async () => {
   const nuova_email = document.getElementById("newEmail")?.value.trim().toLowerCase();
+  const codice_fiscale = document.getElementById("cf")?.value.trim().toUpperCase();
   const msg = msgConfirmEmail;
 
   if (!msg) return;
 
-  if (!nuova_email) {
-    msg.textContent = "Inserisci la nuova email.";
+  if (!nuova_email || !codice_fiscale) {
+    msg.textContent = "Compila tutti i campi.";
+    msg.className = "err";
+    return;
+  }
+
+  if (codice_fiscale.length !== 16) {
+    msg.textContent = "Codice fiscale non valido.";
     msg.className = "err";
     return;
   }
@@ -35,7 +42,7 @@ btnConfirmEmail?.addEventListener("click", async () => {
     const res = await fetch("/api/utenti/reset-email-confirm", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nuova_email })
+      body: JSON.stringify({ nuova_email, codice_fiscale })
     });
 
     const data = await res.json().catch(() => ({}));
