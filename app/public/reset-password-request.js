@@ -1,5 +1,5 @@
 // =========================================================
-// RESET PASSWORD REQUEST — Versione CF (2026.21) — PATCH
+// RESET PASSWORD REQUEST — Versione CF (2026.50) — ZERO-INPUT
 // =========================================================
 
 console.log("[RESET-PASSWORD-REQ] Versione CF caricata");
@@ -26,7 +26,7 @@ btnResetPassword?.addEventListener("click", async () => {
   msg.className = "msg";
 
   try {
-    console.log("[RESET-PASSWORD-REQ] Invio richiesta con CF…");
+    console.log("[RESET-PASSWORD-REQ] Invio richiesta con CF:", codice_fiscale);
 
     const res = await fetch("/api/utenti/reset-password-request", {
       method: "POST",
@@ -39,7 +39,7 @@ btnResetPassword?.addEventListener("click", async () => {
 
     if (data.success) {
 
-      // 🔥 QUESTA È LA RIGA CHE MANCAVA
+      // 🔥 ZERO-INPUT: salvo il CF per la pagina di conferma
       localStorage.setItem("cf_reset", codice_fiscale);
 
       window.location.href = "reset-password-confirm.html";
