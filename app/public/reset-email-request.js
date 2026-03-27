@@ -1,5 +1,5 @@
 // =========================================================
-// RESET EMAIL REQUEST — Versione CF (2026.21) — PATCH
+// RESET EMAIL REQUEST — Versione CF (2026.50) — ZERO-INPUT
 // =========================================================
 
 console.log("[RESET-EMAIL-REQ] Versione CF caricata");
@@ -26,7 +26,7 @@ btnResetEmail?.addEventListener("click", async () => {
   msg.className = "msg";
 
   try {
-    console.log("[RESET-EMAIL-REQ] Invio richiesta con CF…");
+    console.log("[RESET-EMAIL-REQ] Invio richiesta con CF:", codice_fiscale);
 
     const res = await fetch("/api/utenti/reset-email-request", {
       method: "POST",
@@ -39,7 +39,7 @@ btnResetEmail?.addEventListener("click", async () => {
 
     if (data.success) {
 
-      // 🔥 QUESTA È LA RIGA CHE MANCAVA
+      // 🔥 ZERO-INPUT: salvo il CF per la pagina di conferma
       localStorage.setItem("cf_reset", codice_fiscale);
 
       window.location.href = "reset-email-confirm.html";
