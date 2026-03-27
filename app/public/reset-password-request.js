@@ -38,6 +38,10 @@ btnResetPassword?.addEventListener("click", async () => {
     console.log("[RESET-PASSWORD-REQ] Risposta:", data);
 
     if (data.success) {
+
+      // 🔥 QUESTA È LA RIGA CHE MANCAVA
+      localStorage.setItem("cf_reset", codice_fiscale);
+
       window.location.href = "reset-password-confirm.html";
       return;
     }
