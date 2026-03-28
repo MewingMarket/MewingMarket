@@ -1,6 +1,6 @@
 /* =========================================================
    FILE: /public/carrello.js
-   CARRELLO SQL-READY — MODELLO DEFINITIVO (PATCH 2026)
+   CARRELLO SQL-READY — MODELLO DEFINITIVO (PATCH 2026.90)
 ========================================================= */
 
 const Cart = {
@@ -146,9 +146,6 @@ function aggiornaBadgeCarrello() {
   const badge = document.getElementById("cart-badge");
   if (!badge) return;
 
-  // ------------------------------
-  // 1) Homepage → badge SEMPRE nascosto
-  // ------------------------------
   const path = location.pathname.toLowerCase();
   const isHome =
     path === "/" ||
@@ -160,9 +157,6 @@ function aggiornaBadgeCarrello() {
     return;
   }
 
-  // ------------------------------
-  // 2) Shop → badge visibile solo se count > 0
-  // ------------------------------
   const count = Cart.count();
   badge.textContent = count;
 
@@ -189,3 +183,8 @@ document.addEventListener("click", (e) => {
 document.addEventListener("cart-updated", aggiornaBadgeCarrello);
 document.addEventListener("header-loaded", aggiornaBadgeCarrello);
 document.addEventListener("auth-ready", aggiornaBadgeCarrello);
+
+/* =========================================================
+   CART-READY — Segnala che Cart è pronto
+========================================================= */
+document.dispatchEvent(new Event("cart-ready"));
