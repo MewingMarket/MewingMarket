@@ -1,18 +1,44 @@
 // =========================================================
-// CHECKOUT.JS — Versione DEFINITIVA (2026.80)
-// Compatibile con auth-ready + Cart SQL-ready + /me
+// CHECKOUT.JS — Versione DEFINITIVA (2026.90)
+// Fix: attende cart-ready + auth-ready + verifica /me
 // =========================================================
 
 console.log("[CHECKOUT] Caricato");
 
-// Attende auth-ready PRIMA di iniziare
-document.addEventListener("auth-ready", initCheckout);
+let authOk = false;
+let cartOk = false;
+
+// --------------------------------------------------------
+// Attendi auth-ready
+// --------------------------------------------------------
+document.addEventListener("auth-ready", () => {
+  authOk = true;
+  tryStartCheckout();
+});
+
+// --------------------------------------------------------
+// Attendi cart-ready
+// --------------------------------------------------------
+document.addEventListener("cart-ready", () => {
+  cartOk = true;
+  tryStartCheckout();
+});
+
+// --------------------------------------------------------
+// Avvia checkout SOLO quando entrambi sono pronti
+// --------------------------------------------------------
+function tryStartCheckout() {
+  if (authOk && cartOk) {
+    console.log("[CHECKOUT] auth-ready + cart-ready → initCheckout()");
+    initCheckout();
+  }
+}
 
 async function initCheckout() {
   console.log("[CHECKOUT] initCheckout()");
 
   // -------------------------------------------------------
-  // 1) Verifica login tramite /me (fonte di verità)
+  // 1) Verifica login tramite /me
   // -------------------------------------------------------
   const token = localStorage.getItem("token");
 
@@ -49,9 +75,11 @@ async function initCheckout() {
   };
 
   // -------------------------------------------------------
-  // 2) Carica carrello
+  // 2) Carica carrello (ORA SICURO)
   // -------------------------------------------------------
-  const cart = (typeof Cart !== "undefined") ? Cart.get() : [];
+  const cart = Cart.get();
+
+  console.log("[CHECKOUT] Cart.get() →", cart);
 
   if (!Array.isArray(cart) || cart.length === 0) {
     console.warn("[CHECKOUT] Carrello vuoto → redirect catalogo");
@@ -128,7 +156,6 @@ async function initCheckout() {
         return;
       }
 
-      // Redirect PayPal
       window.location.href = data.approvalUrl;
 
     } catch (err) {
