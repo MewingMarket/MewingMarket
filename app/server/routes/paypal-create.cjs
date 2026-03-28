@@ -64,16 +64,31 @@ router.post("/paypal/create-order", authUser, async (req, res) => {
     }
 
     // =========================================================
-    // 2) CREA ORDINE PAYPAL (MODEL A)
+    // 2) CREA ORDINE PAYPAL — PATCH COMPLETA (SANDBOX + LIVE)
     // =========================================================
+
+    const MODE = process.env.PAYPAL_MODE || "sandbox";
+
+    const PAYPAL_API = MODE === "sandbox"
+      ? process.env.PAYPAL_SANDBOX_API
+      : process.env.PAYPAL_LIVE_API;
+
+    const CLIENT_ID = MODE === "sandbox"
+      ? process.env.PAYPAL_SANDBOX_CLIENT_ID
+      : process.env.PAYPAL_LIVE_CLIENT_ID;
+
+    const SECRET = MODE === "sandbox"
+      ? process.env.PAYPAL_SANDBOX_SECRET
+      : process.env.PAYPAL_LIVE_SECRET;
+
     const paypalRes = await fetch(
-      "https://api-m.paypal.com/v2/checkout/orders",
+      `${PAYPAL_API}/v2/checkout/orders`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Basic ${Buffer.from(
-            process.env.PAYPAL_CLIENT_ID + ":" + process.env.PAYPAL_SECRET
+            CLIENT_ID + ":" + SECRET
           ).toString("base64")}`
         },
         body: JSON.stringify({
