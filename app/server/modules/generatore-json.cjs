@@ -9,7 +9,7 @@
 const fs = require("fs");
 const path = require("path");
 
-// Catalogo SQL
+// Catalogo SQL (già patchato con categorie automatiche)
 const catalogo = require("../../modules/catalogo-sql.cjs");
 const db = require("../db/database.cjs");
 
@@ -22,16 +22,10 @@ const { LISTA_NEWSLETTER } = require("../modules/liste-brevo.cjs");
 // Percorsi
 // ---------------------------------------------------------
 
-// 1) Persistente (Render Disk)
 const DISK_DIR = "/var/data/json";
-
-// 2) Copia per il frontend (volatile)
 const PUBLIC_DIR = path.join(__dirname, "../../public/data");
-
-// PATCH — file persistente per tracciare ultimo prodotto inviato
 const LAST_NOVITA_FILE = path.join(DISK_DIR, "last-novita.json");
 
-// Crea entrambe le cartelle se mancano
 [DISK_DIR, PUBLIC_DIR].forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
@@ -46,10 +40,7 @@ function saveJSON(filename, data) {
   try {
     const json = JSON.stringify(data, null, 2);
 
-    // Persistente
     fs.writeFileSync(path.join(DISK_DIR, filename), json, "utf8");
-
-    // Copia volatile per il frontend
     fs.writeFileSync(path.join(PUBLIC_DIR, filename), json, "utf8");
 
     console.log(`💾 JSON aggiornato: ${filename}`);
@@ -63,21 +54,18 @@ function saveJSON(filename, data) {
 // ---------------------------------------------------------
 async function checkAndSendNovita() {
   try {
-    // 1) Ultimo prodotto dal DB
     const latest = db.prepare(`
       SELECT * FROM prodotti ORDER BY id DESC LIMIT 1
     `).get();
 
     if (!latest) return;
 
-    // 2) Ultimo prodotto già inviato
     let lastSentId = 0;
     if (fs.existsSync(LAST_NOVITA_FILE)) {
       const data = JSON.parse(fs.readFileSync(LAST_NOVITA_FILE, "utf8"));
       lastSentId = data?.lastId || 0;
     }
 
-    // 3) Nessuna novità → stop
     if (latest.id === lastSentId) {
       console.log("📭 Nessuna nuova novità da inviare");
       return;
@@ -85,7 +73,6 @@ async function checkAndSendNovita() {
 
     console.log("🔥 Nuovo prodotto rilevato → invio newsletter Novità");
 
-    // 4) Recupera iscritti lista 8 da Brevo
     const result = await axios.get(
       `https://api.brevo.com/v3/contacts/lists/${LISTA_NEWSLETTER}/contacts`,
       {
@@ -106,7 +93,6 @@ async function checkAndSendNovita() {
 
     console.log(`📨 Newsletter Novità inviata a ${count} iscritti`);
 
-    // 5) Aggiorna file persistente
     fs.writeFileSync(
       LAST_NOVITA_FILE,
       JSON.stringify({ lastId: latest.id }, null, 2),
@@ -119,15 +105,16 @@ async function checkAndSendNovita() {
 }
 
 // ---------------------------------------------------------
-// 1) Prodotti
+// 1) Prodotti — PATCH MINIMA
 // ---------------------------------------------------------
 async function exportProducts() {
   try {
+    // catalogo.getAllProducts() ora restituisce categoria: ARRAY
     const prodotti = await catalogo.getAllProducts();
+
     saveJSON("products.json", prodotti);
     console.log("✅ Prodotti esportati");
 
-    // PATCH — dopo export → controlla se c'è un nuovo prodotto
     await checkAndSendNovita();
 
   } catch (err) {
@@ -136,11 +123,13 @@ async function exportProducts() {
 }
 
 // ---------------------------------------------------------
-// 2) Categorie
+// 2) Categorie — PATCH MINIMA
 // ---------------------------------------------------------
 async function exportCategories() {
   try {
+    // catalogo.getAllCategories() ora restituisce array unificato multi-categoria
     const categorie = await catalogo.getAllCategories();
+
     saveJSON("categories.json", categorie);
     console.log("✅ Categorie esportate");
   } catch (err) {
