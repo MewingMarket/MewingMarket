@@ -2,7 +2,7 @@
  * =========================================================
  * File: app/server/modules/email-novita.cjs
  * Newsletter “Novità” basata su tabella prodotti (SQL)
- * PATCH 2026.60 — ID-based + link corretto prodotto.html?id=&utm_
+ * PATCH 2026.70 — Dominio corretto .it + link ID-based
  * =========================================================
  */
 
@@ -28,7 +28,7 @@ function escapeHTML(str) {
 /* =========================================================
    GENERA HTML NEWSLETTER NOVITÀ
    PATCH: link ID-based → prodotto.html?id=<ID>
-   FIX: UTM con & invece di ?
+   FIX: dominio corretto .it
 ========================================================= */
 function generateNovitaHTML(prod) {
   const titolo = escapeHTML(prod.titolo_breve || prod.titolo || "");
@@ -38,8 +38,8 @@ function generateNovitaHTML(prod) {
 
   const immagine = safeString(prod.immagine_url || "");
 
-  // Link base corretto
-  const link = `https://mewingmarket.com/prodotto.html?id=${prod.id}`;
+  // Link base corretto (DOMINIO .IT)
+  const link = `https://mewingmarket.it/prodotto.html?id=${prod.id}`;
 
   return `
 <html lang="it">
@@ -91,7 +91,7 @@ function generateNovitaHTML(prod) {
 
   <p style="font-size:14px; color:#777; text-align:center;">
     Se non vuoi più ricevere email, puoi disiscriverti qui:<br>
-    <a href="https://mewingmarket.com/disiscriviti.html" style="color:#999; text-decoration:underline;">Disiscriviti</a>
+    <a href="https://mewingmarket.it/disiscriviti.html" style="color:#999; text-decoration:underline;">Disiscriviti</a>
   </p>
 
 </div>
