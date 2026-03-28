@@ -1,7 +1,7 @@
 /* =========================================================
    File: app/server/routes/api-utenti.cjs
-   Versione: 2026.70 — CF obbligatorio + Admin via CF + ZERO-INPUT RESET
-   PATCH: nuova sessione in entrambi i reset + token/email restituiti
+   Versione: 2026.71 — CF obbligatorio + Admin via CF + ZERO-INPUT RESET
+   PATCH LOGIN: sessione stabile (non rigenera token se già esiste)
 ========================================================= */
 
 const express = require("express");
@@ -92,10 +92,8 @@ router.post("/registrazione", async (req, res) => {
     console.error("Registrazione:", err);
     return res.json({ success: false, error: "Errore server" });
   }
-});
-
-// =========================================================
-// LOGIN — SENZA CF
+}); // =========================================================
+// LOGIN — PATCH 2026.71 (sessione stabile)
 // =========================================================
 router.post("/login", (req, res) => {
   let { email, password } = req.body || {};
@@ -120,9 +118,18 @@ router.post("/login", (req, res) => {
       return res.json({ success: false, error: "Password errata" });
     }
 
-    const sessione = genToken("tok");
+    // =====================================================
+    // PATCH: NON rigenerare token se già esiste
+    // =====================================================
+    let sessione = user.sessione;
 
-    db.prepare("UPDATE utenti SET sessione = ? WHERE id = ?").run(sessione, user.id);
+    if (!sessione || sessione.length < 10) {
+      sessione = genToken("tok");
+      db.prepare("UPDATE utenti SET sessione = ? WHERE id = ?").run(sessione, user.id);
+      console.log("LOGIN PATCH → Nuova sessione generata:", sessione.substring(0, 6) + "****");
+    } else {
+      console.log("LOGIN PATCH → Sessione esistente mantenuta:", sessione.substring(0, 6) + "****");
+    }
 
     return res.json({
       success: true,
@@ -135,9 +142,7 @@ router.post("/login", (req, res) => {
     console.error("Login:", err);
     return res.json({ success: false, error: "Errore server" });
   }
-});
-
-// =========================================================
+}); // =========================================================
 // CAMBIO EMAIL
 // =========================================================
 router.post("/cambia-email", async (req, res) => {
@@ -255,9 +260,7 @@ router.post("/elimina-account", async (req, res) => {
     console.error("Eliminazione account:", err);
     return res.json({ success: false, error: "Errore server" });
   }
-});
-
-// =========================================================
+}); // =========================================================
 // RESET PASSWORD REQUEST — ZERO-INPUT + CF CHECK
 // =========================================================
 router.post("/reset-password-request", (req, res) => {
