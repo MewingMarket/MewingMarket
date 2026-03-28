@@ -1,7 +1,7 @@
 /* =========================================================
    File: app/server/routes/api-utenti.cjs
-   Versione: 2026.30 — CF obbligatorio + Admin via CF + ZERO-INPUT RESET
-   PATCH 2026.40 — Reset basato su CF, mai più ORDER BY id
+   Versione: 2026.70 — CF obbligatorio + Admin via CF + ZERO-INPUT RESET
+   PATCH: nuova sessione in entrambi i reset + token/email restituiti
 ========================================================= */
 
 const express = require("express");
@@ -134,8 +134,10 @@ router.post("/login", (req, res) => {
   } catch (err) {
     console.error("Login:", err);
     return res.json({ success: false, error: "Errore server" });
-  } 
-}); // =========================================================
+  }
+});
+
+// =========================================================
 // CAMBIO EMAIL
 // =========================================================
 router.post("/cambia-email", async (req, res) => {
@@ -253,8 +255,10 @@ router.post("/elimina-account", async (req, res) => {
     console.error("Eliminazione account:", err);
     return res.json({ success: false, error: "Errore server" });
   }
-}); // =========================================================
-// RESET PASSWORD REQUEST — ZERO-INPUT + CF CHECK (PATCH 2026.40)
+});
+
+// =========================================================
+// RESET PASSWORD REQUEST — ZERO-INPUT + CF CHECK
 // =========================================================
 router.post("/reset-password-request", (req, res) => {
   let { codice_fiscale } = req.body || {};
@@ -289,7 +293,7 @@ router.post("/reset-password-request", (req, res) => {
 });
 
 // =========================================================
-// RESET PASSWORD CONFIRM — ZERO-INPUT + CF CHECK (PATCH 2026.40)
+// RESET PASSWORD CONFIRM — ZERO-INPUT + CF CHECK (PATCH 2026.70)
 // =========================================================
 router.post("/reset-password-confirm", (req, res) => {
   let { nuova_password, codice_fiscale } = req.body || {};
@@ -310,18 +314,25 @@ router.post("/reset-password-confirm", (req, res) => {
       return res.json({ success: false, error: "Utente non trovato" });
     }
 
+    console.log("[RESET-PASS-CONFIRM] CF:", codice_fiscale, "→ id:", user.id, "email:", user.email);
     console.log("[RESET-PASS-CONFIRM] Nuova password (mask):", mask(nuova_password));
 
     const newHash = hash(nuova_password);
+    const newSession = genToken("tok");
 
-    db.prepare("UPDATE utenti SET password_hash = ? WHERE id = ?")
-      .run(newHash, user.id);
+    db.prepare("UPDATE utenti SET password_hash = ?, sessione = ? WHERE id = ?")
+      .run(newHash, newSession, user.id);
 
     console.log("[RESET-PASS-CONFIRM] Password aggiornata.");
+    console.log("[RESET-PASS-CONFIRM] Nuova sessione:", newSession.substring(0, 6) + "****");
 
     inviaEmailCambioPassword({ email: user.email });
 
-    return res.json({ success: true });
+    return res.json({
+      success: true,
+      token: newSession,
+      email: user.email
+    });
 
   } catch (err) {
     console.error("Reset password confirm:", err);
@@ -330,7 +341,7 @@ router.post("/reset-password-confirm", (req, res) => {
 });
 
 // =========================================================
-// RESET EMAIL REQUEST — ZERO-INPUT + CF CHECK (PATCH 2026.40)
+// RESET EMAIL REQUEST — ZERO-INPUT + CF CHECK
 // =========================================================
 router.post("/reset-email-request", (req, res) => {
   let { codice_fiscale } = req.body || {};
@@ -365,7 +376,7 @@ router.post("/reset-email-request", (req, res) => {
 });
 
 // =========================================================
-// RESET EMAIL CONFIRM — ZERO-INPUT + CF CHECK + SESSION FIX (PATCH 2026.40)
+// RESET EMAIL CONFIRM — ZERO-INPUT + CF CHECK (OK)
 // =========================================================
 router.post("/reset-email-confirm", async (req, res) => {
   let { nuova_email, codice_fiscale } = req.body || {};
@@ -415,7 +426,9 @@ router.post("/reset-email-confirm", async (req, res) => {
     console.error("Reset email confirm:", err);
     return res.json({ success: false, error: "Errore server" });
   }
-}); // =========================================================
+});
+
+// =========================================================
 // /me — DATI UTENTE PER DASHBOARD
 // =========================================================
 router.get("/me", (req, res) => {
