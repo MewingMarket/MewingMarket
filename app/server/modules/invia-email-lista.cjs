@@ -47,9 +47,8 @@ async function inviaEmailLista({ email, listId, subject, html, sender, attachmen
       htmlContent: html,
       sender: sender || {
         name: process.env.BREVO_SENDER_NAME || "MewingMarket",
-        email: process.env.BREVO_SENDER_VENDITE || "no-reply@mewingmarket.com"
+        email: process.env.BREVO_SENDER_VENDITE || "no-reply@mewingmarket.it" // ✔️ CORRETTO
       },
-      // ⭐ SOLO se ci sono allegati aggiungiamo "attachment"
       ...(attachments.length > 0
         ? {
             attachment: attachments.map(a => ({
