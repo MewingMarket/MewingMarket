@@ -98,12 +98,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (typeof aggiornaBadgeCarrello === "function") aggiornaBadgeCarrello();
 
   /* =========================================================
-     5) FEEDBACK
+     5) FEEDBACK → RECENSIONI
   ========================================================== */
   const fbBtn = document.getElementById("feedbackBtn");
   if (fbBtn) {
     fbBtn.addEventListener("click", () => {
-      window.location.href = `feedback.html?orderId=${orderId}`;
+      // Portiamo l’utente alla pagina recensioni
+      window.location.href = "recensioni.html";
     });
   }
 
