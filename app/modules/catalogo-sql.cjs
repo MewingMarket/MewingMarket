@@ -1,13 +1,15 @@
 // =========================================================
 // File: app/modules/catalogo-sql.cjs
 // Catalogo prodotti — Versione SQL definitiva (ID-based)
+// + CATEGORIE AUTOMATICHE MULTI-CATEGORIA (JSON STRING)
+// + Nessun pattern, nessuna lista, nessun fallback
 // =========================================================
 
 const path = require("path");
 const db = require(path.join(__dirname, "../server/db/database.cjs"));
 
 // =========================================================
-// GENERA TITOLO BREVE E DESCRIZIONE BREVE
+// UTILS: TITOLO BREVE + DESCRIZIONE BREVE
 // =========================================================
 function makeTitoloBreve(titolo) {
   if (!titolo) return "";
@@ -21,9 +23,68 @@ function makeDescrizioneBreve(descrizione) {
 }
 
 // =========================================================
-// NORMALIZZA PRODOTTO PER FRONTEND
+// CATEGORIE AUTOMATICHE — estrazione concetti
+// Nessuna lista, nessun pattern, nessun fallback
+// =========================================================
+function generaCategorieAutomatiche(titolo, descrizione = "") {
+  const testo = `${titolo} ${descrizione}`.toLowerCase();
+
+  // 1) Tokenizzazione
+  let tokens = testo
+    .replace(/[^a-zA-Z0-9àèéìòùç ]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean);
+
+  // 2) Stopwords italiane
+  const stopwords = new Set([
+    "il","lo","la","i","gli","le","un","una","uno",
+    "per","con","senza","che","dei","delle","degli",
+    "del","della","dallo","dai","dalle","dal",
+    "di","da","in","su","al","allo","alla","alle","agli",
+    "e","ed","ma","o","oppure","anche","come","più",
+    "meno","molto","poco","tanto","questo","quello",
+    "qui","lì","là","nei","nelle","negli","nel"
+  ]);
+
+  tokens = tokens.filter(t => t.length > 2 && !stopwords.has(t));
+
+  if (tokens.length === 0) return ["prodotto"];
+
+  // 3) Frequenza parole
+  const freq = {};
+  for (const t of tokens) {
+    freq[t] = (freq[t] || 0) + 1;
+  }
+
+  // 4) Ordina per rilevanza (frequenza + presenza nel titolo)
+  const titoloTokens = titolo.toLowerCase().split(/\s+/);
+
+  const scored = Object.entries(freq).map(([word, count]) => {
+    const inTitolo = titoloTokens.includes(word) ? 2 : 0;
+    return { word, score: count + inTitolo };
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+
+  // 5) Scegli dinamicamente 1–3 categorie
+  const categorie = scored.slice(0, Math.min(3, scored.length)).map(s => s.word);
+
+  return categorie;
+}
+
+// =========================================================
+// NORMALIZZAZIONE PRODOTTO
 // =========================================================
 function normalizeProduct(row) {
+  let categorie = [];
+
+  try {
+    categorie = JSON.parse(row.categoria || "[]");
+    if (!Array.isArray(categorie)) categorie = [];
+  } catch {
+    categorie = [];
+  }
+
   return {
     id: row.id,
 
@@ -33,11 +94,10 @@ function normalizeProduct(row) {
     descrizione_breve: row.descrizione_breve,
     descrizione_lunga: row.descrizione_lunga,
 
-    // 🔥 PATCH: esponiamo sia prezzo che prezzo_cent
     prezzo_cent: row.prezzo_cent,
     prezzo: row.prezzo_cent / 100,
 
-    categoria: row.categoria,
+    categoria: categorie, // ARRAY
 
     immagine: row.immagine_url,
     fileProdotto: row.file_consegna_url,
@@ -54,7 +114,7 @@ function normalizeProduct(row) {
 }
 
 // =========================================================
-// GET ALL PRODUCTS
+// GET ALL PRODUCTS — auto-fix categorie mancanti
 // =========================================================
 function getAllProducts() {
   const rows = db.prepare(`
@@ -63,11 +123,28 @@ function getAllProducts() {
     ORDER BY created_at DESC, id DESC
   `).all();
 
+  for (const r of rows) {
+    let categorie;
+
+    try {
+      categorie = JSON.parse(r.categoria || "[]");
+    } catch {
+      categorie = [];
+    }
+
+    if (!Array.isArray(categorie) || categorie.length === 0) {
+      const arr = generaCategorieAutomatiche(r.titolo, r.descrizione_lunga);
+      const json = JSON.stringify(arr);
+      db.prepare(`UPDATE prodotti SET categoria = ? WHERE id = ?`).run(json, r.id);
+      r.categoria = json;
+    }
+  }
+
   return rows.map(normalizeProduct);
 }
 
 // =========================================================
-// GET PRODUCT BY ID
+// GET PRODUCT BY ID — auto-fix categoria mancante
 // =========================================================
 function getProductById(id) {
   const row = db.prepare(`
@@ -76,25 +153,52 @@ function getProductById(id) {
     WHERE id = ?
   `).get(id);
 
-  return row ? normalizeProduct(row) : null;
+  if (!row) return null;
+
+  let categorie;
+
+  try {
+    categorie = JSON.parse(row.categoria || "[]");
+  } catch {
+    categorie = [];
+  }
+
+  if (!Array.isArray(categorie) || categorie.length === 0) {
+    const arr = generaCategorieAutomatiche(row.titolo, row.descrizione_lunga);
+    const json = JSON.stringify(arr);
+    db.prepare(`UPDATE prodotti SET categoria = ? WHERE id = ?`).run(json, id);
+    row.categoria = json;
+  }
+
+  return normalizeProduct(row);
 }
 
 // =========================================================
-// GET ALL CATEGORIES (DISTINCT, ORDINATE)
+// GET ALL CATEGORIES — unione di tutte le categorie reali
 // =========================================================
 function getAllCategories() {
   const rows = db.prepare(`
-    SELECT DISTINCT categoria
+    SELECT categoria
     FROM prodotti
     WHERE categoria IS NOT NULL AND TRIM(categoria) <> ''
-    ORDER BY categoria COLLATE NOCASE ASC
   `).all();
 
-  return rows.map(r => r.categoria);
+  const set = new Set();
+
+  for (const r of rows) {
+    try {
+      const arr = JSON.parse(r.categoria);
+      if (Array.isArray(arr)) {
+        arr.forEach(c => set.add(c));
+      }
+    } catch {}
+  }
+
+  return Array.from(set).sort((a, b) => a.localeCompare(b));
 }
 
 // =========================================================
-// SAVE PRODUCT (CREATE OR UPDATE)
+// SAVE PRODUCT — genera categorie se mancanti
 // =========================================================
 function saveProduct(data) {
   const titolo = (data.titolo || "").trim();
@@ -105,7 +209,15 @@ function saveProduct(data) {
   const immagine_url = (data.immagine || "").trim() || null;
   const file_consegna_url = (data.fileProdotto || "").trim() || null;
 
-  const categoria = (data.categoria || "").trim() || null;
+  // CATEGORIE AUTOMATICHE
+  let categorie = data.categoria;
+
+  if (!categorie) {
+    const arr = generaCategorieAutomatiche(titolo, descrizione_lunga);
+    categorie = JSON.stringify(arr); // JSON minificato
+  } else if (Array.isArray(categorie)) {
+    categorie = JSON.stringify(categorie);
+  }
 
   if (!titolo || !prezzo_cent) {
     throw new Error("Titolo e prezzo sono obbligatori");
@@ -136,7 +248,7 @@ function saveProduct(data) {
       prezzo_cent,
       descrizione_breve,
       descrizione_lunga,
-      categoria,
+      categorie,
       immagine_url,
       file_consegna_url,
       now,
@@ -166,7 +278,7 @@ function saveProduct(data) {
     prezzo_cent,
     descrizione_breve,
     descrizione_lunga,
-    categoria,
+    categorie,
     immagine_url,
     file_consegna_url,
     now,
@@ -177,7 +289,7 @@ function saveProduct(data) {
 }
 
 // =========================================================
-// DELETE PRODUCT (ID)
+// DELETE PRODUCT
 // =========================================================
 function deleteProduct(id) {
   const result = db.prepare(`
