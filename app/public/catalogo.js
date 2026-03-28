@@ -81,7 +81,7 @@ function getImage(p) {
 }
 
 /* =========================================================
-   7) CARD PRODOTTO
+   7) CARD PRODOTTO — PATCH MULTI-CATEGORIA
 ========================================================= */
 function cardHTML(p) {
   const img = getImage(p);
@@ -91,12 +91,15 @@ function cardHTML(p) {
   const prezzo_cent = Number(p.prezzo_cent) || 0;
   const prezzo = prezzo_cent / 100;
 
-  const categoria = clean(p.categoria || "");
+  // PATCH: categorie = array → convertiamo in stringa per data-attribute
+  const categorie = Array.isArray(p.categoria) ? p.categoria : [];
+  const categorieAttr = categorie.map(clean).join(" ");
+
   const id = p.id;
   const slug = p.slug || "";
 
   return `
-    <div class="product-card" data-cat="${categoria}" data-prezzo="${prezzo}" data-id="${id}">
+    <div class="product-card" data-cat="${categorieAttr}" data-prezzo="${prezzo}" data-id="${id}">
       <img src="${img}" alt="${titoloBreve}" loading="lazy">
       <h2>${titoloBreve}</h2>
       <p>${descrizione}</p>
@@ -139,11 +142,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (!container || !categorieBox) return;
 
   /* ------------------------------
-     CATEGORIE DINAMICHE
+     CATEGORIE DINAMICHE — PATCH MULTI-CATEGORIA
   ------------------------------ */
   let categorie = categoriesFromJson.length
     ? categoriesFromJson
-    : [...new Set(products.map(p => p.categoria || ""))].filter(Boolean);
+    : [...new Set(products.flatMap(p => Array.isArray(p.categoria) ? p.categoria : []))];
 
   categorieBox.innerHTML = categorie.length
     ? categorie.map(cat => `<button class="btn btn-cat" data-cat="${clean(cat)}">${clean(cat)}</button>`).join("")
@@ -157,14 +160,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     : "<p>Nessun prodotto disponibile.</p>";
 
   /* ------------------------------
-     FILTRO CATEGORIA
+     FILTRO CATEGORIA — PATCH MULTI-CATEGORIA
   ------------------------------ */
   categorieBox.addEventListener("click", e => {
     const cat = e.target.dataset.cat;
     if (!cat) return;
 
     document.querySelectorAll(".product-card").forEach(card => {
-      card.style.display = card.dataset.cat === cat ? "block" : "none";
+      const cats = card.dataset.cat.split(" ");
+      card.style.display = cats.includes(cat) ? "block" : "none";
     });
   });
 
