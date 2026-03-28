@@ -164,7 +164,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /* =========================================================
-     9) CORRELATI (filtrati lato client)
+     9) CORRELATI — PATCH MULTI-CATEGORIA
   ========================================================= */
   try {
     const res = await fetch(`/api/products`, { cache: "no-store" });
@@ -173,8 +173,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     const relatedBox = document.getElementById("related");
 
     if (data.success && Array.isArray(data.prodotti)) {
+
+      const categorieProdotto = Array.isArray(p.categoria) ? p.categoria : [];
+
       const correlati = data.prodotti
-        .filter((x) => x.id !== p.id && x.categoria === p.categoria)
+        .filter(x => x.id !== p.id)
+        .filter(x => {
+          const cats = Array.isArray(x.categoria) ? x.categoria : [];
+          return cats.some(c => categorieProdotto.includes(c));
+        })
         .slice(0, 4);
 
       relatedBox.innerHTML = correlati.length
