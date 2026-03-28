@@ -52,7 +52,7 @@ router.get("/paypal/complete-order", async (req, res) => {
     }
 
     // =========================================================
-    // 2) RECUPERA EMAIL UTENTE DAL DB (NO req.user)
+    // 2) RECUPERA EMAIL UTENTE DAL DB
     // =========================================================
     const stmtUser = db.prepare(`
       SELECT email
@@ -80,16 +80,31 @@ router.get("/paypal/complete-order", async (req, res) => {
     }
 
     // =========================================================
-    // 4) CATTURA PAGAMENTO PAYPAL
+    // 4) CATTURA PAGAMENTO PAYPAL — PATCH COMPLETA
     // =========================================================
+
+    const MODE = process.env.PAYPAL_MODE || "sandbox";
+
+    const PAYPAL_API = MODE === "sandbox"
+      ? process.env.PAYPAL_SANDBOX_API
+      : process.env.PAYPAL_LIVE_API;
+
+    const CLIENT_ID = MODE === "sandbox"
+      ? process.env.PAYPAL_SANDBOX_CLIENT_ID
+      : process.env.PAYPAL_LIVE_CLIENT_ID;
+
+    const SECRET = MODE === "sandbox"
+      ? process.env.PAYPAL_SANDBOX_SECRET
+      : process.env.PAYPAL_LIVE_SECRET;
+
     const captureRes = await fetch(
-      `https://api-m.paypal.com/v2/checkout/orders/${paypalId}/capture`,
+      `${PAYPAL_API}/v2/checkout/orders/${paypalId}/capture`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Basic ${Buffer.from(
-            process.env.PAYPAL_CLIENT_ID + ":" + process.env.PAYPAL_SECRET
+            CLIENT_ID + ":" + SECRET
           ).toString("base64")}`
         }
       }
@@ -145,7 +160,7 @@ router.get("/paypal/complete-order", async (req, res) => {
     };
 
     // =========================================================
-    // 7) SALVA VENDITE (una riga per prodotto)
+    // 7) SALVA VENDITE
     // =========================================================
     const stmtVendita = db.prepare(`
       INSERT INTO vendite (
