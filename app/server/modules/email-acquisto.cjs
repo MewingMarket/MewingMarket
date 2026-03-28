@@ -100,9 +100,9 @@ async function inviaEmailAcquisto({ email, ordine }) {
         <h2 style="font-size:18px;margin-bottom:8px;">⭐ LASCIA UNA RECENSIONE</h2>
         <p style="margin:0 0 12px 0;">
           Il tuo feedback è prezioso:<br>
-          👉 <a href="https://mewingmarket.it/recensione.html" 
+          👉 <a href="https://mewingmarket.it/recensioni.html" 
                 style="color:#38bdf8;text-decoration:underline;">
-               https://mewingmarket.it/recensione.html
+               https://mewingmarket.it/recensioni.html
              </a>
         </p>
 
@@ -159,7 +159,7 @@ async function inviaEmailAcquisto({ email, ordine }) {
     pdfInternoConBollo
   } = await generaRicevuteFiscali(ordineConEmail);
 
-  // 1) EMAIL AL CLIENTE (con PDF generico)
+  // 1) EMAIL AL CLIENTE
   await inviaEmailLista({
     email,
     listId: LISTA_CLIENTI,
@@ -175,7 +175,7 @@ async function inviaEmailAcquisto({ email, ordine }) {
     ]
   });
 
-  // 2) EMAIL INTERNA A TE (due PDF: con e senza marca da bollo)
+  // 2) EMAIL INTERNA A TE
   const htmlOwner = `
     <html>
       <body style="font-family: system-ui; background:#020617; color:#e5e7eb; padding:24px;">
