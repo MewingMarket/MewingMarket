@@ -1,5 +1,5 @@
 // =========================================================
-// AUTH-USER.CJS — Versione 2026.31 (PATCH STABILITÀ TOKEN)
+// AUTH-USER.CJS — Versione 2026.32 (PATCH STABILITÀ + ID UTENTE)
 // Compatibile better-sqlite3 + sessioni SQL + CF
 // =========================================================
 
@@ -95,7 +95,7 @@ module.exports = function authUser(req, res, next) {
     }
 
     // =====================================================
-    // VERIFICA TOKEN SQL
+    // VERIFICA TOKEN SQL (PATCH: includiamo id)
     // =====================================================
     const db = req.db || req.app.get("db");
     if (!db) {
@@ -106,7 +106,7 @@ module.exports = function authUser(req, res, next) {
     let row;
     try {
       row = db.prepare(
-        "SELECT email, ruolo, codice_fiscale FROM utenti WHERE sessione = ? LIMIT 1"
+        "SELECT id, email, ruolo, codice_fiscale FROM utenti WHERE sessione = ? LIMIT 1"
       ).get(token);
     } catch (err) {
       console.error("AUTH SQL ERROR:", err);
@@ -123,9 +123,10 @@ module.exports = function authUser(req, res, next) {
     }
 
     // =====================================================
-    // UTENTE OK
+    // UTENTE OK (PATCH: includiamo id)
     // =====================================================
     req.user = {
+      id: row.id,
       email: row.email,
       ruolo: row.ruolo,
       codice_fiscale: row.codice_fiscale
