@@ -1,5 +1,5 @@
 // =========================================================
-// AUTH-USER.CJS — Versione 2026.30
+// AUTH-USER.CJS — Versione 2026.31 (PATCH STABILITÀ TOKEN)
 // Compatibile better-sqlite3 + sessioni SQL + CF
 // =========================================================
 
@@ -78,22 +78,24 @@ module.exports = function authUser(req, res, next) {
     }
 
     // =====================================================
-    // TUTTO IL RESTO RICHIEDE TOKEN
+    // TOKEN (se manca → guest)
     // =====================================================
     const authHeader = req.headers["authorization"];
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      console.log("AUTH DEBUG → BLOCCO: Token mancante");
-      return res.status(401).json({ error: "Token mancante" });
+      console.log("AUTH DEBUG → Nessun token → guest");
+      req.user = null;
+      return next();
     }
 
     const token = authHeader.replace("Bearer ", "").trim();
     if (!token) {
-      console.log("AUTH DEBUG → BLOCCO: Token vuoto");
-      return res.status(401).json({ error: "Token mancante" });
+      console.log("AUTH DEBUG → Token vuoto → guest");
+      req.user = null;
+      return next();
     }
 
     // =====================================================
-    // VERIFICA TOKEN SQL — VERSIONE CORRETTA better-sqlite3
+    // VERIFICA TOKEN SQL
     // =====================================================
     const db = req.db || req.app.get("db");
     if (!db) {
@@ -111,11 +113,18 @@ module.exports = function authUser(req, res, next) {
       return res.status(500).json({ error: "Errore server" });
     }
 
+    // =====================================================
+    // PATCH: TOKEN NON VALIDO → NON BLOCCARE
+    // =====================================================
     if (!row) {
-      console.log("AUTH DEBUG → BLOCCO: Sessione non valida");
-      return res.status(401).json({ error: "Sessione non valida" });
+      console.log("AUTH DEBUG → Token non valido → guest");
+      req.user = null;
+      return next();
     }
 
+    // =====================================================
+    // UTENTE OK
+    // =====================================================
     req.user = {
       email: row.email,
       ruolo: row.ruolo,
