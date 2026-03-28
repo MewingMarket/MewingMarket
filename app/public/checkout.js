@@ -1,6 +1,6 @@
 // =========================================================
-// CHECKOUT.JS — Versione DEFINITIVA (2026)
-// Compatibile con auth-ready + Cart SQL-ready
+// CHECKOUT.JS — Versione DEFINITIVA (2026.80)
+// Compatibile con auth-ready + Cart SQL-ready + /me
 // =========================================================
 
 console.log("[CHECKOUT] Caricato");
@@ -12,17 +12,33 @@ async function initCheckout() {
   console.log("[CHECKOUT] initCheckout()");
 
   // -------------------------------------------------------
-  // 1) Verifica login
+  // 1) Verifica login tramite /me (fonte di verità)
   // -------------------------------------------------------
-  if (typeof isLogged !== "function" || !isLogged()) {
-    console.warn("[CHECKOUT] Utente non loggato → redirect login");
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    console.warn("[CHECKOUT] Nessun token → redirect login");
     window.location.href = "login.html";
     return;
   }
 
-  const token = localStorage.getItem("token");
-  if (!token) {
-    console.warn("[CHECKOUT] Nessun token → redirect login");
+  try {
+    const res = await fetch("/api/utenti/me", {
+      headers: { "Authorization": "Bearer " + token }
+    });
+
+    const data = await res.json();
+
+    if (!data.success) {
+      console.warn("[CHECKOUT] Sessione non valida → redirect login");
+      window.location.href = "login.html";
+      return;
+    }
+
+    console.log("[CHECKOUT] Utente verificato:", data.utente.email);
+
+  } catch (err) {
+    console.error("[CHECKOUT] Errore verifica sessione:", err);
     window.location.href = "login.html";
     return;
   }
