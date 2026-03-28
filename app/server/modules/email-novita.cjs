@@ -2,7 +2,7 @@
  * =========================================================
  * File: app/server/modules/email-novita.cjs
  * Newsletter “Novità” basata su tabella prodotti (SQL)
- * PATCH 2026 — ID-based + link corretto prodotto.html?id=
+ * PATCH 2026.60 — ID-based + link corretto prodotto.html?id=&utm_
  * =========================================================
  */
 
@@ -28,6 +28,7 @@ function escapeHTML(str) {
 /* =========================================================
    GENERA HTML NEWSLETTER NOVITÀ
    PATCH: link ID-based → prodotto.html?id=<ID>
+   FIX: UTM con & invece di ?
 ========================================================= */
 function generateNovitaHTML(prod) {
   const titolo = escapeHTML(prod.titolo_breve || prod.titolo || "");
@@ -35,13 +36,9 @@ function generateNovitaHTML(prod) {
     prod.descrizione_breve || prod.descrizione_lunga || ""
   );
 
-  // PATCH: immagine sicura
   const immagine = safeString(prod.immagine_url || "");
 
-  // ❌ PRIMA (ROTTO, slug non esiste):
-  // const link = `https://mewingmarket.com/prodotto/${prod.slug}`;
-
-  // ✅ ORA (ID-based, coerente con tutto il sistema):
+  // Link base corretto
   const link = `https://mewingmarket.com/prodotto.html?id=${prod.id}`;
 
   return `
@@ -84,7 +81,7 @@ function generateNovitaHTML(prod) {
   }
 
   <p style="text-align:center;">
-    <a href="${link}?utm_source=brevo&utm_campaign=novita&utm_medium=email" 
+    <a href="${link}&utm_source=brevo&utm_campaign=novita&utm_medium=email" 
        style="background:#28a745; color:white; padding:14px 24px; border-radius:6px; text-decoration:none; font-size:16px; display:inline-block;">
        SCOPRI IL NUOVO CONTENUTO
     </a>
@@ -108,7 +105,6 @@ function generateNovitaHTML(prod) {
 ========================================================= */
 async function inviaEmailNovita({ email }) {
   try {
-    // Recupera l’ultimo prodotto inserito
     const stmt = db.prepare(`
       SELECT *
       FROM prodotti
