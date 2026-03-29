@@ -1,6 +1,6 @@
 /* =========================================================
    FILE: /public/download.js
-   DOWNLOAD PREMIUM — Versione 2026.30
+   DOWNLOAD PREMIUM — Versione 2026.30 + PATCH refresh_dashboard
    SQL READY + ID-based + metadata + fallback
 ========================================================= */
 
@@ -92,4 +92,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     body.appendChild(tr);
   });
+});
+
+/* =========================================================
+   PATCH — refresh_dashboard dopo click su download
+========================================================= */
+document.addEventListener("click", e => {
+  if (e.target.classList.contains("btn-download")) {
+    window.postMessage("refresh_dashboard");
+  }
 });
