@@ -1,7 +1,8 @@
 // =========================================================
-// CHECKOUT.JS — Versione DEFINITIVA (2026.91)
-// Fix: attende cart-ready + auth-ready + verifica /me
-// + DEBUG COMPLETO PRIMA DELLA FETCH
+// CHECKOUT.JS — Versione DEFINITIVA (2026.92)
+// Fix: invio corretto a create-order (email + prodotti + totale)
+// Fix: debug completo
+// Fix: slug eliminato dal carrello
 // =========================================================
 
 console.log("[CHECKOUT] Caricato");
@@ -156,21 +157,26 @@ async function initCheckout() {
 
       const payload = Cart.getForCheckout();
 
+      // 🔥 PATCH DEFINITIVA → invio corretto al backend
       const res = await fetch("/api/paypal/create-order", {
         method: "POST",
         headers: authHeaders,
-        body: JSON.stringify({ carrello: payload })
+        body: JSON.stringify({
+          email: utenteEmail,
+          prodotti: payload,
+          totale: totaleEuro
+        })
       });
 
       const data = await res.json().catch(() => ({}));
       console.log("[CHECKOUT] Risposta create-order:", data);
 
-      if (!data.success || !data.id) {
+      if (!data.success || !data.paypalUrl) {
         alert("Errore nella creazione dell'ordine.");
         return;
       }
 
-      window.location.href = data.approvalUrl;
+      window.location.href = data.paypalUrl;
 
     } catch (err) {
       console.error("[CHECKOUT] Errore:", err);
