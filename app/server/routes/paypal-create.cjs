@@ -110,7 +110,18 @@ router.post("/paypal/create-order", authUser, async (req, res) => {
       }
     );
 
-    const paypalData = await paypalRes.json().catch(() => null);
+    // =========================================================
+    // 🔥 PATCH: LOG RAW PAYPAL RESPONSE
+    // =========================================================
+    const raw = await paypalRes.text();
+    console.log("PAYPAL RAW RESPONSE:", raw);
+
+    let paypalData = null;
+    try {
+      paypalData = JSON.parse(raw);
+    } catch (err) {
+      console.log("PAYPAL JSON PARSE ERROR:", err);
+    }
 
     if (!paypalData || !paypalData.id) {
       return res.json({
