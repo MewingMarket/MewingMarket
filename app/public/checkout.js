@@ -1,6 +1,7 @@
 // =========================================================
-// CHECKOUT.JS — Versione DEFINITIVA (2026.90)
+// CHECKOUT.JS — Versione DEFINITIVA (2026.91)
 // Fix: attende cart-ready + auth-ready + verifica /me
+// + DEBUG COMPLETO PRIMA DELLA FETCH
 // =========================================================
 
 console.log("[CHECKOUT] Caricato");
@@ -48,6 +49,8 @@ async function initCheckout() {
     return;
   }
 
+  let utenteEmail = null;
+
   try {
     const res = await fetch("/api/utenti/me", {
       headers: { "Authorization": "Bearer " + token }
@@ -61,7 +64,8 @@ async function initCheckout() {
       return;
     }
 
-    console.log("[CHECKOUT] Utente verificato:", data.utente.email);
+    utenteEmail = data.utente.email;
+    console.log("[CHECKOUT] Utente verificato:", utenteEmail);
 
   } catch (err) {
     console.error("[CHECKOUT] Errore verifica sessione:", err);
@@ -134,10 +138,21 @@ async function initCheckout() {
   if (!btn) return;
 
   btn.onclick = async () => {
-    btn.disabled = true;
 
     try {
       console.log("[CHECKOUT] Creazione ordine PayPal…");
+
+      // 🔥 DEBUG COMPLETO PRIMA DELLA FETCH
+      console.log("======================================");
+      console.log("[CHECKOUT] DEBUG PRIMA DELLA FETCH");
+      console.log("Email:", utenteEmail);
+      console.log("Token:", localStorage.getItem("token"));
+      console.log("SessionState:", localStorage.getItem("sessionState"));
+      console.log("isLogged:", window.isLogged);
+      console.log("Cart.get():", Cart.get());
+      console.log("Cart.getForCheckout():", Cart.getForCheckout());
+      console.log("Totale:", totaleEuro);
+      console.log("======================================");
 
       const payload = Cart.getForCheckout();
 
@@ -152,7 +167,6 @@ async function initCheckout() {
 
       if (!data.success || !data.id) {
         alert("Errore nella creazione dell'ordine.");
-        btn.disabled = false;
         return;
       }
 
@@ -161,8 +175,6 @@ async function initCheckout() {
     } catch (err) {
       console.error("[CHECKOUT] Errore:", err);
       alert("Errore di connessione.");
-    } finally {
-      btn.disabled = false;
     }
   };
 }
