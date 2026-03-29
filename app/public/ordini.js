@@ -1,6 +1,6 @@
 /* =========================================================
    FILE: /public/ordini.js
-   ORDINI PREMIUM — Versione 2026.30
+   ORDINI PREMIUM — Versione 2026.30 + PATCH refresh_dashboard
    SQL READY + ID-based + metadata + UX migliorata
 ========================================================= */
 
@@ -72,7 +72,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   /* =========================================================
-     3) Annulla ordine (SQL READY)
+     3) Annulla ordine (SQL READY + PATCH refresh_dashboard)
   ========================================================== */
   body.addEventListener("click", async e => {
     if (!e.target.classList.contains("btn-annulla")) return;
@@ -99,7 +99,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       alert("Ordine annullato.");
-      location.reload();
+
+      // PATCH: niente reload → aggiorna dashboard
+      window.postMessage("refresh_dashboard");
 
     } catch (err) {
       console.error("Errore annullamento ordine:", err);
