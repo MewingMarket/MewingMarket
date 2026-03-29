@@ -1,6 +1,7 @@
 // =========================================================
-// DASHBOARD.JS — Versione FINALE (2026.10)
+// DASHBOARD.JS — Versione FINALE (2026.10 + PATCH 2026.40)
 // Compatibile con auth-user + api-utenti.cjs + sessionState
+// + updateOrdersUI() + updateDownloadsUI() + refresh_dashboard
 // =========================================================
 
 console.log("[DASHBOARD] Caricato");
@@ -152,3 +153,117 @@ function logoutAndRedirect() {
   localStorage.setItem("sessionState", "0");
   window.location.href = "login.html";
 }
+
+// =========================================================
+// PATCH — updateOrdersUI() + updateDownloadsUI()
+// =========================================================
+
+async function updateOrdersUI(ordini = null) {
+  const token = localStorage.getItem("token");
+  const container = document.getElementById("ordersList");
+
+  if (!token) {
+    container.innerHTML = "<p>Non loggato.</p>";
+    return;
+  }
+
+  // Se non arrivano ordini da initDashboard → li ricarico
+  if (!ordini) {
+    try {
+      const res = await fetch("/api/ordini/utente", {
+        headers: { "Authorization": "Bearer " + token }
+      });
+      const data = await res.json();
+      ordini = data.ordini || [];
+    } catch {
+      ordini = [];
+    }
+  }
+
+  if (!Array.isArray(ordini) || ordini.length === 0) {
+    container.innerHTML = "<p>Nessun ordine trovato.</p>";
+    return;
+  }
+
+  container.innerHTML = ordini
+    .map(o => {
+      const prodottiHTML = o.prodotti
+        .map(p => {
+          const prezzo = (p.prezzo_cent / 100).toFixed(2);
+          const titolo = p.titolo || p.titolo_breve || "Prodotto digitale";
+          return `${titolo} (${prezzo}€ × ${p.qty || 1})`;
+        })
+        .join("<br>");
+
+      const totaleEuro = (o.totale_cent / 100).toFixed(2);
+
+      return `
+        <div class="ordine-box">
+          <div><strong>Data:</strong> ${new Date(o.data).toLocaleDateString("it-IT")}</div>
+          <div><strong>Prodotti:</strong><br>${prodottiHTML}</div>
+          <div><strong>Totale:</strong> ${totaleEuro}€</div>
+          <div><strong>Stato:</strong> ${o.stato}</div>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+async function updateDownloadsUI(download = null) {
+  const token = localStorage.getItem("token");
+  const container = document.getElementById("downloadsList");
+
+  if (!token) {
+    container.innerHTML = "<p>Non loggato.</p>";
+    return;
+  }
+
+  // Se non arrivano download da initDashboard → li ricarico
+  if (!download) {
+    try {
+      const res = await fetch("/api/ordini/utente", {
+        headers: { "Authorization": "Bearer " + token }
+      });
+      const data = await res.json();
+      const completati = (data.ordini || []).filter(o => o.stato === "completato");
+      download = completati.flatMap(o => o.prodotti);
+    } catch {
+      download = [];
+    }
+  }
+
+  if (!Array.isArray(download) || download.length === 0) {
+    container.innerHTML = "<p>Nessun download disponibile.</p>";
+    return;
+  }
+
+  container.innerHTML = download
+    .map(p => {
+      const titolo = p.titolo || p.titolo_breve || "Prodotto digitale";
+      return `
+        <div class="download-box">
+          <div><strong>${titolo}</strong></div>
+          <a class="btn-download" href="/api/vendite/download/${p.prodotto_id}">
+            Scarica
+          </a>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+// =========================================================
+// PATCH — refresh automatico dopo eventi
+// =========================================================
+window.addEventListener("message", async (event) => {
+  if (!event.data) return;
+
+  if (
+    event.data === "refresh_dashboard" ||
+    event.data === "paypal_complete" ||
+    event.data === "paypal_cancel"
+  ) {
+    await updateOrdersUI();
+    await updateDownloadsUI();
+  }
+});
