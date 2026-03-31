@@ -1,30 +1,34 @@
 /* =========================================================
-   FILE: /public/download.js
-   DOWNLOAD PREMIUM — Versione 2026.30 + PATCH refresh_dashboard
-   SQL READY + ID-based + metadata + fallback
+   DOWNLOAD PREMIUM — Versione 2026.95
+   - Sicuro
+   - Token Bearer
+   - sessionState = 1
+   - Download via fetch + blob
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", async () => {
-  const session = localStorage.getItem("session");
-  const email = localStorage.getItem("utenteEmail");
+  const token = localStorage.getItem("token");
+  const sessionState = localStorage.getItem("sessionState");
 
   const body = document.getElementById("downloadBody");
 
-  if (!session || !email) {
+  // =========================================================
+  // 1) Protezione login
+  // =========================================================
+  if (!token || sessionState !== "1") {
     body.innerHTML = `<tr><td colspan="3">Devi effettuare il login.</td></tr>`;
     return;
   }
 
-  /* =========================================================
-     1) Recupera ordini dell’utente
-  ========================================================== */
+  // =========================================================
+  // 2) Recupera ordini utente
+  // =========================================================
   let data;
   try {
     const res = await fetch("/api/ordini/utente", {
-      headers: { 
-        "Authorization": `Bearer ${session}`
-      }
+      headers: { Authorization: "Bearer " + token }
     });
+
     data = await res.json();
   } catch (err) {
     console.error("Errore fetch /ordini/utente:", err);
@@ -37,9 +41,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  /* =========================================================
-     2) Estrai prodotti acquistati (ID-based + metadata)
-  ========================================================== */
+  // =========================================================
+  // 3) Estrai prodotti acquistati
+  // =========================================================
   const prodotti = [];
 
   data.ordini.forEach(o => {
@@ -48,8 +52,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         prodotti.push({
           prodotto_id: p.prodotto_id,
           titolo: p.titolo || p.titolo_breve || "Prodotto digitale",
-          data: o.data,
-          file_consegna_url: p.file_consegna_url || null
+          data: o.data_ordine || o.data || null
         });
       });
     }
@@ -60,9 +63,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  /* =========================================================
-     3) Rimuovi duplicati (stesso prodotto acquistato più volte)
-  ========================================================== */
+  // =========================================================
+  // 4) Deduplica prodotti
+  // =========================================================
   const unici = [];
   const visti = new Set();
 
@@ -73,32 +76,57 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  /* =========================================================
-     4) Mostra prodotti + link download sicuro (ID + token)
-  ========================================================== */
+  // =========================================================
+  // 5) Render tabella + download sicuro
+  // =========================================================
   unici.forEach(p => {
     const tr = document.createElement("tr");
 
     tr.innerHTML = `
       <td>${p.titolo}</td>
-      <td>${new Date(p.data).toLocaleDateString("it-IT")}</td>
-      <td>
-        <a class="btn-download" 
-           href="/api/vendite/download/${p.prodotto_id}?session=${session}">
-          Scarica
-        </a>
-      </td>
+      <td>${p.data ? new Date(p.data).toLocaleDateString("it-IT") : "—"}</td>
+      <td><button class="btn-download" data-id="${p.prodotto_id}">Scarica</button></td>
     `;
 
     body.appendChild(tr);
   });
-});
 
-/* =========================================================
-   PATCH — refresh_dashboard dopo click su download
-========================================================= */
-document.addEventListener("click", e => {
-  if (e.target.classList.contains("btn-download")) {
-    window.postMessage("refresh_dashboard");
-  }
+  // =========================================================
+  // 6) Download sicuro via fetch + blob
+  // =========================================================
+  document.addEventListener("click", async (e) => {
+    if (!e.target.classList.contains("btn-download")) return;
+
+    const id = e.target.dataset.id;
+    if (!id) return;
+
+    try {
+      const res = await fetch(`/api/vendite/download/${id}`, {
+        headers: { Authorization: "Bearer " + token }
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || "Errore durante il download.");
+        return;
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `prodotto-${id}.pdf`;
+      a.click();
+
+      URL.revokeObjectURL(url);
+
+      // PATCH refresh dashboard
+      window.postMessage("refresh_dashboard");
+
+    } catch (err) {
+      console.error("Errore download:", err);
+      alert("Errore di connessione.");
+    }
+  });
 });
