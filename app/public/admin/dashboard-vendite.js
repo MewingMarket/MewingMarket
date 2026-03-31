@@ -2,16 +2,57 @@
  * =========================================================
  * File: dashboard-vendite.js
  * Dashboard vendite (frontend admin)
- * Versione 2026.60 — Compatibile con loader-admin
+ * Versione 2026.90 — Con adminFetch + protezione admin
  * =========================================================
  */
 
+/* =========================================================
+   adminFetch — identico a dashboard-admin.js
+========================================================= */
+async function adminFetch(url, options = {}) {
+  const token = localStorage.getItem("token");
+  const ruolo = localStorage.getItem("ruolo");
+
+  // Protezione admin
+  if (!token || ruolo !== "admin") {
+    console.warn("[ADMIN] Accesso negato → non admin");
+    window.location.href = "/login.html?redirect=admin/dashboard-admin-vendite.html";
+    return;
+  }
+
+  const headers = {
+    ...(options.headers || {}),
+    Authorization: `Bearer ${token}`
+  };
+
+  const res = await fetch(url, { ...options, headers });
+
+  if (res.status === 401 || res.status === 403) {
+    console.warn("[ADMIN] Token non valido → logout");
+
+    localStorage.removeItem("token");
+    localStorage.removeItem("email");
+    localStorage.removeItem("ruolo");
+
+    window.location.href = "/login.html";
+    return;
+  }
+
+  return res;
+}
+
+/* =========================================================
+   INIT — Avvio dopo header admin
+========================================================= */
 document.addEventListener("admin-header-loaded", async () => {
-  // Aspettiamo che header/footer/head siano caricati
   console.log("[ADMIN] Dashboard vendite: inizializzazione");
 
   try {
-    const res = await fetch("/admin/analytics");
+    // PATCH: endpoint corretto → /api/admin/analytics
+    const res = await adminFetch("/api/admin/analytics");
+
+    if (!res) return; // adminFetch ha già gestito redirect
+
     const data = await res.json();
 
     if (!data.success) {
