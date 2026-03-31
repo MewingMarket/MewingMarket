@@ -2,54 +2,59 @@
  * =========================================================
  * File: app/server/router.cjs
  * Router principale — SOLO API
- * Versione DEFINITIVA 2026 — PUBLIC/PRIVATE perfetto
+ * Versione DEFINITIVA 2026.99 — PUBLIC/PRIVATE perfetto
  * =========================================================
  */
 
 const express = require("express");
 const router = express.Router();
 
-// =========================================================
-// 1) ROTTE PUBBLICHE (NO TOKEN)
-//    Login, registrazione, reset password/email
-// =========================================================
+/* =========================================================
+   1) ROTTE PUBBLICHE (NO TOKEN)
+   Login, registrazione, reset password/email
+========================================================= */
 router.use("/utenti", require("./routes/api-utenti.cjs"));
 
-// =========================================================
-// 2) MIDDLEWARE USER (TOKEN OBBLIGATORIO)
-//    Tutto ciò che segue richiede sessione valida
-// =========================================================
+/* =========================================================
+   2) MIDDLEWARE USER (TOKEN OBBLIGATORIO)
+   Tutto ciò che segue richiede sessione valida
+========================================================= */
 router.use(require("./middleware/auth-user.cjs"));
 
-// =========================================================
-// 3) ROTTE UTENTE PROTETTE (richiedono token user)
-// =========================================================
+/* =========================================================
+   3) ROTTE UTENTE PROTETTE
+========================================================= */
 router.use(require("./routes/api-prodotti-new.cjs"));
 router.use(require("./routes/api-upload.cjs"));
 router.use(require("./routes/ordini-utente.cjs"));
 router.use(require("./routes/api-feedback.cjs"));
 router.use(require("./routes/api-vendite-download.cjs"));
 
-// =========================================================
-// 4) PAYPAL (PUBLIC)
-//    ⚠️ PayPal NON deve essere protetto da token
-// =========================================================
+/* =========================================================
+   4) PAYPAL (PUBLIC)
+   ⚠️ PayPal NON deve essere protetto da token
+========================================================= */
 router.use(require("./routes/paypal-create.cjs"));
 router.use(require("./routes/paypal-complete.cjs"));
 router.use(require("./routes/paypal-cancel.cjs"));
 
-// =========================================================
-// 5) ADMIN (protette da auth-admin)
-//    ⚠️ SOLO /admin deve essere protetto
-// =========================================================
+/* =========================================================
+   5) ADMIN (protette da auth-admin)
+========================================================= */
 const authAdmin = require("./middleware/auth-admin.cjs");
 
+// Tutto ciò che inizia con /admin richiede ruolo admin
 router.use("/admin", authAdmin);
 
-// ⭐⭐⭐ PATCH CRITICA — AGGIUNTA LA ROUTE MANCANTE ⭐⭐⭐
-router.use("/admin", require("./routes/api-admin.cjs"));
+// ⭐ ROUTER ADMIN UNIFICATA (vendite + ordini + KPI)
+router.use("/admin", require("./routes/admin-dashboard.cjs"));
 
-router.use("/admin", require("./routes/admin-analytics.cjs"));
-router.use("/admin", require("./routes/vendite-admin.cjs"));
+/* =========================================================
+   6) RIMOZIONE ROUTE VECCHIE (ELIMINATE)
+   ❌ api-admin.cjs
+   ❌ admin-analytics.cjs
+   ❌ vendite-admin.cjs
+========================================================= */
+// (Non aggiungere più nulla qui)
 
 module.exports = router;
