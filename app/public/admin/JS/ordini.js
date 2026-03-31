@@ -1,5 +1,6 @@
 // =========================================================
-// ORDINI ADMIN — Versione 2026.90 (compatibile loader-admin)
+// ORDINI ADMIN — Versione 2026.95 (compatibile loader-admin)
+// Compatibile con la TABELLA HTML che hai fornito
 // =========================================================
 
 // Sanitizzazione sicura
@@ -9,15 +10,14 @@ const clean = (t) =>
     : t ?? "";
 
 /* =========================================================
-   adminFetch — identico a dashboard-admin.js
+   adminFetch — identico agli altri file admin
 ========================================================= */
 async function adminFetch(url, options = {}) {
   const token = localStorage.getItem("token");
   const ruolo = localStorage.getItem("ruolo");
 
   if (!token || ruolo !== "admin") {
-    console.warn("[ADMIN] Accesso negato → non admin");
-    window.location.href = "/login.html?redirect=admin/dashboard-admin-ordini.html";
+    window.location.href = "/login.html?redirect=admin/ordini.html";
     return;
   }
 
@@ -29,12 +29,7 @@ async function adminFetch(url, options = {}) {
   const res = await fetch(url, { ...options, headers });
 
   if (res.status === 401 || res.status === 403) {
-    console.warn("[ADMIN] Token non valido → logout");
-
-    localStorage.removeItem("token");
-    localStorage.removeItem("email");
-    localStorage.removeItem("ruolo");
-
+    localStorage.clear();
     window.location.href = "/login.html";
     return;
   }
@@ -58,7 +53,7 @@ async function caricaOrdini() {
   console.log("[ADMIN] Caricamento ordini…");
 
   try {
-    // PATCH: endpoint corretto
+    // Endpoint corretto
     const data = await adminGet("/api/admin/ordini");
 
     if (!data || !data.success) {
@@ -68,33 +63,53 @@ async function caricaOrdini() {
 
     const ordini = data.ordini || [];
 
-    // PATCH: metriche calcolate lato frontend
+    // METRICHE
     const totali = ordini.length;
     const completati = ordini.filter(o => o.stato === "completato").length;
-    const annullati = ordini.filter(o => o.stato === "annullato").length;
+    const abbandonati = ordini.filter(o => o.stato === "annullato").length;
 
     document.getElementById("ordini-totali").textContent = totali;
     document.getElementById("ordini-completati").textContent = completati;
-    document.getElementById("ordini-abbandonati").textContent = annullati;
+    document.getElementById("ordini-abbandonati").textContent = abbandonati;
 
-    // TABELLA ORDINI
+    // TABELLA
     const tbody = document.querySelector("#tabella-ordini tbody");
     tbody.innerHTML = "";
 
-    ordini.forEach((o) => {
+    for (const o of ordini) {
+      // Estrai primo prodotto dal JSON
+      let prodotto = "—";
+      let prezzo = (o.totale_cent / 100).toFixed(2) + " €";
+
+      try {
+        const arr = JSON.parse(o.prodotti_json);
+        if (arr.length > 0) {
+          prodotto = arr[0].titolo || arr[0].titolo_breve || "Prodotto digitale";
+        }
+      } catch {}
+
+      // Recupera email utente
+      let email = "—";
+      try {
+        const resUser = await adminFetch(`/api/utenti/${o.utente_id}`);
+        const userData = await resUser.json();
+        if (userData.success) email = userData.email;
+      } catch {}
+
       const tr = document.createElement("tr");
 
       tr.innerHTML = `
         <td>${clean(o.id)}</td>
-        <td>${clean(o.utente_id)}</td>
-        <td>${(o.totale_cent / 100).toFixed(2)} €</td>
+        <td>${clean(prodotto)}</td>
+        <td>${clean(prezzo)}</td>
         <td>${clean(o.stato)}</td>
-        <td>${clean(o.metodo_pagamento || "")}</td>
-        <td>${clean(o.data_ordine || "")}</td>
+        <td>${clean(email)}</td>
+        <td>${clean(o.metodo_pagamento || "—")}</td>
+        <td>${clean(o.data_ordine || "—")}</td>
       `;
 
       tbody.appendChild(tr);
-    });
+    }
 
     console.log("[ADMIN] Ordini caricati");
 
@@ -104,6 +119,6 @@ async function caricaOrdini() {
 }
 
 /* =========================================================
-   INIT — Avvio solo dopo caricamento header/footer/head
+   INIT
 ========================================================= */
 document.addEventListener("admin-header-loaded", caricaOrdini);
