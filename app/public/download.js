@@ -1,5 +1,6 @@
 /* =========================================================
-   DOWNLOAD PREMIUM — Versione 2026.95
+   DOWNLOAD PREMIUM — Versione 2026.98
+   - Solo ordini COMPLETATI
    - Sicuro
    - Token Bearer
    - sessionState = 1
@@ -42,17 +43,27 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // =========================================================
-  // 3) Estrai prodotti acquistati
+  // 3) FILTRA SOLO ORDINI COMPLETATI
+  // =========================================================
+  const ordiniCompletati = data.ordini.filter(o => o.stato === "completato");
+
+  if (ordiniCompletati.length === 0) {
+    body.innerHTML = `<tr><td colspan="3">Nessun prodotto disponibile al download.</td></tr>`;
+    return;
+  }
+
+  // =========================================================
+  // 4) Estrai prodotti acquistati
   // =========================================================
   const prodotti = [];
 
-  data.ordini.forEach(o => {
+  ordiniCompletati.forEach(o => {
     if (Array.isArray(o.prodotti)) {
       o.prodotti.forEach(p => {
         prodotti.push({
           prodotto_id: p.prodotto_id,
           titolo: p.titolo || p.titolo_breve || "Prodotto digitale",
-          data: o.data_ordine || o.data || null
+          data: o.data_ordine || null
         });
       });
     }
@@ -64,7 +75,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // =========================================================
-  // 4) Deduplica prodotti
+  // 5) Deduplica prodotti
   // =========================================================
   const unici = [];
   const visti = new Set();
@@ -77,7 +88,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // =========================================================
-  // 5) Render tabella + download sicuro
+  // 6) Render tabella + download sicuro
   // =========================================================
   unici.forEach(p => {
     const tr = document.createElement("tr");
@@ -92,7 +103,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // =========================================================
-  // 6) Download sicuro via fetch + blob
+  // 7) Download sicuro via fetch + blob
   // =========================================================
   document.addEventListener("click", async (e) => {
     if (!e.target.classList.contains("btn-download")) return;
@@ -121,7 +132,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       URL.revokeObjectURL(url);
 
-      // PATCH refresh dashboard
       window.postMessage("refresh_dashboard");
 
     } catch (err) {
