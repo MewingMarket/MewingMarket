@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <!-- Loader dinamico head-admin -->
+  <script src="/admin/loader-admin.js" defer></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Admin — Vendite & Ordini</title>
+  <link rel="stylesheet" href="/admin/dashboard-admin.css">
+</head>
+
+<body>
+
+  <!-- HEADER ADMIN -->
+  <div id="admin-header"></div>
+
+  <main class="dashboard-container">
+
+    <h1 class="page-title">Dashboard Vendite & Ordini</h1>
+
+    <!-- KPI -->
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <h3>Vendite Totali</h3>
+        <p id="kpi-vendite">—</p>
+      </div>
+
+      <div class="kpi-card">
+        <h3>Revenue Totale</h3>
+        <p id="kpi-revenue">—</p>
+      </div>
+
+      <div class="kpi-card">
+        <h3>Prodotti Venduti</h3>
+        <p id="kpi-prodotti">—</p>
+      </div>
+
+      <div class="kpi-card">
+        <h3>Ordini Totali</h3>
+        <p id="kpi-ordini">—</p>
+      </div>
+
+      <div class="kpi-card">
+        <h3>Ordini Completati</h3>
+        <p id="kpi-ordini-completati">—</p>
+      </div>
+
+      <div class="kpi-card">
+        <h3>Ordini Annullati</h3>
+        <p id="kpi-ordini-annullati">—</p>
+      </div>
+    </section>
+
+    <!-- GRAFICO 30 GIORNI -->
+    <section class="chart-section">
+      <h2>Vendite ultimi 30 giorni</h2>
+      <canvas id="chartVendite30"></canvas>
+    </section>
+
+    <!-- TOP PRODOTTI -->
+    <section class="table-section">
+      <h2>Top Prodotti</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Vendite</th>
+            <th>Revenue</th>
+          </tr>
+        </thead>
+        <tbody id="top-prodotti-body"></tbody>
+      </table>
+    </section>
+
+    <!-- UTM -->
+    <section class="table-section">
+      <h2>Performance UTM</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Source</th>
+            <th>Medium</th>
+            <th>Campaign</th>
+            <th>Vendite</th>
+          </tr>
+        </thead>
+        <tbody id="utm-body"></tbody>
+      </table>
+    </section>
+
+    <!-- ORDINI -->
+    <section class="table-section">
+      <h2>Ordini</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Data</th>
+            <th>Totale</th>
+            <th>Stato</th>
+            <th>Prodotti</th>
+          </tr>
+        </thead>
+        <tbody id="ordini-body"></tbody>
+      </table>
+    </section>
+
+  </main>
+
+  <!-- FOOTER ADMIN -->
+  <div id="admin-footer"></div>
+
+  <script src="/admin/dashboard-vendite-ordini.js" type="module"></script>
+</body>
+</html>
