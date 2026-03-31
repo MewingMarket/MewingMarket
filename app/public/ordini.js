@@ -1,28 +1,32 @@
 /* =========================================================
-   FILE: /public/ordini.js
-   ORDINI PREMIUM — Versione 2026.30 + PATCH refresh_dashboard
-   SQL READY + ID-based + metadata + UX migliorata
+   ORDINI UTENTE — Versione 2026.95
+   - Sicuro
+   - Token Bearer
+   - sessionState = 1
+   - Annullamento ordine
+   - UX migliorata
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", async () => {
-  const session = localStorage.getItem("session");
-  const email = localStorage.getItem("utenteEmail");
+  const token = localStorage.getItem("token");
+  const sessionState = localStorage.getItem("sessionState");
   const body = document.getElementById("ordersBody");
 
-  if (!session || !email) {
+  // =========================================================
+  // 1) Protezione login
+  // =========================================================
+  if (!token || sessionState !== "1") {
     body.innerHTML = `<tr><td colspan="5">Devi effettuare il login.</td></tr>`;
     return;
   }
 
-  /* =========================================================
-     1) Recupera ordini utente
-  ========================================================== */
+  // =========================================================
+  // 2) Recupera ordini utente
+  // =========================================================
   let data;
   try {
     const res = await fetch("/api/ordini/utente", {
-      headers: {
-        "Authorization": `Bearer ${session}`
-      }
+      headers: { Authorization: "Bearer " + token }
     });
 
     data = await res.json();
@@ -37,9 +41,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  /* =========================================================
-     2) Render ordini (ID-based + metadata)
-  ========================================================== */
+  // =========================================================
+  // 3) Render ordini
+  // =========================================================
   data.ordini.forEach(o => {
     const tr = document.createElement("tr");
 
@@ -54,6 +58,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       : "-";
 
     const totaleEuro = (o.totale_cent / 100).toFixed(2);
+    const dataOrdine = o.data_ordine
+      ? new Date(o.data_ordine).toLocaleDateString("it-IT")
+      : "—";
 
     const annullaBtn =
       o.stato === "completato" || o.stato === "annullato"
@@ -61,7 +68,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         : `<button class="btn-annulla" data-id="${o.id}">Annulla</button>`;
 
     tr.innerHTML = `
-      <td>${new Date(o.data).toLocaleDateString("it-IT")}</td>
+      <td>${dataOrdine}</td>
       <td>${prodottiHTML}</td>
       <td>${totaleEuro}€</td>
       <td>${o.stato}</td>
@@ -71,9 +78,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     body.appendChild(tr);
   });
 
-  /* =========================================================
-     3) Annulla ordine (SQL READY + PATCH refresh_dashboard)
-  ========================================================== */
+  // =========================================================
+  // 4) Annulla ordine
+  // =========================================================
   body.addEventListener("click", async e => {
     if (!e.target.classList.contains("btn-annulla")) return;
 
@@ -86,7 +93,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const res = await fetch(`/api/ordini/annulla/${id}`, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${session}`,
+          Authorization: "Bearer " + token,
           "Content-Type": "application/json"
         }
       });
@@ -100,8 +107,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       alert("Ordine annullato.");
 
-      // PATCH: niente reload → aggiorna dashboard
+      // PATCH: refresh dashboard
       window.postMessage("refresh_dashboard");
+
+      // Aggiorna tabella ordini
+      location.reload();
 
     } catch (err) {
       console.error("Errore annullamento ordine:", err);
