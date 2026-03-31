@@ -1,6 +1,6 @@
 /**
  * =========================================================
- * File: app/server/middleware/set-upload-type.cjs
+ * File: app/server/middleware/upload-type.cjs
  * Middleware: setUploadType
  * Imposta il tipo di upload (file, immagine, ecc.)
  * Versione 2026.99
