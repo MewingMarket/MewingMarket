@@ -1,15 +1,12 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <!-- HEAD ADMIN DINAMICO -->
-  <script src="/admin/loader-admin.js" defer></script>
-
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Dashboard Admin — Vendite & Ordini</title>
 
-  <link rel="stylesheet" href="/admin/dashboard-admin.css">
+  <link rel="stylesheet" href="dashboard-admin.css">
 </head>
 
 <body>
@@ -116,9 +113,16 @@
   <!-- FOOTER ADMIN -->
   <div id="footer-admin-placeholder"></div>
 
-  <!-- JS -->
+  <!-- JS GLOBALI ADMIN (IDENTICI AL PROFILO) -->
+  <script src="loader-admin.js"></script>
+  <script src="seo-admin.js"></script>
+  <script src="structured-data-admin.js"></script>
+
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="/admin/dashboard-vendite-ordini.js" type="module"></script>
+
+  <!-- Script specifico dashboard -->
+  <script src="dashboard-vendite-ordini.js" type="module"></script>
 
 </body>
 </html>
