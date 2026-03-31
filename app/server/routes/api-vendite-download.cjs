@@ -2,12 +2,13 @@
  * =========================================================
  * File: app/server/routes/api-vendite-download.cjs
  * Download sicuro dei prodotti acquistati (ID-based)
- * Compatibile con tabella prodotti 2026
+ * Versione 2026.97 — FIX filename + logs + sicurezza
  * =========================================================
  */
 
 const express = require("express");
 const path = require("path");
+const fs = require("fs");
 const db = require("../db/database.cjs");
 const authUser = require("../middleware/auth-user.cjs");
 
@@ -15,6 +16,17 @@ const router = express.Router();
 
 // Percorso persistente dei file prodotto
 const FILES_DIR = "/var/data/uploads/files";
+
+/**
+ * Helper sicuro per JSON
+ */
+function safeParse(str) {
+  try {
+    return JSON.parse(str);
+  } catch {
+    return [];
+  }
+}
 
 /**
  * =========================================================
@@ -34,7 +46,11 @@ router.get("/vendite/download/:id", authUser, (req, res) => {
       });
     }
 
-    // 1) Verifica che l’utente abbia acquistato il prodotto
+    console.log("📥 Richiesta download prodotto:", prodottoId, "da utente:", userId);
+
+    // =========================================================
+    // 1) Verifica acquisto (solo ordini completati)
+    // =========================================================
     const stmt = db.prepare(`
       SELECT prodotti_json
       FROM ordini
@@ -55,19 +71,20 @@ router.get("/vendite/download/:id", authUser, (req, res) => {
     }
 
     if (!trovato) {
+      console.log("❌ Download negato: prodotto non acquistato");
       return res.status(403).json({
         success: false,
         error: "Non hai acquistato questo prodotto"
       });
     }
 
-    // 2) Trova il file reale del prodotto
+    // =========================================================
+    // 2) Recupera info prodotto
+    // =========================================================
     const stmtProd = db.prepare(`
       SELECT 
         titolo,
         titolo_breve,
-        descrizione_lunga,
-        descrizione_breve,
         file_consegna_url
       FROM prodotti
       WHERE id = ?
@@ -77,21 +94,47 @@ router.get("/vendite/download/:id", authUser, (req, res) => {
     const prodotto = stmtProd.get(prodottoId);
 
     if (!prodotto || !prodotto.file_consegna_url) {
+      console.log("❌ Nessun file_consegna_url nel DB");
       return res.status(404).json({
         success: false,
         error: "File non trovato"
       });
     }
 
-    // Fallback automatici
-    const titolo = prodotto.titolo || prodotto.titolo_breve || "Prodotto digitale";
-    const descrizione = prodotto.descrizione_lunga || prodotto.descrizione_breve || "";
+    // =========================================================
+    // 3) Normalizza filename (rimuove URL assoluti)
+    // =========================================================
+    let raw = prodotto.file_consegna_url.trim();
 
-    // Percorso persistente
-    const filePath = path.join(FILES_DIR, prodotto.file_consegna_url);
+    // Se contiene URL → estrai solo il filename
+    if (raw.startsWith("http")) {
+      raw = raw.split("/").pop();
+    }
 
-    // 3) Invia il file in download
-    return res.download(filePath, titolo + ".pdf", err => {
+    const filePath = path.join(FILES_DIR, raw);
+
+    console.log("📄 File richiesto:", raw);
+    console.log("📁 Percorso finale:", filePath);
+
+    // =========================================================
+    // 4) Controllo esistenza file
+    // =========================================================
+    if (!fs.existsSync(filePath)) {
+      console.log("❌ File NON esiste su disco");
+      return res.status(404).json({
+        success: false,
+        error: "File non presente sul server"
+      });
+    }
+
+    // =========================================================
+    // 5) Download
+    // =========================================================
+    const nomeDownload = (prodotto.titolo || prodotto.titolo_breve || "prodotto") + ".pdf";
+
+    console.log("⬇️ Avvio download:", nomeDownload);
+
+    return res.download(filePath, nomeDownload, err => {
       if (err) {
         console.error("❌ Errore download:", err);
         return res.status(500).json({
@@ -99,6 +142,8 @@ router.get("/vendite/download/:id", authUser, (req, res) => {
           error: "Errore durante il download"
         });
       }
+
+      console.log("✅ Download completato:", nomeDownload);
     });
 
   } catch (err) {
@@ -109,16 +154,5 @@ router.get("/vendite/download/:id", authUser, (req, res) => {
     });
   }
 });
-
-/**
- * Helper sicuro per JSON
- */
-function safeParse(str) {
-  try {
-    return JSON.parse(str);
-  } catch {
-    return [];
-  }
-}
 
 module.exports = router;
