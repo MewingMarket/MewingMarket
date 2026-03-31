@@ -1,19 +1,16 @@
 /**
  * =========================================================
  * File: app/server/routes/ordini-admin.cjs
- * Lista ordini per Dashboard Admin (JSON mirror)
+ * Lista ordini per Dashboard Admin (DB LIVE)
+ * Versione 2026.97 — SQL READY + KPI + prodotti_json
  * =========================================================
  */
 
 const express = require("express");
-const fs = require("fs");
-const path = require("path");
+const db = require("../db/database.cjs");
 const authUser = require("../middleware/auth-user.cjs");
 
 const router = express.Router();
-
-// Percorso JSON mirror
-const ORDERS_JSON = path.join(__dirname, "../../public/data/orders.json");
 
 /**
  * =========================================================
@@ -28,20 +25,41 @@ router.get("/admin/ordini", authUser, (req, res) => {
       return res.json({ success: false, error: "Accesso negato" });
     }
 
-    // Legge il JSON mirror
-    if (!fs.existsSync(ORDERS_JSON)) {
-      return res.json({
-        success: true,
-        ordini: []
-      });
-    }
+    // 1) Recupera tutti gli ordini
+    const stmt = db.prepare(`
+      SELECT 
+        id,
+        utente_id,
+        prodotti_json,
+        totale_cent,
+        stato,
+        metodo_pagamento,
+        data_ordine
+      FROM ordini
+      ORDER BY data_ordine DESC
+    `);
 
-    const raw = fs.readFileSync(ORDERS_JSON, "utf8");
-    const ordini = JSON.parse(raw);
+    const ordini = stmt.all();
+
+    // 2) KPI
+    const totali = ordini.length;
+    const completati = ordini.filter(o => o.stato === "completato").length;
+    const annullati = ordini.filter(o => o.stato === "annullato").length;
+
+    // 3) Parsing prodotti_json
+    const parsed = ordini.map(o => ({
+      ...o,
+      prodotti: safeParse(o.prodotti_json)
+    }));
 
     return res.json({
       success: true,
-      ordini
+      stats: {
+        totali,
+        completati,
+        abbandonati: annullati
+      },
+      ordini: parsed
     });
 
   } catch (err) {
@@ -49,5 +67,16 @@ router.get("/admin/ordini", authUser, (req, res) => {
     return res.json({ success: false, error: "Errore server" });
   }
 });
+
+/**
+ * Helper sicuro per JSON
+ */
+function safeParse(str) {
+  try {
+    return JSON.parse(str);
+  } catch {
+    return [];
+  }
+}
 
 module.exports = router;
