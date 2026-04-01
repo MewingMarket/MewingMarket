@@ -1,21 +1,43 @@
-// FILE: routes/admin-analisi.cjs
+/* =========================================================
+   File: app/server/routes/admin-feedback.cjs
+   Lista completa feedback per Admin — Versione definitiva
+   Richiede auth-admin (già applicato in router.cjs)
+========================================================= */
 
 const express = require("express");
 const router = express.Router();
-const authAdmin = require("../middleware/auth-admin.cjs"); // PATCH QUI
+const db = require("../db/database.cjs");
 
-router.get("/analisi/dati", authAdmin, async (req, res) => {
-  res.json({
-    success: true,
-    stats: {
-      conversione: 3.2,
-      traffico: 1200,
-      ctr: 1.8
-    },
-    prodotti: [],
-    traffico: [],
-    utm: []
-  });
+/* =========================================================
+   GET /admin/feedback/lista
+   Restituisce tutte le recensioni con join utenti + prodotti
+========================================================= */
+router.get("/feedback/lista", (req, res) => {
+  try {
+    const stmt = db.prepare(`
+      SELECT 
+        f.id,
+        f.rating,
+        f.commento,
+        f.data,
+        u.email AS utente_email,
+        u.codice_fiscale AS utente_cf,
+        p.titolo_breve AS prodotto_titolo,
+        p.slug AS prodotto_slug
+      FROM feedback f
+      LEFT JOIN utenti u ON u.id = f.utente_id
+      LEFT JOIN prodotti p ON p.id = f.prodotto_id
+      ORDER BY f.id DESC
+    `);
+
+    const lista = stmt.all();
+
+    return res.json({ success: true, feedback: lista });
+
+  } catch (err) {
+    console.error("❌ Errore /admin/feedback/lista:", err);
+    return res.json({ success: false, error: "Errore server" });
+  }
 });
 
 module.exports = router;
