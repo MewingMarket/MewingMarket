@@ -181,25 +181,7 @@ const wait = (ms) => new Promise(res => res(ms));
   require("./middleware/context.cjs")(app);
 
   // =========================================================
-  // STATICI FRONTEND
-  // =========================================================
-  log(">> REGISTER STATIC ROUTES");
-  await wait(200);
-  app.use(express.static(path.resolve("app/public")));
-  app.use("/data", express.static(path.resolve("app/data")));
-
-  // =========================================================
-  // ADMIN
-  // =========================================================
-  log(">> REGISTER ADMIN ROUTES");
-  await wait(200);
-  app.get("/admin/login", (req, res) => {
-    res.sendFile(path.resolve("app/public/admin/admin-login.html"));
-  });
-  app.use("/admin", express.static(path.resolve("app/public/admin")));
-
-  // =========================================================
-  // API
+  // 🔁 API (ROUTER PRINCIPALE) — PRIMA DEI STATICI  🔁
   // =========================================================
   log(">> LOADING router.cjs");
   await wait(200);
@@ -212,6 +194,24 @@ const wait = (ms) => new Promise(res => res(ms));
   log(">> LOADING debug-db.cjs");
   await wait(200);
   app.use("/api", require("./routes/debug-db.cjs"));
+
+  // =========================================================
+  // STATICI FRONTEND (DOPO LE API)  🔁 PATCH ORDINE
+  // =========================================================
+  log(">> REGISTER STATIC ROUTES");
+  await wait(200);
+  app.use(express.static(path.resolve("app/public")));
+  app.use("/data", express.static(path.resolve("app/data")));
+
+  // =========================================================
+  // ADMIN STATIC
+  // =========================================================
+  log(">> REGISTER ADMIN ROUTES");
+  await wait(200);
+  app.get("/admin/login", (req, res) => {
+    res.sendFile(path.resolve("app/public/admin/admin-login.html"));
+  });
+  app.use("/admin", express.static(path.resolve("app/public/admin")));
 
   // =========================================================
   // ROUTE FRONTEND
