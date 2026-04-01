@@ -31,14 +31,6 @@ router.use(require("./routes/api-feedback.cjs"));
 router.use(require("./routes/api-vendite-download.cjs"));
 
 /* =========================================================
-   4) PAYPAL (PUBLIC)
-   ⚠️ PayPal NON deve essere protetto da token
-========================================================= */
-router.use(require("./routes/paypal-create.cjs"));
-router.use(require("./routes/paypal-complete.cjs"));
-router.use(require("./routes/paypal-cancel.cjs"));
-
-/* =========================================================
    5) ADMIN (protette da auth-admin)
 ========================================================= */
 const authAdmin = require("./middleware/auth-admin.cjs");
@@ -48,6 +40,15 @@ router.use("/admin", authAdmin);
 
 // ⭐ ROUTER ADMIN UNIFICATA (vendite + ordini + KPI)
 router.use("/admin", require("./routes/admin-dashboard.cjs"));
+
+/* =========================================================
+   4) PAYPAL (PUBLIC)
+   ⚠️ PayPal NON deve essere protetto da token
+   ⚠️ PATCH: spostato DOPO admin per evitare conflitti
+========================================================= */
+router.use(require("./routes/paypal-create.cjs"));
+router.use(require("./routes/paypal-complete.cjs"));
+router.use(require("./routes/paypal-cancel.cjs"));
 
 /* =========================================================
    6) RIMOZIONE ROUTE VECCHIE (ELIMINATE)
