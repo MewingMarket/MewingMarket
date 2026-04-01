@@ -20,7 +20,16 @@ router.use("/utenti", require("./routes/api-utenti.cjs"));
 ========================================================= */
 const authAdmin = require("./middleware/auth-admin.cjs");
 router.use("/admin", authAdmin);
-router.use("/admin", require("./routes/admin-dashboard.cjs"));
+
+// ⭐⭐⭐ PATCH DIAGNOSTICA — verifica caricamento admin-dashboard
+try {
+  console.log("Tentativo load admin-dashboard...");
+  const adminRouter = require("./routes/admin-dashboard.cjs");
+  console.log("🔥 admin-dashboard CARICATO");
+  router.use("/admin", adminRouter);
+} catch (err) {
+  console.error("❌ ERRORE CARICAMENTO admin-dashboard:", err);
+}
 
 /* =========================================================
    3) MIDDLEWARE USER (TOKEN OBBLIGATORIO)
