@@ -17,7 +17,7 @@
 
     <h1 class="page-title">Dashboard Vendite & Ordini</h1>
 
-    <!-- KPI -->
+    <!-- KPI BASE -->
     <section class="kpi-grid">
       <div class="kpi-card">
         <h3>Vendite Totali</h3>
@@ -47,6 +47,34 @@
       <div class="kpi-card">
         <h3>Ordini Annullati</h3>
         <p id="kpi-ordini-annullati">—</p>
+      </div>
+    </section>
+
+    <!-- KPI AVANZATI -->
+    <section class="kpi-grid" style="margin-top:30px;">
+      <div class="kpi-card">
+        <h3>AOV (Valore Medio Ordine)</h3>
+        <p id="kpi-aov">—</p>
+      </div>
+
+      <div class="kpi-card">
+        <h3>Tasso Annullamento (%)</h3>
+        <p id="kpi-tasso-annullamento">—</p>
+      </div>
+
+      <div class="kpi-card">
+        <h3>Prodotto più venduto</h3>
+        <p id="kpi-top-prodotto">—</p>
+      </div>
+
+      <div class="kpi-card">
+        <h3>Clienti Ricorrenti (%)</h3>
+        <p id="kpi-clienti-ricorrenti">—</p>
+      </div>
+
+      <div class="kpi-card">
+        <h3>Tempo Medio Completamento</h3>
+        <p id="kpi-tempo-completamento">—</p>
       </div>
     </section>
 
@@ -92,6 +120,8 @@
             <th>Totale</th>
             <th>Stato</th>
             <th>Prodotti</th>
+            <th>Cliente</th>       <!-- ⭐ PATCH -->
+            <th>Origine</th>       <!-- ⭐ PATCH -->
           </tr>
         </thead>
         <tbody id="ordini-body"></tbody>
@@ -109,7 +139,6 @@
   <script src="structured-data-admin.js"></script>
 
   <!-- Script specifico dashboard -->
-  <!-- ⭐ PATCH: percorso assoluto -->
   <script src="/admin/dashboard-vendite-ordini.js" type="module"></script>
 
 </body>
