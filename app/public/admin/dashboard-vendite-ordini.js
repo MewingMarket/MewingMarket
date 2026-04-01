@@ -3,6 +3,9 @@
 // Versione 2026.97 — SQL LIVE (con patch diagnostica)
 // =========================================================
 
+// ⭐ PATCH 1 — conferma caricamento modulo
+console.log("🔥 dashboard-vendite-ordini.js CARICATO");
+
 document.addEventListener("DOMContentLoaded", async () => {
   const token = localStorage.getItem("token");
   const sessionState = localStorage.getItem("sessionState");
@@ -18,9 +21,18 @@ document.addEventListener("DOMContentLoaded", async () => {
       headers: { Authorization: "Bearer " + token }
     });
 
+    // ⭐ PATCH 2 — intercetta risposte HTML
+    if (res.headers.get("content-type")?.includes("text/html")) {
+      const text = await res.text();
+      console.error("❌ ERRORE: ricevuto HTML invece di JSON:", text.slice(0, 200));
+      alert("Errore server (HTML ricevuto). Controlla i log.");
+      return;
+    }
+
     const data = await res.json();
 
-    console.log("📦 DATA RICEVUTI:", data);
+    // ⭐ PATCH 3 — log avanzato
+    console.log("📦 DATA RICEVUTI (RAW):", data);
 
     if (!data.success) {
       alert("Errore: " + (data.error || "Accesso negato"));
