@@ -1,6 +1,8 @@
-// =========================================================
-// FEEDBACK ADMIN — Versione 2026.60 (compatibile loader-admin)
-// =========================================================
+/* =========================================================
+   File: app/public/admin/feedback.js
+   Admin — Lista completa feedback clienti
+   Versione definitiva 2026 (PATCH)
+========================================================= */
 
 // Sanitizzazione sicura
 const clean = (t) =>
@@ -8,7 +10,7 @@ const clean = (t) =>
     ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
     : t ?? "";
 
-// Fetch blindato
+// Fetch blindato (usa adminFetch del loader-admin.js)
 async function adminGet(url) {
   const res = await adminFetch(url);
   if (!res.ok) throw new Error("Errore fetch admin: " + url);
@@ -16,12 +18,13 @@ async function adminGet(url) {
 }
 
 // =========================================================
-// CARICA FEEDBACK
+// CARICA FEEDBACK (compatibile con admin-feedback.cjs)
 // =========================================================
 async function caricaFeedback() {
   console.log("[ADMIN] Caricamento feedback…");
 
   try {
+    // PATCH: nuovo endpoint
     const data = await adminGet("/api/admin/feedback/lista");
 
     const tbody = document.querySelector("#tabella-feedback tbody");
@@ -30,10 +33,10 @@ async function caricaFeedback() {
     (data.feedback || []).forEach((f) => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td>${clean(f.prodotto)}</td>
+        <td>${clean(f.prodotto_titolo)}</td>
         <td>${clean(f.rating)}</td>
         <td>${clean(f.commento)}</td>
-        <td>${clean(f.email)}</td>
+        <td>${clean(f.utente_email)}</td>
         <td>${clean(f.data)}</td>
       `;
       tbody.appendChild(tr);
