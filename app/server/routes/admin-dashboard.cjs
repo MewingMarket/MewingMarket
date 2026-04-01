@@ -20,6 +20,12 @@ const router = express.Router();
  */
 router.get("/admin/dashboard", authUser, (req, res) => {
   try {
+    // ⭐ PATCH 1 — Forza risposta JSON
+    res.setHeader("Content-Type", "application/json");
+
+    // ⭐ PATCH 2 — Log diagnostico
+    console.log("📊 /api/admin/dashboard → admin:", req.user?.email);
+
     if (req.user?.ruolo !== "admin") {
       return res.json({ success: false, error: "Accesso negato" });
     }
