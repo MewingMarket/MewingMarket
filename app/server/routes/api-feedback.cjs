@@ -11,12 +11,9 @@ const authUser = require("../middleware/auth-user.cjs");
 
 const router = express.Router();
 
-/**
- * =========================================================
- * GET /api/recensioni/utente
- * Restituisce tutte le recensioni dell’utente loggato
- * =========================================================
- */
+/* =========================================================
+   GET /api/recensioni/utente
+========================================================= */
 router.get("/recensioni/utente", authUser, (req, res) => {
   try {
     const userId = req.user.id;
@@ -46,12 +43,9 @@ router.get("/recensioni/utente", authUser, (req, res) => {
   }
 });
 
-/**
- * =========================================================
- * POST /api/recensioni/crea
- * Crea una nuova recensione (solo se l’utente ha acquistato)
- * =========================================================
- */
+/* =========================================================
+   POST /api/recensioni/crea
+========================================================= */
 router.post("/recensioni/crea", authUser, (req, res) => {
   try {
     const userId = req.user.id;
@@ -61,7 +55,6 @@ router.post("/recensioni/crea", authUser, (req, res) => {
       return res.json({ success: false, error: "Dati mancanti" });
     }
 
-    // 1) Verifica che l’utente abbia acquistato il prodotto
     const stmtOrdini = db.prepare(`
       SELECT prodotti_json
       FROM ordini
@@ -87,7 +80,6 @@ router.post("/recensioni/crea", authUser, (req, res) => {
       });
     }
 
-    // 2) Crea recensione
     const stmtInsert = db.prepare(`
       INSERT INTO feedback (
         utente_id,
@@ -108,12 +100,9 @@ router.post("/recensioni/crea", authUser, (req, res) => {
   }
 });
 
-/**
- * =========================================================
- * POST /api/recensioni/modifica
- * Modifica una recensione esistente dell’utente
- * =========================================================
- */
+/* =========================================================
+   POST /api/recensioni/modifica
+========================================================= */
 router.post("/recensioni/modifica", authUser, (req, res) => {
   try {
     const userId = req.user.id;
@@ -123,7 +112,6 @@ router.post("/recensioni/modifica", authUser, (req, res) => {
       return res.json({ success: false, error: "Dati mancanti" });
     }
 
-    // 1) Recupera recensione
     const stmtFind = db.prepare(`
       SELECT utente_id
       FROM feedback
@@ -136,12 +124,10 @@ router.post("/recensioni/modifica", authUser, (req, res) => {
       return res.json({ success: false, error: "Recensione non trovata" });
     }
 
-    // 2) Verifica che appartenga all’utente
     if (rec.utente_id !== userId) {
       return res.json({ success: false, error: "Non autorizzato" });
     }
 
-    // 3) Aggiorna recensione
     const stmtUpdate = db.prepare(`
       UPDATE feedback
       SET rating = ?, commento = ?, data = CURRENT_TIMESTAMP
@@ -158,9 +144,6 @@ router.post("/recensioni/modifica", authUser, (req, res) => {
   }
 });
 
-/**
- * Helper sicuro per JSON
- */
 function safeParse(str) {
   try {
     return JSON.parse(str);
