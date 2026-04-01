@@ -1,6 +1,6 @@
 // =========================================================
 // Dashboard Admin — Vendite + Ordini (Unificata)
-// Versione 2026.97 — SQL LIVE
+// Versione 2026.97 — SQL LIVE (senza grafico)
 // =========================================================
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     renderKPI(data);
-    renderVendite30(data.vendite.vendite30);
+    // renderVendite30(data.vendite.vendite30);  // RIMOSSO
     renderTopProdotti(data.vendite.topProdotti);
     renderUTM(data.vendite.utm);
     renderOrdini(data.ordini.lista);
@@ -48,29 +48,6 @@ function renderKPI(data) {
   document.getElementById("kpi-ordini").textContent = data.ordini.kpi.totali;
   document.getElementById("kpi-ordini-completati").textContent = data.ordini.kpi.completati;
   document.getElementById("kpi-ordini-annullati").textContent = data.ordini.kpi.annullati;
-}
-
-// =========================================================
-// Vendite ultimi 30 giorni (Chart.js)
-// =========================================================
-function renderVendite30(arr) {
-  const ctx = document.getElementById("chartVendite30");
-
-  const labels = arr.map(v => v.giorno);
-  const values = arr.map(v => v.revenue / 100);
-
-  new Chart(ctx, {
-    type: "line",
-    data: {
-      labels,
-      datasets: [{
-        label: "Revenue (€)",
-        data: values,
-        borderColor: "#007bff",
-        fill: false
-      }]
-    }
-  });
 }
 
 // =========================================================
