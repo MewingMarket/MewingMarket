@@ -1,0 +1,33 @@
+.recensioni-grid {
+  display: grid;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.rec-card {
+  background: #fff;
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+}
+
+.rec-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.stelle {
+  color: #fbbf24;
+  font-size: 18px;
+}
+
+.commento {
+  margin: 10px 0;
+  font-size: 15px;
+}
+
+.prodotto a {
+  color: #2563eb;
+  text-decoration: underline;
+}
