@@ -1,3 +1,9 @@
+<!-- =========================================================
+     File: app/public/recensioni.html
+     Dashboard Utente — Le mie recensioni
+     Versione definitiva 2026 (PATCH)
+========================================================= -->
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -21,6 +27,9 @@
   <div class="box">
     <h1>Le mie recensioni ⭐</h1>
 
+    <!-- ============================
+         FORM NUOVA RECENSIONE
+    ============================= -->
     <h3>Lascia una nuova recensione</h3>
 
     <label>Prodotto acquistato</label>
@@ -28,7 +37,7 @@
       <option value="">Caricamento…</option>
     </select>
 
-    <div id="stars" style="margin-top:10px;">
+    <div id="stars" class="stars">
       <span data-v="1">★</span>
       <span data-v="2">★</span>
       <span data-v="3">★</span>
@@ -44,6 +53,9 @@
 
     <hr style="margin:30px 0;">
 
+    <!-- ============================
+         LISTA RECENSIONI UTENTE
+    ============================= -->
     <h3>Le tue recensioni</h3>
     <div id="listaRecensioni"></div>
   </div>
