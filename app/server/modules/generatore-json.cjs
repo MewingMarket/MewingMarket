@@ -1,8 +1,8 @@
-/**
- * =========================================================
+/* =========================================================
  * GENERATORE JSON — Mirror del database SQL
  * Persistente su /var/data/json + copia in /app/public/data
  * PATCH 2026 — Invio automatico newsletter “Novità”
+ * PATCH FEEDBACK + NEWSLETTER LOG — Mirror SQL aggiuntivi
  * =========================================================
  */
 
@@ -51,7 +51,7 @@ function saveJSON(filename, data) {
 
 // ---------------------------------------------------------
 // PATCH — Invio automatico newsletter “Novità”
-// ---------------------------------------------------------
+/* ------------------------------------------------------- */
 async function checkAndSendNovita() {
   try {
     const latest = db.prepare(`
@@ -105,11 +105,10 @@ async function checkAndSendNovita() {
 }
 
 // ---------------------------------------------------------
-// 1) Prodotti — PATCH MINIMA
+// 1) Prodotti
 // ---------------------------------------------------------
 async function exportProducts() {
   try {
-    // catalogo.getAllProducts() ora restituisce categoria: ARRAY
     const prodotti = await catalogo.getAllProducts();
 
     saveJSON("products.json", prodotti);
@@ -123,11 +122,10 @@ async function exportProducts() {
 }
 
 // ---------------------------------------------------------
-// 2) Categorie — PATCH MINIMA
+// 2) Categorie
 // ---------------------------------------------------------
 async function exportCategories() {
   try {
-    // catalogo.getAllCategories() ora restituisce array unificato multi-categoria
     const categorie = await catalogo.getAllCategories();
 
     saveJSON("categories.json", categorie);
@@ -138,7 +136,7 @@ async function exportCategories() {
 }
 
 // ---------------------------------------------------------
-// 3) YouTube — estratto direttamente dai prodotti
+// 3) YouTube
 // ---------------------------------------------------------
 async function exportYouTube() {
   try {
@@ -202,7 +200,55 @@ async function exportUsers() {
 }
 
 // ---------------------------------------------------------
-// 7) Catalogo completo
+// 7) Feedback — NUOVO MIRROR SQL
+// ---------------------------------------------------------
+async function exportFeedback() {
+  try {
+    const rows = db.prepare(`
+      SELECT 
+        id,
+        utente_id,
+        prodotto_id,
+        rating,
+        commento,
+        data
+      FROM feedback
+      ORDER BY id DESC
+    `).all();
+
+    saveJSON("feedback.json", rows);
+    console.log("⭐ Feedback esportati");
+  } catch (err) {
+    console.error("❌ Errore exportFeedback:", err.message);
+  }
+}
+
+// ---------------------------------------------------------
+// 8) Newsletter Log — NUOVO MIRROR SQL
+// ---------------------------------------------------------
+async function exportNewsletterLog() {
+  try {
+    const rows = db.prepare(`
+      SELECT 
+        id,
+        email,
+        azione,
+        origine,
+        note,
+        data
+      FROM newsletter_log
+      ORDER BY id DESC
+    `).all();
+
+    saveJSON("newsletter.json", rows);
+    console.log("📨 Newsletter log esportato");
+  } catch (err) {
+    console.error("❌ Errore exportNewsletterLog:", err.message);
+  }
+}
+
+// ---------------------------------------------------------
+// 9) Catalogo completo
 // ---------------------------------------------------------
 async function exportCatalog() {
   try {
@@ -230,7 +276,7 @@ async function exportCatalog() {
 }
 
 // ---------------------------------------------------------
-// 8) Esporta tutto
+// 10) Esporta tutto
 // ---------------------------------------------------------
 async function exportAll() {
   console.log("⏳ Rigenerazione JSON…");
@@ -241,6 +287,11 @@ async function exportAll() {
   await exportOrders();
   await exportSales();
   await exportUsers();
+
+  // PATCH — nuovi mirror
+  await exportFeedback();
+  await exportNewsletterLog();
+
   await exportCatalog();
 
   console.log("✅ Tutti i JSON rigenerati (persistente + public)");
@@ -253,6 +304,8 @@ module.exports = {
   exportOrders,
   exportSales,
   exportUsers,
+  exportFeedback,
+  exportNewsletterLog,
   exportCatalog,
   exportAll
 };
