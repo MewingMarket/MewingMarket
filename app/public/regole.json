@@ -1,0 +1,44 @@
+{
+  "sezioni": [
+    {
+      "titolo": "Acquisti e Pagamenti",
+      "regole": [
+        "Tutti i prodotti sono digitali e disponibili immediatamente dopo il pagamento.",
+        "I pagamenti sono gestiti tramite PayPal o carta.",
+        "Ogni ordine genera una ricevuta fiscale automatica."
+      ]
+    },
+    {
+      "titolo": "Download dei Prodotti",
+      "regole": [
+        "Il link di download è disponibile nella pagina Thank You.",
+        "Il link è sempre accessibile dalla tua area personale.",
+        "È vietata la condivisione dei file acquistati."
+      ]
+    },
+    {
+      "titolo": "Recensioni",
+      "regole": [
+        "Puoi lasciare una recensione solo dopo aver acquistato il prodotto.",
+        "Le recensioni devono rispettare il regolamento della community.",
+        "Commenti offensivi o spam verranno rimossi."
+      ]
+    },
+    {
+      "titolo": "Newsletter",
+      "regole": [
+        "Puoi iscriverti o disiscriverti in qualsiasi momento.",
+        "Ogni iscrizione viene registrata nel sistema.",
+        "Le email sono inviate solo per contenuti utili e aggiornamenti."
+      ]
+    },
+    {
+      "titolo": "Supporto",
+      "regole": [
+        "Il supporto risponde entro 24/48 ore.",
+        "Per problemi urgenti puoi usare WhatsApp Business.",
+        "Le richieste devono contenere email e numero ordine."
+      ]
+    }
+  ]
+}
