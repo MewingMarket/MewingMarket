@@ -2,8 +2,8 @@
  * =========================================================
  * File: app/server/router.cjs
  * Router principale — SOLO API
- * Versione DEFINITIVA 2026.99 — PUBLIC/PRIVATE perfetto
- * PATCH: aggiunte rotte feedback admin + top recensioni
+ * Versione DEFINITIVA 2026.100 — PUBLIC/PRIVATE perfetto
+ * PATCH: admin-feedback + admin-utenti + top recensioni
  * =========================================================
  */
 
@@ -32,12 +32,14 @@ try {
 const authAdmin = require("./middleware/auth-admin.cjs");
 router.use("/admin", authAdmin);
 
-// ⭐⭐⭐ PATCH DIAGNOSTICA — verifica caricamento admin-dashboard
+/* =========================================================
+   ADMIN DASHBOARD
+========================================================= */
 try {
   console.log("Tentativo load admin-dashboard...");
-  const adminRouter = require("./routes/admin-dashboard.cjs");
+  const adminDashboard = require("./routes/admin-dashboard.cjs");
+  router.use("/admin", adminDashboard);
   console.log("🔥 admin-dashboard CARICATO");
-  router.use("/admin", adminRouter);
 } catch (err) {
   console.error("❌ ERRORE CARICAMENTO admin-dashboard:", err);
 }
@@ -51,6 +53,17 @@ try {
   console.log("🔥 admin-feedback.cjs CARICATO");
 } catch (err) {
   console.error("❌ ERRORE CARICAMENTO admin-feedback:", err);
+}
+
+/* =========================================================
+   ⭐ PATCH: ADMIN UTENTI (LISTA + BLOCCO)
+========================================================= */
+try {
+  const adminUtenti = require("./routes/admin-utenti.cjs");
+  router.use("/admin", adminUtenti);
+  console.log("🔥 admin-utenti.cjs CARICATO");
+} catch (err) {
+  console.error("❌ ERRORE CARICAMENTO admin-utenti:", err);
 }
 
 /* =========================================================
