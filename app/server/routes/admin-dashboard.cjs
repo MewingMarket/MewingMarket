@@ -2,7 +2,8 @@
  * =========================================================
  * File: app/server/routes/admin-dashboard.cjs
  * Dashboard Admin Unificata — Vendite + Ordini
- * Versione 2026.98 — SQL LIVE + KPI + UTM + Top Prodotti
+ * Versione 2026.99 — SQL LIVE + KPI + UTM + Top Prodotti
+ * + PATCH: email cliente + origine sintetica
  * =========================================================
  */
 
@@ -79,15 +80,17 @@ router.get("/dashboard", authUser, (req, res) => {
 
     const ordini = db.prepare(`
       SELECT 
-        id,
-        utente_id,
-        prodotti_json,
-        totale_cent,
-        stato,
-        metodo_pagamento,
-        data_ordine
-      FROM ordini
-      ORDER BY data_ordine DESC
+        o.id,
+        o.utente_id,
+        o.prodotti_json,
+        o.totale_cent,
+        o.stato,
+        o.metodo_pagamento,
+        o.data_ordine,
+        u.email AS email_cliente
+      FROM ordini o
+      LEFT JOIN utenti u ON u.id = o.utente_id
+      ORDER BY o.data_ordine DESC
     `).all();
 
     const ordiniKPI = {
@@ -96,10 +99,65 @@ router.get("/dashboard", authUser, (req, res) => {
       annullati: ordini.filter(o => o.stato === "annullato").length
     };
 
-    const ordiniParsed = ordini.map(o => ({
-      ...o,
-      prodotti: safeParse(o.prodotti_json)
-    }));
+    // =========================================================
+    // PATCH — ORIGINE SINTETICA PER OGNI ORDINE
+    // =========================================================
+
+    const venditeByUID = db.prepare(`
+      SELECT 
+        uid,
+        origine,
+        utm_source,
+        utm_medium,
+        utm_campaign
+      FROM vendite
+    `).all();
+
+    const origineMap = {};
+    venditeByUID.forEach(v => {
+      origineMap[v.uid] = {
+        origine: v.origine,
+        utm_source: v.utm_source,
+        utm_medium: v.utm_medium,
+        utm_campaign: v.utm_campaign
+      };
+    });
+
+    function origineSintetica(v) {
+      if (!v) return "Direct";
+
+      if (v.utm_source) {
+        const src = v.utm_source.toLowerCase();
+        if (src.includes("insta")) return "Instagram";
+        if (src.includes("yt") || src.includes("you")) return "YouTube";
+        if (src.includes("goo")) return "Google";
+        if (src.includes("bot")) return "Bot";
+        if (src.includes("site") || src.includes("web")) return "Sito";
+        return v.utm_source;
+      }
+
+      if (v.origine) return v.origine;
+
+      return "Direct";
+    }
+
+    const ordiniParsed = ordini.map(o => {
+      const prodotti = safeParse(o.prodotti_json);
+
+      let uid = null;
+      if (prodotti.length > 0) {
+        uid = prodotti[0].uid || null;
+      }
+
+      const origine = origineSintetica(origineMap[uid]);
+
+      return {
+        ...o,
+        prodotti,
+        email: o.email_cliente || null,
+        origine_sintetica: origine
+      };
+    });
 
     // =========================================================
     // RISPOSTA UNIFICATA
