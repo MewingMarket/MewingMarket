@@ -148,3 +148,19 @@ main {
 .nav-site a:hover {
   background: #003fcc;
 }
+
+/* ===========================================================
+   ⭐ PATCH 2026 — Sidebar: voci una sotto l’altra
+   (Download + Ordini + Recensioni allineati verticalmente)
+=========================================================== */
+
+.sidebar .nav-item,
+.sidebar a.nav-item {
+  display: block !important;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.sidebar {
+  display: block !important;
+}
