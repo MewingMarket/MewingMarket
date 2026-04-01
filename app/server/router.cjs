@@ -11,18 +11,25 @@ const router = express.Router();
 
 /* =========================================================
    1) ROTTE PUBBLICHE (NO TOKEN)
-   Login, registrazione, reset password/email
 ========================================================= */
 router.use("/utenti", require("./routes/api-utenti.cjs"));
 
 /* =========================================================
-   2) MIDDLEWARE USER (TOKEN OBBLIGATORIO)
+   2) ADMIN (protette da auth-admin)
+   ⭐ PATCH: PRIMA DI auth-user
+========================================================= */
+const authAdmin = require("./middleware/auth-admin.cjs");
+router.use("/admin", authAdmin);
+router.use("/admin", require("./routes/admin-dashboard.cjs"));
+
+/* =========================================================
+   3) MIDDLEWARE USER (TOKEN OBBLIGATORIO)
    Tutto ciò che segue richiede sessione valida
 ========================================================= */
 router.use(require("./middleware/auth-user.cjs"));
 
 /* =========================================================
-   3) ROTTE UTENTE PROTETTE
+   4) ROTTE UTENTE PROTETTE
 ========================================================= */
 router.use(require("./routes/api-prodotti-new.cjs"));
 router.use(require("./routes/api-upload.cjs"));
@@ -31,31 +38,10 @@ router.use(require("./routes/api-feedback.cjs"));
 router.use(require("./routes/api-vendite-download.cjs"));
 
 /* =========================================================
-   5) ADMIN (protette da auth-admin)
-========================================================= */
-const authAdmin = require("./middleware/auth-admin.cjs");
-
-// Tutto ciò che inizia con /admin richiede ruolo admin
-router.use("/admin", authAdmin);
-
-// ⭐ ROUTER ADMIN UNIFICATA (vendite + ordini + KPI)
-router.use("/admin", require("./routes/admin-dashboard.cjs"));
-
-/* =========================================================
-   4) PAYPAL (PUBLIC)
-   ⚠️ PayPal NON deve essere protetto da token
-   ⚠️ PATCH: spostato DOPO admin per evitare conflitti
+   5) PAYPAL (PUBLIC)
 ========================================================= */
 router.use(require("./routes/paypal-create.cjs"));
 router.use(require("./routes/paypal-complete.cjs"));
 router.use(require("./routes/paypal-cancel.cjs"));
-
-/* =========================================================
-   6) RIMOZIONE ROUTE VECCHIE (ELIMINATE)
-   ❌ api-admin.cjs
-   ❌ admin-analytics.cjs
-   ❌ vendite-admin.cjs
-========================================================= */
-// (Non aggiungere più nulla qui)
 
 module.exports = router;
