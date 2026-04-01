@@ -2,6 +2,7 @@
    FILE: /public/thankyou.js
    THANK YOU PAGE — MewingMarket
    Versione SQL READY + PayPal + Download sicuro
+   PATCH 2026 — Flusso recensioni post-acquisto
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -98,13 +99,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (typeof aggiornaBadgeCarrello === "function") aggiornaBadgeCarrello();
 
   /* =========================================================
-     5) FEEDBACK → RECENSIONI
+     5) PATCH RECENSIONI — Flusso post-acquisto
   ========================================================== */
   const fbBtn = document.getElementById("feedbackBtn");
-  if (fbBtn) {
+
+  if (fbBtn && ordine.prodotti.length > 0) {
+    fbBtn.style.display = "inline-block";
+
     fbBtn.addEventListener("click", () => {
-      // Portiamo l’utente alla pagina recensioni
-      window.location.href = "recensioni.html";
+      // Passiamo i prodotti acquistati alla pagina recensioni
+      const slugs = ordine.prodotti.map(p => p.slug).join(",");
+      window.location.href = `recensioni.html?from=order&prodotti=${slugs}`;
     });
   }
 
