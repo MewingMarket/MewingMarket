@@ -91,7 +91,6 @@ async function initDashboard() {
 
   // -------------------------------------------------------
   // 5) Download — lasciato pronto per /api/download/miei
-  //    (se la route non esiste, non blocca la dashboard)
   // -------------------------------------------------------
   try {
     const res = await fetch("/api/download/miei", {
@@ -167,7 +166,6 @@ async function updateOrdersUI(ordini = null) {
     return;
   }
 
-  // Se non arrivano ordini da initDashboard → li ricarico
   if (!ordini) {
     try {
       const res = await fetch("/api/ordini/utente", {
@@ -218,7 +216,6 @@ async function updateDownloadsUI(download = null) {
     return;
   }
 
-  // Se non arrivano download da initDashboard → li ricarico
   if (!download) {
     try {
       const res = await fetch("/api/ordini/utente", {
@@ -265,5 +262,24 @@ window.addEventListener("message", async (event) => {
   ) {
     await updateOrdersUI();
     await updateDownloadsUI();
+  }
+});
+
+// =========================================================
+// ⭐ PATCH 2026 — MODIFICA PROFILO FUNZIONANTE
+// =========================================================
+
+document.addEventListener("DOMContentLoaded", () => {
+  const btnProfilo = document.getElementById("sidebar-nav-profilo");
+  const contentProfilo = document.getElementById("content-profilo");
+
+  if (btnProfilo && contentProfilo) {
+    btnProfilo.addEventListener("click", () => {
+      // Nasconde tutte le sezioni
+      document.querySelectorAll(".content").forEach(c => c.style.display = "none");
+
+      // Mostra la sezione profilo
+      contentProfilo.style.display = "block";
+    });
   }
 });
