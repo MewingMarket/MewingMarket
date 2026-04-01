@@ -1,3 +1,9 @@
+/* =========================================================
+   File: app/public/recensioni.js
+   Dashboard Utente — Le mie recensioni
+   Versione definitiva 2026 (PATCH)
+========================================================= */
+
 document.addEventListener("DOMContentLoaded", async () => {
   const token = localStorage.getItem("token");
   const email = localStorage.getItem("utenteEmail");
@@ -20,7 +26,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let ordini;
   try {
     const res = await fetch("/api/ordini/utente", {
-      headers: { "x-token": token }
+      headers: { "Authorization": "Bearer " + token }
     });
     const data = await res.json();
     ordini = data.ordini || [];
@@ -89,9 +95,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     try {
-      const res = await fetch("/api/recensioni/crea", {
+      const res = await fetch("/api/feedback/crea", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-token": token },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
         body: JSON.stringify({
           slug,
           titolo,
@@ -127,17 +136,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     listaRecensioni.innerHTML = "Caricamento…";
 
     try {
-      const res = await fetch("/api/recensioni/utente", {
-        headers: { "x-token": token }
+      const res = await fetch("/api/feedback/miei", {
+        headers: { "Authorization": "Bearer " + token }
       });
       const data = await res.json();
 
-      if (!data.success || data.recensioni.length === 0) {
+      if (!data.success || data.feedback.length === 0) {
         listaRecensioni.innerHTML = "Nessuna recensione.";
         return;
       }
 
-      listaRecensioni.innerHTML = data.recensioni
+      listaRecensioni.innerHTML = data.feedback
         .map(r => `
           <div class="review-item">
             <strong>${r.prodotto_titolo}</strong><br>
