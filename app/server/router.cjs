@@ -3,6 +3,7 @@
  * File: app/server/router.cjs
  * Router principale — SOLO API
  * Versione DEFINITIVA 2026.99 — PUBLIC/PRIVATE perfetto
+ * PATCH: aggiunte rotte feedback admin + top recensioni
  * =========================================================
  */
 
@@ -13,6 +14,16 @@ const router = express.Router();
    1) ROTTE PUBBLICHE (NO TOKEN)
 ========================================================= */
 router.use("/utenti", require("./routes/api-utenti.cjs"));
+
+/* =========================================================
+   ⭐ PATCH: TOP RECENSIONI (PUBLIC)
+========================================================= */
+try {
+  router.use(require("./routes/api-recensioni-top.cjs"));
+  console.log("🔥 api-recensioni-top.cjs CARICATO");
+} catch (err) {
+  console.error("❌ ERRORE CARICAMENTO api-recensioni-top:", err);
+}
 
 /* =========================================================
    2) ADMIN (protette da auth-admin)
@@ -29,6 +40,17 @@ try {
   router.use("/admin", adminRouter);
 } catch (err) {
   console.error("❌ ERRORE CARICAMENTO admin-dashboard:", err);
+}
+
+/* =========================================================
+   ⭐ PATCH: ADMIN FEEDBACK (LISTA COMPLETA)
+========================================================= */
+try {
+  const adminFeedback = require("./routes/admin-feedback.cjs");
+  router.use("/admin", adminFeedback);
+  console.log("🔥 admin-feedback.cjs CARICATO");
+} catch (err) {
+  console.error("❌ ERRORE CARICAMENTO admin-feedback:", err);
 }
 
 /* =========================================================
