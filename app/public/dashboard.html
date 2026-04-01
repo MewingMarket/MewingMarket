@@ -1,3 +1,9 @@
+<!-- =========================================================
+     File: app/public/dashboard.html
+     Dashboard Utente — Profilo
+     Versione definitiva 2026 (PATCH SIDEBAR)
+========================================================= -->
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -28,7 +34,7 @@
 
       <div style="margin-top:16px;">
 
-        <!-- Modifica profilo (solo interno dashboard) -->
+        <!-- Modifica profilo -->
         <div class="nav-item" id="sidebar-nav-profilo">Modifica profilo</div>
 
         <!-- Download -->
@@ -41,7 +47,12 @@
           I miei ordini
         </a>
 
-        <!-- Logout (gestito da dashboard/profilo se serve) -->
+        <!-- ⭐ PATCH: Le mie recensioni -->
+        <a href="recensioni.html" class="nav-item" id="sidebar-nav-recensioni">
+          Le mie recensioni
+        </a>
+
+        <!-- Logout -->
         <div class="nav-item" id="sidebar-nav-logout">Logout</div>
 
         <!-- Elimina account -->
@@ -97,5 +108,20 @@
   <script src="structured-data.js"></script>
   <script src="tracking.js"></script>
   <script src="profilo.js"></script>
+
+  <!-- PATCH LOGOUT -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const logout = document.getElementById("sidebar-nav-logout");
+      if (logout) {
+        logout.addEventListener("click", () => {
+          localStorage.removeItem("token");
+          localStorage.removeItem("utenteEmail");
+          window.location.href = "/login.html";
+        });
+      }
+    });
+  </script>
+
 </body>
 </html>
