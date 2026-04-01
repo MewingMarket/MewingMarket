@@ -10,21 +10,38 @@ document.addEventListener("DOMContentLoaded", async () => {
   const token = localStorage.getItem("token");
   const sessionState = localStorage.getItem("sessionState");
 
+  console.log("🔑 TOKEN:", token);
+  console.log("🔑 sessionState:", sessionState);
+
   if (!token || sessionState !== "1") {
     alert("Sessione scaduta. Effettua di nuovo il login.");
     location.href = "/admin/login.html";
     return;
   }
 
+  // ⭐ PATCH LOG — log preciso al momento della fetch
+  console.log("🚀 FETCH /api/admin/dashboard PARTITA");
+  console.log("➡️ HEADER Authorization:", "Bearer " + token);
+
   try {
     const res = await fetch("/api/admin/dashboard", {
-      headers: { Authorization: "Bearer " + token }
+      method: "GET",
+      headers: {
+        Authorization: "Bearer " + token,
+        "X-Debug": "admin-dashboard"
+      }
     });
 
+    console.log("📥 STATUS:", res.status);
+    console.log("📥 HEADERS:", Object.fromEntries(res.headers.entries()));
+
+    const ct = res.headers.get("content-type");
+    console.log("📥 CONTENT-TYPE:", ct);
+
     // ⭐ PATCH 2 — intercetta risposte HTML
-    if (res.headers.get("content-type")?.includes("text/html")) {
+    if (ct && ct.includes("text/html")) {
       const text = await res.text();
-      console.error("❌ ERRORE: ricevuto HTML invece di JSON:", text.slice(0, 200));
+      console.error("❌ ERRORE: ricevuto HTML invece di JSON:", text.slice(0, 500));
       alert("Errore server (HTML ricevuto). Controlla i log.");
       return;
     }
