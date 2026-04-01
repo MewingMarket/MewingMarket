@@ -99,17 +99,110 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (typeof aggiornaBadgeCarrello === "function") aggiornaBadgeCarrello();
 
   /* =========================================================
-     5) PATCH RECENSIONI — Flusso post-acquisto
+     5) PATCH RECENSIONI — Form integrato
   ========================================================== */
+
   const fbBtn = document.getElementById("feedbackBtn");
+  const fbForm = document.getElementById("feedbackForm");
+  const selectProdotto = document.getElementById("selectProdotto");
+  const stars = document.querySelectorAll("#stars span");
+  const comment = document.getElementById("comment");
+  const status = document.getElementById("status");
+
+  const token = localStorage.getItem("token");
+  const email = localStorage.getItem("utenteEmail");
 
   if (fbBtn && ordine.prodotti.length > 0) {
     fbBtn.style.display = "inline-block";
 
     fbBtn.addEventListener("click", () => {
-      // Passiamo i prodotti acquistati alla pagina recensioni
-      const slugs = ordine.prodotti.map(p => p.slug).join(",");
-      window.location.href = `recensioni.html?from=order&prodotti=${slugs}`;
+      fbForm.style.display = "block";
+
+      // Carica prodotti nel select
+      selectProdotto.innerHTML = ordine.prodotti
+        .map(p => `<option value="${p.prodotto_id}" data-title="${p.titolo}">${p.titolo}</option>`)
+        .join("");
+    });
+  }
+
+  /* =========================================================
+     5B) SISTEMA STELLE
+  ========================================================== */
+  let rating = 0;
+
+  stars.forEach(star => {
+    star.addEventListener("click", () => {
+      rating = Number(star.dataset.v);
+
+      stars.forEach(s => s.classList.remove("active"));
+      for (let i = 0; i < rating; i++) {
+        stars[i].classList.add("active");
+      }
+    });
+  });
+
+  /* =========================================================
+     5C) INVIO RECENSIONE
+  ========================================================== */
+  const sendReview = document.getElementById("sendReview");
+
+  if (sendReview) {
+    sendReview.addEventListener("click", async () => {
+      status.textContent = "";
+      status.classList.remove("ok", "err");
+
+      const prodotto_id = selectProdotto.value;
+      const titolo = selectProdotto.selectedOptions[0]?.dataset.title || "";
+
+      if (!prodotto_id) {
+        status.textContent = "Seleziona un prodotto.";
+        status.classList.add("err");
+        return;
+      }
+
+      if (rating === 0) {
+        status.textContent = "Seleziona un numero di stelle.";
+        status.classList.add("err");
+        return;
+      }
+
+      if (comment.value.trim().length < 5) {
+        status.textContent = "Scrivi un commento più dettagliato.";
+        status.classList.add("err");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/recensioni/crea", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+          },
+          body: JSON.stringify({
+            prodotto_id,
+            rating,
+            commento: comment.value.trim()
+          })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          status.textContent = "Recensione inviata!";
+          status.classList.add("ok");
+          comment.value = "";
+          rating = 0;
+          stars.forEach(s => s.classList.remove("active"));
+        } else {
+          status.textContent = data.error || "Errore.";
+          status.classList.add("err");
+        }
+
+      } catch {
+        status.textContent = "Errore di connessione.";
+        status.classList.add("err");
+      }
     });
   }
 
