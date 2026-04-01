@@ -18,12 +18,10 @@ const router = express.Router();
  * Richiede ruolo admin
  * =========================================================
  */
-router.get("/admin/dashboard", authUser, (req, res) => {
+router.get("/dashboard", authUser, (req, res) => {
   try {
-    // ⭐ PATCH 1 — Forza risposta JSON
     res.setHeader("Content-Type", "application/json");
 
-    // ⭐ PATCH 2 — Log diagnostico
     console.log("📊 /api/admin/dashboard → admin:", req.user?.email);
 
     if (req.user?.ruolo !== "admin") {
@@ -34,7 +32,6 @@ router.get("/admin/dashboard", authUser, (req, res) => {
     // SEZIONE VENDITE
     // =========================================================
 
-    // KPI vendite
     const venditeKPI = db.prepare(`
       SELECT 
         COUNT(*) AS venditeTotali,
@@ -43,7 +40,6 @@ router.get("/admin/dashboard", authUser, (req, res) => {
       FROM vendite
     `).get();
 
-    // Vendite ultimi 30 giorni
     const vendite30 = db.prepare(`
       SELECT 
         DATE(created_at) AS giorno,
@@ -54,7 +50,6 @@ router.get("/admin/dashboard", authUser, (req, res) => {
       ORDER BY DATE(created_at)
     `).all();
 
-    // Top prodotti
     const topProdotti = db.prepare(`
       SELECT 
         prodotto_id,
@@ -66,7 +61,6 @@ router.get("/admin/dashboard", authUser, (req, res) => {
       LIMIT 10
     `).all();
 
-    // UTM performance
     const utm = db.prepare(`
       SELECT 
         utm_source AS source,
