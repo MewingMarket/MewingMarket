@@ -2,6 +2,7 @@
    File: app/server/routes/admin-utenti.cjs
    Admin — Gestione Utenti
    Versione 2026 — EVENTI COMPLETI + NEWSLETTER
+   PATCH 2026.200 — Compatibile con fetch normale (senza adminFetch)
 ========================================================= */
 
 const express = require("express");
