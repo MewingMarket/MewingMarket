@@ -1,23 +1,24 @@
 /* =========================================================
    File: app/public/admin/admin-utenti.js
    Admin — Gestione Utenti
-   Versione 2026 — PATCH EVENTI COMPLETI + KPI
-   PATCH 2026.200 — RIMOZIONE adminFetch
+   Versione 2026 — EVENTI COMPLETI + KPI + AZIONI ADMIN
+   PATCH 2026.300 — Blocca/Sblocca/Elimina + Fix KPI
 ========================================================= */
 
 document.addEventListener("admin-header-loaded", caricaUtenti);
 
 // ---------------------------------------------------------
-// FETCH ADMIN (PATCH: SENZA adminFetch)
+// FETCH ADMIN (senza adminFetch)
 // ---------------------------------------------------------
-async function adminGet(url) {
+async function adminGet(url, options = {}) {
   const token = localStorage.getItem("token");
 
-  const res = await fetch(url, {
-    headers: {
-      Authorization: token ? `Bearer ${token}` : ""
-    }
-  });
+  const headers = {
+    ...(options.headers || {}),
+    Authorization: token ? `Bearer ${token}` : ""
+  };
+
+  const res = await fetch(url, { ...options, headers });
 
   if (!res.ok) throw new Error("Errore admin fetch: " + url);
   return res.json();
@@ -71,7 +72,7 @@ function stampaKPI(kpi) {
 // ---------------------------------------------------------
 async function caricaUtenti() {
   const tbody = document.querySelector("#tabella-utenti tbody");
-  tbody.innerHTML = "<tr><td colspan='10'>Caricamento…</td></tr>";
+  tbody.innerHTML = "<tr><td colspan='11'>Caricamento…</td></tr>";
 
   try {
     const data = await adminGet("/api/admin/utenti/lista");
@@ -99,6 +100,12 @@ async function caricaUtenti() {
 
         <td>${u.iscritto || ""}</td>
         <td>${u.disiscritto || ""}</td>
+
+        <td>
+          <button class="btn-blocca" data-email="${u.email}">Blocca</button>
+          <button class="btn-sblocca" data-email="${u.email}">Sblocca</button>
+          <button class="btn-elimina" data-email="${u.email}">Elimina</button>
+        </td>
       `;
 
       tbody.appendChild(tr);
@@ -106,6 +113,47 @@ async function caricaUtenti() {
 
   } catch (err) {
     console.error(err);
-    tbody.innerHTML = "<tr><td colspan='10'>Errore caricamento utenti.</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='11'>Errore caricamento utenti.</td></tr>";
   }
 }
+
+// ---------------------------------------------------------
+// Listener per pulsanti Blocca / Sblocca / Elimina
+// ---------------------------------------------------------
+document.addEventListener("click", async (e) => {
+  const email = e.target.dataset.email;
+  if (!email) return;
+
+  // BLOCCA
+  if (e.target.classList.contains("btn-blocca")) {
+    await adminGet("/api/admin/utenti/blocca", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    });
+    caricaUtenti();
+  }
+
+  // SBLOCCA
+  if (e.target.classList.contains("btn-sblocca")) {
+    await adminGet("/api/admin/utenti/sblocca", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    });
+    caricaUtenti();
+  }
+
+  // ELIMINA
+  if (e.target.classList.contains("btn-elimina")) {
+    if (!confirm("Eliminare definitivamente questo utente?")) return;
+
+    await adminGet("/api/admin/utenti/elimina", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    });
+
+    caricaUtenti();
+  }
+});
