@@ -2,13 +2,13 @@
    File: app/server/routes/admin-utenti.cjs
    Admin — Gestione Utenti
    Versione 2026 — EVENTI COMPLETI + NEWSLETTER
-   PATCH 2026.200 — Compatibile con fetch normale (senza adminFetch)
+   PATCH 2026.200 — Usa auth-admin (requireAdmin eliminato)
 ========================================================= */
 
 const express = require("express");
 const router = express.Router();
 const db = require("../db/database.cjs");
-const { requireAdmin } = require("../middleware/require-admin.cjs");
+const authAdmin = require("../middleware/auth-admin.cjs");
 
 // ---------------------------------------------------------
 // Helper: ultimo evento per tipo
@@ -43,7 +43,7 @@ function getNewsletterEvent(email, tipo) {
 // ---------------------------------------------------------
 // LISTA UTENTI COMPLETA
 // ---------------------------------------------------------
-router.get("/utenti/lista", requireAdmin, (req, res) => {
+router.get("/utenti/lista", authAdmin, (req, res) => {
   try {
     const utenti = db.prepare(`
       SELECT email, codice_fiscale
