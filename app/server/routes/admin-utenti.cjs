@@ -1,7 +1,7 @@
 /* =========================================================
    File: app/server/routes/admin-utenti.cjs
    Admin — Gestione Utenti
-   Versione 2026 — PATCH EVENTI COMPLETI
+   Versione 2026 — EVENTI COMPLETI + NEWSLETTER
 ========================================================= */
 
 const express = require("express");
