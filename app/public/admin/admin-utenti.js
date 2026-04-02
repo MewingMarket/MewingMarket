@@ -2,12 +2,23 @@
    File: app/public/admin/admin-utenti.js
    Admin — Gestione Utenti
    Versione 2026 — PATCH EVENTI COMPLETI + KPI
+   PATCH 2026.200 — RIMOZIONE adminFetch
 ========================================================= */
 
 document.addEventListener("admin-header-loaded", caricaUtenti);
 
+// ---------------------------------------------------------
+// FETCH ADMIN (PATCH: SENZA adminFetch)
+// ---------------------------------------------------------
 async function adminGet(url) {
-  const res = await adminFetch(url);
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(url, {
+    headers: {
+      Authorization: token ? `Bearer ${token}` : ""
+    }
+  });
+
   if (!res.ok) throw new Error("Errore admin fetch: " + url);
   return res.json();
 }
