@@ -96,6 +96,14 @@ router.get("/paypal/cancel-order", async (req, res) => {
       console.error("⚠️ Errore invio email annullamento:", err);
     }
 
+    // ⭐ PATCH BREVO — Rimozione da lista CLIENTI (12)
+    try {
+      const brevo = require("../modules/liste-brevo.cjs");
+      await brevo.removeFromList(brevo.LISTA_CLIENTI, emailUtente);
+    } catch (err) {
+      console.error("❌ Errore rimozione da Brevo (CLIENTI):", err);
+    }
+
     return res.json({
       success: true,
       message: "Ordine annullato correttamente"
