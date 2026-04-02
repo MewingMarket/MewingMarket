@@ -69,9 +69,7 @@ function logUserEvent(email, evento, note = null) {
   } catch (err) {
     console.error("❌ Errore salvataggio utenti_eventi:", err);
   }
-}
-
-// =========================================================
+} // =========================================================
 // REGISTRAZIONE — CF OBBLIGATORIO + ADMIN VIA CF
 // =========================================================
 router.post("/registrazione", async (req, res) => {
@@ -252,10 +250,8 @@ router.post("/cambia-password", async (req, res) => {
     console.error("Cambio password:", err);
     return res.json({ success: false, error: "Errore server" });
   }
-});
-
-// =========================================================
-// ELIMINAZIONE ACCOUNT
+}); // =========================================================
+// ELIMINAZIONE ACCOUNT — PATCHATA COME RICHIESTO
 // =========================================================
 router.post("/elimina-account", async (req, res) => {
   const sessione = getSessionToken(req);
@@ -280,9 +276,41 @@ router.post("/elimina-account", async (req, res) => {
       return res.json({ success: false, error: "Password errata" });
     }
 
-    // EVENTO: eliminato (prima della DELETE, così abbiamo l'email)
+    // EVENTO: eliminato (prima della DELETE)
     logUserEvent(user.email, "eliminato", null);
 
+    // =========================================================
+    // ⭐ PATCH 1 — Eliminare recensioni dell’utente
+    // =========================================================
+    try {
+      db.prepare("DELETE FROM feedback WHERE utente_id = ?").run(user.id);
+    } catch (err) {
+      console.error("❌ Errore eliminazione recensioni:", err);
+    }
+
+    // =========================================================
+    // ⭐ PATCH 2 — Eliminare log newsletter
+    // =========================================================
+    try {
+      db.prepare("DELETE FROM newsletter_log WHERE email = ?").run(user.email);
+    } catch (err) {
+      console.error("❌ Errore eliminazione newsletter_log:", err);
+    }
+
+    // =========================================================
+    // ⭐ PATCH 3 — Rimozione da Brevo (liste 8 e 12)
+    // =========================================================
+    try {
+      const brevo = require("../modules/liste-brevo.cjs");
+      await brevo.removeFromList(8, user.email.toLowerCase());
+      await brevo.removeFromList(12, user.email.toLowerCase());
+    } catch (err) {
+      console.error("❌ Errore rimozione da Brevo:", err);
+    }
+
+    // =========================================================
+    // ⭐ PATCH 4 — Eliminazione utente (originale)
+    // =========================================================
     db.prepare("DELETE FROM utenti WHERE id = ?").run(user.id);
 
     inviaEmailEliminazione({ email: user.email });
@@ -295,9 +323,7 @@ router.post("/elimina-account", async (req, res) => {
     console.error("Eliminazione account:", err);
     return res.json({ success: false, error: "Errore server" });
   }
-});
-
-// =========================================================
+}); // =========================================================
 // RESET PASSWORD REQUEST — ZERO-INPUT + CF CHECK
 // =========================================================
 router.post("/reset-password-request", (req, res) => {
