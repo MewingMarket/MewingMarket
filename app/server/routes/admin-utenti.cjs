@@ -2,7 +2,7 @@
    File: app/server/routes/admin-utenti.cjs
    Admin — Gestione Utenti
    Versione 2026 — EVENTI COMPLETI + NEWSLETTER + BREVO
-   PATCH 2026.400 — Admin visibile come “amministratore”,
+   PATCH 2026.500 — Fix ClienteDB (utente_id), Admin sentinella,
                     RegistratoBrevo + ClienteBrevo + ClienteDB,
                     Sync Brevo automatica + manuale
 ========================================================= */
@@ -48,14 +48,22 @@ function getNewsletterEvent(email, tipo) {
 }
 
 // =========================================================
-// Helper: verifica se utente è cliente DB
+// Helper: verifica se utente è cliente DB (PATCH CORRETTA)
 // =========================================================
 function isClienteDB(email) {
+  // 1) Trova utente
+  const user = db.prepare(`
+    SELECT id FROM utenti WHERE email = ?
+  `).get(email);
+
+  if (!user) return "no";
+
+  // 2) Verifica ordini collegati a utente_id
   const row = db.prepare(`
     SELECT id FROM ordini
-    WHERE email = ?
+    WHERE utente_id = ?
     LIMIT 1
-  `).get(email);
+  `).get(user.id);
 
   return row ? "sì" : "no";
 }
@@ -143,7 +151,7 @@ router.get("/utenti/lista", authAdmin, async (req, res) => {
           ? "presente"
           : "—",
 
-        // ⭐ CLIENTE DB
+        // ⭐ CLIENTE DB (PATCH CORRETTA)
         cliente_db: isClienteDB(u.email)
       };
     });
