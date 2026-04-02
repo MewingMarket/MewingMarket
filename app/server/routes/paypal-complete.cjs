@@ -77,9 +77,7 @@ router.get("/paypal/complete-order", async (req, res) => {
         },
         message: "Ordine già completato"
       });
-    }
-
-    // =========================================================
+    } // =========================================================
     // 4) CATTURA PAGAMENTO PAYPAL — PATCH COMPLETA
     // =========================================================
 
@@ -208,18 +206,14 @@ router.get("/paypal/complete-order", async (req, res) => {
     // =========================================================
     if (typeof global.logEvent === "function") {
       global.logEvent("ordine_completato", ordineFinale);
-    }
-
-    // =========================================================
-    // 10) AGGIUNGI UTENTE ALLA LISTA CLIENTI
+    } // =========================================================
+    // 10) AGGIUNGI UTENTE ALLA LISTA CLIENTI (BREVO ROUTER)
     // =========================================================
     try {
-      await inviaEmailLista({
-        email: emailUtente,
-        listId: LISTA_CLIENTI
-      });
+      const brevo = require("../modules/liste-brevo.cjs");
+      await brevo.addToList(brevo.LISTA_CLIENTI, emailUtente);
     } catch (err) {
-      console.error("⚠️ Errore aggiunta lista clienti:", err);
+      console.error("❌ Errore aggiunta lista clienti (Brevo):", err);
     }
 
     // =========================================================
