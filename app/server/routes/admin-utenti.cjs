@@ -60,6 +60,27 @@ async function getNewsletterStatus(email) {
 }
 
 /* =========================================================
+   Helper: log eventi utente (utenti_eventi)
+========================================================= */
+async function logUserEvent(email, evento, note = null) {
+  try {
+    const cleanEmail = String(email || "").trim().toLowerCase();
+    const cleanEvento = String(evento || "").trim();
+    if (!cleanEmail || !cleanEvento) return;
+
+    await db.run(
+      `
+      INSERT INTO utenti_eventi (email, evento, ip, user_agent, note)
+      VALUES (?, ?, NULL, NULL, ?)
+      `,
+      [cleanEmail, cleanEvento, note]
+    );
+  } catch (err) {
+    console.error("❌ Errore salvataggio utenti_eventi (admin):", err);
+  }
+}
+
+/* =========================================================
    LISTA UTENTI
 ========================================================= */
 router.get("/lista", requireAdmin, async (req, res) => {
@@ -106,6 +127,10 @@ router.post("/blocco", requireAdmin, async (req, res) => {
       `UPDATE utenti SET bloccato = ? WHERE email = ?`,
       [bloccato ? 1 : 0, email]
     );
+
+    // EVENTO: bloccato / sbloccato
+    const evento = bloccato ? "bloccato" : "sbloccato";
+    await logUserEvent(email, evento, null);
 
     res.json({ success: true });
 
