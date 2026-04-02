@@ -1,6 +1,7 @@
 /* =========================================================
    ADMIN — CSS UNICO (2026.50)
    Base + Header + Footer + Pagine + Prodotti + Tabelle
+   PATCH 2026.60 — Brevo + Azioni + Badge
 ========================================================= */
 
 /* BASE */
@@ -101,6 +102,10 @@ a:hover {
 
 .admin-nav a:hover {
   background:#e8eef5;
+}
+
+.admin-nav a i {
+  margin-right:6px;
 }
 
 /* =========================================================
@@ -210,81 +215,37 @@ a:hover {
 }
 
 /* =========================================================
-   DASHBOARD / STATISTICHE
+   BOTTONI AZIONI UTENTI
 ========================================================= */
 
-.stats-grid {
-  display:grid;
-  grid-template-columns:repeat(auto-fit, minmax(180px,1fr));
-  gap:20px;
-}
-
-.stat-card {
-  background:#e8eef5;
-  padding:15px;
-  border-radius:10px;
-  text-align:center;
-}
-
-.stat-card h3 {
-  margin:0;
-  font-size:16px;
-  color:#003366;
-}
-
-.stat-card p {
-  font-size:22px;
-  font-weight:700;
-  margin-top:8px;
-  color:#0077ff;
-}
-
-/* =========================================================
-   CARD PRODOTTI ADMIN
-========================================================= */
-
-.admin-card {
-  display:flex;
-  gap:15px;
-  padding:15px;
-  border:1px solid #d5e1f0;
-  border-radius:10px;
-  background:white;
-  margin-bottom:15px;
-}
-
-.admin-card img {
-  width:90px;
-  height:90px;
-  object-fit:cover;
-  border-radius:8px;
-}
-
-.admin-card-info h3 {
-  margin:0 0 5px 0;
-  font-size:18px;
-  color:#003366;
-}
-
-.btn-modifica,
+.btn-blocca,
+.btn-sblocca,
 .btn-elimina {
-  display:inline-block;
-  padding:6px 12px;
-  margin-right:8px;
+  padding:6px 10px;
+  font-size:13px;
   border-radius:6px;
   cursor:pointer;
   border:none;
-  font-size:14px;
   font-weight:600;
+  margin-right:6px;
 }
 
-.btn-modifica {
-  background:#0077ff;
+.btn-blocca {
+  background:#ff9800;
   color:white;
 }
 
-.btn-modifica:hover {
-  background:#005fe0;
+.btn-blocca:hover {
+  background:#e68900;
+}
+
+.btn-sblocca {
+  background:#4caf50;
+  color:white;
+}
+
+.btn-sblocca:hover {
+  background:#3d8b41;
 }
 
 .btn-elimina {
@@ -296,12 +257,31 @@ a:hover {
   background:#c9302c;
 }
 
-.preview-img {
-  width:150px;
-  height:auto;
-  margin-top:10px;
+/* =========================================================
+   BADGE (Brevo / Clienti)
+========================================================= */
+
+.badge {
+  display:inline-block;
+  padding:4px 8px;
   border-radius:6px;
-  display:block;
+  font-size:13px;
+  font-weight:600;
+}
+
+.badge-verde {
+  background:#d4f8d4;
+  color:#2e7d32;
+}
+
+.badge-rosso {
+  background:#ffe0e0;
+  color:#c62828;
+}
+
+.badge-grigio {
+  background:#eef3f9;
+  color:#607d8b;
 }
 
 /* =========================================================
@@ -323,6 +303,16 @@ a:hover {
 .tabella-standard th {
   font-weight:700;
   background:#eef3f9;
+}
+
+/* =========================================================
+   TOOLBAR UTENTI (Sync Brevo)
+========================================================= */
+
+.toolbar-utenti {
+  margin-bottom:20px;
+  display:flex;
+  justify-content:flex-end;
 }
 
 /* =========================================================
@@ -348,7 +338,4 @@ a:hover {
     margin:20px auto;
     padding:0 15px;
   }
-}
-.admin-nav a i {
-  margin-right: 6px;
 }
