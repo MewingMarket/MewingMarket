@@ -1,7 +1,7 @@
 <!-- =========================================================
      File: app/public/admin/utenti.html
      Admin — Gestione Utenti
-     Versione definitiva 2026
+     Versione definitiva 2026 — PATCH EVENTI COMPLETI
 ========================================================= -->
 
 <!DOCTYPE html>
@@ -17,10 +17,7 @@
 
 <body>
 
-  <!-- HEAD ADMIN -->
   <div id="head-admin-placeholder"></div>
-
-  <!-- HEADER ADMIN -->
   <div id="header-admin-placeholder"></div>
 
   <main class="pagina-standard">
@@ -33,9 +30,17 @@
         <thead>
           <tr>
             <th>Email</th>
-            <th>Newsletter</th>
+            <th>Codice Fiscale</th>
+
+            <th>Registrato</th>
             <th>Login</th>
-            <th>Blocco</th>
+            <th>Logout</th>
+            <th>Eliminato</th>
+            <th>Bloccato</th>
+            <th>Sbloccato</th>
+
+            <th>Iscritto NL</th>
+            <th>Disiscritto NL</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -45,15 +50,12 @@
 
   </main>
 
-  <!-- FOOTER ADMIN -->
   <div id="footer-admin-placeholder"></div>
 
-  <!-- JS GLOBALI -->
   <script src="loader-admin.js"></script>
   <script src="seo-admin.js"></script>
   <script src="structured-data-admin.js"></script>
 
-  <!-- JS SPECIFICO -->
   <script src="admin-utenti.js"></script>
 
 </body>
