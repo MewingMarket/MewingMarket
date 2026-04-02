@@ -2,6 +2,7 @@
 // REGISTER — MewingMarket (SQL READY)
 // Versione DEFINITIVA PATCHATA (2026.10)
 // Compatibile con auth.js + sessionState
+// PATCH EVENTI UTENTE: registra evento "registrato"
 // =========================================================
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -16,6 +17,24 @@ document.addEventListener("DOMContentLoaded", () => {
   // ⭐ PATCH 2026.10 — Entrata in flusso sensibile
   // (registrazione = sessionState 2)
   localStorage.setItem("sessionState", "2");
+
+  // ---------------------------------------------------------
+  // PATCH — Helper per registrare evento utente
+  // ---------------------------------------------------------
+  async function logUserEvent(evento) {
+    try {
+      const email = localStorage.getItem("email") || "";
+      if (!email) return;
+
+      await fetch("/api/utenti/evento", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, evento })
+      });
+    } catch (err) {
+      console.warn("Log evento fallito:", err);
+    }
+  }
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -94,6 +113,9 @@ document.addEventListener("DOMContentLoaded", () => {
         // ⭐ Dopo registrazione → sessione attiva
         localStorage.setItem("sessionState", "1");
       }
+
+      // ⭐ PATCH EVENTO: registra registrazione
+      logUserEvent("registrato");
 
       statusBox.style.color = "green";
       statusBox.textContent = "Registrazione completata! Reindirizzamento...";
