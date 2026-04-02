@@ -2,7 +2,7 @@
    FILE: /public/thankyou.js
    THANK YOU PAGE — MewingMarket
    Versione SQL READY + PayPal + Download sicuro
-   PATCH 2026 — Flusso recensioni post-acquisto
+   PATCH 2026 — Flusso recensioni post-acquisto + Moderazione
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -142,7 +142,46 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   /* =========================================================
-     5C) INVIO RECENSIONE
+     PATCH 2026 — FILTRO RECENSIONI + BAN AUTOMATICO
+  ========================================================== */
+
+  const paroleVietate = [
+    "cazzo", "merda", "stronzo", "troia", "puttana", "vaffanculo",
+    "bastardo", "cretino", "deficiente", "idiota",
+    "bestemmia1", "bestemmia2", "bestemmia3",
+    "sei un fallito", "sei un truffatore", "sei un ladro",
+    "muori", "ti odio", "pezzo di",
+    "vergognati", "fai schifo", "ridicolo"
+  ];
+
+  function contieneParoleVietate(testo) {
+    const lower = testo.toLowerCase();
+    return paroleVietate.some(p => lower.includes(p));
+  }
+
+  function recensioneOffTopic(testo) {
+    const paroleProdotto = [
+      "prodotto", "qualità", "download", "file",
+      "audio", "video", "esercizi", "contenuto"
+    ];
+    const lower = testo.toLowerCase();
+    return !paroleProdotto.some(p => lower.includes(p));
+  }
+
+  async function bannaUtente(motivo) {
+    try {
+      await fetch("/api/utenti/ban", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ motivo })
+      });
+    } catch (err) {
+      console.error("Errore ban utente:", err);
+    }
+  }
+
+  /* =========================================================
+     5C) INVIO RECENSIONE (PATCHATO)
   ========================================================== */
   const sendReview = document.getElementById("sendReview");
 
@@ -153,6 +192,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const prodotto_id = selectProdotto.value;
       const titolo = selectProdotto.selectedOptions[0]?.dataset.title || "";
+      const testo = comment.value.trim();
 
       if (!prodotto_id) {
         status.textContent = "Seleziona un prodotto.";
@@ -166,12 +206,29 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
 
-      if (comment.value.trim().length < 5) {
+      if (testo.length < 5) {
         status.textContent = "Scrivi un commento più dettagliato.";
         status.classList.add("err");
         return;
       }
 
+      // 🔥 FILTRO PAROLACCE / INSULTI / BESTEMMIE
+      if (contieneParoleVietate(testo)) {
+        status.textContent = "Recensione rifiutata: linguaggio non consentito.";
+        status.classList.add("err");
+        await bannaUtente("linguaggio offensivo");
+        return;
+      }
+
+      // 🔥 FILTRO OFF-TOPIC
+      if (recensioneOffTopic(testo)) {
+        status.textContent = "Recensione rifiutata: deve riguardare il prodotto acquistato.";
+        status.classList.add("err");
+        await bannaUtente("recensione impropria/off-topic");
+        return;
+      }
+
+      // 🔥 INVIO RECENSIONE (solo se tutto ok)
       try {
         const res = await fetch("/api/recensioni/crea", {
           method: "POST",
@@ -182,7 +239,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           body: JSON.stringify({
             prodotto_id,
             rating,
-            commento: comment.value.trim()
+            commento: testo
           })
         });
 
