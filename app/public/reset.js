@@ -1,10 +1,29 @@
 // =========================================================
 // Eliminazione Account – MewingMarket (VERSIONE 2026.10)
 // Compatibile con backend SQL + auth.js + sessionState
+// PATCH EVENTI UTENTE: registra evento "eliminato"
 // =========================================================
 
 const msg = document.getElementById("status");
 const btnElimina = document.getElementById("reset-btn");
+
+// ---------------------------------------------------------
+// PATCH — Helper per registrare evento utente
+// ---------------------------------------------------------
+async function logUserEvent(evento) {
+  try {
+    const email = localStorage.getItem("email") || "";
+    if (!email) return;
+
+    await fetch("/api/utenti/evento", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, evento })
+    });
+  } catch (err) {
+    console.warn("Log evento fallito:", err);
+  }
+}
 
 function setMsg(text, ok = false) {
   if (!msg) return;
@@ -70,6 +89,9 @@ btnElimina?.addEventListener("click", async () => {
 
     if (data.success) {
       setMsg("Account eliminato. Reindirizzamento...", true);
+
+      // ⭐ PATCH EVENTO: registra eliminazione
+      await logUserEvent("eliminato");
 
       // =====================================================
       // ⭐ PATCH 2026.10 — Logout pulito + sessionState = 0
