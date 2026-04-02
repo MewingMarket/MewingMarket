@@ -69,7 +69,7 @@ function logUserEvent(email, evento, note = null) {
   } catch (err) {
     console.error("❌ Errore salvataggio utenti_eventi:", err);
   }
-} // =========================================================
+}// =========================================================
 // REGISTRAZIONE — CF OBBLIGATORIO + ADMIN VIA CF
 // =========================================================
 router.post("/registrazione", async (req, res) => {
@@ -298,12 +298,14 @@ router.post("/elimina-account", async (req, res) => {
     }
 
     // =========================================================
-    // ⭐ PATCH 3 — Rimozione da Brevo (liste 8 e 12)
+    // ⭐ PATCH 3 — Rimozione da Brevo (liste newsletter + clienti)
     // =========================================================
     try {
       const brevo = require("../modules/liste-brevo.cjs");
-      await brevo.removeFromList(8, user.email.toLowerCase());
-      await brevo.removeFromList(12, user.email.toLowerCase());
+
+      await brevo.removeFromList(brevo.LISTA_NEWSLETTER, user.email);
+      await brevo.removeFromList(brevo.LISTA_CLIENTI, user.email);
+
     } catch (err) {
       console.error("❌ Errore rimozione da Brevo:", err);
     }
