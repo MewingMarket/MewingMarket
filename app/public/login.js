@@ -1,6 +1,7 @@
 /* =========================================================
    LOGIN.JS — Versione definitiva blindata (2026.10)
    Compatibile con auth.js + sessionState
+   PATCH EVENTI UTENTE: registra evento "login"
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -9,6 +10,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const emailEl = document.getElementById("email");
   const passEl = document.getElementById("password");
+
+  // ---------------------------------------------------------
+  // PATCH — Helper per registrare evento utente
+  // ---------------------------------------------------------
+  async function logUserEvent(evento) {
+    try {
+      const email = localStorage.getItem("email") || "";
+      if (!email) return;
+
+      await fetch("/api/utenti/evento", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, evento })
+      });
+    } catch (err) {
+      console.warn("Log evento fallito:", err);
+    }
+  }
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -45,6 +64,11 @@ document.addEventListener("DOMContentLoaded", () => {
       localStorage.setItem("token", data.token);
       localStorage.setItem("email", data.email);
       localStorage.setItem("ruolo", data.ruolo || "user");
+
+      // =====================================================
+      // ⭐ PATCH EVENTO: registra login
+      // =====================================================
+      logUserEvent("login");
 
       // =====================================================
       // ⭐ PATCH 2026.10 — Sessione attiva
