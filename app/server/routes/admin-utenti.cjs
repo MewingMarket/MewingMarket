@@ -2,9 +2,11 @@
    File: app/server/routes/admin-utenti.cjs
    Admin — Gestione Utenti
    Versione 2026 — EVENTI COMPLETI + NEWSLETTER + BREVO
-   PATCH 2026.500 — Fix ClienteDB (utente_id), Admin sentinella,
+   PATCH 2026.600 — Fix ClienteDB (utente_id),
+                    Admin sentinella,
                     RegistratoBrevo + ClienteBrevo + ClienteDB,
-                    Sync Brevo automatica + manuale
+                    Sync Brevo automatica + manuale,
+                    Eliminazione utente con FK + Brevo lista 8
 ========================================================= */
 
 const express = require("express");
@@ -33,7 +35,7 @@ function getLastEvent(email, evento) {
 }
 
 // =========================================================
-// Helper: newsletter (subscribe / unsubscribe)
+/* Helper: newsletter (subscribe / unsubscribe) */
 // =========================================================
 function getNewsletterEvent(email, tipo) {
   const row = db.prepare(`
@@ -48,7 +50,7 @@ function getNewsletterEvent(email, tipo) {
 }
 
 // =========================================================
-// Helper: verifica se utente è cliente DB (PATCH CORRETTA)
+// Helper: verifica se utente è cliente DB (ordini.utente_id)
 // =========================================================
 function isClienteDB(email) {
   // 1) Trova utente
@@ -90,6 +92,35 @@ async function syncBrevo() {
   const clienti = await getList(liste.LISTA_CLIENTI);
 
   return { newsletter, clienti };
+}
+
+// =========================================================
+// Helper: rimozione da lista newsletter Brevo (lista 8)
+// =========================================================
+async function removeFromBrevoNewsletter(email) {
+  const API_KEY = process.env.BREVO_KEY;
+  if (!API_KEY) return;
+
+  try {
+    const url = `https://api.brevo.com/v3/contacts/lists/${liste.LISTA_NEWSLETTER}/contacts/remove`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "api-key": API_KEY,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        emails: [email]
+      })
+    });
+
+    if (!res.ok) {
+      const txt = await res.text();
+      console.error("Errore removeFromBrevoNewsletter:", res.status, txt);
+    }
+  } catch (err) {
+    console.error("Errore network removeFromBrevoNewsletter:", err);
+  }
 }
 
 // =========================================================
@@ -151,7 +182,7 @@ router.get("/utenti/lista", authAdmin, async (req, res) => {
           ? "presente"
           : "—",
 
-        // ⭐ CLIENTE DB (PATCH CORRETTA)
+        // ⭐ CLIENTE DB
         cliente_db: isClienteDB(u.email)
       };
     });
@@ -197,18 +228,46 @@ router.post("/utenti/sblocca", authAdmin, (req, res) => {
 });
 
 // ==========================================================
-// ELIMINA UTENTE
+// ELIMINA UTENTE (DB + eventi + newsletter_log + Brevo lista 8)
 // ==========================================================
-router.post("/utenti/elimina", authAdmin, (req, res) => {
+router.post("/utenti/elimina", authAdmin, async (req, res) => {
   const { email } = req.body;
   if (!email || email === "amministratore")
     return res.json({ success: false });
 
-  db.prepare(`DELETE FROM utenti WHERE email = ?`).run(email);
-  db.prepare(`DELETE FROM utenti_eventi WHERE email = ?`).run(email);
-  db.prepare(`DELETE FROM newsletter_log WHERE email = ?`).run(email);
+  try {
+    // 1) Trova utente per id (per FK ordini.utente_id)
+    const user = db.prepare(`
+      SELECT id FROM utenti WHERE email = ?
+    `).get(email);
 
-  res.json({ success: true });
+    if (!user) {
+      // già eliminato lato DB, ma proviamo comunque a pulire Brevo
+      await removeFromBrevoNewsletter(email);
+      return res.json({ success: true });
+    }
+
+    // 2) Elimina ordini collegati (FK)
+    db.prepare(`DELETE FROM ordini WHERE utente_id = ?`).run(user.id);
+
+    // 3) Elimina eventi utente
+    db.prepare(`DELETE FROM utenti_eventi WHERE email = ?`).run(email);
+
+    // 4) Elimina log newsletter locali
+    db.prepare(`DELETE FROM newsletter_log WHERE email = ?`).run(email);
+
+    // 5) Elimina utente
+    db.prepare(`DELETE FROM utenti WHERE id = ?`).run(user.id);
+
+    // 6) Rimozione da lista newsletter Brevo (lista 8)
+    await removeFromBrevoNewsletter(email);
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error("Errore elimina utente:", err);
+    res.json({ success: false, error: "Errore eliminazione utente" });
+  }
 });
 
 module.exports = router;
