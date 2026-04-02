@@ -17,7 +17,6 @@ const router = express.Router();
 /**
  * =========================================================
  * GET /api/ordini/utente
- * Restituisce ordini + prodotti con metadata completi
  * =========================================================
  */
 router.get("/ordini/utente", authUser, (req, res) => {
@@ -97,9 +96,7 @@ router.get("/ordini/utente", authUser, (req, res) => {
       error: "Errore server"
     });
   }
-});
-
-/**
+}); /**
  * =========================================================
  * POST /api/ordini/annulla/:id
  * =========================================================
@@ -168,6 +165,9 @@ router.post("/ordini/annulla/:id", authUser, async (req, res) => {
     const utente = stmtUser.get(userId);
     const emailUtente = utente?.email || "";
 
+    // =========================================================
+    // EMAIL DI ANNULLAMENTO
+    // =========================================================
     try {
       inviaEmailOrdineAnnullato({
         email: emailUtente,
@@ -179,6 +179,16 @@ router.post("/ordini/annulla/:id", authUser, async (req, res) => {
       });
     } catch (err) {
       console.error("⚠️ Errore invio email annullamento:", err);
+    }
+
+    // =========================================================
+    // ⭐ PATCH BREVO — Rimozione da lista CLIENTI (12)
+    // =========================================================
+    try {
+      const brevo = require("../modules/liste-brevo.cjs");
+      await brevo.removeFromList(brevo.LISTA_CLIENTI, emailUtente);
+    } catch (err) {
+      console.error("❌ Errore rimozione da Brevo (CLIENTI):", err);
     }
 
     return res.json({
@@ -194,13 +204,3 @@ router.post("/ordini/annulla/:id", authUser, async (req, res) => {
     });
   }
 });
-
-function safeParse(str) {
-  try {
-    return JSON.parse(str);
-  } catch {
-    return [];
-  }
-}
-
-module.exports = router;
