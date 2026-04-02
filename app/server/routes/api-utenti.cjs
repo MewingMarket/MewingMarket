@@ -2,6 +2,7 @@
    File: app/server/routes/api-utenti.cjs
    Versione: 2026.71 — CF obbligatorio + Admin via CF + ZERO-INPUT RESET
    PATCH LOGIN: sessione stabile (non rigenera token se già esiste)
+   PATCH EVENTI: registrazione eventi base in utenti_eventi
 ========================================================= */
 
 const express = require("express");
@@ -50,6 +51,27 @@ function getSessionToken(req) {
 }
 
 // =========================================================
+// HELPER EVENTI UTENTE (utenti_eventi)
+// =========================================================
+function logUserEvent(email, evento, note = null) {
+  try {
+    const cleanEmail = String(email || "").trim().toLowerCase();
+    const cleanEvento = String(evento || "").trim();
+
+    if (!cleanEmail || !cleanEvento) return;
+
+    db.prepare(
+      `
+      INSERT INTO utenti_eventi (email, evento, ip, user_agent, note)
+      VALUES (?, ?, NULL, NULL, ?)
+      `
+    ).run(cleanEmail, cleanEvento, note);
+  } catch (err) {
+    console.error("❌ Errore salvataggio utenti_eventi:", err);
+  }
+}
+
+// =========================================================
 // REGISTRAZIONE — CF OBBLIGATORIO + ADMIN VIA CF
 // =========================================================
 router.post("/registrazione", async (req, res) => {
@@ -82,6 +104,9 @@ router.post("/registrazione", async (req, res) => {
       "INSERT INTO utenti (email, password_hash, sessione, codice_fiscale, ruolo) VALUES (?, ?, ?, ?, ?)"
     ).run(email, passwordHash, sessione, codice_fiscale, ruolo);
 
+    // EVENTO: registrato
+    logUserEvent(email, "registrato", null);
+
     inviaEmailRegistrazione({ email });
 
     await jsonGen.exportUsers();
@@ -92,7 +117,9 @@ router.post("/registrazione", async (req, res) => {
     console.error("Registrazione:", err);
     return res.json({ success: false, error: "Errore server" });
   }
-}); // =========================================================
+});
+
+// =========================================================
 // LOGIN — PATCH 2026.71 (sessione stabile)
 // =========================================================
 router.post("/login", (req, res) => {
@@ -131,6 +158,9 @@ router.post("/login", (req, res) => {
       console.log("LOGIN PATCH → Sessione esistente mantenuta:", sessione.substring(0, 6) + "****");
     }
 
+    // EVENTO: login
+    logUserEvent(email, "login", null);
+
     return res.json({
       success: true,
       token: sessione,
@@ -142,7 +172,9 @@ router.post("/login", (req, res) => {
     console.error("Login:", err);
     return res.json({ success: false, error: "Errore server" });
   }
-}); // =========================================================
+});
+
+// =========================================================
 // CAMBIO EMAIL
 // =========================================================
 router.post("/cambia-email", async (req, res) => {
@@ -248,6 +280,9 @@ router.post("/elimina-account", async (req, res) => {
       return res.json({ success: false, error: "Password errata" });
     }
 
+    // EVENTO: eliminato (prima della DELETE, così abbiamo l'email)
+    logUserEvent(user.email, "eliminato", null);
+
     db.prepare("DELETE FROM utenti WHERE id = ?").run(user.id);
 
     inviaEmailEliminazione({ email: user.email });
@@ -260,7 +295,9 @@ router.post("/elimina-account", async (req, res) => {
     console.error("Eliminazione account:", err);
     return res.json({ success: false, error: "Errore server" });
   }
-}); // =========================================================
+});
+
+// =========================================================
 // RESET PASSWORD REQUEST — ZERO-INPUT + CF CHECK
 // =========================================================
 router.post("/reset-password-request", (req, res) => {
