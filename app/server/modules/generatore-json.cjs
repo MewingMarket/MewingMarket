@@ -3,6 +3,7 @@
  * Persistente su /var/data/json + copia in /app/public/data
  * PATCH 2026 — Invio automatico newsletter “Novità”
  * PATCH FEEDBACK + NEWSLETTER LOG — Mirror SQL aggiuntivi
+ * PATCH EVENTI UTENTE — Mirror utenti_eventi → user-events.json
  * =========================================================
  */
 
@@ -248,7 +249,30 @@ async function exportNewsletterLog() {
 }
 
 // ---------------------------------------------------------
-// 9) Catalogo completo
+// 9) Eventi Utente — NUOVO MIRROR SQL (PATCH)
+// ---------------------------------------------------------
+async function exportUserEvents() {
+  try {
+    const rows = db.prepare(`
+      SELECT 
+        id,
+        email,
+        evento,
+        note,
+        data
+      FROM utenti_eventi
+      ORDER BY id DESC
+    `).all();
+
+    saveJSON("user-events.json", rows);
+    console.log("📌 Eventi utente esportati");
+  } catch (err) {
+    console.error("❌ Errore exportUserEvents:", err.message);
+  }
+}
+
+// ---------------------------------------------------------
+// 10) Catalogo completo
 // ---------------------------------------------------------
 async function exportCatalog() {
   try {
@@ -276,7 +300,7 @@ async function exportCatalog() {
 }
 
 // ---------------------------------------------------------
-// 10) Esporta tutto
+// 11) Esporta tutto
 // ---------------------------------------------------------
 async function exportAll() {
   console.log("⏳ Rigenerazione JSON…");
@@ -291,6 +315,7 @@ async function exportAll() {
   // PATCH — nuovi mirror
   await exportFeedback();
   await exportNewsletterLog();
+  await exportUserEvents();   // ⭐ PATCH EVENTI UTENTE
 
   await exportCatalog();
 
@@ -306,6 +331,7 @@ module.exports = {
   exportUsers,
   exportFeedback,
   exportNewsletterLog,
+  exportUserEvents,   // ⭐ PATCH
   exportCatalog,
   exportAll
 };
