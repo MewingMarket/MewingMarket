@@ -1,7 +1,7 @@
 <!-- =========================================================
      File: app/public/admin/utenti.html
      Admin — Gestione Utenti
-     Versione definitiva 2026 — PATCH KPI + EVENTI COMPLETI
+     Versione definitiva 2026 — PATCH KPI + EVENTI COMPLETI + BREVO
 ========================================================= -->
 
 <!DOCTYPE html>
@@ -34,6 +34,13 @@
 
     <section class="box-standard">
 
+      <!-- ⭐ PULSANTE SYNC BREVO -->
+      <div class="toolbar-utenti">
+        <button id="btn-sync-brevo" class="btn-primario">
+          Sincronizza Brevo
+        </button>
+      </div>
+
       <table class="tabella-standard" id="tabella-utenti">
         <thead>
           <tr>
@@ -50,7 +57,11 @@
             <th>Iscritto NL</th>
             <th>Disiscritto NL</th>
 
-            <!-- ⭐ NUOVA COLONNA -->
+            <!-- ⭐ NUOVE COLONNE BREVO -->
+            <th>Registrato in Brevo</th>
+            <th>Cliente Brevo</th>
+
+            <!-- ⭐ COLONNA AZIONI -->
             <th>Azioni</th>
           </tr>
         </thead>
