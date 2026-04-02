@@ -4,6 +4,13 @@ const axios = require("axios");
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
 const BREVO_API_BASE = "https://api.brevo.com/v3";
 
+/**
+ * =========================================================
+ * inviaEmailLista()
+ * Modulo unico per inviare email via Brevo SMTP API
+ * (NON gestisce più le liste — ora lo fa liste-brevo.cjs)
+ * =========================================================
+ */
 async function inviaEmailLista({ email, listId, subject, html, sender, attachments = [] }) {
   if (!BREVO_API_KEY) {
     console.error("❌ BREVO_API_KEY mancante");
@@ -11,43 +18,23 @@ async function inviaEmailLista({ email, listId, subject, html, sender, attachmen
   }
 
   if (!email || !subject || !html) {
-    console.error("❌ Parametri email mancanti", { email, subject, listId });
+    console.error("❌ Parametri email mancanti", { email, subject });
     return;
   }
 
   try {
-    // 1) Assicura contatto nella lista (solo se listId è presente)
-    if (listId) {
-      try {
-        await axios.post(
-          `${BREVO_API_BASE}/contacts`,
-          {
-            email,
-            listIds: [listId]
-          },
-          {
-            headers: {
-              "api-key": BREVO_API_KEY,
-              "Content-Type": "application/json"
-            }
-          }
-        );
-      } catch (err) {
-        const code = err?.response?.status;
-        if (code !== 400) {
-          console.error("❌ Errore contatto Brevo:", err?.response?.data || err.message);
-        }
-      }
-    }
+    // ⭐ PATCH 2026 — RIMOSSA gestione liste
+    // Ora le liste sono gestite SOLO da liste-brevo.cjs
+    // (addToList / removeFromList / syncLists)
 
-    // 2) Prepara payload email
+    // Prepara payload email
     const payload = {
       to: [{ email }],
       subject,
       htmlContent: html,
       sender: sender || {
         name: process.env.BREVO_SENDER_NAME || "MewingMarket",
-        email: process.env.BREVO_SENDER_VENDITE || "no-reply@mewingmarket.it" // ✔️ CORRETTO
+        email: process.env.BREVO_SENDER_VENDITE || "no-reply@mewingmarket.it"
       },
       ...(attachments.length > 0
         ? {
@@ -60,7 +47,7 @@ async function inviaEmailLista({ email, listId, subject, html, sender, attachmen
         : {})
     };
 
-    // 3) Invia email
+    // Invia email via Brevo SMTP API
     await axios.post(
       `${BREVO_API_BASE}/smtp/email`,
       payload,
