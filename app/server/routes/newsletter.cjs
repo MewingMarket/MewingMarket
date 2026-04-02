@@ -68,3 +68,73 @@ module.exports = function (app) {
       return res.json({ success: false, error: "Errore durante l'iscrizione" });
     }
   });
+/* =========================================================
+     DISISCRIZIONE NEWSLETTER — ENDPOINT CORRETTO EU LEGACY
+  ========================================================== */
+  app.post("/newsletter/unsubscribe", async (req, res) => {
+    const uid = req.uid;
+    const rawEmail = req.body?.email || "";
+    const email = String(rawEmail).trim().toLowerCase();
+
+    if (!email) {
+      return res.json({ success: false, error: "Email mancante" });
+    }
+
+    try {
+      // ⭐ PATCH BREVO — rimozione tramite router centralizzato
+      await brevo.removeFromList(brevo.LISTA_NEWSLETTER, email);
+
+      trackGA4("newsletter_unsubscribe", { uid, email });
+
+      // PATCH: log unsubscribe
+      logNewsletter({
+        email,
+        azione: "unsubscribe",
+        origine: req.body?.origine || "form",
+        note: null
+      });
+
+      await inviaEmailNewsletterUnsubscribe({ email });
+
+      return res.json({ success: true });
+
+    } catch (err) {
+      console.error("❌ Errore /newsletter/unsubscribe:", err?.response?.data || err);
+      return res.json({ success: false, error: "Errore durante la disiscrizione" });
+    }
+  });
+
+  /* =========================================================
+     STATO NEWSLETTER
+  ========================================================== */
+  app.get("/newsletter/status", async (req, res) => {
+    const rawEmail = req.query?.email || "";
+    const email = String(rawEmail).trim().toLowerCase();
+
+    if (!email) {
+      return res.json({ success: false, error: "Email mancante" });
+    }
+
+    try {
+      // ⭐ PATCH BREVO — recupero stato tramite API diretta (necessario)
+      const result = await axios.get(
+        `https://api.brevo.com/v3/contacts/${encodeURIComponent(email)}`,
+        {
+          headers: {
+            "api-key": process.env.BREVO_API_KEY
+          }
+        }
+      );
+
+      return res.json({
+        success: true,
+        subscribed: result.data?.listIds?.includes(brevo.LISTA_NEWSLETTER) || false,
+        data: result.data
+      });
+
+    } catch (err) {
+      console.error("❌ Errore /newsletter/status:", err?.response?.data || err);
+      return res.json({ success: false, error: "Errore nel recupero dello stato" });
+    }
+  });
+};
