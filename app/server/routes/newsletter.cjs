@@ -4,12 +4,27 @@
  */
 
 const axios = require("axios");
+const db = require("../db/database.cjs"); // PATCH: per newsletter_log
 const { trackGA4 } = require("../services/ga4.cjs");
 const { LISTA_NEWSLETTER } = require("../modules/liste-brevo.cjs");
 const { inviaEmailNewsletterBenvenuto } = require("../modules/email-newsletter.cjs");
 const { inviaEmailNewsletterUnsubscribe } = require("../modules/email-newsletter-unsubscribe.cjs");
 
 module.exports = function (app) {
+
+  /* =========================================================
+     Helper: scrivi log newsletter
+  ========================================================== */
+  function logNewsletter({ email, azione, origine = null, note = null }) {
+    try {
+      db.prepare(`
+        INSERT INTO newsletter_log (email, azione, origine, note)
+        VALUES (?, ?, ?, ?)
+      `).run(email, azione, origine, note);
+    } catch (err) {
+      console.error("❌ Errore salvataggio newsletter_log:", err);
+    }
+  }
 
   /* =========================================================
      ISCRIZIONE NEWSLETTER
@@ -44,6 +59,14 @@ module.exports = function (app) {
       );
 
       trackGA4("newsletter_subscribe", { uid, email });
+
+      // PATCH: log subscribe
+      logNewsletter({
+        email,
+        azione: "subscribe",
+        origine: req.body?.origine || "form",
+        note: null
+      });
 
       await inviaEmailNewsletterBenvenuto({ email });
 
@@ -82,6 +105,14 @@ module.exports = function (app) {
       );
 
       trackGA4("newsletter_unsubscribe", { uid, email });
+
+      // PATCH: log unsubscribe
+      logNewsletter({
+        email,
+        azione: "unsubscribe",
+        origine: req.body?.origine || "form",
+        note: null
+      });
 
       await inviaEmailNewsletterUnsubscribe({ email });
 
