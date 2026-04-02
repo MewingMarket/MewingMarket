@@ -1,11 +1,30 @@
 // =========================================================
 // AUTH.JS — Persistenza Intelligente (2026.10 + PATCH DEPLOY)
 // Stato di sessione + versione deploy + logoutReason
+// PATCH EVENTI UTENTE: registra evento "logout"
 // =========================================================
 
 console.log("[AUTH] Caricato");
 
 const APP_VERSION = "2026.10";
+
+// ---------------------------------------------------------
+// Helper: registra evento utente
+// ---------------------------------------------------------
+async function logUserEvent(evento) {
+  try {
+    const email = localStorage.getItem("email") || "";
+    if (!email) return;
+
+    await fetch("/api/utenti/evento", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, evento })
+    });
+  } catch (err) {
+    console.warn("Log evento fallito:", err);
+  }
+}
 
 // ---------------------------------------------------------
 // 0) Gestione versione deploy (reset controllato)
@@ -96,6 +115,9 @@ function initAuth() {
 
   if (reason === "deploy") {
     console.log("[AUTH] Logout automatico per nuovo deploy");
+
+    // ⭐ PATCH EVENTO: registra logout
+    logUserEvent("logout");
 
     // Notifica globale
     document.dispatchEvent(new Event("auto-logout"));
