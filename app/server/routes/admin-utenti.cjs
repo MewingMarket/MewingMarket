@@ -18,6 +18,9 @@ const fetch = require("node-fetch");
 // ⭐ PATCH: importiamo router Brevo centralizzato
 const brevo = require("../modules/liste-brevo.cjs");
 
+// ⭐ PATCH: email disiscrizione newsletter
+const { inviaEmailNewsletterUnsubscribe } = require("../modules/email-newsletter-unsubscribe.cjs");
+
 // Codice fiscale admin
 const CF_ADMIN = "GRSSMN92H25I138W";
 
@@ -101,7 +104,6 @@ router.get("/utenti/sync-brevo", authAdmin, async (req, res) => {
 // =========================================================
 router.get("/utenti/lista", authAdmin, async (req, res) => {
   try {
-    // ⭐ PATCH: Sync Brevo automatica tramite router centralizzato
     let brevoLists = { newsletter: [], clienti: [] };
     try {
       brevoLists = await syncBrevo();
@@ -124,7 +126,6 @@ router.get("/utenti/lista", authAdmin, async (req, res) => {
         email: u.is_admin ? "amministratore" : u.email,
         codice_fiscale: u.codice_fiscale,
 
-        // EVENTI UTENTE
         registrato: getLastEvent(u.email, "registrato") || "Sì",
         login: getLastEvent(u.email, "login"),
         logout: getLastEvent(u.email, "logout"),
@@ -132,11 +133,9 @@ router.get("/utenti/lista", authAdmin, async (req, res) => {
         bloccato: getLastEvent(u.email, "bloccato"),
         sbloccato: getLastEvent(u.email, "sbloccato"),
 
-        // NEWSLETTER (log locale)
         iscritto: getNewsletterEvent(u.email, "subscribe"),
         disiscritto: getNewsletterEvent(u.email, "unsubscribe"),
 
-        // ⭐ BREVO (router centralizzato)
         registrato_brevo: brevoLists.newsletter.includes(emailLower)
           ? "presente"
           : "—",
@@ -145,7 +144,6 @@ router.get("/utenti/lista", authAdmin, async (req, res) => {
           ? "presente"
           : "—",
 
-        // ⭐ CLIENTE DB
         cliente_db: isClienteDB(u.email)
       };
     });
@@ -199,40 +197,45 @@ router.post("/utenti/elimina", authAdmin, async (req, res) => {
     return res.json({ success: false });
 
   try {
-    // 1) Trova utente per id (per FK ordini.utente_id)
     const user = db.prepare(`
       SELECT id FROM utenti WHERE email = ?
     `).get(email);
 
     if (!user) {
-      // già eliminato lato DB, ma puliamo comunque Brevo
       try {
         await brevo.removeFromList(brevo.LISTA_NEWSLETTER, email);
         await brevo.removeFromList(brevo.LISTA_CLIENTI, email);
       } catch (err) {
         console.error("❌ Errore rimozione Brevo (utente inesistente):", err);
       }
+
+      // ⭐ PATCH — email disiscrizione newsletter
+      try {
+        await inviaEmailNewsletterUnsubscribe({ email });
+      } catch (err) {
+        console.error("❌ Errore invio email disiscrizione:", err);
+      }
+
       return res.json({ success: true });
     }
 
-    // 2) Elimina ordini collegati (FK)
     db.prepare(`DELETE FROM ordini WHERE utente_id = ?`).run(user.id);
-
-    // 3) Elimina eventi utente
     db.prepare(`DELETE FROM utenti_eventi WHERE email = ?`).run(email);
-
-    // 4) Elimina log newsletter locali
     db.prepare(`DELETE FROM newsletter_log WHERE email = ?`).run(email);
-
-    // 5) Elimina utente
     db.prepare(`DELETE FROM utenti WHERE id = ?`).run(user.id);
 
-    // ⭐ PATCH BREVO — rimozione da entrambe le liste
     try {
       await brevo.removeFromList(brevo.LISTA_NEWSLETTER, email);
       await brevo.removeFromList(brevo.LISTA_CLIENTI, email);
     } catch (err) {
       console.error("❌ Errore rimozione Brevo:", err);
+    }
+
+    // ⭐ PATCH — email disiscrizione newsletter
+    try {
+      await inviaEmailNewsletterUnsubscribe({ email });
+    } catch (err) {
+      console.error("❌ Errore invio email disiscrizione:", err);
     }
 
     res.json({ success: true });
