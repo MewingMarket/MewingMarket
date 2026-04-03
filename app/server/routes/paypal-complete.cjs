@@ -2,6 +2,7 @@
  * =========================================================
  * File: app/server/routes/paypal-complete.cjs
  * Completa ordine PayPal (SQL) + email + tracking + vendite + JSON mirror
+ * PATCH 2026.1002 — id_ordine coerente per email + frontend
  * =========================================================
  */
 
@@ -66,18 +67,22 @@ router.get("/paypal/complete-order", async (req, res) => {
 
     // =========================================================
     // 3) SE GIÀ COMPLETATO → NON DUPLICARE
+    //    PATCH 2026.1002: ritorno id_ordine anche qui
     // =========================================================
     if (ordine.stato === "completato") {
       return res.json({
         success: true,
         order: {
           ...ordine,
+          id_ordine: ordine.id,              // ⭐ compatibilità email + UI
           prodotti: safeParse(ordine.prodotti_json),
           totale: ordine.totale_cent / 100
         },
         message: "Ordine già completato"
       });
-    } // =========================================================
+    }
+
+    // =========================================================
     // 4) CATTURA PAGAMENTO PAYPAL — PATCH COMPLETA
     // =========================================================
 
@@ -141,11 +146,13 @@ router.get("/paypal/complete-order", async (req, res) => {
 
     // =========================================================
     // 6) PREPARA ORDINE PER EMAIL E FRONTEND
+    //    PATCH 2026.1002: aggiunto id_ordine
     // =========================================================
     const prodotti = safeParse(ordine.prodotti_json);
 
     const ordineFinale = {
       id: ordine.id,
+      id_ordine: ordine.id,                 // ⭐ chiave per email-acquisto
       utente_id: ordine.utente_id,
       prodotti,
       totale: ordine.totale_cent / 100,
@@ -206,7 +213,9 @@ router.get("/paypal/complete-order", async (req, res) => {
     // =========================================================
     if (typeof global.logEvent === "function") {
       global.logEvent("ordine_completato", ordineFinale);
-    } // =========================================================
+    }
+
+    // =========================================================
     // 10) AGGIUNGI UTENTE ALLA LISTA CLIENTI (BREVO ROUTER)
     // =========================================================
     try {
@@ -218,6 +227,7 @@ router.get("/paypal/complete-order", async (req, res) => {
 
     // =========================================================
     // 11) INVIA EMAIL DI CONFERMA ORDINE
+    //    (email-acquisto usa ordine.id_ordine)
     // =========================================================
     try {
       await inviaEmailAcquisto({
