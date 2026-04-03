@@ -5,7 +5,7 @@ const BREVO_API_KEY = process.env.BREVO_API_KEY;
 const BREVO_API_BASE = "https://api.brevo.com/v3";
 
 // =========================================================
-// LISTE BREVO (come da tua struttura originale)
+// LISTE BREVO
 // =========================================================
 const LISTA_NEWSLETTER = 8;
 const LISTA_REGISTRATI = 9;
@@ -80,34 +80,37 @@ async function removeFromList(listId, email) {
 }
 
 // =========================================================
-// SINCRONIZZAZIONE LISTE (opzionale ma utile)
+// ⭐ PATCH — SYNC LISTE COMPLETO (newsletter + clienti)
 // =========================================================
-async function syncLists(email, listIds = []) {
-  if (!BREVO_API_KEY || !email) return;
-
-  const e = clean(email);
+async function syncLists() {
+  if (!BREVO_API_KEY) return { newsletter: [], clienti: [] };
 
   try {
-    await axios.put(
-      `${BREVO_API_BASE}/contacts/${encodeURIComponent(e)}`,
-      {
-        email: e,
-        listIds
-      },
-      {
-        headers: {
-          "api-key": BREVO_API_KEY,
-          "Content-Type": "application/json"
-        }
-      }
+    // NEWSLETTER
+    const resNL = await axios.get(
+      `${BREVO_API_BASE}/contacts/lists/${LISTA_NEWSLETTER}/contacts`,
+      { headers: { "api-key": BREVO_API_KEY } }
     );
+
+    // CLIENTI
+    const resCL = await axios.get(
+      `${BREVO_API_BASE}/contacts/lists/${LISTA_CLIENTI}/contacts`,
+      { headers: { "api-key": BREVO_API_KEY } }
+    );
+
+    return {
+      newsletter: (resNL.data?.contacts || []).map(c => clean(c.email)),
+      clienti: (resCL.data?.contacts || []).map(c => clean(c.email))
+    };
+
   } catch (err) {
     console.error("❌ Errore syncLists:", err?.response?.data || err.message);
+    return { newsletter: [], clienti: [] };
   }
 }
 
 // =========================================================
-// EXPORT DEL ROUTER COMPLETO
+// EXPORT
 // =========================================================
 module.exports = {
   LISTA_NEWSLETTER,
