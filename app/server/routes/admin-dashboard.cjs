@@ -4,6 +4,7 @@
  * Dashboard Admin Unificata — Vendite + Ordini
  * Versione 2026.99 — SQL LIVE + KPI + UTM + Top Prodotti
  * + PATCH: email cliente + origine sintetica
+ * + PATCH 2026.1000: se ordini è vuota → svuota vendite
  * =========================================================
  */
 
@@ -27,6 +28,18 @@ router.get("/dashboard", authUser, (req, res) => {
 
     if (req.user?.ruolo !== "admin") {
       return res.json({ success: false, error: "Accesso negato" });
+    }
+
+    // =========================================================
+    // ⭐ PATCH: se la tabella ordini è vuota → svuota vendite
+    // =========================================================
+    const countOrdini = db.prepare(`SELECT COUNT(*) AS n FROM ordini`).get().n;
+
+    if (countOrdini === 0) {
+      console.log("⚠️ Nessun ordine nel DB → pulizia vendite automatica");
+
+      db.prepare(`DELETE FROM vendite`).run();
+      db.prepare(`DELETE FROM sqlite_sequence WHERE name='vendite'`).run();
     }
 
     // =========================================================
