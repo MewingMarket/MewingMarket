@@ -15,6 +15,9 @@ const { inviaEmailCambioEmail } = require("../modules/email-cambio-email.cjs");
 const { inviaEmailCambioPassword } = require("../modules/email-cambio-password.cjs");
 const { inviaEmailEliminazione } = require("../modules/email-eliminazione.cjs");
 
+// ⭐ PATCH — email disiscrizione newsletter
+const { inviaEmailNewsletterUnsubscribe } = require("../modules/email-newsletter-unsubscribe.cjs");
+
 const router = express.Router();
 
 // =========================================================
@@ -69,7 +72,7 @@ function logUserEvent(email, evento, note = null) {
   } catch (err) {
     console.error("❌ Errore salvataggio utenti_eventi:", err);
   }
-}// =========================================================
+} // =========================================================
 // REGISTRAZIONE — CF OBBLIGATORIO + ADMIN VIA CF
 // =========================================================
 router.post("/registrazione", async (req, res) => {
@@ -143,9 +146,7 @@ router.post("/login", (req, res) => {
       return res.json({ success: false, error: "Password errata" });
     }
 
-    // =====================================================
     // PATCH: NON rigenerare token se già esiste
-    // =====================================================
     let sessione = user.sessione;
 
     if (!sessione || sessione.length < 10) {
@@ -276,30 +277,24 @@ router.post("/elimina-account", async (req, res) => {
       return res.json({ success: false, error: "Password errata" });
     }
 
-    // EVENTO: eliminato (prima della DELETE)
+    // EVENTO: eliminato
     logUserEvent(user.email, "eliminato", null);
 
-    // =========================================================
-    // ⭐ PATCH 1 — Eliminare recensioni dell’utente
-    // =========================================================
+    // Eliminazione recensioni
     try {
       db.prepare("DELETE FROM feedback WHERE utente_id = ?").run(user.id);
     } catch (err) {
       console.error("❌ Errore eliminazione recensioni:", err);
     }
 
-    // =========================================================
-    // ⭐ PATCH 2 — Eliminare log newsletter
-    // =========================================================
+    // Eliminazione log newsletter
     try {
       db.prepare("DELETE FROM newsletter_log WHERE email = ?").run(user.email);
     } catch (err) {
       console.error("❌ Errore eliminazione newsletter_log:", err);
     }
 
-    // =========================================================
-    // ⭐ PATCH 3 — Rimozione da Brevo (liste newsletter + clienti)
-    // =========================================================
+    // Rimozione da Brevo
     try {
       const brevo = require("../modules/liste-brevo.cjs");
 
@@ -310,11 +305,17 @@ router.post("/elimina-account", async (req, res) => {
       console.error("❌ Errore rimozione da Brevo:", err);
     }
 
-    // =========================================================
-    // ⭐ PATCH 4 — Eliminazione utente (originale)
-    // =========================================================
+    // ⭐ PATCH — EMAIL DI DISISCRIZIONE NEWSLETTER
+    try {
+      await inviaEmailNewsletterUnsubscribe({ email: user.email });
+    } catch (err) {
+      console.error("❌ Errore invio email disiscrizione:", err);
+    }
+
+    // Eliminazione utente
     db.prepare("DELETE FROM utenti WHERE id = ?").run(user.id);
 
+    // Email eliminazione account
     inviaEmailEliminazione({ email: user.email });
 
     await jsonGen.exportUsers();
@@ -325,7 +326,9 @@ router.post("/elimina-account", async (req, res) => {
     console.error("Eliminazione account:", err);
     return res.json({ success: false, error: "Errore server" });
   }
-}); // =========================================================
+});
+
+// =========================================================
 // RESET PASSWORD REQUEST — ZERO-INPUT + CF CHECK
 // =========================================================
 router.post("/reset-password-request", (req, res) => {
@@ -441,9 +444,7 @@ router.post("/reset-email-request", (req, res) => {
     console.error("Reset email request:", err);
     return res.json({ success: false, error: "Errore server" });
   }
-});
-
-// =========================================================
+}); // =========================================================
 // RESET EMAIL CONFIRM — ZERO-INPUT + CF CHECK (OK)
 // =========================================================
 router.post("/reset-email-confirm", async (req, res) => {
