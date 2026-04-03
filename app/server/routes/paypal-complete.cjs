@@ -2,17 +2,16 @@
  * =========================================================
  * File: app/server/routes/paypal-complete.cjs
  * Completa ordine PayPal (SQL) + email + tracking + vendite + JSON mirror
- * PATCH 2026.1002 — id_ordine coerente per email + frontend
+ * PATCH 2026.2001 — token download + codice fiscale + ordineFinale completo
  * =========================================================
  */
 
 const express = require("express");
 const fetch = require("node-fetch");
+const crypto = require("crypto");
 const db = require("../db/database.cjs");
 
 const { inviaEmailAcquisto } = require("../modules/email-acquisto.cjs");
-const { inviaEmailLista } = require("../modules/invia-email-lista.cjs");
-const { LISTA_CLIENTI } = require("../modules/liste-brevo.cjs");
 const { trackGA4 } = require("../services/ga4.cjs");
 const jsonGen = require("../modules/generatore-json.cjs");
 
@@ -53,10 +52,10 @@ router.get("/paypal/complete-order", async (req, res) => {
     }
 
     // =========================================================
-    // 2) RECUPERA EMAIL UTENTE DAL DB
+    // 2) RECUPERA EMAIL + CODICE FISCALE UTENTE
     // =========================================================
     const stmtUser = db.prepare(`
-      SELECT email
+      SELECT email, codice_fiscale
       FROM utenti
       WHERE id = ?
       LIMIT 1
@@ -64,17 +63,17 @@ router.get("/paypal/complete-order", async (req, res) => {
 
     const utente = stmtUser.get(ordine.utente_id);
     const emailUtente = utente?.email || "";
+    const codiceFiscale = utente?.codice_fiscale || "";
 
     // =========================================================
     // 3) SE GIÀ COMPLETATO → NON DUPLICARE
-    //    PATCH 2026.1002: ritorno id_ordine anche qui
     // =========================================================
     if (ordine.stato === "completato") {
       return res.json({
         success: true,
         order: {
           ...ordine,
-          id_ordine: ordine.id,              // ⭐ compatibilità email + UI
+          id_ordine: ordine.id,
           prodotti: safeParse(ordine.prodotti_json),
           totale: ordine.totale_cent / 100
         },
@@ -83,9 +82,8 @@ router.get("/paypal/complete-order", async (req, res) => {
     }
 
     // =========================================================
-    // 4) CATTURA PAGAMENTO PAYPAL — PATCH COMPLETA
+    // 4) CATTURA PAGAMENTO PAYPAL
     // =========================================================
-
     const MODE = process.env.PAYPAL_MODE || "sandbox";
 
     const PAYPAL_API = MODE === "sandbox"
@@ -125,7 +123,20 @@ router.get("/paypal/complete-order", async (req, res) => {
     const paypalCaptureId = captureData.id || null;
 
     // =========================================================
-    // 5) AGGIORNA ORDINE → COMPLETATO
+    // 5) GENERA TOKEN DOWNLOAD MONOUSO
+    // =========================================================
+    const downloadToken = crypto.randomUUID();
+
+    const stmtToken = db.prepare(`
+      UPDATE ordini
+      SET download_token = ?
+      WHERE id = ?
+    `);
+
+    stmtToken.run(downloadToken, orderId);
+
+    // =========================================================
+    // 6) AGGIORNA ORDINE → COMPLETATO
     // =========================================================
     const stmtUpdate = db.prepare(`
       UPDATE ordini
@@ -137,22 +148,18 @@ router.get("/paypal/complete-order", async (req, res) => {
 
     stmtUpdate.run(orderId);
 
-    // 🔥 Aggiorna JSON mirror ordini
     try {
       await jsonGen.exportOrders();
-    } catch (err) {
-      console.error("⚠️ Errore exportOrders JSON:", err);
-    }
+    } catch {}
 
     // =========================================================
-    // 6) PREPARA ORDINE PER EMAIL E FRONTEND
-    //    PATCH 2026.1002: aggiunto id_ordine
+    // 7) PREPARA ORDINE PER EMAIL E FRONTEND
     // =========================================================
     const prodotti = safeParse(ordine.prodotti_json);
 
     const ordineFinale = {
       id: ordine.id,
-      id_ordine: ordine.id,                 // ⭐ chiave per email-acquisto
+      id_ordine: ordine.id,
       utente_id: ordine.utente_id,
       prodotti,
       totale: ordine.totale_cent / 100,
@@ -161,11 +168,15 @@ router.get("/paypal/complete-order", async (req, res) => {
       stato: "completato",
       metodo_pagamento: "PayPal",
       paypal_transaction_id: paypalId,
-      paypal_capture_id: paypalCaptureId
+      paypal_capture_id: paypalCaptureId,
+
+      // ⭐ PATCH
+      codice_fiscale: codiceFiscale,
+      download_token: downloadToken
     };
 
     // =========================================================
-    // 7) SALVA VENDITE
+    // 8) SALVA VENDITE
     // =========================================================
     const stmtVendita = db.prepare(`
       INSERT INTO vendite (
@@ -193,15 +204,12 @@ router.get("/paypal/complete-order", async (req, res) => {
       );
     }
 
-    // 🔥 Aggiorna JSON mirror vendite
     try {
       await jsonGen.exportSales();
-    } catch (err) {
-      console.error("⚠️ Errore exportSales JSON:", err);
-    }
+    } catch {}
 
     // =========================================================
-    // 8) TRACKING GA4
+    // 9) TRACKING GA4
     // =========================================================
     trackGA4("ordine_completato", {
       ordine_id: ordine.id,
@@ -209,25 +217,7 @@ router.get("/paypal/complete-order", async (req, res) => {
     });
 
     // =========================================================
-    // 9) LOG EVENTO INTERNO
-    // =========================================================
-    if (typeof global.logEvent === "function") {
-      global.logEvent("ordine_completato", ordineFinale);
-    }
-
-    // =========================================================
-    // 10) AGGIUNGI UTENTE ALLA LISTA CLIENTI (BREVO ROUTER)
-    // =========================================================
-    try {
-      const brevo = require("../modules/liste-brevo.cjs");
-      await brevo.addToList(brevo.LISTA_CLIENTI, emailUtente);
-    } catch (err) {
-      console.error("❌ Errore aggiunta lista clienti (Brevo):", err);
-    }
-
-    // =========================================================
-    // 11) INVIA EMAIL DI CONFERMA ORDINE
-    //    (email-acquisto usa ordine.id_ordine)
+    // 10) EMAIL ACQUISTO
     // =========================================================
     try {
       await inviaEmailAcquisto({
@@ -239,7 +229,7 @@ router.get("/paypal/complete-order", async (req, res) => {
     }
 
     // =========================================================
-    // 12) RITORNA ORDINE AL FRONTEND
+    // 11) RITORNA ORDINE AL FRONTEND
     // =========================================================
     return res.json({
       success: true,
