@@ -10,7 +10,7 @@
 
 <body>
 
-<!-- HEAD DINAMICO (spostato qui, posizione corretta) -->
+<!-- HEAD DINAMICO -->
 <div id="head-placeholder"></div>
 
 <!-- HEADER DINAMICO -->
@@ -33,17 +33,14 @@
 <!-- FOOTER DINAMICO -->
 <div id="footer-placeholder"></div>
 
-<!-- JS SPECIFICO -->
-<script src="elimina-account.js"></script>
-
-<!-- JS PROTEZIONE LOGIN -->
-<script src="auth.js"></script>
-
-<!-- JS GLOBALI -->
+<!-- JS GLOBALI (caricano anche auth.js) -->
 <script src="loader-header-footer.js"></script>
 <script src="seo.js"></script>
 <script src="structured-data.js"></script>
 <script src="tracking.js"></script>
+
+<!-- JS SPECIFICO (dopo il loader) -->
+<script src="elimina-account.js"></script>
 
 </body>
 </html>
