@@ -2,7 +2,9 @@
 // File: app/server/modules/ricevuta-fiscale.cjs
 // Generatore PDF ricevuta fiscale prestazione occasionale
 // Layout stile Quickfisco + Logo + Tabella prodotti
-// Versione definitiva 2026 — PATCH 2026.2000 (una sola ricevuta)
+// Versione definitiva 2026 — PATCH 2026.2001
+// - 1 ricevuta cliente
+// - 1 ricevuta interna
 // =========================================================
 
 const PDFDocument = require("pdfkit");
@@ -148,21 +150,28 @@ function creaPDF(ordine, { includeMarcaBollo = false, numeroRicevuta }) {
 }
 
 // ===============================
-// GENERATORE COMPLETO — UNA SOLA RICEVUTA
+// GENERATORE COMPLETO — 1 cliente + 1 interno
 // ===============================
 async function generaRicevuteFiscali(ordine) {
   const sopraSoglia = Number(ordine.totale || 0) >= MARCA_BOLLO_SOGLIA;
 
   const numeroRicevuta = ordine.id_ordine || ordine.id || "0";
 
-  // Generiamo SOLO il PDF cliente
+  // Cliente → include bollo se sopra soglia
   const pdfCliente = await creaPDF(ordine, {
+    includeMarcaBollo: sopraSoglia,
+    numeroRicevuta
+  });
+
+  // Interno → stessa logica del cliente
+  const pdfInterno = await creaPDF(ordine, {
     includeMarcaBollo: sopraSoglia,
     numeroRicevuta
   });
 
   return {
     pdfCliente: pdfCliente.toString("base64"),
+    pdfInterno: pdfInterno.toString("base64"),
     sopraSoglia
   };
 }
