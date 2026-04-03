@@ -79,6 +79,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const data = await res.json().catch(() => null);
 
+      // ⭐ PATCH — LOG RISPOSTA
+      console.log("Risposta elimina-account:", data);
+
       if (res.status === 401) {
         setMsg("Sessione scaduta o non valida. Effettua di nuovo il login.");
         return;
@@ -90,10 +93,10 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       // =====================================================
-      // ⭐ Password errata (allineato al backend)
+      // ⭐ PATCH — MOSTRA ERRORE REALE DEL BACKEND
       // =====================================================
-      if (data.error === "Password errata") {
-        setMsg("Password errata. Riprova.");
+      if (data.error) {
+        setMsg(data.error);
         return;
       }
 
