@@ -4,7 +4,11 @@ const { LISTA_CLIENTI } = require("./liste-brevo.cjs");
 const { SENDER_ACQUISTI } = require("./email-senders.cjs");
 
 async function inviaEmailOrdineAnnullato({ email, ordine }) {
-  const subject = `Il tuo ordine #${ordine.id_ordine} è stato annullato`;
+
+  // ⭐ PATCH 2026.1005 — fallback ID ordine
+  const numeroOrdine = ordine.id_ordine || ordine.id || "SENZA-ID";
+
+  const subject = `Il tuo ordine #${numeroOrdine} è stato annullato`;
 
   const html = `
 <!DOCTYPE html>
@@ -15,7 +19,7 @@ async function inviaEmailOrdineAnnullato({ email, ordine }) {
   <h2 style="text-align:center;color:#333;">Ordine annullato</h2>
 
   <p style="font-size:16px;color:#444;">
-    Il tuo ordine <strong>#${ordine.id_ordine}</strong> è stato annullato.
+    Il tuo ordine <strong>#${numeroOrdine}</strong> è stato annullato.
   </p>
 
   <p style="font-size:16px;color:#444;">
