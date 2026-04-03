@@ -2,7 +2,7 @@
 // File: app/server/modules/ricevuta-fiscale.cjs
 // Generatore PDF ricevuta fiscale prestazione occasionale
 // Layout stile Quickfisco + Logo + Tabella prodotti
-// Versione definitiva 2026 — PATCH 2026.1006
+// Versione definitiva 2026 — PATCH 2026.2000 (una sola ricevuta)
 // =========================================================
 
 const PDFDocument = require("pdfkit");
@@ -37,27 +37,20 @@ function creaPDF(ordine, { includeMarcaBollo = false, numeroRicevuta }) {
       ? new Date(ordine.data).toLocaleDateString("it-IT")
       : new Date().toLocaleDateString("it-IT");
 
-    // =========================================================
-    // LOGO (in alto)
-    // =========================================================
+    // LOGO
     try {
       doc.image("app/public/logo.png", 50, 40, { width: 120 });
-    } catch {
-      // se manca il logo, ignora
-    }
+    } catch {}
+
     doc.moveDown(3);
 
-    // =========================================================
     // TITOLO
-    // =========================================================
     doc.fontSize(20).text(`Ricevuta fiscale n. ${numeroRicevuta}`, { align: "center" });
     doc.moveDown(0.5);
     doc.fontSize(12).text(`del ${dataOrdine}`, { align: "center" });
     doc.moveDown(2);
 
-    // =========================================================
     // DATI PRESTATORE
-    // =========================================================
     doc.fontSize(14).text("Dati Prestatore", { underline: true });
     doc.moveDown(0.5);
 
@@ -68,9 +61,7 @@ function creaPDF(ordine, { includeMarcaBollo = false, numeroRicevuta }) {
     doc.text(`Email: ${DATI_PRESTATORE.email}`);
     doc.moveDown(1.5);
 
-    // =========================================================
     // DATI CLIENTE
-    // =========================================================
     doc.fontSize(14).text("Dati Cliente", { underline: true });
     doc.moveDown(0.5);
 
@@ -78,31 +69,25 @@ function creaPDF(ordine, { includeMarcaBollo = false, numeroRicevuta }) {
     doc.text(`Codice Fiscale: ${ordine.codice_fiscale || "-"}`);
     doc.moveDown(1.5);
 
-    // =========================================================
     // OGGETTO
-    // =========================================================
     doc.fontSize(14).text("Oggetto della prestazione", { underline: true });
     doc.moveDown(0.5);
 
     doc.fontSize(12).text("Fornitura di prodotti digitali acquistati tramite la piattaforma MewingMarket.");
     doc.moveDown(1.5);
 
-    // =========================================================
-    // TABELLA PRODOTTI (stile Quickfisco)
-    // =========================================================
+    // TABELLA PRODOTTI
     doc.fontSize(14).text("Dettaglio prodotti", { underline: true });
     doc.moveDown(0.8);
 
     const startX = 50;
     let y = doc.y;
 
-    // Header tabella
     doc.rect(startX, y, 500, 25).stroke();
     doc.fontSize(12).text("Prodotto", startX + 10, y + 7);
     doc.text("Prezzo", startX + 350, y + 7);
     y += 25;
 
-    // Righe prodotti
     if (Array.isArray(ordine.prodotti)) {
       ordine.prodotti.forEach(p => {
         const prezzoEuro = (p.prezzo_cent / 100).toFixed(2);
@@ -117,9 +102,7 @@ function creaPDF(ordine, { includeMarcaBollo = false, numeroRicevuta }) {
 
     doc.moveDown(3);
 
-    // =========================================================
     // TOTALE + MARCA DA BOLLO
-    // =========================================================
     doc.fontSize(14).text("Totale", { underline: true });
     doc.moveDown(0.5);
 
@@ -129,12 +112,10 @@ function creaPDF(ordine, { includeMarcaBollo = false, numeroRicevuta }) {
       doc.moveDown(1);
       doc.text("Importo superiore alla soglia di 77,47 €.");
       doc.text("Marca da bollo da 2,00 € assolta ai sensi di legge.");
-
       doc.moveDown(1);
       doc.rect(doc.x, doc.y, 120, 120).stroke();
       doc.text("Incolla qui la marca da bollo", doc.x + 10, doc.y + 10);
       doc.moveDown(8);
-
     } else {
       doc.moveDown(1);
       doc.text("Operazione sotto soglia marca da bollo (77,47 €).");
@@ -143,32 +124,23 @@ function creaPDF(ordine, { includeMarcaBollo = false, numeroRicevuta }) {
 
     doc.moveDown(2);
 
-    // =========================================================
     // METODO DI PAGAMENTO
-    // =========================================================
     doc.fontSize(14).text("Metodo di pagamento", { underline: true });
     doc.moveDown(0.5);
-
     doc.fontSize(12).text("PayPal");
     doc.moveDown(2);
 
-    // =========================================================
     // NOTE FISCALI
-    // =========================================================
     doc.fontSize(12).text(
       "La prestazione è di natura occasionale ed è esclusa dall’applicazione dell’IVA ai sensi dell’art. 5 del D.P.R. 633/1972."
     );
     doc.moveDown();
-
     doc.text("Documento generato elettronicamente ai sensi della normativa vigente.");
     doc.moveDown(2);
 
-    // =========================================================
     // FIRMA
-    // =========================================================
     doc.fontSize(14).text("Firma:");
     doc.moveDown(0.5);
-
     doc.fontSize(20).text("Simone Griseri");
 
     doc.end();
@@ -176,24 +148,21 @@ function creaPDF(ordine, { includeMarcaBollo = false, numeroRicevuta }) {
 }
 
 // ===============================
-// GENERATORE COMPLETO
+// GENERATORE COMPLETO — UNA SOLA RICEVUTA
 // ===============================
 async function generaRicevuteFiscali(ordine) {
   const sopraSoglia = Number(ordine.totale || 0) >= MARCA_BOLLO_SOGLIA;
 
-  // ⭐ PATCH 2026.1006 — fallback ID ordine
   const numeroRicevuta = ordine.id_ordine || ordine.id || "0";
 
-  const [pdfCliente, pdfInternoSenza, pdfInternoCon] = await Promise.all([
-    creaPDF(ordine, { includeMarcaBollo: false, numeroRicevuta }),
-    creaPDF(ordine, { includeMarcaBollo: false, numeroRicevuta }),
-    creaPDF(ordine, { includeMarcaBollo: true, numeroRicevuta })
-  ]);
+  // Generiamo SOLO il PDF cliente
+  const pdfCliente = await creaPDF(ordine, {
+    includeMarcaBollo: sopraSoglia,
+    numeroRicevuta
+  });
 
   return {
     pdfCliente: pdfCliente.toString("base64"),
-    pdfInternoSenzaBollo: pdfInternoSenza.toString("base64"),
-    pdfInternoConBollo: pdfInternoCon.toString("base64"),
     sopraSoglia
   };
 }
