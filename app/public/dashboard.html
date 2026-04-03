@@ -1,7 +1,7 @@
 <!-- =========================================================
      File: app/public/dashboard.html
      Dashboard Utente — Profilo
-     Versione definitiva 2026 (PATCH SIDEBAR)
+     Versione definitiva 2026 (PATCH SIDEBAR + EMAIL/USERNAME/CF)
 ========================================================= -->
 
 <!DOCTYPE html>
@@ -28,8 +28,9 @@
       <h2>Area utente</h2>
 
       <div class="user-meta">
-        <div id="sidebarCF"></div>
+        <div id="sidebarEmail"></div>
         <div id="sidebarUsername"></div>
+        <div id="sidebarCF"></div>
       </div>
 
       <div style="margin-top:16px;">
@@ -71,8 +72,9 @@
       <h1>Profilo utente</h1>
 
       <p class="user-meta">
-        Codice fiscale: <span id="userCF"></span><br>
-        Username: <span id="username"></span>
+        Email: <span id="userEmail"></span><br>
+        Username: <span id="username"></span><br>
+        Codice fiscale: <span id="userCF"></span>
       </p>
 
       <div class="field-group">
