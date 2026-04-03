@@ -72,12 +72,18 @@ function isClienteDB(email) {
 // =========================================================
 async function syncBrevo() {
   try {
-    return await brevo.syncLists();
+    const res = await brevo.syncLists();
+    return {
+      newsletter: Array.isArray(res?.newsletter) ? res.newsletter : [],
+      clienti: Array.isArray(res?.clienti) ? res.clienti : []
+    };
   } catch (err) {
     console.error("Errore syncBrevo:", err);
     return { newsletter: [], clienti: [] };
   }
-} // =========================================================
+}
+
+// =========================================================
 // ENDPOINT: SYNC BREVO (manuale + automatica)
 // =========================================================
 router.get("/utenti/sync-brevo", authAdmin, async (req, res) => {
@@ -99,7 +105,10 @@ router.get("/utenti/lista", authAdmin, async (req, res) => {
     let brevoLists = { newsletter: [], clienti: [] };
     try {
       brevoLists = await syncBrevo();
-    } catch {}
+    } catch (err) {
+      console.error("Errore syncBrevo in /utenti/lista:", err);
+      brevoLists = { newsletter: [], clienti: [] };
+    }
 
     const utenti = db.prepare(`
       SELECT email, codice_fiscale,
@@ -109,7 +118,7 @@ router.get("/utenti/lista", authAdmin, async (req, res) => {
     `).all(CF_ADMIN);
 
     const output = utenti.map(u => {
-      const emailLower = u.email.toLowerCase();
+      const emailLower = (u.email || "").toLowerCase();
 
       return {
         email: u.is_admin ? "amministratore" : u.email,
@@ -179,7 +188,9 @@ router.post("/utenti/sblocca", authAdmin, (req, res) => {
   `).run(email);
 
   res.json({ success: true });
-}); // ==========================================================
+});
+
+// ==========================================================
 // ELIMINA UTENTE (DB + eventi + newsletter_log + Brevo liste)
 // ==========================================================
 router.post("/utenti/elimina", authAdmin, async (req, res) => {
@@ -230,4 +241,6 @@ router.post("/utenti/elimina", authAdmin, async (req, res) => {
     console.error("Errore elimina utente:", err);
     res.json({ success: false, error: "Errore eliminazione utente" });
   }
-}); module.exports = router;
+});
+
+module.exports = router;
