@@ -1,5 +1,5 @@
 /* =========================================================
-   DASHBOARD ADMIN — Versione 2026.70
+   DASHBOARD ADMIN — Versione 2026.70 + PATCH USERNAME + CF
    Gestione profilo admin (email + password)
    PATCH: adminFetch integrato nel file
 ========================================================= */
@@ -24,15 +24,12 @@ async function adminFetch(url, options = {}) {
 
   const res = await fetch(url, { ...options, headers });
 
-  // PATCH: niente login admin → usa login normale
   if (res.status === 401 || res.status === 403) {
     console.warn("[ADMIN] Accesso negato → token non valido");
 
-    // Logout pulito
     localStorage.removeItem("token");
     localStorage.removeItem("email");
 
-    // Redirect al login normale
     window.location.href = "/login.html";
     return;
   }
@@ -52,16 +49,38 @@ document.addEventListener("admin-header-loaded", () => {
 });
 
 /* =========================================================
-   1) Popola dati admin nella pagina
+   1) Popola dati admin nella pagina (EMAIL + USERNAME + CF + RUOLO)
 ========================================================= */
-function popolaDatiAdmin() {
-  const email = localStorage.getItem("email") || "—";
+async function popolaDatiAdmin() {
+  try {
+    const res = await adminFetch("/api/utenti/me", { method: "GET" });
+    if (!res) return;
 
-  const emailSpan = document.getElementById("adminEmailMain");
-  const ruoloSpan = document.getElementById("adminRoleMain");
+    const data = await res.json();
+    if (!data.success || !data.utente) return;
 
-  if (emailSpan) emailSpan.textContent = clean(email);
-  if (ruoloSpan) ruoloSpan.textContent = "Admin";
+    const email = clean(data.utente.email);
+    const username = email.split("@")[0];
+    const cf = clean(data.utente.codice_fiscale);
+    const ruolo = clean(data.utente.ruolo || "Admin");
+
+    // Salvo email in localStorage per coerenza
+    localStorage.setItem("email", email);
+
+    // Popola UI
+    const emailSpan = document.getElementById("adminEmailMain");
+    const usernameSpan = document.getElementById("adminUsernameMain");
+    const cfSpan = document.getElementById("adminCFMain");
+    const ruoloSpan = document.getElementById("adminRoleMain");
+
+    if (emailSpan) emailSpan.textContent = email;
+    if (usernameSpan) usernameSpan.textContent = username;
+    if (cfSpan) cfSpan.textContent = cf;
+    if (ruoloSpan) ruoloSpan.textContent = ruolo;
+
+  } catch (err) {
+    console.error("[ADMIN] Errore caricamento dati admin:", err);
+  }
 }
 
 /* =========================================================
