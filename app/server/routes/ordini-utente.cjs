@@ -14,6 +14,18 @@ const { inviaEmailOrdineAnnullato } = require("../modules/email-ordine-annullato
 
 const router = express.Router();
 
+// =========================================================
+// Helper: safeParse per prodotti_json
+// =========================================================
+function safeParse(str) {
+  try {
+    if (!str) return [];
+    return JSON.parse(str);
+  } catch {
+    return [];
+  }
+}
+
 /**
  * =========================================================
  * GET /api/ordini/utente
