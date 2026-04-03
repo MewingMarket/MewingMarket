@@ -1,8 +1,7 @@
 /* =========================================================
    FILE: /public/thankyou.js
    THANK YOU PAGE — MewingMarket
-   Versione SQL READY + PayPal + Download sicuro
-   PATCH 2026 — Flusso recensioni post-acquisto + Moderazione
+   Versione 2026 — Download diretto + Recensioni patchate
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -46,7 +45,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /* =========================================================
-     2) RENDER RIEPILOGO (SQL READY)
+     2) RENDER RIEPILOGO
   ========================================================== */
   const prodEl = document.getElementById("prod");
   const priceEl = document.getElementById("price");
@@ -62,7 +61,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     priceEl.textContent = (ordine.totale_cent / 100).toFixed(2);
   }
 
-  // Lista prodotti
   const listEl = document.getElementById("prod-list");
   listEl.innerHTML = ordine.prodotti
     .map(p => {
@@ -74,16 +72,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   dateEl.textContent = new Date().toLocaleDateString("it-IT");
 
   /* =========================================================
-     3) DOWNLOAD (ID-based + token)
+     3) DOWNLOAD DIRETTO (TOKEN)
   ========================================================== */
   const dlBox = document.getElementById("download-box");
-  const session = localStorage.getItem("session");
 
   if (ordine.stato === "completato") {
     dlBox.innerHTML = ordine.prodotti
       .map(p => `
         <a class="btn-download" 
-           href="/api/vendite/download/${p.prodotto_id}?session=${session}">
+           href="/api/vendite/download-direct/${ordine.download_token}">
           Scarica ${p.titolo}
         </a>
       `)
@@ -93,13 +90,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /* =========================================================
-     4) SVUOTA CARRELLO + BADGE
+     4) SVUOTA CARRELLO
   ========================================================== */
   Cart.clear();
   if (typeof aggiornaBadgeCarrello === "function") aggiornaBadgeCarrello();
 
   /* =========================================================
-     5) PATCH RECENSIONI — Form integrato
+     5) RECENSIONI — PATCH 2026
+     - Nessun filtro off-topic
+     - Nessun ban automatico
+     - Solo filtro parolacce
   ========================================================== */
 
   const fbBtn = document.getElementById("feedbackBtn");
@@ -110,7 +110,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   const status = document.getElementById("status");
 
   const token = localStorage.getItem("token");
-  const email = localStorage.getItem("utenteEmail");
 
   if (fbBtn && ordine.prodotti.length > 0) {
     fbBtn.style.display = "inline-block";
@@ -118,7 +117,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     fbBtn.addEventListener("click", () => {
       fbForm.style.display = "block";
 
-      // Carica prodotti nel select
       selectProdotto.innerHTML = ordine.prodotti
         .map(p => `<option value="${p.prodotto_id}" data-title="${p.titolo}">${p.titolo}</option>`)
         .join("");
@@ -126,7 +124,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /* =========================================================
-     5B) SISTEMA STELLE
+     SISTEMA STELLE
   ========================================================== */
   let rating = 0;
 
@@ -142,16 +140,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   /* =========================================================
-     PATCH 2026 — FILTRO RECENSIONI + BAN AUTOMATICO
+     FILTRO PAROLACCE (UNICO FILTRO)
   ========================================================== */
-
   const paroleVietate = [
     "cazzo", "merda", "stronzo", "troia", "puttana", "vaffanculo",
     "bastardo", "cretino", "deficiente", "idiota",
-    "bestemmia1", "bestemmia2", "bestemmia3",
-    "sei un fallito", "sei un truffatore", "sei un ladro",
-    "muori", "ti odio", "pezzo di",
-    "vergognati", "fai schifo", "ridicolo"
+    "bestemmia1", "bestemmia2", "bestemmia3"
   ];
 
   function contieneParoleVietate(testo) {
@@ -159,29 +153,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     return paroleVietate.some(p => lower.includes(p));
   }
 
-  function recensioneOffTopic(testo) {
-    const paroleProdotto = [
-      "prodotto", "qualità", "download", "file",
-      "audio", "video", "esercizi", "contenuto"
-    ];
-    const lower = testo.toLowerCase();
-    return !paroleProdotto.some(p => lower.includes(p));
-  }
-
-  async function bannaUtente(motivo) {
-    try {
-      await fetch("/api/utenti/ban", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ motivo })
-      });
-    } catch (err) {
-      console.error("Errore ban utente:", err);
-    }
-  }
-
   /* =========================================================
-     5C) INVIO RECENSIONE (PATCHATO)
+     INVIO RECENSIONE (PATCHATO)
   ========================================================== */
   const sendReview = document.getElementById("sendReview");
 
@@ -191,7 +164,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       status.classList.remove("ok", "err");
 
       const prodotto_id = selectProdotto.value;
-      const titolo = selectProdotto.selectedOptions[0]?.dataset.title || "";
       const testo = comment.value.trim();
 
       if (!prodotto_id) {
@@ -206,29 +178,20 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
 
-      if (testo.length < 5) {
+      if (testo.length < 3) {
         status.textContent = "Scrivi un commento più dettagliato.";
         status.classList.add("err");
         return;
       }
 
-      // 🔥 FILTRO PAROLACCE / INSULTI / BESTEMMIE
+      // 🔥 UNICO FILTRO: PAROLACCE
       if (contieneParoleVietate(testo)) {
         status.textContent = "Recensione rifiutata: linguaggio non consentito.";
         status.classList.add("err");
-        await bannaUtente("linguaggio offensivo");
         return;
       }
 
-      // 🔥 FILTRO OFF-TOPIC
-      if (recensioneOffTopic(testo)) {
-        status.textContent = "Recensione rifiutata: deve riguardare il prodotto acquistato.";
-        status.classList.add("err");
-        await bannaUtente("recensione impropria/off-topic");
-        return;
-      }
-
-      // 🔥 INVIO RECENSIONE (solo se tutto ok)
+      // 🔥 INVIO RECENSIONE
       try {
         const res = await fetch("/api/recensioni/crea", {
           method: "POST",
