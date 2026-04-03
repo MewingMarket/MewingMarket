@@ -1,8 +1,3 @@
-<!-- =========================================================
-     File: app/public/regolamento.html
-     Pagina Regolamento — Versione definitiva 2026
-========================================================= -->
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -12,9 +7,6 @@
 
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="regolamento.css">
-
-  <script defer src="loader-header-footer.js"></script>
-  <script defer src="regole.js"></script>
 </head>
 
 <body>
@@ -40,6 +32,15 @@
 
   <!-- FOOTER -->
   <div id="footer-placeholder"></div>
+
+  <!-- JS GLOBALI (caricano anche auth.js) -->
+  <script src="loader-header-footer.js"></script>
+  <script src="seo.js"></script>
+  <script src="structured-data.js"></script>
+  <script src="tracking.js"></script>
+
+  <!-- JS SPECIFICO (dopo il loader) -->
+  <script src="regole.js"></script>
 
 </body>
 </html>
