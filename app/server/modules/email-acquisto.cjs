@@ -25,9 +25,13 @@ function renderProdotti(prodotti) {
 }
 
 /* =========================================================
-   INVIO EMAIL ACQUISTO — PATCH 2026
+   INVIO EMAIL ACQUISTO — PATCH 2026.1004 (fallback ID ordine)
 ========================================================= */
 async function inviaEmailAcquisto({ email, ordine }) {
+
+  // ⭐ PATCH 2026.1004 — fallback ID ordine a prova di bomba
+  const numeroOrdine = ordine.id_ordine || ordine.id || "SENZA-ID";
+
   const subject = "Grazie per il tuo acquisto da MewingMarket! 🎉";
 
   const prodottiHTML = renderProdotti(ordine.prodotti || []);
@@ -45,7 +49,7 @@ async function inviaEmailAcquisto({ email, ordine }) {
         </h1>
 
         <p style="margin:0 0 12px 0;">
-          Abbiamo ricevuto correttamente il tuo ordine <strong>#${ordine.id_ordine}</strong> del ${dataOrdine}.
+          Abbiamo ricevuto correttamente il tuo ordine <strong>#${numeroOrdine}</strong> del ${dataOrdine}.
         </p>
 
         <hr style="border:none;border-top:1px solid #1f2937;margin:16px 0;" />
@@ -144,14 +148,14 @@ async function inviaEmailAcquisto({ email, ordine }) {
     totale > 77.47
       ? [
           {
-            filename: `ricevuta-ordine-${ordine.id_ordine}.pdf`,
+            filename: `ricevuta-ordine-${numeroOrdine}.pdf`,
             content: pdfInternoConBollo,
             mimeType: "application/pdf"
           }
         ]
       : [
           {
-            filename: `ricevuta-ordine-${ordine.id_ordine}.pdf`,
+            filename: `ricevuta-ordine-${numeroOrdine}.pdf`,
             content: pdfInternoSenzaBollo,
             mimeType: "application/pdf"
           }
@@ -171,17 +175,17 @@ async function inviaEmailAcquisto({ email, ordine }) {
   await inviaEmailLista({
     email: EMAIL_OWNER,
     listId: LISTA_CLIENTI,
-    subject: `Nuovo ordine #${ordine.id_ordine} – ricevute fiscali`,
+    subject: `Nuovo ordine #${numeroOrdine} – ricevute fiscali`,
     html: `<p>Nuovo ordine da ${email}</p>`,
     sender: SENDER_ACQUISTI,
     attachments: [
       {
-        filename: `ricevuta-interna-senza-bollo-${ordine.id_ordine}.pdf`,
+        filename: `ricevuta-interna-senza-bollo-${numeroOrdine}.pdf`,
         content: pdfInternoSenzaBollo,
         mimeType: "application/pdf"
       },
       {
-        filename: `ricevuta-interna-con-bollo-${ordine.id_ordine}.pdf`,
+        filename: `ricevuta-interna-con-bollo-${numeroOrdine}.pdf`,
         content: pdfInternoConBollo,
         mimeType: "application/pdf"
       }
