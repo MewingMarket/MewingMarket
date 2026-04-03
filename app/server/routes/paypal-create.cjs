@@ -2,6 +2,7 @@
  * =========================================================
  * File: app/server/routes/paypal-create.cjs
  * Crea ordine PayPal (SQL) + salva ordine in DB + JSON mirror
+ * PATCH 2026.1001 — Ritorno orderId al frontend
  * =========================================================
  */
 
@@ -162,9 +163,13 @@ router.post("/paypal/create-order", authUser, async (req, res) => {
       });
     }
 
+    // =========================================================
+    // 🔥 PATCH 2026.1001 — ritorno anche orderId al frontend
+    // =========================================================
     return res.json({
       success: true,
-      paypalUrl: approveLink.href
+      paypalUrl: approveLink.href,
+      orderId: ordineId
     });
 
   } catch (err) {
