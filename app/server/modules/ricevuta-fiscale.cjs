@@ -2,7 +2,7 @@
 // File: app/server/modules/ricevuta-fiscale.cjs
 // Generatore PDF ricevuta fiscale prestazione occasionale
 // Layout stile Quickfisco + Logo + Tabella prodotti
-// Versione definitiva 2026
+// Versione definitiva 2026 — PATCH 2026.1006
 // =========================================================
 
 const PDFDocument = require("pdfkit");
@@ -105,9 +105,12 @@ function creaPDF(ordine, { includeMarcaBollo = false, numeroRicevuta }) {
     // Righe prodotti
     if (Array.isArray(ordine.prodotti)) {
       ordine.prodotti.forEach(p => {
+        const prezzoEuro = (p.prezzo_cent / 100).toFixed(2);
+        const qty = p.qty || 1;
+
         doc.rect(startX, y, 500, 25).stroke();
         doc.text(p.titolo, startX + 10, y + 7);
-        doc.text(`${p.prezzo}€ x ${p.qty || 1}`, startX + 350, y + 7);
+        doc.text(`${prezzoEuro}€ x ${qty}`, startX + 350, y + 7);
         y += 25;
       });
     }
@@ -127,7 +130,6 @@ function creaPDF(ordine, { includeMarcaBollo = false, numeroRicevuta }) {
       doc.text("Importo superiore alla soglia di 77,47 €.");
       doc.text("Marca da bollo da 2,00 € assolta ai sensi di legge.");
 
-      // QUADRATINO MARCA DA BOLLO
       doc.moveDown(1);
       doc.rect(doc.x, doc.y, 120, 120).stroke();
       doc.text("Incolla qui la marca da bollo", doc.x + 10, doc.y + 10);
@@ -179,6 +181,7 @@ function creaPDF(ordine, { includeMarcaBollo = false, numeroRicevuta }) {
 async function generaRicevuteFiscali(ordine) {
   const sopraSoglia = Number(ordine.totale || 0) >= MARCA_BOLLO_SOGLIA;
 
+  // ⭐ PATCH 2026.1006 — fallback ID ordine
   const numeroRicevuta = ordine.id_ordine || ordine.id || "0";
 
   const [pdfCliente, pdfInternoSenza, pdfInternoCon] = await Promise.all([
