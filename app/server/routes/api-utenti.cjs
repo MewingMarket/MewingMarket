@@ -72,7 +72,9 @@ function logUserEvent(email, evento, note = null) {
   } catch (err) {
     console.error("❌ Errore salvataggio utenti_eventi:", err);
   }
-} // =========================================================
+}
+
+// =========================================================
 // REGISTRAZIONE — CF OBBLIGATORIO + ADMIN VIA CF
 // =========================================================
 router.post("/registrazione", async (req, res) => {
@@ -252,7 +254,7 @@ router.post("/cambia-password", async (req, res) => {
     return res.json({ success: false, error: "Errore server" });
   }
 }); // =========================================================
-// ELIMINAZIONE ACCOUNT — PATCHATA COME RICHIESTO
+// ELIMINAZIONE ACCOUNT — VERSIONE COMPLETA PATCHATA 2026.100
 // =========================================================
 router.post("/elimina-account", async (req, res) => {
   const sessione = getSessionToken(req);
@@ -279,6 +281,20 @@ router.post("/elimina-account", async (req, res) => {
 
     // EVENTO: eliminato
     logUserEvent(user.email, "eliminato", null);
+
+    // ⭐ PATCH 1 — elimina ordini
+    try {
+      db.prepare("DELETE FROM ordini WHERE utente_id = ?").run(user.id);
+    } catch (err) {
+      console.error("❌ Errore eliminazione ordini:", err);
+    }
+
+    // ⭐ PATCH 2 — elimina eventi utente
+    try {
+      db.prepare("DELETE FROM utenti_eventi WHERE email = ?").run(user.email);
+    } catch (err) {
+      console.error("❌ Errore eliminazione utenti_eventi:", err);
+    }
 
     // Eliminazione recensioni
     try {
@@ -326,9 +342,7 @@ router.post("/elimina-account", async (req, res) => {
     console.error("Eliminazione account:", err);
     return res.json({ success: false, error: "Errore server" });
   }
-});
-
-// =========================================================
+}); // =========================================================
 // RESET PASSWORD REQUEST — ZERO-INPUT + CF CHECK
 // =========================================================
 router.post("/reset-password-request", (req, res) => {
@@ -444,7 +458,9 @@ router.post("/reset-email-request", (req, res) => {
     console.error("Reset email request:", err);
     return res.json({ success: false, error: "Errore server" });
   }
-}); // =========================================================
+});
+
+// =========================================================
 // RESET EMAIL CONFIRM — ZERO-INPUT + CF CHECK (OK)
 // =========================================================
 router.post("/reset-email-confirm", async (req, res) => {
