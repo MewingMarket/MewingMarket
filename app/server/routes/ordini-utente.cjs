@@ -193,12 +193,12 @@ router.post("/ordini/annulla/:id", authUser, async (req, res) => {
       console.error("⚠️ Errore invio email annullamento:", err);
     }
 
-    // ⭐ PATCH BREVO — Rimozione da lista CLIENTI (12)
+    // ⭐ PATCH — L’utente è cliente anche se l’ordine è annullato
     try {
       const brevo = require("../modules/liste-brevo.cjs");
-      await brevo.removeFromList(brevo.LISTA_CLIENTI, emailUtente);
+      await brevo.addToList(brevo.LISTA_CLIENTI, emailUtente);
     } catch (err) {
-      console.error("❌ Errore rimozione da Brevo (CLIENTI):", err);
+      console.error("❌ Errore aggiunta a Brevo (CLIENTI):", err);
     }
 
     return res.json({
