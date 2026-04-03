@@ -3,6 +3,7 @@
    Admin — Gestione Utenti
    Versione 2026 — EVENTI COMPLETI + KPI + BREVO + FALLBACK
    PATCH 2026.400 — Sync Brevo + RegistratoBrevo + ClienteBrevo + ClienteDB
+   PATCH 2026.700 — Colonna Bannato + KPI Bannati
 ========================================================= */
 
 document.addEventListener("admin-header-loaded", async () => {
@@ -68,6 +69,10 @@ function calcolaKPI(lista) {
     eliminati: lista.filter(u => u.eliminato).length,
     bloccati: lista.filter(u => u.bloccato).length,
     sbloccati: lista.filter(u => u.sbloccato).length,
+
+    // ⭐ KPI Bannati
+    bannati: lista.filter(u => u.__bannato === "sì").length,
+
     iscritto: lista.filter(u => u.iscritto).length,
     disiscritto: lista.filter(u => u.disiscritto).length,
 
@@ -98,6 +103,7 @@ function stampaKPI(kpi) {
     <div class="kpi-item"><b>Eliminati:</b> ${kpi.eliminati}</div>
     <div class="kpi-item"><b>Bloccati:</b> ${kpi.bloccati}</div>
     <div class="kpi-item"><b>Sbloccati:</b> ${kpi.sbloccati}</div>
+    <div class="kpi-item"><b>Bannati:</b> ${kpi.bannati}</div>
 
     <div class="kpi-item"><b>Iscritti NL:</b> ${kpi.iscritto}</div>
     <div class="kpi-item"><b>Disiscritti NL:</b> ${kpi.disiscritto}</div>
@@ -116,10 +122,27 @@ function stampaKPI(kpi) {
 // ---------------------------------------------------------
 async function caricaUtenti() {
   const tbody = document.querySelector("#tabella-utenti tbody");
-  tbody.innerHTML = "<tr><td colspan='14'>Caricamento…</td></tr>";
+  tbody.innerHTML = "<tr><td colspan='15'>Caricamento…</td></tr>";
 
   try {
     const data = await adminGet("/api/admin/utenti/lista");
+
+    // ⭐ Determina se utente è bannato
+    (data.utenti || []).forEach(u => {
+      let bannato = "no";
+
+      if (u.bloccato) {
+        if (!u.sbloccato) {
+          bannato = "sì";
+        } else {
+          const dBloc = new Date(u.bloccato);
+          const dSbloc = new Date(u.sbloccato);
+          if (dBloc > dSbloc) bannato = "sì";
+        }
+      }
+
+      u.__bannato = bannato;
+    });
 
     // ⭐ Calcolo KPI
     const kpi = calcolaKPI(data.utenti);
@@ -141,15 +164,14 @@ async function caricaUtenti() {
         <td>${u.eliminato || ""}</td>
         <td>${u.bloccato || ""}</td>
         <td>${u.sbloccato || ""}</td>
+        <td>${u.__bannato}</td>
 
         <td>${u.iscritto || ""}</td>
         <td>${u.disiscritto || ""}</td>
 
-        <!-- ⭐ BREVO -->
         <td>${u.registrato_brevo}</td>
         <td>${u.cliente_brevo}</td>
 
-        <!-- ⭐ CLIENTE DB -->
         <td>${u.cliente_db}</td>
 
         <td>
@@ -166,7 +188,7 @@ async function caricaUtenti() {
 
   } catch (err) {
     console.error(err);
-    tbody.innerHTML = "<tr><td colspan='14'>Errore caricamento utenti.</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='15'>Errore caricamento utenti.</td></tr>";
   }
 }
 
