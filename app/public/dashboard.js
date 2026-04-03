@@ -122,24 +122,32 @@ async function initDashboard() {
 }
 
 // =========================================================
-// AGGIORNA UI UTENTE — CF al centro
+// AGGIORNA UI UTENTE — EMAIL + USERNAME (ricavato) + CF
 // =========================================================
 function updateUserUI(utente) {
   if (!utente) return;
 
+  const email = utente.email || "";
+  const usernameCalc = email ? email.split("@")[0] : "";
   const cf = utente.codice_fiscale || "";
 
+  // --- SIDEBAR ---
+  const sidebarEmail = document.getElementById("sidebarEmail");
+  const sidebarUsername = document.getElementById("sidebarUsername");
   const sidebarCF = document.getElementById("sidebarCF");
+
+  if (sidebarEmail) sidebarEmail.textContent = email;
+  if (sidebarUsername) sidebarUsername.textContent = usernameCalc;
+  if (sidebarCF) sidebarCF.textContent = cf;
+
+  // --- PROFILO ---
+  const userEmail = document.getElementById("userEmail");
+  const userUsername = document.getElementById("username");
   const userCF = document.getElementById("userCF");
 
-  if (sidebarCF) sidebarCF.textContent = cf;
+  if (userEmail) userEmail.textContent = email;
+  if (userUsername) userUsername.textContent = usernameCalc;
   if (userCF) userCF.textContent = cf;
-
-  const username = document.getElementById("username");
-  const sidebarUsername = document.getElementById("sidebarUsername");
-
-  if (username) username.textContent = utente.username || "";
-  if (sidebarUsername) sidebarUsername.textContent = utente.username || "";
 }
 
 // =========================================================
