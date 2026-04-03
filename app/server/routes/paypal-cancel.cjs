@@ -2,6 +2,7 @@
  * =========================================================
  * File: app/server/routes/paypal-cancel.cjs
  * Annulla ordine PayPal (SQL) + email annullamento + JSON mirror
+ * PATCH 2026.1003 — id_ordine coerente per email + frontend
  * =========================================================
  */
 
@@ -42,7 +43,14 @@ router.get("/paypal/cancel-order", async (req, res) => {
     if (ordine.stato === "completato" || ordine.stato === "COMPLETED") {
       return res.json({
         success: true,
-        message: "Ordine già completato, nessuna modifica"
+        message: "Ordine già completato, nessuna modifica",
+        order: {
+          id: ordine.id,
+          id_ordine: ordine.id,   // ⭐ PATCH 2026.1003
+          prodotti: JSON.parse(ordine.prodotti_json),
+          totale: ordine.totale_cent / 100,
+          stato: ordine.stato
+        }
       });
     }
 
@@ -50,7 +58,14 @@ router.get("/paypal/cancel-order", async (req, res) => {
     if (ordine.stato === "annullato" || ordine.stato === "CANCELLED") {
       return res.json({
         success: true,
-        message: "Ordine già annullato"
+        message: "Ordine già annullato",
+        order: {
+          id: ordine.id,
+          id_ordine: ordine.id,   // ⭐ PATCH 2026.1003
+          prodotti: JSON.parse(ordine.prodotti_json),
+          totale: ordine.totale_cent / 100,
+          stato: ordine.stato
+        }
       });
     }
 
@@ -88,8 +103,10 @@ router.get("/paypal/cancel-order", async (req, res) => {
         email: emailUtente,
         ordine: {
           id: ordine.id,
+          id_ordine: ordine.id,   // ⭐ PATCH 2026.1003 — evita undefined nelle email
           prodotti: JSON.parse(ordine.prodotti_json),
-          totale: ordine.totale_cent / 100
+          totale: ordine.totale_cent / 100,
+          stato: "annullato"
         }
       });
     } catch (err) {
@@ -106,7 +123,14 @@ router.get("/paypal/cancel-order", async (req, res) => {
 
     return res.json({
       success: true,
-      message: "Ordine annullato correttamente"
+      message: "Ordine annullato correttamente",
+      order: {
+        id: ordine.id,
+        id_ordine: ordine.id,     // ⭐ PATCH 2026.1003 — coerenza totale
+        prodotti: JSON.parse(ordine.prodotti_json),
+        totale: ordine.totale_cent / 100,
+        stato: "annullato"
+      }
     });
 
   } catch (err) {
