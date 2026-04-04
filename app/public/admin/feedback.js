@@ -10,13 +10,13 @@ const clean = (t) =>
     ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
     : t ?? "";
 
-// Fetch blindato (usa adminFetch del loader-admin.js)
+// =========================================================
+// FETCH NORMALE (come admin-prodotti.js)
+// =========================================================
 async function adminGet(url) {
   console.log("[ADMIN][FETCH] Chiamata a:", url);
 
-  const res = await adminFetch(url);
-
-  console.log("[ADMIN][FETCH] Status:", res.status);
+  const res = await fetch(url);
 
   if (!res.ok) {
     console.error("[ADMIN][FETCH] Errore HTTP:", res.status, res.statusText);
