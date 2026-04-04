@@ -1,12 +1,16 @@
 /* =========================================================
    File: app/public/recensioni.js
    Dashboard Utente — Le mie recensioni
-   Versione patchata 2026.3001
+   Versione patchata 2026.3001 + DEBUG
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", async () => {
+  console.log("🔵 [DEBUG] recensioni.js caricato");
+
   const token = localStorage.getItem("token");
   const listaRecensioni = document.getElementById("listaRecensioni");
+
+  console.log("🔵 [DEBUG] Token:", token);
 
   if (!token) {
     listaRecensioni.innerHTML = "<p>Devi effettuare il login.</p>";
@@ -19,6 +23,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   const selectProdotto = document.getElementById("selectProdotto");
 
   async function caricaProdottiAcquistati() {
+    console.log("🔵 [DEBUG] Carico prodotti acquistati...");
+
     try {
       const res = await fetch("/api/recensioni/prodotti-acquistati", {
         headers: { "Authorization": "Bearer " + token }
@@ -26,7 +32,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const data = await res.json();
 
+      console.log("🟣 [DEBUG] Risposta prodotti-acquistati:", data);
+
       if (!data.success || data.prodotti.length === 0) {
+        console.log("🟠 [DEBUG] Nessun prodotto acquistato trovato");
         selectProdotto.innerHTML = `<option value="">Nessun prodotto acquistato</option>`;
         return;
       }
@@ -35,13 +44,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         .map(p => `<option value="${p.id}">${p.titolo_breve}</option>`)
         .join("");
 
-    } catch {
+      console.log("🟢 [DEBUG] Prodotti caricati nel select");
+
+    } catch (err) {
+      console.error("🔴 [DEBUG] Errore caricamento prodotti:", err);
       selectProdotto.innerHTML = `<option value="">Errore caricamento</option>`;
     }
   }
 
   /* =========================================================
-     2) SISTEMA STELLE (PATCH robusta)
+     2) SISTEMA STELLE (PATCH robusta + DEBUG)
   ========================================================== */
   const stars = document.querySelectorAll("#stars span");
   let rating = 0;
@@ -49,6 +61,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   stars.forEach((star, index) => {
     star.addEventListener("click", () => {
       rating = index + 1;
+
+      console.log("⭐ [DEBUG] Rating selezionato:", rating);
 
       stars.forEach(s => s.classList.remove("active"));
       for (let i = 0; i < rating; i++) stars[i].classList.add("active");
@@ -69,7 +83,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /* =========================================================
-     4) INVIO RECENSIONE (PATCH prodotto_id → Number)
+     4) INVIO RECENSIONE (PATCH + DEBUG)
   ========================================================== */
   const btnInvia = document.getElementById("btnInvia");
   const commento = document.getElementById("commento");
@@ -81,6 +95,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const prodotto_id = Number(selectProdotto.value);
     const testo = commento.value.trim();
+
+    console.log("🟦 [DEBUG] Click INVIA →", {
+      prodotto_id,
+      rating,
+      testo
+    });
 
     if (!prodotto_id) {
       status.textContent = "Seleziona un prodotto.";
@@ -107,6 +127,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     try {
+      console.log("🟦 [DEBUG] Invio fetch /recensioni/crea...");
+
       const res = await fetch("/api/recensioni/crea", {
         method: "POST",
         headers: {
@@ -122,6 +144,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const data = await res.json();
 
+      console.log("🟣 [DEBUG] Risposta /recensioni/crea:", data);
+
       if (data.success) {
         status.textContent = "Recensione inviata!";
         status.classList.add("ok");
@@ -136,16 +160,19 @@ document.addEventListener("DOMContentLoaded", async () => {
         status.classList.add("err");
       }
 
-    } catch {
+    } catch (err) {
+      console.error("🔴 [DEBUG] Errore invio recensione:", err);
       status.textContent = "Errore di connessione.";
       status.classList.add("err");
     }
   });
 
   /* =========================================================
-     5) CARICA RECENSIONI UTENTE
+     5) CARICA RECENSIONI UTENTE (DEBUG)
   ========================================================== */
   async function caricaRecensioni() {
+    console.log("🔵 [DEBUG] Carico recensioni utente...");
+
     listaRecensioni.innerHTML = "Caricamento…";
 
     try {
@@ -154,6 +181,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
 
       const data = await res.json();
+
+      console.log("🟣 [DEBUG] Risposta /recensioni/utente:", data);
 
       if (!data.success || data.recensioni.length === 0) {
         listaRecensioni.innerHTML = "<p>Nessuna recensione presente.</p>";
@@ -177,11 +206,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         .join("");
 
       /* ------------------------------
-         ELIMINA (PATCH)
+         ELIMINA (DEBUG)
       ------------------------------ */
       document.querySelectorAll(".btn-delete").forEach(btn => {
         btn.addEventListener("click", async () => {
           const id = btn.dataset.id;
+
+          console.log("🗑️ [DEBUG] Elimina recensione ID:", id);
 
           if (!confirm("Vuoi davvero eliminare questa recensione?")) return;
 
@@ -197,21 +228,26 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             const data = await res.json();
 
+            console.log("🟣 [DEBUG] Risposta elimina:", data);
+
             if (data.success) caricaRecensioni();
             else alert(data.error || "Errore.");
 
-          } catch {
+          } catch (err) {
+            console.error("🔴 [DEBUG] Errore eliminazione:", err);
             alert("Errore di connessione.");
           }
         });
       });
 
       /* ------------------------------
-         MODIFICA
+         MODIFICA (DEBUG)
       ------------------------------ */
       document.querySelectorAll(".btn-edit").forEach(btn => {
         btn.addEventListener("click", async () => {
           const id = btn.dataset.id;
+
+          console.log("✏️ [DEBUG] Modifica recensione ID:", id);
 
           const nuovoCommento = prompt("Modifica il commento:");
           if (!nuovoCommento || nuovoCommento.trim().length < 5) {
@@ -243,16 +279,20 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             const data = await res.json();
 
+            console.log("🟣 [DEBUG] Risposta modifica:", data);
+
             if (data.success) caricaRecensioni();
             else alert(data.error || "Errore.");
 
-          } catch {
+          } catch (err) {
+            console.error("🔴 [DEBUG] Errore modifica:", err);
             alert("Errore di connessione.");
           }
         });
       });
 
-    } catch {
+    } catch (err) {
+      console.error("🔴 [DEBUG] Errore caricamento recensioni:", err);
       listaRecensioni.innerHTML = "<p>Errore caricamento recensioni.</p>";
     }
   }
