@@ -1,7 +1,7 @@
 <!-- =========================================================
      File: app/public/recensioni.html
      Dashboard Utente — Le mie recensioni
-     Versione definitiva 2026 (PATCH LISTA)
+     Versione definitiva 2026 (PATCH CREAZIONE)
 ========================================================= -->
 
 <!DOCTYPE html>
@@ -10,16 +10,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- CSS SPECIFICO -->
   <link rel="stylesheet" href="recensioni.css">
 </head>
 
 <body>
 
-<!-- HEAD DINAMICO -->
 <div id="head-placeholder"></div>
-
-<!-- HEADER DINAMICO -->
 <div id="header-placeholder"></div>
 
 <main>
@@ -27,7 +23,6 @@
   <div class="box">
     <h1>Le mie recensioni ⭐</h1>
 
-    <!-- 🔙 PULSANTI DI NAVIGAZIONE -->
     <div class="back-buttons" style="margin-bottom:20px; display:flex; gap:10px;">
       <a href="dashboard.html" class="btn btn-secondary">← Torna alla Dashboard</a>
       <a href="index.html" class="btn btn-secondary">← Torna al sito</a>
@@ -39,20 +34,44 @@
     <h3>Le tue recensioni</h3>
     <div id="listaRecensioni"></div>
 
+    <!-- ============================
+         FORM CREAZIONE RECENSIONE
+    ============================= -->
+    <h3 style="margin-top:40px;">Aggiungi una recensione</h3>
+
+    <div id="formRecensione">
+
+      <label>Prodotto acquistato</label>
+      <select id="selectProdotto">
+        <option value="">Caricamento…</option>
+      </select>
+
+      <div id="stars" class="stars" style="margin-top:10px;">
+        <span data-v="1">★</span>
+        <span data-v="2">★</span>
+        <span data-v="3">★</span>
+        <span data-v="4">★</span>
+        <span data-v="5">★</span>
+      </div>
+
+      <textarea id="commento" placeholder="Scrivi qui la tua opinione…" style="margin-top:10px;"></textarea>
+
+      <button id="btnInvia" class="btn btn-primary" style="margin-top:10px;">
+        Invia recensione
+      </button>
+
+      <div id="status" class="status" style="margin-top:10px;"></div>
+
+    </div>
+
   </div>
 
 </main>
 
-<!-- FOOTER DINAMICO -->
 <div id="footer-placeholder"></div>
 
-<!-- JS SPECIFICO -->
 <script src="recensioni.js"></script>
-
-<!-- JS PROTEZIONE LOGIN -->
 <script src="auth.js"></script>
-
-<!-- JS GLOBALI -->
 <script src="loader-header-footer.js"></script>
 <script src="seo.js"></script>
 <script src="structured-data.js"></script>
