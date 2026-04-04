@@ -18,12 +18,15 @@ function clean(email) {
 }
 
 // =========================================================
+// ⭐ PATCH 2026.950 — addToList con fallback PUT se il contatto esiste
+// =========================================================
 async function addToList(listId, email) {
   if (!BREVO_API_KEY || !listId || !email) return;
 
   const e = clean(email);
 
   try {
+    // Primo tentativo: crea contatto + aggiungi lista
     await axios.post(
       `${BREVO_API_BASE}/contacts`,
       {
@@ -37,9 +40,31 @@ async function addToList(listId, email) {
         }
       }
     );
+
   } catch (err) {
     const code = err?.response?.status;
-    if (code === 400) return;
+
+    // ⭐ PATCH: se il contatto esiste già → aggiorna le liste
+    if (code === 400) {
+      try {
+        await axios.put(
+          `${BREVO_API_BASE}/contacts/${encodeURIComponent(e)}`,
+          {
+            listIds: [listId]
+          },
+          {
+            headers: {
+              "api-key": BREVO_API_KEY,
+              "Content-Type": "application/json"
+            }
+          }
+        );
+      } catch (err2) {
+        console.error("❌ Errore updateList:", err2?.response?.data || err2.message);
+      }
+      return;
+    }
+
     console.error("❌ Errore addToList:", code, err?.response?.data || err.message);
   }
 }
@@ -110,6 +135,9 @@ async function syncBrevoUtenteStatoReale({
   const e = clean(email);
   const old = emailVecchia ? clean(emailVecchia) : null;
 
+  // =========================================================
+  // ⭐ Eliminazione totale da tutte le liste
+  // =========================================================
   if (elimina === true) {
     const liste = [
       LISTA_NEWSLETTER,
@@ -126,6 +154,9 @@ async function syncBrevoUtenteStatoReale({
     return;
   }
 
+  // =========================================================
+  // ⭐ Cambio email → rimuovi vecchia + aggiungi nuova
+  // =========================================================
   if (old && old !== e) {
     const liste = [
       LISTA_NEWSLETTER,
@@ -140,10 +171,16 @@ async function syncBrevoUtenteStatoReale({
     }
   }
 
+  // =========================================================
+  // ⭐ Registrazione
+  // =========================================================
   if (registrato === true) {
     await addToList(LISTA_REGISTRATI, e);
   }
 
+  // =========================================================
+  // ⭐ Cliente
+  // =========================================================
   if (cliente === true) {
     await addToList(LISTA_CLIENTI, e);
     await addToList(LISTA_REGISTRATI, e);
@@ -153,6 +190,9 @@ async function syncBrevoUtenteStatoReale({
     await removeFromList(LISTA_CLIENTI, e);
   }
 
+  // =========================================================
+  // ⭐ Newsletter
+  // =========================================================
   if (newsletter === true) {
     await addToList(LISTA_NEWSLETTER, e);
   }
@@ -161,6 +201,9 @@ async function syncBrevoUtenteStatoReale({
     await removeFromList(LISTA_NEWSLETTER, e);
   }
 
+  // =========================================================
+  // ⭐ Credenziali modificate
+  // =========================================================
   if (credenzialiModificate === true) {
     await addToList(LISTA_CREDENZIALI, e);
   }
