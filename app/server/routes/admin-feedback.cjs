@@ -9,7 +9,7 @@ const db = require("../db/database.cjs");
 
 router.get("/feedback/lista", (req, res) => {
   try {
-    // 1) Query base SENZA subquery (robusta)
+    // 1) Query base
     const stmt = db.prepare(`
       SELECT 
         f.id,
@@ -28,45 +28,38 @@ router.get("/feedback/lista", (req, res) => {
 
     const lista = stmt.all();
 
-    // 2) Fallback JS: se utente_email è NULL → risali da vendite/ordini
-    const fallbackVendite = db.prepare(`
-      SELECT u.email
-      FROM vendite v
-      JOIN utenti u ON u.id = v.utente_id
-      WHERE v.prodotto_id = ?
-      LIMIT 1
-    `);
-
-    const fallbackOrdini = db.prepare(`
-      SELECT u.email
-      FROM ordini o
-      JOIN utenti u ON u.id = o.utente_id
-      WHERE o.prodotto_id = ?
-      LIMIT 1
-    `);
+    // Carichiamo tutti gli ordini (per fallback)
+    const ordini = db.prepare(`
+      SELECT id, utente_id, prodotti_json
+      FROM ordini
+    `).all();
 
     const output = lista.map(f => {
       let email = f.utente_email;
 
-      // Se non c'è email → fallback vendite
-      if (!email) {
-        const r1 = fallbackVendite.get(f.prodotto_id);
-        if (r1 && r1.email) email = r1.email;
+      // 1) Se email esiste → ok
+      if (email) {
+        return { ...f, utente_email: email };
       }
 
-      // Se ancora nulla → fallback ordini
-      if (!email) {
-        const r2 = fallbackOrdini.get(f.prodotto_id);
-        if (r2 && r2.email) email = r2.email;
+      // 2) Fallback ordini (JSON)
+      for (const o of ordini) {
+        try {
+          const prodotti = JSON.parse(o.prodotti_json);
+          if (Array.isArray(prodotti)) {
+            const match = prodotti.find(p => p.prodotto_id === f.prodotto_id);
+            if (match) {
+              const u = db.prepare(`SELECT email FROM utenti WHERE id = ?`).get(o.utente_id);
+              if (u && u.email) {
+                return { ...f, utente_email: u.email };
+              }
+            }
+          }
+        } catch {}
       }
 
-      // Se ancora nulla → Anonimo
-      if (!email) email = "Anonimo";
-
-      return {
-        ...f,
-        utente_email: email
-      };
+      // 3) Fallback finale
+      return { ...f, utente_email: "Anonimo" };
     });
 
     return res.json({ success: true, feedback: output });
