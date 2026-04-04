@@ -1,7 +1,7 @@
 /* =========================================================
    File: app/public/recensioni.js
    Dashboard Utente — Le mie recensioni
-   Versione definitiva 2026 (SOLO LISTA + BOTTONI)
+   Versione definitiva 2026 (PATCH CREAZIONE)
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -13,9 +13,138 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  // ============================
-  // CARICA RECENSIONI UTENTE
-  // ============================
+  /* =========================================================
+     1) CARICA PRODOTTI ACQUISTATI
+  ========================================================== */
+  const selectProdotto = document.getElementById("selectProdotto");
+
+  async function caricaProdottiAcquistati() {
+    try {
+      const res = await fetch("/api/recensioni/prodotti-acquistati", {
+        headers: { "Authorization": "Bearer " + token }
+      });
+
+      const data = await res.json();
+
+      if (!data.success || data.prodotti.length === 0) {
+        selectProdotto.innerHTML = `<option value="">Nessun prodotto acquistato</option>`;
+        return;
+      }
+
+      selectProdotto.innerHTML = data.prodotti
+        .map(p => `<option value="${p.id}">${p.titolo_breve}</option>`)
+        .join("");
+
+    } catch {
+      selectProdotto.innerHTML = `<option value="">Errore caricamento</option>`;
+    }
+  }
+
+  /* =========================================================
+     2) SISTEMA STELLE
+  ========================================================== */
+  const stars = document.querySelectorAll("#stars span");
+  let rating = 0;
+
+  stars.forEach(star => {
+    star.addEventListener("click", () => {
+      rating = Number(star.dataset.v);
+
+      stars.forEach(s => s.classList.remove("active"));
+      for (let i = 0; i < rating; i++) stars[i].classList.add("active");
+    });
+  });
+
+  /* =========================================================
+     3) FILTRO PAROLACCE
+  ========================================================== */
+  const paroleVietate = [
+    "cazzo", "merda", "stronzo", "troia", "puttana", "vaffanculo",
+    "bastardo", "cretino", "deficiente", "idiota"
+  ];
+
+  function contieneParoleVietate(testo) {
+    const lower = testo.toLowerCase();
+    return paroleVietate.some(p => lower.includes(p));
+  }
+
+  /* =========================================================
+     4) INVIO RECENSIONE
+  ========================================================== */
+  const btnInvia = document.getElementById("btnInvia");
+  const commento = document.getElementById("commento");
+  const status = document.getElementById("status");
+
+  btnInvia.addEventListener("click", async () => {
+    status.textContent = "";
+    status.classList.remove("ok", "err");
+
+    const prodotto_id = selectProdotto.value;
+    const testo = commento.value.trim();
+
+    if (!prodotto_id) {
+      status.textContent = "Seleziona un prodotto.";
+      status.classList.add("err");
+      return;
+    }
+
+    if (rating === 0) {
+      status.textContent = "Seleziona un numero di stelle.";
+      status.classList.add("err");
+      return;
+    }
+
+    if (testo.length < 3) {
+      status.textContent = "Scrivi un commento più dettagliato.";
+      status.classList.add("err");
+      return;
+    }
+
+    if (contieneParoleVietate(testo)) {
+      status.textContent = "Recensione rifiutata: linguaggio non consentito.";
+      status.classList.add("err");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/recensioni/crea", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({
+          prodotto_id,
+          rating,
+          commento: testo
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        status.textContent = "Recensione inviata!";
+        status.classList.add("ok");
+
+        commento.value = "";
+        rating = 0;
+        stars.forEach(s => s.classList.remove("active"));
+
+        caricaRecensioni();
+      } else {
+        status.textContent = data.error || "Errore.";
+        status.classList.add("err");
+      }
+
+    } catch {
+      status.textContent = "Errore di connessione.";
+      status.classList.add("err");
+    }
+  });
+
+  /* =========================================================
+     5) CARICA RECENSIONI UTENTE (già esistente)
+  ========================================================== */
   async function caricaRecensioni() {
     listaRecensioni.innerHTML = "Caricamento…";
 
@@ -47,10 +176,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         `)
         .join("");
 
-      // ============================
-      // EVENTI BOTTONI
-      // ============================
-
       // ELIMINA
       document.querySelectorAll(".btn-delete").forEach(btn => {
         btn.addEventListener("click", async () => {
@@ -70,11 +195,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             const data = await res.json();
 
-            if (data.success) {
-              caricaRecensioni();
-            } else {
-              alert(data.error || "Errore.");
-            }
+            if (data.success) caricaRecensioni();
+            else alert(data.error || "Errore.");
 
           } catch {
             alert("Errore di connessione.");
@@ -117,11 +239,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             const data = await res.json();
 
-            if (data.success) {
-              caricaRecensioni();
-            } else {
-              alert(data.error || "Errore.");
-            }
+            if (data.success) caricaRecensioni();
+            else alert(data.error || "Errore.");
 
           } catch {
             alert("Errore di connessione.");
@@ -134,5 +253,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  caricaProdottiAcquistati();
   caricaRecensioni();
 });
