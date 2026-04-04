@@ -1,7 +1,7 @@
 /* =========================================================
    File: app/public/recensioni.js
    Dashboard Utente — Le mie recensioni
-   Versione definitiva 2026 (PATCH CREAZIONE)
+   Versione patchata 2026.3001
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -41,14 +41,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /* =========================================================
-     2) SISTEMA STELLE
+     2) SISTEMA STELLE (PATCH robusta)
   ========================================================== */
   const stars = document.querySelectorAll("#stars span");
   let rating = 0;
 
-  stars.forEach(star => {
+  stars.forEach((star, index) => {
     star.addEventListener("click", () => {
-      rating = Number(star.dataset.v);
+      rating = index + 1;
 
       stars.forEach(s => s.classList.remove("active"));
       for (let i = 0; i < rating; i++) stars[i].classList.add("active");
@@ -69,7 +69,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /* =========================================================
-     4) INVIO RECENSIONE
+     4) INVIO RECENSIONE (PATCH prodotto_id → Number)
   ========================================================== */
   const btnInvia = document.getElementById("btnInvia");
   const commento = document.getElementById("commento");
@@ -79,7 +79,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     status.textContent = "";
     status.classList.remove("ok", "err");
 
-    const prodotto_id = selectProdotto.value;
+    const prodotto_id = Number(selectProdotto.value);
     const testo = commento.value.trim();
 
     if (!prodotto_id) {
@@ -143,7 +143,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   /* =========================================================
-     5) CARICA RECENSIONI UTENTE (già esistente)
+     5) CARICA RECENSIONI UTENTE
   ========================================================== */
   async function caricaRecensioni() {
     listaRecensioni.innerHTML = "Caricamento…";
@@ -176,7 +176,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         `)
         .join("");
 
-      // ELIMINA
+      /* ------------------------------
+         ELIMINA (PATCH)
+      ------------------------------ */
       document.querySelectorAll(".btn-delete").forEach(btn => {
         btn.addEventListener("click", async () => {
           const id = btn.dataset.id;
@@ -204,7 +206,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
       });
 
-      // MODIFICA
+      /* ------------------------------
+         MODIFICA
+      ------------------------------ */
       document.querySelectorAll(".btn-edit").forEach(btn => {
         btn.addEventListener("click", async () => {
           const id = btn.dataset.id;
