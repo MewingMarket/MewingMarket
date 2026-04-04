@@ -1,7 +1,7 @@
 /**
  * =========================================================
  * File: app/server/routes/api-feedback.cjs
- * Sistema recensioni utenti — Versione SQL definitiva
+ * Sistema recensioni utenti — Versione SQL definitiva (PATCH 2026)
  * =========================================================
  */
 
@@ -10,6 +10,30 @@ const db = require("../db/database.cjs");
 const authUser = require("../middleware/auth-user.cjs");
 
 const router = express.Router();
+
+/* =========================================================
+   GET /api/recensioni/prodotti-acquistati
+========================================================= */
+router.get("/recensioni/prodotti-acquistati", authUser, (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const stmt = db.prepare(`
+      SELECT DISTINCT p.id, p.titolo_breve
+      FROM ordini o
+      JOIN prodotti p ON json_extract(o.prodotti_json, '$[*].prodotto_id') LIKE '%' || p.id || '%'
+      WHERE o.utente_id = ?
+    `);
+
+    const prodotti = stmt.all(userId);
+
+    return res.json({ success: true, prodotti });
+
+  } catch (err) {
+    console.error("❌ Errore GET /recensioni/prodotti-acquistati:", err);
+    return res.json({ success: false, error: "Errore server" });
+  }
+});
 
 /* =========================================================
    GET /api/recensioni/utente
@@ -55,6 +79,25 @@ router.post("/recensioni/crea", authUser, (req, res) => {
       return res.json({ success: false, error: "Dati mancanti" });
     }
 
+    /* ------------------------------
+       FILTRO PAROLACCE
+    ------------------------------ */
+    const paroleVietate = [
+      "cazzo", "merda", "stronzo", "troia", "puttana", "vaffanculo",
+      "bastardo", "cretino", "deficiente", "idiota"
+    ];
+
+    const lower = commento.toLowerCase();
+    if (paroleVietate.some(p => lower.includes(p))) {
+      return res.json({
+        success: false,
+        error: "Linguaggio non consentito"
+      });
+    }
+
+    /* ------------------------------
+       VERIFICA ACQUISTO
+    ------------------------------ */
     const stmtOrdini = db.prepare(`
       SELECT prodotti_json
       FROM ordini
@@ -80,6 +123,26 @@ router.post("/recensioni/crea", authUser, (req, res) => {
       });
     }
 
+    /* ------------------------------
+       BLOCCO DOPPIE RECENSIONI
+    ------------------------------ */
+    const stmtCheck = db.prepare(`
+      SELECT id FROM feedback
+      WHERE utente_id = ? AND prodotto_id = ?
+    `);
+
+    const esiste = stmtCheck.get(userId, prodotto_id);
+
+    if (esiste) {
+      return res.json({
+        success: false,
+        error: "Hai già recensito questo prodotto"
+      });
+    }
+
+    /* ------------------------------
+       INSERIMENTO RECENSIONE
+    ------------------------------ */
     const stmtInsert = db.prepare(`
       INSERT INTO feedback (
         utente_id,
