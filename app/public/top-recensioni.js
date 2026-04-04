@@ -1,7 +1,7 @@
 /* =========================================================
    File: app/public/top-recensioni.js
    Pagina pubblica — Top Recensioni
-   Versione definitiva 2026
+   Versione definitiva 2026 — PATCH ID
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", caricaTopRecensioni);
@@ -29,7 +29,8 @@ async function caricaTopRecensioni() {
           <p class="commento">${r.commento}</p>
 
           <p class="prodotto">
-            <a href="/prodotto.html?slug=${r.prodotto_slug}">
+            <!-- PATCH: link basato su ID -->
+            <a href="/prodotto.html?id=${r.prodotto_id}">
               ${r.prodotto_titolo}
             </a>
           </p>
