@@ -1,7 +1,7 @@
 <!-- =========================================================
      File: app/public/thankyou.html
      Pagina post-acquisto — Ordine completato
-     Versione definitiva 2026 (PATCH RECENSIONI)
+     Versione 2026 — MINIMAL (senza download, senza recensioni)
 ========================================================= -->
 
 <!DOCTYPE html>
@@ -38,49 +38,13 @@
         <strong>Dettaglio prodotti:</strong>
         <ul id="prod-list"></ul>
       </div>
-
-      <div id="download-box" style="margin-top:20px;"></div>
     </div>
 
     <p style="margin-top:20px;">
-      Riceverai anche una email con il link per scaricare i prodotti acquistati.
+      Riceverai una email con il link per scaricare i prodotti acquistati.
     </p>
 
     <a href="index.html" class="btn btn-home">Torna al sito</a>
-
-    <!-- ⭐ PATCH: pulsante recensioni -->
-    <a id="feedbackBtn" class="btn btn-feedback" style="display:none;">
-      Lascia una recensione ⭐
-    </a>
-
-    <!-- ⭐⭐⭐ FORM RECENSIONE (PATCH) -->
-    <div id="feedbackForm" style="display:none; margin-top:25px;">
-
-      <h3>Lascia una recensione</h3>
-
-      <label>Prodotto acquistato</label>
-      <select id="selectProdotto">
-        <option value="">Caricamento…</option>
-      </select>
-
-      <div id="stars" class="stars" style="margin-top:10px;">
-        <span data-v="1">★</span>
-        <span data-v="2">★</span>
-        <span data-v="3">★</span>
-        <span data-v="4">★</span>
-        <span data-v="5">★</span>
-      </div>
-
-      <textarea id="comment" placeholder="Scrivi qui la tua opinione…" style="margin-top:10px;"></textarea>
-
-      <button id="sendReview" class="btn btn-primary" style="margin-top:10px;">
-        Invia recensione
-      </button>
-
-      <div id="status" class="status" style="margin-top:10px;"></div>
-
-    </div>
-    <!-- ⭐⭐⭐ FINE FORM RECENSIONE -->
 
   </div>
 
