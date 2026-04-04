@@ -46,7 +46,7 @@ router.get("/paypal/cancel-order", async (req, res) => {
         message: "Ordine già completato, nessuna modifica",
         order: {
           id: ordine.id,
-          id_ordine: ordine.id,   // ⭐ PATCH 2026.1003
+          id_ordine: ordine.id,
           prodotti: JSON.parse(ordine.prodotti_json),
           totale: ordine.totale_cent / 100,
           stato: ordine.stato
@@ -61,7 +61,7 @@ router.get("/paypal/cancel-order", async (req, res) => {
         message: "Ordine già annullato",
         order: {
           id: ordine.id,
-          id_ordine: ordine.id,   // ⭐ PATCH 2026.1003
+          id_ordine: ordine.id,
           prodotti: JSON.parse(ordine.prodotti_json),
           totale: ordine.totale_cent / 100,
           stato: ordine.stato
@@ -103,7 +103,7 @@ router.get("/paypal/cancel-order", async (req, res) => {
         email: emailUtente,
         ordine: {
           id: ordine.id,
-          id_ordine: ordine.id,   // ⭐ PATCH 2026.1003 — evita undefined nelle email
+          id_ordine: ordine.id,
           prodotti: JSON.parse(ordine.prodotti_json),
           totale: ordine.totale_cent / 100,
           stato: "annullato"
@@ -113,12 +113,15 @@ router.get("/paypal/cancel-order", async (req, res) => {
       console.error("⚠️ Errore invio email annullamento:", err);
     }
 
-    // ⭐ PATCH BREVO — Rimozione da lista CLIENTI (12)
+    // ⭐ PATCH BREVO — PayPal cancel → NON è cliente
     try {
-      const brevo = require("../modules/liste-brevo.cjs");
-      await brevo.removeFromList(brevo.LISTA_CLIENTI, emailUtente);
+      const { syncBrevoUtenteStatoReale } = require("../modules/liste-brevo.cjs");
+      await syncBrevoUtenteStatoReale({
+        email: emailUtente,
+        cliente: false
+      });
     } catch (err) {
-      console.error("❌ Errore rimozione da Brevo (CLIENTI):", err);
+      console.error("❌ Errore sync Brevo:", err);
     }
 
     return res.json({
@@ -126,7 +129,7 @@ router.get("/paypal/cancel-order", async (req, res) => {
       message: "Ordine annullato correttamente",
       order: {
         id: ordine.id,
-        id_ordine: ordine.id,     // ⭐ PATCH 2026.1003 — coerenza totale
+        id_ordine: ordine.id,
         prodotti: JSON.parse(ordine.prodotti_json),
         totale: ordine.totale_cent / 100,
         stato: "annullato"
