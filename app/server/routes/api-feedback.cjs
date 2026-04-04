@@ -1,7 +1,7 @@
 /**
  * =========================================================
  * File: app/server/routes/api-feedback.cjs
- * Sistema recensioni utenti — Versione SQL definitiva (PATCH 2026)
+ * Sistema recensioni utenti — Versione SQL definitiva (PATCH 2026.3002)
  * =========================================================
  */
 
@@ -44,10 +44,13 @@ router.get("/recensioni/prodotti-acquistati", authUser, (req, res) => {
 
 /* =========================================================
    GET /api/recensioni/utente
+   PATCH: RIMOZIONE p.slug (colonna non esistente)
 ========================================================= */
 router.get("/recensioni/utente", authUser, (req, res) => {
   try {
     const userId = req.user.id;
+
+    console.log("🔍 [DEBUG] /recensioni/utente → userId:", userId);
 
     const stmt = db.prepare(`
       SELECT 
@@ -56,7 +59,6 @@ router.get("/recensioni/utente", authUser, (req, res) => {
         f.rating,
         f.commento,
         f.data,
-        p.slug AS prodotto_slug,
         p.titolo_breve AS prodotto_titolo
       FROM feedback f
       LEFT JOIN prodotti p ON p.id = f.prodotto_id
@@ -65,6 +67,8 @@ router.get("/recensioni/utente", authUser, (req, res) => {
     `);
 
     const recensioni = stmt.all(userId);
+
+    console.log("🔍 [DEBUG] Recensioni trovate:", recensioni);
 
     return res.json({ success: true, recensioni });
 
