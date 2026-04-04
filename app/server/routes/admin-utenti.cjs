@@ -7,6 +7,7 @@
                     RegistratoBrevo + ClienteBrevo + ClienteDB,
                     Sync Brevo automatica + manuale,
                     Eliminazione utente con FK + Brevo liste
+   PATCH 2026.900 — Sync Utenti Storici (Brevo Full)
 ========================================================= */
 
 const express = require("express");
@@ -73,7 +74,9 @@ function isClienteDB(email) {
   `).get(user.id);
 
   return row ? "sì" : "no";
-}// =========================================================
+}
+
+// =========================================================
 // ⭐ PATCH: SYNC BREVO COMPLETO (registrati + newsletter + clienti)
 // =========================================================
 async function syncBrevo() {
@@ -120,6 +123,49 @@ router.get("/utenti/sync-brevo", authAdmin, async (req, res) => {
   } catch (err) {
     console.error("Errore sync Brevo:", err);
     res.json({ success: false, error: "Errore sync Brevo" });
+  }
+});
+
+// =========================================================
+// ⭐ PATCH 2026.900 — SYNC UTENTI STORICI (una tantum)
+// =========================================================
+router.get("/utenti/sync-brevo-full", authAdmin, async (req, res) => {
+  try {
+    const utenti = db.prepare(`
+      SELECT email FROM utenti
+      ORDER BY id ASC
+    `).all();
+
+    for (const u of utenti) {
+      const email = (u.email || "").trim().toLowerCase();
+      if (!email) continue;
+
+      // Registrato
+      await syncBrevoUtenteStatoReale({
+        email,
+        registrato: true
+      });
+
+      // Cliente DB?
+      const isCliente = db.prepare(`
+        SELECT 1 FROM ordini
+        WHERE utente_id = (SELECT id FROM utenti WHERE email = ?)
+        LIMIT 1
+      `).get(email);
+
+      if (isCliente) {
+        await syncBrevoUtenteStatoReale({
+          email,
+          cliente: true
+        });
+      }
+    }
+
+    res.json({ success: true, message: "Sync utenti storici completata" });
+
+  } catch (err) {
+    console.error("❌ Errore sync utenti storici:", err);
+    res.json({ success: false, error: "Errore sync utenti storici" });
   }
 });
 
@@ -210,7 +256,9 @@ router.post("/utenti/sblocca", authAdmin, (req, res) => {
   `).run(email);
 
   res.json({ success: true });
-});  // ==========================================================
+});
+
+// ==========================================================
 // ELIMINA UTENTE (DB + eventi + newsletter_log + Brevo liste)
 // ==========================================================
 router.post("/utenti/elimina", authAdmin, async (req, res) => {
