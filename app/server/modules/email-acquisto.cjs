@@ -1,9 +1,8 @@
 // =========================================================
 // File: app/server/modules/email-acquisto.cjs
-// Email acquisto — Versione patchata 2026.2000
-// - Testo email riscritto come richiesto
-// - Prezzo corretto (prezzo_cent)
-// - Link recensioni → thankyou.html
+// Email acquisto — Versione patchata 2026.2001
+// - Link recensioni → pagina Le mie recensioni
+// - Social con icone SVG inline
 // - Download diretto con token monouso
 // - Una sola ricevuta fiscale
 // =========================================================
@@ -41,23 +40,19 @@ function renderProdotti(prodotti) {
 ========================================================= */
 async function inviaEmailAcquisto({ email, ordine }) {
 
-  // ID ordine a prova di bomba
   const numeroOrdine = ordine.id_ordine || ordine.id || "SENZA-ID";
 
-  // Data ordine
   const dataOrdine = ordine.data
     ? new Date(ordine.data).toLocaleDateString("it-IT")
     : new Date().toLocaleDateString("it-IT");
 
-  // Tabella prodotti
   const prodottiHTML = renderProdotti(ordine.prodotti || []);
 
-  // Token download monouso (generato in paypal-complete)
   const token = ordine.download_token;
 
-  // =========================================================
-  // EMAIL HTML — Testo fornito da te
-  // =========================================================
+  /* =========================================================
+     EMAIL HTML — Versione patchata
+  ========================================================== */
   const html = `
   <html>
     <body style="font-family: system-ui; background:#020617; color:#e5e7eb; padding:24px;">
@@ -131,29 +126,54 @@ async function inviaEmailAcquisto({ email, ordine }) {
         <h2 style="font-size:18px;margin-top:24px;">⭐ LASCIA UNA RECENSIONE</h2>
         <p>
           Il tuo feedback è prezioso:<br>
-          <a href="https://mewingmarket.it/thankyou.html?orderId=${numeroOrdine}"
+          <a href="https://mewingmarket.it/recensioni.html"
              style="color:#38bdf8;text-decoration:underline;">
             Lascia una recensione
           </a>
         </p>
 
-        <h2 style="font-size:18px;margin-top:24px;">📞 CONTATTI</h2>
-        <p>Email supporto: supporto@mewingmarket.it</p>
-        <p>WhatsApp Business: +39 352 026 6660</p>
-
         <h2 style="font-size:18px;margin-top:24px;">🌐 SOCIAL</h2>
-        <p>
-          Facebook · Instagram · TikTok · YouTube · Threads · X · LinkedIn
-        </p>
+
+        <div style="display:flex;gap:12px;align-items:center;margin-top:8px;">
+
+          <!-- Facebook -->
+          <a href="https://facebook.com" style="color:#38bdf8;">
+            <svg width="22" height="22" fill="#38bdf8" viewBox="0 0 24 24">
+              <path d="M22 12a10 10 0 1 0-11.5 9.9v-7h-2v-3h2v-2.3c0-2 1.2-3.1 3-3.1.9 0 1.8.1 1.8.1v2h-1c-1 0-1.3.6-1.3 1.2V12h2.3l-.4 3h-1.9v7A10 10 0 0 0 22 12"/>
+            </svg>
+          </a>
+
+          <!-- Instagram -->
+          <a href="https://instagram.com" style="color:#38bdf8;">
+            <svg width="22" height="22" fill="#38bdf8" viewBox="0 0 24 24">
+              <path d="M7 2C4.2 2 2 4.2 2 7v10c0 2.8 2.2 5 5 5h10c2.8 0 5-2.2 5-5V7c0-2.8-2.2-5-5-5H7zm10 2c1.7 0 3 1.3 3 3v10c0 1.7-1.3 3-3 3H7c-1.7 0-3-1.3-3-3V7c0-1.7 1.3-3 3-3h10zm-5 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm4.8-.9a1.1 1.1 0 1 0 0-2.2 1.1 1.1 0 0 0 0 2.2z"/>
+            </svg>
+          </a>
+
+          <!-- TikTok -->
+          <a href="https://tiktok.com" style="color:#38bdf8;">
+            <svg width="22" height="22" fill="#38bdf8" viewBox="0 0 24 24">
+              <path d="M12 2h3c.2 1.6 1.3 3 2.8 3.6V9c-1.8-.1-3.5-.8-4.8-2v7.3a5.7 5.7 0 1 1-3-5V12a2.7 2.7 0 1 0 1.2 2.3V2z"/>
+            </svg>
+          </a>
+
+          <!-- YouTube -->
+          <a href="https://youtube.com" style="color:#38bdf8;">
+            <svg width="22" height="22" fill="#38bdf8" viewBox="0 0 24 24">
+              <path d="M21.8 8.2s-.2-1.5-.8-2.2c-.8-.9-1.7-.9-2.1-1C15.9 4.5 12 4.5 12 4.5h-.1s-3.9 0-6.9.5c-.4.1-1.3.1-2.1 1-.6.7-.8 2.2-.8 2.2S2 9.9 2 11.6v1.7c0 1.7.2 3.4.2 3.4s.2 1.5.8 2.2c.8.9 1.9.9 2.4 1 1.7.2 7 .5 7 .5s3.9 0 6.9-.5c.4-.1 1.3-.1 2.1-1 .6-.7.8-2.2.8-2.2s.2-1.7.2-3.4v-1.7c0-1.7-.2-3.4-.2-3.4zM10 14.7V9.3l5.2 2.7L10 14.7z"/>
+            </svg>
+          </a>
+
+        </div>
 
       </div>
     </body>
   </html>
   `;
 
-  // =========================================================
-  // UNA SOLA RICEVUTA FISCALE
-  // =========================================================
+  /* =========================================================
+     UNA SOLA RICEVUTA FISCALE
+  ========================================================== */
   const ordineConEmail = { ...ordine, email };
   const { pdfCliente } = await generaRicevuteFiscali(ordineConEmail);
 
@@ -165,9 +185,9 @@ async function inviaEmailAcquisto({ email, ordine }) {
     }
   ];
 
-  // =========================================================
-  // EMAIL CLIENTE
-  // =========================================================
+  /* =========================================================
+     EMAIL CLIENTE
+  ========================================================== */
   await inviaEmailLista({
     email,
     listId: LISTA_CLIENTI,
@@ -177,9 +197,9 @@ async function inviaEmailAcquisto({ email, ordine }) {
     attachments: allegatiCliente
   });
 
-  // =========================================================
-  // EMAIL INTERNA
-  // =========================================================
+  /* =========================================================
+     EMAIL INTERNA
+  ========================================================== */
   await inviaEmailLista({
     email: EMAIL_OWNER,
     listId: LISTA_CLIENTI,
