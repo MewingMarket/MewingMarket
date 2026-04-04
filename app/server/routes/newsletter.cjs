@@ -4,11 +4,14 @@
  */
 
 const axios = require("axios");
-const db = require("../db/database.cjs"); // PATCH: per newsletter_log
+const db = require("../db/database.cjs"); 
 const { trackGA4 } = require("../services/ga4.cjs");
 
-// ⭐ PATCH: importiamo il router Brevo centralizzato
-const brevo = require("../modules/liste-brevo.cjs");
+// ⭐ PATCH: importiamo syncBrevoUtenteStatoReale
+const { 
+  syncBrevoUtenteStatoReale,
+  LISTA_NEWSLETTER
+} = require("../modules/liste-brevo.cjs");
 
 const { inviaEmailNewsletterBenvenuto } = require("../modules/email-newsletter.cjs");
 const { inviaEmailNewsletterUnsubscribe } = require("../modules/email-newsletter-unsubscribe.cjs");
@@ -46,12 +49,14 @@ module.exports = function (app) {
         global.logEvent("newsletter_subscribe_attempt", { uid, email });
       }
 
-      // ⭐ PATCH BREVO — aggiunta tramite router centralizzato
-      await brevo.addToList(brevo.LISTA_NEWSLETTER, email);
+      // ⭐ PATCH BREVO — sync centrale
+      await syncBrevoUtenteStatoReale({
+        email,
+        newsletter: true
+      });
 
       trackGA4("newsletter_subscribe", { uid, email });
 
-      // PATCH: log subscribe
       logNewsletter({
         email,
         azione: "subscribe",
@@ -68,8 +73,9 @@ module.exports = function (app) {
       return res.json({ success: false, error: "Errore durante l'iscrizione" });
     }
   });
-/* =========================================================
-     DISISCRIZIONE NEWSLETTER — ENDPOINT CORRETTO EU LEGACY
+
+  /* =========================================================
+     DISISCRIZIONE NEWSLETTER
   ========================================================== */
   app.post("/newsletter/unsubscribe", async (req, res) => {
     const uid = req.uid;
@@ -81,12 +87,14 @@ module.exports = function (app) {
     }
 
     try {
-      // ⭐ PATCH BREVO — rimozione tramite router centralizzato
-      await brevo.removeFromList(brevo.LISTA_NEWSLETTER, email);
+      // ⭐ PATCH BREVO — sync centrale
+      await syncBrevoUtenteStatoReale({
+        email,
+        newsletter: false
+      });
 
       trackGA4("newsletter_unsubscribe", { uid, email });
 
-      // PATCH: log unsubscribe
       logNewsletter({
         email,
         azione: "unsubscribe",
@@ -116,7 +124,6 @@ module.exports = function (app) {
     }
 
     try {
-      // ⭐ PATCH BREVO — recupero stato tramite API diretta (necessario)
       const result = await axios.get(
         `https://api.brevo.com/v3/contacts/${encodeURIComponent(email)}`,
         {
@@ -128,7 +135,7 @@ module.exports = function (app) {
 
       return res.json({
         success: true,
-        subscribed: result.data?.listIds?.includes(brevo.LISTA_NEWSLETTER) || false,
+        subscribed: result.data?.listIds?.includes(LISTA_NEWSLETTER) || false,
         data: result.data
       });
 
