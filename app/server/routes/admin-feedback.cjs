@@ -1,6 +1,6 @@
 /* =========================================================
    File: app/server/routes/admin-feedback.cjs
-   Lista completa feedback per Admin — Versione definitiva
+   Lista completa feedback per Admin — Versione definitiva PATCH
 ========================================================= */
 
 const express = require("express");
@@ -16,8 +16,7 @@ router.get("/feedback/lista", (req, res) => {
         f.commento,
         f.data,
         u.email AS utente_email,
-        p.titolo_breve AS prodotto_titolo,
-        p.slug AS prodotto_slug
+        p.titolo_breve AS prodotto_titolo
       FROM feedback f
       LEFT JOIN utenti u ON u.id = f.utente_id
       LEFT JOIN prodotti p ON p.id = f.prodotto_id
