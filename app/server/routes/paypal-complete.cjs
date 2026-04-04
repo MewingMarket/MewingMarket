@@ -229,7 +229,20 @@ router.get("/paypal/complete-order", async (req, res) => {
     }
 
     // =========================================================
-    // 11) RITORNA ORDINE AL FRONTEND
+    // ⭐ 11) PATCH BREVO — pagamento completato → diventa cliente
+    // =========================================================
+    try {
+      const { syncBrevoUtenteStatoReale } = require("../modules/liste-brevo.cjs");
+      await syncBrevoUtenteStatoReale({
+        email: emailUtente,
+        cliente: true
+      });
+    } catch (err) {
+      console.error("❌ Errore sync Brevo:", err);
+    }
+
+    // =========================================================
+    // 12) RITORNA ORDINE AL FRONTEND
     // =========================================================
     return res.json({
       success: true,
