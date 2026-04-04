@@ -1,6 +1,6 @@
 /* =========================================================
    File: app/server/routes/admin-feedback.cjs
-   Lista completa feedback per Admin — Versione definitiva PATCH
+   Lista completa feedback per Admin — Versione definitiva PATCH A+B
 ========================================================= */
 
 const express = require("express");
@@ -9,35 +9,17 @@ const db = require("../db/database.cjs");
 
 router.get("/feedback/lista", (req, res) => {
   try {
+    // 1) Query base SENZA subquery (robusta)
     const stmt = db.prepare(`
       SELECT 
         f.id,
         f.rating,
         f.commento,
         f.data,
+        f.prodotto_id,
+        f.utente_id,
         p.titolo_breve AS prodotto_titolo,
-
-        /* =====================================================
-           1) Email diretta se utente_id esiste
-           2) Altrimenti fallback da vendite
-           3) Altrimenti fallback da ordini
-           4) Altrimenti "Anonimo"
-        ====================================================== */
-        COALESCE(
-          u.email,
-          (SELECT u2.email 
-             FROM vendite v2
-             JOIN utenti u2 ON u2.id = v2.utente_id
-            WHERE v2.prodotto_id = f.prodotto_id
-            LIMIT 1),
-          (SELECT u3.email 
-             FROM ordini o3
-             JOIN utenti u3 ON u3.id = o3.utente_id
-            WHERE o3.prodotto_id = f.prodotto_id
-            LIMIT 1),
-          'Anonimo'
-        ) AS utente_email
-
+        u.email AS utente_email
       FROM feedback f
       LEFT JOIN utenti u ON u.id = f.utente_id
       LEFT JOIN prodotti p ON p.id = f.prodotto_id
@@ -46,7 +28,48 @@ router.get("/feedback/lista", (req, res) => {
 
     const lista = stmt.all();
 
-    return res.json({ success: true, feedback: lista });
+    // 2) Fallback JS: se utente_email è NULL → risali da vendite/ordini
+    const fallbackVendite = db.prepare(`
+      SELECT u.email
+      FROM vendite v
+      JOIN utenti u ON u.id = v.utente_id
+      WHERE v.prodotto_id = ?
+      LIMIT 1
+    `);
+
+    const fallbackOrdini = db.prepare(`
+      SELECT u.email
+      FROM ordini o
+      JOIN utenti u ON u.id = o.utente_id
+      WHERE o.prodotto_id = ?
+      LIMIT 1
+    `);
+
+    const output = lista.map(f => {
+      let email = f.utente_email;
+
+      // Se non c'è email → fallback vendite
+      if (!email) {
+        const r1 = fallbackVendite.get(f.prodotto_id);
+        if (r1 && r1.email) email = r1.email;
+      }
+
+      // Se ancora nulla → fallback ordini
+      if (!email) {
+        const r2 = fallbackOrdini.get(f.prodotto_id);
+        if (r2 && r2.email) email = r2.email;
+      }
+
+      // Se ancora nulla → Anonimo
+      if (!email) email = "Anonimo";
+
+      return {
+        ...f,
+        utente_email: email
+      };
+    });
+
+    return res.json({ success: true, feedback: output });
 
   } catch (err) {
     console.error("❌ Errore /admin/feedback/lista:", err);
