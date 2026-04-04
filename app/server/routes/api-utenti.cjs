@@ -14,9 +14,10 @@ const { inviaEmailRegistrazione } = require("../modules/email-registrazione.cjs"
 const { inviaEmailCambioEmail } = require("../modules/email-cambio-email.cjs");
 const { inviaEmailCambioPassword } = require("../modules/email-cambio-password.cjs");
 const { inviaEmailEliminazione } = require("../modules/email-eliminazione.cjs");
-
-// ⭐ PATCH — email disiscrizione newsletter
 const { inviaEmailNewsletterUnsubscribe } = require("../modules/email-newsletter-unsubscribe.cjs");
+
+// ⭐ PATCH BREVO — import centrale
+const { syncBrevoUtenteStatoReale } = require("../modules/liste-brevo.cjs");
 
 const router = express.Router();
 
@@ -111,6 +112,16 @@ router.post("/registrazione", async (req, res) => {
     logUserEvent(email, "registrato", null);
 
     inviaEmailRegistrazione({ email });
+
+    // ⭐ PATCH BREVO — nuovo utente registrato
+    try {
+      await syncBrevoUtenteStatoReale({
+        email,
+        registrato: true
+      });
+    } catch (err) {
+      console.error("❌ Errore sync Brevo (registrazione):", err);
+    }
 
     await jsonGen.exportUsers();
 
@@ -211,6 +222,17 @@ router.post("/cambia-email", async (req, res) => {
 
     inviaEmailCambioEmail({ email: nuova_email });
 
+    // ⭐ PATCH BREVO — cambio email
+    try {
+      await syncBrevoUtenteStatoReale({
+        email: nuova_email,
+        emailVecchia: user.email,
+        credenzialiModificate: true
+      });
+    } catch (err) {
+      console.error("❌ Errore sync Brevo (cambio email):", err);
+    }
+
     await jsonGen.exportUsers();
 
     return res.json({ success: true });
@@ -219,9 +241,7 @@ router.post("/cambia-email", async (req, res) => {
     console.error("Cambio email:", err);
     return res.json({ success: false, error: "Errore server" });
   }
-});
-
-// =========================================================
+}); // =========================================================
 // CAMBIO PASSWORD
 // =========================================================
 router.post("/cambia-password", async (req, res) => {
@@ -247,13 +267,26 @@ router.post("/cambia-password", async (req, res) => {
 
     inviaEmailCambioPassword({ email: user.email });
 
+    // ⭐ PATCH BREVO — cambio password
+    try {
+      await syncBrevoUtenteStatoReale({
+        email: user.email,
+        credenzialiModificate: true
+      });
+    } catch (err) {
+      console.error("❌ Errore sync Brevo (cambio password):", err);
+    }
+
     return res.json({ success: true });
 
   } catch (err) {
     console.error("Cambio password:", err);
     return res.json({ success: false, error: "Errore server" });
   }
-}); // =========================================================
+});
+
+
+// =========================================================
 // ELIMINAZIONE ACCOUNT — VERSIONE COMPLETA PATCHATA 2026.100
 // =========================================================
 router.post("/elimina-account", async (req, res) => {
@@ -310,15 +343,14 @@ router.post("/elimina-account", async (req, res) => {
       console.error("❌ Errore eliminazione newsletter_log:", err);
     }
 
-    // Rimozione da Brevo
+    // ⭐ PATCH BREVO — eliminazione account totale
     try {
-      const brevo = require("../modules/liste-brevo.cjs");
-
-      await brevo.removeFromList(brevo.LISTA_NEWSLETTER, user.email);
-      await brevo.removeFromList(brevo.LISTA_CLIENTI, user.email);
-
+      await syncBrevoUtenteStatoReale({
+        email: user.email,
+        elimina: true
+      });
     } catch (err) {
-      console.error("❌ Errore rimozione da Brevo:", err);
+      console.error("❌ Errore sync Brevo (eliminazione):", err);
     }
 
     // ⭐ PATCH — EMAIL DI DISISCRIZIONE NEWSLETTER
@@ -342,7 +374,10 @@ router.post("/elimina-account", async (req, res) => {
     console.error("Eliminazione account:", err);
     return res.json({ success: false, error: "Errore server" });
   }
-}); // =========================================================
+});
+
+
+// =========================================================
 // RESET PASSWORD REQUEST — ZERO-INPUT + CF CHECK
 // =========================================================
 router.post("/reset-password-request", (req, res) => {
@@ -376,6 +411,7 @@ router.post("/reset-password-request", (req, res) => {
     return res.json({ success: false, error: "Errore server" });
   }
 });
+
 
 // =========================================================
 // RESET PASSWORD CONFIRM — ZERO-INPUT + CF CHECK (PATCH 2026.70)
@@ -413,6 +449,16 @@ router.post("/reset-password-confirm", (req, res) => {
 
     inviaEmailCambioPassword({ email: user.email });
 
+    // ⭐ PATCH BREVO — reset password
+    try {
+      syncBrevoUtenteStatoReale({
+        email: user.email,
+        credenzialiModificate: true
+      });
+    } catch (err) {
+      console.error("❌ Errore sync Brevo (reset password):", err);
+    }
+
     return res.json({
       success: true,
       token: newSession,
@@ -423,9 +469,7 @@ router.post("/reset-password-confirm", (req, res) => {
     console.error("Reset password confirm:", err);
     return res.json({ success: false, error: "Errore server" });
   }
-});
-
-// =========================================================
+}); // =========================================================
 // RESET EMAIL REQUEST — ZERO-INPUT + CF CHECK
 // =========================================================
 router.post("/reset-email-request", (req, res) => {
@@ -459,6 +503,7 @@ router.post("/reset-email-request", (req, res) => {
     return res.json({ success: false, error: "Errore server" });
   }
 });
+
 
 // =========================================================
 // RESET EMAIL CONFIRM — ZERO-INPUT + CF CHECK (OK)
@@ -501,6 +546,17 @@ router.post("/reset-email-confirm", async (req, res) => {
 
     inviaEmailCambioEmail({ email: nuova_email });
 
+    // ⭐ PATCH BREVO — reset email
+    try {
+      await syncBrevoUtenteStatoReale({
+        email: nuova_email,
+        emailVecchia: user.email,
+        credenzialiModificate: true
+      });
+    } catch (err) {
+      console.error("❌ Errore sync Brevo (reset email):", err);
+    }
+
     return res.json({
       success: true,
       token: newSession,
@@ -512,6 +568,7 @@ router.post("/reset-email-confirm", async (req, res) => {
     return res.json({ success: false, error: "Errore server" });
   }
 });
+
 
 // =========================================================
 // /me — DATI UTENTE PER DASHBOARD
