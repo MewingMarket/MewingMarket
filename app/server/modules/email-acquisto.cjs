@@ -175,7 +175,7 @@ async function inviaEmailAcquisto({ email, ordine }) {
      UNA SOLA RICEVUTA FISCALE
   ========================================================== */
   const ordineConEmail = { ...ordine, email };
-  const { pdfCliente } = await generaRicevuteFiscali(ordineConEmail);
+  const { pdfCliente, pdfInterno } = await generaRicevuteFiscali(ordineConEmail);
 
   const allegatiCliente = [
     {
@@ -198,14 +198,38 @@ async function inviaEmailAcquisto({ email, ordine }) {
   });
 
   /* =========================================================
-     EMAIL INTERNA
+     EMAIL INTERNA (PATCH COMPLETA)
   ========================================================== */
+  const htmlOwner = `
+    <p><strong>Nuovo ordine MewingMarket</strong></p>
+    <p>Ordine #${numeroOrdine} da <strong>${email}</strong></p>
+    <p>Totale: <strong>${ordine.totale}€</strong></p>
+    <p>Codice fiscale cliente: <strong>${ordine.codice_fiscale || "-"}</strong></p>
+    <p>Prodotti:</p>
+    <ul>
+      ${ordine.prodotti
+        .map(
+          p =>
+            `<li>${p.titolo} — ${(p.prezzo_cent / 100).toFixed(2)}€</li>`
+        )
+        .join("")}
+    </ul>
+    <p>In allegato trovi la ricevuta fiscale.</p>
+  `;
+
   await inviaEmailLista({
     email: EMAIL_OWNER,
     listId: LISTA_CLIENTI,
     subject: `Nuovo ordine #${numeroOrdine}`,
-    html: `<p>Nuovo ordine da ${email}</p>`,
-    sender: SENDER_ACQUISTI
+    html: htmlOwner,
+    sender: SENDER_ACQUISTI,
+    attachments: [
+      {
+        filename: `ricevuta-ordine-${numeroOrdine}.pdf`,
+        content: pdfInterno,
+        mimeType: "application/pdf"
+      }
+    ]
   });
 
   return true;
