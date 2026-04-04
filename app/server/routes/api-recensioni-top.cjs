@@ -1,22 +1,12 @@
 /* =========================================================
    File: app/server/routes/api-recensioni-top.cjs
-   Top recensioni globali — Versione definitiva
-   Usato nel footer del sito
+   Top recensioni globali — Versione definitiva PATCH
 ========================================================= */
 
 const express = require("express");
 const router = express.Router();
 const db = require("../db/database.cjs");
 
-/* =========================================================
-   GET /recensioni/top
-   Restituisce le migliori recensioni globali
-   Criteri:
-   - rating >= 4
-   - commento non vuoto
-   - ordinate per data DESC
-   - limite 10
-========================================================= */
 router.get("/recensioni/top", (req, res) => {
   try {
     const stmt = db.prepare(`
@@ -25,8 +15,7 @@ router.get("/recensioni/top", (req, res) => {
         f.rating,
         f.commento,
         f.data,
-        p.titolo_breve AS prodotto_titolo,
-        p.slug AS prodotto_slug
+        p.titolo_breve AS prodotto_titolo
       FROM feedback f
       LEFT JOIN prodotti p ON p.id = f.prodotto_id
       WHERE f.rating >= 4
