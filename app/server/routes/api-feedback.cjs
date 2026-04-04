@@ -13,6 +13,7 @@ const router = express.Router();
 
 /* =========================================================
    GET /api/recensioni/prodotti-acquistati
+   PATCH: SQL ROBUSTO CON json_each
 ========================================================= */
 router.get("/recensioni/prodotti-acquistati", authUser, (req, res) => {
   try {
@@ -21,7 +22,8 @@ router.get("/recensioni/prodotti-acquistati", authUser, (req, res) => {
     const stmt = db.prepare(`
       SELECT DISTINCT p.id, p.titolo_breve
       FROM ordini o
-      JOIN prodotti p ON json_extract(o.prodotti_json, '$[*].prodotto_id') LIKE '%' || p.id || '%'
+      JOIN json_each(o.prodotti_json) AS je
+      JOIN prodotti p ON p.id = je.value ->> '$.prodotto_id'
       WHERE o.utente_id = ?
     `);
 
@@ -79,9 +81,6 @@ router.post("/recensioni/crea", authUser, (req, res) => {
       return res.json({ success: false, error: "Dati mancanti" });
     }
 
-    /* ------------------------------
-       FILTRO PAROLACCE
-    ------------------------------ */
     const paroleVietate = [
       "cazzo", "merda", "stronzo", "troia", "puttana", "vaffanculo",
       "bastardo", "cretino", "deficiente", "idiota"
@@ -96,7 +95,7 @@ router.post("/recensioni/crea", authUser, (req, res) => {
     }
 
     /* ------------------------------
-       VERIFICA ACQUISTO
+       VERIFICA ACQUISTO (PATCH robusta)
     ------------------------------ */
     const stmtOrdini = db.prepare(`
       SELECT prodotti_json
@@ -110,7 +109,7 @@ router.post("/recensioni/crea", authUser, (req, res) => {
 
     for (const o of ordini) {
       const prodotti = safeParse(o.prodotti_json);
-      if (prodotti.some(p => p.prodotto_id === prodotto_id)) {
+      if (prodotti.some(p => Number(p.prodotto_id) === Number(prodotto_id))) {
         haAcquistato = true;
         break;
       }
@@ -203,6 +202,45 @@ router.post("/recensioni/modifica", authUser, (req, res) => {
 
   } catch (err) {
     console.error("❌ Errore POST /recensioni/modifica:", err);
+    return res.json({ success: false, error: "Errore server" });
+  }
+});
+
+/* =========================================================
+   POST /api/recensioni/elimina
+   (PATCH: aggiunto)
+========================================================= */
+router.post("/recensioni/elimina", authUser, (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.body;
+
+    if (!id) {
+      return res.json({ success: false, error: "ID mancante" });
+    }
+
+    const stmtFind = db.prepare(`
+      SELECT utente_id
+      FROM feedback
+      WHERE id = ?
+    `);
+
+    const rec = stmtFind.get(id);
+
+    if (!rec) {
+      return res.json({ success: false, error: "Recensione non trovata" });
+    }
+
+    if (rec.utente_id !== userId) {
+      return res.json({ success: false, error: "Non autorizzato" });
+    }
+
+    db.prepare(`DELETE FROM feedback WHERE id = ?`).run(id);
+
+    return res.json({ success: true });
+
+  } catch (err) {
+    console.error("❌ Errore POST /recensioni/elimina:", err);
     return res.json({ success: false, error: "Errore server" });
   }
 });
