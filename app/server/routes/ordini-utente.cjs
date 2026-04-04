@@ -193,12 +193,15 @@ router.post("/ordini/annulla/:id", authUser, async (req, res) => {
       console.error("⚠️ Errore invio email annullamento:", err);
     }
 
-    // ⭐ PATCH — L’utente è cliente anche se l’ordine è annullato
+    // ⭐ PATCH BREVO — l’utente rimane cliente anche se annulla
     try {
-      const brevo = require("../modules/liste-brevo.cjs");
-      await brevo.addToList(brevo.LISTA_CLIENTI, emailUtente);
+      const { syncBrevoUtenteStatoReale } = require("../modules/liste-brevo.cjs");
+      await syncBrevoUtenteStatoReale({
+        email: emailUtente,
+        cliente: true
+      });
     } catch (err) {
-      console.error("❌ Errore aggiunta a Brevo (CLIENTI):", err);
+      console.error("❌ Errore sync Brevo:", err);
     }
 
     return res.json({
