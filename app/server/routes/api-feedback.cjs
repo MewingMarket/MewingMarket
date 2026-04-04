@@ -13,21 +13,26 @@ const router = express.Router();
 
 /* =========================================================
    GET /api/recensioni/prodotti-acquistati
-   PATCH: SQL ROBUSTO CON json_each
+   PATCH: SQL compatibile + LOG DEBUG
 ========================================================= */
 router.get("/recensioni/prodotti-acquistati", authUser, (req, res) => {
   try {
     const userId = req.user.id;
 
+    console.log("🔍 [DEBUG] /prodotti-acquistati → userId:", userId);
+
     const stmt = db.prepare(`
       SELECT DISTINCT p.id, p.titolo_breve
-      FROM ordini o
-      JOIN json_each(o.prodotti_json) AS je
-      JOIN prodotti p ON p.id = je.value ->> '$.prodotto_id'
+      FROM ordini o,
+           json_each(o.prodotti_json) AS je
+      JOIN prodotti p
+           ON p.id = CAST(json_extract(je.value, '$.prodotto_id') AS INTEGER)
       WHERE o.utente_id = ?
     `);
 
     const prodotti = stmt.all(userId);
+
+    console.log("🔍 [DEBUG] Prodotti trovati:", prodotti);
 
     return res.json({ success: true, prodotti });
 
@@ -71,11 +76,19 @@ router.get("/recensioni/utente", authUser, (req, res) => {
 
 /* =========================================================
    POST /api/recensioni/crea
+   + LOG DEBUG
 ========================================================= */
 router.post("/recensioni/crea", authUser, (req, res) => {
   try {
     const userId = req.user.id;
     const { prodotto_id, rating, commento } = req.body;
+
+    console.log("📝 [DEBUG] CREA RECENSIONE →", {
+      userId,
+      prodotto_id,
+      rating,
+      commento
+    });
 
     if (!prodotto_id || !rating || !commento) {
       return res.json({ success: false, error: "Dati mancanti" });
@@ -95,7 +108,7 @@ router.post("/recensioni/crea", authUser, (req, res) => {
     }
 
     /* ------------------------------
-       VERIFICA ACQUISTO (PATCH robusta)
+       VERIFICA ACQUISTO
     ------------------------------ */
     const stmtOrdini = db.prepare(`
       SELECT prodotti_json
@@ -105,15 +118,21 @@ router.post("/recensioni/crea", authUser, (req, res) => {
 
     const ordini = stmtOrdini.all(userId);
 
+    console.log("🔍 [DEBUG] Ordini utente:", ordini);
+
     let haAcquistato = false;
 
     for (const o of ordini) {
       const prodotti = safeParse(o.prodotti_json);
+      console.log("🔍 [DEBUG] Prodotti ordine:", prodotti);
+
       if (prodotti.some(p => Number(p.prodotto_id) === Number(prodotto_id))) {
         haAcquistato = true;
         break;
       }
     }
+
+    console.log("🔍 [DEBUG] Ha acquistato?", haAcquistato);
 
     if (!haAcquistato) {
       return res.json({
@@ -131,6 +150,8 @@ router.post("/recensioni/crea", authUser, (req, res) => {
     `);
 
     const esiste = stmtCheck.get(userId, prodotto_id);
+
+    console.log("🔍 [DEBUG] Recensione già esistente?", esiste);
 
     if (esiste) {
       return res.json({
@@ -154,6 +175,8 @@ router.post("/recensioni/crea", authUser, (req, res) => {
 
     stmtInsert.run(userId, prodotto_id, Number(rating), commento);
 
+    console.log("✅ [DEBUG] Recensione inserita");
+
     return res.json({ success: true });
 
   } catch (err) {
@@ -169,10 +192,6 @@ router.post("/recensioni/modifica", authUser, (req, res) => {
   try {
     const userId = req.user.id;
     const { id, rating, commento } = req.body;
-
-    if (!id || !rating || !commento) {
-      return res.json({ success: false, error: "Dati mancanti" });
-    }
 
     const stmtFind = db.prepare(`
       SELECT utente_id
@@ -208,16 +227,11 @@ router.post("/recensioni/modifica", authUser, (req, res) => {
 
 /* =========================================================
    POST /api/recensioni/elimina
-   (PATCH: aggiunto)
 ========================================================= */
 router.post("/recensioni/elimina", authUser, (req, res) => {
   try {
     const userId = req.user.id;
     const { id } = req.body;
-
-    if (!id) {
-      return res.json({ success: false, error: "ID mancante" });
-    }
 
     const stmtFind = db.prepare(`
       SELECT utente_id
