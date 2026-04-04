@@ -4,6 +4,7 @@
    Versione 2026 — EVENTI COMPLETI + KPI + BREVO + FALLBACK
    PATCH 2026.400 — Sync Brevo + RegistratoBrevo + ClienteBrevo + ClienteDB
    PATCH 2026.700 — Colonna Bannato + KPI Bannati
+   PATCH 2026.900 — Sync Utenti Storici (Brevo Full)
 ========================================================= */
 
 document.addEventListener("admin-header-loaded", async () => {
@@ -51,6 +52,23 @@ document.addEventListener("click", async (e) => {
       caricaUtenti();
     } catch (err) {
       alert("Errore nella sincronizzazione Brevo");
+    }
+  }
+});
+
+// ---------------------------------------------------------
+// ⭐ PATCH — SYNC UTENTI STORICI (una tantum)
+// ---------------------------------------------------------
+document.addEventListener("click", async (e) => {
+  if (e.target.id === "btn-sync-brevo-full") {
+    if (!confirm("Sincronizzare tutti gli utenti storici in Brevo?")) return;
+
+    try {
+      await adminGet("/api/admin/utenti/sync-brevo-full");
+      alert("Sincronizzazione utenti storici completata");
+      caricaUtenti();
+    } catch (err) {
+      alert("Errore nella sincronizzazione utenti storici");
     }
   }
 });
