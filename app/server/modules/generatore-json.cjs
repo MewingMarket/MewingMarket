@@ -4,6 +4,7 @@
  * PATCH 2026 — Invio automatico newsletter “Novità”
  * PATCH FEEDBACK + NEWSLETTER LOG — Mirror SQL aggiuntivi
  * PATCH EVENTI UTENTE — Mirror utenti_eventi → user-events.json
+ * PATCH KPI — Mirror kpi_giornalieri / settimanali / mensili
  * =========================================================
  */
 
@@ -272,7 +273,79 @@ async function exportUserEvents() {
 }
 
 // ---------------------------------------------------------
-// 10) Catalogo completo
+// 10) KPI Giornalieri — NUOVO MIRROR SQL
+// ---------------------------------------------------------
+async function exportKpiGiornalieri() {
+  try {
+    const rows = db.prepare(`
+      SELECT 
+        id,
+        data,
+        vendite,
+        nuovi_utenti,
+        feedback,
+        revenue
+      FROM kpi_giornalieri
+      ORDER BY data DESC
+    `).all();
+
+    saveJSON("kpi-daily.json", rows);
+    console.log("📊 KPI giornalieri esportati");
+  } catch (err) {
+    console.error("❌ Errore exportKpiGiornalieri:", err.message);
+  }
+}
+
+// ---------------------------------------------------------
+// 11) KPI Settimanali — NUOVO MIRROR SQL
+// ---------------------------------------------------------
+async function exportKpiSettimanali() {
+  try {
+    const rows = db.prepare(`
+      SELECT 
+        id,
+        settimana,
+        vendite,
+        nuovi_utenti,
+        feedback,
+        revenue
+      FROM kpi_settimanali
+      ORDER BY settimana DESC
+    `).all();
+
+    saveJSON("kpi-weekly.json", rows);
+    console.log("📈 KPI settimanali esportati");
+  } catch (err) {
+    console.error("❌ Errore exportKpiSettimanali:", err.message);
+  }
+}
+
+// ---------------------------------------------------------
+// 12) KPI Mensili — NUOVO MIRROR SQL
+// ---------------------------------------------------------
+async function exportKpiMensili() {
+  try {
+    const rows = db.prepare(`
+      SELECT 
+        id,
+        mese,
+        vendite,
+        nuovi_utenti,
+        feedback,
+        revenue
+      FROM kpi_mensili
+      ORDER BY mese DESC
+    `).all();
+
+    saveJSON("kpi-monthly.json", rows);
+    console.log("📅 KPI mensili esportati");
+  } catch (err) {
+    console.error("❌ Errore exportKpiMensili:", err.message);
+  }
+}
+
+// ---------------------------------------------------------
+// 13) Catalogo completo
 // ---------------------------------------------------------
 async function exportCatalog() {
   try {
@@ -300,7 +373,7 @@ async function exportCatalog() {
 }
 
 // ---------------------------------------------------------
-// 11) Esporta tutto
+// 14) Esporta tutto
 // ---------------------------------------------------------
 async function exportAll() {
   console.log("⏳ Rigenerazione JSON…");
@@ -315,7 +388,12 @@ async function exportAll() {
   // PATCH — nuovi mirror
   await exportFeedback();
   await exportNewsletterLog();
-  await exportUserEvents();   // ⭐ PATCH EVENTI UTENTE
+  await exportUserEvents();
+
+  // PATCH KPI
+  await exportKpiGiornalieri();
+  await exportKpiSettimanali();
+  await exportKpiMensili();
 
   await exportCatalog();
 
@@ -331,7 +409,10 @@ module.exports = {
   exportUsers,
   exportFeedback,
   exportNewsletterLog,
-  exportUserEvents,   // ⭐ PATCH
+  exportUserEvents,
+  exportKpiGiornalieri,
+  exportKpiSettimanali,
+  exportKpiMensili,
   exportCatalog,
   exportAll
 };
