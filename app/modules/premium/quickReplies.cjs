@@ -1,5 +1,5 @@
 /**
- * modules/bot/quickReplies.cjs — VERSIONE DEFINITIVA PATCHATA
+ * app/modules/premium/quickReplies.cjs — VERSIONE DEFINITIVA PATCHATA
  * Quick replies premium per bot MewingMarket
  * Compatibile con SQL, ID-based, descrizione PRO
  */
