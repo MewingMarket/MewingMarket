@@ -1,83 +1,64 @@
 /**
- * premium/quickReplies.cjs
- * Modulo per suggerimenti rapidi (quick replies) in stile WhatsApp.
+ * modules/bot/quickReplies.cjs — VERSIONE DEFINITIVA PATCHATA
+ * Quick replies premium per bot MewingMarket
+ * Compatibile con SQL, ID-based, descrizione PRO
  */
 
-function escapeHTML(str = "") {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
+const path = require("path");
+const { normalizeProduct } = require("./catalogo.cjs");
 
-/* ------------------------------------------
-   QUICK REPLIES — base
------------------------------------------- */
-function quickReplies(options = []) {
-  if (!Array.isArray(options) || !options.length) return "";
-
-  let html = `<div class="mm-quick-container">`;
-
-  for (const opt of options) {
-    const label = escapeHTML(opt.label || "");
-    const value = escapeHTML(opt.value || label);
-
-    html += `
-      <button class="mm-quick" data-value="${value}">
-        ${label}
-      </button>
-    `;
-  }
-
-  html += `</div>`;
-  return html;
-}
-
-/* ------------------------------------------
-   QUICK REPLIES — per prodotto
------------------------------------------- */
+/* ============================================================
+   QUICK REPLIES PER PRODOTTO
+============================================================ */
 function productQuickReplies(product) {
-  if (!product) return "";
+  if (!product) return [];
 
-  return quickReplies([
-    { label: "📄 Dettagli", value: "dettagli" },
-    { label: "🎥 Video", value: "video" },
-    { label: "💰 Prezzo", value: "prezzo" },
-    { label: "🛒 Acquista", value: "acquista" },
-    { label: "🔍 Confronta", value: "confronto" }
-  ]);
+  const p = normalizeProduct(product);
+
+  return [
+    {
+      title: "Dettagli completi",
+      payload: `dettagli ${p.id}`
+    },
+    {
+      title: "Mostra immagine",
+      payload: `immagine ${p.id}`
+    },
+    {
+      title: "Apri prodotto",
+      payload: `apri ${p.id}`
+    }
+  ];
 }
 
-/* ------------------------------------------
-   QUICK REPLIES — per catalogo
------------------------------------------- */
-function catalogQuickReplies() {
-  return quickReplies([
-    { label: "📘 Ecosistema Digitale", value: "ecosistema" },
-    { label: "💼 Business Digitale AI", value: "business" },
-    { label: "🧠 Produttività AI", value: "produttività" },
-    { label: "🔍 Consigliami", value: "consiglio" }
-  ]);
+/* ============================================================
+   QUICK REPLIES GENERALI
+============================================================ */
+function generalQuickReplies() {
+  return [
+    { title: "Catalogo", payload: "catalogo" },
+    { title: "Novità", payload: "novità" },
+    { title: "Consigliami qualcosa", payload: "consigliami" }
+  ];
 }
 
-/* ------------------------------------------
-   QUICK REPLIES — per supporto
------------------------------------------- */
-function supportQuickReplies() {
-  return quickReplies([
-    { label: "⬇️ Download", value: "download" },
-    { label: "💳 Payhip", value: "payhip" },
-    { label: "💸 Rimborso", value: "rimborso" },
-    { label: "📞 Contatto", value: "contatto" }
-  ]);
+/* ============================================================
+   QUICK REPLIES PER CATEGORIA
+============================================================ */
+function categoryQuickReplies(categories = []) {
+  if (!Array.isArray(categories) || !categories.length) return [];
+
+  return categories.map(cat => ({
+    title: `Categoria: ${cat}`,
+    payload: `categoria ${cat}`
+  }));
 }
 
-/* ------------------------------------------
-   EXPORT UNICO
------------------------------------------- */
+/* ============================================================
+   EXPORT
+============================================================ */
 module.exports = {
-  quickReplies,
   productQuickReplies,
-  catalogQuickReplies,
-  supportQuickReplies
+  generalQuickReplies,
+  categoryQuickReplies
 };
