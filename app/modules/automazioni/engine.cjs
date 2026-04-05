@@ -20,11 +20,10 @@ function debug(msg, data = null) {
 }
 
 // =========================
-// 1) SCHEDULER
+// 1) JOB MANUALI (safe)
 // =========================
 
-// Segmentazione ogni 30 minuti
-setInterval(() => {
+function jobSegmentazione() {
   try {
     debug("Esecuzione segmentazione...");
     const utenti = db.prepare("SELECT * FROM utenti").all();
@@ -32,38 +31,34 @@ setInterval(() => {
   } catch (err) {
     console.error("[ENGINE] Errore segmentazione:", err);
   }
-}, 30 * 60 * 1000);
+}
 
-// Report giornaliero
-setInterval(() => {
+function jobReportGiornaliero() {
   try {
     debug("Esecuzione report giornaliero...");
     reportGiornaliero();
   } catch (err) {
     console.error("[ENGINE] Errore report giornaliero:", err);
   }
-}, 24 * 60 * 60 * 1000);
+}
 
-// Report settimanale
-setInterval(() => {
+function jobReportSettimanale() {
   try {
     debug("Esecuzione report settimanale...");
     reportSettimanale();
   } catch (err) {
     console.error("[ENGINE] Errore report settimanale:", err);
   }
-}, 7 * 24 * 60 * 60 * 1000);
+}
 
-// Report mensile
-setInterval(() => {
+function jobReportMensile() {
   try {
     debug("Esecuzione report mensile...");
     reportMensile();
   } catch (err) {
     console.error("[ENGINE] Errore report mensile:", err);
   }
-}, 30 * 24 * 60 * 60 * 1000);
-
+}
 
 // =========================
 // 2) TRIGGER EVENTI
@@ -71,12 +66,10 @@ setInterval(() => {
 
 function onNuovoOrdine(ordine) {
   debug("Trigger: nuovo ordine", ordine.id);
-  // In futuro: patch email-acquisto
 }
 
 function onNuovoFeedback(feedback) {
   debug("Trigger: nuovo feedback", feedback.id);
-  // In futuro: email ringraziamento + KPI
 }
 
 function onNuovoUtente(utente) {
@@ -84,12 +77,15 @@ function onNuovoUtente(utente) {
   segmentazione(utente);
 }
 
-
 // =========================
 // EXPORT
 // =========================
 
 module.exports = {
+  jobSegmentazione,
+  jobReportGiornaliero,
+  jobReportSettimanale,
+  jobReportMensile,
   onNuovoOrdine,
   onNuovoFeedback,
   onNuovoUtente
