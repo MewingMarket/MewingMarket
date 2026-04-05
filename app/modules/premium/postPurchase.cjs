@@ -17,21 +17,22 @@ function postPurchaseMessage(product) {
   if (!product) return "";
 
   const titolo = escapeHTML(product.titoloBreve || product.titolo || "");
-  const link = escapeHTML(product.linkPayhip || "");
+  const id = escapeHTML(String(product.id || ""));
+  const link = `https://www.mewingmarket.it/prodotto/${id}`;
 
   return `
 <div class="mm-success">
   <div class="mm-success-title">🎉 Acquisto completato!</div>
   <div class="mm-success-body">
     Hai appena acquistato <b>${titolo}</b>.<br>
-    Il link per scaricare il prodotto è già disponibile nella tua email Payhip.
+    Puoi accedere subito al tuo prodotto dalla pagina dedicata.
   </div>
 </div>
 
 <div class="mm-info">
-  <div class="mm-info-title">📥 Download immediato</div>
+  <div class="mm-info-title">📥 Accesso immediato</div>
   <div class="mm-info-body">
-    Puoi anche scaricarlo direttamente da qui:<br>
+    Apri la pagina del prodotto per trovare tutti i materiali:<br>
     <a href="${link}" target="_blank">Apri il tuo prodotto</a>
   </div>
 </div>
@@ -49,16 +50,16 @@ function gettingStartedMessage(product) {
   <div class="mm-rich-title">🚀 Come iniziare con ${titolo}</div>
 
   <div class="mm-rich-section">
-    <div class="mm-rich-section-title">1. Scarica il materiale</div>
+    <div class="mm-rich-section-title">1. Accedi al materiale</div>
     <div class="mm-rich-section-body">
-      Trovi tutto nel link Payhip che hai ricevuto via email.
+      Tutti i file sono disponibili nella pagina del prodotto.
     </div>
   </div>
 
   <div class="mm-rich-section">
     <div class="mm-rich-section-title">2. Apri la cartella principale</div>
     <div class="mm-rich-section-body">
-      Dentro trovi la struttura completa del prodotto, già organizzata.
+      Troverai la struttura completa del prodotto, già organizzata.
     </div>
   </div>
 
@@ -101,8 +102,8 @@ function needHelpMessage() {
   <div class="mm-warning-body">
     Posso aiutarti con:<br>
     • Download<br>
-    • Accesso Payhip<br>
-    • Problemi con i file<br>
+    • Accesso ai file<br>
+    • Problemi con gli archivi<br>
     • Domande sul prodotto
   </div>
 </div>
