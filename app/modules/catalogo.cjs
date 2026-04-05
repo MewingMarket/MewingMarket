@@ -1,18 +1,18 @@
 /**
- * modules/catalogo.cjs — VERSIONE DEFINITIVA
- * Catalogo dinamico basato sul backend /api/prodotti/list
- * Compatibile con bot, store, PayPal e prodotto.html
+ * modules/catalogo.cjs — VERSIONE DEFINITIVA PATCHATA
+ * Catalogo dinamico basato su backend SQL /api/prodotti/list
+ * Compatibile con bot, store, PayPal e prodotto/:id
  */
 
 const path = require("path");
 const { normalize, extractKeywords } = require(path.join(__dirname, "bot", "utils.cjs"));
 const fetch = require("node-fetch");
 
-// Endpoint backend
+// Endpoint backend SQL
 const CATALOG_ENDPOINT = "http://localhost:3000/api/prodotti/list";
 
 /* ============================================================
-   FETCH SICURO DAL BACKEND
+   FETCH SICURO DAL BACKEND SQL
 ============================================================ */
 async function fetchCatalog() {
   try {
@@ -24,7 +24,20 @@ async function fetchCatalog() {
       return [];
     }
 
-    return data.products;
+    // Normalizzazione snake_case → oggetto coerente
+    return data.products.map(p => ({
+      id: Number(p.id),
+      titolo: p.titolo || "",
+      titolo_breve: p.titolo_breve || p.titolo || "",
+      descrizione_breve: p.descrizione_breve || "",
+      descrizione_lunga: p.descrizione_lunga || "",
+      prezzo_cent: Number(p.prezzo_cent) || 0,
+      immagine_url: p.immagine_url || "",
+      categoria: Array.isArray(p.categoria) ? p.categoria : [],
+      youtube_url: p.youtube_url || "",
+      youtube_description: p.youtube_description || "",
+      catalog_video_block: p.catalog_video_block || ""
+    }));
   } catch (err) {
     console.error("catalogo: errore fetchCatalog:", err);
     return [];
@@ -50,12 +63,11 @@ async function getCatalog() {
 }
 
 /* ============================================================
-   FUNZIONI DI RICERCA
+   FUNZIONI DI RICERCA — VERSIONE SQL + ID
 ============================================================ */
-async function findProductBySlug(slug) {
-  if (!slug) return null;
+async function findProductById(id) {
   const PRODUCTS = await getCatalog();
-  return PRODUCTS.find(p => p.slug === slug) || null;
+  return PRODUCTS.find(p => Number(p.id) === Number(id)) || null;
 }
 
 async function findProductFromText(text) {
@@ -68,14 +80,13 @@ async function findProductFromText(text) {
   // Match diretto
   let match = PRODUCTS.find(p =>
     normalize(p.titolo).includes(t) ||
-    normalize(p.titoloBreve).includes(t) ||
-    normalize(p.slug).includes(t)
+    normalize(p.titolo_breve).includes(t)
   );
   if (match) return match;
 
   // Match fuzzy per keyword
   for (const p of PRODUCTS) {
-    const full = normalize(`${p.titolo} ${p.titoloBreve} ${p.slug}`);
+    const full = normalize(`${p.titolo} ${p.titolo_breve} ${p.descrizione_breve}`);
     if (keys.some(k => full.includes(k))) return p;
   }
 
@@ -84,7 +95,7 @@ async function findProductFromText(text) {
 
 async function listProductsByCategory(cat) {
   const PRODUCTS = await getCatalog();
-  return PRODUCTS.filter(p => p.categoria === cat);
+  return PRODUCTS.filter(p => p.categoria.includes(cat));
 }
 
 async function listAllProducts() {
@@ -92,7 +103,7 @@ async function listAllProducts() {
 }
 
 /* ============================================================
-   MATCH FUZZY PER FALLBACK
+   MATCH FUZZY FALLBACK (solo CACHE)
 ============================================================ */
 function fuzzyMatchProduct(text = "") {
   if (!text) return null;
@@ -102,17 +113,16 @@ function fuzzyMatchProduct(text = "") {
   const PRODUCTS = CACHE || [];
   if (!PRODUCTS.length) return null;
 
-  // Match diretto su CACHE
+  // Match diretto
   let match = PRODUCTS.find(p =>
     normalize(p.titolo).includes(t) ||
-    normalize(p.titoloBreve).includes(t) ||
-    normalize(p.slug).includes(t)
+    normalize(p.titolo_breve).includes(t)
   );
   if (match) return match;
 
-  // Match fuzzy per keyword
+  // Match fuzzy
   for (const p of PRODUCTS) {
-    const full = normalize(`${p.titolo} ${p.titoloBreve} ${p.slug}`);
+    const full = normalize(`${p.titolo} ${p.titolo_breve} ${p.descrizione_breve}`);
     if (keys.some(k => full.includes(k))) return p;
   }
 
@@ -120,18 +130,20 @@ function fuzzyMatchProduct(text = "") {
 }
 
 /* ============================================================
-   RISPOSTE PRODOTTO — VERSIONE PREMIUM
+   RISPOSTE PRODOTTO — VERSIONE PREMIUM PRO
 ============================================================ */
 function productReply(p) {
   if (!p) return "Non ho trovato questo prodotto.";
 
+  const prezzo = (p.prezzo_cent / 100).toFixed(2);
+
   return `
-📘 <b>${p.titolo}</b>
+📘 <b>${p.titolo_breve}</b>
 
-${p.descrizioneBreve || ""}
+${p.descrizione_breve}
 
-💰 <b>Prezzo:</b> ${p.prezzo}€
-👉 <a href="prodotto.html?slug=${p.slug}" class="mm-btn">Vedi prodotto</a>
+💰 <b>Prezzo:</b> ${prezzo}€
+👉 <a href="https://www.mewingmarket.it/prodotto/${p.id}" class="mm-btn">Vedi prodotto</a>
 
 ${p.youtube_url ? `🎥 Video: ${p.youtube_url}` : ""}
 `;
@@ -140,13 +152,15 @@ ${p.youtube_url ? `🎥 Video: ${p.youtube_url}` : ""}
 function productLongReply(p) {
   if (!p) return "Non ho trovato questo prodotto.";
 
+  const prezzo = (p.prezzo_cent / 100).toFixed(2);
+
   return `
 📘 <b>${p.titolo}</b> — <b>Dettagli completi</b>
 
-${p.descrizioneLunga || ""}
+${p.descrizione_lunga}
 
-💰 <b>Prezzo:</b> ${p.prezzo}€
-👉 <a href="prodotto.html?slug=${p.slug}" class="mm-btn">Vai al prodotto</a>
+💰 <b>Prezzo:</b> ${prezzo}€
+👉 <a href="https://www.mewingmarket.it/prodotto/${p.id}" class="mm-btn">Vai al prodotto</a>
 
 ${p.youtube_url ? `🎥 Video: ${p.youtube_url}` : ""}
 ${p.youtube_description ? `📝 ${p.youtube_description}` : ""}
@@ -157,11 +171,11 @@ function productImageReply(p) {
   if (!p) return "Non ho trovato questo prodotto.";
 
   return `
-🖼 <b>${p.titoloBreve}</b>
+🖼 <b>${p.titolo_breve}</b>
 
-${p.immagine}
+<img src="${p.immagine_url}" alt="${p.titolo_breve}" />
 
-👉 <a href="prodotto.html?slug=${p.slug}" class="mm-btn">Vedi prodotto</a>
+👉 <a href="https://www.mewingmarket.it/prodotto/${p.id}" class="mm-btn">Vedi prodotto</a>
 `;
 }
 
@@ -170,7 +184,7 @@ ${p.immagine}
 ============================================================ */
 module.exports = {
   getCatalog,
-  findProductBySlug,
+  findProductById,
   findProductFromText,
   listProductsByCategory,
   listAllProducts,
