@@ -16,7 +16,7 @@ function generateAdvancedImagesSitemap() {
   try {
     const stmt = db.prepare(`
       SELECT 
-        slug,
+        id,
         titolo_breve,
         descrizione_breve,
         descrizione_lunga,
@@ -34,7 +34,7 @@ function generateAdvancedImagesSitemap() {
                    xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n`;
 
     rows.forEach(p => {
-      const productUrl = `https://mewingmarket.com/prodotto/${p.slug}`;
+      const productUrl = `https://mewingmarket.com/prodotto/${p.id}`;
 
       xml += `
   <url>
