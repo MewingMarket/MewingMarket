@@ -6,7 +6,9 @@
 const callGPT = require("../gpt.cjs");
 const { reply, log } = require("../utils.cjs");
 const Memory = require("../../memory.cjs");
-const Context = require("../../context.cjs");
+
+// 🔥 PATCH: percorso corretto
+const Context = require("../../bot/context.cjs");
 
 // Moduli dinamici
 const FAQ = require("../../faq.cjs");
@@ -46,10 +48,13 @@ module.exports = async function fallbackHandler(req, res, rawText) {
 
   /* ============================================================
      3) MATCH PRODOTTO
+     🔥 PATCH: rimozione slug, uso ID + link corretto
   ============================================================ */
   const product = fuzzyMatchProduct(text);
   if (product) {
-    log("FALLBACK_PRODUCT_MATCH", product.slug);
+    log("FALLBACK_PRODUCT_MATCH", product.id);
+
+    const id = String(product.id || "");
 
     return reply(res, `
 <div class="mm-card">
@@ -57,7 +62,7 @@ module.exports = async function fallbackHandler(req, res, rawText) {
   <div class="mm-card-body">
     Prezzo: <b>${product.prezzo}€</b><br>
     Categoria: ${product.categoria}<br><br>
-    <a href="prodotto.html?slug=${product.slug}" class="mm-btn">Vedi prodotto</a>
+    <a href="https://www.mewingmarket.it/prodotto/${id}" class="mm-btn">Vedi prodotto</a>
   </div>
 </div>
 `);
