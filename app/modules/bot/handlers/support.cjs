@@ -6,7 +6,9 @@
 const callGPT = require("../gpt.cjs");
 const { reply, log } = require("../utils.cjs");
 const Memory = require("../../memory.cjs");
-const Context = require("../../context.cjs");
+
+// 🔥 PATCH: percorso corretto
+const Context = require("../../bot/context.cjs");
 
 // Moduli dinamici
 const FAQ = require("../../faq.cjs");
@@ -194,7 +196,10 @@ module.exports = function supportHandler(req, res, sub, rawText) {
   log("HANDLER_SUPPORT", { sub, rawText });
 
   if (sub === "download") return handleDownload(req, res, rawText);
-  if (sub === "payhip") return handlePagamento(req, res, rawText);
+
+  // 🔥 PATCH: rimosso "payhip", sostituito con "pagamento"
+  if (sub === "pagamento") return handlePagamento(req, res, rawText);
+
   if (sub === "rimborso") return handleRefund(req, res, rawText);
   if (sub === "contatto") return handleContact(req, res, rawText);
 
