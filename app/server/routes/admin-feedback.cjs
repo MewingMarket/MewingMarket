@@ -1,6 +1,7 @@
 /* =========================================================
    File: app/server/routes/admin-feedback.cjs
    Lista completa feedback per Admin — DEBUG SUPREMO + FALLBACK
+   PATCH 2026 — KPI Feedback
 ========================================================= */
 
 const express = require("express");
@@ -53,13 +54,6 @@ router.get("/feedback/lista", (req, res) => {
     `).all();
 
     console.log("🔵 [ADMIN] Ordini trovati:", ordini.length);
-    ordini.forEach((o, i) => {
-      console.log(`   [ORDINE ${i}]`, {
-        id: o.id,
-        utente_id: o.utente_id,
-        prodotti_json: o.prodotti_json
-      });
-    });
 
     // MAP + FALLBACK
     const output = lista.map((f, idx) => {
@@ -110,9 +104,74 @@ router.get("/feedback/lista", (req, res) => {
       return { ...f, utente_email: "Anonimo" };
     });
 
-    console.log("🟣 [ADMIN] Output finale inviato al frontend. Righe:", output.length);
+    /* =========================================================
+       PATCH KPI FEEDBACK — STATISTICHE PER ADMIN
+    ========================================================== */
 
-    return res.json({ success: true, feedback: output });
+    const kpi = {
+      totale: output.length,
+      media_stelle: 0,
+      percentuali: {
+        1: 0,
+        2: 0,
+        3: 0,
+        4: 0,
+        5: 0
+      },
+      prodotti_top: [],
+      prodotti_flop: []
+    };
+
+    if (output.length > 0) {
+      // Media stelle
+      kpi.media_stelle = (
+        output.reduce((sum, f) => sum + Number(f.rating), 0) / output.length
+      ).toFixed(2);
+
+      // Percentuali stelle
+      output.forEach(f => {
+        const r = Number(f.rating);
+        if (kpi.percentuali[r] !== undefined) {
+          kpi.percentuali[r]++;
+        }
+      });
+
+      Object.keys(kpi.percentuali).forEach(k => {
+        kpi.percentuali[k] = ((kpi.percentuali[k] / output.length) * 100).toFixed(1);
+      });
+
+      // Prodotti top/flop
+      const mapProdotti = {};
+
+      output.forEach(f => {
+        if (!mapProdotti[f.prodotto_id]) {
+          mapProdotti[f.prodotto_id] = {
+            prodotto_id: f.prodotto_id,
+            titolo: f.prodotto_titolo,
+            count: 0,
+            somma: 0
+          };
+        }
+        mapProdotti[f.prodotto_id].count++;
+        mapProdotti[f.prodotto_id].somma += Number(f.rating);
+      });
+
+      const arr = Object.values(mapProdotti).map(p => ({
+        ...p,
+        media: (p.somma / p.count).toFixed(2)
+      }));
+
+      kpi.prodotti_top = arr.sort((a, b) => b.media - a.media).slice(0, 5);
+      kpi.prodotti_flop = arr.sort((a, b) => a.media - b.media).slice(0, 5);
+    }
+
+    console.log("🟣 [ADMIN] KPI Feedback:", kpi);
+
+    return res.json({
+      success: true,
+      feedback: output,
+      kpi
+    });
 
   } catch (err) {
     console.error("❌ [ADMIN] Errore /admin/feedback/lista:", err);
