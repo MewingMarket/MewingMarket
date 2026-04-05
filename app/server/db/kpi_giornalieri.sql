@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS kpi_giornalieri (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  data TEXT NOT NULL, -- formato YYYY-MM-DD
+  vendite INTEGER DEFAULT 0,
+  nuovi_utenti INTEGER DEFAULT 0,
+  feedback INTEGER DEFAULT 0,
+  revenue REAL DEFAULT 0
+);
