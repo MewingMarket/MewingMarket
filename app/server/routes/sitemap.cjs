@@ -12,7 +12,7 @@ module.exports = function (app) {
     try {
       // Recupera tutti i prodotti dal DB
       const stmt = db.prepare(`
-        SELECT slug
+        SELECT id
         FROM prodotti
         ORDER BY id DESC
       `);
@@ -21,10 +21,10 @@ module.exports = function (app) {
 
       const urls = prodotti
         .map((p) => {
-          const slug = p.slug;
+          const id = p.id;
           return `
     <url>
-      <loc>https://mewingmarket.com/prodotto/${slug}</loc>
+      <loc>https://mewingmarket.com/prodotto/${id}</loc>
       <changefreq>weekly</changefreq>
       <priority>0.8</priority>
     </url>`;
