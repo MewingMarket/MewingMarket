@@ -254,7 +254,10 @@ const wait = (ms) => new Promise(res => res(ms));
     app.listen(PORT, () => {
       log(`🎉 SERVER LISTENING ON PORT ${PORT}`);
       log("⚡ Server pronto e online");
-
+// =========================================================
+// AUTOMAZIONI (SCHEDULER)
+// =========================================================
+require("./startup/automazioni.cjs");
       // =========================================================
       // SYNC JSON INIZIALE
       // =========================================================
