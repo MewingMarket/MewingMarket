@@ -2,7 +2,7 @@
 
 const path = require("path");
 const { getProducts } = require(path.join(__dirname, "airtable-sync.cjs"));
-const { safeText, cleanURL, safeSlug } = require("./utils.cjs");
+const { safeText, cleanURL } = require("./utils.cjs");
 
 /* =========================================================
    GENERA SITEMAP COMPLETA (blindata)
@@ -32,11 +32,12 @@ function generateSitemap() {
 
     /* =====================================================
        GENERAZIONE URL PRODOTTI (blindata)
+       🔥 PATCH: rimosso slug → uso id
     ====================================================== */
     const productUrls = products
-      .map(p => safeSlug(p?.slug))
-      .filter(slug => slug && typeof slug === "string")
-      .map(slug => `/prodotto/${slug}`);
+      .map(p => p?.id)
+      .filter(id => id && typeof id === "string")
+      .map(id => `/prodotto/${id}`);
 
     const urls = [...staticPages, ...productUrls];
 
