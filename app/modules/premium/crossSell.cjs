@@ -51,6 +51,9 @@ function crossSellByCategory(product, allProducts = []) {
 `;
 
   for (const p of correlati) {
+    const id = escapeHTML(String(p.id || ""));
+    const link = `https://www.mewingmarket.it/prodotto/${id}`;
+
     html += `
 <div class="mm-card">
   <div class="mm-card-header">
@@ -58,7 +61,7 @@ function crossSellByCategory(product, allProducts = []) {
     <div class="mm-card-price">${escapeHTML(p.prezzo)}€</div>
   </div>
   <div class="mm-card-footer">
-    <a class="mm-btn-small" href="${escapeHTML(p.linkPayhip)}" target="_blank">Apri</a>
+    <a class="mm-btn-small" href="${link}" target="_blank">Apri</a>
   </div>
 </div>
 `;
@@ -74,7 +77,6 @@ function crossSellByProduct(product, allProducts = []) {
   if (!product) return "";
 
   const titolo = product.titoloBreve || product.titolo || "";
-
   const keywords = titolo.toLowerCase().split(" ");
 
   const correlati = allProducts.filter(p => {
@@ -95,6 +97,9 @@ function crossSellByProduct(product, allProducts = []) {
 `;
 
   for (const p of correlati) {
+    const id = escapeHTML(String(p.id || ""));
+    const link = `https://www.mewingmarket.it/prodotto/${id}`;
+
     html += `
 <div class="mm-card">
   <div class="mm-card-header">
@@ -102,7 +107,7 @@ function crossSellByProduct(product, allProducts = []) {
     <div class="mm-card-price">${escapeHTML(p.prezzo)}€</div>
   </div>
   <div class="mm-card-footer">
-    <a class="mm-btn-small" href="${escapeHTML(p.linkPayhip)}" target="_blank">Apri</a>
+    <a class="mm-btn-small" href="${link}" target="_blank">Apri</a>
   </div>
 </div>
 `;
@@ -130,6 +135,9 @@ function crossSellUpgrade(product, allProducts = []) {
 
   const best = upgrade.sort((a, b) => Number(b.prezzo) - Number(a.prezzo))[0];
 
+  const id = escapeHTML(String(best.id || ""));
+  const link = `https://www.mewingmarket.it/prodotto/${id}`;
+
   return `
 <div class="mm-success">
   <div class="mm-success-title">⬆️ Upgrade consigliato</div>
@@ -144,7 +152,7 @@ function crossSellUpgrade(product, allProducts = []) {
     <div class="mm-card-price">${escapeHTML(best.prezzo)}€</div>
   </div>
   <div class="mm-card-footer">
-    <a class="mm-btn" href="${escapeHTML(best.linkPayhip)}" target="_blank">Scopri di più</a>
+    <a class="mm-btn" href="${link}" target="_blank">Scopri di più</a>
   </div>
 </div>
 `;
