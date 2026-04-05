@@ -10,10 +10,9 @@ const db = require("../db/database.cjs");
 function generateStoreSitemap() {
   try {
     const stmt = db.prepare(`
-      SELECT slug
+      SELECT id
       FROM prodotti
-      WHERE slug IS NOT NULL
-        AND slug != ''
+      WHERE id IS NOT NULL
       ORDER BY id DESC
     `);
 
@@ -25,7 +24,7 @@ function generateStoreSitemap() {
     rows.forEach(p => {
       xml += `
   <url>
-    <loc>https://mewingmarket.com/prodotto/${p.slug}</loc>
+    <loc>https://mewingmarket.com/prodotto/${p.id}</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>`;
