@@ -6,7 +6,9 @@
 const callGPT = require("../gpt.cjs");
 const { reply, log } = require("../utils.cjs");
 const Memory = require("../../memory.cjs");
-const Context = require("../../context.cjs");
+
+// 🔥 PATCH: percorso corretto
+const Context = require("../../bot/context.cjs");
 
 /* ============================================================
    HANDLER DISISCRIZIONE
