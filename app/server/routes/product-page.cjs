@@ -10,7 +10,7 @@ const path = require("path");
 module.exports = function (app) {
 
   // Serve la pagina prodotto statica
-  app.get("/prodotto/:slug", (req, res) => {
+  app.get("/prodotto/:id", (req, res) => {
     try {
       res.sendFile("prodotto.html", {
         root: path.join(__dirname, "../../public")
@@ -18,15 +18,15 @@ module.exports = function (app) {
 
       // Tracking opzionale
       if (typeof global.logEvent === "function") {
-        global.logEvent("product_page_view", { slug: req.params.slug });
+        global.logEvent("product_page_view", { id: req.params.id });
       }
 
     } catch (err) {
-      console.error("❌ Errore /prodotto/:slug:", err);
+      console.error("❌ Errore /prodotto/:id:", err);
 
       if (typeof global.logEvent === "function") {
         global.logEvent("product_page_error", {
-          slug: req.params.slug,
+          id: req.params.id,
           error: err?.message || "unknown"
         });
       }
