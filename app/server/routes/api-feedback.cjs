@@ -9,6 +9,9 @@ const express = require("express");
 const db = require("../db/database.cjs");
 const authUser = require("../middleware/auth-user.cjs");
 
+// PATCH — email ringraziamento feedback
+const { inviaEmailFeedback } = require("../modules/email-feedback.cjs");
+
 const router = express.Router();
 
 /* =========================================================
@@ -81,10 +84,12 @@ router.get("/recensioni/utente", authUser, (req, res) => {
 /* =========================================================
    POST /api/recensioni/crea
    + LOG DEBUG
+   + PATCH EMAIL FEEDBACK
 ========================================================= */
 router.post("/recensioni/crea", authUser, (req, res) => {
   try {
     const userId = req.user.id;
+    const userEmail = req.user.email;
     const { prodotto_id, rating, commento } = req.body;
 
     console.log("📝 [DEBUG] CREA RECENSIONE →", {
@@ -180,6 +185,23 @@ router.post("/recensioni/crea", authUser, (req, res) => {
     stmtInsert.run(userId, prodotto_id, Number(rating), commento);
 
     console.log("✅ [DEBUG] Recensione inserita");
+
+    /* =========================================================
+       PATCH — INVIO EMAIL FEEDBACK (non blocca la risposta)
+    ========================================================= */
+    try {
+      console.log("📨 [DEBUG] Invio email ringraziamento feedback →", userEmail);
+
+      inviaEmailFeedback({
+        email: userEmail,
+        prodotto_id,
+        rating,
+        commento
+      });
+
+    } catch (err) {
+      console.error("❌ [DEBUG] Errore invio email feedback:", err);
+    }
 
     return res.json({ success: true });
 
