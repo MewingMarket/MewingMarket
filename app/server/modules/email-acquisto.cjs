@@ -1,6 +1,6 @@
 // =========================================================
 // File: app/server/modules/email-acquisto.cjs
-// Email acquisto — Versione patchata 2026.2001 + TEMPLATE GRAFICO
+// Email acquisto — Versione patchata 2026.2001 + TEMPLATE GRAFICO + FAQ/Guide/Contatti
 // =========================================================
 
 const { inviaEmailLista } = require("./invia-email-lista.cjs");
@@ -122,6 +122,28 @@ async function inviaEmailAcquisto({ email, ordine }) {
            style="color:#38bdf8;text-decoration:underline;">
           Lascia una recensione
         </a>
+      </p>
+
+      <hr style="margin:30px 0;">
+
+      <h3 style="color:#333;">❓ Hai dubbi o domande?</h3>
+      <p style="font-size:16px;color:#444;">
+        Puoi consultare la pagina FAQ e la pagina Guide per trovare risposte immediate:
+      </p>
+
+      <p>
+        <a href="https://www.mewingmarket.it/FAQ.html" style="color:#007bff;text-decoration:underline;">FAQ</a><br>
+        <a href="https://www.mewingmarket.it/guide.html" style="color:#007bff;text-decoration:underline;">Guide & Assistenza</a>
+      </p>
+
+      <p style="font-size:16px;color:#444;margin-top:10px;">
+        All’interno della pagina FAQ trovi anche il bot di assistenza.<br>
+        Se preferisci, puoi contattarci direttamente:
+      </p>
+
+      <p style="font-size:16px;color:#444;">
+        Email supporto: <strong>supporto@mewingmarket.it</strong><br>
+        WhatsApp Business: <strong>+39 352 026 6660</strong>
       </p>
   `;
 
