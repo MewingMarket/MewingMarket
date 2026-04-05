@@ -20,8 +20,10 @@ function productCard(product) {
   const titolo = escapeHTML(product.titolo || "");
   const breve = escapeHTML(product.titoloBreve || titolo);
   const prezzo = escapeHTML(product.prezzo || "");
-  const link = escapeHTML(product.linkPayhip || "");
+  const id = escapeHTML(String(product.id || ""));
   const descrizione = escapeHTML(product.descrizioneBreve || "");
+
+  const link = `https://www.mewingmarket.it/prodotto/${id}`;
 
   return `
 <div class="mm-card">
@@ -35,7 +37,7 @@ function productCard(product) {
   </div>
 
   <div class="mm-card-footer">
-    <a class="mm-btn" href="${link}" target="_blank">Acquista ora</a>
+    <a class="mm-btn" href="${link}" target="_blank">Apri prodotto</a>
   </div>
 </div>
 `;
@@ -60,7 +62,8 @@ function catalogCard(products = []) {
   for (const p of products) {
     const titolo = escapeHTML(p.titoloBreve || p.titolo || "");
     const prezzo = escapeHTML(p.prezzo || "");
-    const link = escapeHTML(p.linkPayhip || "");
+    const id = escapeHTML(String(p.id || ""));
+    const link = `https://www.mewingmarket.it/prodotto/${id}`;
 
     html += `
     <div class="mm-product-row">
@@ -122,7 +125,8 @@ function priceCard(product) {
 
   const titolo = escapeHTML(product.titoloBreve || product.titolo || "");
   const prezzo = escapeHTML(product.prezzo || "");
-  const link = escapeHTML(product.linkPayhip || "");
+  const id = escapeHTML(String(product.id || ""));
+  const link = `https://www.mewingmarket.it/prodotto/${id}`;
 
   return `
 <div class="mm-card">
@@ -135,7 +139,7 @@ function priceCard(product) {
   </div>
 
   <div class="mm-card-footer">
-    <a class="mm-btn" href="${link}" target="_blank">Acquista ora</a>
+    <a class="mm-btn" href="${link}" target="_blank">Apri prodotto</a>
   </div>
 </div>
 `;
@@ -159,8 +163,11 @@ function compareCard(a, b) {
   const titoloB = escapeHTML(b.titoloBreve || b.titolo || "");
   const prezzoA = escapeHTML(a.prezzo || "");
   const prezzoB = escapeHTML(b.prezzo || "");
-  const linkA = escapeHTML(a.linkPayhip || "");
-  const linkB = escapeHTML(b.linkPayhip || "");
+  const idA = escapeHTML(String(a.id || ""));
+  const idB = escapeHTML(String(b.id || ""));
+
+  const linkA = `https://www.mewingmarket.it/prodotto/${idA}`;
+  const linkB = `https://www.mewingmarket.it/prodotto/${idB}`;
 
   return `
 <div class="mm-card">
