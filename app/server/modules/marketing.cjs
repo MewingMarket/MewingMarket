@@ -3,6 +3,7 @@
  * File: app/server/modules/marketing.cjs
  * Modulo marketing universale — Newsletter + Post-vendita
  * Versione premium 2026
+ * PATCH AI: usa descrizione_email come priorità
  * =========================================================
  */
 
@@ -101,11 +102,20 @@ function templateEmailUniversale(contenuto) {
 
 /* =========================================================
    GENERA EMAIL PRODOTTO
+   PATCH AI: usa descrizione_email come priorità
 ========================================================= */
 function generaEmailProdotto(prod) {
   const titolo = escapeHTML(prod.titolo_breve || prod.titolo || "");
-  const descrizione = escapeHTML(prod.descrizione_breve || prod.descrizione_lunga || "");
-  const immagine = safeString(prod.immagine_url || "");
+
+  // 🔥 PATCH AI: priorità descrizione_email
+  const descrizione = escapeHTML(
+    prod.descrizione_email ||
+    prod.descrizione_breve ||
+    prod.descrizione_lunga ||
+    ""
+  );
+
+  const immagine = safeString(prod.immagine_url || prod.immagine || "");
   const link = `https://mewingmarket.it/prodotto.html?id=${prod.id}`;
 
   return templateEmailUniversale(`
