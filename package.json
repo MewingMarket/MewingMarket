@@ -24,7 +24,7 @@
         "pdfkit": "^0.15.0",
         "puppeteer": "^24.37.5",
         "xml2js": "^0.6.2"
-    },
+    "fuse.js": "^6.6.2"},
     "engines": {
         "node": "18.x"
     }
