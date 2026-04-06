@@ -2,7 +2,7 @@
 // CHECKOUT.JS — Versione DEFINITIVA (2026.92)
 // Fix: invio corretto a create-order (email + prodotti + totale)
 // Fix: debug completo
-// Fix: slug eliminato dal carrello
+// Fix: slug eliminato dal carrello (ID-based)
 // =========================================================
 
 console.log("[CHECKOUT] Caricato");
