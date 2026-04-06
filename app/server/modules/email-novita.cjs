@@ -4,6 +4,7 @@
  * Newsletter “Novità” basata su tabella prodotti (SQL)
  * PATCH 2026.70 — Dominio corretto .it + link ID-based
  * + TEMPLATE GRAFICO UNIVERSALE
+ * + PATCH AI: usa descrizione_email se presente
  * =========================================================
  */
 
@@ -31,14 +32,20 @@ function escapeHTML(str) {
    PATCH: link ID-based → prodotto.html?id=<ID>
    FIX: dominio corretto .it
    + TEMPLATE GRAFICO UNIVERSALE
+   + PATCH AI: descrizione_email
 ========================================================= */
 function generateNovitaHTML(prod) {
   const titolo = escapeHTML(prod.titolo_breve || prod.titolo || "");
+
+  // 🔥 PATCH AI: priorità descrizione_email
   const descrizione = escapeHTML(
-    prod.descrizione_breve || prod.descrizione_lunga || ""
+    prod.descrizione_email ||
+    prod.descrizione_breve ||
+    prod.descrizione_lunga ||
+    ""
   );
 
-  const immagine = safeString(prod.immagine_url || "");
+  const immagine = safeString(prod.immagine_url || prod.immagine || "");
 
   const link = `https://mewingmarket.it/prodotto.html?id=${prod.id}`;
 
