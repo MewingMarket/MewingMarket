@@ -3,7 +3,7 @@
 (async function () {
   const path = window.location.pathname.toLowerCase();
   const params = new URLSearchParams(window.location.search);
-  const rawSlug = params.get("slug");
+  const rawId = params.get("id");
 
   /* =========================================================
      SANITIZZAZIONE
@@ -18,7 +18,7 @@
       ? url
       : "";
 
-  const slug = clean(rawSlug || "");
+  const id = clean(rawId || "");
 
   function injectSchema(data) {
     try {
@@ -110,10 +110,10 @@
   }
 
   /* =========================================================
-     5) FETCH UNICO PRODUCTS.JSON (se serve)
+     5) FETCH UNICO PRODUCTS.JSON (solo se serve)
   ========================================================== */
   let products = [];
-  if (slug) {
+  if (id) {
     try {
       const res = await fetch("products.json", { cache: "no-store" });
       if (res.ok) {
@@ -150,8 +150,8 @@
     });
   }
 
-  if (slug && products.length) {
-    const p = products.find(pr => pr.slug === slug);
+  if (id && products.length) {
+    const p = products.find(pr => String(pr.id) === String(id));
     if (p) {
       breadcrumb.itemListElement.push(
         {
@@ -162,9 +162,9 @@
         },
         {
           "@type": "ListItem",
-          "position": 3,
+          "position": 3",
           "name": clean(p.titolo),
-          "item": `https://www.mewingmarket.it/prodotto.html?slug=${clean(p.slug)}`
+          "item": `https://www.mewingmarket.it/prodotto.html?id=${clean(id)}`
         }
       );
     }
@@ -175,24 +175,32 @@
   /* =========================================================
      7) PRODUCT – dinamico (con AggregateRating)
   ========================================================== */
-  if (slug && products.length) {
-    const p = products.find(pr => pr.slug === slug);
+  if (id && products.length) {
+    const p = products.find(pr => String(pr.id) === String(id));
     if (!p) return;
 
     const productSchema = {
       "@context": "https://schema.org/",
       "@type": "Product",
       "name": clean(p.titolo),
-      "description": clean(p.descrizioneBreve || p.descrizioneLunga || ""),
+
+      // 🔥 PATCH SEO AI: priorità descrizione_email → breve → lunga
+      "description": clean(
+        p.descrizioneEmail ||
+        p.descrizioneBreve ||
+        p.descrizioneLunga ||
+        ""
+      ),
+
       "image": safeURL(p.immagine),
-      "sku": clean(p.slug),
+      "sku": clean(String(p.id)),
       "brand": {
         "@type": "Brand",
         "name": "MewingMarket"
       },
       "offers": {
         "@type": "Offer",
-        "url": `https://www.mewingmarket.it/prodotto.html?slug=${clean(p.slug)}`,
+        "url": `https://www.mewingmarket.it/prodotto.html?id=${clean(id)}`,
         "priceCurrency": "EUR",
         "price": Number(p.prezzo) || 0,
         "availability": "https://schema.org/InStock"
