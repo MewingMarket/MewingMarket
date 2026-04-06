@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   /* =========================================================
      SANITIZZAZIONE
-  ========================================================= */
+  ========================================================== */
   const clean = (t) =>
     typeof t === "string"
       ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
@@ -101,14 +101,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     p.descrizione_lunga || "";
 
   /* =========================================================
-     6) ACQUISTA ORA — checkout single
+     6) ACQUISTA ORA — checkout single (ID-based)
   ========================================================= */
   document.getElementById("btn-acquista").addEventListener("click", () => {
 
     if (typeof aggiungiAlCarrello === "function") {
       aggiungiAlCarrello({
         id: p.id,
-        slug: p.slug,
         titolo: p.titolo,
         prezzo_cent: prezzo_cent,
         prezzo: prezzo,
@@ -124,14 +123,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   /* =========================================================
-     7) AGGIUNGI AL CARRELLO — guest OK
+     7) AGGIUNGI AL CARRELLO — guest OK (ID-based)
   ========================================================= */
   document.getElementById("btn-carrello").addEventListener("click", () => {
 
     if (typeof aggiungiAlCarrello === "function") {
       aggiungiAlCarrello({
         id: p.id,
-        slug: p.slug,
         titolo: p.titolo,
         prezzo_cent: prezzo_cent,
         prezzo: prezzo,
