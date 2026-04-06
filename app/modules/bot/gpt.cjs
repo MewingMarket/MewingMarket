@@ -1,14 +1,16 @@
 /**
  * modules/bot/gpt.cjs
  * GPT engine — versione blindata, robusta, con timeout e agent HTTPS
+ * PATCH: ora usa il motore AI universale (ai.cjs)
  */
 
-const https = require("https");
-const fetch = require("node-fetch");
 const { addEmojis, log } = require("./utils.cjs");
 
+// 🔥 Nuovo motore AI universale
+const callAI = require("../../modules/ai.cjs");
+
 /* ============================================================
-   SYSTEM PROMPT BASE
+   SYSTEM PROMPT BASE (solo per il BOT)
 ============================================================ */
 const BASE_SYSTEM_PROMPT = `
 Sei il Copilot ufficiale di MewingMarket.
@@ -18,16 +20,7 @@ Usa markup WhatsApp-style.
 `;
 
 /* ============================================================
-   HTTPS AGENT — evita blocchi su Render
-============================================================ */
-const agent = new https.Agent({
-  keepAlive: true,
-  maxSockets: 10,
-  timeout: 10000
-});
-
-/* ============================================================
-   CALL GPT — versione blindata
+   CALL GPT — versione blindata (BOT WRAPPER)
 ============================================================ */
 async function callGPT(
   userPrompt,
@@ -46,89 +39,27 @@ async function callGPT(
 
     /* ============================================================
        PATCH: risposte brevi senza GPT (evita bug OpenRouter)
-    ============================================================ */
+    ============================================================= */
     const short = (userPrompt || "").trim().toLowerCase();
     if (["ciao", "hey", "hi", "salve", "menu", "ok"].includes(short)) {
       return addEmojis("Ciao! 👋 Come posso aiutarti oggi?");
     }
 
-    const safeMemory = Array.isArray(memory) ? memory.slice(-6) : [];
-    const ctx = context && typeof context === "object" ? context : {};
-    const data = extraData && typeof extraData === "object" ? extraData : {};
-
     /* ============================================================
-       Costruzione system prompt pulito
-    ============================================================ */
-    let system = BASE_SYSTEM_PROMPT + (extraSystem || "");
-
-    const extraBlocks = [];
-
-    if (safeMemory.length > 0) {
-      extraBlocks.push(`Memoria conversazione: ${JSON.stringify(safeMemory)}`);
-    }
-
-    if (Object.keys(ctx).length > 0) {
-      extraBlocks.push(`Contesto pagina: ${JSON.stringify(ctx)}`);
-    }
-
-    if (Object.keys(data).length > 0) {
-      extraBlocks.push(`Dati aggiuntivi: ${JSON.stringify(data)}`);
-    }
-
-    if (extraBlocks.length > 0) {
-      system += "\n\n" + extraBlocks.join("\n");
-    }
-
-    const payload = {
-      model: "meta-llama/llama-3.1-8b-instruct",
-      messages: [
-        { role: "system", content: system.trim() },
-        { role: "user", content: userPrompt || "" }
-      ]
-    };
-
-    log("GPT_PAYLOAD", payload);
-
-    /* ============================================================
-       TIMEOUT MANUALE — evita fetch infinite
-    ============================================================ */
-    const controller = new AbortController();
-    const timeout = setTimeout(() => {
-      controller.abort();
-      log("GPT_TIMEOUT", "Timeout raggiunto");
-    }, 15000);
-
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload),
-      agent,
-      signal: controller.signal
+       Chiamata al nuovo motore AI universale
+    ============================================================= */
+    const response = await callAI({
+      userPrompt,
+      memory,
+      extraSystem: BASE_SYSTEM_PROMPT + (extraSystem || ""),
+      extraData: {
+        ...extraData,
+        context
+      }
     });
 
-    clearTimeout(timeout);
+    return addEmojis(response);
 
-    let json = null;
-    try {
-      json = await res.json();
-    } catch (err) {
-      log("GPT_JSON_ERROR", err);
-      return addEmojis("Sto avendo un piccolo rallentamento, ma posso aiutarti.");
-    }
-
-    log("GPT_RESPONSE", json);
-
-    const out = json?.choices?.[0]?.message?.content;
-
-    if (out && typeof out === "string") {
-      return addEmojis(out.trim());
-    }
-
-    log("GPT_EMPTY_RESPONSE", json);
-    return addEmojis("Sto avendo un piccolo rallentamento, ma posso aiutarti.");
   } catch (err) {
     log("GPT_FATAL_ERROR", err);
     return addEmojis("C’è un piccolo problema tecnico, ma posso aiutarti.");
