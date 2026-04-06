@@ -81,7 +81,7 @@ function getImage(p) {
 }
 
 /* =========================================================
-   7) CARD PRODOTTO — PATCH MULTI-CATEGORIA
+   7) CARD PRODOTTO — PATCH MULTI-CATEGORIA + SOLO ID
 ========================================================= */
 function cardHTML(p) {
   const img = getImage(p);
@@ -91,12 +91,10 @@ function cardHTML(p) {
   const prezzo_cent = Number(p.prezzo_cent) || 0;
   const prezzo = prezzo_cent / 100;
 
-  // PATCH: categorie = array → convertiamo in stringa per data-attribute
   const categorie = Array.isArray(p.categoria) ? p.categoria : [];
   const categorieAttr = categorie.map(clean).join(" ");
 
   const id = p.id;
-  const slug = p.slug || "";
 
   return `
     <div class="product-card" data-cat="${categorieAttr}" data-prezzo="${prezzo}" data-id="${id}">
@@ -111,8 +109,7 @@ function cardHTML(p) {
         <a href="prodotto.html?id=${encodeURIComponent(id)}" class="btn">Scopri di più</a>
 
         <button class="btn-secondario btn-add-cart" 
-          data-id="${id}" 
-          data-slug="${slug}"
+          data-id="${id}"
           data-title="${titoloBreve}" 
           data-price-cent="${prezzo_cent}"
           data-img="${img}">
@@ -142,7 +139,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (!container || !categorieBox) return;
 
   /* ------------------------------
-     CATEGORIE DINAMICHE — PATCH MULTI-CATEGORIA
+     CATEGORIE DINAMICHE
   ------------------------------ */
   let categorie = categoriesFromJson.length
     ? categoriesFromJson
@@ -160,7 +157,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     : "<p>Nessun prodotto disponibile.</p>";
 
   /* ------------------------------
-     FILTRO CATEGORIA — PATCH MULTI-CATEGORIA
+     FILTRO CATEGORIA
   ------------------------------ */
   categorieBox.addEventListener("click", e => {
     const cat = e.target.dataset.cat;
@@ -199,14 +196,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /* ------------------------------
-     AGGIUNTA / RIMOZIONE CARRELLO
+     AGGIUNTA / RIMOZIONE CARRELLO (solo ID)
   ------------------------------ */
   document.querySelectorAll(".btn-add-cart").forEach(btn => {
     btn.addEventListener("click", () => {
 
       const prodotto = {
         id: Number(btn.dataset.id),
-        slug: btn.dataset.slug,
         titolo: btn.dataset.title,
         prezzo_cent: Number(btn.dataset.priceCent),
         prezzo: Number(btn.dataset.priceCent) / 100,
