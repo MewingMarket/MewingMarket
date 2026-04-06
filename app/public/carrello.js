@@ -1,6 +1,7 @@
 /* =========================================================
    FILE: /public/carrello.js
    CARRELLO SQL-READY — MODELLO DEFINITIVO (PATCH 2026.90)
+   PATCH: rimosso completamente slug → solo ID
 ========================================================= */
 
 const Cart = {
@@ -28,6 +29,7 @@ const Cart = {
 
   /* -----------------------------------------
      AGGIUNGI PRODOTTO (qty++)
+     PATCH: rimosso slug
   ----------------------------------------- */
   add(product) {
     const items = this.get();
@@ -38,7 +40,6 @@ const Cart = {
     } else {
       items.push({
         id: product.id,
-        slug: product.slug,
         titolo: product.titolo,
         prezzo_cent: product.prezzo_cent,
         prezzo: product.prezzo_cent / 100,
@@ -111,6 +112,7 @@ const Cart = {
 
   /* -----------------------------------------
      PAYLOAD PER CHECKOUT SQL
+     PATCH: rimosso slug
   ----------------------------------------- */
   getForCheckout() {
     return this.get().map(p => ({
