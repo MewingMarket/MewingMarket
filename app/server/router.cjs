@@ -80,7 +80,7 @@ router.use(require("./routes/api-upload.cjs"));
 router.use(require("./routes/ordini-utente.cjs"));
 router.use(require("./routes/api-feedback.cjs"));
 router.use(require("./routes/api-vendite-download.cjs"));
-
+router.use("/prodotti", require("./routes/prodotti-ai.cjs"));
 /* =========================================================
    5) PAYPAL (PUBLIC)
 ========================================================= */
