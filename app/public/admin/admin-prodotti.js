@@ -1,5 +1,5 @@
 /* =========================================================
-   ADMIN PRODOTTI — VERSIONE SQL DEFINITIVA
+   ADMIN PRODOTTI — VERSIONE SQL DEFINITIVA + AI
    Lista + Modifica + Creazione + Upload
 ========================================================= */
 
@@ -20,6 +20,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const fFileProdotto = document.getElementById("fileProdotto");
   const fStatus = document.getElementById("status");
+
+  // 🔥 AI: campi e UI
+  const btnAiDescrizione = document.getElementById("btn-ai-descrizione");
+  const aiStatus = document.getElementById("ai-status");
+  const aiPreviewBox = document.getElementById("ai-preview-box");
+  const aiPreview = document.getElementById("ai-preview");
+  const fDescrizioneBreve = document.getElementById("descrizione-breve");
+  const fDescrizioneEmail = document.getElementById("descrizione-email");
 
   let prodottoCorrente = null;
 
@@ -114,6 +122,23 @@ document.addEventListener("DOMContentLoaded", () => {
       fDescrizione.value = p.descrizione_lunga || "";
       fPrezzo.value = p.prezzo || "";
 
+      // AI: riempi breve + email + anteprima se presenti
+      if (fDescrizioneBreve) {
+        fDescrizioneBreve.value = p.descrizione_breve || "";
+      }
+      if (fDescrizioneEmail) {
+        fDescrizioneEmail.value = p.descrizione_email || "";
+      }
+      if (aiPreview && aiPreviewBox) {
+        if (p.descrizione_lunga) {
+          aiPreview.textContent = p.descrizione_lunga;
+          aiPreviewBox.style.display = "block";
+        } else {
+          aiPreview.textContent = "";
+          aiPreviewBox.style.display = "none";
+        }
+      }
+
       fImg.value = "";
       fImgUrl.value = p.immagine || "";
 
@@ -156,8 +181,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
       prodottoCorrente = null;
       titoloForm.textContent = "Crea / Modifica prodotto";
-      document.getElementById("form-prodotto").reset();
+      const form = document.getElementById("form-prodotto");
+      if (form) form.reset();
       fPreview.style.display = "none";
+      if (aiPreviewBox) aiPreviewBox.style.display = "none";
       fStatus.textContent = "Prodotto eliminato.";
 
       caricaListaProdotti();
@@ -165,6 +192,61 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) {
       console.error("[ADMIN] Errore eliminazione:", err);
     }
+  }
+
+  /* =========================================================
+     AI: GENERA DESCRIZIONE
+  ========================================================= */
+  if (btnAiDescrizione) {
+    btnAiDescrizione.addEventListener("click", async () => {
+      const titolo = fTitolo.value.trim();
+
+      if (!titolo) {
+        aiStatus.textContent = "Inserisci prima il titolo.";
+        return;
+      }
+
+      aiStatus.textContent = "Generazione descrizione con AI…";
+      aiPreviewBox.style.display = "none";
+      aiPreview.textContent = "";
+
+      try {
+        const res = await fetch("/api/prodotti/genera-descrizione-ai", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            titolo,
+            contenuto: fDescrizione.value.trim() || ""
+          })
+        });
+
+        const data = await res.json();
+
+        if (!data.success) {
+          aiStatus.textContent = "Errore generazione AI.";
+          return;
+        }
+
+        // Riempie i campi
+        fDescrizione.value = data.descrizione_lunga || "";
+        if (fDescrizioneBreve) {
+          fDescrizioneBreve.value = data.descrizione_breve || "";
+        }
+        if (fDescrizioneEmail) {
+          fDescrizioneEmail.value = data.descrizione_email || "";
+        }
+
+        // Anteprima
+        aiPreview.textContent = data.descrizione_lunga || "";
+        aiPreviewBox.style.display = data.descrizione_lunga ? "block" : "none";
+
+        aiStatus.textContent = "Descrizione generata con successo.";
+
+      } catch (err) {
+        console.error("[ADMIN] Errore AI:", err);
+        aiStatus.textContent = "Errore di connessione con l'AI.";
+      }
+    });
   }
 
   /* =========================================================
@@ -205,6 +287,8 @@ document.addEventListener("DOMContentLoaded", () => {
       id: prodottoCorrente?.id || null,
       titolo: fTitolo.value.trim(),
       descrizione_lunga: fDescrizione.value.trim(),
+      descrizione_breve: fDescrizioneBreve ? fDescrizioneBreve.value.trim() : "",
+      descrizione_email: fDescrizioneEmail ? fDescrizioneEmail.value.trim() : "",
       prezzo: parseFloat(fPrezzo.value),
       immagine: immagineURL,
       fileProdotto: fileProdottoURL
@@ -233,6 +317,12 @@ document.addEventListener("DOMContentLoaded", () => {
       if (p.immagine) {
         fPreview.src = p.immagine;
         fPreview.style.display = "block";
+      }
+
+      // Aggiorna anteprima AI se presente
+      if (aiPreview && aiPreviewBox && p.descrizione_lunga) {
+        aiPreview.textContent = p.descrizione_lunga;
+        aiPreviewBox.style.display = "block";
       }
 
       caricaListaProdotti();
