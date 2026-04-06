@@ -19,7 +19,7 @@
   ========================================================== */
   const path = window.location.pathname.toLowerCase();
   const params = new URLSearchParams(window.location.search);
-  const slug = clean(params.get("slug") || "");
+  const id = clean(params.get("id") || "");
 
   /* =========================================================
      META DI DEFAULT
@@ -70,17 +70,17 @@
   }
 
   /* =========================================================
-     PAGINA PRODOTTO (blindata)
+     PAGINA PRODOTTO (solo ID)
   ========================================================== */
   let productData = null;
 
-  if (slug) {
+  if (id) {
     try {
       const res = await fetch("products.json", { cache: "no-store" });
       if (res.ok) {
         const products = await res.json();
         if (Array.isArray(products)) {
-          productData = products.find((pr) => pr.slug === slug);
+          productData = products.find((pr) => String(pr.id) === String(id));
         }
       }
     } catch (err) {
@@ -91,13 +91,21 @@
       const p = productData;
 
       title = clean(p.titolo);
-      description = clean(p.descrizioneBreve || p.descrizioneLunga || "");
-      canonical = `https://www.mewingmarket.it/prodotto.html?slug=${clean(p.slug)}`;
+
+      // 🔥 PATCH SEO AI: priorità descrizione_email → breve → lunga
+      description = clean(
+        p.descrizioneEmail ||
+        p.descrizioneBreve ||
+        p.descrizioneLunga ||
+        ""
+      );
+
+      canonical = `https://www.mewingmarket.it/prodotto.html?id=${clean(id)}`;
 
       const img = safeURL(p.immagine);
 
       /* ----------------------------
-         OPEN GRAPH (blindato)
+         OPEN GRAPH
       ----------------------------- */
       const ogTitle = document.getElementById("og-title");
       const ogDesc = document.getElementById("og-description");
@@ -110,7 +118,7 @@
       if (ogImg && img) ogImg.setAttribute("content", img);
 
       /* ----------------------------
-         TWITTER (blindato)
+         TWITTER
       ----------------------------- */
       const twTitle = document.getElementById("twitter-title");
       const twDesc = document.getElementById("twitter-description");
@@ -123,7 +131,7 @@
   }
 
   /* =========================================================
-     META COMUNI (blindato)
+     META COMUNI
   ========================================================== */
   const elTitle = document.getElementById("dynamic-title");
   const elDesc = document.getElementById("dynamic-description");
