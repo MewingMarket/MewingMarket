@@ -1,4 +1,4 @@
-l// app/server/modules/email-newsletter-unsubscribe.cjs
+// app/server/modules/email-newsletter-unsubscribe.cjs
 const { inviaEmailLista } = require("./invia-email-lista.cjs");
 const { LISTA_NEWSLETTER } = require("./liste-brevo.cjs");
 const { SENDER_NEWSLETTER } = require("./email-senders.cjs");
