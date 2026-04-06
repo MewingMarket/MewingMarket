@@ -1,6 +1,6 @@
 /**
  * app/server/middleware/context.cjs
- * Gestione aggiornamento contesto (page, slug) + safeText
+ * Gestione aggiornamento contesto (page) + safeText
  */
 
 const path = require("path");
@@ -20,11 +20,11 @@ module.exports = function (app) {
       req.query = req.query || {};
 
       const page = req.body.page ?? req.query.page ?? null;
-      const slug = req.body.slug ?? req.query.slug ?? null;
 
-      if (page || slug) {
+      if (page) {
         try {
-          Context.update(uid, page, slug);
+          // PATCH: rimosso slug
+          Context.update(uid, page);
         } catch (err) {
           console.error("Context.update error:", err);
 
@@ -36,7 +36,8 @@ module.exports = function (app) {
           }
         }
 
-        trackGA4("page_view", { uid, page: page || "", slug: slug || "" });
+        // GA4 può continuare a ricevere slug, ma non lo salviamo più
+        trackGA4("page_view", { uid, page: page || "" });
       }
 
       if (typeof req.body.message === "string") {
