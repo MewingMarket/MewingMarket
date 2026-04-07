@@ -4,7 +4,12 @@
 // FUTURE-PROOF + DEBUG
 // =====================================================
 
-const { syncBrevoUtenteStatoReale } = require("../liste-brevo.cjs");
+const path = require("path");
+
+// Percorso assoluto corretto → file reale: app/server/modules/liste-brevo.cjs
+const { syncBrevoUtenteStatoReale } = require(
+  path.join(process.cwd(), "app/server/modules/liste-brevo.cjs")
+);
 
 function debug(msg, data = null) {
   console.log(`[SEGMENTAZIONE] ${msg}`, data ? data : "");
