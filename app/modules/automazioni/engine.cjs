@@ -4,15 +4,17 @@
 // =====================================================
 
 const path = require("path");
-const db = require("../../db/database.cjs");
+
+// DB — percorso assoluto corretto
+const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
 
 // Moduli automazioni
-const { segmentazione } = require("./segmentazione.cjs");
+const { segmentazione } = require(path.join(process.cwd(), "app/modules/automazioni/segmentazione.cjs"));
 const { 
   reportGiornaliero, 
   reportSettimanale, 
   reportMensile 
-} = require("./reportistica.cjs");
+} = require(path.join(process.cwd(), "app/modules/automazioni/reportistica.cjs"));
 
 // Debug globale
 function debug(msg, data = null) {
