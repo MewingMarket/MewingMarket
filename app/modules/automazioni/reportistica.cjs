@@ -1,7 +1,6 @@
 // =====================================================
 // FILE: app/modules/automazioni/reportistica.cjs
-// SCOPO: Report giornalieri/settimanali/mensili
-// DESTINATARIO: mewingmarket2@gmail.com
+// SCOPO: SOLO report mensile (giornaliero/settimanale disattivati)
 // FUTURE-PROOF + DEBUG
 // =====================================================
 
@@ -22,53 +21,7 @@ function debug(msg, data = null) {
 }
 
 // =========================
-// REPORT GIORNALIERO
-// =========================
-
-async function reportGiornaliero() {
-  try {
-    debug("Generazione report giornaliero...");
-
-    const kpi = db.prepare(`
-      SELECT * FROM kpi_giornalieri ORDER BY data DESC LIMIT 1
-    `).get();
-
-    await inviaEmailAutomatica({
-      to: DESTINATARIO,
-      template: "report_giornaliero",
-      dati: kpi
-    });
-
-  } catch (err) {
-    console.error("[REPORT] Errore giornaliero:", err);
-  }
-}
-
-// =========================
-// REPORT SETTIMANALE
-// =========================
-
-async function reportSettimanale() {
-  try {
-    debug("Generazione report settimanale...");
-
-    const kpi = db.prepare(`
-      SELECT * FROM kpi_settimanali ORDER BY settimana DESC LIMIT 1
-    `).get();
-
-    await inviaEmailAutomatica({
-      to: DESTINATARIO,
-      template: "report_settimanale",
-      dati: kpi
-    });
-
-  } catch (err) {
-    console.error("[REPORT] Errore settimanale:", err);
-  }
-}
-
-// =========================
-// REPORT MENSILE
+// REPORT MENSILE (UNICO ATTIVO)
 // =========================
 
 async function reportMensile() {
@@ -79,19 +32,36 @@ async function reportMensile() {
       SELECT * FROM kpi_mensili ORDER BY mese DESC LIMIT 1
     `).get();
 
+    // Nessun dato → non inviare nulla
+    if (!kpi) {
+      debug("Nessun dato disponibile per report_mensile");
+      return;
+    }
+
+    // Dati vuoti → non inviare nulla
+    if (Object.keys(kpi).length === 0) {
+      debug("Report mensile vuoto, nessuna email inviata");
+      return;
+    }
+
+    // Invia SOLO se ci sono dati reali
     await inviaEmailAutomatica({
       to: DESTINATARIO,
       template: "report_mensile",
       dati: kpi
     });
 
+    debug("Report mensile inviato correttamente");
+
   } catch (err) {
     console.error("[REPORT] Errore mensile:", err);
   }
 }
 
+// =========================
+// EXPORT — SOLO MENSILE
+// =========================
+
 module.exports = {
-  reportGiornaliero,
-  reportSettimanale,
   reportMensile
 };
