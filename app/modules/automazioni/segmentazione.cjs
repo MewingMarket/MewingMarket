@@ -1,7 +1,7 @@
 // =====================================================
 // FILE: app/modules/automazioni/segmentazione.cjs
 // SCOPO: Segmentazione utenti (Brevo + tag interni)
-// FUTURE-PROOF + DEBUG
+// FUTURE-PROOF + DEBUG + ANTI-LOOP
 // =====================================================
 
 const path = require("path");
@@ -11,37 +11,63 @@ const { syncBrevoUtenteStatoReale } = require(
   path.join(process.cwd(), "app/server/modules/liste-brevo.cjs")
 );
 
+// Anti-loop: cache in memoria per evitare invii ripetuti ravvicinati
+const lastSegmentazione = new Map(); // uid/email → timestamp
+
 function debug(msg, data = null) {
   console.log(`[SEGMENTAZIONE] ${msg}`, data ? data : "");
 }
 
 async function segmentazione(utente) {
   try {
-    debug("Segmentazione utente", utente.email);
-
-    // Tag cliente
-    if (utente.cliente_db === "sì") {
-      await syncBrevoUtenteStatoReale({
-        email: utente.email,
-        cliente: true
-      });
+    if (!utente || !utente.email) {
+      debug("Utente non valido, skip");
+      return;
     }
 
-    // Tag newsletter
-    if (utente.newsletter === "sì") {
-      await syncBrevoUtenteStatoReale({
-        email: utente.email,
-        newsletter: true
-      });
+    const email = utente.email;
+
+    // ============================
+    // 1) ANTI-LOOP (debounce 10 minuti)
+    // ============================
+    const now = Date.now();
+    const last = lastSegmentazione.get(email);
+
+    if (last && now - last < 10 * 60 * 1000) {
+      debug("Skip: segmentazione già eseguita di recente", email);
+      return;
     }
 
-    // Tag interesse alto
-    if (utente.visite_prodotto >= 3) {
-      await syncBrevoUtenteStatoReale({
-        email: utente.email,
-        interesse_alto: true
-      });
+    lastSegmentazione.set(email, now);
+
+    debug("Segmentazione utente", email);
+
+    // ============================
+    // 2) COSTRUZIONE PAYLOAD
+    // ============================
+
+    const payload = {};
+
+    if (utente.cliente_db === "sì") payload.cliente = true;
+    if (utente.newsletter === "sì") payload.newsletter = true;
+    if (utente.visite_prodotto >= 3) payload.interesse_alto = true;
+
+    // Nessun tag da aggiornare → skip
+    if (Object.keys(payload).length === 0) {
+      debug("Nessun cambiamento da sincronizzare", email);
+      return;
     }
+
+    // ============================
+    // 3) INVIO A BREVO (solo se serve)
+    // ============================
+
+    await syncBrevoUtenteStatoReale({
+      email,
+      ...payload
+    });
+
+    debug("Segmentazione completata", payload);
 
   } catch (err) {
     console.error("[SEGMENTAZIONE] Errore:", err);
