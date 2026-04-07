@@ -4,11 +4,13 @@
  * PATCH: ora usa il motore AI universale (ai.cjs)
  */
 
+const path = require("path");
 const { addEmojis, log } = require("./utils.cjs");
 
 // 🔥 Nuovo motore AI universale
-// PATCH: percorso corretto → ai.cjs deve stare in app/modules/
-const callAI = require("../ai.cjs");
+// PATCH: require ASSOLUTO basato su process.cwd()
+// Percorso reale: app/server/modules/ai.cjs
+const callAI = require(path.join(process.cwd(), "app/server/modules/ai.cjs"));
 
 /* ============================================================
    SYSTEM PROMPT BASE (solo per il BOT)
