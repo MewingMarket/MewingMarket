@@ -5,8 +5,15 @@
 // FUTURE-PROOF + DEBUG
 // =====================================================
 
-const db = require("../../db/database.cjs");
-const { inviaEmailAutomatica } = require("../email-automatiche.cjs");
+const path = require("path");
+
+// DB — percorso assoluto corretto
+const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
+
+// Email automatiche — percorso assoluto corretto
+const { inviaEmailAutomatica } = require(
+  path.join(process.cwd(), "app/modules/email-automatiche.cjs")
+);
 
 const DESTINATARIO = "mewingmarket2@gmail.com";
 
