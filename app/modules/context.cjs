@@ -6,12 +6,18 @@
  * =========================================================
  */
 
+// PATCH DEBUG — appare SEMPRE, anche se il middleware crasha
+console.log("### CONTEXT_MODULE_LOADED ###", __filename);
+
 const store = new Map();
 
 /**
  * Aggiorna il contesto dell’utente
  */
 function update(uid, page) {
+  // PATCH DEBUG — log ogni update
+  console.log("### CONTEXT_UPDATE ###", { uid, page });
+
   if (!uid) return; // utente anonimo → ignora
 
   const prev = store.get(uid) || {};
@@ -29,6 +35,9 @@ function update(uid, page) {
  * Recupera contesto
  */
 function get(uid) {
+  // PATCH DEBUG — log ogni get
+  console.log("### CONTEXT_GET ###", { uid });
+
   return store.get(uid) || null;
 }
 
