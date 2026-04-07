@@ -9,10 +9,16 @@ const path = require("path");
 const { safeText } = require(path.join(process.cwd(), "app/modules/utils.cjs"));
 const Context = require(path.join(process.cwd(), "app/modules/context.cjs"));
 
+// PATCH DEBUG — conferma che il middleware è stato caricato
+console.log("### CONTEXT_MIDDLEWARE_LOADED ###", __filename);
+
 // GA4 è già nel percorso corretto
 const { trackGA4 } = require("../services/ga4.cjs");
 
 module.exports = function (app) {
+  // PATCH DEBUG — conferma che il middleware è stato registrato
+  console.log("### CONTEXT_MIDDLEWARE_REGISTERED ###");
+
   app.use((req, res, next) => {
     try {
       const uid = req.uid;
@@ -20,6 +26,14 @@ module.exports = function (app) {
       req.query = req.query || {};
 
       const page = req.body.page ?? req.query.page ?? null;
+
+      // PATCH DEBUG — log di ogni richiesta che passa dal middleware
+      console.log("### CONTEXT_MIDDLEWARE_REQUEST ###", {
+        uid,
+        page,
+        url: req.url,
+        method: req.method
+      });
 
       if (page) {
         try {
