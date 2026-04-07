@@ -10,11 +10,7 @@ const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
 
 // Moduli automazioni
 const { segmentazione } = require(path.join(process.cwd(), "app/modules/automazioni/segmentazione.cjs"));
-const { 
-  reportGiornaliero, 
-  reportSettimanale, 
-  reportMensile 
-} = require(path.join(process.cwd(), "app/modules/automazioni/reportistica.cjs"));
+const { reportMensile } = require(path.join(process.cwd(), "app/modules/automazioni/reportistica.cjs"));
 
 // Debug globale
 function debug(msg, data = null) {
@@ -35,24 +31,16 @@ function jobSegmentazione() {
   }
 }
 
+// ⚠️ DISATTIVATI: giornaliero e settimanale
 function jobReportGiornaliero() {
-  try {
-    debug("Esecuzione report giornaliero...");
-    reportGiornaliero();
-  } catch (err) {
-    console.error("[ENGINE] Errore report giornaliero:", err);
-  }
+  debug("Report giornaliero DISATTIVATO");
 }
 
 function jobReportSettimanale() {
-  try {
-    debug("Esecuzione report settimanale...");
-    reportSettimanale();
-  } catch (err) {
-    console.error("[ENGINE] Errore report settimanale:", err);
-  }
+  debug("Report settimanale DISATTIVATO");
 }
 
+// ✔️ UNICO REPORT ATTIVO
 function jobReportMensile() {
   try {
     debug("Esecuzione report mensile...");
@@ -85,9 +73,7 @@ function onNuovoUtente(utente) {
 
 module.exports = {
   jobSegmentazione,
-  jobReportGiornaliero,
-  jobReportSettimanale,
-  jobReportMensile,
+  jobReportMensile,   // ← unico attivo
   onNuovoOrdine,
   onNuovoFeedback,
   onNuovoUtente
