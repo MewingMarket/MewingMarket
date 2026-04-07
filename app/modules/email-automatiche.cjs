@@ -6,8 +6,16 @@
  * =========================================================
  */
 
-const { inviaEmailLista } = require("./invia-email-lista.cjs");
-const { SENDER_NEWSLETTER } = require("./email-senders.cjs");
+const path = require("path");
+
+// Percorsi assoluti corretti (struttura reale)
+const { inviaEmailLista } = require(
+  path.join(process.cwd(), "app/server/modules/invia-email-lista.cjs")
+);
+
+const { SENDER_NEWSLETTER } = require(
+  path.join(process.cwd(), "app/server/modules/email-senders.cjs")
+);
 
 /**
  * Invio email automatica interna
