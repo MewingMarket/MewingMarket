@@ -5,9 +5,9 @@
 
 const path = require("path");
 
-// PATCH: utils e context stanno in app/modules/
-const { safeText } = require("../../modules/utils.cjs");
-const Context = require("../../modules/context.cjs");
+// PATCH: require assoluti basati su process.cwd()
+const { safeText } = require(path.join(process.cwd(), "app/modules/utils.cjs"));
+const Context = require(path.join(process.cwd(), "app/modules/context.cjs"));
 
 // GA4 è già nel percorso corretto
 const { trackGA4 } = require("../services/ga4.cjs");
