@@ -6,16 +6,16 @@
 const path = require("path");
 
 // Utils
-const utils = require("./utils.cjs");
+const utils = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
 const { reply, setState, generateUID, addEmojis, isYes } = utils;
 const log = global.logBot || console.log;
 
 // Core
-const detectIntent = require("./intent.cjs");
-const callGPT = require("./gpt.cjs");
-const transcribeAudio = require("./whisper.cjs");
+const detectIntent = require(path.join(process.cwd(), "app/modules/bot/intent.cjs"));
+const callGPT = require(path.join(process.cwd(), "app/modules/bot/gpt.cjs"));
+const transcribeAudio = require(path.join(process.cwd(), "app/modules/bot/whisper.cjs"));
 
-// Handlers (require assoluti blindati)
+// Handlers (assoluti blindati)
 const conversationHandler = require(path.join(process.cwd(), "app/modules/bot/handlers/conversation.cjs"));
 const catalogHandler = require(path.join(process.cwd(), "app/modules/bot/handlers/catalogHandler.cjs"));
 const newsletterHandler = require(path.join(process.cwd(), "app/modules/bot/handlers/newsletter.cjs"));
@@ -27,7 +27,7 @@ const fallbackHandler = require(path.join(process.cwd(), "app/modules/bot/handle
 
 // External modules (assoluti blindati)
 const Context = require(path.join(process.cwd(), "app/modules/bot/context.cjs"));
-const Memory = require(path.join(process.cwd(), "app/modules/bot/memory.cjs"));
+const Memory = require(path.join(process.cwd(), "app/modules/memory.cjs"));
 const { getCatalog } = require(path.join(process.cwd(), "app/modules/bot/catalogo.cjs"));
 
 /* ============================================================
