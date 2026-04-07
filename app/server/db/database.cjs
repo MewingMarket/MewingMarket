@@ -2,6 +2,7 @@
  * =========================================================
  * File: app/server/db/database.cjs
  * Database SQLite persistente su Render Disk
+ * Compatibile con ambiente locale / Codespaces
  * Carica automaticamente tutti gli schema .sql
  * =========================================================
  */
@@ -11,15 +12,37 @@ const fs = require("fs");
 const path = require("path");
 
 // =========================================================
-// PATH PERSISTENTE SU RENDER DISK
+// PATH DB DINAMICO (Render vs Locale)
 // =========================================================
-const dbPath = "/var/data/mewingmarket.db";
+//
+// Render → /var/data/mewingmarket.db  (persistente)
+// Locale / Codespaces → ./data/mewingmarket.db (scrivibile)
+//
+// Render espone variabili d'ambiente come:
+// - RENDER=true
+// - RENDER_SERVICE_ID=xxxx
+//
+const isRender =
+  process.env.RENDER === "true" ||
+  Boolean(process.env.RENDER_SERVICE_ID);
 
-// Crea directory se non esiste
+const dbPath = isRender
+  ? "/var/data/mewingmarket.db"
+  : path.join(process.cwd(), "data", "mewingmarket.db");
+
+// =========================================================
+// CREA DIRECTORY SE NON ESISTE
+// =========================================================
 const dir = path.dirname(dbPath);
-if (!fs.existsSync(dir)) {
-  fs.mkdirSync(dir, { recursive: true });
-  console.log("📁 Creata directory persistente:", dir);
+
+try {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+    console.log("📁 Creata directory DB:", dir);
+  }
+} catch (err) {
+  console.error("❌ ERRORE creazione directory DB:", err.message);
+  throw err;
 }
 
 // =========================================================
