@@ -7,7 +7,8 @@
 const { addEmojis, log } = require("./utils.cjs");
 
 // 🔥 Nuovo motore AI universale
-const callAI = require("../../modules/ai.cjs");
+// PATCH: percorso corretto → ai.cjs deve stare in app/modules/
+const callAI = require("../ai.cjs");
 
 /* ============================================================
    SYSTEM PROMPT BASE (solo per il BOT)
