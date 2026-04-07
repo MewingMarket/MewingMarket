@@ -18,6 +18,12 @@ process.on("unhandledRejection", err => {
 });
 
 // =========================================================
+// ⭐ PATCH: LOG DIAGNOSTICI PERMANENTI
+// =========================================================
+console.log("WORKDIR:", process.cwd());
+console.log("SERVER FILE:", __filename);
+
+// =========================================================
 // 🕒 LOGGER UNIVERSALE (TIMESTAMP + COLORI)
 // =========================================================
 function log(...args) {
@@ -49,7 +55,6 @@ log(">> ROOT PATH:", ROOT);
 
 // =========================================================
 // 🛡 RIMOSSA PROTEZIONE ANTI-DOPPIO BOOTSTRAP
-// (Blocca i deploy su Render)
 // =========================================================
 // ❌ RIMOSSO:
 // if (global.__server_started) {
@@ -196,7 +201,7 @@ const wait = (ms) => new Promise(res => res(ms));
   app.use("/api", require("./routes/debug-db.cjs"));
 
   // =========================================================
-  // STATICI FRONTEND (DOPO LE API)  🔁 PATCH ORDINE
+  // STATICI FRONTEND (DOPO LE API)
   // =========================================================
   log(">> REGISTER STATIC ROUTES");
   await wait(200);
@@ -254,10 +259,12 @@ const wait = (ms) => new Promise(res => res(ms));
     app.listen(PORT, () => {
       log(`🎉 SERVER LISTENING ON PORT ${PORT}`);
       log("⚡ Server pronto e online");
-// =========================================================
-// AUTOMAZIONI (SCHEDULER)
-// =========================================================
-require("./startup/automazioni.cjs");
+
+      // =========================================================
+      // AUTOMAZIONI (SCHEDULER)
+      // =========================================================
+      require("./startup/automazioni.cjs");
+
       // =========================================================
       // SYNC JSON INIZIALE
       // =========================================================
