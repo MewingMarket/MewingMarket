@@ -15,20 +15,20 @@ const detectIntent = require("./intent.cjs");
 const callGPT = require("./gpt.cjs");
 const transcribeAudio = require("./whisper.cjs");
 
-// Handlers
-const conversationHandler = require("./handlers/conversation.cjs");
-const catalogHandler = require("./handlers/catalog.cjs");
-const newsletterHandler = require("./handlers/newsletter.cjs");
-const socialHandler = require("./handlers/social.cjs");
-const legalHandler = require("./handlers/legal.cjs");
-const supportHandler = require("./handlers/support.cjs");
-const productHandler = require("./handlers/product.cjs");
-const fallbackHandler = require("./handlers/fallback.cjs");
+// Handlers (require assoluti blindati)
+const conversationHandler = require(path.join(process.cwd(), "app/modules/bot/handlers/conversation.cjs"));
+const catalogHandler = require(path.join(process.cwd(), "app/modules/bot/handlers/catalogHandler.cjs"));
+const newsletterHandler = require(path.join(process.cwd(), "app/modules/bot/handlers/newsletter.cjs"));
+const socialHandler = require(path.join(process.cwd(), "app/modules/bot/handlers/social.cjs"));
+const legalHandler = require(path.join(process.cwd(), "app/modules/bot/handlers/legal.cjs"));
+const supportHandler = require(path.join(process.cwd(), "app/modules/bot/handlers/support.cjs"));
+const productHandler = require(path.join(process.cwd(), "app/modules/bot/handlers/productHandler.cjs"));
+const fallbackHandler = require(path.join(process.cwd(), "app/modules/bot/handlers/fallback.cjs"));
 
-// External modules
-const Context = require(path.join(__dirname, "..", "context.cjs"));
-const Memory = require(path.join(__dirname, "..", "memory.cjs"));
-const { getCatalog } = require(path.join(__dirname, "..", "catalogo.cjs"));
+// External modules (assoluti blindati)
+const Context = require(path.join(process.cwd(), "app/modules/bot/context.cjs"));
+const Memory = require(path.join(process.cwd(), "app/modules/bot/memory.cjs"));
+const { getCatalog } = require(path.join(process.cwd(), "app/modules/bot/catalogo.cjs"));
 
 /* ============================================================
    HANDLE CONVERSATION — ENTRY POINT
