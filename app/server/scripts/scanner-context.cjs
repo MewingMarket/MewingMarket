@@ -1,12 +1,20 @@
 /**
- * Scanner per trovare TUTTI i require di context.cjs
- * Utile per scoprire se c’è un altro file che fa require sbagliati
+ * =========================================================
+ * File: app/server/scripts/scanner-context.cjs
+ * SCOPO: Scansiona TUTTO il progetto e trova QUALSIASI require
+ *        che punti a context.cjs (anche se relativo, sbagliato,
+ *        annidato o in un file dimenticato).
+ * =========================================================
  */
 
 const fs = require("fs");
 const path = require("path");
 
 const ROOT = process.cwd();
+
+console.log("🔍 SCANNER CONTEXT.CJS AVVIATO");
+console.log("📂 ROOT:", ROOT);
+console.log("========================================");
 
 function scan(dir) {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -38,6 +46,7 @@ function scan(dir) {
   }
 }
 
-console.log("🔍 Avvio scanner context.cjs…");
 scan(ROOT);
-console.log("✅ Scanner completato");
+
+console.log("========================================");
+console.log("✅ SCANNER COMPLETATO");
