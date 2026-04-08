@@ -1,7 +1,11 @@
 // app/server/modules/email-ordine-annullato.cjs
-const { inviaEmailLista } = require("./invia-email-lista.cjs");
-const { LISTA_CLIENTI } = require("./liste-brevo.cjs");
-const { SENDER_ACQUISTI } = require("./email-senders.cjs");
+
+const path = require("path");
+
+// PATCH: require assoluti
+const { inviaEmailLista } = require(path.join(process.cwd(), "app/server/modules/invia-email-lista.cjs"));
+const { LISTA_CLIENTI } = require(path.join(process.cwd(), "app/server/modules/liste-brevo.cjs"));
+const { SENDER_ACQUISTI } = require(path.join(process.cwd(), "app/server/modules/email-senders.cjs"));
 
 async function inviaEmailOrdineAnnullato({ email, ordine }) {
 
@@ -104,7 +108,7 @@ async function inviaEmailOrdineAnnullato({ email, ordine }) {
     subject,
     html,
     sender: SENDER_ACQUISTI,
-    tipo: "transazionale"   // 🔥 FIREWALL: SEMPRE PERMESSA
+    tipo: "transazionale"
   });
 }
 
