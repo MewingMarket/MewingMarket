@@ -1,7 +1,11 @@
 // app/server/modules/email-newsletter.cjs
-const { inviaEmailLista } = require("./invia-email-lista.cjs");
-const { LISTA_NEWSLETTER } = require("./liste-brevo.cjs");
-const { SENDER_NEWSLETTER } = require("./email-senders.cjs");
+
+const path = require("path");
+
+// PATCH: require assoluti
+const { inviaEmailLista } = require(path.join(process.cwd(), "app/server/modules/invia-email-lista.cjs"));
+const { LISTA_NEWSLETTER } = require(path.join(process.cwd(), "app/server/modules/liste-brevo.cjs"));
+const { SENDER_NEWSLETTER } = require(path.join(process.cwd(), "app/server/modules/email-senders.cjs"));
 
 async function inviaEmailNewsletterBenvenuto({ email }) {
   const subject = "Benvenuto nella newsletter MewingMarket 👋";
@@ -95,7 +99,7 @@ async function inviaEmailNewsletterBenvenuto({ email }) {
     subject,
     html,
     sender: SENDER_NEWSLETTER,
-    tipo: "transazionale"   // 🔥 ECCEZIONE: email di benvenuto → SEMPRE PERMESSA
+    tipo: "transazionale"
   });
 }
 
