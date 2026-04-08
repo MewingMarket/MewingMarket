@@ -7,8 +7,8 @@
 
 const path = require("path");
 
-// PATCH: require assoluto
-const callAI = require(path.join(process.cwd(), "app/modules/ai.cjs"));
+// PATCH: require assoluto CORRETTO
+const callAI = require(path.join(process.cwd(), "app/server/modules/ai.cjs"));
 
 /* ============================================================
    1) DESCRIZIONE LUNGA
