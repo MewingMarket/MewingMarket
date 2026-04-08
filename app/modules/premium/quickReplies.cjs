@@ -5,7 +5,9 @@
  */
 
 const path = require("path");
-const { normalizeProduct } = require("./catalogo.cjs");
+
+// PATCH: require assoluto
+const { normalizeProduct } = require(path.join(process.cwd(), "app/modules/premium/catalogo.cjs"));
 
 /* ============================================================
    QUICK REPLIES PER PRODOTTO
