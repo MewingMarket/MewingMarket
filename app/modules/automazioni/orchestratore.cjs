@@ -1,23 +1,52 @@
 // =====================================================
 // FILE: app/modules/automazioni/orchestratore.cjs
-// SCOPO: Avviare i job del motore automazioni
+// SCOPO: Avviare i job del motore automazioni (SAFE MODE)
 // =====================================================
 
-const engine = require("./engine.cjs");
+const path = require("path");
 
-console.log("🔥 ORCHESTRATORE AUTOMAZIONI AVVIATO");
+// Require assoluto blindato
+const engine = require(path.join(process.cwd(), "app/modules/automazioni/engine.cjs"));
 
-// Segmentazione ogni 30 minuti
-setInterval(engine.jobSegmentazione, 30 * 60 * 1000);
+console.log("🔥 ORCHESTRATORE AUTOMAZIONI AVVIATO (SAFE MODE)");
 
-// Report giornaliero
-setInterval(engine.jobReportGiornaliero, 24 * 60 * 60 * 1000);
+// ===============================
+// 1) SEGMENTAZIONE — SAFE
+// ===============================
 
-// Report settimanale
-setInterval(engine.jobReportSettimanale, 7 * 24 * 60 * 60 * 1000);
+// Segmentazione ogni 30 minuti (ma con anti-loop interno)
+setInterval(() => {
+  try {
+    engine.jobSegmentazione();
+  } catch (err) {
+    console.error("[ORCH] Errore jobSegmentazione:", err);
+  }
+}, 30 * 60 * 1000);
 
-// Report mensile
-setInterval(engine.jobReportMensile, 30 * 24 * 60 * 60 * 1000);
+// ===============================
+// 2) REPORT — SOLO MENSILE
+// ===============================
 
-// Esecuzione immediata all’avvio (opzionale)
-engine.jobSegmentazione();
+// Disattivati giornaliero e settimanale
+// setInterval(engine.jobReportGiornaliero, ...);
+// setInterval(engine.jobReportSettimanale, ...);
+
+// Report mensile (ogni 30 giorni)
+setInterval(() => {
+  try {
+    engine.jobReportMensile();
+  } catch (err) {
+    console.error("[ORCH] Errore jobReportMensile:", err);
+  }
+}, 30 * 24 * 60 * 60 * 1000);
+
+// ===============================
+// 3) AVVIO IMMEDIATO (SAFE)
+// ===============================
+
+// Segmentazione immediata ma con anti-loop interno
+try {
+  engine.jobSegmentazione();
+} catch (err) {
+  console.error("[ORCH] Errore avvio immediato segmentazione:", err);
+}
