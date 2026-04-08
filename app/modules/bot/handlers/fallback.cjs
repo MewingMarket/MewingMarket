@@ -3,17 +3,20 @@
  * Fallback intelligente: FAQ, Guide, Catalogo, Supporto, GPT
  */
 
-const callGPT = require("../gpt.cjs");
-const { reply, log } = require("../utils.cjs");
-const Memory = require("../../memory.cjs");
+const path = require("path");
+
+// PATCH: require assoluti
+const callGPT = require(path.join(process.cwd(), "app/modules/bot/gpt.cjs"));
+const { reply, log } = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
+const Memory = require(path.join(process.cwd(), "app/modules/memory.cjs"));
 
 // 🔥 PATCH: percorso corretto
-const Context = require("../../bot/context.cjs");
+const Context = require(path.join(process.cwd(), "app/modules/bot/context.cjs"));
 
 // Moduli dinamici
-const FAQ = require("../../faq.cjs");
-const Guides = require("../../guides.cjs");
-const { fuzzyMatchProduct } = require("../../catalogo.cjs");
+const FAQ = require(path.join(process.cwd(), "app/modules/faq.cjs"));
+const Guides = require(path.join(process.cwd(), "app/modules/guides.cjs"));
+const { fuzzyMatchProduct } = require(path.join(process.cwd(), "app/modules/catalogo.cjs"));
 
 module.exports = async function fallbackHandler(req, res, rawText) {
   log("HANDLER_FALLBACK", { rawText });
