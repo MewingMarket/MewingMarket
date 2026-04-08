@@ -1,13 +1,16 @@
 // app/modules/sitemap-full.cjs — VERSIONE DEFINITIVA, BLINDATA
 
-const { generateSitemap } = require("./sitemap.cjs");
-const { generateFooterSitemap } = require("./sitemap-footer.cjs");
-const { generateImagesSitemap } = require("./sitemap-images.cjs");
-const { generateAdvancedImagesSitemap } = require("./sitemap-images-advanced.cjs");
-const { generateSocialSitemap } = require("./sitemap-social.cjs");
-const { generateStoreSitemap } = require("./sitemap-store.cjs");
-const { generateYouTubeSitemap } = require("./sitemap-youtube.cjs");
-const { generateVideoSitemap } = require("./sitemap-video.cjs");
+const path = require("path");
+
+// PATCH: require assoluti
+const { generateSitemap } = require(path.join(process.cwd(), "app/modules/sitemap.cjs"));
+const { generateFooterSitemap } = require(path.join(process.cwd(), "app/modules/sitemap-footer.cjs"));
+const { generateImagesSitemap } = require(path.join(process.cwd(), "app/modules/sitemap-images.cjs"));
+const { generateAdvancedImagesSitemap } = require(path.join(process.cwd(), "app/modules/sitemap-images-advanced.cjs"));
+const { generateSocialSitemap } = require(path.join(process.cwd(), "app/modules/sitemap-social.cjs"));
+const { generateStoreSitemap } = require(path.join(process.cwd(), "app/modules/sitemap-store.cjs"));
+const { generateYouTubeSitemap } = require(path.join(process.cwd(), "app/modules/sitemap-youtube.cjs"));
+const { generateVideoSitemap } = require(path.join(process.cwd(), "app/modules/sitemap-video.cjs"));
 
 /* =========================================================
    GENERA SITEMAP COMPLETA (blindata)
