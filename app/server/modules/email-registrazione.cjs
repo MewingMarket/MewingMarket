@@ -147,7 +147,8 @@ async function inviaEmailRegistrazione({ email }) {
     listId: LISTA_REGISTRATI,
     subject,
     html,
-    sender: SENDER_VENDITE
+    sender: SENDER_VENDITE,
+    tipo: "transazionale"   // 🔥 FIREWALL: SEMPRE PERMESSA
   });
 }
 
