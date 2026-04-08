@@ -1,6 +1,9 @@
 // modules/sitemap-social.js — VERSIONE BLINDATA
 
-const { cleanURL, safeText } = require("./utils.cjs");
+const path = require("path");
+
+// PATCH: require assoluto
+const { cleanURL, safeText } = require(path.join(process.cwd(), "app/modules/utils.cjs"));
 
 /* =========================================================
    GENERA SITEMAP SOCIAL (blindata)
