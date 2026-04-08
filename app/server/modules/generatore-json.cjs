@@ -11,21 +11,20 @@
 const fs = require("fs");
 const path = require("path");
 
-// Catalogo SQL (già patchato con categorie automatiche)
-const catalogo = require("../../modules/catalogo-sql.cjs");
-const db = require("../db/database.cjs");
+// PATCH: require assoluti
+const catalogo = require(path.join(process.cwd(), "app/server/modules/catalogo-sql.cjs"));
+const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
 
-// PATCH — moduli newsletter
 const axios = require("axios");
-const { inviaEmailNovita } = require("../modules/email-novita.cjs");
-const { LISTA_NEWSLETTER } = require("../modules/liste-brevo.cjs");
+const { inviaEmailNovita } = require(path.join(process.cwd(), "app/server/modules/email-novita.cjs"));
+const { LISTA_NEWSLETTER } = require(path.join(process.cwd(), "app/server/modules/liste-brevo.cjs"));
 
 // ---------------------------------------------------------
 // Percorsi
 // ---------------------------------------------------------
 
 const DISK_DIR = "/var/data/json";
-const PUBLIC_DIR = path.join(__dirname, "../../public/data");
+const PUBLIC_DIR = path.join(process.cwd(), "app/public/data");
 const LAST_NOVITA_FILE = path.join(DISK_DIR, "last-novita.json");
 
 [DISK_DIR, PUBLIC_DIR].forEach(dir => {
@@ -202,7 +201,7 @@ async function exportUsers() {
 }
 
 // ---------------------------------------------------------
-// 7) Feedback — NUOVO MIRROR SQL
+// 7) Feedback
 // ---------------------------------------------------------
 async function exportFeedback() {
   try {
@@ -226,7 +225,7 @@ async function exportFeedback() {
 }
 
 // ---------------------------------------------------------
-// 8) Newsletter Log — NUOVO MIRROR SQL
+// 8) Newsletter Log
 // ---------------------------------------------------------
 async function exportNewsletterLog() {
   try {
@@ -250,7 +249,7 @@ async function exportNewsletterLog() {
 }
 
 // ---------------------------------------------------------
-// 9) Eventi Utente — NUOVO MIRROR SQL (PATCH)
+// 9) Eventi Utente
 // ---------------------------------------------------------
 async function exportUserEvents() {
   try {
@@ -273,7 +272,7 @@ async function exportUserEvents() {
 }
 
 // ---------------------------------------------------------
-// 10) KPI Giornalieri — NUOVO MIRROR SQL
+// 10) KPI Giornalieri
 // ---------------------------------------------------------
 async function exportKpiGiornalieri() {
   try {
@@ -297,7 +296,7 @@ async function exportKpiGiornalieri() {
 }
 
 // ---------------------------------------------------------
-// 11) KPI Settimanali — NUOVO MIRROR SQL
+// 11) KPI Settimanali
 // ---------------------------------------------------------
 async function exportKpiSettimanali() {
   try {
@@ -321,7 +320,7 @@ async function exportKpiSettimanali() {
 }
 
 // ---------------------------------------------------------
-// 12) KPI Mensili — NUOVO MIRROR SQL
+// 12) KPI Mensili
 // ---------------------------------------------------------
 async function exportKpiMensili() {
   try {
@@ -385,12 +384,10 @@ async function exportAll() {
   await exportSales();
   await exportUsers();
 
-  // PATCH — nuovi mirror
   await exportFeedback();
   await exportNewsletterLog();
   await exportUserEvents();
 
-  // PATCH KPI
   await exportKpiGiornalieri();
   await exportKpiSettimanali();
   await exportKpiMensili();
