@@ -5,8 +5,11 @@
  * =========================================================
  */
 
-const authUser = require("./auth-user.cjs");
-const authAdmin = require("./auth-admin.cjs");
+const path = require("path");
+
+// PATCH: require assoluti
+const authUser = require(path.join(process.cwd(), "app/server/middleware/auth-user.cjs"));
+const authAdmin = require(path.join(process.cwd(), "app/server/middleware/auth-admin.cjs"));
 
 module.exports = {
   authUser,
