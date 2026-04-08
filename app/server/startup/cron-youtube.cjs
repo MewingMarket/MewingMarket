@@ -1,4 +1,7 @@
-const { syncYouTube } = require("../../services/youtube.cjs");
+const path = require("path");
+
+// PATCH: require assoluto
+const { syncYouTube } = require(path.join(process.cwd(), "app/services/youtube.cjs"));
 
 module.exports = function startYouTubeCron() {
   console.log("⏳ Avvio cron YouTube (ogni 10 minuti)…");
