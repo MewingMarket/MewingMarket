@@ -74,14 +74,28 @@ async function inviaEmailNewsletterBenvenuto({ email }) {
       </p>
   `;
 
-  const html = `... (resto identico) ...`;
+  const html = `
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+  <div style="max-width:600px;margin:auto;background:#fff;padding:25px;border-radius:10px;border:1px solid #e5e5e5;">
+    ${contenutoOriginale}
+  </div>
+</body>
+</html>
+`;
 
   return inviaEmailLista({
     email,
     listId: LISTA_NEWSLETTER,
     subject,
     html,
-    sender: SENDER_NEWSLETTER
+    sender: SENDER_NEWSLETTER,
+    tipo: "transazionale"   // 🔥 ECCEZIONE: email di benvenuto → SEMPRE PERMESSA
   });
 }
 
