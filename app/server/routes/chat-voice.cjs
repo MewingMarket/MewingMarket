@@ -7,14 +7,18 @@ const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
 
-// BOT → percorso corretto
-const { detectIntent, handleConversation, reply: buildReply } = require("../../modules/bot/index.cjs");
+// BOT → percorso assoluto
+const {
+  detectIntent,
+  handleConversation,
+  reply: buildReply
+} = require(path.join(process.cwd(), "app/modules/bot/index.cjs"));
 
-// GA4 → dal nuovo server
-const { trackGA4 } = require("../services/ga4.cjs");
+// GA4 → percorso assoluto
+const { trackGA4 } = require(path.join(process.cwd(), "app/server/services/ga4.cjs"));
 
-// AUDIO → percorso corretto
-const { transcribeAudio } = require("../../modules/audio.cjs");
+// AUDIO → percorso assoluto
+const { transcribeAudio } = require(path.join(process.cwd(), "app/modules/audio.cjs"));
 
 module.exports = function (app) {
   const ROOT = path.resolve(__dirname, "..", "..");
@@ -85,7 +89,6 @@ module.exports = function (app) {
       });
 
     } finally {
-      // Pulizia file temporaneo
       try {
         if (req.file?.path) fs.unlinkSync(req.file.path);
       } catch {}
