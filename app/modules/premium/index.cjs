@@ -4,11 +4,13 @@
  * Importa e riesporta tutto in modo ordinato.
  */
 
-const Cards = require("./cards.cjs");
-const Quick = require("./quickReplies.cjs");
-const Rich = require("./richMessages.cjs");
-const Post = require("./postPurchase.cjs");
-const Cross = require("./crossSell.cjs");
+const path = require("path");
+
+const Cards = require(path.join(process.cwd(), "app/modules/premium/cards.cjs"));
+const Quick = require(path.join(process.cwd(), "app/modules/premium/quickReplies.cjs"));
+const Rich = require(path.join(process.cwd(), "app/modules/premium/richMessages.cjs"));
+const Post = require(path.join(process.cwd(), "app/modules/premium/postPurchase.cjs"));
+const Cross = require(path.join(process.cwd(), "app/modules/premium/crossSell.cjs"));
 
 module.exports = {
   Cards,
