@@ -10,10 +10,13 @@
  * =========================================================
  */
 
-const db = require("../db/database.cjs");
-const { inviaEmailLista } = require("./invia-email-lista.cjs");
-const { LISTA_NEWSLETTER } = require("./liste-brevo.cjs");
-const { SENDER_VENDITE } = require("./email-senders.cjs");
+const path = require("path");
+
+// PATCH: require assoluti
+const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
+const { inviaEmailLista } = require(path.join(process.cwd(), "app/server/modules/invia-email-lista.cjs"));
+const { LISTA_NEWSLETTER } = require(path.join(process.cwd(), "app/server/modules/liste-brevo.cjs"));
+const { SENDER_VENDITE } = require(path.join(process.cwd(), "app/server/modules/email-senders.cjs"));
 
 /* =========================================================
    UTILS
@@ -35,7 +38,6 @@ function escapeHTML(str) {
 function generateNovitaHTML(prod) {
   const titolo = escapeHTML(prod.titolo_breve || prod.titolo || "");
 
-  // 🔥 PATCH AI: priorità descrizione_email
   const descrizione = escapeHTML(
     prod.descrizione_email ||
     prod.descrizione_breve ||
@@ -145,13 +147,11 @@ async function inviaEmailNovita({ email }) {
 
     const latest = stmt.get();
 
-    // ❌ STOP se non ci sono prodotti
     if (!latest) {
       console.error("❌ Nessun prodotto → novità non inviata");
       return "NO_PRODUCT";
     }
 
-    // ❌ STOP se descrizione vuota
     const descr = latest.descrizione_email || latest.descrizione_breve || latest.descrizione_lunga;
     if (!descr || descr.trim().length < 10) {
       console.error("❌ Descrizione vuota → novità non inviata");
@@ -162,7 +162,6 @@ async function inviaEmailNovita({ email }) {
     const oggetto = `✨ Novità: è arrivato “${titolo}”`;
     const html = generateNovitaHTML(latest);
 
-    // 🔥 FIREWALL: tipo "novita" (1/settimana)
     return inviaEmailLista({
       email,
       listId: LISTA_NEWSLETTER,
