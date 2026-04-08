@@ -9,8 +9,10 @@
 const axios = require("axios");
 const xml2js = require("xml2js");
 const path = require("path");
-const db = require(path.join(__dirname, "../server/db/database.cjs"));
-const jsonGen = require("../server/modules/generatore-json.cjs");
+
+// PATCH: require assoluti
+const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
+const jsonGen = require(path.join(process.cwd(), "app/server/modules/generatore-json.cjs"));
 
 const PROXY = "https://corsproxy.io/?";
 
