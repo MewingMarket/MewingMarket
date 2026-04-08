@@ -6,16 +6,8 @@
  * =========================================================
  */
 
-const path = require("path");
-
-// Percorsi assoluti corretti (struttura reale)
-const { inviaEmailLista } = require(
-  path.join(process.cwd(), "app/server/modules/invia-email-lista.cjs")
-);
-
-const { SENDER_NEWSLETTER } = require(
-  path.join(process.cwd(), "app/server/modules/email-senders.cjs")
-);
+const { inviaEmailLista } = require("./invia-email-lista.cjs");
+const { SENDER_NEWSLETTER } = require("./email-senders.cjs");
 
 /**
  * Invio email automatica interna
@@ -38,7 +30,8 @@ async function inviaEmailAutomatica({ to, template, dati }) {
       listId: null, // nessuna lista, invio diretto
       subject: `Report automatico: ${template}`,
       html,
-      sender: SENDER_NEWSLETTER
+      sender: SENDER_NEWSLETTER,
+      tipo: "report"   // 🔥 FIREWALL: 1 al giorno, evita spam e loop
     });
 
   } catch (err) {
