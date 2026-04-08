@@ -5,7 +5,9 @@
  */
 
 const path = require("path");
-const { addEmojis, log } = require("./utils.cjs");
+
+// PATCH: require assoluto
+const { addEmojis, log } = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
 
 // 🔥 Nuovo motore AI universale
 // PATCH: require ASSOLUTO basato su process.cwd()
