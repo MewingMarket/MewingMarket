@@ -1,9 +1,9 @@
-// modules/sitemap.cjs — VERSIONE BLINDATA
+// modules/sitemap.cjs — VERSIONE BLINDATA (SQL)
 
 const path = require("path");
 
-// PATCH: require assoluti
-const { getProducts } = require(path.join(process.cwd(), "app/modules/airtable-sync.cjs"));
+// PATCH: catalogo SQL, non Airtable
+const { getAllProducts } = require(path.join(process.cwd(), "app/modules/catalogo-sql.cjs"));
 const { safeText, cleanURL } = require(path.join(process.cwd(), "app/modules/utils.cjs"));
 
 /* =========================================================
@@ -21,24 +21,24 @@ function generateSitemap() {
     ];
 
     /* =====================================================
-       CARICAMENTO PRODOTTI SICURO
+       CARICAMENTO PRODOTTI (SQL)
     ====================================================== */
     let products = [];
     try {
-      const p = getProducts();
+      const p = getAllProducts();
       products = Array.isArray(p) ? p : [];
     } catch (err) {
-      console.error("sitemap: errore getProducts:", err);
+      console.error("sitemap: errore getAllProducts:", err);
       products = [];
     }
 
     /* =====================================================
        GENERAZIONE URL PRODOTTI (blindata)
-       🔥 PATCH: rimosso slug → uso id
+       🔥 Usa ID numerico del catalogo SQL
     ====================================================== */
     const productUrls = products
       .map(p => p?.id)
-      .filter(id => id && typeof id === "string")
+      .filter(id => id && Number.isInteger(id))
       .map(id => `/prodotto/${id}`);
 
     const urls = [...staticPages, ...productUrls];
