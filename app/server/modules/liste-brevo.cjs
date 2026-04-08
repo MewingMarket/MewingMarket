@@ -26,38 +26,21 @@ async function addToList(listId, email) {
   const e = clean(email);
 
   try {
-    // Primo tentativo: crea contatto + aggiungi lista
     await axios.post(
       `${BREVO_API_BASE}/contacts`,
-      {
-        email: e,
-        listIds: [listId]
-      },
-      {
-        headers: {
-          "api-key": BREVO_API_KEY,
-          "Content-Type": "application/json"
-        }
-      }
+      { email: e, listIds: [listId] },
+      { headers: { "api-key": BREVO_API_KEY, "Content-Type": "application/json" } }
     );
 
   } catch (err) {
     const code = err?.response?.status;
 
-    // ⭐ PATCH: se il contatto esiste già → aggiorna le liste
     if (code === 400) {
       try {
         await axios.put(
           `${BREVO_API_BASE}/contacts/${encodeURIComponent(e)}`,
-          {
-            listIds: [listId]
-          },
-          {
-            headers: {
-              "api-key": BREVO_API_KEY,
-              "Content-Type": "application/json"
-            }
-          }
+          { listIds: [listId] },
+          { headers: { "api-key": BREVO_API_KEY, "Content-Type": "application/json" } }
         );
       } catch (err2) {
         console.error("❌ Errore updateList:", err2?.response?.data || err2.message);
@@ -78,12 +61,7 @@ async function removeFromList(listId, email) {
   try {
     await axios.delete(
       `${BREVO_API_BASE}/contacts/${encodeURIComponent(e)}/lists/${listId}`,
-      {
-        headers: {
-          "api-key": BREVO_API_KEY,
-          "Content-Type": "application/json"
-        }
-      }
+      { headers: { "api-key": BREVO_API_KEY, "Content-Type": "application/json" } }
     );
   } catch (err) {
     const code = err?.response?.status;
@@ -115,6 +93,37 @@ async function syncLists() {
   } catch (err) {
     console.error("❌ Errore syncLists:", err?.response?.data || err.message);
     return { newsletter: [], clienti: [] };
+  }
+}
+
+// =========================================================
+// ⭐ PATCH 2026 — GET STATO REALE UTENTE (NO-OP INTELLIGENTE)
+// =========================================================
+async function getBrevoStatoRealeUtente(email) {
+  if (!BREVO_API_KEY || !email) return null;
+
+  const e = clean(email);
+
+  try {
+    const res = await axios.get(
+      `${BREVO_API_BASE}/contacts/${encodeURIComponent(e)}`,
+      { headers: { "api-key": BREVO_API_KEY } }
+    );
+
+    const data = res.data || {};
+
+    return {
+      cliente: (data.listIds || []).includes(LISTA_CLIENTI),
+      newsletter: (data.listIds || []).includes(LISTA_NEWSLETTER),
+      registrato: (data.listIds || []).includes(LISTA_REGISTRATI),
+      credenziali: (data.listIds || []).includes(LISTA_CREDENZIALI)
+    };
+
+  } catch (err) {
+    const code = err?.response?.status;
+    if (code === 404) return null;
+    console.error("❌ Errore getBrevoStatoRealeUtente:", err?.response?.data || err.message);
+    return null;
   }
 }
 
@@ -219,5 +228,6 @@ module.exports = {
   addToList,
   removeFromList,
   syncLists,
-  syncBrevoUtenteStatoReale
+  syncBrevoUtenteStatoReale,
+  getBrevoStatoRealeUtente   // 🔥 aggiunto
 };
