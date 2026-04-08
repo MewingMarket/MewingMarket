@@ -1,5 +1,6 @@
 // app/server/modules/invia-email-lista.cjs
 const axios = require("axios");
+const { emailFirewall } = require("./email-firewall.cjs"); // 🔥 PATCH: firewall
 
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
 const BREVO_API_BASE = "https://api.brevo.com/v3";
@@ -8,10 +9,18 @@ const BREVO_API_BASE = "https://api.brevo.com/v3";
  * =========================================================
  * inviaEmailLista()
  * Modulo unico per inviare email via Brevo SMTP API
- * (NON gestisce più le liste — ora lo fa liste-brevo.cjs)
+ * + FIREWALL 2026 — rate limit, duplicati, contenuto vuoto
  * =========================================================
  */
-async function inviaEmailLista({ email, listId, subject, html, sender, attachments = [] }) {
+async function inviaEmailLista({
+  email,
+  listId,
+  subject,
+  html,
+  sender,
+  attachments = [],
+  tipo = "marketing" // 🔥 default: marketing
+}) {
   if (!BREVO_API_KEY) {
     console.error("❌ BREVO_API_KEY mancante");
     return;
@@ -22,11 +31,23 @@ async function inviaEmailLista({ email, listId, subject, html, sender, attachmen
     return;
   }
 
-  try {
-    // ⭐ PATCH 2026 — RIMOSSA gestione liste
-    // Ora le liste sono gestite SOLO da liste-brevo.cjs
-    // (addToList / removeFromList / syncLists)
+  /* =========================================================
+     🔥 FIREWALL — BLOCCA se non autorizzata
+     (rate limit, duplicati, contenuto vuoto, ecc.)
+  ========================================================== */
+  const firewallResult = await emailFirewall({
+    email,
+    tipo,
+    subject,
+    html
+  });
 
+  if (firewallResult === "BLOCKED") {
+    console.log(`⛔ [FIREWALL] Email bloccata (${tipo}) →`, subject);
+    return "BLOCKED";
+  }
+
+  try {
     // Prepara payload email
     const payload = {
       to: [{ email }],
@@ -48,19 +69,20 @@ async function inviaEmailLista({ email, listId, subject, html, sender, attachmen
     };
 
     // Invia email via Brevo SMTP API
-    await axios.post(
-      `${BREVO_API_BASE}/smtp/email`,
-      payload,
-      {
-        headers: {
-          "api-key": BREVO_API_KEY,
-          "Content-Type": "application/json"
-        }
+    await axios.post(`${BREVO_API_BASE}/smtp/email`, payload, {
+      headers: {
+        "api-key": BREVO_API_KEY,
+        "Content-Type": "application/json"
       }
-    );
+    });
+
+    console.log(`📨 Email inviata (${tipo}) →`, subject);
+
+    return "OK";
 
   } catch (err) {
     console.error("❌ Errore inviaEmailLista:", err?.response?.data || err.message);
+    return "ERROR";
   }
 }
 
