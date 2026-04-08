@@ -5,8 +5,8 @@ const path = require("path");
 // Scansioniamo SOLO la cartella /app
 const ROOT = path.join(process.cwd(), "app");
 
-// File di output HTML
-const OUTPUT_FILE = path.join(process.cwd(), "app/tools/require-report.html");
+// 🔥 Salviamo il report in /app/public così è accessibile via browser
+const OUTPUT_FILE = path.join(process.cwd(), "app/public/require-report.html");
 
 let rows = [];
 
@@ -60,17 +60,12 @@ const html = `<!DOCTYPE html>
   <meta charset="UTF-8" />
   <title>Require Scan Report</title>
   <style>
-    body { font-family: system-ui, -apple-system, sans-serif; padding: 20px; background:#0b0b10; color:#f5f5f5; }
-    h1 { margin-bottom: 10px; }
+    body { font-family: system-ui, sans-serif; padding: 20px; background:#0b0b10; color:#f5f5f5; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th, td { border: 1px solid #333; padding: 6px 8px; vertical-align: top; }
-    th { background: #111827; position: sticky; top: 0; }
+    th, td { border: 1px solid #333; padding: 6px 8px; }
+    th { background: #111827; }
     tr:nth-child(even) { background: #111; }
-    code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-    .file { color:#93c5fd; }
-    .path { color:#a5b4fc; }
-    .rel { color:#f97373; }
-    .fix { color:#4ade80; white-space: pre; }
+    code { font-family: monospace; }
   </style>
 </head>
 <body>
@@ -91,11 +86,11 @@ const html = `<!DOCTYPE html>
         .map(
           r => `
         <tr>
-          <td class="file"><code>${r.file}</code></td>
+          <td><code>${r.file}</code></td>
           <td>${r.line}</td>
-          <td class="rel"><code>${r.relative}</code></td>
-          <td class="path"><code>${r.real}</code></td>
-          <td class="fix"><code>${r.fix}</code></td>
+          <td><code>${r.relative}</code></td>
+          <td><code>${r.real}</code></td>
+          <td><code>${r.fix}</code></td>
         </tr>`
         )
         .join("")}
@@ -105,4 +100,7 @@ const html = `<!DOCTYPE html>
 </html>`;
 
 fs.writeFileSync(OUTPUT_FILE, html, "utf8");
+
 console.log("📄 Report HTML salvato in:", OUTPUT_FILE);
+console.log("🌐 Aprilo da browser:");
+console.log("   /require-report.html");
