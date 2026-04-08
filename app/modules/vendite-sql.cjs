@@ -3,8 +3,11 @@
 // Vendite — Versione SQL definitiva + JSON mirror
 // =========================================================
 
-const db = require("../db/database.cjs");
-const jsonGen = require("../modules/generatore-json.cjs");
+const path = require("path");
+
+// PATCH: require assoluti
+const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
+const jsonGen = require(path.join(process.cwd(), "app/modules/generatore-json.cjs"));
 
 // =========================================================
 // REGISTRA VENDITA
