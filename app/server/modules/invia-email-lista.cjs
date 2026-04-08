@@ -1,15 +1,22 @@
 // app/server/modules/invia-email-lista.cjs
 const axios = require("axios");
-const { emailFirewall } = require("./email-firewall.cjs"); // 🔥 PATCH: firewall
+const { emailFirewall } = require("./email-firewall.cjs");
+
+// SANDBOX (simulatore locale)
+const { sandboxSend } = require("./email-sandbox.cjs");
 
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
 const BREVO_API_BASE = "https://api.brevo.com/v3";
+
+// 🔥 Modalità invio: "live" oppure "sandbox"
+const EMAIL_MODE = process.env.EMAIL_MODE || "sandbox";
 
 /**
  * =========================================================
  * inviaEmailLista()
  * Modulo unico per inviare email via Brevo SMTP API
  * + FIREWALL 2026 — rate limit, duplicati, contenuto vuoto
+ * + SANDBOX MODE — test locale senza Brevo
  * =========================================================
  */
 async function inviaEmailLista({
@@ -19,13 +26,8 @@ async function inviaEmailLista({
   html,
   sender,
   attachments = [],
-  tipo = "marketing" // 🔥 default: marketing
+  tipo = "marketing"
 }) {
-  if (!BREVO_API_KEY) {
-    console.error("❌ BREVO_API_KEY mancante");
-    return;
-  }
-
   if (!email || !subject || !html) {
     console.error("❌ Parametri email mancanti", { email, subject });
     return;
@@ -33,7 +35,6 @@ async function inviaEmailLista({
 
   /* =========================================================
      🔥 FIREWALL — BLOCCA se non autorizzata
-     (rate limit, duplicati, contenuto vuoto, ecc.)
   ========================================================== */
   const firewallResult = await emailFirewall({
     email,
@@ -47,8 +48,29 @@ async function inviaEmailLista({
     return "BLOCKED";
   }
 
+  /* =========================================================
+     🔥 SANDBOX MODE — salva email in locale
+  ========================================================== */
+  if (EMAIL_MODE !== "live") {
+    console.log("📨 [SANDBOX] Email intercettata → nessun invio reale");
+    return sandboxSend({
+      email,
+      subject,
+      html,
+      tipo,
+      sender
+    });
+  }
+
+  /* =========================================================
+     🔥 LIVE MODE — invio reale via Brevo
+  ========================================================== */
+  if (!BREVO_API_KEY) {
+    console.error("❌ BREVO_API_KEY mancante (LIVE MODE)");
+    return "ERROR_NO_KEY";
+  }
+
   try {
-    // Prepara payload email
     const payload = {
       to: [{ email }],
       subject,
@@ -68,7 +90,6 @@ async function inviaEmailLista({
         : {})
     };
 
-    // Invia email via Brevo SMTP API
     await axios.post(`${BREVO_API_BASE}/smtp/email`, payload, {
       headers: {
         "api-key": BREVO_API_KEY,
@@ -77,7 +98,6 @@ async function inviaEmailLista({
     });
 
     console.log(`📨 Email inviata (${tipo}) →`, subject);
-
     return "OK";
 
   } catch (err) {
