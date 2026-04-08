@@ -1,7 +1,11 @@
 // app/server/scripts/invia-novita.js
+
 const axios = require("axios");
-const { inviaEmailNovita } = require("../modules/email-novita.cjs");
-const { LISTA_NEWSLETTER } = require("../modules/liste-brevo.cjs");
+const path = require("path");
+
+// PATCH: require assoluti
+const { inviaEmailNovita } = require(path.join(process.cwd(), "app/server/modules/email-novita.cjs"));
+const { LISTA_NEWSLETTER } = require(path.join(process.cwd(), "app/server/modules/liste-brevo.cjs"));
 
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
 
