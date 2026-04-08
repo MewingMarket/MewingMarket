@@ -16,6 +16,9 @@ async function inviaEmailFeedback({ email, prodotto_id, rating, commento }) {
       to: email,
       template: "feedback_ricevuto",
 
+      // 🔥 FIREWALL: questa è un'email transazionale
+      tipo: "transazionale",
+
       // 🔥 DATI ORIGINALI (non toccati)
       dati: {
         prodotto_id,
@@ -35,7 +38,7 @@ async function inviaEmailFeedback({ email, prodotto_id, rating, commento }) {
           linkedin: "https://www.linkedin.com/in/simone-griseri-5368a7394"
         },
 
-        // 🔥 PATCH — link newsletter (questa email LI DEVE AVERE)
+        // 🔥 PATCH — link newsletter
         link_iscrizione: "https://www.mewingmarket.it/iscrizione.html",
         link_disiscrizione: "https://www.mewingmarket.it/disiscriviti.html",
 
