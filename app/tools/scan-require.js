@@ -1,8 +1,9 @@
-// tools/scan-require.js
+// app/tools/scan-require.js
 const fs = require("fs");
 const path = require("path");
 
-const ROOT = process.cwd();
+// 🔥 Scansioniamo SOLO la cartella /app
+const ROOT = path.join(process.cwd(), "app");
 
 function scanDir(dir) {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -31,10 +32,10 @@ function scanFile(filePath) {
     if (match) {
       const relative = match[1];
       const absolute = path.resolve(path.dirname(filePath), relative);
-      const projectRelative = path.relative(ROOT, absolute);
+      const projectRelative = path.relative(process.cwd(), absolute);
 
       console.log("\n====================================");
-      console.log("FILE:", filePath);
+      console.log("FILE:", filePath.replace(process.cwd(), ""));
       console.log("LINE:", i + 1);
       console.log("RELATIVE REQUIRE:", relative);
       console.log("REAL PATH:", projectRelative);
@@ -46,6 +47,6 @@ function scanFile(filePath) {
   });
 }
 
-console.log("🔍 SCANSIONE REQUIRE RELATIVI…");
+console.log("🔍 SCANSIONE REQUIRE RELATIVI (solo /app)…");
 scanDir(ROOT);
 console.log("\n✅ SCANSIONE COMPLETATA");
