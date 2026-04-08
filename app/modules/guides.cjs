@@ -3,7 +3,10 @@
  * Guides engine — coerente con guide.html
  */
 
-const { cleanSearchQuery } = require("./utils.cjs");
+const path = require("path");
+
+// PATCH: require assoluto
+const { cleanSearchQuery } = require(path.join(process.cwd(), "app/modules/utils.cjs"));
 
 const GUIDES = [
   {
