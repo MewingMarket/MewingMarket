@@ -1,7 +1,11 @@
 // app/server/modules/email-cambio-email.cjs
-const { inviaEmailLista } = require("./invia-email-lista.cjs");
-const { LISTA_CREDENZIALI } = require("./liste-brevo.cjs");
-const { SENDER_CREDENZIALI } = require("./email-senders.cjs");
+
+const path = require("path");
+
+// PATCH: require assoluti
+const { inviaEmailLista } = require(path.join(process.cwd(), "app/server/modules/invia-email-lista.cjs"));
+const { LISTA_CREDENZIALI } = require(path.join(process.cwd(), "app/server/modules/liste-brevo.cjs"));
+const { SENDER_CREDENZIALI } = require(path.join(process.cwd(), "app/server/modules/email-senders.cjs"));
 
 async function inviaEmailCambioEmail({ email }) {
   const subject = "La tua email è stata aggiornata";
@@ -100,7 +104,7 @@ async function inviaEmailCambioEmail({ email }) {
     subject,
     html,
     sender: SENDER_CREDENZIALI,
-    tipo: "transazionale"   // 🔥 FIREWALL: SEMPRE PERMESSA
+    tipo: "transazionale"
   });
 }
 
