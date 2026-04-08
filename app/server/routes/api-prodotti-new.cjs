@@ -5,13 +5,14 @@
 // =========================================================
 
 const express = require("express");
+const path = require("path");
 const router = express.Router();
 
 // PATCH: catalogo sta in app/modules/
-const catalogo = require("../../modules/catalogo-sql.cjs");
+const catalogo = require(path.join(process.cwd(), "app/modules/catalogo-sql.cjs"));
 
-// PATCH: fix nome variabile
-const jsonGen = require("../modules/generatore-json.cjs");
+// PATCH: fix nome variabile (percorso assoluto)
+const jsonGen = require(path.join(process.cwd(), "app/server/modules/generatore-json.cjs"));
 
 // =========================================================
 // GET — LISTA PRODOTTI (SQL) — ADMIN
