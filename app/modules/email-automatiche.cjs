@@ -1,6 +1,6 @@
 /**
  * =========================================================
- * File: app/modules/email-automatiche.cjs
+ * File: app/server/modules/email-automatiche.cjs
  * SCOPO: Invio email automatiche interne (KPI, report, alert)
  * FUTURE-PROOF — Nessuna logica invasiva
  * =========================================================
@@ -8,9 +8,9 @@
 
 const path = require("path");
 
-// PATCH: require assoluti
-const { inviaEmailLista } = require(path.join(process.cwd(), "app/modules/invia-email-lista.cjs"));
-const { SENDER_NEWSLETTER } = require(path.join(process.cwd(), "app/modules/email-senders.cjs"));
+// PATCH: require assoluti CORRETTI (server/modules)
+const { inviaEmailLista } = require(path.join(process.cwd(), "app/server/modules/invia-email-lista.cjs"));
+const { SENDER_NEWSLETTER } = require(path.join(process.cwd(), "app/server/modules/email-senders.cjs"));
 
 /**
  * Invio email automatica interna
