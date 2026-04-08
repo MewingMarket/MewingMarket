@@ -4,7 +4,10 @@
  * + PATCH: normalizzazione avanzata, ricerca, sicurezza GPT
  */
 
-const { stripHTML } = require("../utils.cjs"); // usa il tuo utils generale
+const path = require("path");
+
+// PATCH: require assoluto
+const { stripHTML } = require(path.join(process.cwd(), "app/modules/utils.cjs")); // usa il tuo utils generale
 
 /* ============================================================
    LOG ENGINE — logging totale
