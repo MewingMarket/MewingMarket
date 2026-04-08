@@ -6,10 +6,13 @@
  * =========================================================
  */
 
-const db = require("../db/database.cjs");
-const { inviaEmailLista } = require("./invia-email-lista.cjs");
-const { LISTA_NEWSLETTER, LISTA_CLIENTI } = require("./liste-brevo.cjs");
-const { SENDER_VENDITE } = require("./email-senders.cjs");
+const path = require("path");
+
+// PATCH: require assoluti
+const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
+const { inviaEmailLista } = require(path.join(process.cwd(), "app/server/modules/invia-email-lista.cjs"));
+const { LISTA_NEWSLETTER, LISTA_CLIENTI } = require(path.join(process.cwd(), "app/server/modules/liste-brevo.cjs"));
+const { SENDER_VENDITE } = require(path.join(process.cwd(), "app/server/modules/email-senders.cjs"));
 
 /* =========================================================
    UTILS
@@ -107,9 +110,7 @@ function generaEmailProdotto(prod) {
 }
 
 /* =========================================================
-   NEWSLETTER SETTIMANALE (solo registrati)
-   → 1 volta a settimana
-   → random prodotto
+   NEWSLETTER SETTIMANALE
 ========================================================= */
 async function inviaNewsletterSettimanale(email) {
   const prod = db.prepare(`
@@ -126,20 +127,16 @@ async function inviaNewsletterSettimanale(email) {
     subject: `✨ Novità per te: ${prod.titolo_breve || prod.titolo}`,
     html,
     sender: SENDER_VENDITE,
-    tipo: "marketing"   // 🔥 1 volta a settimana garantita dal firewall
+    tipo: "marketing"
   });
 }
 
 /* =========================================================
    POST-VENDITA SETTIMANALE
-   → 1 volta a settimana
-   → solo se esiste un correlato
-   → quando finiscono → STOP definitivo
 ========================================================= */
 async function inviaPostVenditaSettimanale(email, prodottiAcquistati) {
   const ids = prodottiAcquistati.map(p => p.id);
 
-  // 1) Cerca correlato nella stessa categoria
   let correlato = db.prepare(`
     SELECT * FROM prodotti 
     WHERE categoria = (SELECT categoria FROM prodotti WHERE id = ?)
@@ -148,7 +145,6 @@ async function inviaPostVenditaSettimanale(email, prodottiAcquistati) {
     LIMIT 1
   `).get(ids[0]);
 
-  // 2) Fallback: random tra tutti i prodotti non acquistati
   if (!correlato) {
     correlato = db.prepare(`
       SELECT * FROM prodotti 
@@ -158,7 +154,6 @@ async function inviaPostVenditaSettimanale(email, prodottiAcquistati) {
     `).get();
   }
 
-  // 3) Se non esiste più nulla → STOP definitivo
   if (!correlato) {
     console.log("⛔ Nessun correlato rimasto → stop post-vendita");
     return "NO_MORE_CORRELATI";
@@ -172,7 +167,7 @@ async function inviaPostVenditaSettimanale(email, prodottiAcquistati) {
     subject: `Ti potrebbe piacere: ${correlato.titolo_breve || correlato.titolo}`,
     html,
     sender: SENDER_VENDITE,
-    tipo: "proposte"   // 🔥 1 volta a settimana garantita dal firewall
+    tipo: "proposte"
   });
 }
 
