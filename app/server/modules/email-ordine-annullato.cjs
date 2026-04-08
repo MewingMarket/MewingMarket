@@ -33,7 +33,6 @@ async function inviaEmailOrdineAnnullato({ email, ordine }) {
 
   /* =========================================================
      TEMPLATE GRAFICO UNIVERSALE (LOGO + SOCIAL + FOOTER)
-     — NESSUN LINK NEWSLETTER in questa email
   ========================================================== */
   const html = `
 <!DOCTYPE html>
@@ -104,7 +103,8 @@ async function inviaEmailOrdineAnnullato({ email, ordine }) {
     listId: LISTA_CLIENTI,
     subject,
     html,
-    sender: SENDER_ACQUISTI
+    sender: SENDER_ACQUISTI,
+    tipo: "transazionale"   // 🔥 FIREWALL: SEMPRE PERMESSA
   });
 }
 
