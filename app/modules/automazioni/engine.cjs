@@ -17,17 +17,34 @@ function debug(msg, data = null) {
   console.log(`[ENGINE] ${msg}`, data ? data : "");
 }
 
+// =====================================================
+// PATCH ANTI-LOOP 2026
+// Evita doppie esecuzioni in caso di restart o doppio trigger
+// =====================================================
+const locks = {
+  segmentazione: false,
+  reportMensile: false
+};
+
 // =========================
 // 1) JOB MANUALI (safe)
 // =========================
 
 function jobSegmentazione() {
+  if (locks.segmentazione) {
+    return debug("Segmentazione ignorata (lock attivo)");
+  }
+
+  locks.segmentazione = true;
+
   try {
     debug("Esecuzione segmentazione...");
     const utenti = db.prepare("SELECT * FROM utenti").all();
     utenti.forEach(u => segmentazione(u));
   } catch (err) {
     console.error("[ENGINE] Errore segmentazione:", err);
+  } finally {
+    locks.segmentazione = false;
   }
 }
 
@@ -42,11 +59,19 @@ function jobReportSettimanale() {
 
 // ✔️ UNICO REPORT ATTIVO
 function jobReportMensile() {
+  if (locks.reportMensile) {
+    return debug("Report mensile ignorato (lock attivo)");
+  }
+
+  locks.reportMensile = true;
+
   try {
     debug("Esecuzione report mensile...");
     reportMensile();
   } catch (err) {
     console.error("[ENGINE] Errore report mensile:", err);
+  } finally {
+    locks.reportMensile = false;
   }
 }
 
@@ -56,15 +81,17 @@ function jobReportMensile() {
 
 function onNuovoOrdine(ordine) {
   debug("Trigger: nuovo ordine", ordine.id);
+  // Le email partono dai moduli dedicati (corretto)
 }
 
 function onNuovoFeedback(feedback) {
   debug("Trigger: nuovo feedback", feedback.id);
+  // Le email partono dai moduli dedicati (corretto)
 }
 
 function onNuovoUtente(utente) {
   debug("Trigger: nuovo utente", utente.email);
-  segmentazione(utente);
+  segmentazione(utente); // firewall protegge le email
 }
 
 // =========================
