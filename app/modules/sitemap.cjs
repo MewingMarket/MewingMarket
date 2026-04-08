@@ -1,8 +1,10 @@
 // modules/sitemap.cjs — VERSIONE BLINDATA
 
 const path = require("path");
-const { getProducts } = require(path.join(__dirname, "airtable-sync.cjs"));
-const { safeText, cleanURL } = require("./utils.cjs");
+
+// PATCH: require assoluti
+const { getProducts } = require(path.join(process.cwd(), "app/modules/airtable-sync.cjs"));
+const { safeText, cleanURL } = require(path.join(process.cwd(), "app/modules/utils.cjs"));
 
 /* =========================================================
    GENERA SITEMAP COMPLETA (blindata)
