@@ -1,22 +1,19 @@
 // app/server/modules/invia-email-lista.cjs
 const axios = require("axios");
+const nodemailer = require("nodemailer");
 const { emailFirewall } = require("./email-firewall.cjs");
-
-// SANDBOX (simulatore locale)
-const { sandboxSend } = require("./email-sandbox.cjs");
 
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
 const BREVO_API_BASE = "https://api.brevo.com/v3";
 
-// 🔥 Modalità invio: "live" oppure "sandbox"
+// 🔥 Modalità invio: "live" (Brevo) oppure "sandbox" (Gmail SMTP)
 const EMAIL_MODE = process.env.EMAIL_MODE || "sandbox";
 
 /**
  * =========================================================
  * inviaEmailLista()
- * Modulo unico per inviare email via Brevo SMTP API
- * + FIREWALL 2026 — rate limit, duplicati, contenuto vuoto
- * + SANDBOX MODE — test locale senza Brevo
+ * + FIREWALL
+ * + SANDBOX SMTP (Gmail)
  * =========================================================
  */
 async function inviaEmailLista({
@@ -34,7 +31,7 @@ async function inviaEmailLista({
   }
 
   /* =========================================================
-     🔥 FIREWALL — BLOCCA se non autorizzata
+     🔥 FIREWALL
   ========================================================== */
   const firewallResult = await emailFirewall({
     email,
@@ -49,17 +46,34 @@ async function inviaEmailLista({
   }
 
   /* =========================================================
-     🔥 SANDBOX MODE — salva email in locale
+     🔥 SANDBOX MODE — invio reale via Gmail SMTP
   ========================================================== */
   if (EMAIL_MODE !== "live") {
-    console.log("📨 [SANDBOX] Email intercettata → nessun invio reale");
-    return sandboxSend({
-      email,
-      subject,
-      html,
-      tipo,
-      sender
-    });
+    console.log("📨 [SANDBOX] Invio email tramite Gmail SMTP");
+
+    try {
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: process.env.SANDBOX_EMAIL,      // es: mewingmarket2@gmail.com
+          pass: process.env.SANDBOX_PASSWORD    // password app Gmail
+        }
+      });
+
+      await transporter.sendMail({
+        from: sender?.email || process.env.SANDBOX_EMAIL,
+        to: email,
+        subject,
+        html
+      });
+
+      console.log("📨 [SANDBOX] Email inviata a Gmail →", email);
+      return "SANDBOX_OK";
+
+    } catch (err) {
+      console.error("❌ Errore SANDBOX SMTP:", err.message);
+      return "SANDBOX_ERROR";
+    }
   }
 
   /* =========================================================
@@ -78,16 +92,7 @@ async function inviaEmailLista({
       sender: sender || {
         name: process.env.BREVO_SENDER_NAME || "MewingMarket",
         email: process.env.BREVO_SENDER_VENDITE || "no-reply@mewingmarket.it"
-      },
-      ...(attachments.length > 0
-        ? {
-            attachment: attachments.map(a => ({
-              name: a.filename,
-              content: a.content,
-              type: a.mimeType || "application/pdf"
-            }))
-          }
-        : {})
+      }
     };
 
     await axios.post(`${BREVO_API_BASE}/smtp/email`, payload, {
