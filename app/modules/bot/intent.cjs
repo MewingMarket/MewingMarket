@@ -5,11 +5,13 @@
  */
 
 const path = require("path");
-const { normalize } = require("./utils.cjs");
+
+// PATCH: require assoluti
+const { normalize } = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
 const {
   findProductFromText,
   findProductById
-} = require("./catalogo.cjs");
+} = require(path.join(process.cwd(), "app/modules/bot/catalogo.cjs"));
 
 /* ============================================================
    INTENT BASE
