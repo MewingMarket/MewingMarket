@@ -12,7 +12,7 @@ const fs = require("fs");
 const path = require("path");
 
 // PATCH: require assoluti
-const catalogo = require(path.join(process.cwd(), "app/server/modules/catalogo-sql.cjs"));
+const catalogo = require(path.join(process.cwd(), "app/modules/catalogo-sql.cjs"));
 const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
 
 const axios = require("axios");
