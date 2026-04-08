@@ -5,11 +5,14 @@
 
 const fs = require("fs");
 const path = require("path");
-const { cleanURL, safeText } = require("./utils.cjs");
+
+// PATCH: require assoluto
+const { cleanURL, safeText } = require(path.join(process.cwd(), "app/modules/utils.cjs"));
 
 function generateFooterSitemap() {
   try {
-    const footerPath = path.join(__dirname, "..", "public", "footer.html");
+    // PATCH: percorso assoluto verso footer.html
+    const footerPath = path.join(process.cwd(), "app/public/footer.html");
 
     if (!fs.existsSync(footerPath)) {
       console.error("❌ footer.html non trovato");
