@@ -5,6 +5,15 @@ const path = require("path");
 // 🔥 Scansioniamo SOLO la cartella /app
 const ROOT = path.join(process.cwd(), "app");
 
+// 🔥 File di output
+const OUTPUT_FILE = path.join(process.cwd(), "require-scan.txt");
+let output = "=== SCANSIONE REQUIRE RELATIVI (solo /app) ===\n\n";
+
+function log(text) {
+  console.log(text);
+  output += text + "\n";
+}
+
 function scanDir(dir) {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
 
@@ -34,19 +43,24 @@ function scanFile(filePath) {
       const absolute = path.resolve(path.dirname(filePath), relative);
       const projectRelative = path.relative(process.cwd(), absolute);
 
-      console.log("\n====================================");
-      console.log("FILE:", filePath.replace(process.cwd(), ""));
-      console.log("LINE:", i + 1);
-      console.log("RELATIVE REQUIRE:", relative);
-      console.log("REAL PATH:", projectRelative);
-      console.log("SUGGESTED FIX:");
-      console.log(
+      log("\n==============================");
+      log("FILE: " + filePath.replace(process.cwd(), ""));
+      log("LINE: " + (i + 1));
+      log("RELATIVE REQUIRE: " + relative);
+      log("REAL PATH: " + projectRelative);
+      log("SUGGESTED FIX:");
+      log(
         `  const X = require(path.join(process.cwd(), "${projectRelative.replace(/\\/g, "/")}"));`
       );
     }
   });
 }
 
-console.log("🔍 SCANSIONE REQUIRE RELATIVI (solo /app)…");
+log("🔍 SCANSIONE REQUIRE RELATIVI (solo /app)…");
 scanDir(ROOT);
-console.log("\n✅ SCANSIONE COMPLETATA");
+log("\n✅ SCANSIONE COMPLETATA");
+
+// 🔥 Scrivi tutto nel file
+fs.writeFileSync(OUTPUT_FILE, output, "utf8");
+
+console.log("\n📄 Output salvato in:", OUTPUT_FILE);
