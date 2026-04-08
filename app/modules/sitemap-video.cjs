@@ -5,7 +5,10 @@
  * =========================================================
  */
 
-const db = require("../db/database.cjs");
+const path = require("path");
+
+// PATCH: require assoluto
+const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
 
 function escapeCDATA(str) {
   if (!str) return "";
