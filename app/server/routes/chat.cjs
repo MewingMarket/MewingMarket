@@ -3,8 +3,11 @@
  * Endpoint principale /chat — versione corretta e modulare
  */
 
-const { handleConversation } = require("../../modules/bot/index.cjs");
-const { trackGA4 } = require("../services/ga4.cjs");
+const path = require("path");
+
+// PATCH: require assoluto
+const { handleConversation } = require(path.join(process.cwd(), "app/modules/bot/index.cjs"));
+const { trackGA4 } = require(path.join(process.cwd(), "app/server/services/ga4.cjs"));
 
 module.exports = function (app) {
   app.post("/chat", async (req, res) => {
@@ -16,10 +19,6 @@ module.exports = function (app) {
         global.logBot("chat_request", { uid, message });
       }
 
-      /* ⭐ PATCH READY SYSTEM:
-         Se il catalogo non è ancora pronto, non chiamiamo il bot.
-         Evitiamo undefined, fatal error e timeout GPT.
-      */
       if (!global.catalogReady) {
         return res.json({
           reply: "Sto pensando… un attimo 😄",
@@ -27,10 +26,8 @@ module.exports = function (app) {
         });
       }
 
-      // ⭐ Passiamo req e res direttamente al bot
       await handleConversation(req, res);
 
-      // GA4 tracking
       trackGA4("chat_message", {
         uid,
         message,
