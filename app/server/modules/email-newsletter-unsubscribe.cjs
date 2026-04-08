@@ -28,8 +28,7 @@ async function inviaEmailNewsletterUnsubscribe({ email }) {
   `;
 
   /* =========================================================
-     TEMPLATE GRAFICO UNIVERSALE (LOGO + SOCIAL + FOOTER)
-     — NESSUN LINK NEWSLETTER in questa email
+     TEMPLATE GRAFICO UNIVERSALE
   ========================================================== */
   const html = `
 <!DOCTYPE html>
@@ -100,7 +99,8 @@ async function inviaEmailNewsletterUnsubscribe({ email }) {
     listId: LISTA_NEWSLETTER,
     subject,
     html,
-    sender: SENDER_NEWSLETTER
+    sender: SENDER_NEWSLETTER,
+    tipo: "transazionale"   // 🔥 FIREWALL: SEMPRE PERMESSA
   });
 }
 
