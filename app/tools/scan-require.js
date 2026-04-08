@@ -63,4 +63,7 @@ log("\n✅ SCANSIONE COMPLETATA");
 // 🔥 Scrivi tutto nel file
 fs.writeFileSync(OUTPUT_FILE, output, "utf8");
 
-console.log("\n📄 Output salvato in:", OUTPUT_FILE);
+// 🔥 Stampa tutto il file a schermo
+console.log("\n\n📄 CONTENUTO DI require-scan.txt:\n");
+console.log(output);
+console.log("\n📄 File salvato in:", OUTPUT_FILE);
