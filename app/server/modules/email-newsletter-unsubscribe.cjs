@@ -1,7 +1,11 @@
 // app/server/modules/email-newsletter-unsubscribe.cjs
-const { inviaEmailLista } = require("./invia-email-lista.cjs");
-const { LISTA_NEWSLETTER } = require("./liste-brevo.cjs");
-const { SENDER_NEWSLETTER } = require("./email-senders.cjs");
+
+const path = require("path");
+
+// PATCH: require assoluti
+const { inviaEmailLista } = require(path.join(process.cwd(), "app/server/modules/invia-email-lista.cjs"));
+const { LISTA_NEWSLETTER } = require(path.join(process.cwd(), "app/server/modules/liste-brevo.cjs"));
+const { SENDER_NEWSLETTER } = require(path.join(process.cwd(), "app/server/modules/email-senders.cjs"));
 
 async function inviaEmailNewsletterUnsubscribe({ email }) {
   const subject = "Hai annullato l’iscrizione alla newsletter";
@@ -100,7 +104,7 @@ async function inviaEmailNewsletterUnsubscribe({ email }) {
     subject,
     html,
     sender: SENDER_NEWSLETTER,
-    tipo: "transazionale"   // 🔥 FIREWALL: SEMPRE PERMESSA
+    tipo: "transazionale"
   });
 }
 
