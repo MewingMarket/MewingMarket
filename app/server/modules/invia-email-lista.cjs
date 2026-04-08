@@ -1,7 +1,11 @@
 // app/server/modules/invia-email-lista.cjs
+
+const path = require("path");
+
+// PATCH: require assoluti
 const axios = require("axios");
 const nodemailer = require("nodemailer");
-const { emailFirewall } = require("./email-firewall.cjs");
+const { emailFirewall } = require(path.join(process.cwd(), "app/server/modules/email-firewall.cjs"));
 
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
 const BREVO_API_BASE = "https://api.brevo.com/v3";
@@ -55,8 +59,8 @@ async function inviaEmailLista({
       const transporter = nodemailer.createTransport({
         service: "gmail",
         auth: {
-          user: process.env.SANDBOX_EMAIL,      // es: mewingmarket2@gmail.com
-          pass: process.env.SANDBOX_PASSWORD    // password app Gmail
+          user: process.env.SANDBOX_EMAIL,
+          pass: process.env.SANDBOX_PASSWORD
         }
       });
 
