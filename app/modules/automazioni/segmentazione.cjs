@@ -1,13 +1,16 @@
 // =====================================================
 // FILE: app/modules/automazioni/segmentazione.cjs
 // SCOPO: Segmentazione utenti (Brevo + tag interni)
-// FUTURE-PROOF + DEBUG + ANTI-LOOP
+// FUTURE-PROOF + DEBUG + ANTI-LOOP + NO-OP intelligente
 // =====================================================
 
 const path = require("path");
 
 // Percorso assoluto corretto → file reale: app/server/modules/liste-brevo.cjs
-const { syncBrevoUtenteStatoReale } = require(
+const { 
+  syncBrevoUtenteStatoReale,
+  getBrevoStatoRealeUtente   // 🔥 PATCH: serve per evitare update inutili
+} = require(
   path.join(process.cwd(), "app/server/modules/liste-brevo.cjs")
 );
 
@@ -59,7 +62,25 @@ async function segmentazione(utente) {
     }
 
     // ============================
-    // 3) INVIO A BREVO (solo se serve)
+    // 3) NO-OP INTELLIGENTE
+    //    Evita chiamate inutili a Brevo
+    // ============================
+
+    const statoAttuale = await getBrevoStatoRealeUtente(email);
+
+    if (statoAttuale) {
+      const uguali = Object.keys(payload).every(
+        key => statoAttuale[key] === payload[key]
+      );
+
+      if (uguali) {
+        debug("Nessun cambiamento reale → skip update Brevo", payload);
+        return;
+      }
+    }
+
+    // ============================
+    // 4) INVIO A BREVO (solo se serve)
     // ============================
 
     await syncBrevoUtenteStatoReale({
