@@ -49,6 +49,7 @@ async function reportMensile() {
       to: DESTINATARIO,
       template: "report_mensile",
       dati: kpi
+      // 🔥 tipo: "report" viene già aggiunto automaticamente
     });
 
     debug("Report mensile inviato correttamente");
