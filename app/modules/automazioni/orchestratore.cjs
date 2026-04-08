@@ -10,16 +10,30 @@ const engine = require(path.join(process.cwd(), "app/modules/automazioni/engine.
 
 console.log("🔥 ORCHESTRATORE AUTOMAZIONI AVVIATO (SAFE MODE)");
 
+// =====================================================
+// PATCH ANTI-OVERLAP 2026
+// Evita che due intervalli si sovrappongano se Node è sotto carico
+// =====================================================
+let lockSegmentazione = false;
+let lockReportMensile = false;
+
 // ===============================
 // 1) SEGMENTAZIONE — SAFE
 // ===============================
 
-// Segmentazione ogni 30 minuti (ma con anti-loop interno)
 setInterval(() => {
+  if (lockSegmentazione) {
+    return console.log("[ORCH] Segmentazione ignorata (overlap)");
+  }
+
+  lockSegmentazione = true;
+
   try {
     engine.jobSegmentazione();
   } catch (err) {
     console.error("[ORCH] Errore jobSegmentazione:", err);
+  } finally {
+    lockSegmentazione = false;
   }
 }, 30 * 60 * 1000);
 
@@ -27,16 +41,20 @@ setInterval(() => {
 // 2) REPORT — SOLO MENSILE
 // ===============================
 
-// Disattivati giornaliero e settimanale
-// setInterval(engine.jobReportGiornaliero, ...);
-// setInterval(engine.jobReportSettimanale, ...);
-
 // Report mensile (ogni 30 giorni)
 setInterval(() => {
+  if (lockReportMensile) {
+    return console.log("[ORCH] Report mensile ignorato (overlap)");
+  }
+
+  lockReportMensile = true;
+
   try {
     engine.jobReportMensile();
   } catch (err) {
     console.error("[ORCH] Errore jobReportMensile:", err);
+  } finally {
+    lockReportMensile = false;
   }
 }, 30 * 24 * 60 * 60 * 1000);
 
@@ -44,7 +62,6 @@ setInterval(() => {
 // 3) AVVIO IMMEDIATO (SAFE)
 // ===============================
 
-// Segmentazione immediata ma con anti-loop interno
 try {
   engine.jobSegmentazione();
 } catch (err) {
