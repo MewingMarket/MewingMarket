@@ -6,7 +6,9 @@
 // =========================================================
 
 const path = require("path");
-const db = require(path.join(__dirname, "../server/db/database.cjs"));
+
+// PATCH: require assoluto
+const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
 
 // =========================================================
 // UTILS: TITOLO BREVE + DESCRIZIONE BREVE
