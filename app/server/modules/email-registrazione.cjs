@@ -1,7 +1,11 @@
 // app/server/modules/email-registrazione.cjs
-const { inviaEmailLista } = require("./invia-email-lista.cjs");
-const { LISTA_REGISTRATI } = require("./liste-brevo.cjs");
-const { SENDER_VENDITE } = require("./email-senders.cjs");
+
+const path = require("path");
+
+// PATCH: require assoluti
+const { inviaEmailLista } = require(path.join(process.cwd(), "app/server/modules/invia-email-lista.cjs"));
+const { LISTA_REGISTRATI } = require(path.join(process.cwd(), "app/server/modules/liste-brevo.cjs"));
+const { SENDER_VENDITE } = require(path.join(process.cwd(), "app/server/modules/email-senders.cjs"));
 
 async function inviaEmailRegistrazione({ email }) {
   const subject = "Benvenuto su MewingMarket 👋";
@@ -67,8 +71,7 @@ async function inviaEmailRegistrazione({ email }) {
   `;
 
   /* =========================================================
-     TEMPLATE GRAFICO UNIVERSALE (LOGO + SOCIAL + FOOTER)
-     + LINK NEWSLETTER (perché email di registrazione)
+     TEMPLATE GRAFICO UNIVERSALE
   ========================================================== */
   const html = `
 <!DOCTYPE html>
@@ -99,17 +102,14 @@ async function inviaEmailRegistrazione({ email }) {
 
   <div class="email-container">
 
-    <!-- LOGO UFFICIALE -->
     <div class="logo">
       <img src="https://www.mewingmarket.it/logo.png" alt="MewingMarket">
     </div>
 
-    <!-- CONTENUTO ORIGINALE -->
     <div class="content">
       ${contenutoOriginale}
     </div>
 
-    <!-- SOCIAL UFFICIALI -->
     <div class="social">
       <a href="https://www.facebook.com/profile.php?id=61584779793628"><i class="fab fa-facebook"></i></a>
       <a href="https://www.threads.com/@mewingmarket"><i class="fab fa-threads"></i></a>
@@ -120,13 +120,11 @@ async function inviaEmailRegistrazione({ email }) {
       <a href="https://www.linkedin.com/in/simone-griseri-5368a7394"><i class="fab fa-linkedin"></i></a>
     </div>
 
-    <!-- LINK NEWSLETTER (registrazione → OBBLIGATORI) -->
     <div class="nl-links">
       <a href="https://www.mewingmarket.it/iscrizione.html">Iscriviti alla newsletter</a>
       <a href="https://www.mewingmarket.it/disiscriviti.html">Annulla iscrizione</a>
     </div>
 
-    <!-- FOOTER LEGALE -->
     <div class="footer-bottom">
       © <span id="anno"></span> MewingMarket — Prodotti digitali creati con Intelligenza Artificiale.
       Tutti i diritti riservati.
@@ -148,7 +146,7 @@ async function inviaEmailRegistrazione({ email }) {
     subject,
     html,
     sender: SENDER_VENDITE,
-    tipo: "transazionale"   // 🔥 FIREWALL: SEMPRE PERMESSA
+    tipo: "transazionale"
   });
 }
 
