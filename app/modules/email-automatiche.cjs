@@ -6,8 +6,11 @@
  * =========================================================
  */
 
-const { inviaEmailLista } = require("./invia-email-lista.cjs");
-const { SENDER_NEWSLETTER } = require("./email-senders.cjs");
+const path = require("path");
+
+// PATCH: require assoluti
+const { inviaEmailLista } = require(path.join(process.cwd(), "app/modules/invia-email-lista.cjs"));
+const { SENDER_NEWSLETTER } = require(path.join(process.cwd(), "app/modules/email-senders.cjs"));
 
 /**
  * Invio email automatica interna
