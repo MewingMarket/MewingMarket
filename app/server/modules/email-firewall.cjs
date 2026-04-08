@@ -3,29 +3,17 @@
 // FIREWALL EMAIL ENTERPRISE — Versione definitiva 2026
 // =====================================================
 
-const path = require("path");
-const { inviaEmailLista } = require(path.join(process.cwd(), "app/server/modules/invia-email-lista.cjs"));
-const { SENDER_NEWSLETTER } = require(path.join(process.cwd(), "app/server/modules/email-senders.cjs"));
-
 // Cache anti-loop (in-memory)
-const lastSend = new Map(); // key → timestamp
+const lastSend = new Map(); // tipo+email → timestamp
 
 // Limiti per tipo di email (in millisecondi)
 const LIMITS = {
-  // Report mensile → 1 volta al mese
-  report_mensile: 1000 * 60 * 60 * 24 * 30,
-
-  // Segmentazione → 1 volta al giorno
-  segmentazione: 1000 * 60 * 60 * 24,
-
-  // Novità → 1 volta a settimana
-  novita: 1000 * 60 * 60 * 24 * 7,
-
-  // Proposte prodotto → 1 volta a settimana
-  proposte: 1000 * 60 * 60 * 24 * 7,
-
-  // Email transazionali → SEMPRE PERMESSE
-  transazionale: 0
+  transazionale: 0,                       // sempre permessa
+  marketing: 1000 * 60 * 60 * 24 * 7,     // 1 a settimana
+  proposte: 1000 * 60 * 60 * 24 * 7,      // 1 a settimana
+  novita: 1000 * 60 * 60 * 24 * 7,        // 1 a settimana
+  report: 1000 * 60 * 60 * 24,            // 1 al giorno
+  segmentazione: 1000 * 60 * 60 * 24      // 1 al giorno
 };
 
 function debug(msg, data = null) {
@@ -33,44 +21,42 @@ function debug(msg, data = null) {
 }
 
 /**
- * Invio email sicuro con rate-limit + contenuto obbligatorio
+ * =========================================================
+ * emailFirewall()
+ * Decide SE un'email può essere inviata
+ * NON invia email — solo autorizza o blocca
+ * =========================================================
  */
-async function safeSend({ key, to, subject, html, sender = SENDER_NEWSLETTER }) {
+async function emailFirewall({ email, tipo, subject, html }) {
   try {
     // 1) Contenuto obbligatorio
     if (!html || html.trim().length < 20) {
-      console.error("[EMAIL-FIREWALL] Errore: contenuto email vuoto o insufficiente");
-      return "ERROR_EMPTY_CONTENT";
+      console.error("[EMAIL-FIREWALL] BLOCCATA: contenuto vuoto");
+      return "BLOCKED";
     }
 
+    // 2) Chiave univoca (tipo + email)
+    const key = `${tipo}:${email}`;
     const now = Date.now();
     const last = lastSend.get(key);
-    const limit = LIMITS[key] ?? 0;
+    const limit = LIMITS[tipo] ?? 0;
 
-    // 2) Rate limit
+    // 3) Rate limit
     if (last && now - last < limit) {
-      debug("SKIP: rate limit attivo", { key, to });
-      return "SKIPPED_RATE_LIMIT";
+      debug("BLOCCATA: rate limit attivo", { tipo, email });
+      return "BLOCKED";
     }
 
-    // 3) Aggiorna timestamp
+    // 4) Aggiorna timestamp
     lastSend.set(key, now);
 
-    // 4) Invio reale
-    debug("Invio email autorizzato", { key, to });
-
-    return await inviaEmailLista({
-      email: to,
-      listId: null,
-      subject,
-      html,
-      sender
-    });
+    debug("PERMESSA", { tipo, email, subject });
+    return "ALLOW";
 
   } catch (err) {
-    console.error("[EMAIL-FIREWALL] Errore invio:", err);
-    return "ERROR";
+    console.error("[EMAIL-FIREWALL] Errore:", err);
+    return "BLOCKED";
   }
 }
 
-module.exports = { safeSend };
+module.exports = { emailFirewall };
