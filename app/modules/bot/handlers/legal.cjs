@@ -3,12 +3,15 @@
  * Gestione privacy, termini e cookie
  */
 
-const callGPT = require("../gpt.cjs");
-const { reply, log } = require("../utils.cjs");
-const Memory = require("../../memory.cjs");
+const path = require("path");
+
+// PATCH: require assoluti
+const callGPT = require(path.join(process.cwd(), "app/modules/bot/gpt.cjs"));
+const { reply, log } = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
+const Memory = require(path.join(process.cwd(), "app/modules/memory.cjs"));
 
 // 🔥 PATCH: percorso corretto
-const Context = require("../../bot/context.cjs");
+const Context = require(path.join(process.cwd(), "app/modules/bot/context.cjs"));
 
 /* ============================================================
    PRIVACY
