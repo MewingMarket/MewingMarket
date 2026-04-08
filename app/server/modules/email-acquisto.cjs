@@ -3,10 +3,13 @@
 // Email acquisto — Versione patchata 2026.2001 + TEMPLATE GRAFICO + FAQ/Guide/Contatti
 // =========================================================
 
-const { inviaEmailLista } = require("./invia-email-lista.cjs");
-const { LISTA_CLIENTI } = require("./liste-brevo.cjs");
-const { SENDER_ACQUISTI } = require("./email-senders.cjs");
-const { generaRicevuteFiscali } = require("./ricevuta-fiscale.cjs");
+const path = require("path");
+
+// PATCH: require assoluti
+const { inviaEmailLista } = require(path.join(process.cwd(), "app/server/modules/invia-email-lista.cjs"));
+const { LISTA_CLIENTI } = require(path.join(process.cwd(), "app/server/modules/liste-brevo.cjs"));
+const { SENDER_ACQUISTI } = require(path.join(process.cwd(), "app/server/modules/email-senders.cjs"));
+const { generaRicevuteFiscali } = require(path.join(process.cwd(), "app/server/modules/ricevuta-fiscale.cjs"));
 
 const EMAIL_OWNER = "mewingmarket2@gmail.com";
 
@@ -80,7 +83,7 @@ async function inviaEmailAcquisto({ email, ordine }) {
     html,
     sender: SENDER_ACQUISTI,
     attachments: allegatiCliente,
-    tipo: "transazionale"   // 🔥 FIREWALL: SEMPRE PERMESSA
+    tipo: "transazionale"
   });
 
   /* =========================================================
@@ -116,7 +119,7 @@ async function inviaEmailAcquisto({ email, ordine }) {
         mimeType: "application/pdf"
       }
     ],
-    tipo: "transazionale"   // 🔥 FIREWALL: SEMPRE PERMESSA
+    tipo: "transazionale"
   });
 
   return true;
