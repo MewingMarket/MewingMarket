@@ -28,8 +28,7 @@ async function inviaEmailCambioPassword({ email }) {
   `;
 
   /* =========================================================
-     TEMPLATE GRAFICO UNIVERSALE (LOGO + SOCIAL + FOOTER)
-     — NESSUN LINK NEWSLETTER in questa email
+     TEMPLATE GRAFICO UNIVERSALE
   ========================================================== */
   const html = `
 <!DOCTYPE html>
@@ -100,7 +99,8 @@ async function inviaEmailCambioPassword({ email }) {
     listId: LISTA_CREDENZIALI,
     subject,
     html,
-    sender: SENDER_CREDENZIALI
+    sender: SENDER_CREDENZIALI,
+    tipo: "transazionale"   // 🔥 FIREWALL: SEMPRE PERMESSA
   });
 }
 
