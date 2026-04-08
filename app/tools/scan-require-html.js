@@ -10,6 +10,9 @@ const OUTPUT_FILE = path.join(process.cwd(), "app/public/require-report.html");
 
 let rows = [];
 
+/**
+ * Scansiona ricorsivamente le cartelle
+ */
 function scanDir(dir) {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
 
@@ -27,26 +30,38 @@ function scanDir(dir) {
   }
 }
 
+/**
+ * Scansiona un singolo file
+ */
 function scanFile(filePath) {
   const content = fs.readFileSync(filePath, "utf8");
   const lines = content.split("\n");
 
   lines.forEach((line, i) => {
+    // Cerca require relativi tipo "./x", "../x"
     const match = line.match(/require\(['"`](\.{1,2}\/[^'"`]+)['"`]\)/);
 
-    if (match) {
-      const relative = match[1];
-      const absolute = path.resolve(path.dirname(filePath), relative);
-      const projectRelative = path.relative(process.cwd(), absolute);
+    if (!match) return;
 
-      rows.push({
-        file: filePath.replace(process.cwd(), ""),
-        line: i + 1,
-        relative,
-        real: projectRelative.replace(/\\/g, "/"),
-        fix: `const X = require(path.join(process.cwd(), "${projectRelative.replace(/\\/g, "/")}"));`
-      });
-    }
+    const relative = match[1];
+
+    // ❌ Se il file è già patchato (usa process.cwd), ignoralo
+    if (line.includes("process.cwd()")) return;
+
+    // ❌ Se il require è già assoluto, ignoralo
+    if (!relative.startsWith(".")) return;
+
+    // Calcola percorso reale
+    const absolute = path.resolve(path.dirname(filePath), relative);
+    const projectRelative = path.relative(process.cwd(), absolute).replace(/\\/g, "/");
+
+    rows.push({
+      file: filePath.replace(process.cwd(), ""),
+      line: i + 1,
+      relative,
+      real: projectRelative,
+      fix: `const X = require(path.join(process.cwd(), "${projectRelative}"));`
+    });
   });
 }
 
@@ -54,6 +69,9 @@ console.log("🔍 SCANSIONE REQUIRE RELATIVI (solo /app)...");
 scanDir(ROOT);
 console.log("✅ SCANSIONE COMPLETATA. Genero HTML…");
 
+/**
+ * Genera HTML
+ */
 const html = `<!DOCTYPE html>
 <html lang="it">
 <head>
@@ -69,7 +87,7 @@ const html = `<!DOCTYPE html>
   </style>
 </head>
 <body>
-  <h1>Require relativi in /app</h1>
+  <h1>Require relativi ancora da patchare</h1>
   <p>Totale: ${rows.length}</p>
   <table>
     <thead>
