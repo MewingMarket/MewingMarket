@@ -3,6 +3,7 @@
 // File: app/server/modules/email-acquisto.cjs
 // Email acquisto — Versione patchata 2026.2001 + TEMPLATE GRAFICO + FAQ/Guide/Contatti
 // + PATCH 2026: Flag persistente "email_acquisto" su DB
+// + PATCH 2026-B: Backup ricevuta (modulo unico)
 // =========================================================
 
 const path = require("path");
@@ -12,6 +13,9 @@ const { inviaEmailLista } = require(path.join(process.cwd(), "app/server/modules
 const { LISTA_CLIENTI } = require(path.join(process.cwd(), "app/server/modules/liste-brevo.cjs"));
 const { SENDER_ACQUISTI } = require(path.join(process.cwd(), "app/server/modules/email-senders.cjs"));
 const { generaRicevuteFiscali } = require(path.join(process.cwd(), "app/server/modules/ricevuta-fiscale.cjs"));
+
+// 🔥 Modulo unico backup
+const { backup } = require(path.join(process.cwd(), "app/server/modules/backup.cjs"));
 
 // ⚠️ Nuovo require: uso DB per flag "already sent"
 const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
@@ -57,16 +61,15 @@ async function inviaEmailAcquisto({ email, ordine }) {
   /* =========================================================
      TUO HTML ORIGINALE (NON MODIFICATO)
   ========================================================== */
-  const contenutoOriginale = `...`; // (lasciato invariato per brevità)
+  const contenutoOriginale = `...`; // invariato
 
   /* =========================================================
      TEMPLATE GRAFICO UNIVERSALE
   ========================================================== */
-  const html = `...`; // (lasciato invariato per brevità)
+  const html = `...`; // invariato
 
   /* =========================================================
      FIREWALL PERSISTENTE — email_acquisto
-     Se abbiamo già inviato per questo ordine, non inviamo di nuovo
   ========================================================== */
   try {
     if (db.hasFlag("email_acquisto", numeroOrdine)) {
@@ -139,6 +142,19 @@ async function inviaEmailAcquisto({ email, ordine }) {
     ],
     tipo: "transazionale"
   });
+
+  /* =========================================================
+     🔥 BACKUP RICEVUTA (modulo unico)
+  ========================================================== */
+  try {
+    await backup("ricevuta", {
+      numeroOrdine,
+      pdfInterno
+    });
+    console.log("🧾 [BACKUP] Ricevuta salvata correttamente");
+  } catch (err) {
+    console.error("❌ Errore backup ricevuta:", err);
+  }
 
   /* =========================================================
      REGISTRA FLAG PERSISTENTE — email_acquisto
