@@ -5,6 +5,7 @@
  * Entry point del server — versione DEFINITIVA (NO SYNC API)
  * Patch B — Blindatura totale (SOFT + LOGGER AVANZATO)
  * Patch DB — app.set("db", db) per auth-user
+ * Patch 2026 — Backup + Restore automatici
  * =========================================================
  */
 
@@ -55,8 +56,7 @@ const ROOT = path.resolve("app");
 log(">> ROOT PATH:", ROOT);
 
 // =========================================================
-// 🛡 FIREWALL SERVER SINGOLO PROCESSO (RIATTIVATO)
-// Evita doppi avvii nello stesso processo Node
+// 🛡 FIREWALL SERVER SINGOLO PROCESSO
 // =========================================================
 if (global.__server_started) {
   logErr("⚠️ SERVER GIÀ AVVIATO — istanza duplicata evitata");
@@ -84,6 +84,13 @@ const wait = (ms) => new Promise(res => res(ms));
   log(">> LOADING logging.cjs");
   await wait(200);
   require("./services/logging.cjs");
+
+  // =========================================================
+  // ♻️ RESTORE DB + FILES (se il servizio è stato ricreato)
+  // =========================================================
+  log(">> RESTORE DB & FILES (if needed)");
+  await wait(200);
+  require("./startup/restore-db.cjs")();
 
   log(">> APPLYING PARSER MIDDLEWARE");
   await wait(200);
@@ -185,7 +192,7 @@ const wait = (ms) => new Promise(res => res(ms));
   require("./middleware/context.cjs")(app);
 
   // =========================================================
-  // 🔁 API (ROUTER PRINCIPALE) — PRIMA DEI STATICI  🔁
+  // 🔁 API (ROUTER PRINCIPALE)
   // =========================================================
   log(">> LOADING router.cjs");
   await wait(200);
@@ -200,7 +207,7 @@ const wait = (ms) => new Promise(res => res(ms));
   app.use("/api", require("./routes/debug-db.cjs"));
 
   // =========================================================
-  // STATICI FRONTEND (DOPO LE API)
+  // STATICI FRONTEND
   // =========================================================
   log(">> REGISTER STATIC ROUTES");
   await wait(200);
@@ -231,6 +238,19 @@ const wait = (ms) => new Promise(res => res(ms));
   require("./routes/versione.cjs")(app);
 
   // =========================================================
+  // ENDPOINT UNICO BACKUP + RESTORE
+  // =========================================================
+  app.get("/admin/backup-restore", (req, res) => {
+    try {
+      require("./startup/backup-db.cjs")();
+      require("./startup/restore-db.cjs")();
+      res.json({ ok: true, msg: "Backup + Restore eseguiti" });
+    } catch (err) {
+      res.json({ ok: false, error: err.message });
+    }
+  });
+
+  // =========================================================
   // BOOTSTRAP
   // =========================================================
   async function startServer() {
@@ -258,6 +278,28 @@ const wait = (ms) => new Promise(res => res(ms));
     app.listen(PORT, () => {
       log(`🎉 SERVER LISTENING ON PORT ${PORT}`);
       log("⚡ Server pronto e online");
+
+      // =========================================================
+      // 💾 BACKUP AUTOMATICO (DB + JSON + UPLOADS)
+      // =========================================================
+      try {
+        require("./startup/backup-db.cjs")();
+        log("💾 Backup iniziale completato");
+      } catch (err) {
+        logErr("❌ Errore backup iniziale:", err.message);
+      }
+
+      // =========================================================
+      // BACKUP PERIODICO OGNI 24 ORE
+      // =========================================================
+      setInterval(() => {
+        try {
+          require("./startup/backup-db.cjs")();
+          log("💾 Backup periodico completato");
+        } catch (err) {
+          logErr("❌ Errore backup periodico:", err.message);
+        }
+      }, 24 * 60 * 60 * 1000);
 
       // =========================================================
       // AUTOMAZIONI (SCHEDULER)
