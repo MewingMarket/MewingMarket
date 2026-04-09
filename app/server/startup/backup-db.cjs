@@ -4,6 +4,8 @@ const fs = require("fs");
 const path = require("path");
 
 module.exports = function backupDB() {
+  console.log("💾 [BACKUP] Sto effettuando il backup completo…");
+
   const BACKUP_DIR = "/var/data/backup";
   const DB_FILE = "/var/data/mewingmarket.db";
   const JSON_DIR = "/var/data/json";
@@ -19,7 +21,7 @@ module.exports = function backupDB() {
     // Backup DB
     if (fs.existsSync(DB_FILE)) {
       fs.copyFileSync(DB_FILE, path.join(BACKUP_DIR, "db", "mewingmarket.db"));
-      console.log("💾 Backup DB completato");
+      console.log("💾 [BACKUP] Database salvato");
     }
 
     // Backup JSON mirror
@@ -31,7 +33,7 @@ module.exports = function backupDB() {
           path.join(BACKUP_DIR, "json", f)
         );
       }
-      console.log("💾 Backup JSON completato");
+      console.log("💾 [BACKUP] JSON mirror salvati");
     }
 
     // Backup uploads (immagini, file)
@@ -43,7 +45,7 @@ module.exports = function backupDB() {
           path.join(BACKUP_DIR, "uploads", f)
         );
       }
-      console.log("💾 Backup uploads completato");
+      console.log("💾 [BACKUP] Uploads salvati");
     }
 
     // Timestamp
@@ -53,7 +55,9 @@ module.exports = function backupDB() {
       "utf8"
     );
 
+    console.log("✅ [BACKUP] Backup completato");
+
   } catch (err) {
-    console.error("❌ Errore backup DB:", err.message);
+    console.error("❌ [BACKUP] Errore:", err.message);
   }
 };
