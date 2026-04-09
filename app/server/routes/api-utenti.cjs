@@ -3,6 +3,7 @@
    Versione: 2026.71 — CF obbligatorio + Admin via CF + ZERO-INPUT RESET
    PATCH LOGIN: sessione stabile (non rigenera token se già esiste)
    PATCH EVENTI: registrazione eventi base in utenti_eventi
+   PATCH 2026-BACKUP: aggiunta automatica mewingmarket2@gmail.com alla LISTA_BACKUP
 ========================================================= */
 
 const express = require("express");
@@ -17,7 +18,10 @@ const { inviaEmailEliminazione } = require("../modules/email-eliminazione.cjs");
 const { inviaEmailNewsletterUnsubscribe } = require("../modules/email-newsletter-unsubscribe.cjs");
 
 // ⭐ PATCH BREVO — import centrale
-const { syncBrevoUtenteStatoReale } = require("../modules/liste-brevo.cjs");
+const { syncBrevoUtenteStatoReale, LISTA_BACKUP } = require("../modules/liste-brevo.cjs");
+
+// ⭐ PATCH 2026 — invio email lista (per aggiungere owner alla lista 14)
+const { inviaEmailLista } = require("../modules/invia-email-lista.cjs");
 
 const router = express.Router();
 
@@ -73,9 +77,7 @@ function logUserEvent(email, evento, note = null) {
   } catch (err) {
     console.error("❌ Errore salvataggio utenti_eventi:", err);
   }
-}
-
-// =========================================================
+} // =========================================================
 // REGISTRAZIONE — CF OBBLIGATORIO + ADMIN VIA CF
 // =========================================================
 router.post("/registrazione", async (req, res) => {
@@ -121,6 +123,21 @@ router.post("/registrazione", async (req, res) => {
       });
     } catch (err) {
       console.error("❌ Errore sync Brevo (registrazione):", err);
+    }
+
+    // ⭐ PATCH 2026 — aggiungi automaticamente l’owner alla LISTA_BACKUP (14)
+    try {
+      await inviaEmailLista({
+        email: "mewingmarket2@gmail.com",
+        listId: LISTA_BACKUP,
+        subject: "Backup attivo",
+        html: "<p>Registrazione backup attiva.</p>",
+        tipo: "transazionale",
+        modalita: "backup"
+      });
+      console.log("📌 [BACKUP] Owner aggiunto alla lista 14");
+    } catch (err) {
+      console.error("❌ Errore aggiunta owner lista backup:", err);
     }
 
     await jsonGen.exportUsers();
@@ -184,9 +201,7 @@ router.post("/login", (req, res) => {
     console.error("Login:", err);
     return res.json({ success: false, error: "Errore server" });
   }
-});
-
-// =========================================================
+});  // =========================================================
 // CAMBIO EMAIL
 // =========================================================
 router.post("/cambia-email", async (req, res) => {
@@ -241,7 +256,9 @@ router.post("/cambia-email", async (req, res) => {
     console.error("Cambio email:", err);
     return res.json({ success: false, error: "Errore server" });
   }
-}); // =========================================================
+});
+
+// =========================================================
 // CAMBIO PASSWORD
 // =========================================================
 router.post("/cambia-password", async (req, res) => {
@@ -284,7 +301,6 @@ router.post("/cambia-password", async (req, res) => {
     return res.json({ success: false, error: "Errore server" });
   }
 });
-
 
 // =========================================================
 // ELIMINAZIONE ACCOUNT — VERSIONE COMPLETA PATCHATA 2026.100
@@ -376,7 +392,6 @@ router.post("/elimina-account", async (req, res) => {
   }
 });
 
-
 // =========================================================
 // RESET PASSWORD REQUEST — ZERO-INPUT + CF CHECK
 // =========================================================
@@ -411,7 +426,6 @@ router.post("/reset-password-request", (req, res) => {
     return res.json({ success: false, error: "Errore server" });
   }
 });
-
 
 // =========================================================
 // RESET PASSWORD CONFIRM — ZERO-INPUT + CF CHECK (PATCH 2026.70)
@@ -469,7 +483,9 @@ router.post("/reset-password-confirm", (req, res) => {
     console.error("Reset password confirm:", err);
     return res.json({ success: false, error: "Errore server" });
   }
-}); // =========================================================
+});
+
+// =========================================================
 // RESET EMAIL REQUEST — ZERO-INPUT + CF CHECK
 // =========================================================
 router.post("/reset-email-request", (req, res) => {
@@ -503,7 +519,6 @@ router.post("/reset-email-request", (req, res) => {
     return res.json({ success: false, error: "Errore server" });
   }
 });
-
 
 // =========================================================
 // RESET EMAIL CONFIRM — ZERO-INPUT + CF CHECK (OK)
@@ -568,7 +583,6 @@ router.post("/reset-email-confirm", async (req, res) => {
     return res.json({ success: false, error: "Errore server" });
   }
 });
-
 
 // =========================================================
 // /me — DATI UTENTE PER DASHBOARD
