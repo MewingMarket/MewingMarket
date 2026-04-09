@@ -10,6 +10,9 @@ const { emailFirewall } = require(path.join(process.cwd(), "app/server/modules/e
 // 🔥 PATCH: sandbox locale (layout perfetto)
 const { sandboxSend } = require(path.join(process.cwd(), "app/server/modules/email-sandbox.cjs"));
 
+// ⭐ LISTA BACKUP
+const { LISTA_BACKUP } = require(path.join(process.cwd(), "app/server/modules/liste-brevo.cjs"));
+
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
 const BREVO_API_BASE = "https://api.brevo.com/v3";
 
@@ -22,6 +25,7 @@ const EMAIL_MODE = process.env.EMAIL_MODE || "sandbox";
  * + FIREWALL
  * + SANDBOX LOCALE (layout perfetto)
  * + LIVE MODE (Brevo)
+ * + PATCH 2026 — modalità backup/restore
  * =========================================================
  */
 async function inviaEmailLista({
@@ -31,7 +35,8 @@ async function inviaEmailLista({
   html,
   sender,
   attachments = [],
-  tipo = "marketing"
+  tipo = "marketing",
+  modalita = "normale"   // ⭐ nuovo parametro
 }) {
   if (!email || !subject || !html) {
     console.error("❌ Parametri email mancanti", { email, subject });
@@ -39,7 +44,55 @@ async function inviaEmailLista({
   }
 
   /* =========================================================
-     🔥 FIREWALL
+     ⭐ PATCH 2026 — modalità backup/restore
+     Bypass firewall + tracking + limiti
+  ========================================================== */
+  if (modalita === "backup" || modalita === "restore") {
+    console.log("📨 [BACKUP/RESTORE] Invio forzato → LISTA_BACKUP");
+
+    // SANDBOX
+    if (EMAIL_MODE !== "live") {
+      return sandboxSend({
+        email,
+        subject,
+        html,
+        tipo: "backup",
+        sender,
+        attachments
+      });
+    }
+
+    // LIVE
+    try {
+      const payload = {
+        to: [{ email }],
+        subject,
+        htmlContent: html,
+        sender: sender || {
+          name: process.env.BREVO_SENDER_NAME || "MewingMarket",
+          email: process.env.BREVO_SENDER_VENDITE || "no-reply@mewingmarket.it"
+        },
+        attachment: attachments
+      };
+
+      await axios.post(`${BREVO_API_BASE}/smtp/email`, payload, {
+        headers: {
+          "api-key": BREVO_API_KEY,
+          "Content-Type": "application/json"
+        }
+      });
+
+      console.log("📨 [BACKUP/RESTORE] Email inviata →", subject);
+      return "OK";
+
+    } catch (err) {
+      console.error("❌ Errore invio backup/restore:", err?.response?.data || err.message);
+      return "ERROR";
+    }
+  }
+
+  /* =========================================================
+     🔥 FIREWALL (solo per email normali)
   ========================================================== */
   const firewallResult = await emailFirewall({
     email,
@@ -55,11 +108,10 @@ async function inviaEmailLista({
 
   /* =========================================================
      🔥 SANDBOX MODE — SALVATAGGIO LOCALE (layout perfetto)
-     (Sostituisce Gmail SMTP)
   ========================================================== */
   if (EMAIL_MODE !== "live") {
     console.log("📨 [SANDBOX] Salvataggio email locale (email-sandbox.cjs)");
-    return sandboxSend({ email, subject, html, tipo, sender });
+    return sandboxSend({ email, subject, html, tipo, sender, attachments });
   }
 
   /* =========================================================
@@ -78,7 +130,8 @@ async function inviaEmailLista({
       sender: sender || {
         name: process.env.BREVO_SENDER_NAME || "MewingMarket",
         email: process.env.BREVO_SENDER_VENDITE || "no-reply@mewingmarket.it"
-      }
+      },
+      attachment: attachments
     };
 
     await axios.post(`${BREVO_API_BASE}/smtp/email`, payload, {
