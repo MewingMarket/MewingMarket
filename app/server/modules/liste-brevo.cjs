@@ -12,6 +12,9 @@ const LISTA_REGISTRATI = 9;
 const LISTA_CREDENZIALI = 10;
 const LISTA_CLIENTI = 12;
 
+// ⭐ NUOVA LISTA BACKUP (ID 14)
+const LISTA_BACKUP = 14;
+
 // =========================================================
 function clean(email) {
   return String(email || "").trim().toLowerCase();
@@ -72,7 +75,7 @@ async function removeFromList(listId, email) {
 
 // =========================================================
 async function syncLists() {
-  if (!BREVO_API_KEY) return { newsletter: [], clienti: [] };
+  if (!BREVO_API_KEY) return { newsletter: [], clienti: [], backup: [] };
 
   try {
     const resNL = await axios.get(
@@ -85,14 +88,20 @@ async function syncLists() {
       { headers: { "api-key": BREVO_API_KEY } }
     );
 
+    const resBK = await axios.get(
+      `${BREVO_API_BASE}/contacts/lists/${LISTA_BACKUP}/contacts`,
+      { headers: { "api-key": BREVO_API_KEY } }
+    );
+
     return {
       newsletter: (resNL.data?.contacts || []).map(c => clean(c.email)),
-      clienti: (resCL.data?.contacts || []).map(c => clean(c.email))
+      clienti: (resCL.data?.contacts || []).map(c => clean(c.email)),
+      backup: (resBK.data?.contacts || []).map(c => clean(c.email))
     };
 
   } catch (err) {
     console.error("❌ Errore syncLists:", err?.response?.data || err.message);
-    return { newsletter: [], clienti: [] };
+    return { newsletter: [], clienti: [], backup: [] };
   }
 }
 
@@ -116,7 +125,8 @@ async function getBrevoStatoRealeUtente(email) {
       cliente: (data.listIds || []).includes(LISTA_CLIENTI),
       newsletter: (data.listIds || []).includes(LISTA_NEWSLETTER),
       registrato: (data.listIds || []).includes(LISTA_REGISTRATI),
-      credenziali: (data.listIds || []).includes(LISTA_CREDENZIALI)
+      credenziali: (data.listIds || []).includes(LISTA_CREDENZIALI),
+      backup: (data.listIds || []).includes(LISTA_BACKUP)   // ⭐ AGGIUNTO
     };
 
   } catch (err) {
@@ -137,6 +147,7 @@ async function syncBrevoUtenteStatoReale({
   cliente = null,
   newsletter = null,
   credenzialiModificate = null,
+  backup = null,          // ⭐ AGGIUNTO
   elimina = false
 }) {
   if (!BREVO_API_KEY) return;
@@ -152,7 +163,8 @@ async function syncBrevoUtenteStatoReale({
       LISTA_NEWSLETTER,
       LISTA_REGISTRATI,
       LISTA_CLIENTI,
-      LISTA_CREDENZIALI
+      LISTA_CREDENZIALI,
+      LISTA_BACKUP
     ];
 
     for (const L of liste) {
@@ -171,7 +183,8 @@ async function syncBrevoUtenteStatoReale({
       LISTA_NEWSLETTER,
       LISTA_REGISTRATI,
       LISTA_CLIENTI,
-      LISTA_CREDENZIALI
+      LISTA_CREDENZIALI,
+      LISTA_BACKUP
     ];
 
     for (const L of liste) {
@@ -216,6 +229,17 @@ async function syncBrevoUtenteStatoReale({
   if (credenzialiModificate === true) {
     await addToList(LISTA_CREDENZIALI, e);
   }
+
+  // =========================================================
+  // ⭐ BACKUP (lista 14)
+  // =========================================================
+  if (backup === true) {
+    await addToList(LISTA_BACKUP, e);
+  }
+
+  if (backup === false) {
+    await removeFromList(LISTA_BACKUP, e);
+  }
 }
 
 // =========================================================
@@ -224,10 +248,11 @@ module.exports = {
   LISTA_REGISTRATI,
   LISTA_CREDENZIALI,
   LISTA_CLIENTI,
+  LISTA_BACKUP, // ⭐ esportata
 
   addToList,
   removeFromList,
   syncLists,
   syncBrevoUtenteStatoReale,
-  getBrevoStatoRealeUtente   // 🔥 aggiunto
+  getBrevoStatoRealeUtente
 };
