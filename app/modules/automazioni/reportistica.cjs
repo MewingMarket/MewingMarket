@@ -1,7 +1,9 @@
+/* FILE: app/modules/automazioni/reportistica.cjs */
 // =====================================================
 // FILE: app/modules/automazioni/reportistica.cjs
 // SCOPO: SOLO report mensile (giornaliero/settimanale disattivati)
 // FUTURE-PROOF + DEBUG
+// + PATCH 2026: Flag persistente "report_mensile"
 // =====================================================
 
 const path = require("path");
@@ -44,6 +46,13 @@ async function reportMensile() {
       return;
     }
 
+    // 🔥 FIREWALL PERSISTENTE: se abbiamo già inviato questo mese, skip
+    const riferimento = kpi.mese || kpi.id || "ultimo";
+    if (db.hasFlag("report_mensile", riferimento)) {
+      debug("Report mensile già inviato per riferimento:", riferimento);
+      return;
+    }
+
     // Invia SOLO se ci sono dati reali
     await inviaEmailAutomatica({
       to: DESTINATARIO,
@@ -51,6 +60,12 @@ async function reportMensile() {
       dati: kpi
       // 🔥 tipo: "report" viene già aggiunto automaticamente
     });
+
+    try {
+      db.setFlag("report_mensile", riferimento);
+    } catch (err) {
+      console.error("❌ Errore setFlag report_mensile:", err);
+    }
 
     debug("Report mensile inviato correttamente");
 
