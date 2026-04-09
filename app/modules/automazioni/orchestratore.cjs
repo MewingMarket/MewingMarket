@@ -1,42 +1,36 @@
 /* FILE: app/modules/automazioni/orchestratore.cjs */
 // =====================================================
-// FILE: app/modules/automazioni/orchestratore.cjs
-// SCOPO: Avviare i job del motore automazioni (SAFE MODE)
+// ORCHESTRATORE AUTOMAZIONI — VERSIONE PATCHATA 2026
+// Report mensile eseguito SOLO una volta al mese
 // =====================================================
 
 const path = require("path");
 
-// 🔥 FIREWALL ORCHESTRATORE — evita registrazione multipla degli intervalli
+// FIREWALL ORCHESTRATORE
 if (global.__orchestratore_started) {
-  console.log("⚠️ ORCHESTRATORE GIÀ ATTIVO — registrazione intervalli ignorata");
-  // Non registriamo di nuovo gli intervalli
+  console.log("⚠️ ORCHESTRATORE GIÀ ATTIVO — skip");
   return;
 }
 global.__orchestratore_started = true;
 
-// Require assoluto blindato
 const engine = require(path.join(process.cwd(), "app/modules/automazioni/engine.cjs"));
+const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
 
 console.log("🔥 ORCHESTRATORE AUTOMAZIONI AVVIATO (SAFE MODE)");
 
 // =====================================================
-// PATCH ANTI-OVERLAP 2026
-// Evita che due intervalli si sovrappongano se Node è sotto carico
+// PATCH ANTI-OVERLAP
 // =====================================================
 let lockSegmentazione = false;
 let lockReportMensile = false;
 
-// ===============================
-// 1) SEGMENTAZIONE — SAFE
-// ===============================
-
+// =====================================================
+// 1) SEGMENTAZIONE — ogni 30 minuti
+// =====================================================
 setInterval(() => {
-  if (lockSegmentazione) {
-    return console.log("[ORCH] Segmentazione ignorata (overlap)");
-  }
+  if (lockSegmentazione) return;
 
   lockSegmentazione = true;
-
   try {
     engine.jobSegmentazione();
   } catch (err) {
@@ -46,31 +40,43 @@ setInterval(() => {
   }
 }, 30 * 60 * 1000);
 
-// ===============================
-// 2) REPORT — SOLO MENSILE
-// ===============================
+// =====================================================
+// 2) REPORT MENSILE — PATCH: controlla la data
+// =====================================================
 
-// Report mensile (ogni 30 giorni)
-setInterval(() => {
-  if (lockReportMensile) {
-    return console.log("[ORCH] Report mensile ignorato (overlap)");
+function shouldRunMonthlyReport() {
+  const now = new Date();
+  const meseCorrente = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+  // Se già inviato → STOP
+  if (db.hasFlag("report_mensile", meseCorrente)) {
+    return false;
   }
 
+  // Esegui SOLO il giorno 9 di ogni mese
+  return now.getDate() === 9;
+}
+
+// Controllo giornaliero (ogni 24 ore)
+setInterval(() => {
+  if (lockReportMensile) return;
   lockReportMensile = true;
 
   try {
-    engine.jobReportMensile();
+    if (shouldRunMonthlyReport()) {
+      console.log("📅 Avvio report mensile…");
+      engine.jobReportMensile();
+    }
   } catch (err) {
     console.error("[ORCH] Errore jobReportMensile:", err);
   } finally {
     lockReportMensile = false;
   }
-}, 30 * 24 * 60 * 60 * 1000);
+}, 24 * 60 * 60 * 1000);
 
-// ===============================
-// 3) AVVIO IMMEDIATO (SAFE)
-// ===============================
-
+// =====================================================
+// 3) AVVIO IMMEDIATO SEGMENTAZIONE
+// =====================================================
 try {
   engine.jobSegmentazione();
 } catch (err) {
