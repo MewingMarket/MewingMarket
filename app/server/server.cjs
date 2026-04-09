@@ -1,3 +1,4 @@
+/* FILE: app/server/server.cjs */
 /**
  * =========================================================
  * File: app/server/server.cjs
@@ -54,14 +55,14 @@ const ROOT = path.resolve("app");
 log(">> ROOT PATH:", ROOT);
 
 // =========================================================
-// 🛡 RIMOSSA PROTEZIONE ANTI-DOPPIO BOOTSTRAP
+// 🛡 FIREWALL SERVER SINGOLO PROCESSO (RIATTIVATO)
+// Evita doppi avvii nello stesso processo Node
 // =========================================================
-// ❌ RIMOSSO:
-// if (global.__server_started) {
-//   logErr("⚠️ SERVER GIÀ AVVIATO — Render doppio processo evitato");
-//   return;
-// }
-// global.__server_started = true;
+if (global.__server_started) {
+  logErr("⚠️ SERVER GIÀ AVVIATO — istanza duplicata evitata");
+  return;
+}
+global.__server_started = true;
 
 // =========================================================
 // 🩺 HEALTH CHECK
@@ -76,8 +77,6 @@ app.get("/health", (req, res) => {
   });
 });
 
-// =========================================================
-// AVVIO SEQUENZIALE
 // =========================================================
 const wait = (ms) => new Promise(res => res(ms));
 
