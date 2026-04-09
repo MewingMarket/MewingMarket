@@ -1,9 +1,11 @@
+/* FILE: app/server/db/database.cjs */
 /**
  * =========================================================
  * File: app/server/db/database.cjs
  * Database SQLite persistente su Render Disk
  * Compatibile con ambiente locale / Codespaces
  * Carica automaticamente tutti gli schema .sql
+ * + PATCH 2026: Tabella automazioni_log + helper flag
  * =========================================================
  */
 
@@ -56,6 +58,57 @@ try {
   console.error("❌ ERRORE apertura DB:", err.message);
   throw err;
 }
+
+// =========================================================
+/**
+ * PATCH 2026 — Tabella automazioni_log
+ * Flag persistenti "already sent" / "already done"
+ * tipo: string (es. "email_acquisto", "email_novita", "report_mensile")
+ * riferimento: string (es. id ordine, email, mese, ecc.)
+ */
+// =========================================================
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS automazioni_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      tipo TEXT NOT NULL,
+      riferimento TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+  `);
+  console.log("✅ Tabella automazioni_log pronta");
+} catch (err) {
+  console.error("❌ ERRORE creazione automazioni_log:", err.message);
+}
+
+// Helper per flag persistenti
+db.hasFlag = function (tipo, riferimento) {
+  try {
+    const ref = String(riferimento);
+    const row = db
+      .prepare(
+        `SELECT 1 FROM automazioni_log WHERE tipo = ? AND riferimento = ? LIMIT 1`
+      )
+      .get(tipo, ref);
+    return !!row;
+  } catch (err) {
+    console.error("❌ ERRORE hasFlag:", err.message, { tipo, riferimento });
+    return false;
+  }
+};
+
+db.setFlag = function (tipo, riferimento) {
+  try {
+    const ref = String(riferimento);
+    const now = new Date().toISOString();
+    db.prepare(
+      `INSERT INTO automazioni_log (tipo, riferimento, created_at) VALUES (?, ?, ?)`
+    ).run(tipo, ref, now);
+    console.log("✅ Flag registrato:", tipo, ref);
+  } catch (err) {
+    console.error("❌ ERRORE setFlag:", err.message, { tipo, riferimento });
+  }
+};
 
 // =========================================================
 // CARICA AUTOMATICAMENTE TUTTI GLI SCHEMA .SQL
