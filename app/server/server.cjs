@@ -5,7 +5,7 @@
  * Entry point del server — versione DEFINITIVA (NO SYNC API)
  * Patch B — Blindatura totale (SOFT + LOGGER AVANZATO)
  * Patch DB — app.set("db", db) per auth-user
- * Patch 2026 — Backup + Restore automatici
+ * Patch 2026 — Backup + Restore automatici (moduli nuovi)
  * =========================================================
  */
 
@@ -86,11 +86,12 @@ const wait = (ms) => new Promise(res => res(ms));
   require("./services/logging.cjs");
 
   // =========================================================
-  // ♻️ RESTORE DB + FILES (se il servizio è stato ricreato)
+  // ♻️ RESTORE DB + FILES (modulo nuovo)
   // =========================================================
   log(">> RESTORE DB & FILES (if needed)");
   await wait(200);
-  require("./startup/restore-db.cjs")();
+  const { restore } = require("./modules/restore.cjs");
+  await restore();
 
   log(">> APPLYING PARSER MIDDLEWARE");
   await wait(200);
@@ -238,12 +239,16 @@ const wait = (ms) => new Promise(res => res(ms));
   require("./routes/versione.cjs")(app);
 
   // =========================================================
-  // ENDPOINT UNICO BACKUP + RESTORE
+  // ENDPOINT UNICO BACKUP + RESTORE (moduli nuovi)
   // =========================================================
-  app.get("/admin/backup-restore", (req, res) => {
+  app.get("/admin/backup-restore", async (req, res) => {
     try {
-      require("./startup/backup-db.cjs")();
-      require("./startup/restore-db.cjs")();
+      const { backupGenerale } = require("./modules/backup.cjs");
+      const { restore } = require("./modules/restore.cjs");
+
+      await backupGenerale();
+      await restore();
+
       res.json({ ok: true, msg: "Backup + Restore eseguiti" });
     } catch (err) {
       res.json({ ok: false, error: err.message });
@@ -280,21 +285,23 @@ const wait = (ms) => new Promise(res => res(ms));
       log("⚡ Server pronto e online");
 
       // =========================================================
-      // 💾 BACKUP AUTOMATICO (DB + JSON + UPLOADS)
+      // 💾 BACKUP AUTOMATICO (modulo nuovo)
       // =========================================================
       try {
-        require("./startup/backup-db.cjs")();
+        const { backupGenerale } = require("./modules/backup.cjs");
+        backupGenerale();
         log("💾 Backup iniziale completato");
       } catch (err) {
         logErr("❌ Errore backup iniziale:", err.message);
       }
 
       // =========================================================
-      // BACKUP PERIODICO OGNI 24 ORE
+      // BACKUP PERIODICO OGNI 24 ORE (modulo nuovo)
       // =========================================================
-      setInterval(() => {
+      setInterval(async () => {
         try {
-          require("./startup/backup-db.cjs")();
+          const { backupGenerale } = require("./modules/backup.cjs");
+          await backupGenerale();
           log("💾 Backup periodico completato");
         } catch (err) {
           logErr("❌ Errore backup periodico:", err.message);
