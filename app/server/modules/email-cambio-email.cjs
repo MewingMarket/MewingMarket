@@ -2,6 +2,9 @@
 
 const path = require("path");
 
+// ⭐ DEBUG: verifica quale file viene realmente caricato
+console.log("DEBUG EMAIL-CAMBIO-EMAIL → FILE CARICATO:", __filename);
+
 // PATCH: require assoluti
 const { inviaEmailLista } = require(path.join(process.cwd(), "app/server/modules/invia-email-lista.cjs"));
 const { LISTA_CREDENZIALI } = require(path.join(process.cwd(), "app/server/modules/liste-brevo.cjs"));
