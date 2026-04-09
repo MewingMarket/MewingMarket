@@ -1,9 +1,18 @@
+/* FILE: app/modules/automazioni/engine.cjs */
 // =====================================================
 // FILE: app/modules/automazioni/engine.cjs
 // SCOPO: Motore centrale automazioni (future-proof)
 // =====================================================
 
 const path = require("path");
+
+// 🔥 FIREWALL ENGINE (SOFT) — evita re-init nello stesso processo
+if (global.__engine_initialized) {
+  console.log("[ENGINE] Già inizializzato in questo processo");
+} else {
+  global.__engine_initialized = true;
+  console.log("[ENGINE] Inizializzazione motore automazioni");
+}
 
 // DB — percorso assoluto corretto
 const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
@@ -80,17 +89,17 @@ function jobReportMensile() {
 // =========================
 
 function onNuovoOrdine(ordine) {
-  debug("Trigger: nuovo ordine", ordine.id);
+  debug("Trigger: nuovo ordine", ordine?.id);
   // Le email partono dai moduli dedicati (corretto)
 }
 
 function onNuovoFeedback(feedback) {
-  debug("Trigger: nuovo feedback", feedback.id);
+  debug("Trigger: nuovo feedback", feedback?.id);
   // Le email partono dai moduli dedicati (corretto)
 }
 
 function onNuovoUtente(utente) {
-  debug("Trigger: nuovo utente", utente.email);
+  debug("Trigger: nuovo utente", utente?.email);
   segmentazione(utente); // firewall protegge le email
 }
 
