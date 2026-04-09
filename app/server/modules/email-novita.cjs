@@ -1,3 +1,4 @@
+/* FILE: app/server/modules/email-novita.cjs */
 /**
  * =========================================================
  * File: app/server/modules/email-novita.cjs
@@ -7,6 +8,7 @@
  * + PATCH AI: usa descrizione_email se presente
  * + FIREWALL: tipo "novita" (1/settimana)
  * + STOP se nessun prodotto / descrizione vuota / prodotto già inviato
+ * + PATCH 2026: Flag persistente "email_novita" per destinatario
  * =========================================================
  */
 
@@ -138,6 +140,12 @@ function generateNovitaHTML(prod) {
 ========================================================= */
 async function inviaEmailNovita({ email }) {
   try {
+    // 🔥 FIREWALL PERSISTENTE: se questa email ha già ricevuto una "novità", skip
+    if (db.hasFlag("email_novita", email)) {
+      console.log("[EMAIL-NOVITA] Già inviata novità a:", email);
+      return "ALREADY_SENT";
+    }
+
     const stmt = db.prepare(`
       SELECT *
       FROM prodotti
@@ -162,7 +170,7 @@ async function inviaEmailNovita({ email }) {
     const oggetto = `✨ Novità: è arrivato “${titolo}”`;
     const html = generateNovitaHTML(latest);
 
-    return inviaEmailLista({
+    const res = await inviaEmailLista({
       email,
       listId: LISTA_NEWSLETTER,
       subject: oggetto,
@@ -170,6 +178,15 @@ async function inviaEmailNovita({ email }) {
       sender: SENDER_VENDITE,
       tipo: "novita"
     });
+
+    // ✅ Registra flag persistente solo se l'invio non ha lanciato errori
+    try {
+      db.setFlag("email_novita", email);
+    } catch (err) {
+      console.error("❌ Errore setFlag email_novita:", err);
+    }
+
+    return res;
 
   } catch (err) {
     console.error("❌ email-novita: errore invio:", err);
