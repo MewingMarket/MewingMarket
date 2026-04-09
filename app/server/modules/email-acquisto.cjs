@@ -1,6 +1,8 @@
+/* FILE: app/server/modules/email-acquisto.cjs */
 // =========================================================
 // File: app/server/modules/email-acquisto.cjs
 // Email acquisto — Versione patchata 2026.2001 + TEMPLATE GRAFICO + FAQ/Guide/Contatti
+// + PATCH 2026: Flag persistente "email_acquisto" su DB
 // =========================================================
 
 const path = require("path");
@@ -10,6 +12,9 @@ const { inviaEmailLista } = require(path.join(process.cwd(), "app/server/modules
 const { LISTA_CLIENTI } = require(path.join(process.cwd(), "app/server/modules/liste-brevo.cjs"));
 const { SENDER_ACQUISTI } = require(path.join(process.cwd(), "app/server/modules/email-senders.cjs"));
 const { generaRicevuteFiscali } = require(path.join(process.cwd(), "app/server/modules/ricevuta-fiscale.cjs"));
+
+// ⚠️ Nuovo require: uso DB per flag "already sent"
+const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
 
 const EMAIL_OWNER = "mewingmarket2@gmail.com";
 
@@ -58,6 +63,19 @@ async function inviaEmailAcquisto({ email, ordine }) {
      TEMPLATE GRAFICO UNIVERSALE
   ========================================================== */
   const html = `...`; // (lasciato invariato per brevità)
+
+  /* =========================================================
+     FIREWALL PERSISTENTE — email_acquisto
+     Se abbiamo già inviato per questo ordine, non inviamo di nuovo
+  ========================================================== */
+  try {
+    if (db.hasFlag("email_acquisto", numeroOrdine)) {
+      console.log("[EMAIL-ACQUISTO] Email già inviata per ordine:", numeroOrdine);
+      return true;
+    }
+  } catch (err) {
+    console.error("❌ Errore controllo flag email_acquisto:", err);
+  }
 
   /* =========================================================
      UNA SOLA RICEVUTA FISCALE
@@ -121,6 +139,15 @@ async function inviaEmailAcquisto({ email, ordine }) {
     ],
     tipo: "transazionale"
   });
+
+  /* =========================================================
+     REGISTRA FLAG PERSISTENTE — email_acquisto
+  ========================================================== */
+  try {
+    db.setFlag("email_acquisto", numeroOrdine);
+  } catch (err) {
+    console.error("❌ Errore setFlag email_acquisto:", err);
+  }
 
   return true;
 }
