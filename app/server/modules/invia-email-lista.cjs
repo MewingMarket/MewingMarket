@@ -7,17 +7,21 @@ const axios = require("axios");
 const nodemailer = require("nodemailer");
 const { emailFirewall } = require(path.join(process.cwd(), "app/server/modules/email-firewall.cjs"));
 
+// 🔥 PATCH: sandbox locale (layout perfetto)
+const { sandboxSend } = require(path.join(process.cwd(), "app/server/modules/email-sandbox.cjs"));
+
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
 const BREVO_API_BASE = "https://api.brevo.com/v3";
 
-// 🔥 Modalità invio: "live" (Brevo) oppure "sandbox" (Gmail SMTP)
+// 🔥 Modalità invio: "live" (Brevo) oppure "sandbox" (locale)
 const EMAIL_MODE = process.env.EMAIL_MODE || "sandbox";
 
 /**
  * =========================================================
  * inviaEmailLista()
  * + FIREWALL
- * + SANDBOX SMTP (Gmail)
+ * + SANDBOX LOCALE (layout perfetto)
+ * + LIVE MODE (Brevo)
  * =========================================================
  */
 async function inviaEmailLista({
@@ -50,34 +54,12 @@ async function inviaEmailLista({
   }
 
   /* =========================================================
-     🔥 SANDBOX MODE — invio reale via Gmail SMTP
+     🔥 SANDBOX MODE — SALVATAGGIO LOCALE (layout perfetto)
+     (Sostituisce Gmail SMTP)
   ========================================================== */
   if (EMAIL_MODE !== "live") {
-    console.log("📨 [SANDBOX] Invio email tramite Gmail SMTP");
-
-    try {
-      const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-          user: process.env.SANDBOX_EMAIL,
-          pass: process.env.SANDBOX_PASSWORD
-        }
-      });
-
-      await transporter.sendMail({
-        from: sender?.email || process.env.SANDBOX_EMAIL,
-        to: email,
-        subject,
-        html
-      });
-
-      console.log("📨 [SANDBOX] Email inviata a Gmail →", email);
-      return "SANDBOX_OK";
-
-    } catch (err) {
-      console.error("❌ Errore SANDBOX SMTP:", err.message);
-      return "SANDBOX_ERROR";
-    }
+    console.log("📨 [SANDBOX] Salvataggio email locale (email-sandbox.cjs)");
+    return sandboxSend({ email, subject, html, tipo, sender });
   }
 
   /* =========================================================
