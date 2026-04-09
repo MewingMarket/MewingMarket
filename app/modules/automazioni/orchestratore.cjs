@@ -1,9 +1,18 @@
+/* FILE: app/modules/automazioni/orchestratore.cjs */
 // =====================================================
 // FILE: app/modules/automazioni/orchestratore.cjs
 // SCOPO: Avviare i job del motore automazioni (SAFE MODE)
 // =====================================================
 
 const path = require("path");
+
+// 🔥 FIREWALL ORCHESTRATORE — evita registrazione multipla degli intervalli
+if (global.__orchestratore_started) {
+  console.log("⚠️ ORCHESTRATORE GIÀ ATTIVO — registrazione intervalli ignorata");
+  // Non registriamo di nuovo gli intervalli
+  return;
+}
+global.__orchestratore_started = true;
 
 // Require assoluto blindato
 const engine = require(path.join(process.cwd(), "app/modules/automazioni/engine.cjs"));
