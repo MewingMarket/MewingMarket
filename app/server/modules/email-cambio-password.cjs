@@ -9,31 +9,26 @@ const { SENDER_CREDENZIALI } = require(path.join(process.cwd(), "app/server/modu
 
 async function inviaEmailCambioPassword({ email }) {
   const subject = "La tua password è stata aggiornata";
+  const year = new Date().getFullYear();
 
-  /* =========================================================
-     CONTENUTO ORIGINALE (NON MODIFICATO)
-  ========================================================== */
   const contenutoOriginale = `
-        <h1 style="color:#f97316;font-size:22px;margin-bottom:16px;">Password aggiornata</h1>
+    <h1 style="color:#f97316;font-size:22px;margin-bottom:16px;">Password aggiornata</h1>
 
-        <p style="font-size:16px; color:#e5e7eb;">
-          La tua password è stata modificata correttamente.
-        </p>
+    <p style="font-size:16px; color:#444;">
+      La tua password è stata modificata correttamente.
+    </p>
 
-        <p style="margin-top:12px; font-size:16px;">
-          Email account: <strong>${email}</strong>
-        </p>
+    <p style="margin-top:12px; font-size:16px;">
+      Email account: <strong>${email}</strong>
+    </p>
 
-        <hr style="margin:24px 0; border-color:#1f2937;">
+    <hr style="margin:24px 0; border-color:#ddd;">
 
-        <p style="font-size:14px; color:#9ca3af;">
-          Se non hai richiesto questa modifica, contatta immediatamente il supporto.
-        </p>
+    <p style="font-size:14px; color:#777;">
+      Se non hai richiesto questa modifica, contatta immediatamente il supporto.
+    </p>
   `;
 
-  /* =========================================================
-     TEMPLATE GRAFICO UNIVERSALE
-  ========================================================== */
   const html = `
 <!DOCTYPE html>
 <html lang="it">
@@ -61,38 +56,30 @@ async function inviaEmailCambioPassword({ email }) {
 
   <div class="email-container">
 
-    <!-- LOGO -->
     <div class="logo">
       <img src="https://www.mewingmarket.it/logo.png" alt="MewingMarket">
     </div>
 
-    <!-- CONTENUTO ORIGINALE -->
     <div class="content">
       ${contenutoOriginale}
     </div>
 
-    <!-- SOCIAL -->
     <div class="social">
       <a href="https://www.facebook.com/profile.php?id=61584779793628"><i class="fab fa-facebook"></i></a>
-      <a href="https://www.threads.com/@mewingmarket"><i class="fab fa-threads"></i></a>
-      <a href="https://www.instagram.com/mewingmarket?igsh=eGZ2MHE0bTFtbmJt"><i class="fab fa-instagram"></i></a>
-      <a href="https://tiktok.com/@mewingmarket"><i class="fab fa-tiktok"></i></a>
+      <a href="https://www.threads.net/@mewingmarket"><i class="fab fa-threads"></i></a>
+      <a href="https://www.instagram.com/mewingmarket"><i class="fab fa-instagram"></i></a>
+      <a href="https://www.tiktok.com/@mewingmarket"><i class="fab fa-tiktok"></i></a>
       <a href="https://x.com/mewingm8"><i class="fab fa-x-twitter"></i></a>
       <a href="https://www.youtube.com/@mewingmarket2"><i class="fab fa-youtube"></i></a>
       <a href="https://www.linkedin.com/in/simone-griseri-5368a7394"><i class="fab fa-linkedin"></i></a>
     </div>
 
-    <!-- FOOTER -->
     <div class="footer-bottom">
-      © <span id="anno"></span> MewingMarket — Prodotti digitali creati con Intelligenza Artificiale.
+      © ${year} MewingMarket — Prodotti digitali creati con Intelligenza Artificiale.
       Tutti i diritti riservati.
     </div>
 
   </div>
-
-  <script>
-    document.getElementById("anno").textContent = new Date().getFullYear();
-  </script>
 
 </body>
 </html>
