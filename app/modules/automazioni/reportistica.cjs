@@ -4,6 +4,7 @@
 // SCOPO: SOLO report mensile (giornaliero/settimanale disattivati)
 // FUTURE-PROOF + DEBUG
 // + PATCH 2026: Flag persistente "report_mensile"
+// + PATCH 2026-B: Backup automatico report (modulo unico)
 // =====================================================
 
 const path = require("path");
@@ -14,6 +15,11 @@ const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
 // Email automatiche — percorso assoluto corretto
 const { inviaEmailAutomatica } = require(
   path.join(process.cwd(), "app/modules/email-automatiche.cjs")
+);
+
+// 🔥 Modulo unico backup
+const { backup } = require(
+  path.join(process.cwd(), "app/server/modules/backup.cjs")
 );
 
 const DESTINATARIO = "mewingmarket2@gmail.com";
@@ -53,14 +59,29 @@ async function reportMensile() {
       return;
     }
 
-    // Invia SOLO se ci sono dati reali
+    // ============================
+    // 1) INVIO EMAIL AUTOMATICA
+    // ============================
     await inviaEmailAutomatica({
       to: DESTINATARIO,
       template: "report_mensile",
       dati: kpi
-      // 🔥 tipo: "report" viene già aggiunto automaticamente
+      // tipo: "report" viene già aggiunto automaticamente
     });
 
+    // ============================
+    // 2) BACKUP REPORT (modulo unico)
+    // ============================
+    try {
+      await backup("report", { kpi });
+      debug("Backup report mensile completato");
+    } catch (err) {
+      console.error("❌ Errore backup report mensile:", err);
+    }
+
+    // ============================
+    // 3) REGISTRA FLAG
+    // ============================
     try {
       db.setFlag("report_mensile", riferimento);
     } catch (err) {
