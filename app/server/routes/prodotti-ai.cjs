@@ -1,17 +1,23 @@
-/**
+l/**
  * =========================================================
  * API AI — Generazione descrizioni prodotto
+ * Versione 2026.200 — require assoluti
  * =========================================================
  */
 
 const express = require("express");
+const path = require("path");
+
 const router = express.Router();
+
+// PATCH: require assoluto
+const R = (p) => require(path.join(process.cwd(), "app/server", p));
 
 const {
   generaDescrizioneLunga,
   generaDescrizioneBreve,
   generaDescrizioneEmail
-} = require("../modules/catalogo-ai.cjs");
+} = R("modules/catalogo-ai.cjs");
 
 /* ============================================================
    POST /api/prodotti/genera-descrizione-ai
