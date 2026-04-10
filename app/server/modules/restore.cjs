@@ -21,6 +21,29 @@ const UPLOADS_DIR = path.join(process.cwd(), "app/public/uploads");
 const DRIVE_FOLDER_BACKUP = process.env.DRIVE_FOLDER_BACKUP;
 
 // =========================================================
+// FUNZIONE CHIAVE: DB VUOTO?
+// =========================================================
+function isDatabaseEmpty() {
+  try {
+    const sqlite = require("better-sqlite3");
+    const db = new sqlite(DB_FILE);
+
+    const row = db.prepare(`
+      SELECT name 
+      FROM sqlite_master 
+      WHERE type='table' 
+      AND name NOT LIKE 'sqlite_%'
+      LIMIT 1
+    `).get();
+
+    return !row; // true = vuoto
+  } catch (err) {
+    console.error("❌ Errore controllo DB vuoto:", err.message);
+    return false;
+  }
+}
+
+// =========================================================
 // 1) CHECK BACKUP LOCALE
 // =========================================================
 function backupLocaleEsiste() {
@@ -121,33 +144,43 @@ function estraiZip(zipPath) {
 }
 
 // =========================================================
-// 6) DISPATCHER INTELLIGENTE — SAFE MODE
+// 6) DISPATCHER INTELLIGENTE — SAFE MODE 2026
 // =========================================================
 async function restore() {
   try {
     console.log("🔄 [RESTORE] Avvio restore…");
 
-    // 1) Locale (se esiste → PRIORITARIO)
+    // 🔍 0) Controllo DB
+    if (!isDatabaseEmpty()) {
+      console.log("⛔ [RESTORE] Saltato: database già popolato");
+      return false;
+    }
+
+    // 1) Locale (solo se DB vuoto)
     if (backupLocaleEsiste()) {
       console.log("📁 [RESTORE] Backup locale trovato → uso locale");
       restoreLocale();
       return true;
     }
 
-    // 2) Drive
-    try {
-      await restoreFromDrive();
-      return true;
-    } catch (err) {
-      console.error("⚠️ Drive non disponibile:", err.message);
+    // 2) Drive (solo se DB vuoto)
+    if (isDatabaseEmpty()) {
+      try {
+        await restoreFromDrive();
+        return true;
+      } catch (err) {
+        console.error("⚠️ Drive non disponibile:", err.message);
+      }
     }
 
-    // 3) GitHub
-    try {
-      await restoreFromGitHub();
-      return true;
-    } catch (err) {
-      console.error("⚠️ GitHub non disponibile:", err.message);
+    // 3) GitHub (solo se DB vuoto)
+    if (isDatabaseEmpty()) {
+      try {
+        await restoreFromGitHub();
+        return true;
+      } catch (err) {
+        console.error("⚠️ GitHub non disponibile:", err.message);
+      }
     }
 
     // 4) Nessuna fonte → NON sovrascrivere il DB
