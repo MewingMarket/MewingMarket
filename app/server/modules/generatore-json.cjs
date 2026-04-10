@@ -1,8 +1,7 @@
 /* =========================================================
  * GENERATORE JSON — Mirror automatico del database SQL
- * Auto-detect tabelle da schema SQL
+ * Auto-detect tabelle + funzioni singole compatibili
  * Persistente su /var/data/json + copia in /app/public/data
- * PATCH 2026 — Export schema + backup log + newsletter novità
  * =========================================================
  */
 
@@ -140,13 +139,28 @@ async function checkAndSendNovita() {
 // ---------------------------------------------------------
 // 4) EXPORT SPECIALI (prodotti, categorie, youtube, catalogo)
 // ---------------------------------------------------------
-async function exportSpecial() {
+async function exportProducts() {
   try {
     const prodotti = await catalogo.getAllProducts();
-    const categorie = await catalogo.getAllCategories();
-
     saveJSON("products.json", prodotti);
+    await checkAndSendNovita();
+  } catch (err) {
+    console.error("❌ Errore exportProducts:", err.message);
+  }
+}
+
+async function exportCategories() {
+  try {
+    const categorie = await catalogo.getAllCategories();
     saveJSON("categories.json", categorie);
+  } catch (err) {
+    console.error("❌ Errore exportCategories:", err.message);
+  }
+}
+
+async function exportYouTube() {
+  try {
+    const prodotti = await catalogo.getAllProducts();
 
     const youtube = prodotti
       .filter(p => p.youtube_video_id)
@@ -160,23 +174,172 @@ async function exportSpecial() {
       }));
 
     saveJSON("youtube.json", youtube);
-
-    saveJSON("catalog.json", {
-      prodotti,
-      categorie,
-      youtube
-    });
-
-    await checkAndSendNovita();
-
-    console.log("📚 Export special completato");
   } catch (err) {
-    console.error("❌ Errore exportSpecial:", err.message);
+    console.error("❌ Errore exportYouTube:", err.message);
+  }
+}
+
+async function exportCatalog() {
+  try {
+    const prodotti = await catalogo.getAllProducts();
+    const categorie = await catalogo.getAllCategories();
+
+    const youtube = prodotti
+      .filter(p => p.youtube_video_id)
+      .map(p => ({
+        id: p.id,
+        video_id: p.youtube_video_id,
+        url: p.youtube_url,
+        title: p.youtube_title,
+        description: p.youtube_description,
+        thumbnail: p.youtube_thumbnail
+      }));
+
+    saveJSON("catalog.json", { prodotti, categorie, youtube });
+  } catch (err) {
+    console.error("❌ Errore exportCatalog:", err.message);
   }
 }
 
 // ---------------------------------------------------------
-// 5) EXPORT BACKUP LOG (mirror JSON)
+// 5) EXPORT USERS (compatibilità legacy)
+// ---------------------------------------------------------
+async function exportUsers() {
+  try {
+    const rows = db.prepare(`
+      SELECT id, email, created_at 
+      FROM utenti 
+      ORDER BY id DESC
+    `).all();
+
+    saveJSON("users.json", rows);
+    console.log("👤 Users esportati");
+  } catch (err) {
+    console.error("❌ Errore exportUsers:", err.message);
+  }
+}
+
+// ---------------------------------------------------------
+// 6) EXPORT ORDERS (compatibilità legacy)
+// ---------------------------------------------------------
+async function exportOrders() {
+  try {
+    const rows = db.prepare(`
+      SELECT * FROM ordini ORDER BY id DESC
+    `).all();
+
+    saveJSON("orders.json", rows);
+    console.log("📦 Orders esportati");
+  } catch (err) {
+    console.error("❌ Errore exportOrders:", err.message);
+  }
+}
+
+// ---------------------------------------------------------
+// 7) EXPORT SALES (compatibilità legacy)
+// ---------------------------------------------------------
+async function exportSales() {
+  try {
+    const rows = db.prepare(`
+      SELECT * FROM vendite ORDER BY id DESC
+    `).all();
+
+    saveJSON("sales.json", rows);
+    console.log("💰 Sales esportate");
+  } catch (err) {
+    console.error("❌ Errore exportSales:", err.message);
+  }
+}
+
+// ---------------------------------------------------------
+// 8) EXPORT FEEDBACK (compatibilità legacy)
+// ---------------------------------------------------------
+async function exportFeedback() {
+  try {
+    const rows = db.prepare(`
+      SELECT * FROM feedback ORDER BY id DESC
+    `).all();
+
+    saveJSON("feedback.json", rows);
+    console.log("⭐ Feedback esportati");
+  } catch (err) {
+    console.error("❌ Errore exportFeedback:", err.message);
+  }
+}
+
+// ---------------------------------------------------------
+// 9) EXPORT NEWSLETTER LOG (compatibilità legacy)
+// ---------------------------------------------------------
+async function exportNewsletterLog() {
+  try {
+    const rows = db.prepare(`
+      SELECT * FROM newsletter_log ORDER BY id DESC
+    `).all();
+
+    saveJSON("newsletter.json", rows);
+    console.log("📨 Newsletter log esportato");
+  } catch (err) {
+    console.error("❌ Errore exportNewsletterLog:", err.message);
+  }
+}
+
+// ---------------------------------------------------------
+// 10) EXPORT USER EVENTS (compatibilità legacy)
+// ---------------------------------------------------------
+async function exportUserEvents() {
+  try {
+    const rows = db.prepare(`
+      SELECT * FROM utenti_eventi ORDER BY id DESC
+    `).all();
+
+    saveJSON("user-events.json", rows);
+    console.log("📌 Eventi utente esportati");
+  } catch (err) {
+    console.error("❌ Errore exportUserEvents:", err.message);
+  }
+}
+
+// ---------------------------------------------------------
+// 11) EXPORT KPI (daily, weekly, monthly)
+// ---------------------------------------------------------
+async function exportKpiGiornalieri() {
+  try {
+    const rows = db.prepare(`
+      SELECT * FROM kpi_giornalieri ORDER BY data DESC
+    `).all();
+
+    saveJSON("kpi-daily.json", rows);
+  } catch (err) {
+    console.error("❌ Errore exportKpiGiornalieri:", err.message);
+  }
+}
+
+async function exportKpiSettimanali() {
+  try {
+    const rows = db.prepare(`
+      SELECT * FROM kpi_settimanali ORDER BY settimana DESC
+    `).all();
+
+    saveJSON("kpi-weekly.json", rows);
+  } catch (err) {
+    console.error("❌ Errore exportKpiSettimanali:", err.message);
+  }
+}
+
+async function exportKpiMensili() {
+  try {
+    const rows = db.prepare(`
+      SELECT * FROM kpi_mensili ORDER BY mese DESC
+    `).all();
+
+    saveJSON("kpi-monthly.json", rows);
+  } catch (err) {
+    console.error("❌ Errore exportKpiMensili:", err.message);
+  }
+}
+
+// ---------------------------------------------------------
+// 12) EXPORT BACKUP LOG (mirror JSON)
 // ---------------------------------------------------------
 async function exportBackupLog() {
   try {
@@ -187,30 +350,20 @@ async function exportBackupLog() {
     `).all();
 
     saveJSON("backups.json", rows);
-    console.log("🗂️ Backup log esportato");
   } catch (err) {
     console.error("❌ Errore exportBackupLog:", err.message);
   }
 }
 
 // ---------------------------------------------------------
-// 6) EXPORT SCHEMA — colonne, tipi, PK, FK, indici
+// 13) EXPORT SCHEMA — colonne, tipi, PK, FK, indici
 // ---------------------------------------------------------
 async function exportSchema() {
   try {
-    const tables = db.prepare(`
-      SELECT name 
-      FROM sqlite_master 
-      WHERE type='table' 
-      AND name NOT LIKE 'sqlite_%'
-      ORDER BY name ASC
-    `).all();
-
+    const tables = getAllTables();
     const schema = {};
 
-    for (const t of tables) {
-      const table = t.name;
-
+    for (const table of tables) {
       const columns = db.prepare(`PRAGMA table_info(${table});`).all();
       const foreignKeys = db.prepare(`PRAGMA foreign_key_list(${table});`).all();
       const indexes = db.prepare(`PRAGMA index_list(${table});`).all();
@@ -223,33 +376,19 @@ async function exportSchema() {
           default: c.dflt_value,
           primaryKey: Boolean(c.pk)
         })),
-        foreignKeys: foreignKeys.map(fk => ({
-          id: fk.id,
-          table: fk.table,
-          from: fk.from,
-          to: fk.to,
-          onUpdate: fk.on_update,
-          onDelete: fk.on_delete
-        })),
-        indexes: indexes.map(idx => ({
-          name: idx.name,
-          unique: Boolean(idx.unique),
-          origin: idx.origin,
-          partial: Boolean(idx.partial)
-        }))
+        foreignKeys,
+        indexes
       };
     }
 
     saveJSON("schema.json", schema);
-    console.log("📐 Schema SQL esportato");
-
   } catch (err) {
     console.error("❌ Errore exportSchema:", err.message);
   }
 }
 
 // ---------------------------------------------------------
-// 7) EXPORT COMPLETO
+// 14) EXPORT COMPLETO (AUTO + SPECIALI + LEGACY)
 // ---------------------------------------------------------
 async function exportAll() {
   console.log("⏳ Rigenerazione JSON…");
@@ -260,13 +399,46 @@ async function exportAll() {
     await exportTable(t);
   }
 
-  await exportSpecial();
+  await exportProducts();
+  await exportCategories();
+  await exportYouTube();
+  await exportCatalog();
+
+  await exportUsers();
+  await exportOrders();
+  await exportSales();
+  await exportFeedback();
+  await exportNewsletterLog();
+  await exportUserEvents();
+
+  await exportKpiGiornalieri();
+  await exportKpiSettimanali();
+  await exportKpiMensili();
+
   await exportBackupLog();
   await exportSchema();
 
   console.log("✅ Tutti i JSON rigenerati (persistente + public)");
 }
 
+// ---------------------------------------------------------
+// EXPORT API COMPLETA (compatibilità totale)
+// ---------------------------------------------------------
 module.exports = {
-  exportAll
+  exportAll,
+  exportProducts,
+  exportCategories,
+  exportYouTube,
+  exportCatalog,
+  exportUsers,
+  exportOrders,
+  exportSales,
+  exportFeedback,
+  exportNewsletterLog,
+  exportUserEvents,
+  exportKpiGiornalieri,
+  exportKpiSettimanali,
+  exportKpiMensili,
+  exportBackupLog,
+  exportSchema
 };
