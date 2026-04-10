@@ -1,6 +1,9 @@
 /* =========================================================
-   ADMIN PRODOTTI — VERSIONE SQL DEFINITIVA + AI
-   Lista + Modifica + Creazione + Upload
+   ADMIN PRODOTTI — VERSIONE SQL DEFINITIVA + AI 2026.900
+   Sistema descrizioni unificato:
+   - descrizione_lunga (PDF + YouTube)
+   - descrizione_breve (riassunto)
+   - NESSUNA descrizione_email
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -11,7 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Campi form
   const fTitolo = document.getElementById("titolo");
-  const fDescrizione = document.getElementById("descrizione");
+  const fDescrizione = document.getElementById("descrizione"); // descrizione lunga
   const fPrezzo = document.getElementById("prezzo");
 
   const fImg = document.getElementById("immagine");
@@ -27,7 +30,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const aiPreviewBox = document.getElementById("ai-preview-box");
   const aiPreview = document.getElementById("ai-preview");
   const fDescrizioneBreve = document.getElementById("descrizione-breve");
-  const fDescrizioneEmail = document.getElementById("descrizione-email");
 
   let prodottoCorrente = null;
 
@@ -122,13 +124,11 @@ document.addEventListener("DOMContentLoaded", () => {
       fDescrizione.value = p.descrizione_lunga || "";
       fPrezzo.value = p.prezzo || "";
 
-      // AI: riempi breve + email + anteprima se presenti
+      // AI: riempi breve + anteprima
       if (fDescrizioneBreve) {
         fDescrizioneBreve.value = p.descrizione_breve || "";
       }
-      if (fDescrizioneEmail) {
-        fDescrizioneEmail.value = p.descrizione_email || "";
-      }
+
       if (aiPreview && aiPreviewBox) {
         if (p.descrizione_lunga) {
           aiPreview.textContent = p.descrizione_lunga;
@@ -195,7 +195,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* =========================================================
-     AI: GENERA DESCRIZIONE
+     AI: GENERA DESCRIZIONE (LUNGA + BREVE)
   ========================================================= */
   if (btnAiDescrizione) {
     btnAiDescrizione.addEventListener("click", async () => {
@@ -231,9 +231,6 @@ document.addEventListener("DOMContentLoaded", () => {
         fDescrizione.value = data.descrizione_lunga || "";
         if (fDescrizioneBreve) {
           fDescrizioneBreve.value = data.descrizione_breve || "";
-        }
-        if (fDescrizioneEmail) {
-          fDescrizioneEmail.value = data.descrizione_email || "";
         }
 
         // Anteprima
@@ -288,7 +285,6 @@ document.addEventListener("DOMContentLoaded", () => {
       titolo: fTitolo.value.trim(),
       descrizione_lunga: fDescrizione.value.trim(),
       descrizione_breve: fDescrizioneBreve ? fDescrizioneBreve.value.trim() : "",
-      descrizione_email: fDescrizioneEmail ? fDescrizioneEmail.value.trim() : "",
       prezzo: parseFloat(fPrezzo.value),
       immagine: immagineURL,
       fileProdotto: fileProdottoURL
