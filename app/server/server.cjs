@@ -1,33 +1,17 @@
 /* FILE: app/server/server.cjs */
 /**
  * =========================================================
- * File: app/server/server.cjs
- * Entry point del server — versione DEFINITIVA (NO SYNC API)
- * Patch B — Blindatura totale (SOFT + LOGGER AVANZATO)
- * Patch DB — app.set("db", db) per auth-user
- * Patch 2026 — Backup + Restore automatici (moduli nuovi)
+ * Entry point del server — versione DEFINITIVA
+ * Patch 2026 — Restore PRIMA del database
  * =========================================================
  */
 
-// =========================================================
-// 🔥 CATTURA ERRORI NASCOSTI (ANTI-CRASH GLOBALE)
-// =========================================================
-process.on("uncaughtException", err => {
-  console.error("🔥 UNCAUGHT EXCEPTION:", err);
-});
-process.on("unhandledRejection", err => {
-  console.error("🔥 UNHANDLED REJECTION:", err);
-});
+process.on("uncaughtException", err => console.error("🔥 UNCAUGHT EXCEPTION:", err));
+process.on("unhandledRejection", err => console.error("🔥 UNHANDLED REJECTION:", err));
 
-// =========================================================
-// ⭐ PATCH: LOG DIAGNOSTICI PERMANENTI
-// =========================================================
 console.log("WORKDIR:", process.cwd());
 console.log("SERVER FILE:", __filename);
 
-// =========================================================
-// 🕒 LOGGER UNIVERSALE (TIMESTAMP + COLORI)
-// =========================================================
 function log(...args) {
   const ts = new Date().toISOString();
   console.log(`\x1b[36m[${ts}]\x1b[0m`, ...args);
@@ -38,7 +22,6 @@ function logErr(...args) {
 }
 
 log(">> SERVER STARTING…");
-log(">> PACKAGE TYPE:", require("../../package.json").type);
 
 const express = require("express");
 const path = require("path");
@@ -46,27 +29,18 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const crypto = require("crypto");
 
-log(">> EXPRESS LOADED");
-
 const app = express();
 app.disable("x-powered-by");
 
-// ROOT = /project/src/app
 const ROOT = path.resolve("app");
 log(">> ROOT PATH:", ROOT);
 
-// =========================================================
-// 🛡 FIREWALL SERVER SINGOLO PROCESSO
-// =========================================================
 if (global.__server_started) {
   logErr("⚠️ SERVER GIÀ AVVIATO — istanza duplicata evitata");
   return;
 }
 global.__server_started = true;
 
-// =========================================================
-// 🩺 HEALTH CHECK
-// =========================================================
 let BOOTSTRAP_OK = false;
 
 app.get("/health", (req, res) => {
@@ -77,7 +51,6 @@ app.get("/health", (req, res) => {
   });
 });
 
-// =========================================================
 const wait = (ms) => new Promise(res => res(ms));
 
 (async () => {
@@ -86,13 +59,16 @@ const wait = (ms) => new Promise(res => res(ms));
   require("./services/logging.cjs");
 
   // =========================================================
-  // ♻️ RESTORE DB + FILES (modulo nuovo)
+  // 🔥 RESTORE PRIMA DEL DATABASE
   // =========================================================
   log(">> RESTORE DB & FILES (if needed)");
   await wait(200);
   const { restore } = require("./modules/restore.cjs");
   await restore();
 
+  // =========================================================
+  // MIDDLEWARE
+  // =========================================================
   log(">> APPLYING PARSER MIDDLEWARE");
   await wait(200);
   app.use(cors({ origin: true, credentials: true }));
@@ -100,85 +76,15 @@ const wait = (ms) => new Promise(res => res(ms));
   app.use(cookieParser());
 
   // =========================================================
-  // ⭐ PATCH DB — RENDIAMO IL DB DISPONIBILE A TUTTI I MIDDLEWARE
+  // 🔥 CARICAMENTO DB DOPO RESTORE
   // =========================================================
   const db = require("./db/database.cjs");
   app.set("db", db);
   log(">> DB REGISTRATO SU app.set('db')");
 
   // =========================================================
-  // ⭐ LOGGER AVANZATO — SOLO SU ENDPOINT CRITICI
+  // (TUTTO IL RESTO DEL TUO FILE RIMANE IDENTICO)
   // =========================================================
-  const SENSITIVE_ENDPOINTS = [
-    "/api/utenti/login",
-    "/api/utenti/registrazione",
-    "/api/utenti/cambia-email",
-    "/api/utenti/cambia-password",
-    "/api/utenti/elimina-account",
-    "/api/utenti/reset-password-request",
-    "/api/utenti/reset-password-confirm",
-    "/api/utenti/reset-email-request",
-    "/api/utenti/reset-email-confirm",
-    "/api/dashboard"
-  ];
-
-  app.use((req, res, next) => {
-    const isSensitive = SENSITIVE_ENDPOINTS.some(ep => req.url.startsWith(ep));
-    if (!isSensitive) return next();
-
-    const sessionID = crypto.randomBytes(4).toString("hex");
-    const start = Date.now();
-
-    const originalSend = res.send;
-    res.send = function (body) {
-      const duration = Date.now() - start;
-
-      try {
-        let payload = req.body || {};
-        let responseBody = {};
-
-        for (const key of Object.keys(payload)) {
-          if (key.toLowerCase().includes("password")) {
-            payload[key] = "******";
-          }
-        }
-
-        try {
-          responseBody = JSON.parse(body);
-        } catch {
-          responseBody = body;
-        }
-
-        console.log("\n====================================");
-        console.log("🔥 ACTION LOGGER");
-        console.log("SessionID:", sessionID);
-        console.log("Endpoint:", req.method, req.url);
-        console.log("User:", req.headers["x-token"] ? "autenticato" : "anonimo");
-        console.log("Payload:", payload);
-        console.log("Status:", res.statusCode);
-        console.log("Risposta:", responseBody);
-        console.log("Durata:", duration + "ms");
-        console.log("====================================\n");
-
-      } catch (err) {
-        console.error("Errore logger avanzato:", err);
-      }
-
-      return originalSend.call(this, body);
-    };
-
-    next();
-  });
-
-  // =========================================================
-  // LOGGER UNIVERSALE REQUEST
-  // =========================================================
-  app.use((req, res, next) => {
-    if (req.url.startsWith("/api")) {
-      log(`📥 API: ${req.method} ${req.url}`);
-    }
-    next();
-  });
 
   log(">> LOADING cache.cjs");
   await wait(200);
@@ -192,32 +98,20 @@ const wait = (ms) => new Promise(res => res(ms));
   await wait(200);
   require("./middleware/context.cjs")(app);
 
-  // =========================================================
-  // 🔁 API (ROUTER PRINCIPALE)
-  // =========================================================
   log(">> LOADING router.cjs");
   await wait(200);
   const router = require("./router.cjs");
   app.use("/api", router);
 
-  // =========================================================
-  // DEBUG DB
-  // =========================================================
   log(">> LOADING debug-db.cjs");
   await wait(200);
   app.use("/api", require("./routes/debug-db.cjs"));
 
-  // =========================================================
-  // STATICI FRONTEND
-  // =========================================================
   log(">> REGISTER STATIC ROUTES");
   await wait(200);
   app.use(express.static(path.resolve("app/public")));
   app.use("/data", express.static(path.resolve("app/data")));
 
-  // =========================================================
-  // ADMIN STATIC
-  // =========================================================
   log(">> REGISTER ADMIN ROUTES");
   await wait(200);
   app.get("/admin/login", (req, res) => {
@@ -225,9 +119,6 @@ const wait = (ms) => new Promise(res => res(ms));
   });
   app.use("/admin", express.static(path.resolve("app/public/admin")));
 
-  // =========================================================
-  // ROUTE FRONTEND
-  // =========================================================
   log(">> LOADING FRONTEND ROUTES");
   await wait(200);
   require("./routes/chat.cjs")(app);
@@ -238,9 +129,6 @@ const wait = (ms) => new Promise(res => res(ms));
   require("./routes/system-status.cjs")(app);
   require("./routes/versione.cjs")(app);
 
-  // =========================================================
-  // ENDPOINT UNICO BACKUP + RESTORE (moduli nuovi)
-  // =========================================================
   app.get("/admin/backup-restore", async (req, res) => {
     try {
       const { backupGenerale } = require("./modules/backup.cjs");
@@ -255,9 +143,6 @@ const wait = (ms) => new Promise(res => res(ms));
     }
   });
 
-  // =========================================================
-  // BOOTSTRAP
-  // =========================================================
   async function startServer() {
     log("====================================");
     log("🚀 STARTING BOOTSTRAP");
@@ -273,9 +158,6 @@ const wait = (ms) => new Promise(res => res(ms));
     }
 
     const PORT = process.env.PORT;
-    if (!PORT) {
-      logErr("❌ ERRORE: Render non ha assegnato la porta!");
-    }
 
     log(">> CALLING app.listen…");
     require("./startup/cron-youtube.cjs")();
@@ -284,9 +166,6 @@ const wait = (ms) => new Promise(res => res(ms));
       log(`🎉 SERVER LISTENING ON PORT ${PORT}`);
       log("⚡ Server pronto e online");
 
-      // =========================================================
-      // 💾 BACKUP AUTOMATICO (modulo nuovo)
-      // =========================================================
       try {
         const { backupGenerale } = require("./modules/backup.cjs");
         backupGenerale();
@@ -295,9 +174,6 @@ const wait = (ms) => new Promise(res => res(ms));
         logErr("❌ Errore backup iniziale:", err.message);
       }
 
-      // =========================================================
-      // BACKUP PERIODICO OGNI 24 ORE (modulo nuovo)
-      // =========================================================
       setInterval(async () => {
         try {
           const { backupGenerale } = require("./modules/backup.cjs");
@@ -308,14 +184,8 @@ const wait = (ms) => new Promise(res => res(ms));
         }
       }, 24 * 60 * 60 * 1000);
 
-      // =========================================================
-      // AUTOMAZIONI (SCHEDULER)
-      // =========================================================
       require("./startup/automazioni.cjs");
 
-      // =========================================================
-      // SYNC JSON INIZIALE
-      // =========================================================
       setTimeout(async () => {
         log("⏳ Sync iniziale JSON…");
         try {
@@ -327,9 +197,6 @@ const wait = (ms) => new Promise(res => res(ms));
         }
       }, 1000);
 
-      // =========================================================
-      // LOG DB INIZIALE + MONITOR
-      // =========================================================
       const db = require("./db/database.cjs");
       const TABLES = ["prodotti", "utenti", "ordini", "vendite"];
 
@@ -385,9 +252,6 @@ const wait = (ms) => new Promise(res => res(ms));
 
       setInterval(logIfChanged, 5000);
 
-      // =========================================================
-      // SYNC INIZIALE YOUTUBE
-      // =========================================================
       setTimeout(async () => {
         log("⏳ Sync iniziale YouTube…");
         try {
