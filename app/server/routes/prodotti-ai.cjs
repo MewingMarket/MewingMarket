@@ -1,7 +1,10 @@
 /**
  * =========================================================
  * API AI — Generazione descrizioni prodotto
- * Versione 2026.200 — require assoluti
+ * Versione 2026.300 — Sistema descrizioni unificato
+ * - RIMOSSA descrizione_email
+ * - descrizione_lunga = fonte principale (PDF + YouTube)
+ * - descrizione_breve = riassunto automatico
  * =========================================================
  */
 
@@ -15,8 +18,7 @@ const R = (p) => require(path.join(process.cwd(), "app/server", p));
 
 const {
   generaDescrizioneLunga,
-  generaDescrizioneBreve,
-  generaDescrizioneEmail
+  generaDescrizioneBreve
 } = R("modules/catalogo-ai.cjs");
 
 /* ============================================================
@@ -38,20 +40,16 @@ router.post("/genera-descrizione-ai", async (req, res) => {
       contenuto: contenuto || ""
     };
 
-    // 1) Descrizione lunga
+    // 1) Descrizione lunga (PDF + YouTube → testo di vendita)
     const descrizione_lunga = await generaDescrizioneLunga(prodotto);
 
-    // 2) Descrizione breve
+    // 2) Descrizione breve (riassunto automatico)
     const descrizione_breve = await generaDescrizioneBreve(descrizione_lunga);
-
-    // 3) Descrizione email
-    const descrizione_email = await generaDescrizioneEmail(descrizione_lunga);
 
     return res.json({
       success: true,
       descrizione_lunga,
-      descrizione_breve,
-      descrizione_email
+      descrizione_breve
     });
 
   } catch (err) {
