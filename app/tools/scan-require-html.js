@@ -2,10 +2,7 @@
 const fs = require("fs");
 const path = require("path");
 
-// Scansioniamo SOLO la cartella /app
 const ROOT = path.join(process.cwd(), "app");
-
-// 🔥 Salviamo il report in /app/public così è accessibile via browser
 const OUTPUT_FILE = path.join(process.cwd(), "app/public/require-report.html");
 
 let rows = [];
@@ -41,31 +38,65 @@ function scanFile(filePath) {
     // Cerca require relativi tipo "./x", "../x"
     const match = line.match(/require\(['"`](\.{1,2}\/[^'"`]+)['"`]\)/);
 
-    if (!match) return;
+    // Cerca import database.cjs
+    const dbMatch = line.match(/require\(['"`].*database\.cjs['"`]\)/);
 
-    const relative = match[1];
+    // Se non c'è nulla, salta
+    if (!match && !dbMatch) return;
 
-    // ❌ Se il file è già patchato (usa process.cwd), ignoralo
-    if (line.includes("process.cwd()")) return;
+    let critical = "OK";
+    let relative = null;
+    let real = null;
+    let fix = null;
 
-    // ❌ Se il require è già assoluto, ignoralo
-    if (!relative.startsWith(".")) return;
+    // Caso 1: require relativo
+    if (match) {
+      relative = match[1];
 
-    // Calcola percorso reale
-    const absolute = path.resolve(path.dirname(filePath), relative);
-    const projectRelative = path.relative(process.cwd(), absolute).replace(/\\/g, "/");
+      // ❌ Se già usa process.cwd(), ignora
+      if (line.includes("process.cwd()")) return;
+
+      // ❌ Se NON è relativo, ignora
+      if (!relative.startsWith(".")) return;
+
+      // Calcola percorso reale
+      const absolute = path.resolve(path.dirname(filePath), relative);
+      real = path.relative(process.cwd(), absolute).replace(/\\/g, "/");
+
+      fix = `const X = require(path.join(process.cwd(), "${real}"));`;
+
+      // 🔥 Criticità: se il file è in startup, services, middleware → pericoloso
+      if (
+        filePath.includes("/startup/") ||
+        filePath.includes("/services/") ||
+        filePath.includes("/middleware/")
+      ) {
+        critical = "🔥 PERICOLOSO (caricato prima del restore)";
+      } else {
+        critical = "⚠️ Relativo da patchare";
+      }
+    }
+
+    // Caso 2: import database.cjs
+    if (dbMatch) {
+      critical = "💀 IMPORT DATABASE.CJS (potenziale DB vuoto)";
+      relative = "database.cjs";
+      real = "app/server/db/database.cjs";
+      fix = `const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));`;
+    }
 
     rows.push({
       file: filePath.replace(process.cwd(), ""),
       line: i + 1,
       relative,
-      real: projectRelative,
-      fix: `const X = require(path.join(process.cwd(), "${projectRelative}"));`
+      real,
+      fix,
+      critical
     });
   });
 }
 
-console.log("🔍 SCANSIONE REQUIRE RELATIVI (solo /app)...");
+console.log("🔍 SCANSIONE REQUIRE RELATIVI + IMPORT DB...");
 scanDir(ROOT);
 console.log("✅ SCANSIONE COMPLETATA. Genero HTML…");
 
@@ -84,10 +115,14 @@ const html = `<!DOCTYPE html>
     th { background: #111827; }
     tr:nth-child(even) { background: #111; }
     code { font-family: monospace; }
+    .crit-ok { color:#9ca3af; }
+    .crit-warn { color:#fbbf24; }
+    .crit-danger { color:#f87171; font-weight:bold; }
+    .crit-dead { color:#ef4444; font-weight:bold; font-size:14px; }
   </style>
 </head>
 <body>
-  <h1>Require relativi ancora da patchare</h1>
+  <h1>Require relativi e import database.cjs</h1>
   <p>Totale: ${rows.length}</p>
   <table>
     <thead>
@@ -96,6 +131,7 @@ const html = `<!DOCTYPE html>
         <th>Linea</th>
         <th>Relative</th>
         <th>Percorso reale</th>
+        <th>Criticità</th>
         <th>Fix suggerito</th>
       </tr>
     </thead>
@@ -106,9 +142,18 @@ const html = `<!DOCTYPE html>
         <tr>
           <td><code>${r.file}</code></td>
           <td>${r.line}</td>
-          <td><code>${r.relative}</code></td>
-          <td><code>${r.real}</code></td>
-          <td><code>${r.fix}</code></td>
+          <td><code>${r.relative || ""}</code></td>
+          <td><code>${r.real || ""}</code></td>
+          <td class="${
+            r.critical.includes("💀")
+              ? "crit-dead"
+              : r.critical.includes("🔥")
+              ? "crit-danger"
+              : r.critical.includes("⚠️")
+              ? "crit-warn"
+              : "crit-ok"
+          }">${r.critical}</td>
+          <td><code>${r.fix || ""}</code></td>
         </tr>`
         )
         .join("")}
