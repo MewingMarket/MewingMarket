@@ -2,8 +2,6 @@
 /**
  * =========================================================
  * Database SQLite persistente su Render Disk
- * Compatibile con ambiente locale / Codespaces
- * Carica automaticamente tutti gli schema .sql
  * Patch 2026 — NON creare DB vuoto se non esiste
  * =========================================================
  */
@@ -44,7 +42,9 @@ try {
 const exists = fs.existsSync(dbPath);
 
 if (!exists) {
-  console.log("⚠️ DB non trovato → attendo restore (nessuna creazione automatica)");
+  console.log("⚠️ DB non trovato → NON inizializzo SQLite (attendo restore)");
+  module.exports = null;
+  return;
 }
 
 // =========================================================
