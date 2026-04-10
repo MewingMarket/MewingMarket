@@ -2,6 +2,7 @@
  * =========================================================
  * File: app/server/routes/meta-feed.cjs
  * Feed prodotti per Meta / Facebook / Instagram (JSON mirror)
+ * Versione 2026.200 — require assoluti + percorso stabile
  * =========================================================
  */
 
@@ -11,7 +12,11 @@ const path = require("path");
 module.exports = function (app) {
   app.get("/meta/feed", (req, res) => {
     try {
-      const PRODUCTS_JSON = path.join(__dirname, "../../public/data/products.json");
+      // PATCH: percorso assoluto e stabile
+      const PRODUCTS_JSON = path.join(
+        process.cwd(),
+        "app/public/data/products.json"
+      );
 
       // Se il JSON non esiste → feed vuoto
       if (!fs.existsSync(PRODUCTS_JSON)) {
