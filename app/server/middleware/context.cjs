@@ -12,8 +12,8 @@ const Context = require(path.join(process.cwd(), "app/modules/context.cjs"));
 // PATCH DEBUG — conferma che il middleware è stato caricato
 console.log("### CONTEXT_MIDDLEWARE_LOADED ###", __filename);
 
-// GA4 è già nel percorso corretto
-const { trackGA4 } = require("../services/ga4.cjs");
+// PATCH: GA4 assoluto (mai relativo nei middleware)
+const { trackGA4 } = require(path.join(process.cwd(), "app/server/services/ga4.cjs"));
 
 module.exports = function (app) {
   // PATCH DEBUG — conferma che il middleware è stato registrato
