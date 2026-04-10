@@ -2,21 +2,23 @@
  * =========================================================
  * File: app/server/routes/api-feedback.cjs
  * Sistema recensioni utenti — Versione SQL definitiva (PATCH 2026.3002)
+ * Versione 2026.200 — require assoluti
  * =========================================================
  */
 
 const express = require("express");
-const db = require("../db/database.cjs");
-const authUser = require("../middleware/auth-user.cjs");
+const path = require("path");
 
-// PATCH — email ringraziamento feedback
-const { inviaEmailFeedback } = require("../modules/email-feedback.cjs");
+const R = (p) => require(path.join(process.cwd(), "app/server", p));
+
+const db = R("db/database.cjs");
+const authUser = R("middleware/auth-user.cjs");
+const { inviaEmailFeedback } = R("modules/email-feedback.cjs");
 
 const router = express.Router();
 
 /* =========================================================
    GET /api/recensioni/prodotti-acquistati
-   PATCH: SQL compatibile + LOG DEBUG
 ========================================================= */
 router.get("/recensioni/prodotti-acquistati", authUser, (req, res) => {
   try {
@@ -47,7 +49,6 @@ router.get("/recensioni/prodotti-acquistati", authUser, (req, res) => {
 
 /* =========================================================
    GET /api/recensioni/utente
-   PATCH: RIMOZIONE p.slug (colonna non esistente)
 ========================================================= */
 router.get("/recensioni/utente", authUser, (req, res) => {
   try {
@@ -83,8 +84,6 @@ router.get("/recensioni/utente", authUser, (req, res) => {
 
 /* =========================================================
    POST /api/recensioni/crea
-   + LOG DEBUG
-   + PATCH EMAIL FEEDBACK
 ========================================================= */
 router.post("/recensioni/crea", authUser, (req, res) => {
   try {
