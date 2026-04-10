@@ -2,7 +2,7 @@
 /**
  * =========================================================
  * Entry point del server — versione DEFINITIVA
- * Patch 2026 — Restore PRIMA del database + DB null-safe
+ * Patch 2026 — Restore PRIMA del database + Backup intelligente
  * =========================================================
  */
 
@@ -28,6 +28,7 @@ const path = require("path");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const crypto = require("crypto");
+const fs = require("fs");
 
 const app = express();
 app.disable("x-powered-by");
@@ -59,7 +60,7 @@ const wait = (ms) => new Promise(res => res(ms));
   require("./services/logging.cjs");
 
   // =========================================================
-  // 🔥 RESTORE PRIMA DEL DATABASE
+  // 🔥 RESTORE PRIMA DEL DATABASE (solo se necessario)
   // =========================================================
   log(">> RESTORE DB & FILES (if needed)");
   await wait(200);
@@ -76,7 +77,7 @@ const wait = (ms) => new Promise(res => res(ms));
   app.use(cookieParser());
 
   // =========================================================
-  // 🔥 CARICAMENTO DB DOPO RESTORE — CON PATCH DB NULL-SAFE
+  // 🔥 CARICAMENTO DB DOPO RESTORE — DB NULL-SAFE
   // =========================================================
   let db = require("./db/database.cjs");
 
@@ -97,9 +98,8 @@ const wait = (ms) => new Promise(res => res(ms));
   log(">> DB REGISTRATO SU app.set('db')");
 
   // =========================================================
-  // (TUTTO IL RESTO DEL TUO FILE RIMANE IDENTICO)
+  // MIDDLEWARE VARI
   // =========================================================
-
   log(">> LOADING cache.cjs");
   await wait(200);
   require("./middleware/cache.cjs")(app);
@@ -143,12 +143,15 @@ const wait = (ms) => new Promise(res => res(ms));
   require("./routes/system-status.cjs")(app);
   require("./routes/versione.cjs")(app);
 
+  // =========================================================
+  // ENDPOINT UNICO BACKUP + RESTORE
+  // =========================================================
   app.get("/admin/backup-restore", async (req, res) => {
     try {
       const { backupGenerale } = require("./modules/backup.cjs");
       const { restore } = require("./modules/restore.cjs");
 
-      await backupGenerale();
+      await backupGenerale({ source: "manual", force: true });
       await restore();
 
       res.json({ ok: true, msg: "Backup + Restore eseguiti" });
@@ -180,26 +183,69 @@ const wait = (ms) => new Promise(res => res(ms));
       log(`🎉 SERVER LISTENING ON PORT ${PORT}`);
       log("⚡ Server pronto e online");
 
+      // =====================================================
+      // 💾 BACKUP INIZIALE (forzato, DB aggiornato)
+      // =====================================================
       try {
         const { backupGenerale } = require("./modules/backup.cjs");
-        backupGenerale();
+        backupGenerale({ source: "startup", force: true });
         log("💾 Backup iniziale completato");
       } catch (err) {
         logErr("❌ Errore backup iniziale:", err.message);
       }
 
+      // =====================================================
+      // BACKUP PERIODICO OGNI 24 ORE (forzato)
+      // =====================================================
       setInterval(async () => {
         try {
           const { backupGenerale } = require("./modules/backup.cjs");
-          await backupGenerale();
+          await backupGenerale({ source: "daily", force: true });
           log("💾 Backup periodico completato");
         } catch (err) {
           logErr("❌ Errore backup periodico:", err.message);
         }
       }, 24 * 60 * 60 * 1000);
 
+      // =====================================================
+      // BACKUP INTELLIGENTE OGNI 5 MINUTI (solo se DB cambia)
+      // =====================================================
+      let lastDbHash = null;
+      const DB_FILE = "/var/data/mewingmarket.db";
+
+      setInterval(async () => {
+        try {
+          if (!fs.existsSync(DB_FILE)) {
+            log("⚠️ DB non trovato → skip backup intelligente");
+            return;
+          }
+
+          const buffer = fs.readFileSync(DB_FILE);
+          const hash = crypto.createHash("md5").update(buffer).digest("hex");
+
+          if (hash !== lastDbHash) {
+            lastDbHash = hash;
+
+            log("💾 Backup intelligente: DB modificato → salvo snapshot…");
+            const { backupGenerale } = require("./modules/backup.cjs");
+            await backupGenerale({ source: "auto-5m", force: false });
+          } else {
+            log("⏳ Backup intelligente: nessuna modifica → skip");
+          }
+
+        } catch (err) {
+          logErr("❌ Errore backup intelligente:", err.message);
+        }
+      }, 5 * 60 * 1000);
+
+      // =====================================================
+      // AUTOMAZIONI
+      // =====================================================
       require("./startup/automazioni.cjs");
 
+      // =====================================================
+      // SYNC JSON INIZIALE
+      // =====================================================
       setTimeout(async () => {
         log("⏳ Sync iniziale JSON…");
         try {
@@ -211,6 +257,9 @@ const wait = (ms) => new Promise(res => res(ms));
         }
       }, 1000);
 
+      // =====================================================
+      // LOG DB INIZIALE + MONITOR
+      // =====================================================
       const db = require("./db/database.cjs");
       const TABLES = ["prodotti", "utenti", "ordini", "vendite"];
 
