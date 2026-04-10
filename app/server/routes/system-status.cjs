@@ -1,10 +1,18 @@
 /**
- * app/server/routes/system-status.cjs
+ * =========================================================
+ * File: app/server/routes/system-status.cjs
  * Stato del sistema
+ * Versione 2026.200 — require assoluti
+ * =========================================================
  */
 
 const os = require("os");
-const { SERVER_LOGS } = require("../services/logging.cjs");
+const path = require("path");
+
+// PATCH: require assoluto
+const R = (p) => require(path.join(process.cwd(), "app/server", p));
+
+const { SERVER_LOGS } = R("services/logging.cjs");
 
 module.exports = function (app) {
   app.get("/system/status", (req, res) => {
