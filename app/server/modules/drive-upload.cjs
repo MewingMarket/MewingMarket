@@ -1,27 +1,33 @@
 /* FILE: app/server/modules/drive-upload.cjs
- * Upload ZIP backup su Google Drive (cartella backup)
+ * Upload ZIP su Google Drive — Modalità SAFE
+ * Compatibile con GOOGLE_APPLICATION_CREDENTIALS (Secret File JSON)
  */
 
 const fs = require("fs");
 const path = require("path");
 const { google } = require("googleapis");
 
-const GOOGLE_SERVICE_ACCOUNT = process.env.GOOGLE_SERVICE_ACCOUNT;
-const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY;
 const DRIVE_FOLDER_BACKUP = process.env.DRIVE_FOLDER_BACKUP;
 
-if (!GOOGLE_SERVICE_ACCOUNT || !GOOGLE_PRIVATE_KEY || !DRIVE_FOLDER_BACKUP) {
-  console.error("❌ Google Drive non configurato correttamente");
-}
-
+// =========================================================
+// SAFE MODE: se manca GOOGLE_APPLICATION_CREDENTIALS → skip
+// =========================================================
 function getDriveClient() {
-  const auth = new google.auth.JWT(
-    GOOGLE_SERVICE_ACCOUNT,
-    null,
-    GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-    ["https://www.googleapis.com/auth/drive.file"]
-  );
-  return google.drive({ version: "v3", auth });
+  if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    console.log("⚠️ Drive non configurato (manca GOOGLE_APPLICATION_CREDENTIALS)");
+    return null;
+  }
+
+  try {
+    const auth = new google.auth.GoogleAuth({
+      scopes: ["https://www.googleapis.com/auth/drive.file"]
+    });
+
+    return google.drive({ version: "v3", auth });
+  } catch (err) {
+    console.error("❌ Errore inizializzazione GoogleAuth:", err.message);
+    return null;
+  }
 }
 
 async function uploadToDrive(filePath) {
@@ -31,7 +37,13 @@ async function uploadToDrive(filePath) {
       return null;
     }
 
+    if (!DRIVE_FOLDER_BACKUP) {
+      console.log("⚠️ Drive: manca DRIVE_FOLDER_BACKUP → skip");
+      return null;
+    }
+
     const drive = getDriveClient();
+    if (!drive) return null;
 
     const fileName = path.basename(filePath);
 
