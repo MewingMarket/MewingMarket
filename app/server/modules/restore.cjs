@@ -7,7 +7,6 @@
 
 const fs = require("fs");
 const path = require("path");
-const crypto = require("crypto");
 
 // Moduli Drive + GitHub (SAFE MODE)
 const downloadDrive = require(path.join(process.cwd(), "app/server/modules/drive-download.cjs"));
@@ -25,6 +24,12 @@ const DRIVE_FOLDER_BACKUP = process.env.DRIVE_FOLDER_BACKUP;
 // =========================================================
 function isDatabaseEmpty() {
   try {
+    // Se il file DB non esiste → consideriamo "vuoto"
+    if (!fs.existsSync(DB_FILE)) {
+      console.log("⚠️ [RESTORE] DB file non trovato → considerato vuoto");
+      return true;
+    }
+
     const sqlite = require("better-sqlite3");
     const db = new sqlite(DB_FILE);
 
@@ -134,7 +139,6 @@ function estraiZip(zipPath) {
 
   console.log("📦 [RESTORE] Estrazione ZIP…");
 
-  // Svuota backup dir
   fs.rmSync(BACKUP_DIR, { recursive: true, force: true });
   fs.mkdirSync(BACKUP_DIR, { recursive: true });
 
@@ -150,8 +154,9 @@ async function restore() {
   try {
     console.log("🔄 [RESTORE] Avvio restore…");
 
-    // 🔍 0) Controllo DB
-    if (!isDatabaseEmpty()) {
+    const empty = isDatabaseEmpty();
+
+    if (!empty) {
       console.log("⛔ [RESTORE] Saltato: database già popolato");
       return false;
     }
@@ -164,26 +169,21 @@ async function restore() {
     }
 
     // 2) Drive (solo se DB vuoto)
-    if (isDatabaseEmpty()) {
-      try {
-        await restoreFromDrive();
-        return true;
-      } catch (err) {
-        console.error("⚠️ Drive non disponibile:", err.message);
-      }
+    try {
+      await restoreFromDrive();
+      return true;
+    } catch (err) {
+      console.error("⚠️ Drive non disponibile:", err.message);
     }
 
     // 3) GitHub (solo se DB vuoto)
-    if (isDatabaseEmpty()) {
-      try {
-        await restoreFromGitHub();
-        return true;
-      } catch (err) {
-        console.error("⚠️ GitHub non disponibile:", err.message);
-      }
+    try {
+      await restoreFromGitHub();
+      return true;
+    } catch (err) {
+      console.error("⚠️ GitHub non disponibile:", err.message);
     }
 
-    // 4) Nessuna fonte → NON sovrascrivere il DB
     console.error("❌ [RESTORE] Nessuna fonte di backup disponibile → DB lasciato intatto");
     return false;
 
