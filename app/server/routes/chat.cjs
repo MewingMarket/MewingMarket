@@ -1,6 +1,7 @@
 /**
  * app/server/routes/chat.cjs
  * Endpoint principale /chat — versione corretta e modulare
+ * Versione 2026.200 — require assoluti + percorso stabile
  */
 
 const path = require("path");
@@ -10,6 +11,7 @@ const { handleConversation } = require(path.join(process.cwd(), "app/modules/bot
 const { trackGA4 } = require(path.join(process.cwd(), "app/server/services/ga4.cjs"));
 
 module.exports = function (app) {
+
   app.post("/chat", async (req, res) => {
     const uid = req.uid;
     const message = req.body?.message || "";
@@ -19,6 +21,7 @@ module.exports = function (app) {
         global.logBot("chat_request", { uid, message });
       }
 
+      // PATCH: protezione catalogo
       if (!global.catalogReady) {
         return res.json({
           reply: "Sto pensando… un attimo 😄",
@@ -26,8 +29,10 @@ module.exports = function (app) {
         });
       }
 
+      // Conversazione bot
       await handleConversation(req, res);
 
+      // GA4 tracking
       trackGA4("chat_message", {
         uid,
         message,
@@ -52,4 +57,5 @@ module.exports = function (app) {
       });
     }
   });
+
 };
