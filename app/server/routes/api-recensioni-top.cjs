@@ -1,21 +1,20 @@
 /* =========================================================
    File: app/server/routes/api-recensioni-top.cjs
    Top recensioni globali — Versione definitiva PATCH ID
+   Versione 2026.200 — require assoluti
 ========================================================= */
 
 const express = require("express");
+const path = require("path");
+
+const R = (p) => require(path.join(process.cwd(), "app/server", p));
+
 const router = express.Router();
-const db = require("../db/database.cjs");
+const db = R("db/database.cjs");
 
 /* =========================================================
    GET /recensioni/top
    Restituisce le migliori recensioni globali
-   Criteri:
-   - rating >= 4
-   - commento non vuoto
-   - ordinate per data DESC
-   - limite 10
-   - PATCH: restituisce prodotto_id per link basato su ID
 ========================================================= */
 router.get("/recensioni/top", (req, res) => {
   try {
