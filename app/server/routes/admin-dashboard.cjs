@@ -2,15 +2,18 @@
  * =========================================================
  * File: app/server/routes/admin-dashboard.cjs
  * Dashboard Admin Unificata — Vendite + Ordini
- * Versione 2026.99 — SQL LIVE + KPI + UTM + Top Prodotti
- * + PATCH: email cliente + origine sintetica
- * + PATCH 2026.1000: se ordini è vuota → svuota vendite
+ * Versione 2026.200 — require assoluti
  * =========================================================
  */
 
 const express = require("express");
-const db = require("../db/database.cjs");
-const authUser = require("../middleware/auth-user.cjs");
+const path = require("path");
+
+// Helper require assoluto
+const R = (p) => require(path.join(process.cwd(), "app/server", p));
+
+const db = R("db/database.cjs");
+const authUser = R("middleware/auth-user.cjs");
 
 const router = express.Router();
 
