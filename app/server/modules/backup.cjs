@@ -1,8 +1,8 @@
 /* FILE: app/server/modules/backup.cjs
- * Backup 2026 — Modalità SAFE
+ * Backup 2026 — Modalità SAFE + HASH + LOG
  * - Drive → GitHub → Locale
  * - Nessun crash se Drive/GitHub non configurati
- * - Compatibile con GOOGLE_APPLICATION_CREDENTIALS (Secret File JSON)
+ * - Log in backups_log + JSON mirror
  */
 
 const fs = require("fs");
@@ -17,6 +17,14 @@ const { LISTA_BACKUP } = require(path.join(process.cwd(), "app/server/modules/li
 const uploadDrive = require(path.join(process.cwd(), "app/server/modules/drive-upload.cjs"));
 const uploadGitHub = require(path.join(process.cwd(), "app/server/modules/github-upload.cjs"));
 
+// DB (per log backups_log)
+let db = null;
+try {
+  db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
+} catch {
+  db = null;
+}
+
 // Cartelle Drive
 const DRIVE_FOLDER_BACKUP = process.env.DRIVE_FOLDER_BACKUP;
 const DRIVE_FOLDER_REPORT = process.env.DRIVE_FOLDER_REPORT;
@@ -27,6 +35,34 @@ const BACKUP_DIR = "/var/data/backup";
 const DB_FILE = "/var/data/mewingmarket.db";
 const JSON_DIR = "/var/data/json";
 const UPLOADS_DIR = path.join(process.cwd(), "app/public/uploads");
+const STATE_FILE = path.join(BACKUP_DIR, "state.json");
+const BACKUPS_JSON = path.join(JSON_DIR, "backups.json");
+
+// =========================================================
+// HELPER: HASH DB
+// =========================================================
+function getDbHash() {
+  if (!fs.existsSync(DB_FILE)) return null;
+  const buffer = fs.readFileSync(DB_FILE);
+  return crypto.createHash("md5").update(buffer).digest("hex");
+}
+
+// =========================================================
+// HELPER: STATE (ultimo hash)
+// =========================================================
+function loadState() {
+  try {
+    if (!fs.existsSync(STATE_FILE)) return {};
+    return JSON.parse(fs.readFileSync(STATE_FILE, "utf8"));
+  } catch {
+    return {};
+  }
+}
+
+function saveState(state) {
+  fs.mkdirSync(BACKUP_DIR, { recursive: true });
+  fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2), "utf8");
+}
 
 // =========================================================
 // 1) BACKUP LOCALE
@@ -100,16 +136,60 @@ async function inviaBackupEmail({ filename, base64 }) {
 }
 
 // =========================================================
-// 4) BACKUP GENERALE (SAFE MODE)
+// 4) LOG IN TABELLA backups_log + JSON mirror
 // =========================================================
-async function backupGenerale() {
-  console.log("💾 [BACKUP] Backup generale…");
+function logBackup({ source, hash, sizeBytes, filename }) {
+  try {
+    if (!db) {
+      console.log("⚠️ [BACKUP] DB non disponibile per log backups_log");
+      return;
+    }
+
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO backups_log (created_at, source, hash, size_bytes, filename)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(now, source || "unknown", hash || "", sizeBytes || 0, filename || "");
+
+    // JSON mirror
+    fs.mkdirSync(JSON_DIR, { recursive: true });
+    const rows = db.prepare(`
+      SELECT id, created_at, source, hash, size_bytes, filename
+      FROM backups_log
+      ORDER BY id DESC
+    `).all();
+    fs.writeFileSync(BACKUPS_JSON, JSON.stringify(rows, null, 2), "utf8");
+
+    console.log("📑 [BACKUP] Log aggiornato + JSON mirror");
+  } catch (err) {
+    console.error("❌ [BACKUP] Errore log backups_log:", err.message);
+  }
+}
+
+// =========================================================
+// 5) BACKUP GENERALE (SAFE MODE + HASH)
+// =========================================================
+async function backupGenerale(options = {}) {
+  const source = options.source || "manual";
+  const force = Boolean(options.force);
+
+  console.log(`💾 [BACKUP] Backup generale… (source=${source}, force=${force})`);
+
+  const hash = getDbHash();
+  const state = loadState();
+
+  if (!force && hash && state.lastHash === hash) {
+    console.log("⏳ [BACKUP] Nessuna modifica DB rispetto all'ultimo backup → skip");
+    return;
+  }
 
   backupLocale();
 
   const nome = `backup-${Date.now()}.zip`;
   const zipPath = creaZip(nome, BACKUP_DIR);
-  const base64 = fs.readFileSync(zipPath).toString("base64");
+  const buffer = fs.readFileSync(zipPath);
+  const base64 = buffer.toString("base64");
+  const sizeBytes = buffer.length;
 
   // DRIVE (SAFE)
   try {
@@ -136,11 +216,20 @@ async function backupGenerale() {
   // EMAIL
   await inviaBackupEmail({ filename: nome, base64 });
 
+  // STATE + LOG
+  const newState = {
+    lastHash: hash || null,
+    lastAt: new Date().toISOString(),
+    lastFile: nome
+  };
+  saveState(newState);
+  logBackup({ source, hash, sizeBytes, filename: nome });
+
   console.log("✅ [BACKUP] Backup generale completato");
 }
 
 // =========================================================
-// 5) BACKUP RICEVUTA
+// 6) BACKUP RICEVUTA
 // =========================================================
 async function backupRicevuta({ numeroOrdine, pdfInterno }) {
   console.log("🧾 [BACKUP] Ricevuta…");
@@ -167,7 +256,7 @@ async function backupRicevuta({ numeroOrdine, pdfInterno }) {
 }
 
 // =========================================================
-// 6) BACKUP REPORT
+// 7) BACKUP REPORT
 // =========================================================
 async function backupReport({ kpi }) {
   console.log("📊 [BACKUP] Report…");
@@ -196,12 +285,12 @@ async function backupReport({ kpi }) {
 }
 
 // =========================================================
-// 7) DISPATCHER
+// 8) DISPATCHER
 // =========================================================
 async function backup(tipo, payload = {}) {
   if (tipo === "ricevuta") return backupRicevuta(payload);
   if (tipo === "report") return backupReport(payload);
-  return backupGenerale();
+  return backupGenerale(payload);
 }
 
 module.exports = {
