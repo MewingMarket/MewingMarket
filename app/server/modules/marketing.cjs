@@ -2,7 +2,7 @@
  * =========================================================
  * File: app/server/modules/marketing.cjs
  * Modulo marketing universale — Newsletter + Post-vendita
- * Versione premium 2026
+ * Versione premium 2026 — PATCH DESCRIZIONI
  * =========================================================
  */
 
@@ -71,14 +71,15 @@ function templateEmailUniversale(contenuto) {
 }
 
 /* =========================================================
-   GENERA EMAIL PRODOTTO
+   GENERA EMAIL PRODOTTO — PATCH DESCRIZIONI
 ========================================================= */
 function generaEmailProdotto(prod) {
   const titolo = escapeHTML(prod.titolo_breve || prod.titolo || "");
+
+  // PATCH 2026 — usa SEMPRE descrizione_lunga
   const descrizione = escapeHTML(
-    prod.descrizione_email ||
-    prod.descrizione_breve ||
     prod.descrizione_lunga ||
+    prod.descrizione_breve ||
     ""
   );
 
