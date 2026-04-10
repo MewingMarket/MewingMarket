@@ -2,24 +2,27 @@
  * =========================================================
  * File: app/server/router.cjs
  * Router principale — SOLO API
- * Versione DEFINITIVA 2026.100 — PUBLIC/PRIVATE perfetto
- * PATCH: admin-feedback + admin-utenti + top recensioni
+ * Versione DEFINITIVA 2026.200 — require assoluti
  * =========================================================
  */
 
 const express = require("express");
+const path = require("path");
 const router = express.Router();
+
+/* Helper per require assoluti */
+const R = (p) => require(path.join(process.cwd(), "app/server", p));
 
 /* =========================================================
    1) ROTTE PUBBLICHE (NO TOKEN)
 ========================================================= */
-router.use("/utenti", require("./routes/api-utenti.cjs"));
+router.use("/utenti", R("routes/api-utenti.cjs"));
 
 /* =========================================================
    ⭐ PATCH: TOP RECENSIONI (PUBLIC)
 ========================================================= */
 try {
-  router.use(require("./routes/api-recensioni-top.cjs"));
+  router.use(R("routes/api-recensioni-top.cjs"));
   console.log("🔥 api-recensioni-top.cjs CARICATO");
 } catch (err) {
   console.error("❌ ERRORE CARICAMENTO api-recensioni-top:", err);
@@ -29,7 +32,7 @@ try {
    2) ADMIN (protette da auth-admin)
    ⭐ PATCH: PRIMA DI auth-user
 ========================================================= */
-const authAdmin = require("./middleware/auth-admin.cjs");
+const authAdmin = R("middleware/auth-admin.cjs");
 router.use("/admin", authAdmin);
 
 /* =========================================================
@@ -37,7 +40,7 @@ router.use("/admin", authAdmin);
 ========================================================= */
 try {
   console.log("Tentativo load admin-dashboard...");
-  const adminDashboard = require("./routes/admin-dashboard.cjs");
+  const adminDashboard = R("routes/admin-dashboard.cjs");
   router.use("/admin", adminDashboard);
   console.log("🔥 admin-dashboard CARICATO");
 } catch (err) {
@@ -48,7 +51,7 @@ try {
    ⭐ PATCH: ADMIN FEEDBACK (LISTA COMPLETA)
 ========================================================= */
 try {
-  const adminFeedback = require("./routes/admin-feedback.cjs");
+  const adminFeedback = R("routes/admin-feedback.cjs");
   router.use("/admin", adminFeedback);
   console.log("🔥 admin-feedback.cjs CARICATO");
 } catch (err) {
@@ -59,7 +62,7 @@ try {
    ⭐ PATCH: ADMIN UTENTI (LISTA + BLOCCO)
 ========================================================= */
 try {
-  const adminUtenti = require("./routes/admin-utenti.cjs");
+  const adminUtenti = R("routes/admin-utenti.cjs");
   router.use("/admin", adminUtenti);
   console.log("🔥 admin-utenti.cjs CARICATO");
 } catch (err) {
@@ -68,24 +71,24 @@ try {
 
 /* =========================================================
    3) MIDDLEWARE USER (TOKEN OBBLIGATORIO)
-   Tutto ciò che segue richiede sessione valida
 ========================================================= */
-router.use(require("./middleware/auth-user.cjs"));
+router.use(R("middleware/auth-user.cjs"));
 
 /* =========================================================
    4) ROTTE UTENTE PROTETTE
 ========================================================= */
-router.use(require("./routes/api-prodotti-new.cjs"));
-router.use(require("./routes/api-upload.cjs"));
-router.use(require("./routes/ordini-utente.cjs"));
-router.use(require("./routes/api-feedback.cjs"));
-router.use(require("./routes/api-vendite-download.cjs"));
-router.use("/prodotti", require("./routes/prodotti-ai.cjs"));
+router.use(R("routes/api-prodotti-new.cjs"));
+router.use(R("routes/api-upload.cjs"));
+router.use(R("routes/ordini-utente.cjs"));
+router.use(R("routes/api-feedback.cjs"));
+router.use(R("routes/api-vendite-download.cjs"));
+router.use("/prodotti", R("routes/prodotti-ai.cjs"));
+
 /* =========================================================
    5) PAYPAL (PUBLIC)
 ========================================================= */
-router.use(require("./routes/paypal-create.cjs"));
-router.use(require("./routes/paypal-complete.cjs"));
-router.use(require("./routes/paypal-cancel.cjs"));
+router.use(R("routes/paypal-create.cjs"));
+router.use(R("routes/paypal-complete.cjs"));
+router.use(R("routes/paypal-cancel.cjs"));
 
 module.exports = router;
