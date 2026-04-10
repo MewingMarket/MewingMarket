@@ -1,15 +1,15 @@
 /* FILE: app/server/modules/restore.cjs
- * Restore unico — 2026
- * - Locale → Drive → GitHub
- * - Ricostruzione backup
- * - Ripristino DB + JSON + uploads
+ * Restore unico — Modalità SAFE 2026
+ * - Drive → GitHub → Locale
+ * - Nessun crash se Drive/GitHub non configurati
+ * - Compatibile con GOOGLE_APPLICATION_CREDENTIALS (Secret File JSON)
  */
 
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 
-// Moduli Drive + GitHub
+// Moduli Drive + GitHub (SAFE MODE)
 const downloadDrive = require(path.join(process.cwd(), "app/server/modules/drive-download.cjs"));
 const downloadGitHub = require(path.join(process.cwd(), "app/server/modules/github-download.cjs"));
 
@@ -69,10 +69,15 @@ function restoreLocale() {
 }
 
 // =========================================================
-// 3) RIPRISTINO DA DRIVE
+// 3) RIPRISTINO DA DRIVE (SAFE MODE)
 // =========================================================
 async function restoreFromDrive() {
   console.log("☁️ [RESTORE] Tentativo restore da Google Drive…");
+
+  if (!process.env.GOOGLE_APPLICATION_CREDENTIALS || !DRIVE_FOLDER_BACKUP) {
+    console.log("⚠️ Drive non configurato → skip");
+    throw new Error("Drive non configurato");
+  }
 
   const zipPath = await downloadDrive(DRIVE_FOLDER_BACKUP);
   if (!zipPath) throw new Error("Nessun backup trovato su Drive");
@@ -84,7 +89,7 @@ async function restoreFromDrive() {
 }
 
 // =========================================================
-// 4) RIPRISTINO DA GITHUB
+// 4) RIPRISTINO DA GITHUB (SAFE MODE)
 // =========================================================
 async function restoreFromGitHub() {
   console.log("🐙 [RESTORE] Tentativo restore da GitHub…");
@@ -116,14 +121,15 @@ function estraiZip(zipPath) {
 }
 
 // =========================================================
-// 6) DISPATCHER INTELLIGENTE
+// 6) DISPATCHER INTELLIGENTE — SAFE MODE
 // =========================================================
 async function restore() {
   try {
     console.log("🔄 [RESTORE] Avvio restore…");
 
-    // 1) Locale
+    // 1) Locale (se esiste → PRIORITARIO)
     if (backupLocaleEsiste()) {
+      console.log("📁 [RESTORE] Backup locale trovato → uso locale");
       restoreLocale();
       return true;
     }
@@ -144,7 +150,8 @@ async function restore() {
       console.error("⚠️ GitHub non disponibile:", err.message);
     }
 
-    console.error("❌ [RESTORE] Nessuna fonte di backup disponibile");
+    // 4) Nessuna fonte → NON sovrascrivere il DB
+    console.error("❌ [RESTORE] Nessuna fonte di backup disponibile → DB lasciato intatto");
     return false;
 
   } catch (err) {
