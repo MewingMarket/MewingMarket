@@ -1,22 +1,19 @@
 /* FILE: app/server/modules/backup.cjs
- * Modulo unico di backup — 2026
- * - Backup locale (mirror)
- * - Backup Drive (cartella corretta)
- * - Backup GitHub (solo generale)
- * - Invio email lista 14 (modalità backup)
- * - Fallback sandbox
- * - Routing automatico: ricevuta / report / generale
+ * Backup 2026 — Modalità SAFE
+ * - Drive → GitHub → Locale
+ * - Nessun crash se Drive/GitHub non configurati
+ * - Compatibile con GOOGLE_APPLICATION_CREDENTIALS (Secret File JSON)
  */
 
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 
-// Moduli email
+// Email
 const { inviaEmailLista } = require(path.join(process.cwd(), "app/server/modules/invia-email-lista.cjs"));
 const { LISTA_BACKUP } = require(path.join(process.cwd(), "app/server/modules/liste-brevo.cjs"));
 
-// Moduli Drive + GitHub
+// Drive + GitHub
 const uploadDrive = require(path.join(process.cwd(), "app/server/modules/drive-upload.cjs"));
 const uploadGitHub = require(path.join(process.cwd(), "app/server/modules/github-upload.cjs"));
 
@@ -32,7 +29,7 @@ const JSON_DIR = "/var/data/json";
 const UPLOADS_DIR = path.join(process.cwd(), "app/public/uploads");
 
 // =========================================================
-// 1) BACKUP LOCALE (mirror)
+// 1) BACKUP LOCALE
 // =========================================================
 function backupLocale() {
   console.log("💾 [BACKUP] Mirror locale…");
@@ -76,7 +73,7 @@ function creaZip(nome, dir) {
 }
 
 // =========================================================
-// 3) INVIO EMAIL (lista 14 + fallback sandbox)
+// 3) EMAIL
 // =========================================================
 async function inviaBackupEmail({ filename, base64 }) {
   try {
@@ -103,7 +100,7 @@ async function inviaBackupEmail({ filename, base64 }) {
 }
 
 // =========================================================
-// 4) BACKUP GENERALE
+// 4) BACKUP GENERALE (SAFE MODE)
 // =========================================================
 async function backupGenerale() {
   console.log("💾 [BACKUP] Backup generale…");
@@ -114,13 +111,29 @@ async function backupGenerale() {
   const zipPath = creaZip(nome, BACKUP_DIR);
   const base64 = fs.readFileSync(zipPath).toString("base64");
 
-  // Drive
-  await uploadDrive(zipPath, DRIVE_FOLDER_BACKUP);
+  // DRIVE (SAFE)
+  try {
+    if (process.env.GOOGLE_APPLICATION_CREDENTIALS && DRIVE_FOLDER_BACKUP) {
+      await uploadDrive(zipPath, DRIVE_FOLDER_BACKUP);
+    } else {
+      console.log("⚠️ [BACKUP] Drive non configurato → skip");
+    }
+  } catch (err) {
+    console.error("❌ [BACKUP] Errore Drive:", err.message);
+  }
 
-  // GitHub
-  await uploadGitHub(zipPath, nome);
+  // GITHUB (SAFE)
+  try {
+    if (process.env.GITHUB_TOKEN) {
+      await uploadGitHub(zipPath, nome);
+    } else {
+      console.log("⚠️ [BACKUP] GitHub non configurato → skip");
+    }
+  } catch (err) {
+    console.error("❌ [BACKUP] Errore GitHub:", err.message);
+  }
 
-  // Email
+  // EMAIL
   await inviaBackupEmail({ filename: nome, base64 });
 
   console.log("✅ [BACKUP] Backup generale completato");
@@ -138,14 +151,17 @@ async function backupRicevuta({ numeroOrdine, pdfInterno }) {
   fs.mkdirSync(path.dirname(localPath), { recursive: true });
   fs.writeFileSync(localPath, Buffer.from(pdfInterno, "base64"));
 
-  // Drive
-  await uploadDrive(localPath, DRIVE_FOLDER_RECEIPTS);
+  try {
+    if (process.env.GOOGLE_APPLICATION_CREDENTIALS && DRIVE_FOLDER_RECEIPTS) {
+      await uploadDrive(localPath, DRIVE_FOLDER_RECEIPTS);
+    } else {
+      console.log("⚠️ [BACKUP] Drive non configurato → skip");
+    }
+  } catch (err) {
+    console.error("❌ [BACKUP] Errore Drive:", err.message);
+  }
 
-  // Email
-  await inviaBackupEmail({
-    filename,
-    base64: pdfInterno
-  });
+  await inviaBackupEmail({ filename, base64: pdfInterno });
 
   console.log("✅ [BACKUP] Ricevuta salvata");
 }
@@ -164,17 +180,23 @@ async function backupReport({ kpi }) {
   const zipPath = creaZip(zipName, "/tmp");
   const base64 = fs.readFileSync(zipPath).toString("base64");
 
-  // Drive
-  await uploadDrive(zipPath, DRIVE_FOLDER_REPORT);
+  try {
+    if (process.env.GOOGLE_APPLICATION_CREDENTIALS && DRIVE_FOLDER_REPORT) {
+      await uploadDrive(zipPath, DRIVE_FOLDER_REPORT);
+    } else {
+      console.log("⚠️ [BACKUP] Drive non configurato → skip");
+    }
+  } catch (err) {
+    console.error("❌ [BACKUP] Errore Drive:", err.message);
+  }
 
-  // Email
   await inviaBackupEmail({ filename: zipName, base64 });
 
   console.log("✅ [BACKUP] Report salvato");
 }
 
 // =========================================================
-// 7) DISPATCHER INTELLIGENTE
+// 7) DISPATCHER
 // =========================================================
 async function backup(tipo, payload = {}) {
   if (tipo === "ricevuta") return backupRicevuta(payload);
