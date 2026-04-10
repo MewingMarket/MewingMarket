@@ -1,10 +1,10 @@
 /* FILE: app/server/db/database.cjs */
 /**
  * =========================================================
- * File: app/server/db/database.cjs
  * Database SQLite persistente su Render Disk
  * Compatibile con ambiente locale / Codespaces
  * Carica automaticamente tutti gli schema .sql
+ * Patch 2026 — NON creare DB vuoto se non esiste
  * =========================================================
  */
 
@@ -39,7 +39,16 @@ try {
 }
 
 // =========================================================
-// INIZIALIZZA DATABASE
+// PATCH: NON CREARE DB VUOTO
+// =========================================================
+const exists = fs.existsSync(dbPath);
+
+if (!exists) {
+  console.log("⚠️ DB non trovato → attendo restore (nessuna creazione automatica)");
+}
+
+// =========================================================
+// INIZIALIZZA DATABASE SOLO SE ESISTE
 // =========================================================
 let db;
 try {
@@ -51,7 +60,7 @@ try {
 }
 
 // =========================================================
-// HELPER FLAG AUTOMAZIONI (usa tabella da schema SQL)
+// HELPER FLAG AUTOMAZIONI
 // =========================================================
 db.hasFlag = function (tipo, riferimento) {
   try {
