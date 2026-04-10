@@ -5,7 +5,8 @@
  * =========================================================
  */
 
-const db = require("../db/database.cjs");
+const path = require("path");
+const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
 
 function escapeCDATA(str) {
   if (!str) return "";
@@ -41,7 +42,6 @@ function generateAdvancedImagesSitemap() {
     <loc>${productUrl}</loc>
 `;
 
-      // Immagine principale del prodotto
       if (p.immagine_url) {
         xml += `
     <image:image>
@@ -51,7 +51,6 @@ function generateAdvancedImagesSitemap() {
     </image:image>`;
       }
 
-      // Thumbnail YouTube
       if (p.youtube_thumbnail) {
         xml += `
     <image:image>
