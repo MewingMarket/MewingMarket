@@ -1,8 +1,19 @@
-const express = require("express");
-const router = express.Router();
-const db = require("../db/database.cjs");
+/**
+ * File: app/server/routes/debug-db.cjs
+ * Debug DB — SOLO ADMIN
+ * Versione 2026.200 — require assoluti + protezione
+ */
 
-router.get("/debug-db", (req, res) => {
+const express = require("express");
+const path = require("path");
+
+const R = (p) => require(path.join(process.cwd(), "app/server", p));
+
+const router = express.Router();
+const db = R("db/database.cjs");
+const authAdmin = R("middleware/auth-admin.cjs");
+
+router.get("/debug-db", authAdmin, (req, res) => {
   const utenti = db.prepare("SELECT * FROM utenti").all();
 
   let html = `
@@ -20,7 +31,7 @@ router.get("/debug-db", (req, res) => {
         <tr>
           <th>ID</th>
           <th>Email</th>
-          <th>Password</th>
+          <th>Password Hash</th>
           <th>Ruolo</th>
           <th>Token</th>
           <th>Created</th>
