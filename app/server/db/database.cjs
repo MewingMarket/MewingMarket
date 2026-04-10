@@ -3,6 +3,7 @@
  * =========================================================
  * Database SQLite persistente su Render Disk
  * Patch 2026 — NON creare DB vuoto se non esiste
+ * Protezione anti-inizializzazione precoce
  * =========================================================
  */
 
@@ -34,6 +35,15 @@ try {
 } catch (err) {
   console.error("❌ ERRORE creazione directory DB:", err.message);
   throw err;
+}
+
+// =========================================================
+// 🔥 PROTEZIONE: BLOCCA QUALSIASI INIZIALIZZAZIONE PRECOCE
+// =========================================================
+if (!global.__restore_completed) {
+  console.log("⏳ DB richiesto troppo presto → ritorno null");
+  module.exports = null;
+  return;
 }
 
 // =========================================================
