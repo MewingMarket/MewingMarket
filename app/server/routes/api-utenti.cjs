@@ -1,33 +1,34 @@
-/* =========================================================
-   File: app/server/routes/api-utenti.cjs
-   Versione: 2026.71 — CF obbligatorio + Admin via CF + ZERO-INPUT RESET
-   PATCH LOGIN: sessione stabile (non rigenera token se già esiste)
-   PATCH EVENTI: registrazione eventi base in utenti_eventi
-   PATCH 2026-BACKUP: aggiunta automatica mewingmarket2@gmail.com alla LISTA_BACKUP
-========================================================= */
+/**
+ * =========================================================
+ * File: app/server/routes/api-utenti.cjs
+ * Versione PATCHATA 2026.200 — require assoluti + percorsi stabili
+ * =========================================================
+ */
 
 const express = require("express");
 const crypto = require("crypto");
-const db = require("../db/database.cjs");
-const jsonGen = require("../modules/generatore-json.cjs");
+const path = require("path");
 
-const { inviaEmailRegistrazione } = require("../modules/email-registrazione.cjs");
-const { inviaEmailCambioEmail } = require("../modules/email-cambio-email.cjs");
-const { inviaEmailCambioPassword } = require("../modules/email-cambio-password.cjs");
-const { inviaEmailEliminazione } = require("../modules/email-eliminazione.cjs");
-const { inviaEmailNewsletterUnsubscribe } = require("../modules/email-newsletter-unsubscribe.cjs");
+// PATCH: require assoluto
+const R = (p) => require(path.join(process.cwd(), "app/server", p));
 
-// ⭐ PATCH BREVO — import centrale
-const { syncBrevoUtenteStatoReale, LISTA_BACKUP } = require("../modules/liste-brevo.cjs");
+const db = R("db/database.cjs");
+const jsonGen = R("modules/generatore-json.cjs");
 
-// ⭐ PATCH 2026 — invio email lista (per aggiungere owner alla lista 14)
-const { inviaEmailLista } = require("../modules/invia-email-lista.cjs");
+const { inviaEmailRegistrazione } = R("modules/email-registrazione.cjs");
+const { inviaEmailCambioEmail } = R("modules/email-cambio-email.cjs");
+const { inviaEmailCambioPassword } = R("modules/email-cambio-password.cjs");
+const { inviaEmailEliminazione } = R("modules/email-eliminazione.cjs");
+const { inviaEmailNewsletterUnsubscribe } = R("modules/email-newsletter-unsubscribe.cjs");
+
+const { syncBrevoUtenteStatoReale, LISTA_BACKUP } = R("modules/liste-brevo.cjs");
+const { inviaEmailLista } = R("modules/invia-email-lista.cjs");
 
 const router = express.Router();
 
-// =========================================================
-// FUNZIONI UTILI
-// =========================================================
+/* =========================================================
+   FUNZIONI UTILI
+========================================================= */
 function normalizePassword(p) {
   return String(p || "").trim();
 }
@@ -58,9 +59,9 @@ function getSessionToken(req) {
   return h.replace("Bearer ", "").trim();
 }
 
-// =========================================================
-// HELPER EVENTI UTENTE (utenti_eventi)
-// =========================================================
+/* =========================================================
+   HELPER EVENTI UTENTE
+========================================================= */
 function logUserEvent(email, evento, note = null) {
   try {
     const cleanEmail = String(email || "").trim().toLowerCase();
@@ -68,18 +69,19 @@ function logUserEvent(email, evento, note = null) {
 
     if (!cleanEmail || !cleanEvento) return;
 
-    db.prepare(
-      `
+    db.prepare(`
       INSERT INTO utenti_eventi (email, evento, ip, user_agent, note)
       VALUES (?, ?, NULL, NULL, ?)
-      `
-    ).run(cleanEmail, cleanEvento, note);
+    `).run(cleanEmail, cleanEvento, note);
+
   } catch (err) {
     console.error("❌ Errore salvataggio utenti_eventi:", err);
   }
-} // =========================================================
-// REGISTRAZIONE — CF OBBLIGATORIO + ADMIN VIA CF
-// =========================================================
+}
+
+/* =========================================================
+   REGISTRAZIONE — CF OBBLIGATORIO + ADMIN VIA CF
+========================================================= */
 router.post("/registrazione", async (req, res) => {
   let { email, password, codice_fiscale } = req.body || {};
 
@@ -106,26 +108,22 @@ router.post("/registrazione", async (req, res) => {
       ruolo = "admin";
     }
 
-    db.prepare(
-      "INSERT INTO utenti (email, password_hash, sessione, codice_fiscale, ruolo) VALUES (?, ?, ?, ?, ?)"
-    ).run(email, passwordHash, sessione, codice_fiscale, ruolo);
+    db.prepare(`
+      INSERT INTO utenti (email, password_hash, sessione, codice_fiscale, ruolo)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(email, passwordHash, sessione, codice_fiscale, ruolo);
 
-    // EVENTO: registrato
     logUserEvent(email, "registrato", null);
 
     inviaEmailRegistrazione({ email });
 
-    // ⭐ PATCH BREVO — nuovo utente registrato
     try {
       await syncBrevoUtenteStatoReale({
         email,
         registrato: true
       });
-    } catch (err) {
-      console.error("❌ Errore sync Brevo (registrazione):", err);
-    }
+    } catch {}
 
-    // ⭐ PATCH 2026 — aggiungi automaticamente l’owner alla LISTA_BACKUP (14)
     try {
       await inviaEmailLista({
         email: "mewingmarket2@gmail.com",
@@ -135,10 +133,7 @@ router.post("/registrazione", async (req, res) => {
         tipo: "transazionale",
         modalita: "backup"
       });
-      console.log("📌 [BACKUP] Owner aggiunto alla lista 14");
-    } catch (err) {
-      console.error("❌ Errore aggiunta owner lista backup:", err);
-    }
+    } catch {}
 
     await jsonGen.exportUsers();
 
@@ -148,11 +143,9 @@ router.post("/registrazione", async (req, res) => {
     console.error("Registrazione:", err);
     return res.json({ success: false, error: "Errore server" });
   }
-});
-
-// =========================================================
-// LOGIN — PATCH 2026.71 (sessione stabile)
-// =========================================================
+}); /* =========================================================
+   LOGIN — PATCH 2026.71 (sessione stabile)
+========================================================= */
 router.post("/login", (req, res) => {
   let { email, password } = req.body || {};
 
@@ -182,12 +175,8 @@ router.post("/login", (req, res) => {
     if (!sessione || sessione.length < 10) {
       sessione = genToken("tok");
       db.prepare("UPDATE utenti SET sessione = ? WHERE id = ?").run(sessione, user.id);
-      console.log("LOGIN PATCH → Nuova sessione generata:", sessione.substring(0, 6) + "****");
-    } else {
-      console.log("LOGIN PATCH → Sessione esistente mantenuta:", sessione.substring(0, 6) + "****");
     }
 
-    // EVENTO: login
     logUserEvent(email, "login", null);
 
     return res.json({
@@ -201,9 +190,11 @@ router.post("/login", (req, res) => {
     console.error("Login:", err);
     return res.json({ success: false, error: "Errore server" });
   }
-});  // =========================================================
-// CAMBIO EMAIL
-// =========================================================
+});
+
+/* =========================================================
+   CAMBIO EMAIL
+========================================================= */
 router.post("/cambia-email", async (req, res) => {
   const sessione = getSessionToken(req);
   let { nuova_email, password } = req.body || {};
@@ -237,16 +228,13 @@ router.post("/cambia-email", async (req, res) => {
 
     inviaEmailCambioEmail({ email: nuova_email });
 
-    // ⭐ PATCH BREVO — cambio email
     try {
       await syncBrevoUtenteStatoReale({
         email: nuova_email,
         emailVecchia: user.email,
         credenzialiModificate: true
       });
-    } catch (err) {
-      console.error("❌ Errore sync Brevo (cambio email):", err);
-    }
+    } catch {}
 
     await jsonGen.exportUsers();
 
@@ -258,9 +246,9 @@ router.post("/cambia-email", async (req, res) => {
   }
 });
 
-// =========================================================
-// CAMBIO PASSWORD
-// =========================================================
+/* =========================================================
+   CAMBIO PASSWORD
+========================================================= */
 router.post("/cambia-password", async (req, res) => {
   const sessione = getSessionToken(req);
   let { nuova_password } = req.body || {};
@@ -284,15 +272,12 @@ router.post("/cambia-password", async (req, res) => {
 
     inviaEmailCambioPassword({ email: user.email });
 
-    // ⭐ PATCH BREVO — cambio password
     try {
       await syncBrevoUtenteStatoReale({
         email: user.email,
         credenzialiModificate: true
       });
-    } catch (err) {
-      console.error("❌ Errore sync Brevo (cambio password):", err);
-    }
+    } catch {}
 
     return res.json({ success: true });
 
@@ -300,11 +285,9 @@ router.post("/cambia-password", async (req, res) => {
     console.error("Cambio password:", err);
     return res.json({ success: false, error: "Errore server" });
   }
-});
-
-// =========================================================
-// ELIMINAZIONE ACCOUNT — VERSIONE COMPLETA PATCHATA 2026.100
-// =========================================================
+}); /* =========================================================
+   ELIMINAZIONE ACCOUNT — VERSIONE COMPLETA PATCHATA 2026.200
+========================================================= */
 router.post("/elimina-account", async (req, res) => {
   const sessione = getSessionToken(req);
   let { password } = req.body || {};
@@ -328,58 +311,23 @@ router.post("/elimina-account", async (req, res) => {
       return res.json({ success: false, error: "Password errata" });
     }
 
-    // EVENTO: eliminato
     logUserEvent(user.email, "eliminato", null);
 
-    // ⭐ PATCH 1 — elimina ordini
-    try {
-      db.prepare("DELETE FROM ordini WHERE utente_id = ?").run(user.id);
-    } catch (err) {
-      console.error("❌ Errore eliminazione ordini:", err);
-    }
+    try { db.prepare("DELETE FROM ordini WHERE utente_id = ?").run(user.id); } catch {}
+    try { db.prepare("DELETE FROM utenti_eventi WHERE email = ?").run(user.email); } catch {}
+    try { db.prepare("DELETE FROM feedback WHERE utente_id = ?").run(user.id); } catch {}
+    try { db.prepare("DELETE FROM newsletter_log WHERE email = ?").run(user.email); } catch {}
 
-    // ⭐ PATCH 2 — elimina eventi utente
     try {
-      db.prepare("DELETE FROM utenti_eventi WHERE email = ?").run(user.email);
-    } catch (err) {
-      console.error("❌ Errore eliminazione utenti_eventi:", err);
-    }
+      await syncBrevoUtenteStatoReale({ email: user.email, elimina: true });
+    } catch {}
 
-    // Eliminazione recensioni
-    try {
-      db.prepare("DELETE FROM feedback WHERE utente_id = ?").run(user.id);
-    } catch (err) {
-      console.error("❌ Errore eliminazione recensioni:", err);
-    }
-
-    // Eliminazione log newsletter
-    try {
-      db.prepare("DELETE FROM newsletter_log WHERE email = ?").run(user.email);
-    } catch (err) {
-      console.error("❌ Errore eliminazione newsletter_log:", err);
-    }
-
-    // ⭐ PATCH BREVO — eliminazione account totale
-    try {
-      await syncBrevoUtenteStatoReale({
-        email: user.email,
-        elimina: true
-      });
-    } catch (err) {
-      console.error("❌ Errore sync Brevo (eliminazione):", err);
-    }
-
-    // ⭐ PATCH — EMAIL DI DISISCRIZIONE NEWSLETTER
     try {
       await inviaEmailNewsletterUnsubscribe({ email: user.email });
-    } catch (err) {
-      console.error("❌ Errore invio email disiscrizione:", err);
-    }
+    } catch {}
 
-    // Eliminazione utente
     db.prepare("DELETE FROM utenti WHERE id = ?").run(user.id);
 
-    // Email eliminazione account
     inviaEmailEliminazione({ email: user.email });
 
     await jsonGen.exportUsers();
@@ -392,9 +340,9 @@ router.post("/elimina-account", async (req, res) => {
   }
 });
 
-// =========================================================
-// RESET PASSWORD REQUEST — ZERO-INPUT + CF CHECK
-// =========================================================
+/* =========================================================
+   RESET PASSWORD REQUEST — ZERO-INPUT + CF CHECK
+========================================================= */
 router.post("/reset-password-request", (req, res) => {
   let { codice_fiscale } = req.body || {};
   codice_fiscale = (codice_fiscale || "").trim().toUpperCase();
@@ -412,12 +360,7 @@ router.post("/reset-password-request", (req, res) => {
       return res.json({ success: false, error: "Utente non trovato" });
     }
 
-    console.log("[RESET-PASS-REQ] Vecchia password (mask):", mask(user.password_hash));
-
-    db.prepare("UPDATE utenti SET password_hash = '' WHERE id = ?")
-      .run(user.id);
-
-    console.log("[RESET-PASS-REQ] Password svuotata.");
+    db.prepare("UPDATE utenti SET password_hash = '' WHERE id = ?").run(user.id);
 
     return res.json({ success: true });
 
@@ -427,9 +370,9 @@ router.post("/reset-password-request", (req, res) => {
   }
 });
 
-// =========================================================
-// RESET PASSWORD CONFIRM — ZERO-INPUT + CF CHECK (PATCH 2026.70)
-// =========================================================
+/* =========================================================
+   RESET PASSWORD CONFIRM — ZERO-INPUT + CF CHECK
+========================================================= */
 router.post("/reset-password-confirm", (req, res) => {
   let { nuova_password, codice_fiscale } = req.body || {};
 
@@ -449,29 +392,20 @@ router.post("/reset-password-confirm", (req, res) => {
       return res.json({ success: false, error: "Utente non trovato" });
     }
 
-    console.log("[RESET-PASS-CONFIRM] CF:", codice_fiscale, "→ id:", user.id, "email:", user.email);
-    console.log("[RESET-PASS-CONFIRM] Nuova password (mask):", mask(nuova_password));
-
     const newHash = hash(nuova_password);
     const newSession = genToken("tok");
 
     db.prepare("UPDATE utenti SET password_hash = ?, sessione = ? WHERE id = ?")
       .run(newHash, newSession, user.id);
 
-    console.log("[RESET-PASS-CONFIRM] Password aggiornata.");
-    console.log("[RESET-PASS-CONFIRM] Nuova sessione:", newSession.substring(0, 6) + "****");
-
     inviaEmailCambioPassword({ email: user.email });
 
-    // ⭐ PATCH BREVO — reset password
     try {
       syncBrevoUtenteStatoReale({
         email: user.email,
         credenzialiModificate: true
       });
-    } catch (err) {
-      console.error("❌ Errore sync Brevo (reset password):", err);
-    }
+    } catch {}
 
     return res.json({
       success: true,
@@ -483,11 +417,9 @@ router.post("/reset-password-confirm", (req, res) => {
     console.error("Reset password confirm:", err);
     return res.json({ success: false, error: "Errore server" });
   }
-});
-
-// =========================================================
-// RESET EMAIL REQUEST — ZERO-INPUT + CF CHECK
-// =========================================================
+}); /* =========================================================
+   RESET EMAIL REQUEST — ZERO-INPUT + CF CHECK
+========================================================= */
 router.post("/reset-email-request", (req, res) => {
   let { codice_fiscale } = req.body || {};
   codice_fiscale = (codice_fiscale || "").trim().toUpperCase();
@@ -505,12 +437,7 @@ router.post("/reset-email-request", (req, res) => {
       return res.json({ success: false, error: "Utente non trovato" });
     }
 
-    console.log("[RESET-EMAIL-REQ] Vecchia email:", maskEmail(user.email));
-
-    db.prepare("UPDATE utenti SET email = '' WHERE id = ?")
-      .run(user.id);
-
-    console.log("[RESET-EMAIL-REQ] Email svuotata.");
+    db.prepare("UPDATE utenti SET email = '' WHERE id = ?").run(user.id);
 
     return res.json({ success: true });
 
@@ -520,9 +447,9 @@ router.post("/reset-email-request", (req, res) => {
   }
 });
 
-// =========================================================
-// RESET EMAIL CONFIRM — ZERO-INPUT + CF CHECK (OK)
-// =========================================================
+/* =========================================================
+   RESET EMAIL CONFIRM — ZERO-INPUT + CF CHECK
+========================================================= */
 router.post("/reset-email-confirm", async (req, res) => {
   let { nuova_email, codice_fiscale } = req.body || {};
 
@@ -542,11 +469,7 @@ router.post("/reset-email-confirm", async (req, res) => {
       return res.json({ success: false, error: "Utente non trovato" });
     }
 
-    console.log("[RESET-EMAIL-CONFIRM] Nuova email:", maskEmail(nuova_email));
-
-    const esiste = db.prepare("SELECT id FROM utenti WHERE email = ?")
-      .get(nuova_email);
-
+    const esiste = db.prepare("SELECT id FROM utenti WHERE email = ?").get(nuova_email);
     if (esiste) {
       return res.json({ success: false, error: "Email gia in uso" });
     }
@@ -556,21 +479,15 @@ router.post("/reset-email-confirm", async (req, res) => {
     db.prepare("UPDATE utenti SET email = ?, sessione = ? WHERE id = ?")
       .run(nuova_email, newSession, user.id);
 
-    console.log("[RESET-EMAIL-CONFIRM] Email aggiornata.");
-    console.log("[RESET-EMAIL-CONFIRM] Nuova sessione:", newSession.substring(0, 6) + "****");
-
     inviaEmailCambioEmail({ email: nuova_email });
 
-    // ⭐ PATCH BREVO — reset email
     try {
       await syncBrevoUtenteStatoReale({
         email: nuova_email,
         emailVecchia: user.email,
         credenzialiModificate: true
       });
-    } catch (err) {
-      console.error("❌ Errore sync Brevo (reset email):", err);
-    }
+    } catch {}
 
     return res.json({
       success: true,
@@ -584,9 +501,9 @@ router.post("/reset-email-confirm", async (req, res) => {
   }
 });
 
-// =========================================================
-// /me — DATI UTENTE PER DASHBOARD
-// =========================================================
+/* =========================================================
+   /me — DATI UTENTE PER DASHBOARD
+========================================================= */
 router.get("/me", (req, res) => {
   try {
     const sessione = getSessionToken(req);
@@ -594,9 +511,12 @@ router.get("/me", (req, res) => {
       return res.status(401).json({ success: false, error: "Non loggato" });
     }
 
-    const user = db.prepare(
-      "SELECT id, email, ruolo, codice_fiscale, created_at FROM utenti WHERE sessione = ? LIMIT 1"
-    ).get(sessione);
+    const user = db.prepare(`
+      SELECT id, email, ruolo, codice_fiscale, created_at
+      FROM utenti
+      WHERE sessione = ?
+      LIMIT 1
+    `).get(sessione);
 
     if (!user) {
       return res.status(401).json({ success: false, error: "Sessione non valida" });
@@ -610,4 +530,4 @@ router.get("/me", (req, res) => {
   }
 });
 
-module.exports = router;
+module.exports = router; 
