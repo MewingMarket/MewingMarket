@@ -2,10 +2,16 @@
  * =========================================================
  * File: app/server/routes/sitemap.cjs
  * Sitemap dinamica basata sui prodotti (SQL)
+ * Versione 2026.200 — require assoluti
  * =========================================================
  */
 
-const db = require("../db/database.cjs");
+const path = require("path");
+
+// PATCH: require assoluto
+const R = (p) => require(path.join(process.cwd(), "app/server", p));
+
+const db = R("db/database.cjs");
 
 module.exports = function (app) {
   app.get("/sitemap.xml", (req, res) => {
@@ -14,7 +20,7 @@ module.exports = function (app) {
       const stmt = db.prepare(`
         SELECT id
         FROM prodotti
-        ORDER BY id DESC
+        ORDER ORDER BY id DESC
       `);
 
       const prodotti = stmt.all();
