@@ -67,6 +67,9 @@ const wait = (ms) => new Promise(res => res(ms));
   const { restore } = require("./modules/restore.cjs");
   await restore();
 
+  // 🔥 PATCH: segnala che il restore è completato
+  global.__restore_completed = true;
+
   // =========================================================
   // MIDDLEWARE
   // =========================================================
@@ -85,6 +88,9 @@ const wait = (ms) => new Promise(res => res(ms));
     log("⚠️ DB non inizializzato → forzo restore");
     const { restore } = require("./modules/restore.cjs");
     await restore();
+
+    // PATCH: restore completato → abilita database.cjs
+    global.__restore_completed = true;
 
     db = require("./db/database.cjs");
 
@@ -153,6 +159,9 @@ const wait = (ms) => new Promise(res => res(ms));
 
       await backupGenerale({ source: "manual", force: true });
       await restore();
+
+      // PATCH: restore completato
+      global.__restore_completed = true;
 
       res.json({ ok: true, msg: "Backup + Restore eseguiti" });
     } catch (err) {
