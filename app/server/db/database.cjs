@@ -2,8 +2,7 @@
 /**
  * =========================================================
  * Database SQLite persistente su Render Disk
- * Patch 2026 — NON creare DB vuoto se non esiste
- * Protezione anti-inizializzazione precoce
+ * Versione 2026.300 — FIX: inizializzazione sempre garantita
  * =========================================================
  */
 
@@ -27,38 +26,23 @@ const dbPath = isRender
 // =========================================================
 const dir = path.dirname(dbPath);
 
-try {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-    console.log("📁 Creata directory DB:", dir);
-  }
-} catch (err) {
-  console.error("❌ ERRORE creazione directory DB:", err.message);
-  throw err;
+if (!fs.existsSync(dir)) {
+  fs.mkdirSync(dir, { recursive: true });
+  console.log("📁 Creata directory DB:", dir);
 }
 
 // =========================================================
-// 🔥 PROTEZIONE: BLOCCA QUALSIASI INIZIALIZZAZIONE PRECOCE
-// =========================================================
-if (!global.__restore_completed) {
-  console.log("⏳ DB richiesto troppo presto → ritorno null");
-  module.exports = null;
-  return;
-}
-
-// =========================================================
-// PATCH: NON CREARE DB VUOTO
+// FIX 2026.300 — SE IL DB NON ESISTE, CREALO
 // =========================================================
 const exists = fs.existsSync(dbPath);
 
 if (!exists) {
-  console.log("⚠️ DB non trovato → NON inizializzo SQLite (attendo restore)");
-  module.exports = null;
-  return;
+  console.log("⚠️ DB non trovato → CREO nuovo DB:", dbPath);
+  fs.writeFileSync(dbPath, "");
 }
 
 // =========================================================
-// INIZIALIZZA DATABASE SOLO SE ESISTE
+// INIZIALIZZA DATABASE
 // =========================================================
 let db;
 try {
@@ -68,37 +52,6 @@ try {
   console.error("❌ ERRORE apertura DB:", err.message);
   throw err;
 }
-
-// =========================================================
-// HELPER FLAG AUTOMAZIONI
-// =========================================================
-db.hasFlag = function (tipo, riferimento) {
-  try {
-    const ref = String(riferimento);
-    const row = db
-      .prepare(
-        `SELECT 1 FROM automazioni_log WHERE tipo = ? AND riferimento = ? LIMIT 1`
-      )
-      .get(tipo, ref);
-    return !!row;
-  } catch (err) {
-    console.error("❌ ERRORE hasFlag:", err.message, { tipo, riferimento });
-    return false;
-  }
-};
-
-db.setFlag = function (tipo, riferimento) {
-  try {
-    const ref = String(riferimento);
-    const now = new Date().toISOString();
-    db.prepare(
-      `INSERT INTO automazioni_log (tipo, riferimento, created_at) VALUES (?, ?, ?)`
-    ).run(tipo, ref, now);
-    console.log("✅ Flag registrato:", tipo, ref);
-  } catch (err) {
-    console.error("❌ ERRORE setFlag:", err.message, { tipo, riferimento });
-  }
-};
 
 // =========================================================
 // CARICA AUTOMATICAMENTE TUTTI GLI SCHEMA .SQL
