@@ -2,15 +2,20 @@
  * =========================================================
  * File: app/server/routes/paypal-create.cjs
  * Crea ordine PayPal (SQL) + salva ordine in DB + JSON mirror
- * PATCH 2026.1001 — Ritorno orderId al frontend
+ * Versione 2026.200 — require assoluti
  * =========================================================
  */
 
 const express = require("express");
 const fetch = require("node-fetch");
-const db = require("../db/database.cjs");
-const authUser = require("../middleware/auth-user.cjs");
-const jsonGen = require("../modules/generatore-json.cjs");
+const path = require("path");
+
+// PATCH: require assoluto
+const R = (p) => require(path.join(process.cwd(), "app/server", p));
+
+const db = R("db/database.cjs");
+const authUser = R("middleware/auth-user.cjs");
+const jsonGen = R("modules/generatore-json.cjs");
 
 const router = express.Router();
 
