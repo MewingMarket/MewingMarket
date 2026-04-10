@@ -1,15 +1,19 @@
 /**
  * =========================================================
  * API ADMIN — PROFILO ADMIN COMPLETO
- * Versione 2026 — Admin via Codice Fiscale
+ * Versione 2026.200 — require assoluti
  * =========================================================
  */
 
 const express = require("express");
+const path = require("path");
+
+const R = (p) => require(path.join(process.cwd(), "app/server", p));
+
 const router = express.Router();
 
-const db = require("../db/database.cjs");
-const authAdmin = require("../middleware/auth-admin.cjs");
+const db = R("db/database.cjs");
+const authAdmin = R("middleware/auth-admin.cjs");
 const crypto = require("crypto");
 
 // =========================================================
