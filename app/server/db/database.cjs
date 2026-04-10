@@ -5,7 +5,6 @@
  * Database SQLite persistente su Render Disk
  * Compatibile con ambiente locale / Codespaces
  * Carica automaticamente tutti gli schema .sql
- * + PATCH 2026: Tabella automazioni_log + helper flag
  * =========================================================
  */
 
@@ -16,14 +15,6 @@ const path = require("path");
 // =========================================================
 // PATH DB DINAMICO (Render vs Locale)
 // =========================================================
-//
-// Render → /var/data/mewingmarket.db  (persistente)
-// Locale / Codespaces → ./data/mewingmarket.db (scrivibile)
-//
-// Render espone variabili d'ambiente come:
-// - RENDER=true
-// - RENDER_SERVICE_ID=xxxx
-//
 const isRender =
   process.env.RENDER === "true" ||
   Boolean(process.env.RENDER_SERVICE_ID);
@@ -60,28 +51,8 @@ try {
 }
 
 // =========================================================
-/**
- * PATCH 2026 — Tabella automazioni_log
- * Flag persistenti "already sent" / "already done"
- * tipo: string (es. "email_acquisto", "email_novita", "report_mensile")
- * riferimento: string (es. id ordine, email, mese, ecc.)
- */
+// HELPER FLAG AUTOMAZIONI (usa tabella da schema SQL)
 // =========================================================
-try {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS automazioni_log (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      tipo TEXT NOT NULL,
-      riferimento TEXT NOT NULL,
-      created_at TEXT NOT NULL
-    );
-  `);
-  console.log("✅ Tabella automazioni_log pronta");
-} catch (err) {
-  console.error("❌ ERRORE creazione automazioni_log:", err.message);
-}
-
-// Helper per flag persistenti
 db.hasFlag = function (tipo, riferimento) {
   try {
     const ref = String(riferimento);
