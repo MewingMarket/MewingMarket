@@ -2,7 +2,7 @@
 /**
  * =========================================================
  * Entry point del server — versione DEFINITIVA
- * Patch 2026 — Restore PRIMA del database
+ * Patch 2026 — Restore PRIMA del database + DB null-safe
  * =========================================================
  */
 
@@ -76,9 +76,23 @@ const wait = (ms) => new Promise(res => res(ms));
   app.use(cookieParser());
 
   // =========================================================
-  // 🔥 CARICAMENTO DB DOPO RESTORE
+  // 🔥 CARICAMENTO DB DOPO RESTORE — CON PATCH DB NULL-SAFE
   // =========================================================
-  const db = require("./db/database.cjs");
+  let db = require("./db/database.cjs");
+
+  if (!db) {
+    log("⚠️ DB non inizializzato → forzo restore");
+    const { restore } = require("./modules/restore.cjs");
+    await restore();
+
+    db = require("./db/database.cjs");
+
+    if (!db) {
+      logErr("❌ ERRORE FATALE: DB ancora null dopo restore");
+      process.exit(1);
+    }
+  }
+
   app.set("db", db);
   log(">> DB REGISTRATO SU app.set('db')");
 
