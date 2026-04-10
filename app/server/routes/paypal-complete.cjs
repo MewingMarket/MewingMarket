@@ -2,18 +2,23 @@
  * =========================================================
  * File: app/server/routes/paypal-complete.cjs
  * Completa ordine PayPal (SQL) + email + tracking + vendite + JSON mirror
- * PATCH 2026.2001 — token download + codice fiscale + ordineFinale completo
+ * Versione 2026.200 — require assoluti
  * =========================================================
  */
 
 const express = require("express");
 const fetch = require("node-fetch");
 const crypto = require("crypto");
-const db = require("../db/database.cjs");
+const path = require("path");
 
-const { inviaEmailAcquisto } = require("../modules/email-acquisto.cjs");
-const { trackGA4 } = require("../services/ga4.cjs");
-const jsonGen = require("../modules/generatore-json.cjs");
+// PATCH: require assoluto
+const R = (p) => require(path.join(process.cwd(), "app/server", p));
+
+const db = R("db/database.cjs");
+const { inviaEmailAcquisto } = R("modules/email-acquisto.cjs");
+const { trackGA4 } = R("services/ga4.cjs");
+const jsonGen = R("modules/generatore-json.cjs");
+const { syncBrevoUtenteStatoReale } = R("modules/liste-brevo.cjs");
 
 const router = express.Router();
 
@@ -232,7 +237,6 @@ router.get("/paypal/complete-order", async (req, res) => {
     // ⭐ 11) PATCH BREVO — pagamento completato → diventa cliente
     // =========================================================
     try {
-      const { syncBrevoUtenteStatoReale } = require("../modules/liste-brevo.cjs");
       await syncBrevoUtenteStatoReale({
         email: emailUtente,
         cliente: true
