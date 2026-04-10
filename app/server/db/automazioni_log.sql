@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS automazioni_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  tipo TEXT NOT NULL,
+  riferimento TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
