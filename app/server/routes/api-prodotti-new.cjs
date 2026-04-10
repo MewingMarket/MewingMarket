@@ -2,17 +2,21 @@
 // File: app/server/routes/api-prodotti-new.cjs
 // Catalogo prodotti — Versione SQL definitiva (ID-based)
 // Con mirroring JSON automatico
+// Versione 2026.200 — require assoluti
 // =========================================================
 
 const express = require("express");
 const path = require("path");
 const router = express.Router();
 
-// PATCH: catalogo sta in app/modules/
-const catalogo = require(path.join(process.cwd(), "app/modules/catalogo-sql.cjs"));
+// Helper require assoluto
+const R = (p) => require(path.join(process.cwd(), "app", p));
 
-// PATCH: fix nome variabile (percorso assoluto)
-const jsonGen = require(path.join(process.cwd(), "app/server/modules/generatore-json.cjs"));
+// PATCH: catalogo sta in app/modules/
+const catalogo = R("modules/catalogo-sql.cjs");
+
+// PATCH: generatore JSON (percorso assoluto)
+const jsonGen = R("server/modules/generatore-json.cjs");
 
 // =========================================================
 // GET — LISTA PRODOTTI (SQL) — ADMIN
