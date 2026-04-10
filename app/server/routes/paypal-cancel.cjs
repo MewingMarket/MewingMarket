@@ -2,14 +2,20 @@
  * =========================================================
  * File: app/server/routes/paypal-cancel.cjs
  * Annulla ordine PayPal (SQL) + email annullamento + JSON mirror
- * PATCH 2026.1003 — id_ordine coerente per email + frontend
+ * Versione 2026.200 — require assoluti
  * =========================================================
  */
 
 const express = require("express");
-const db = require("../db/database.cjs");
-const { inviaEmailOrdineAnnullato } = require("../modules/email-ordine-annullato.cjs");
-const jsonGen = require("../modules/generatore-json.cjs");
+const path = require("path");
+
+// PATCH: require assoluto
+const R = (p) => require(path.join(process.cwd(), "app/server", p));
+
+const db = R("db/database.cjs");
+const { inviaEmailOrdineAnnullato } = R("modules/email-ordine-annullato.cjs");
+const jsonGen = R("modules/generatore-json.cjs");
+const { syncBrevoUtenteStatoReale } = R("modules/liste-brevo.cjs");
 
 const router = express.Router();
 
@@ -115,7 +121,6 @@ router.get("/paypal/cancel-order", async (req, res) => {
 
     // ⭐ PATCH BREVO — PayPal cancel → NON è cliente
     try {
-      const { syncBrevoUtenteStatoReale } = require("../modules/liste-brevo.cjs");
       await syncBrevoUtenteStatoReale({
         email: emailUtente,
         cliente: false
