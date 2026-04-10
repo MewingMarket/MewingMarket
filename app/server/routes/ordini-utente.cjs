@@ -3,14 +3,20 @@
  * File: app/server/routes/ordini-utente.cjs
  * Restituisce gli ordini dell'utente loggato (SQL)
  * + Annulla ordine (SQL)
- * Versione 2026.97 — DB only, niente JSON mirror
+ * Versione 2026.200 — require assoluti
  * =========================================================
  */
 
 const express = require("express");
-const db = require("../db/database.cjs");
-const authUser = require("../middleware/auth-user.cjs");
-const { inviaEmailOrdineAnnullato } = require("../modules/email-ordine-annullato.cjs");
+const path = require("path");
+
+// PATCH: require assoluto
+const R = (p) => require(path.join(process.cwd(), "app/server", p));
+
+const db = R("db/database.cjs");
+const authUser = R("middleware/auth-user.cjs");
+const { inviaEmailOrdineAnnullato } = R("modules/email-ordine-annullato.cjs");
+const { syncBrevoUtenteStatoReale } = R("modules/liste-brevo.cjs");
 
 const router = express.Router();
 
@@ -195,7 +201,6 @@ router.post("/ordini/annulla/:id", authUser, async (req, res) => {
 
     // ⭐ PATCH BREVO — l’utente rimane cliente anche se annulla
     try {
-      const { syncBrevoUtenteStatoReale } = require("../modules/liste-brevo.cjs");
       await syncBrevoUtenteStatoReale({
         email: emailUtente,
         cliente: true
