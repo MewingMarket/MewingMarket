@@ -3,19 +3,22 @@
 // Compatibile better-sqlite3 + sessioni SQL + CF
 // =========================================================
 
+const path = require("path");
+
+// PATCH: require assoluto del DB (fallback)
+const dbAbsolute = require(path.join(process.cwd(), "app/server/db/database.cjs"));
+
 module.exports = function authUser(req, res, next) {
   try {
-    const path = req.path.toLowerCase();
+    const pathLower = req.path.toLowerCase();
 
-    console.log("AUTH DEBUG → req.path:", path);
+    console.log("AUTH DEBUG → req.path:", pathLower);
     console.log("AUTH DEBUG → headers.authorization:", req.headers["authorization"]);
 
     // =====================================================
     // ROTTE COMPLETAMENTE PUBBLICHE
     // =====================================================
     const publicPaths = [
-
-      // Pagine pubbliche
       "/", "/index", "/index.html",
       "/catalogo", "/catalogo.html",
       "/prodotto", "/prodotto.html",
@@ -23,57 +26,49 @@ module.exports = function authUser(req, res, next) {
       "/login", "/login.html",
       "/registrazione", "/registrazione.html",
 
-      // Login & Registrazione (PUBLIC)
       "/utenti/login",
       "/utenti/registrazione",
       "/api/utenti/login",
       "/api/utenti/registrazione",
 
-      // Catalogo API (PUBLIC)
       "/products",
       "/products/",
       "/products/:id",
 
-      // Reset password (PUBLIC)
       "/reset-password", "/reset-password.html",
       "/reset-password-request",
       "/reset-password-confirm",
       "/utenti/reset-password-request",
       "/utenti/reset-password-confirm",
 
-      // Reset email (PUBLIC)
       "/reset-email", "/reset-email.html",
       "/reset-email-request",
       "/reset-email-confirm",
       "/utenti/reset-email-request",
       "/utenti/reset-email-confirm",
 
-      // SEO & SYSTEM
       "/sitemap.xml",
       "/system-status",
       "/meta-feed",
       "/newsletter",
       "/structured-data",
 
-      // PayPal callback (PUBLIC)
       "/paypal-create",
       "/paypal-complete",
       "/paypal-cancel",
 
-      // Chat pubblica
       "/chat",
       "/chat-voice"
     ];
 
-    // MATCH PUBLIC
     const isPublic = publicPaths.some(base =>
-      path === base ||
-      path.startsWith(base + "/") ||
+      pathLower === base ||
+      pathLower.startsWith(base + "/") ||
       req.url.toLowerCase().startsWith(base + "?")
     );
 
     if (isPublic) {
-      console.log("AUTH DEBUG → PUBLIC MATCH:", path);
+      console.log("AUTH DEBUG → PUBLIC MATCH:", pathLower);
       return next();
     }
 
@@ -97,7 +92,7 @@ module.exports = function authUser(req, res, next) {
     // =====================================================
     // VERIFICA TOKEN SQL (PATCH: includiamo id)
     // =====================================================
-    const db = req.db || req.app.get("db");
+    const db = req.db || req.app.get("db") || dbAbsolute;
     if (!db) {
       console.error("AUTH ERROR → db mancante");
       return res.status(500).json({ error: "Errore server" });
@@ -113,18 +108,12 @@ module.exports = function authUser(req, res, next) {
       return res.status(500).json({ error: "Errore server" });
     }
 
-    // =====================================================
-    // PATCH: TOKEN NON VALIDO → NON BLOCCARE
-    // =====================================================
     if (!row) {
       console.log("AUTH DEBUG → Token non valido → guest");
       req.user = null;
       return next();
     }
 
-    // =====================================================
-    // UTENTE OK (PATCH: includiamo id)
-    // =====================================================
     req.user = {
       id: row.id,
       email: row.email,
