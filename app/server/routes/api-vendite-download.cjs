@@ -2,15 +2,18 @@
  * =========================================================
  * File: app/server/routes/api-vendite-download.cjs
  * Download sicuro dei prodotti acquistati
- * Versione 2026.2001 — aggiunto download-direct con token
+ * Versione 2026.200 — require assoluti
  * =========================================================
  */
 
 const express = require("express");
 const path = require("path");
 const fs = require("fs");
-const db = require("../db/database.cjs");
-const authUser = require("../middleware/auth-user.cjs");
+
+const R = (p) => require(path.join(process.cwd(), "app/server", p));
+
+const db = R("db/database.cjs");
+const authUser = R("middleware/auth-user.cjs");
 
 const router = express.Router();
 
