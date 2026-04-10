@@ -1,24 +1,24 @@
-/**
- * =========================================================
- * File: app/server/routes/api-upload.cjs
- * Upload File Prodotto — Versione 2026.99
- * - Salva SOLO filename nel DB
- * - Log avanzati
- * - Compatibile con download backend
- * =========================================================
- */
+/* =========================================================
+   File: app/server/routes/api-upload.cjs
+   Upload File Prodotto — Versione 2026.200 (FULL PATCHED)
+   - require assoluti
+   - percorso upload assoluto
+========================================================= */
 
 const express = require("express");
+const path = require("path");
+const fs = require("fs");
+
 const router = express.Router();
 
-const fs = require("fs");
-const path = require("path");
+// Helper require assoluto
+const R = (p) => require(path.join(process.cwd(), "app/server", p));
 
 // Middleware per tipo upload
-const setUploadType = require("../middleware/upload-type.cjs");
+const setUploadType = R("middleware/upload-type.cjs");
 
-// Cartella upload
-const uploadFiles = path.join(__dirname, "../public/uploads");
+// Cartella upload (assoluta, stabile)
+const uploadFiles = path.join(process.cwd(), "app/public/uploads");
 
 /**
  * =========================================================
@@ -43,7 +43,7 @@ router.post("/upload/file", setUploadType("file"), (req, res) => {
 
     const finalName = filename + ext;
 
-    // Percorso finale su Render
+    // Percorso finale assoluto
     const filePath = path.join(uploadFiles, finalName);
 
     console.log("📁 Upload file prodotto →", finalName);
@@ -54,7 +54,6 @@ router.post("/upload/file", setUploadType("file"), (req, res) => {
     req.pipe(writeStream);
 
     writeStream.on("finish", () => {
-      // Restituiamo SOLO il filename
       return res.json({
         success: true,
         filename: finalName
