@@ -2,13 +2,12 @@
  * Restore unico — Modalità SAFE 2026
  * - Drive → GitHub → Locale
  * - Nessun crash se Drive/GitHub non configurati
- * - Compatibile con GOOGLE_APPLICATION_CREDENTIALS (Secret File JSON)
+ * - Restore automatico SOLO se DB mancante o corrotto
  */
 
 const fs = require("fs");
 const path = require("path");
 
-// Moduli Drive + GitHub (SAFE MODE)
 const downloadDrive = require(path.join(process.cwd(), "app/server/modules/drive-download.cjs"));
 const downloadGitHub = require(path.join(process.cwd(), "app/server/modules/github-download.cjs"));
 
@@ -20,31 +19,28 @@ const UPLOADS_DIR = path.join(process.cwd(), "app/public/uploads");
 const DRIVE_FOLDER_BACKUP = process.env.DRIVE_FOLDER_BACKUP;
 
 // =========================================================
-// FUNZIONE CHIAVE: DB VUOTO?
+// CONTROLLO INTEGRITÀ DB (corrotto / mancante)
 // =========================================================
-function isDatabaseEmpty() {
+function needsRestoreAuto() {
   try {
-    // Se il file DB non esiste → consideriamo "vuoto"
     if (!fs.existsSync(DB_FILE)) {
-      console.log("⚠️ [RESTORE] DB file non trovato → considerato vuoto");
+      console.log("⚠️ [RESTORE] DB file mancante → restore necessario");
       return true;
     }
 
     const sqlite = require("better-sqlite3");
     const db = new sqlite(DB_FILE);
 
-    const row = db.prepare(`
-      SELECT name 
-      FROM sqlite_master 
-      WHERE type='table' 
-      AND name NOT LIKE 'sqlite_%'
-      LIMIT 1
-    `).get();
+    const row = db.prepare("PRAGMA integrity_check;").get();
+    if (!row || !row.integrity_check || row.integrity_check !== "ok") {
+      console.log("⚠️ [RESTORE] PRAGMA integrity_check fallita → restore necessario");
+      return true;
+    }
 
-    return !row; // true = vuoto
-  } catch (err) {
-    console.error("❌ Errore controllo DB vuoto:", err.message);
     return false;
+  } catch (err) {
+    console.error("❌ [RESTORE] Errore controllo integrità DB:", err.message);
+    return true;
   }
 }
 
@@ -65,13 +61,11 @@ function backupLocaleEsiste() {
 function restoreLocale() {
   console.log("♻️ [RESTORE] Ripristino da backup locale…");
 
-  // DB
   const localDB = path.join(BACKUP_DIR, "db", "mewingmarket.db");
   if (fs.existsSync(localDB)) {
     fs.copyFileSync(localDB, DB_FILE);
   }
 
-  // JSON
   if (fs.existsSync(path.join(BACKUP_DIR, "json"))) {
     fs.mkdirSync(JSON_DIR, { recursive: true });
     for (const f of fs.readdirSync(path.join(BACKUP_DIR, "json"))) {
@@ -82,7 +76,6 @@ function restoreLocale() {
     }
   }
 
-  // Uploads
   if (fs.existsSync(path.join(BACKUP_DIR, "uploads"))) {
     fs.mkdirSync(UPLOADS_DIR, { recursive: true });
     for (const f of fs.readdirSync(path.join(BACKUP_DIR, "uploads"))) {
@@ -97,7 +90,7 @@ function restoreLocale() {
 }
 
 // =========================================================
-// 3) RIPRISTINO DA DRIVE (SAFE MODE)
+// 3) RIPRISTINO DA DRIVE
 // =========================================================
 async function restoreFromDrive() {
   console.log("☁️ [RESTORE] Tentativo restore da Google Drive…");
@@ -117,7 +110,7 @@ async function restoreFromDrive() {
 }
 
 // =========================================================
-// 4) RIPRISTINO DA GITHUB (SAFE MODE)
+// 4) RIPRISTINO DA GITHUB
 // =========================================================
 async function restoreFromGitHub() {
   console.log("🐙 [RESTORE] Tentativo restore da GitHub…");
@@ -154,21 +147,19 @@ async function restore() {
   try {
     console.log("🔄 [RESTORE] Avvio restore…");
 
-    const empty = isDatabaseEmpty();
+    const need = needsRestoreAuto();
 
-    if (!empty) {
-      console.log("⛔ [RESTORE] Saltato: database già popolato");
+    if (!need) {
+      console.log("⛔ [RESTORE] Saltato: database integro e presente");
       return false;
     }
 
-    // 1) Locale (solo se DB vuoto)
     if (backupLocaleEsiste()) {
       console.log("📁 [RESTORE] Backup locale trovato → uso locale");
       restoreLocale();
       return true;
     }
 
-    // 2) Drive (solo se DB vuoto)
     try {
       await restoreFromDrive();
       return true;
@@ -176,7 +167,6 @@ async function restore() {
       console.error("⚠️ Drive non disponibile:", err.message);
     }
 
-    // 3) GitHub (solo se DB vuoto)
     try {
       await restoreFromGitHub();
       return true;
