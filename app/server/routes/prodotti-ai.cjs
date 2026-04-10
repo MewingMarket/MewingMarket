@@ -1,4 +1,4 @@
-l/**
+/**
  * =========================================================
  * API AI — Generazione descrizioni prodotto
  * Versione 2026.200 — require assoluti
