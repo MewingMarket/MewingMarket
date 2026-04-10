@@ -1,6 +1,7 @@
 /**
  * app/server/routes/chat-voice.cjs
  * Endpoint /chat/voice — input vocale → testo → bot
+ * Versione 2026.200 — require assoluti + uploadDir assoluto
  */
 
 const fs = require("fs");
@@ -21,8 +22,9 @@ const { trackGA4 } = require(path.join(process.cwd(), "app/server/services/ga4.c
 const { transcribeAudio } = require(path.join(process.cwd(), "app/modules/audio.cjs"));
 
 module.exports = function (app) {
-  const ROOT = path.resolve(__dirname, "..", "..");
-  const uploadDir = path.join(ROOT, "public", "uploads");
+
+  // PATCH: percorso upload ASSOLUTO
+  const uploadDir = path.join(process.cwd(), "app/public/uploads");
 
   const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, uploadDir),
