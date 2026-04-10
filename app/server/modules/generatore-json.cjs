@@ -1,20 +1,19 @@
 /* =========================================================
- * GENERATORE JSON — Mirror del database SQL
+ * GENERATORE JSON — Mirror automatico del database SQL
+ * Auto-detect tabelle da schema SQL
  * Persistente su /var/data/json + copia in /app/public/data
- * PATCH 2026 — Invio automatico newsletter “Novità”
- * PATCH FEEDBACK + NEWSLETTER LOG — Mirror SQL aggiuntivi
- * PATCH EVENTI UTENTE — Mirror utenti_eventi → user-events.json
- * PATCH KPI — Mirror kpi_giornalieri / settimanali / mensili
+ * PATCH 2026 — Export schema + backup log + newsletter novità
  * =========================================================
  */
 
 const fs = require("fs");
 const path = require("path");
 
-// PATCH: require assoluti
-const catalogo = require(path.join(process.cwd(), "app/modules/catalogo-sql.cjs"));
+// DB + Catalogo
 const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
+const catalogo = require(path.join(process.cwd(), "app/modules/catalogo-sql.cjs"));
 
+// Newsletter Novità
 const axios = require("axios");
 const { inviaEmailNovita } = require(path.join(process.cwd(), "app/server/modules/email-novita.cjs"));
 const { LISTA_NEWSLETTER } = require(path.join(process.cwd(), "app/server/modules/liste-brevo.cjs"));
@@ -51,8 +50,41 @@ function saveJSON(filename, data) {
 }
 
 // ---------------------------------------------------------
-// PATCH — Invio automatico newsletter “Novità”
-/* ------------------------------------------------------- */
+// 1) AUTO-DETECT TABELLE DAL DATABASE
+// ---------------------------------------------------------
+function getAllTables() {
+  try {
+    const rows = db.prepare(`
+      SELECT name 
+      FROM sqlite_master 
+      WHERE type='table' 
+      AND name NOT LIKE 'sqlite_%'
+      ORDER BY name ASC
+    `).all();
+
+    return rows.map(r => r.name);
+  } catch (err) {
+    console.error("❌ Errore lettura lista tabelle:", err.message);
+    return [];
+  }
+}
+
+// ---------------------------------------------------------
+// 2) ESPORTA OGNI TABELLA IN JSON
+// ---------------------------------------------------------
+async function exportTable(table) {
+  try {
+    const rows = db.prepare(`SELECT * FROM ${table} ORDER BY 1 DESC`).all();
+    saveJSON(`${table}.json`, rows);
+    console.log(`📄 Tabella esportata: ${table}`);
+  } catch (err) {
+    console.error(`❌ Errore exportTable (${table}):`, err.message);
+  }
+}
+
+// ---------------------------------------------------------
+// 3) PATCH — Invio automatico newsletter “Novità”
+// ---------------------------------------------------------
 async function checkAndSendNovita() {
   try {
     const latest = db.prepare(`
@@ -106,42 +138,15 @@ async function checkAndSendNovita() {
 }
 
 // ---------------------------------------------------------
-// 1) Prodotti
+// 4) EXPORT SPECIALI (prodotti, categorie, youtube, catalogo)
 // ---------------------------------------------------------
-async function exportProducts() {
+async function exportSpecial() {
   try {
     const prodotti = await catalogo.getAllProducts();
-
-    saveJSON("products.json", prodotti);
-    console.log("✅ Prodotti esportati");
-
-    await checkAndSendNovita();
-
-  } catch (err) {
-    console.error("❌ Errore exportProducts:", err.message);
-  }
-}
-
-// ---------------------------------------------------------
-// 2) Categorie
-// ---------------------------------------------------------
-async function exportCategories() {
-  try {
     const categorie = await catalogo.getAllCategories();
 
+    saveJSON("products.json", prodotti);
     saveJSON("categories.json", categorie);
-    console.log("✅ Categorie esportate");
-  } catch (err) {
-    console.error("❌ Errore exportCategories:", err.message);
-  }
-}
-
-// ---------------------------------------------------------
-// 3) YouTube
-// ---------------------------------------------------------
-async function exportYouTube() {
-  try {
-    const prodotti = await catalogo.getAllProducts();
 
     const youtube = prodotti
       .filter(p => p.youtube_video_id)
@@ -155,261 +160,113 @@ async function exportYouTube() {
       }));
 
     saveJSON("youtube.json", youtube);
-    console.log("🎥 YouTube esportato");
+
+    saveJSON("catalog.json", {
+      prodotti,
+      categorie,
+      youtube
+    });
+
+    await checkAndSendNovita();
+
+    console.log("📚 Export special completato");
   } catch (err) {
-    console.error("❌ Errore exportYouTube:", err.message);
+    console.error("❌ Errore exportSpecial:", err.message);
   }
 }
 
 // ---------------------------------------------------------
-// 4) Ordini
+// 5) EXPORT BACKUP LOG (mirror JSON)
 // ---------------------------------------------------------
-async function exportOrders() {
-  try {
-    const rows = db.prepare("SELECT * FROM ordini ORDER BY id DESC").all();
-    saveJSON("orders.json", rows);
-    console.log("📦 Ordini esportati");
-  } catch (err) {
-    console.error("❌ Errore exportOrders:", err.message);
-  }
-}
-
-// ---------------------------------------------------------
-// 5) Vendite
-// ---------------------------------------------------------
-async function exportSales() {
-  try {
-    const rows = db.prepare("SELECT * FROM vendite ORDER BY id DESC").all();
-    saveJSON("sales.json", rows);
-    console.log("💰 Vendite esportate");
-  } catch (err) {
-    console.error("❌ Errore exportSales:", err.message);
-  }
-}
-
-// ---------------------------------------------------------
-// 6) Utenti
-// ---------------------------------------------------------
-async function exportUsers() {
-  try {
-    const rows = db.prepare("SELECT id, email, created_at FROM utenti").all();
-    saveJSON("users.json", rows);
-    console.log("👤 Utenti esportati");
-  } catch (err) {
-    console.error("❌ Errore exportUsers:", err.message);
-  }
-}
-
-// ---------------------------------------------------------
-// 7) Feedback
-// ---------------------------------------------------------
-async function exportFeedback() {
+async function exportBackupLog() {
   try {
     const rows = db.prepare(`
-      SELECT 
-        id,
-        utente_id,
-        prodotto_id,
-        rating,
-        commento,
-        data
-      FROM feedback
+      SELECT id, created_at, source, hash, size_bytes, filename
+      FROM backups_log
       ORDER BY id DESC
     `).all();
 
-    saveJSON("feedback.json", rows);
-    console.log("⭐ Feedback esportati");
+    saveJSON("backups.json", rows);
+    console.log("🗂️ Backup log esportato");
   } catch (err) {
-    console.error("❌ Errore exportFeedback:", err.message);
+    console.error("❌ Errore exportBackupLog:", err.message);
   }
 }
 
 // ---------------------------------------------------------
-// 8) Newsletter Log
+// 6) EXPORT SCHEMA — colonne, tipi, PK, FK, indici
 // ---------------------------------------------------------
-async function exportNewsletterLog() {
+async function exportSchema() {
   try {
-    const rows = db.prepare(`
-      SELECT 
-        id,
-        email,
-        azione,
-        origine,
-        note,
-        data
-      FROM newsletter_log
-      ORDER BY id DESC
+    const tables = db.prepare(`
+      SELECT name 
+      FROM sqlite_master 
+      WHERE type='table' 
+      AND name NOT LIKE 'sqlite_%'
+      ORDER BY name ASC
     `).all();
 
-    saveJSON("newsletter.json", rows);
-    console.log("📨 Newsletter log esportato");
+    const schema = {};
+
+    for (const t of tables) {
+      const table = t.name;
+
+      const columns = db.prepare(`PRAGMA table_info(${table});`).all();
+      const foreignKeys = db.prepare(`PRAGMA foreign_key_list(${table});`).all();
+      const indexes = db.prepare(`PRAGMA index_list(${table});`).all();
+
+      schema[table] = {
+        columns: columns.map(c => ({
+          name: c.name,
+          type: c.type,
+          notNull: Boolean(c.notnull),
+          default: c.dflt_value,
+          primaryKey: Boolean(c.pk)
+        })),
+        foreignKeys: foreignKeys.map(fk => ({
+          id: fk.id,
+          table: fk.table,
+          from: fk.from,
+          to: fk.to,
+          onUpdate: fk.on_update,
+          onDelete: fk.on_delete
+        })),
+        indexes: indexes.map(idx => ({
+          name: idx.name,
+          unique: Boolean(idx.unique),
+          origin: idx.origin,
+          partial: Boolean(idx.partial)
+        }))
+      };
+    }
+
+    saveJSON("schema.json", schema);
+    console.log("📐 Schema SQL esportato");
+
   } catch (err) {
-    console.error("❌ Errore exportNewsletterLog:", err.message);
+    console.error("❌ Errore exportSchema:", err.message);
   }
 }
 
 // ---------------------------------------------------------
-// 9) Eventi Utente
-// ---------------------------------------------------------
-async function exportUserEvents() {
-  try {
-    const rows = db.prepare(`
-      SELECT 
-        id,
-        email,
-        evento,
-        note,
-        data
-      FROM utenti_eventi
-      ORDER BY id DESC
-    `).all();
-
-    saveJSON("user-events.json", rows);
-    console.log("📌 Eventi utente esportati");
-  } catch (err) {
-    console.error("❌ Errore exportUserEvents:", err.message);
-  }
-}
-
-// ---------------------------------------------------------
-// 10) KPI Giornalieri
-// ---------------------------------------------------------
-async function exportKpiGiornalieri() {
-  try {
-    const rows = db.prepare(`
-      SELECT 
-        id,
-        data,
-        vendite,
-        nuovi_utenti,
-        feedback,
-        revenue
-      FROM kpi_giornalieri
-      ORDER BY data DESC
-    `).all();
-
-    saveJSON("kpi-daily.json", rows);
-    console.log("📊 KPI giornalieri esportati");
-  } catch (err) {
-    console.error("❌ Errore exportKpiGiornalieri:", err.message);
-  }
-}
-
-// ---------------------------------------------------------
-// 11) KPI Settimanali
-// ---------------------------------------------------------
-async function exportKpiSettimanali() {
-  try {
-    const rows = db.prepare(`
-      SELECT 
-        id,
-        settimana,
-        vendite,
-        nuovi_utenti,
-        feedback,
-        revenue
-      FROM kpi_settimanali
-      ORDER BY settimana DESC
-    `).all();
-
-    saveJSON("kpi-weekly.json", rows);
-    console.log("📈 KPI settimanali esportati");
-  } catch (err) {
-    console.error("❌ Errore exportKpiSettimanali:", err.message);
-  }
-}
-
-// ---------------------------------------------------------
-// 12) KPI Mensili
-// ---------------------------------------------------------
-async function exportKpiMensili() {
-  try {
-    const rows = db.prepare(`
-      SELECT 
-        id,
-        mese,
-        vendite,
-        nuovi_utenti,
-        feedback,
-        revenue
-      FROM kpi_mensili
-      ORDER BY mese DESC
-    `).all();
-
-    saveJSON("kpi-monthly.json", rows);
-    console.log("📅 KPI mensili esportati");
-  } catch (err) {
-    console.error("❌ Errore exportKpiMensili:", err.message);
-  }
-}
-
-// ---------------------------------------------------------
-// 13) Catalogo completo
-// ---------------------------------------------------------
-async function exportCatalog() {
-  try {
-    const prodotti = await catalogo.getAllProducts();
-    const categorie = await catalogo.getAllCategories();
-
-    const youtube = prodotti
-      .filter(p => p.youtube_video_id)
-      .map(p => ({
-        id: p.id,
-        video_id: p.youtube_video_id,
-        url: p.youtube_url,
-        title: p.youtube_title,
-        description: p.youtube_description,
-        thumbnail: p.youtube_thumbnail
-      }));
-
-    const catalogoCompleto = { prodotti, categorie, youtube };
-    saveJSON("catalog.json", catalogoCompleto);
-
-    console.log("📚 Catalogo completo esportato");
-  } catch (err) {
-    console.error("❌ Errore exportCatalog:", err.message);
-  }
-}
-
-// ---------------------------------------------------------
-// 14) Esporta tutto
+// 7) EXPORT COMPLETO
 // ---------------------------------------------------------
 async function exportAll() {
   console.log("⏳ Rigenerazione JSON…");
 
-  await exportProducts();
-  await exportCategories();
-  await exportYouTube();
-  await exportOrders();
-  await exportSales();
-  await exportUsers();
+  const tables = getAllTables();
 
-  await exportFeedback();
-  await exportNewsletterLog();
-  await exportUserEvents();
+  for (const t of tables) {
+    await exportTable(t);
+  }
 
-  await exportKpiGiornalieri();
-  await exportKpiSettimanali();
-  await exportKpiMensili();
-
-  await exportCatalog();
+  await exportSpecial();
+  await exportBackupLog();
+  await exportSchema();
 
   console.log("✅ Tutti i JSON rigenerati (persistente + public)");
 }
 
 module.exports = {
-  exportProducts,
-  exportCategories,
-  exportYouTube,
-  exportOrders,
-  exportSales,
-  exportUsers,
-  exportFeedback,
-  exportNewsletterLog,
-  exportUserEvents,
-  exportKpiGiornalieri,
-  exportKpiSettimanali,
-  exportKpiMensili,
-  exportCatalog,
   exportAll
 };
