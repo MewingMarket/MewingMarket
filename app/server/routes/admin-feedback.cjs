@@ -1,12 +1,16 @@
 /* =========================================================
    File: app/server/routes/admin-feedback.cjs
    Lista completa feedback per Admin — DEBUG SUPREMO + FALLBACK
-   PATCH 2026 — KPI Feedback
+   Versione 2026.200 — require assoluti
 ========================================================= */
 
 const express = require("express");
+const path = require("path");
+
+const R = (p) => require(path.join(process.cwd(), "app/server", p));
+
 const router = express.Router();
-const db = require("../db/database.cjs");
+const db = R("db/database.cjs");
 
 /* =========================================================
    1) ROTTA PRINCIPALE: FEEDBACK LISTA + DEBUG SUPREMO
@@ -15,7 +19,6 @@ router.get("/feedback/lista", (req, res) => {
   try {
     console.log("🔵 [ADMIN] GET /admin/feedback/lista chiamato");
 
-    // Query base
     const stmt = db.prepare(`
       SELECT 
         f.id,
@@ -47,7 +50,6 @@ router.get("/feedback/lista", (req, res) => {
       });
     });
 
-    // Carichiamo tutti gli ordini per fallback
     const ordini = db.prepare(`
       SELECT id, utente_id, prodotti_json
       FROM ordini
@@ -55,7 +57,6 @@ router.get("/feedback/lista", (req, res) => {
 
     console.log("🔵 [ADMIN] Ordini trovati:", ordini.length);
 
-    // MAP + FALLBACK
     const output = lista.map((f, idx) => {
       let email = f.utente_email;
 
@@ -66,13 +67,11 @@ router.get("/feedback/lista", (req, res) => {
         utente_email: f.utente_email
       });
 
-      // 1) Email diretta
       if (email) {
         console.log(`   ✅ Email diretta trovata per feedback #${idx}:`, email);
         return { ...f, utente_email: email };
       }
 
-      // 2) Fallback ordini (JSON)
       for (const o of ordini) {
         try {
           const prodotti = JSON.parse(o.prodotti_json);
@@ -99,7 +98,6 @@ router.get("/feedback/lista", (req, res) => {
         }
       }
 
-      // 3) Fallback finale
       console.log(`   ⚪ Nessun utente trovato per feedback #${idx} → Anonimo`);
       return { ...f, utente_email: "Anonimo" };
     });
@@ -111,24 +109,16 @@ router.get("/feedback/lista", (req, res) => {
     const kpi = {
       totale: output.length,
       media_stelle: 0,
-      percentuali: {
-        1: 0,
-        2: 0,
-        3: 0,
-        4: 0,
-        5: 0
-      },
+      percentuali: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
       prodotti_top: [],
       prodotti_flop: []
     };
 
     if (output.length > 0) {
-      // Media stelle
       kpi.media_stelle = (
         output.reduce((sum, f) => sum + Number(f.rating), 0) / output.length
       ).toFixed(2);
 
-      // Percentuali stelle
       output.forEach(f => {
         const r = Number(f.rating);
         if (kpi.percentuali[r] !== undefined) {
@@ -140,7 +130,6 @@ router.get("/feedback/lista", (req, res) => {
         kpi.percentuali[k] = ((kpi.percentuali[k] / output.length) * 100).toFixed(1);
       });
 
-      // Prodotti top/flop
       const mapProdotti = {};
 
       output.forEach(f => {
@@ -190,11 +179,6 @@ router.get("/feedback/debug-db", (req, res) => {
     const ordini = db.prepare(`SELECT * FROM ordini`).all();
     const prodotti = db.prepare(`SELECT * FROM prodotti`).all();
     const utenti = db.prepare(`SELECT * FROM utenti`).all();
-
-    console.log("   📦 feedback:", feedback);
-    console.log("   📦 ordini:", ordini);
-    console.log("   📦 prodotti:", prodotti);
-    console.log("   📦 utenti:", utenti);
 
     return res.json({
       success: true,
