@@ -2,6 +2,7 @@
  * =========================================================
  * File: app/server/routes/product-page.cjs
  * Endpoint pagina prodotto (serve solo l'HTML)
+ * Versione 2026.200 — require assoluti + percorso stabile
  * =========================================================
  */
 
@@ -12,8 +13,9 @@ module.exports = function (app) {
   // Serve la pagina prodotto statica
   app.get("/prodotto/:id", (req, res) => {
     try {
+      // PATCH: percorso assoluto e stabile
       res.sendFile("prodotto.html", {
-        root: path.join(__dirname, "../../public")
+        root: path.join(process.cwd(), "app/public")
       });
 
       // Tracking opzionale
