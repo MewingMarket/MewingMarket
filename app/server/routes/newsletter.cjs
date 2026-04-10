@@ -1,20 +1,26 @@
 /**
  * app/server/routes/newsletter.cjs
  * Gestione iscrizione e disiscrizione newsletter (lista 8)
+ * Versione 2026.200 — require assoluti
  */
 
 const axios = require("axios");
-const db = require("../db/database.cjs"); 
-const { trackGA4 } = require("../services/ga4.cjs");
+const path = require("path");
+
+// PATCH: require assoluti
+const R = (p) => require(path.join(process.cwd(), "app/server", p));
+
+const db = R("db/database.cjs");
+const { trackGA4 } = R("services/ga4.cjs");
 
 // ⭐ PATCH: importiamo syncBrevoUtenteStatoReale
-const { 
+const {
   syncBrevoUtenteStatoReale,
   LISTA_NEWSLETTER
-} = require("../modules/liste-brevo.cjs");
+} = R("modules/liste-brevo.cjs");
 
-const { inviaEmailNewsletterBenvenuto } = require("../modules/email-newsletter.cjs");
-const { inviaEmailNewsletterUnsubscribe } = require("../modules/email-newsletter-unsubscribe.cjs");
+const { inviaEmailNewsletterBenvenuto } = R("modules/email-newsletter.cjs");
+const { inviaEmailNewsletterUnsubscribe } = R("modules/email-newsletter-unsubscribe.cjs");
 
 module.exports = function (app) {
 
