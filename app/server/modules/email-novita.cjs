@@ -3,12 +3,10 @@
  * =========================================================
  * File: app/server/modules/email-novita.cjs
  * Newsletter “Novità” basata su tabella prodotti (SQL)
- * PATCH 2026.70 — Dominio corretto .it + link ID-based
- * + TEMPLATE GRAFICO UNIVERSALE
- * + PATCH AI: usa descrizione_email se presente
- * + FIREWALL: tipo "novita" (1/settimana)
- * + STOP se nessun prodotto / descrizione vuota / prodotto già inviato
- * + PATCH 2026: Flag persistente "email_novita" per destinatario
+ * PATCH 2026.90 — Sistema descrizioni unificato
+ * - Usa SEMPRE descrizione_lunga
+ * - descrizione_breve come fallback
+ * - RIMOSSA descrizione_email
  * =========================================================
  */
 
@@ -35,15 +33,15 @@ function escapeHTML(str) {
 }
 
 /* =========================================================
-   GENERA HTML NEWSLETTER NOVITÀ
+   GENERA HTML NEWSLETTER NOVITÀ — PATCH DESCRIZIONI
 ========================================================= */
 function generateNovitaHTML(prod) {
   const titolo = escapeHTML(prod.titolo_breve || prod.titolo || "");
 
+  // PATCH 2026 — descrizione_lunga è la fonte principale
   const descrizione = escapeHTML(
-    prod.descrizione_email ||
-    prod.descrizione_breve ||
     prod.descrizione_lunga ||
+    prod.descrizione_breve ||
     ""
   );
 
@@ -140,27 +138,25 @@ function generateNovitaHTML(prod) {
 ========================================================= */
 async function inviaEmailNovita({ email }) {
   try {
-    // 🔥 FIREWALL PERSISTENTE: se questa email ha già ricevuto una "novità", skip
     if (db.hasFlag("email_novita", email)) {
       console.log("[EMAIL-NOVITA] Già inviata novità a:", email);
       return "ALREADY_SENT";
     }
 
-    const stmt = db.prepare(`
+    const latest = db.prepare(`
       SELECT *
       FROM prodotti
       ORDER BY id DESC
       LIMIT 1
-    `);
-
-    const latest = stmt.get();
+    `).get();
 
     if (!latest) {
       console.error("❌ Nessun prodotto → novità non inviata");
       return "NO_PRODUCT";
     }
 
-    const descr = latest.descrizione_email || latest.descrizione_breve || latest.descrizione_lunga;
+    // PATCH — usa descrizione_lunga come requisito minimo
+    const descr = latest.descrizione_lunga || latest.descrizione_breve;
     if (!descr || descr.trim().length < 10) {
       console.error("❌ Descrizione vuota → novità non inviata");
       return "EMPTY_DESCRIPTION";
@@ -179,7 +175,6 @@ async function inviaEmailNovita({ email }) {
       tipo: "novita"
     });
 
-    // ✅ Registra flag persistente solo se l'invio non ha lanciato errori
     try {
       db.setFlag("email_novita", email);
     } catch (err) {
