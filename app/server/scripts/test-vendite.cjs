@@ -8,7 +8,7 @@
 
 const path = require("path");
 const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
-const { registraVendita } = require(path.join(process.cwd(), "app/server/modules/vendite-sql.cjs"));
+const { registraVendita } = require(path.join(process.cwd(), "app/modules/vendite-sql.cjs"));
 
 function sleep(ms) {
   return new Promise(r => setTimeout(r, ms));
