@@ -39,6 +39,17 @@
         "Per problemi urgenti puoi usare WhatsApp Business.",
         "Le richieste devono contenere email e numero ordine."
       ]
+    },
+    {
+      "titolo": "Rimborsi",
+      "regole": [
+        "Il rimborso può essere richiesto solo per ordini completati.",
+        "Le richieste vengono valutate caso per caso entro 24/48 ore.",
+        "È necessario indicare il motivo della richiesta.",
+        "Il rimborso può essere approvato in caso di errore tecnico, file non scaricabile o acquisto duplicato.",
+        "Il rimborso non è previsto per uso improprio o per prodotti già scaricati correttamente.",
+        "La procedura si avvia dalla pagina dedicata ai rimborsi o dalla sezione ordini."
+      ]
     }
   ]
 }
