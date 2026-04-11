@@ -2,7 +2,7 @@
  * =========================================================
  * File: app/server/routes/paypal-complete.cjs
  * Completa ordine PayPal (SQL) + email + tracking + vendite + JSON mirror
- * Versione 2026.200 — require assoluti
+ * Versione 2026.300 — require assoluti + PATCH capture future-proof
  * =========================================================
  */
 
@@ -87,7 +87,7 @@ router.get("/paypal/complete-order", async (req, res) => {
     }
 
     // =========================================================
-    // 4) CATTURA PAGAMENTO PAYPAL
+    // 4) CATTURA PAGAMENTO PAYPAL — PATCH FUTURE-PROOF
     // =========================================================
     const MODE = process.env.PAYPAL_MODE || "sandbox";
 
@@ -118,6 +118,8 @@ router.get("/paypal/complete-order", async (req, res) => {
 
     const captureData = await captureRes.json().catch(() => null);
 
+    console.log("🔥 PAYPAL CAPTURE RAW:", JSON.stringify(captureData, null, 2));
+
     if (!captureData || captureData.status !== "COMPLETED") {
       return res.json({
         success: false,
@@ -125,7 +127,17 @@ router.get("/paypal/complete-order", async (req, res) => {
       });
     }
 
-    const paypalCaptureId = captureData.id || null;
+    // ⭐ PATCH 2026 — estrazione captureId reale (API 2024+)
+    const paypalCaptureId =
+      captureData?.purchase_units?.[0]?.payments?.captures?.[0]?.id || null;
+
+    if (!paypalCaptureId) {
+      console.error("❌ Nessuna capture valida trovata:", captureData);
+      return res.json({
+        success: false,
+        error: "Capture PayPal non valida"
+      });
+    }
 
     // =========================================================
     // 5) GENERA TOKEN DOWNLOAD MONOUSO
@@ -174,8 +186,6 @@ router.get("/paypal/complete-order", async (req, res) => {
       metodo_pagamento: "PayPal",
       paypal_transaction_id: paypalId,
       paypal_capture_id: paypalCaptureId,
-
-      // ⭐ PATCH
       codice_fiscale: codiceFiscale,
       download_token: downloadToken
     };
@@ -234,7 +244,7 @@ router.get("/paypal/complete-order", async (req, res) => {
     }
 
     // =========================================================
-    // ⭐ 11) PATCH BREVO — pagamento completato → diventa cliente
+    // 11) PATCH BREVO — pagamento completato → diventa cliente
     // =========================================================
     try {
       await syncBrevoUtenteStatoReale({
