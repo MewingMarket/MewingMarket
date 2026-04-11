@@ -1,3 +1,10 @@
+/* =========================================================
+   GUIDE — Database locale delle guide
+   Versione 2026.995
+   - Tuo codice originale
+   - Patch rendering dinamico
+========================================================= */
+
 const guides = {
 
   index: {
@@ -150,3 +157,32 @@ const guides = {
     html: "<p>La guida richiesta non esiste.</p>"
   }
 };
+
+
+/* =========================================================
+   PATCH RENDERING — Versione 2026.995
+   Risolve pagina vuota su mobile e desktop
+========================================================= */
+
+document.addEventListener("DOMContentLoaded", () => {
+
+  // 1) Leggi il topic dalla URL
+  const params = new URLSearchParams(window.location.search);
+  const topic = params.get("topic") || "index";
+
+  // 2) Recupera la guida
+  const guida = guides[topic] || guides.default;
+
+  // 3) Aggiorna breadcrumb
+  const breadcrumb = document.getElementById("breadcrumb-topic");
+  if (breadcrumb) breadcrumb.textContent = guida.title;
+
+  // 4) Aggiorna titolo
+  const titleEl = document.getElementById("guide-title");
+  if (titleEl) titleEl.textContent = guida.title;
+
+  // 5) Aggiorna contenuto
+  const contentEl = document.getElementById("guide-content");
+  if (contentEl) contentEl.innerHTML = guida.html;
+
+});
