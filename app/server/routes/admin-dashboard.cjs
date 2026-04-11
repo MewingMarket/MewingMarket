@@ -2,7 +2,7 @@
  * =========================================================
  * File: app/server/routes/admin-dashboard.cjs
  * Dashboard Admin Unificata — Vendite + Ordini
- * Versione 2026.200 — require assoluti
+ * Versione 2026.300 — UTM ENGINE + Origine Sintetica Avanzata
  * =========================================================
  */
 
@@ -83,10 +83,11 @@ router.get("/dashboard", authUser, (req, res) => {
         utm_source AS source,
         utm_medium AS medium,
         utm_campaign AS campaign,
+        referrer,
         COUNT(*) AS vendite
       FROM vendite
-      WHERE utm_source IS NOT NULL
-      GROUP BY utm_source, utm_medium, utm_campaign
+      WHERE utm_source IS NOT NULL OR referrer IS NOT NULL
+      GROUP BY utm_source, utm_medium, utm_campaign, referrer
       ORDER BY vendite DESC
     `).all();
 
@@ -116,7 +117,7 @@ router.get("/dashboard", authUser, (req, res) => {
     };
 
     // =========================================================
-    // PATCH — ORIGINE SINTETICA PER OGNI ORDINE
+    // PATCH — ORIGINE SINTETICA AVANZATA
     // =========================================================
 
     const venditeByUID = db.prepare(`
@@ -125,7 +126,8 @@ router.get("/dashboard", authUser, (req, res) => {
         origine,
         utm_source,
         utm_medium,
-        utm_campaign
+        utm_campaign,
+        referrer
       FROM vendite
     `).all();
 
@@ -135,23 +137,51 @@ router.get("/dashboard", authUser, (req, res) => {
         origine: v.origine,
         utm_source: v.utm_source,
         utm_medium: v.utm_medium,
-        utm_campaign: v.utm_campaign
+        utm_campaign: v.utm_campaign,
+        referrer: v.referrer
       };
     });
 
     function origineSintetica(v) {
       if (!v) return "Direct";
 
-      if (v.utm_source) {
-        const src = v.utm_source.toLowerCase();
-        if (src.includes("insta")) return "Instagram";
-        if (src.includes("yt") || src.includes("you")) return "YouTube";
-        if (src.includes("goo")) return "Google";
-        if (src.includes("bot")) return "Bot";
-        if (src.includes("site") || src.includes("web")) return "Sito";
-        return v.utm_source;
+      const src = (v.utm_source || "").toLowerCase();
+      const med = (v.utm_medium || "").toLowerCase();
+      const ref = (v.referrer || "").toLowerCase();
+      const org = (v.origine || "").toLowerCase();
+
+      // BOT
+      if (src.includes("bot") || med.includes("bot") || org.includes("bot")) return "Bot";
+
+      // EMAIL
+      if (src.includes("email") || med.includes("email") || ref.includes("mail.")) return "Email";
+
+      // SOCIAL SPECIFICI
+      if (src.includes("insta") || ref.includes("instagram")) return "Instagram";
+      if (src.includes("tiktok") || ref.includes("tiktok")) return "TikTok";
+      if (src.includes("fb") || src.includes("face") || ref.includes("facebook")) return "Facebook";
+      if (ref.includes("whatsapp")) return "WhatsApp";
+      if (ref.includes("telegram")) return "Telegram";
+
+      // YOUTUBE
+      if (src.includes("yt") || src.includes("you") || ref.includes("youtube")) return "YouTube";
+
+      // GOOGLE / ORGANIC
+      if (src.includes("goo") || ref.includes("google")) {
+        if (med.includes("cpc") || med.includes("ads")) return "Paid Ads";
+        return "Organic Search";
       }
 
+      // PAID GENERICO
+      if (med.includes("ads") || med.includes("cpc") || med.includes("paid")) return "Paid Ads";
+
+      // REFERRAL
+      if (ref && !ref.includes("mewingmarket")) return "Referral";
+
+      // SITO
+      if (src.includes("site") || org.includes("sito") || med.includes("product_page")) return "Sito";
+
+      // ORIGINE GREZZA
       if (v.origine) return v.origine;
 
       return "Direct";
