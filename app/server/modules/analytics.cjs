@@ -2,7 +2,7 @@
  * =========================================================
  * File: app/server/modules/analytics.cjs
  * Modulo Analytics Unificato — Vendite + Ordini
- * Versione 2026.98 — SQL LIVE
+ * Versione 2026.99 — SQL LIVE + UTM estesi
  * =========================================================
  */
 
@@ -67,7 +67,7 @@ function getTopProdotti(limit = 10) {
 }
 
 /* =========================================================
-   VENDITE — UTM performance
+   VENDITE — UTM performance (con referrer)
 ========================================================= */
 function getUTM() {
   return db.prepare(`
@@ -75,10 +75,39 @@ function getUTM() {
       utm_source AS source,
       utm_medium AS medium,
       utm_campaign AS campaign,
+      referrer,
       COUNT(*) AS vendite
     FROM vendite
-    WHERE utm_source IS NOT NULL
-    GROUP BY utm_source, utm_medium, utm_campaign
+    WHERE utm_source IS NOT NULL OR referrer IS NOT NULL
+    GROUP BY utm_source, utm_medium, utm_campaign, referrer
+    ORDER BY vendite DESC
+  `).all();
+}
+
+/* =========================================================
+   VENDITE — Origini sintetiche aggregate
+========================================================= */
+function getOriginiSintetiche() {
+  return db.prepare(`
+    SELECT 
+      CASE
+        WHEN utm_source LIKE '%insta%' OR referrer LIKE '%instagram%' THEN 'Instagram'
+        WHEN utm_source LIKE '%tiktok%' OR referrer LIKE '%tiktok%' THEN 'TikTok'
+        WHEN utm_source LIKE '%you%' OR referrer LIKE '%youtube%' THEN 'YouTube'
+        WHEN utm_source LIKE '%fb%' OR utm_source LIKE '%face%' OR referrer LIKE '%facebook%' THEN 'Facebook'
+        WHEN referrer LIKE '%whatsapp%' THEN 'WhatsApp'
+        WHEN referrer LIKE '%telegram%' THEN 'Telegram'
+        WHEN utm_source LIKE '%email%' OR utm_medium LIKE '%email%' THEN 'Email'
+        WHEN utm_source LIKE '%bot%' OR utm_medium LIKE '%bot%' THEN 'Bot'
+        WHEN utm_medium LIKE '%ads%' OR utm_medium LIKE '%cpc%' THEN 'Paid Ads'
+        WHEN referrer LIKE '%google%' AND utm_medium = 'organic' THEN 'Organic Search'
+        WHEN referrer IS NOT NULL AND referrer NOT LIKE '%mewingmarket%' THEN 'Referral'
+        WHEN utm_source LIKE '%site%' OR utm_medium LIKE '%product_page%' THEN 'Sito'
+        ELSE 'Direct'
+      END AS origine_sintetica,
+      COUNT(*) AS vendite
+    FROM vendite
+    GROUP BY origine_sintetica
     ORDER BY vendite DESC
   `).all();
 }
@@ -132,6 +161,8 @@ function getDashboardData() {
       vendite30: getVendite30(),
       topProdotti: getTopProdotti(),
       utm: getUTM()
+      // volendo in futuro:
+      // origini: getOriginiSintetiche()
     },
     ordini: {
       kpi: getOrdiniKPI(),
@@ -145,6 +176,7 @@ module.exports = {
   getVendite30,
   getTopProdotti,
   getUTM,
+  getOriginiSintetiche,
   getOrdiniKPI,
   getOrdiniLista,
   getDashboardData
