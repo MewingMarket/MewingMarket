@@ -1,6 +1,6 @@
 // =========================================================
 // Dashboard Admin — Vendite + Ordini (Unificata)
-// Versione 2026.97 — SQL LIVE (con patch diagnostica + KPI avanzati)
+// Versione 2026.120 — Frontend UTM esteso + Origine sintetica
 // =========================================================
 
 console.log("🔥 dashboard-vendite-ordini.js CARICATO");
@@ -9,17 +9,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   const token = localStorage.getItem("token");
   const sessionState = localStorage.getItem("sessionState");
 
-  console.log("🔑 TOKEN:", token);
-  console.log("🔑 sessionState:", sessionState);
-
   if (!token || sessionState !== "1") {
     alert("Sessione scaduta. Effettua di nuovo il login.");
     location.href = "/admin/login.html";
     return;
   }
-
-  console.log("🚀 FETCH /api/admin/dashboard PARTITA");
-  console.log("➡️ HEADER Authorization:", "Bearer " + token);
 
   try {
     const res = await fetch("/api/admin/dashboard", {
@@ -30,12 +24,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     });
 
-    console.log("📥 STATUS:", res.status);
-    console.log("📥 HEADERS:", Object.fromEntries(res.headers.entries()));
-
     const ct = res.headers.get("content-type");
-    console.log("📥 CONTENT-TYPE:", ct);
-
     if (ct && ct.includes("text/html")) {
       const text = await res.text();
       console.error("❌ ERRORE: ricevuto HTML invece di JSON:", text.slice(0, 500));
@@ -44,17 +33,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     const data = await res.json();
-    console.log("📦 DATA RICEVUTI (RAW):", data);
-
     if (!data.success) {
       alert("Errore: " + (data.error || "Accesso negato"));
       return;
     }
 
-    try { renderKPI(data); } catch (e) { console.error("❌ ERRORE renderKPI:", e); }
-    try { renderTopProdotti(data?.vendite?.topProdotti || []); } catch (e) { console.error("❌ ERRORE renderTopProdotti:", e); }
-    try { renderUTM(data?.vendite?.utm || []); } catch (e) { console.error("❌ ERRORE renderUTM:", e); }
-    try { renderOrdini(data?.ordini?.lista || [], data?.vendite?.utm || []); } catch (e) { console.error("❌ ERRORE renderOrdini:", e); }
+    renderKPI(data);
+    renderTopProdotti(data?.vendite?.topProdotti || []);
+    renderUTM(data?.vendite?.utm || []);
+    renderOrdini(data?.ordini?.lista || []);
 
   } catch (err) {
     console.error("❌ ERRORE GENERALE DASHBOARD:", err);
@@ -77,10 +64,6 @@ function renderKPI(data) {
   document.getElementById("kpi-ordini").textContent = ordini.totali ?? "0";
   document.getElementById("kpi-ordini-completati").textContent = ordini.completati ?? "0";
   document.getElementById("kpi-ordini-annullati").textContent = ordini.annullati ?? "0";
-
-  // =========================================================
-  // KPI AVANZATI
-  // =========================================================
 
   // AOV
   const aov = listaOrdini.length
@@ -110,14 +93,14 @@ function renderKPI(data) {
     : 0;
   document.getElementById("kpi-clienti-ricorrenti").textContent = ricPerc + "%";
 
-  // Tempo medio completamento (solo ordini completati)
+  // Tempo medio completamento
   const completati = listaOrdini.filter(o => o.stato === "completato");
   let tempoMedio = "—";
 
   if (completati.length > 0) {
     const diff = completati.map(o => {
       const d1 = new Date(o.data_ordine).getTime();
-      const d2 = new Date(o.data_ordine).getTime(); // non hai campo "data completamento"
+      const d2 = new Date(o.data_ordine).getTime();
       return d2 - d1;
     });
 
@@ -148,18 +131,22 @@ function renderTopProdotti(arr) {
 }
 
 // =========================================================
-// UTM
+// UTM — VERSIONE ESTESA
 // =========================================================
 function renderUTM(arr) {
   const body = document.getElementById("utm-body");
   body.innerHTML = "";
 
   arr.forEach(u => {
+    const origineSintetica = detectOrigine(u);
+
     const tr = document.createElement("tr");
     tr.innerHTML = `
+      <td>${origineSintetica}</td>
       <td>${u.source || "-"}</td>
       <td>${u.medium || "-"}</td>
       <td>${u.campaign || "-"}</td>
+      <td>${u.referrer || "-"}</td>
       <td>${u.vendite ?? 0}</td>
     `;
     body.appendChild(tr);
@@ -193,4 +180,39 @@ function renderOrdini(arr) {
     `;
     body.appendChild(tr);
   });
+}
+
+// =========================================================
+// Funzione frontend per origine sintetica (coerente col backend)
+// =========================================================
+function detectOrigine(v) {
+  if (!v) return "Direct";
+
+  const src = (v.source || "").toLowerCase();
+  const med = (v.medium || "").toLowerCase();
+  const ref = (v.referrer || "").toLowerCase();
+
+  if (src.includes("bot") || med.includes("bot")) return "Bot";
+  if (src.includes("email") || med.includes("email") || ref.includes("mail.")) return "Email";
+
+  if (src.includes("insta") || ref.includes("instagram")) return "Instagram";
+  if (src.includes("tiktok") || ref.includes("tiktok")) return "TikTok";
+  if (src.includes("fb") || src.includes("face") || ref.includes("facebook")) return "Facebook";
+  if (ref.includes("whatsapp")) return "WhatsApp";
+  if (ref.includes("telegram")) return "Telegram";
+
+  if (src.includes("yt") || src.includes("you") || ref.includes("youtube")) return "YouTube";
+
+  if (src.includes("goo") || ref.includes("google")) {
+    if (med.includes("cpc") || med.includes("ads")) return "Paid Ads";
+    return "Organic Search";
+  }
+
+  if (med.includes("ads") || med.includes("cpc")) return "Paid Ads";
+
+  if (ref && !ref.includes("mewingmarket")) return "Referral";
+
+  if (src.includes("site") || med.includes("product_page")) return "Sito";
+
+  return "Direct";
 }
