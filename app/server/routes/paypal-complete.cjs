@@ -1,8 +1,8 @@
 /**
  * =========================================================
  * File: app/server/routes/paypal-complete.cjs
- * Completa ordine PayPal (SQL) + email + tracking + vendite + JSON mirror
- * Versione 2026.400 — require assoluti + PATCH capture future-proof + DEBUG totale
+ * Completa ordine PayPal (SQL) + email + vendite + JSON mirror
+ * Versione 2026.950 — require assoluti + FIX totale + FIX sicurezza
  * =========================================================
  */
 
@@ -15,61 +15,63 @@ const path = require("path");
 const R = (p) => require(path.join(process.cwd(), "app/server", p));
 
 const db = R("db/database.cjs");
+const jsonGen = R("modules/generatore-json.cjs");
 const { inviaEmailAcquisto } = R("modules/email-acquisto.cjs");
 const { trackGA4 } = R("services/ga4.cjs");
-const jsonGen = R("modules/generatore-json.cjs");
-const { syncBrevoUtenteStatoReale } = R("modules/liste-brevo.cjs");
+const authUser = R("middleware/auth-user.cjs");
+
+/**
+ * Helper sicuro per JSON
+ */
+function safeParse(str) {
+  try {
+    return JSON.parse(str);
+  } catch {
+    return [];
+  }
+}
 
 const router = express.Router();
 
 /**
  * =========================================================
  * GET /api/paypal/complete-order?orderId=xxxx
+ * Protetto da auth-user
  * =========================================================
  */
-router.get("/paypal/complete-order", async (req, res) => {
+router.get("/paypal/complete-order", authUser, async (req, res) => {
   try {
     const orderId = req.query.orderId;
+    const userId = req.user.id;
 
-    console.log("===============================================");
-    console.log("🔥 COMPLETE-ORDER CALLED");
-    console.log("orderId:", orderId);
-    console.log("===============================================");
-
-    if (!orderId) {
-      console.log("❌ OrderId mancante");
-      return res.json({ success: false, error: "OrderId mancante" });
+    if (!orderId || !userId) {
+      return res.json({ success: false, error: "Parametri mancanti" });
     }
 
     // =========================================================
-    // 1) RECUPERA ORDINE DAL DB
+    // 1) Recupera ordine dal DB
     // =========================================================
     const stmtFind = db.prepare(`
       SELECT *
       FROM ordini
-      WHERE id = ?
+      WHERE id = ? AND utente_id = ?
+      LIMIT 1
     `);
 
-    const ordine = stmtFind.get(orderId);
-
-    console.log("📦 ORDINE DAL DB:", ordine);
+    const ordine = stmtFind.get(orderId, userId);
 
     if (!ordine) {
-      console.log("❌ Ordine non trovato nel DB");
       return res.json({ success: false, error: "Ordine non trovato" });
     }
 
     const paypalId = ordine.paypal_transaction_id;
 
-    console.log("🔑 paypal_transaction_id:", paypalId);
-
     if (!paypalId) {
-      console.log("❌ Transazione PayPal mancante");
       return res.json({ success: false, error: "Transazione PayPal mancante" });
     }
 
     // =========================================================
-    // 2) RECUPERA EMAIL + CODICE FISCALE UTENTE
+    // 2) Recupera email utente
     // =========================================================
     const stmtUser = db.prepare(`
       SELECT email, codice_fiscale
@@ -78,31 +80,26 @@ router.get("/paypal/complete-order", async (req, res) => {
       LIMIT 1
     `);
 
-    const utente = stmtUser.get(ordine.utente_id);
-    console.log("👤 UTENTE:", utente);
-
+    const utente = stmtUser.get(userId);
     const emailUtente = utente?.email || "";
     const codiceFiscale = utente?.codice_fiscale || "";
 
     // =========================================================
-    // 3) SE GIÀ COMPLETATO → NON DUPLICARE
+    // 3) Se già completato → ritorna ordine
     // =========================================================
     if (ordine.stato === "completato") {
-      console.log("ℹ️ Ordine già completato");
       return res.json({
         success: true,
         order: {
           ...ordine,
-          id_ordine: ordine.id,
           prodotti: safeParse(ordine.prodotti_json),
           totale: ordine.totale_cent / 100
-        },
-        message: "Ordine già completato"
+        }
       });
     }
 
     // =========================================================
-    // 4) CATTURA PAGAMENTO PAYPAL — PATCH FUTURE-PROOF
+    // 4) Cattura pagamento PayPal
     // =========================================================
     const MODE = process.env.PAYPAL_MODE || "sandbox";
 
@@ -118,9 +115,6 @@ router.get("/paypal/complete-order", async (req, res) => {
       ? process.env.PAYPAL_SANDBOX_SECRET
       : process.env.PAYPAL_LIVE_SECRET;
 
-    console.log("🌍 PAYPAL MODE:", MODE);
-    console.log("🔗 PAYPAL_API:", PAYPAL_API);
-
     const captureRes = await fetch(
       `${PAYPAL_API}/v2/checkout/orders/${paypalId}/capture`,
       {
@@ -134,34 +128,26 @@ router.get("/paypal/complete-order", async (req, res) => {
       }
     );
 
-    const captureRaw = await captureRes.text();
-    console.log("🔥 RAW CAPTURE RESPONSE:", captureRaw);
-
+    const raw = await captureRes.text();
     let captureData = null;
+
     try {
-      captureData = JSON.parse(captureRaw);
+      captureData = JSON.parse(raw);
     } catch (err) {
-      console.log("❌ ERRORE PARSE CAPTURE JSON:", err);
+      console.error("❌ ERRORE PARSE CAPTURE JSON:", err);
     }
 
-    console.log("📦 CAPTURE DATA PARSED:", captureData);
-
     if (!captureData || captureData.status !== "COMPLETED") {
-      console.log("❌ Pagamento NON completato");
       return res.json({
         success: false,
         error: "Pagamento non completato"
       });
     }
 
-    // ⭐ PATCH 2026 — estrazione captureId reale (API 2024+)
     const paypalCaptureId =
       captureData?.purchase_units?.[0]?.payments?.captures?.[0]?.id || null;
 
-    console.log("🔍 paypalCaptureId:", paypalCaptureId);
-
     if (!paypalCaptureId) {
-      console.error("❌ Nessuna capture valida trovata:", captureData);
       return res.json({
         success: false,
         error: "Capture PayPal non valida"
@@ -169,42 +155,36 @@ router.get("/paypal/complete-order", async (req, res) => {
     }
 
     // =========================================================
-    // 5) GENERA TOKEN DOWNLOAD MONOUSO
+    // 5) Genera token download monouso
     // =========================================================
     const downloadToken = crypto.randomUUID();
-    console.log("🎟️ downloadToken:", downloadToken);
 
-    const stmtToken = db.prepare(`
+    db.prepare(`
       UPDATE ordini
       SET download_token = ?
       WHERE id = ?
-    `);
-
-    stmtToken.run(downloadToken, orderId);
+    `).run(downloadToken, orderId);
 
     // =========================================================
-    // 6) AGGIORNA ORDINE → COMPLETATO
+    // 6) Aggiorna ordine → completato
     // =========================================================
-    const stmtUpdate = db.prepare(`
+    db.prepare(`
       UPDATE ordini
       SET stato = 'completato',
           metodo_pagamento = 'PayPal',
           data_ordine = CURRENT_TIMESTAMP
       WHERE id = ?
-    `);
+    `).run(orderId);
 
-    stmtUpdate.run(orderId);
-
-    console.log("✅ ORDINE AGGIORNATO A COMPLETATO");
-
+    // Aggiorna JSON mirror
     try {
       await jsonGen.exportOrders();
     } catch (err) {
-      console.log("⚠️ Errore exportOrders:", err);
+      console.error("⚠️ Errore exportOrders:", err);
     }
 
     // =========================================================
-    // 7) PREPARA ORDINE PER EMAIL E FRONTEND
+    // 7) Prepara ordine finale
     // =========================================================
     const prodotti = safeParse(ordine.prodotti_json);
 
@@ -224,10 +204,8 @@ router.get("/paypal/complete-order", async (req, res) => {
       download_token: downloadToken
     };
 
-    console.log("📦 ORDINE FINALE:", ordineFinale);
-
     // =========================================================
-    // 8) SALVA VENDITE
+    // 8) Salva vendite
     // =========================================================
     const stmtVendita = db.prepare(`
       INSERT INTO vendite (
@@ -258,11 +236,11 @@ router.get("/paypal/complete-order", async (req, res) => {
     try {
       await jsonGen.exportSales();
     } catch (err) {
-      console.log("⚠️ Errore exportSales:", err);
+      console.error("⚠️ Errore exportSales:", err);
     }
 
     // =========================================================
-    // 9) TRACKING GA4
+    // 9) Tracking GA4
     // =========================================================
     trackGA4("ordine_completato", {
       ordine_id: ordine.id,
@@ -270,7 +248,7 @@ router.get("/paypal/complete-order", async (req, res) => {
     });
 
     // =========================================================
-    // 10) EMAIL ACQUISTO
+    // 10) Email acquisto (Brevo o sandbox fallback)
     // =========================================================
     try {
       await inviaEmailAcquisto({
@@ -282,23 +260,8 @@ router.get("/paypal/complete-order", async (req, res) => {
     }
 
     // =========================================================
-    // 11) PATCH BREVO — pagamento completato → diventa cliente
+    // 11) Risposta al frontend
     // =========================================================
-    try {
-      await syncBrevoUtenteStatoReale({
-        email: emailUtente,
-        cliente: true
-      });
-    } catch (err) {
-      console.error("❌ Errore sync Brevo:", err);
-    }
-
-    // =========================================================
-    // 12) RITORNA ORDINE AL FRONTEND
-    // =========================================================
-    console.log("✅ COMPLETE-ORDER SUCCESS");
-    console.log("===============================================");
-
     return res.json({
       success: true,
       order: ordineFinale
@@ -313,15 +276,4 @@ router.get("/paypal/complete-order", async (req, res) => {
   }
 });
 
-/**
- * Helper sicuro per JSON
- */
-function safeParse(str) {
-  try {
-    return JSON.parse(str);
-  } catch {
-    return [];
-  }
-}
-
-module.exports = router;
+module.exports = router; 
