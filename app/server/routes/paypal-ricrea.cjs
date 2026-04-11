@@ -13,7 +13,7 @@ const router = express.Router();
 const path = require("path");
 
 // Moduli
-const db = require(path.join(process.cwd(), "app/server/modules/db.cjs"));
+const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
 const paypal = require(path.join(process.cwd(), "app/server/modules/paypal.cjs"));
 const { inviaEmailAttesa } = require(path.join(process.cwd(), "app/server/modules/email-attesa.cjs"));
 const { addToList } = require(path.join(process.cwd(), "app/server/modules/liste-brevo.cjs"));
