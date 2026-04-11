@@ -18,13 +18,16 @@
   <p>Compila il modulo per inviare la tua richiesta.</p>
 
   <form id="rimborsoForm" class="rimborso-form">
-    <label>Email</label>
+
+    <label for="email">Email</label>
     <input type="email" id="email" required>
 
-    <label>ID Ordine</label>
-    <input type="text" id="ordine" required>
+    <label for="ordineSelect">Seleziona l’ordine</label>
+    <select id="ordineSelect" required>
+      <option value="">Caricamento ordini...</option>
+    </select>
 
-    <label>Motivo della richiesta</label>
+    <label for="motivo">Motivo della richiesta</label>
     <textarea id="motivo" rows="6" required></textarea>
 
     <button type="submit" class="rimborso-btn">Invia richiesta</button>
