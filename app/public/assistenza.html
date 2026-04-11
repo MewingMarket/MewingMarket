@@ -30,30 +30,30 @@
     <textarea id="domanda" rows="6" required></textarea>
 
     <button type="submit" class="assist-btn">Invia richiesta</button>
+
+    <!-- PATCH: Contenitore messaggi -->
+    <div id="msgAssistenza" class="status"></div>
   </form>
 
- 
+  <!-- BOT ORIGINALE (disattivato, verrà patchato dopo) -->
+  <div id="chat-toggle">
+    <img src="chat-icon.svg" alt="Chat">
+  </div>
 
-    <!-- BOT ORIGINALE TRASFERITO QUI -->
-    <div id="chat-toggle">
-      <img src="chat-icon.svg" alt="Chat">
+  <div id="chat-container">
+    <div id="chat-header">
+      <img src="chat-icon.svg" alt="">
+      Supporto MewingMarket
     </div>
 
-    <div id="chat-container">
-      <div id="chat-header">
-        <img src="chat-icon.svg" alt="">
-        Supporto MewingMarket
-      </div>
+    <div id="chat-box"></div>
 
-      <div id="chat-box"></div>
-
-      <div id="chat-input-area">
-        <input id="chat-input" type="text" placeholder="Scrivi un messaggio..." disabled>
-        <button id="chat-send" disabled>➤</button>
-        <button id="chat-voice" disabled>🎤</button>
-        <button id="chat-attach" disabled>📎</button>
-        <input id="chat-file" type="file" style="display:none;">
-      </div>
+    <div id="chat-input-area">
+      <input id="chat-input" type="text" placeholder="Scrivi un messaggio..." disabled>
+      <button id="chat-send" disabled>➤</button>
+      <button id="chat-voice" disabled>🎤</button>
+      <button id="chat-attach" disabled>📎</button>
+      <input id="chat-file" type="file" style="display:none;">
     </div>
   </div>
 
@@ -73,6 +73,7 @@
 <script src="assistenza.js"></script>
 <script src="chat.js"></script>
 <script src="premium.js"></script>
+
 <!-- JS GLOBALI -->
 <script src="loader-header-footer.js"></script>
 <script src="seo.js"></script>
