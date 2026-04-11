@@ -17,5 +17,7 @@ CREATE TABLE IF NOT EXISTS ordini (
 
   data_ordine TEXT DEFAULT CURRENT_TIMESTAMP,
 
+  download_token TEXT,
+
   FOREIGN KEY (utente_id) REFERENCES utenti(id)
 );
