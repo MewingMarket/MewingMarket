@@ -1,9 +1,11 @@
 /* =========================================================
-   ORDINI UTENTE — Versione 2026.95
+   ORDINI UTENTE — Versione 2026.96
    - Sicuro
    - Token Bearer
    - sessionState = 1
    - Annullamento ordine
+   - Completa pagamento
+   - Richiedi rimborso
    - UX migliorata
 ========================================================= */
 
@@ -62,17 +64,32 @@ document.addEventListener("DOMContentLoaded", async () => {
       ? new Date(o.data_ordine).toLocaleDateString("it-IT")
       : "—";
 
-    const annullaBtn =
-      o.stato === "completato" || o.stato === "annullato"
-        ? ""
-        : `<button class="btn-annulla" data-id="${o.id}">Annulla</button>`;
+    // =========================================================
+    // BOTTONI AZIONE (PATCH 2026.96)
+    // =========================================================
+    let azione = "";
+
+    // 🔵 COMPLETA PAGAMENTO
+    if (o.stato === "in_attesa_pagamento") {
+      azione = `<button class="btn-paga" data-id="${o.id}">Completa pagamento</button>`;
+    }
+
+    // 🟢 RICHIEDI RIMBORSO (solo ordini completati)
+    else if (o.stato === "completato") {
+      azione = `<button class="btn-rimborso" data-id="${o.id}">Richiedi rimborso</button>`;
+    }
+
+    // 🔴 ANNULLA (solo se non completato e non annullato)
+    else if (o.stato !== "annullato") {
+      azione = `<button class="btn-annulla" data-id="${o.id}">Annulla</button>`;
+    }
 
     tr.innerHTML = `
       <td>${dataOrdine}</td>
       <td>${prodottiHTML}</td>
       <td>${totaleEuro}€</td>
       <td>${o.stato}</td>
-      <td>${annullaBtn}</td>
+      <td>${azione}</td>
     `;
 
     body.appendChild(tr);
@@ -106,16 +123,55 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       alert("Ordine annullato.");
-
-      // PATCH: refresh dashboard
       window.postMessage("refresh_dashboard");
-
-      // Aggiorna tabella ordini
       location.reload();
 
     } catch (err) {
       console.error("Errore annullamento ordine:", err);
       alert("Errore di connessione.");
     }
+  });
+
+  // =========================================================
+  // 5) Completa pagamento (PayPal)
+  // =========================================================
+  body.addEventListener("click", async e => {
+    if (!e.target.classList.contains("btn-paga")) return;
+
+    const id = e.target.dataset.id;
+    if (!id) return;
+
+    try {
+      const res = await fetch(`/api/paypal/ricrea/${id}`, {
+        method: "POST",
+        headers: { Authorization: "Bearer " + token }
+      });
+
+      const data = await res.json();
+
+      if (!data.success || !data.url) {
+        alert("Errore nella rigenerazione del pagamento.");
+        return;
+      }
+
+      window.location.href = data.url;
+
+    } catch (err) {
+      console.error("Errore completa pagamento:", err);
+      alert("Errore di connessione.");
+    }
+  });
+
+  // =========================================================
+  // 6) Richiedi rimborso
+  // =========================================================
+  body.addEventListener("click", async e => {
+    if (!e.target.classList.contains("btn-rimborso")) return;
+
+    const id = e.target.dataset.id;
+    if (!id) return;
+
+    // Redirect alla pagina rimborso
+    window.location.href = `/rimborso.html?id=${id}`;
   });
 });
