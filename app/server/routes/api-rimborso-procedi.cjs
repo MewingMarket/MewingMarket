@@ -7,7 +7,7 @@
 const express = require("express");
 const router = express.Router();
 const path = require("path");
-const db = require(path.join(process.cwd(), "app/server/modules/db.cjs"));
+const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
 
 router.post("/procedi/:id", async (req, res) => {
   const id = req.params.id;
