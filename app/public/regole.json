@@ -11,8 +11,8 @@
     {
       "titolo": "Download dei Prodotti",
       "regole": [
-        "Il link di download è disponibile nella pagina Thank You.",
-        "Il link è sempre accessibile dalla tua area personale.",
+        "Dopo il pagamento ricevi una email con il link di download.",
+        "Puoi scaricare i prodotti in qualsiasi momento dalla Dashboard, sezione 'I miei download'.",
         "È vietata la condivisione dei file acquistati."
       ]
     },
@@ -48,7 +48,7 @@
         "È necessario indicare il motivo della richiesta.",
         "Il rimborso può essere approvato in caso di errore tecnico, file non scaricabile o acquisto duplicato.",
         "Il rimborso non è previsto per uso improprio o per prodotti già scaricati correttamente.",
-        "La procedura si avvia dalla pagina dedicata ai rimborsi o dalla sezione ordini."
+        "La procedura si avvia dalla Dashboard, sezione 'I miei ordini', tramite il pulsante 'Richiedi rimborso'."
       ]
     }
   ]
