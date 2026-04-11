@@ -1,11 +1,13 @@
 /* =========================================================
-   ORDINI UTENTE — Versione 2026.96
+   ORDINI UTENTE — Versione 2026.200 (patch totale)
    - Sicuro
    - Token Bearer
    - sessionState = 1
    - Annullamento ordine
-   - Completa pagamento
+   - Completa pagamento (ricrea)
    - Richiedi rimborso
+   - Download file
+   - Stati coerenti con backend 2026
    - UX migliorata
 ========================================================= */
 
@@ -65,7 +67,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       : "—";
 
     // =========================================================
-    // BOTTONI AZIONE (PATCH 2026.96)
+    // BOTTONI AZIONE (PATCH 2026.200)
     // =========================================================
     let azione = "";
 
@@ -74,9 +76,21 @@ document.addEventListener("DOMContentLoaded", async () => {
       azione = `<button class="btn-paga" data-id="${o.id}">Completa pagamento</button>`;
     }
 
-    // 🟢 RICHIEDI RIMBORSO (solo ordini completati)
+    // 🟢 DOWNLOAD + RICHIEDI RIMBORSO (solo ordini completati)
     else if (o.stato === "completato") {
-      azione = `<button class="btn-rimborso" data-id="${o.id}">Richiedi rimborso</button>`;
+      const downloadBtn = o.download_token
+        ? `<button class="btn-download" data-token="${o.download_token}">Download</button>`
+        : "";
+
+      azione = `
+        ${downloadBtn}
+        <button class="btn-rimborso" data-id="${o.id}">Richiedi rimborso</button>
+      `;
+    }
+
+    // 🟡 RIMBORSATO
+    else if (o.stato === "rimborsato") {
+      azione = `<span class="badge-rimborsato">Rimborsato</span>`;
     }
 
     // 🔴 ANNULLA (solo se non completato e non annullato)
@@ -123,7 +137,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       alert("Ordine annullato.");
-      window.postMessage("refresh_dashboard");
       location.reload();
 
     } catch (err) {
@@ -171,7 +184,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     const id = e.target.dataset.id;
     if (!id) return;
 
-    // Redirect alla pagina rimborso
     window.location.href = `/rimborso.html?id=${id}`;
+  });
+
+  // =========================================================
+  // 7) Download file
+  // =========================================================
+  body.addEventListener("click", e => {
+    if (!e.target.classList.contains("btn-download")) return;
+
+    const token = e.target.dataset.token;
+    if (!token) return;
+
+    window.location.href = `/download/${token}`;
   });
 });
