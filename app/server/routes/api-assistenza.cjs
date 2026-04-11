@@ -1,8 +1,9 @@
 /**
  * =========================================================
- * ASSISTENZA — Endpoint invio richiesta (PATCH 2026.980)
+ * ASSISTENZA — Endpoint invio richiesta (PATCH 2026.995)
  * - Usa FAQ.sql
  * - Usa prodotti SQL per consigli prodotto
+ * - Usa template email premium
  * - Nessuna invenzione
  * =========================================================
  */
@@ -11,9 +12,16 @@ const express = require("express");
 const router = express.Router();
 const path = require("path");
 const db = require(path.join(process.cwd(), "app/server/db/database.cjs")); // PATCH: DB SQL
+
 const assistAI = require(path.join(process.cwd(), "app/server/modules/assistenza-ai.cjs"));
 const { inviaEmailLista } = require(path.join(process.cwd(), "app/server/modules/invia-email-lista.cjs"));
 const { addToList } = require(path.join(process.cwd(), "app/server/modules/liste-brevo.cjs"));
+
+// PATCH: Template email premium
+const { templateEmailRisposta } = require(path.join(
+  process.cwd(),
+  "app/server/modules/email-risposta.cjs"
+));
 
 router.post("/invia", async (req, res) => {
   const { email, domanda } = req.body;
@@ -31,17 +39,15 @@ router.post("/invia", async (req, res) => {
     // ============================================================
     let faqRecord = null;
 
-    // Cerca match prodotto per titolo o keywords
     const prodotti = await db.all("SELECT * FROM prodotti");
     const matchProdotto = prodotti.find(p =>
       domanda.toLowerCase().includes((p.titolo || "").toLowerCase())
     );
 
     if (matchProdotto) {
-      // Risposta base derivata dalla descrizione lunga
       faqRecord = {
         categoria: "prodotti",
-        domanda: domanda,
+        domanda,
         risposta_base: matchProdotto.descrizione_lunga || "",
         keywords: matchProdotto.titolo,
         fonte: "prodotti.sql"
@@ -54,12 +60,10 @@ router.post("/invia", async (req, res) => {
     if (!faqRecord) {
       const tutteFAQ = await db.all("SELECT * FROM faq");
 
-      // Matching semplice: keywords + similarità minima
       faqRecord = tutteFAQ.find(f =>
         domanda.toLowerCase().includes((f.keywords || "").toLowerCase())
       );
 
-      // Se ancora nulla → fallback neutro
       if (!faqRecord) {
         faqRecord = {
           categoria: "generico",
@@ -85,13 +89,18 @@ router.post("/invia", async (req, res) => {
     const ticket = Math.floor(100000 + Math.random() * 900000);
 
     // ============================================================
-    // 6) INVIA EMAIL
+    // 6) TEMPLATE EMAIL PREMIUM
+    // ============================================================
+    const htmlEmail = templateEmailRisposta({ rispostaAI });
+
+    // ============================================================
+    // 7) INVIA EMAIL
     // ============================================================
     await inviaEmailLista({
       email,
       listId: 15,
       subject: `Risposta alla tua richiesta – Ticket n°${ticket}`,
-      html: rispostaAI,
+      html: htmlEmail,
       tipo: "assistenza",
       modalita: "normale"
     });
