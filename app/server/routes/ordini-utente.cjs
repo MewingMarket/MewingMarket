@@ -3,7 +3,7 @@
  * File: app/server/routes/ordini-utente.cjs
  * Restituisce gli ordini dell'utente loggato (SQL)
  * + Annulla ordine (SQL)
- * Versione 2026.200 — require assoluti
+ * Versione 2026.950 — require assoluti + FIX sicurezza + FIX stato
  * =========================================================
  */
 
@@ -15,14 +15,14 @@ const R = (p) => require(path.join(process.cwd(), "app/server", p));
 
 const db = R("db/database.cjs");
 const authUser = R("middleware/auth-user.cjs");
+const jsonGen = R("modules/generatore-json.cjs");
 const { inviaEmailOrdineAnnullato } = R("modules/email-ordine-annullato.cjs");
-const { syncBrevoUtenteStatoReale } = R("modules/liste-brevo.cjs");
 
 const router = express.Router();
 
-// =========================================================
-// Helper: safeParse per prodotti_json
-// =========================================================
+/**
+ * Helper sicuro per JSON
+ */
 function safeParse(str) {
   try {
     if (!str) return [];
@@ -35,18 +35,12 @@ function safeParse(str) {
 /**
  * =========================================================
  * GET /api/ordini/utente
+ * Protetto da auth-user
  * =========================================================
  */
 router.get("/ordini/utente", authUser, (req, res) => {
   try {
     const userId = req.user.id;
-
-    if (!userId) {
-      return res.json({
-        success: false,
-        error: "Utente non valido"
-      });
-    }
 
     const stmt = db.prepare(`
       SELECT 
@@ -57,6 +51,7 @@ router.get("/ordini/utente", authUser, (req, res) => {
         stato,
         metodo_pagamento,
         paypal_transaction_id,
+        download_token,
         data_ordine
       FROM ordini
       WHERE utente_id = ?
@@ -98,7 +93,8 @@ router.get("/ordini/utente", authUser, (req, res) => {
         stato: o.stato,
         data_ordine: o.data_ordine,
         metodo_pagamento: o.metodo_pagamento,
-        paypal_transaction_id: o.paypal_transaction_id
+        paypal_transaction_id: o.paypal_transaction_id,
+        download_token: o.download_token || null
       };
     });
 
@@ -119,6 +115,7 @@ router.get("/ordini/utente", authUser, (req, res) => {
 /**
  * =========================================================
  * POST /api/ordini/annulla/:id
+ * Protetto da auth-user
  * =========================================================
  */
 router.post("/ordini/annulla/:id", authUser, async (req, res) => {
@@ -126,31 +123,17 @@ router.post("/ordini/annulla/:id", authUser, async (req, res) => {
     const ordineId = req.params.id;
     const userId = req.user.id;
 
-    if (!ordineId || !userId) {
-      return res.json({
-        success: false,
-        error: "Dati mancanti"
-      });
-    }
-
     const stmtFind = db.prepare(`
       SELECT *
       FROM ordini
-      WHERE id = ?
+      WHERE id = ? AND utente_id = ?
       LIMIT 1
     `);
 
-    const ordine = stmtFind.get(ordineId);
+    const ordine = stmtFind.get(ordineId, userId);
 
     if (!ordine) {
       return res.json({ success: false, error: "Ordine non trovato" });
-    }
-
-    if (ordine.utente_id !== userId) {
-      return res.json({
-        success: false,
-        error: "Non puoi annullare un ordine non tuo"
-      });
     }
 
     if (ordine.stato === "completato") {
@@ -167,14 +150,22 @@ router.post("/ordini/annulla/:id", authUser, async (req, res) => {
       });
     }
 
-    const stmtUpdate = db.prepare(`
+    // Aggiorna stato → annullato
+    db.prepare(`
       UPDATE ordini
-      SET stato = 'annullato'
+      SET stato = 'annullato',
+          data_ordine = CURRENT_TIMESTAMP
       WHERE id = ?
-    `);
+    `).run(ordineId);
 
-    stmtUpdate.run(ordineId);
+    // Aggiorna JSON mirror
+    try {
+      await jsonGen.exportOrders();
+    } catch (err) {
+      console.error("⚠️ Errore exportOrders JSON:", err);
+    }
 
+    // Recupera email utente
     const stmtUser = db.prepare(`
       SELECT email
       FROM utenti
@@ -185,9 +176,9 @@ router.post("/ordini/annulla/:id", authUser, async (req, res) => {
     const utente = stmtUser.get(userId);
     const emailUtente = utente?.email || "";
 
-    // EMAIL DI ANNULLAMENTO
+    // Email annullamento (Brevo o sandbox fallback)
     try {
-      inviaEmailOrdineAnnullato({
+      await inviaEmailOrdineAnnullato({
         email: emailUtente,
         ordine: {
           id: ordine.id,
@@ -197,16 +188,6 @@ router.post("/ordini/annulla/:id", authUser, async (req, res) => {
       });
     } catch (err) {
       console.error("⚠️ Errore invio email annullamento:", err);
-    }
-
-    // ⭐ PATCH BREVO — l’utente rimane cliente anche se annulla
-    try {
-      await syncBrevoUtenteStatoReale({
-        email: emailUtente,
-        cliente: true
-      });
-    } catch (err) {
-      console.error("❌ Errore sync Brevo:", err);
     }
 
     return res.json({
