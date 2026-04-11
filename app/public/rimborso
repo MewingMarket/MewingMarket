@@ -1,0 +1,33 @@
+.rimborso-form {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.rimborso-form input,
+.rimborso-form textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.rimborso-btn {
+  padding: 12px 20px;
+  background: #d9534f;
+  color: #fff;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.rimborso-btn:hover {
+  background: #c9302c;
+}
+
+.rimborso-info {
+  margin-top: 30px;
+  font-size: 15px;
+}
