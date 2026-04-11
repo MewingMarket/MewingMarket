@@ -2,7 +2,7 @@
    File: app/server/routes/api-upload.cjs
    Upload File Prodotto — Versione 2026.200 (FULL PATCHED)
    - require assoluti
-   - percorso upload assoluto
+   - percorso upload assoluto (PATCH OPZIONE A)
 ========================================================= */
 
 const express = require("express");
@@ -17,8 +17,11 @@ const R = (p) => require(path.join(process.cwd(), "app/server", p));
 // Middleware per tipo upload
 const setUploadType = R("middleware/upload-type.cjs");
 
-// Cartella upload (assoluta, stabile)
-const uploadFiles = path.join(process.cwd(), "app/public/uploads");
+// =========================================================
+// PATCH 2026 — CARTELLA UPLOAD DEFINITIVA
+// Upload e Download ora usano la STESSA cartella
+// =========================================================
+const uploadFiles = "/var/data/uploads/files";
 
 /**
  * =========================================================
@@ -43,11 +46,18 @@ router.post("/upload/file", setUploadType("file"), (req, res) => {
 
     const finalName = filename + ext;
 
-    // Percorso finale assoluto
+    // Percorso finale assoluto (PATCH)
     const filePath = path.join(uploadFiles, finalName);
 
     console.log("📁 Upload file prodotto →", finalName);
     console.log("📂 Percorso finale →", filePath);
+
+    // Assicura che la cartella esista
+    try {
+      fs.mkdirSync(uploadFiles, { recursive: true });
+    } catch (err) {
+      console.error("❌ Errore creazione cartella upload:", err);
+    }
 
     // Stream su disco
     const writeStream = fs.createWriteStream(filePath);
