@@ -2,7 +2,7 @@
  * =========================================================
  * File: app/server/routes/paypal-cancel.cjs
  * Annulla ordine PayPal (SQL) + email annullamento + JSON mirror
- * Versione 2026.200 — require assoluti
+ * Versione 2026.950 — require assoluti + FIX sicurezza + FIX stato
  * =========================================================
  */
 
@@ -13,129 +13,130 @@ const path = require("path");
 const R = (p) => require(path.join(process.cwd(), "app/server", p));
 
 const db = R("db/database.cjs");
-const { inviaEmailOrdineAnnullato } = R("modules/email-ordine-annullato.cjs");
 const jsonGen = R("modules/generatore-json.cjs");
-const { syncBrevoUtenteStatoReale } = R("modules/liste-brevo.cjs");
+const { inviaEmailOrdineAnnullato } = R("modules/email-ordine-annullato.cjs");
+const authUser = R("middleware/auth-user.cjs");
 
 const router = express.Router();
 
 /**
+ * Helper sicuro per JSON
+ */
+function safeParse(str) {
+  try {
+    return JSON.parse(str);
+  } catch {
+    return [];
+  }
+}
+
+/**
  * =========================================================
  * GET /api/paypal/cancel-order?orderId=xxxx
+ * Protetto da auth-user
  * =========================================================
  */
-router.get("/paypal/cancel-order", async (req, res) => {
+router.get("/paypal/cancel-order", authUser, async (req, res) => {
   try {
     const orderId = req.query.orderId;
+    const userId = req.user.id;
 
-    if (!orderId) {
-      return res.json({ success: false, error: "OrderId mancante" });
+    if (!orderId || !userId) {
+      return res.json({ success: false, error: "Parametri mancanti" });
     }
 
-    // Recupera ordine
+    // =========================================================
+    // 1) Recupera ordine dal DB
+    // =========================================================
     const stmtFind = db.prepare(`
-      SELECT id, stato, utente_id, prodotti_json, totale_cent
-      FROM ordini
-      WHERE id = ?
+      SELECT 
+        o.id,
+        o.utente_id,
+        o.prodotti_json,
+        o.totale_cent,
+        o.stato,
+        u.email AS utente_email
+      FROM ordini o
+      LEFT JOIN utenti u ON u.id = o.utente_id
+      WHERE o.id = ? AND o.utente_id = ?
+      LIMIT 1
     `);
 
-    const ordine = stmtFind.get(orderId);
+    const ordine = stmtFind.get(orderId, userId);
 
     if (!ordine) {
       return res.json({ success: false, error: "Ordine non trovato" });
     }
 
-    // Se già completato → non lo tocchiamo
-    if (ordine.stato === "completato" || ordine.stato === "COMPLETED") {
+    // Se già completato → non annullabile
+    if (ordine.stato === "completato") {
       return res.json({
-        success: true,
-        message: "Ordine già completato, nessuna modifica",
-        order: {
-          id: ordine.id,
-          id_ordine: ordine.id,
-          prodotti: JSON.parse(ordine.prodotti_json),
-          totale: ordine.totale_cent / 100,
-          stato: ordine.stato
-        }
+        success: false,
+        error: "Ordine già completato, non annullabile"
       });
     }
 
-    // Se già annullato → non lo tocchiamo
-    if (ordine.stato === "annullato" || ordine.stato === "CANCELLED") {
+    // Se già annullato → ritorna ordine
+    if (ordine.stato === "annullato") {
       return res.json({
         success: true,
         message: "Ordine già annullato",
         order: {
           id: ordine.id,
-          id_ordine: ordine.id,
-          prodotti: JSON.parse(ordine.prodotti_json),
+          prodotti: safeParse(ordine.prodotti_json),
           totale: ordine.totale_cent / 100,
           stato: ordine.stato
         }
       });
     }
 
-    // Aggiorna stato → annullato
-    const stmtUpdate = db.prepare(`
+    // =========================================================
+    // 2) Aggiorna stato → annullato
+    // =========================================================
+    db.prepare(`
       UPDATE ordini
       SET stato = 'annullato',
           data_ordine = CURRENT_TIMESTAMP
       WHERE id = ?
-    `);
+    `).run(orderId);
 
-    stmtUpdate.run(orderId);
-
-    // 🔥 Aggiorna JSON mirror ordini
+    // Aggiorna JSON mirror
     try {
       await jsonGen.exportOrders();
     } catch (err) {
       console.error("⚠️ Errore exportOrders JSON:", err);
     }
 
-    // Recupera email utente
-    const stmtUser = db.prepare(`
-      SELECT email
-      FROM utenti
-      WHERE id = ?
-      LIMIT 1
-    `);
+    const emailUtente = ordine.utente_email || "";
 
-    const utente = stmtUser.get(ordine.utente_id);
-    const emailUtente = utente?.email || "";
-
-    // Invia email annullamento
+    // =========================================================
+    // 3) Email annullamento (Brevo o sandbox fallback)
+    // =========================================================
     try {
-      inviaEmailOrdineAnnullato({
-        email: emailUtente,
-        ordine: {
-          id: ordine.id,
-          id_ordine: ordine.id,
-          prodotti: JSON.parse(ordine.prodotti_json),
-          totale: ordine.totale_cent / 100,
-          stato: "annullato"
-        }
-      });
+      if (emailUtente) {
+        await inviaEmailOrdineAnnullato({
+          email: emailUtente,
+          ordine: {
+            id: ordine.id,
+            prodotti: safeParse(ordine.prodotti_json),
+            totale: ordine.totale_cent / 100,
+            stato: "annullato"
+          }
+        });
+      }
     } catch (err) {
       console.error("⚠️ Errore invio email annullamento:", err);
     }
 
-    // ⭐ PATCH BREVO — PayPal cancel → NON è cliente
-    try {
-      await syncBrevoUtenteStatoReale({
-        email: emailUtente,
-        cliente: false
-      });
-    } catch (err) {
-      console.error("❌ Errore sync Brevo:", err);
-    }
-
+    // =========================================================
+    // 4) Risposta al frontend
+    // =========================================================
     return res.json({
       success: true,
       message: "Ordine annullato correttamente",
       order: {
         id: ordine.id,
-        id_ordine: ordine.id,
-        prodotti: JSON.parse(ordine.prodotti_json),
+        prodotti: safeParse(ordine.prodotti_json),
         totale: ordine.totale_cent / 100,
         stato: "annullato"
       }
