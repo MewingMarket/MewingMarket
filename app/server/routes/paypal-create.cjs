@@ -2,7 +2,7 @@
  * =========================================================
  * File: app/server/routes/paypal-create.cjs
  * Crea ordine PayPal (SQL) + salva ordine in DB + JSON mirror
- * Versione 2026.200 — require assoluti
+ * Versione 2026.950 — require assoluti + FIX totale + FIX sicurezza
  * =========================================================
  */
 
@@ -32,9 +32,6 @@ router.post("/paypal/create-order", authUser, async (req, res) => {
     if (!email || !Array.isArray(prodotti) || prodotti.length === 0) {
       return res.json({ success: false, error: "Dati ordine mancanti" });
     }
-
-    // MODEL A → prendiamo solo il primo prodotto
-    const prodotto = prodotti[0];
 
     // totale arriva in EURO → convertiamo in centesimi
     const totaleCent = Math.round(Number(totale) * 100);
@@ -117,7 +114,7 @@ router.post("/paypal/create-order", authUser, async (req, res) => {
     );
 
     // =========================================================
-    // 🔥 PATCH: LOG RAW PAYPAL RESPONSE
+    // 🔥 LOG RAW PAYPAL RESPONSE
     // =========================================================
     const raw = await paypalRes.text();
     console.log("PAYPAL RAW RESPONSE:", raw);
