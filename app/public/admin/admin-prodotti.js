@@ -53,7 +53,8 @@ document.addEventListener("DOMContentLoaded", () => {
       throw new Error(data.error || "Errore upload");
     }
 
-    return data.url;
+    // ⭐ PATCH 2026 — backend restituisce "filename", non "url"
+    return data.filename;
   }
 
   /* =========================================================
@@ -124,7 +125,6 @@ document.addEventListener("DOMContentLoaded", () => {
       fDescrizione.value = p.descrizione_lunga || "";
       fPrezzo.value = p.prezzo || "";
 
-      // AI: riempi breve + anteprima
       if (fDescrizioneBreve) {
         fDescrizioneBreve.value = p.descrizione_breve || "";
       }
@@ -227,13 +227,11 @@ document.addEventListener("DOMContentLoaded", () => {
           return;
         }
 
-        // Riempie i campi
         fDescrizione.value = data.descrizione_lunga || "";
         if (fDescrizioneBreve) {
           fDescrizioneBreve.value = data.descrizione_breve || "";
         }
 
-        // Anteprima
         aiPreview.textContent = data.descrizione_lunga || "";
         aiPreviewBox.style.display = data.descrizione_lunga ? "block" : "none";
 
@@ -257,7 +255,6 @@ document.addEventListener("DOMContentLoaded", () => {
     let immagineURL = prodottoCorrente?.immagine || "";
     let fileProdottoURL = prodottoCorrente?.fileProdotto || "";
 
-    // 1) URL immagine da campo testo ha priorità
     const urlDiretto = fImgUrl.value.trim();
     if (urlDiretto) {
       immagineURL = urlDiretto;
@@ -270,7 +267,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    // File prodotto (opzionale)
     if (fFileProdotto.files.length > 0) {
       try {
         fileProdottoURL = await uploadFile("/api/upload/file", fFileProdotto.files[0]);
@@ -315,7 +311,6 @@ document.addEventListener("DOMContentLoaded", () => {
         fPreview.style.display = "block";
       }
 
-      // Aggiorna anteprima AI se presente
       if (aiPreview && aiPreviewBox && p.descrizione_lunga) {
         aiPreview.textContent = p.descrizione_lunga;
         aiPreviewBox.style.display = "block";
