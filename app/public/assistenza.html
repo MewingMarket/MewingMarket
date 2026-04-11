@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- CSS PAGINA STANDARD -->
+  <link rel="stylesheet" href="pagina-standard.css">
+  <link rel="stylesheet" href="assistenza.css">
+</head>
+
+<body class="pagina-standard-body">
+
+<!-- HEAD DINAMICO -->
+<div id="head-placeholder"></div>
+
+<!-- HEADER DINAMICO -->
+<div id="header-placeholder"></div>
+
+<main class="pagina-standard">
+  <h1>Assistenza</h1>
+  <p>Hai una domanda? Compila il modulo e ti risponderemo entro 24–48 ore.</p>
+
+  <!-- FORM ASSISTENZA -->
+  <form id="assistenzaForm" class="assist-form">
+    <label>Email</label>
+    <input type="email" id="email" required>
+
+    <label>La tua domanda</label>
+    <textarea id="domanda" rows="6" required></textarea>
+
+    <button type="submit" class="assist-btn">Invia richiesta</button>
+  </form>
+
+  <!-- BOT (inattivo, solo markup) -->
+  <div class="assist-bot">
+    <h2>Supporto rapido</h2>
+    <p>Il bot sarà disponibile prossimamente.</p>
+  </div>
+
+  <!-- CONTATTI RAPIDI -->
+  <div class="assist-contatti">
+    <h2>Contatti rapidi</h2>
+    <p><strong>Email supporto:</strong> <a href="mailto:supporto@mewingmarket.it">supporto@mewingmarket.it</a></p>
+    <p><strong>WhatsApp Business:</strong> <a href="https://wa.me/393520266660">352 026 6660</a></p>
+    <p><a href="contatti.html">Vai alla pagina contatti →</a></p>
+  </div>
+</main>
+
+<!-- FOOTER DINAMICO -->
+<div id="footer-placeholder"></div>
+
+<!-- JS SPECIFICO -->
+<script src="assistenza.js"></script>
+
+<!-- JS GLOBALI -->
+<script src="loader-header-footer.js"></script>
+<script src="seo.js"></script>
+<script src="structured-data.js"></script>
+<script src="tracking.js"></script>
+
+</body>
+</html>
