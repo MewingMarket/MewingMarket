@@ -1,10 +1,46 @@
 [
   {
     "domanda": "Come funziona MewingMarket?",
-    "risposta": "Acquisti un prodotto digitale tramite PayPal e ricevi subito il link per scaricare il file dal nostro server."
+    "risposta": "Acquisti un prodotto digitale tramite PayPal e ricevi subito il link per scaricare il file via email e nella tua Dashboard."
   },
   {
     "domanda": "Posso chiedere un rimborso?",
-    "risposta": "Sì, valutiamo ogni richiesta caso per caso in caso di problemi tecnici o acquisti duplicati."
+    "risposta": "Sì, valutiamo ogni richiesta caso per caso in caso di problemi tecnici, file non scaricabile o acquisti duplicati. Il rimborso può essere richiesto solo per ordini completati."
+  },
+  {
+    "domanda": "Dove trovo i miei download?",
+    "risposta": "Dopo il pagamento ricevi una email con il link di download. Puoi scaricare i prodotti anche dalla Dashboard, sezione 'I miei download'."
+  },
+  {
+    "domanda": "Come annullo un ordine?",
+    "risposta": "Puoi annullare un ordine dalla Dashboard, sezione 'I miei ordini', se lo stato non è ancora completato."
+  },
+  {
+    "domanda": "Cosa significa 'Completa pagamento'?",
+    "risposta": "Se un ordine è in attesa di pagamento, puoi cliccare su 'Completa pagamento' per rigenerare il link PayPal e concludere l'acquisto."
+  },
+  {
+    "domanda": "Come accedo al mio account?",
+    "risposta": "Vai sulla pagina di login, inserisci email e password e accedi alla Dashboard."
+  },
+  {
+    "domanda": "Ho dimenticato la password, come la reimposto?",
+    "risposta": "Puoi usare la procedura di reset basata sul codice fiscale nella pagina di login."
+  },
+  {
+    "domanda": "Come elimino il mio account?",
+    "risposta": "Puoi eliminare il tuo account dalla Dashboard, sezione 'Elimina account'. È necessaria la password per confermare."
+  },
+  {
+    "domanda": "Dove trovo i miei ordini?",
+    "risposta": "Nella Dashboard, sezione 'I miei ordini', puoi vedere stato, prodotti e azioni disponibili."
+  },
+  {
+    "domanda": "Il file non si scarica, cosa faccio?",
+    "risposta": "Prova da un altro browser o dispositivo. Se il problema persiste, contattaci via email o WhatsApp Business."
+  },
+  {
+    "domanda": "Posso usare i prodotti commercialmente?",
+    "risposta": "No, tutti i prodotti sono ad uso personale salvo diversa indicazione nella pagina del prodotto."
   }
 ]
