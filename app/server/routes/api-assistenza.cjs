@@ -10,7 +10,7 @@
 const express = require("express");
 const router = express.Router();
 const path = require("path");
-const db = require(path.join(process.cwd(), "app/server/db.cjs")); // PATCH: DB SQL
+const db = require(path.join(process.cwd(), "app/server/db/database.cjs")); // PATCH: DB SQL
 const assistAI = require(path.join(process.cwd(), "app/server/modules/assistenza-ai.cjs"));
 const { inviaEmailLista } = require(path.join(process.cwd(), "app/server/modules/invia-email-lista.cjs"));
 const { addToList } = require(path.join(process.cwd(), "app/server/modules/liste-brevo.cjs"));
