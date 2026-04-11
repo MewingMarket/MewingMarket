@@ -1,0 +1,57 @@
+.assist-form {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.assist-form input,
+.assist-form textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.assist-btn {
+  padding: 12px 20px;
+  background: #0077ff;
+  color: #fff;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.assist-btn:hover {
+  background: #005fcc;
+}
+
+.assist-bot {
+  margin-top: 40px;
+  padding: 20px;
+  background: #f7f7f7;
+  border-radius: 8px;
+}
+
+#chat-container {
+  margin-top: 15px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 10px;
+}
+
+#chat-input-area {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+#chat-input-area input {
+  flex: 1;
+  padding: 8px;
+}
+
+.assist-contatti {
+  margin-top: 40px;
+}
