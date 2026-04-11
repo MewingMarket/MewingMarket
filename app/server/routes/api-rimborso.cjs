@@ -1,36 +1,88 @@
 /**
  * =========================================================
  * RIMBORSO — Crea richiesta
- * Versione 2026.950
+ * Versione 2026.950 — require assoluti + FIX sicurezza + FIX ordine
  * =========================================================
  */
 
 const express = require("express");
-const router = express.Router();
 const path = require("path");
 
-const { inviaEmailRimborso } = require(path.join(process.cwd(), "app/server/modules/email-rimborso.cjs"));
+const R = (p) => require(path.join(process.cwd(), "app/server", p));
 
-router.post("/crea", async (req, res) => {
-  const { email, ordine, motivo } = req.body;
+const db = R("db/database.cjs");
+const authUser = R("middleware/auth-user.cjs");
+const { inviaEmailRimborso } = R("modules/email-rimborso.cjs");
+const jsonGen = R("modules/generatore-json.cjs");
 
-  if (!email || !ordine || !motivo) {
+const router = express.Router();
+
+/**
+ * Helper sicuro
+ */
+function safeParse(str) {
+  try {
+    return JSON.parse(str);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * =========================================================
+ * POST /api/rimborso/crea
+ * Protetto da auth-user
+ * =========================================================
+ */
+router.post("/crea", authUser, async (req, res) => {
+  const userId = req.user.id;
+  const { ordine_id, motivo } = req.body;
+
+  if (!ordine_id || !motivo) {
     return res.json({ success: false, error: "Campi mancanti." });
   }
 
   try {
-    // LOGICA RISOLVIBILE / NON RISOLVIBILE
+    // 1) Recupera ordine dell’utente
+    const stmt = db.prepare(`
+      SELECT *
+      FROM ordini
+      WHERE id = ? AND utente_id = ?
+      LIMIT 1
+    `);
+
+    const ordine = stmt.get(ordine_id, userId);
+
+    if (!ordine) {
+      return res.json({ success: false, error: "Ordine non trovato." });
+    }
+
+    // 2) Solo ordini completati possono essere rimborsati
+    if (ordine.stato !== "completato") {
+      return res.json({
+        success: false,
+        error: "Puoi richiedere rimborso solo per ordini completati."
+      });
+    }
+
+    // 3) Determina tipo richiesta
     let tipo = "non_risolvibile";
     let guida = "";
 
     if (motivo.toLowerCase().includes("download")) {
       tipo = "risolvibile";
-      guida = "Per risolvere il problema, prova a scaricare il file da un altro browser o dispositivo.";
+      guida = "Prova a scaricare il file da un altro browser o dispositivo.";
     }
 
-    // INVIA EMAIL
+    // 4) Invia email (Brevo o sandbox fallback)
+    const stmtUser = db.prepare(`
+      SELECT email FROM utenti WHERE id = ? LIMIT 1
+    `);
+
+    const utente = stmtUser.get(userId);
+
     await inviaEmailRimborso({
-      email,
+      email: utente.email,
       tipo,
       guida
     });
@@ -38,7 +90,7 @@ router.post("/crea", async (req, res) => {
     return res.json({ success: true });
 
   } catch (err) {
-    console.error("Errore rimborso:", err);
+    console.error("❌ Errore rimborso:", err);
     return res.json({ success: false, error: "Errore interno." });
   }
 });
