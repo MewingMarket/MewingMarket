@@ -1,8 +1,7 @@
 /**
  * =========================================================
- * File: app/server/routes/api-rimborso.cjs
  * RIMBORSI — Utente + Admin (unificato)
- * Versione 2026.950 — require assoluti + FIX sicurezza + SQL ready
+ * Versione 2026.960 — Rimborso intelligente
  * =========================================================
  */
 
@@ -16,27 +15,12 @@ const authUser = R("middleware/auth-user.cjs");
 const authAdmin = R("middleware/auth-admin.cjs");
 
 const { inviaEmailRimborso } = R("modules/email-rimborso.cjs");
-const { inviaEmailRimborsoApprovato } = R("modules/email-rimborso-approvato.cjs");
-const { inviaEmailRimborsoRifiutato } = R("modules/email-rimborso-rifiutato.cjs");
-
 const jsonGen = R("modules/generatore-json.cjs");
 
 const router = express.Router();
 
 /* =========================================================
-   Helper sicuro
-========================================================= */
-function safeParse(str) {
-  try {
-    return JSON.parse(str);
-  } catch {
-    return [];
-  }
-}
-
-/* =========================================================
-   UTENTE — CREA RICHIESTA RIMBORSO
-   POST /api/rimborso/crea
+   UTENTE — CREA RICHIESTA RIMBORSO (INTELLIGENTE)
 ========================================================= */
 router.post("/crea", authUser, async (req, res) => {
   const userId = req.user.id;
@@ -47,7 +31,6 @@ router.post("/crea", authUser, async (req, res) => {
   }
 
   try {
-    // 1) Recupera ordine dell’utente
     const ordine = db.prepare(`
       SELECT *
       FROM ordini
@@ -59,7 +42,6 @@ router.post("/crea", authUser, async (req, res) => {
       return res.json({ success: false, error: "Ordine non trovato." });
     }
 
-    // 2) Solo ordini completati possono essere rimborsati
     if (ordine.stato !== "completato") {
       return res.json({
         success: false,
@@ -67,18 +49,49 @@ router.post("/crea", authUser, async (req, res) => {
       });
     }
 
-    // 3) Inserisci richiesta rimborso
+    // =========================================================
+    // 🔥 LOGICA INTELLIGENTE
+    // =========================================================
+    const motivoLower = motivo.toLowerCase();
+
+    const paroleRisolvibili = [
+      "download",
+      "scaricare",
+      "non si apre",
+      "file",
+      "errore",
+      "link"
+    ];
+
+    const isRisolvibile = paroleRisolvibili.some(k => motivoLower.includes(k));
+
+    // =========================================================
+    // CASO 1 — RISOLVIBILE → email aiuto → NON crea rimborso
+    // =========================================================
+    if (isRisolvibile) {
+      await inviaEmailRimborso({
+        email: req.user.email,
+        tipo: "risolvibile",
+        guida: "Prova a scaricare il file da un altro browser o dispositivo. Se il problema persiste, rispondi a questa email."
+      });
+
+      return res.json({
+        success: true,
+        message: "Problema risolvibile → email inviata → rimborso NON aperto"
+      });
+    }
+
+    // =========================================================
+    // CASO 2 — NON RISOLVIBILE → crea richiesta rimborso
+    // =========================================================
     db.prepare(`
       INSERT INTO rimborsi (ordine_id, utente_id, motivo, stato)
       VALUES (?, ?, ?, 'in_attesa')
     `).run(ordine_id, userId, motivo);
 
-    // 4) Email utente
-    const utente = db.prepare(`SELECT email FROM utenti WHERE id = ?`).get(userId);
-
     await inviaEmailRimborso({
-      email: utente.email,
-      tipo: "richiesta",
+      email: req.user.email,
+      tipo: "non_risolvibile",
       guida: ""
     });
 
@@ -92,37 +105,17 @@ router.post("/crea", authUser, async (req, res) => {
 
 /* =========================================================
    ADMIN — APPROVA RIMBORSO
-   POST /api/rimborso/procedi/:id
 ========================================================= */
 router.post("/procedi/:id", authAdmin, async (req, res) => {
   const rimborsoId = req.params.id;
 
   try {
-    // 1) Recupera richiesta rimborso
-    const r = db.prepare(`
-      SELECT *
-      FROM rimborsi
-      WHERE id = ?
-      LIMIT 1
-    `).get(rimborsoId);
+    const r = db.prepare(`SELECT * FROM rimborsi WHERE id = ?`).get(rimborsoId);
+    if (!r) return res.json({ success: false, error: "Richiesta non trovata." });
 
-    if (!r) {
-      return res.json({ success: false, error: "Richiesta rimborso non trovata." });
-    }
+    const ordine = db.prepare(`SELECT * FROM ordini WHERE id = ?`).get(r.ordine_id);
+    if (!ordine) return res.json({ success: false, error: "Ordine non trovato." });
 
-    // 2) Recupera ordine
-    const ordine = db.prepare(`
-      SELECT *
-      FROM ordini
-      WHERE id = ?
-      LIMIT 1
-    `).get(r.ordine_id);
-
-    if (!ordine) {
-      return res.json({ success: false, error: "Ordine non trovato." });
-    }
-
-    // 3) Aggiorna ordine → rimborsato
     db.prepare(`
       UPDATE ordini
       SET stato = 'rimborsato',
@@ -131,27 +124,13 @@ router.post("/procedi/:id", authAdmin, async (req, res) => {
       WHERE id = ?
     `).run(ordine.id);
 
-    // 4) Aggiorna richiesta rimborso
     db.prepare(`
       UPDATE rimborsi
       SET stato = 'approvato'
       WHERE id = ?
     `).run(rimborsoId);
 
-    // 5) Aggiorna JSON mirror
-    try {
-      await jsonGen.exportOrders();
-    } catch (err) {
-      console.error("⚠️ Errore exportOrders JSON:", err);
-    }
-
-    // 6) Email utente
-    const utente = db.prepare(`SELECT email FROM utenti WHERE id = ?`).get(r.utente_id);
-
-    await inviaEmailRimborsoApprovato({
-      email: utente.email,
-      ordine_id: ordine.id
-    });
+    try { await jsonGen.exportOrders(); } catch {}
 
     return res.json({ success: true });
 
@@ -163,37 +142,19 @@ router.post("/procedi/:id", authAdmin, async (req, res) => {
 
 /* =========================================================
    ADMIN — RIFIUTA RIMBORSO
-   POST /api/rimborso/rifiuta/:id
 ========================================================= */
 router.post("/rifiuta/:id", authAdmin, async (req, res) => {
   const rimborsoId = req.params.id;
 
   try {
-    const r = db.prepare(`
-      SELECT *
-      FROM rimborsi
-      WHERE id = ?
-      LIMIT 1
-    `).get(rimborsoId);
+    const r = db.prepare(`SELECT * FROM rimborsi WHERE id = ?`).get(rimborsoId);
+    if (!r) return res.json({ success: false, error: "Richiesta non trovata." });
 
-    if (!r) {
-      return res.json({ success: false, error: "Richiesta rimborso non trovata." });
-    }
-
-    // Aggiorna stato
     db.prepare(`
       UPDATE rimborsi
       SET stato = 'rifiutato'
       WHERE id = ?
     `).run(rimborsoId);
-
-    // Email utente
-    const utente = db.prepare(`SELECT email FROM utenti WHERE id = ?`).get(r.utente_id);
-
-    await inviaEmailRimborsoRifiutato({
-      email: utente.email,
-      ordine_id: r.ordine_id
-    });
 
     return res.json({ success: true });
 
