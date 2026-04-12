@@ -57,7 +57,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // =========================================================
-  // 3) INVIO RICHIESTA RIMBORSO
+  // 3) INVIO RICHIESTA RIMBORSO (INTELLIGENTE)
   // =========================================================
   form.addEventListener("submit", async e => {
     e.preventDefault();
@@ -84,6 +84,19 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
 
+      // =========================================================
+      // 🔥 LOGICA INTELLIGENTE (RISOLVIBILE / NON RISOLVIBILE)
+      // =========================================================
+      if (data.message && data.message.includes("risolvibile")) {
+        alert(
+          "Il problema sembra risolvibile.\n" +
+          "Ti abbiamo inviato una email con le istruzioni per risolvere subito."
+        );
+        form.reset();
+        return;
+      }
+
+      // Caso NON risolvibile → ticket aperto
       alert("Richiesta inviata. Ti risponderemo entro 24–48 ore.");
       form.reset();
 
