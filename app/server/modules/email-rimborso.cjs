@@ -1,7 +1,7 @@
 /**
  * =========================================================
- * EMAIL — Rimborso (risolvibile / non risolvibile)
- * Versione 2026.950
+ * EMAIL — Rimborso intelligente (risolvibile / non risolvibile)
+ * Versione 2026.960 — Unificato
  * =========================================================
  */
 
@@ -16,13 +16,15 @@ function generateEmailRimborsoHTML({ tipo, guida, whatsapp }) {
     contenuto = `
       <p>Abbiamo analizzato la tua richiesta e il problema è risolvibile.</p>
       <p>${guida}</p>
+      <p>Se il problema persiste, rispondi a questa email e ti assisteremo direttamente.</p>
     `;
   }
 
   if (tipo === "non_risolvibile") {
     contenuto = `
-      <p>Il problema richiede assistenza diretta.</p>
-      <p>Contattaci su WhatsApp: <a href="${whatsapp}">${whatsapp}</a></p>
+      <p>Abbiamo ricevuto la tua richiesta di rimborso.</p>
+      <p>Il nostro team la sta valutando e riceverai una conferma entro poche ore.</p>
+      <p>Se hai urgenza, puoi contattarci su WhatsApp: <a href="${whatsapp}">${whatsapp}</a></p>
     `;
   }
 
@@ -73,7 +75,7 @@ async function inviaEmailRimborso({ email, tipo, guida }) {
   return await inviaEmailLista({
     email,
     listId: 12,
-    subject: "Aggiornamento sulla tua richiesta di rimborso",
+    subject: "Aggiornamento sulla tua richiesta",
     html,
     sender: SENDER_VENDITE,
     tipo: "rimborso",
