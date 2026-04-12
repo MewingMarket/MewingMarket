@@ -1,15 +1,12 @@
 // =========================================================
-// LOADER HEADER/FOOTER — Versione DEFINITIVA (2026 + PATCH DEPLOY)
-// Carica: auth.js → head → header.html → header.js → carrello.js → footer
+// LOADER HEADER/FOOTER — Versione DEFINITIVA (2026 + CLEAN)
+// Carica: auth.js → head → header → header.js → carrello → footer
 // + SEO / Structured / Tracking (safe)
-// + Versioning / Anti-cache / Deduplica
+// + Versioning / Anti-cache / Anti-SW
 // =========================================================
 
 (function () {
 
-  // =========================================================
-  // VERSIONING CENTRALIZZATO
-  // =========================================================
   const VERSION = "20260412";
 
   // =========================================================
@@ -42,43 +39,23 @@
   })();
 
   // =========================================================
-  // DEDUPLICA SCRIPT (no doppioni, safe)
+  // ANTI SERVICE WORKER + CLEAR CACHE (SAFE)
   // =========================================================
-  (function dedupeScriptsOnce() {
+  (function removeServiceWorkers() {
     try {
-      const seen = new Set();
-      const toRemove = [];
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(regs => {
+          regs.forEach(r => r.unregister());
+        });
+      }
 
-      document.querySelectorAll("script[src]").forEach(s => {
-        const src = s.getAttribute("src");
-        if (!src) return;
+      if (window.caches) {
+        caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+      }
 
-        // Mantieni sempre il loader
-        if (src.includes("loader-header-footer.js")) {
-          if (seen.has(src)) toRemove.push(s);
-          else seen.add(src);
-          return;
-        }
-
-        // Mantieni sempre lo script di pagina (index.js, catalogo.js, prodotto.js ecc.)
-        if (/index\.js|catalogo\.js|prodotto\.js|dashboard|ordini|download|feedback/i.test(src)) {
-          if (seen.has(src)) toRemove.push(s);
-          else seen.add(src);
-          return;
-        }
-
-        // Tutto il resto → deduplica
-        if (seen.has(src)) toRemove.push(s);
-        else seen.add(src);
-      });
-
-      toRemove.forEach(s => {
-        console.log("[LOADER] Rimozione script duplicato:", s.getAttribute("src"));
-        s.remove();
-      });
-
+      console.log("[LOADER] Service worker e cache rimossi");
     } catch (e) {
-      console.warn("[LOADER] Errore dedupe script (ignorato):", e);
+      console.warn("[LOADER] Errore rimozione SW/cache (ignorato):", e);
     }
   })();
 
@@ -88,10 +65,7 @@
   function loadUtilityScript(name) {
     try {
       const id = `util-${name}`;
-      if (document.getElementById(id)) {
-        console.log(`[LOADER] ${name}.js già presente, skip`);
-        return;
-      }
+      if (document.getElementById(id)) return;
 
       const s = document.createElement("script");
       s.id = id;
@@ -106,7 +80,6 @@
     }
   }
 
-  // Carica globalmente (safe)
   loadUtilityScript("seo");
   loadUtilityScript("structured-data");
   loadUtilityScript("tracking");
