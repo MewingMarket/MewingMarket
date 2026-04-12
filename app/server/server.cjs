@@ -3,6 +3,7 @@
  * =========================================================
  * Entry point del server — versione DEFINITIVA
  * Patch 2026 — Restore PRIMA del database + Backup intelligente
+ * Patch 2026.600 — Anti-crash router + Monitor DB/Frontend
  * =========================================================
  */
 
@@ -118,20 +119,56 @@ const wait = (ms) => new Promise(res => res(ms));
   await wait(200);
   require("./middleware/context.cjs")(app);
 
+  // =========================================================
+  // 🔥 ROUTER API PROTETTO (non blocca frontend se crasha)
+  // =========================================================
   log(">> LOADING router.cjs");
   await wait(200);
-  const router = require("./router.cjs");
-  app.use("/api", router);
+  try {
+    const router = require("./router.cjs");
+    app.use("/api", router);
+    log(">> ROUTER API CARICATO");
+  } catch (err) {
+    logErr("❌ ROUTER ERROR — API disabilitate ma frontend attivo:", err.message || err);
+  }
 
+  // =========================================================
+  // DEBUG-DB PROTETTO
+  // =========================================================
   log(">> LOADING debug-db.cjs");
   await wait(200);
-  app.use("/api", require("./routes/debug-db.cjs"));
+  try {
+    app.use("/api", require("./routes/debug-db.cjs"));
+    log(">> DEBUG-DB ROUTE CARICATA");
+  } catch (err) {
+    logErr("❌ ERRORE debug-db.cjs (ignorato, frontend resta attivo):", err.message || err);
+  }
 
+  // =========================================================
+  // STATIC ROUTES
+  // =========================================================
   log(">> REGISTER STATIC ROUTES");
   await wait(200);
-  app.use(express.static(path.resolve("app/public")));
-  app.use("/data", express.static(path.resolve("app/data")));
+  const PUBLIC_DIR = path.resolve("app/public");
+  const DATA_DIR = path.resolve("app/data");
 
+  if (!fs.existsSync(PUBLIC_DIR)) {
+    logErr("❌ PUBLIC DIR NON TROVATA:", PUBLIC_DIR);
+  } else {
+    const indexPath = path.join(PUBLIC_DIR, "index.html");
+    if (!fs.existsSync(indexPath)) {
+      logErr("❌ index.html NON TROVATO in PUBLIC:", indexPath);
+    } else {
+      log("✅ index.html trovato:", indexPath);
+    }
+  }
+
+  app.use(express.static(PUBLIC_DIR));
+  app.use("/data", express.static(DATA_DIR));
+
+  // =========================================================
+  // ADMIN STATIC
+  // =========================================================
   log(">> REGISTER ADMIN ROUTES");
   await wait(200);
   app.get("/admin/login", (req, res) => {
@@ -139,15 +176,23 @@ const wait = (ms) => new Promise(res => res(ms));
   });
   app.use("/admin", express.static(path.resolve("app/public/admin")));
 
+  // =========================================================
+  // FRONTEND ROUTES (CHAT, NEWSLETTER, ETC.)
+  // =========================================================
   log(">> LOADING FRONTEND ROUTES");
   await wait(200);
-  require("./routes/chat.cjs")(app);
-  require("./routes/chat-voice.cjs")(app);
-  require("./routes/newsletter.cjs")(app);
-  require("./routes/meta-feed.cjs")(app);
-  require("./routes/product-page.cjs")(app);
-  require("./routes/system-status.cjs")(app);
-  require("./routes/versione.cjs")(app);
+  try {
+    require("./routes/chat.cjs")(app);
+    require("./routes/chat-voice.cjs")(app);
+    require("./routes/newsletter.cjs")(app);
+    require("./routes/meta-feed.cjs")(app);
+    require("./routes/product-page.cjs")(app);
+    require("./routes/system-status.cjs")(app);
+    require("./routes/versione.cjs")(app);
+    log("✅ FRONTEND ROUTES CARICATE");
+  } catch (err) {
+    logErr("❌ ERRORE FRONTEND ROUTES (ma static resta attivo):", err.message || err);
+  }
 
   // =========================================================
   // ENDPOINT UNICO BACKUP + RESTORE
@@ -166,6 +211,46 @@ const wait = (ms) => new Promise(res => res(ms));
       res.json({ ok: true, msg: "Backup + Restore eseguiti" });
     } catch (err) {
       res.json({ ok: false, error: err.message });
+    }
+  });
+
+  // =========================================================
+  // 🔍 ENDPOINT DIAGNOSTICO: STATO DB + FRONTEND
+  // =========================================================
+  app.get("/admin/frontend-status", (req, res) => {
+    try {
+      const dbLocal = require("./db/database.cjs");
+      const countProdotti = dbLocal.prepare("SELECT COUNT(*) AS n FROM prodotti").get().n;
+      const countOrdini = dbLocal.prepare("SELECT COUNT(*) AS n FROM ordini").get().n;
+      const countUtenti = dbLocal.prepare("SELECT COUNT(*) AS n FROM utenti").get().n;
+      const countVendite = dbLocal.prepare("SELECT COUNT(*) AS n FROM vendite").get().n;
+
+      const PUBLIC_DIR = path.resolve("app/public");
+      const indexPath = path.join(PUBLIC_DIR, "index.html");
+      const hasPublic = fs.existsSync(PUBLIC_DIR);
+      const hasIndex = fs.existsSync(indexPath);
+
+      const dbVuoto = (countProdotti + countOrdini + countUtenti + countVendite) === 0;
+
+      res.json({
+        ok: true,
+        db: {
+          prodotti: countProdotti,
+          ordini: countOrdini,
+          utenti: countUtenti,
+          vendite: countVendite,
+          vuoto: dbVuoto
+        },
+        frontend: {
+          publicDir: PUBLIC_DIR,
+          hasPublic,
+          indexPath,
+          hasIndex
+        }
+      });
+    } catch (err) {
+      logErr("❌ ERRORE /admin/frontend-status:", err.message || err);
+      res.json({ ok: false, error: err.message || String(err) });
     }
   });
 
@@ -323,6 +408,38 @@ const wait = (ms) => new Promise(res => res(ms));
       }
 
       setInterval(logIfChanged, 5000);
+
+      // =====================================================
+      // 🔍 MONITOR DB vs FRONTEND OGNI 10s
+      // =====================================================
+      setInterval(() => {
+        try {
+          const dbLocal = require("./db/database.cjs");
+          const countOrdini = dbLocal.prepare("SELECT COUNT(*) AS n FROM ordini").get().n;
+          const countProdotti = dbLocal.prepare("SELECT COUNT(*) AS n FROM prodotti").get().n;
+          const countUtenti = dbLocal.prepare("SELECT COUNT(*) AS n FROM utenti").get().n;
+          const countVendite = dbLocal.prepare("SELECT COUNT(*) AS n FROM vendite").get().n;
+
+          const PUBLIC_DIR = path.resolve("app/public");
+          const indexPath = path.join(PUBLIC_DIR, "index.html");
+          const hasPublic = fs.existsSync(PUBLIC_DIR);
+          const hasIndex = fs.existsSync(indexPath);
+
+          const dbVuoto = (countOrdini + countProdotti + countUtenti + countVendite) === 0;
+
+          if (dbVuoto) {
+            log("🔎 MONITOR: DB VUOTO — frontend può essere vuoto per design.");
+          } else {
+            if (hasPublic && hasIndex) {
+              log("✅ MONITOR: DB PIENO + FRONTEND PRESENTE (public + index.html ok)");
+            } else {
+              logErr("🚨 MONITOR CRITICO: DB PIENO MA FRONTEND NON TROVATO (public/index.html mancante o non leggibile)");
+            }
+          }
+        } catch (err) {
+          logErr("❌ ERRORE MONITOR DB/FRONTEND:", err.message || err);
+        }
+      }, 10000);
 
       setTimeout(async () => {
         log("⏳ Sync iniziale YouTube…");
