@@ -4,11 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- 🔥 ANTI-CACHE BROWSER + CDN -->
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
-
   <!-- CSS SPECIFICO HOMEPAGE (versioning per invalidare CDN Render) -->
   <link rel="stylesheet" href="index.css?v=20260412">
 </head>
@@ -114,37 +109,11 @@
 <!-- FOOTER DINAMICO -->
 <div id="footer-placeholder"></div>
 
-<!-- JS GLOBALI (versioning per invalidare CDN Render) -->
+<!-- JS GLOBALI: solo loader, gli altri (SEO/structured/tracking) li caricherà lui -->
 <script src="loader-header-footer.js?v=20260412"></script>
-<script src="seo.js?v=20260412"></script>
-<script src="structured-data.js?v=20260412"></script>
-<script src="tracking.js?v=20260412"></script>
 
-<!-- JS HOMEPAGE -->
+<!-- JS HOMEPAGE (script specifico di pagina) -->
 <script src="index.js?v=20260412"></script>
-
-<!-- 🔥 ANTI-SERVICE-WORKER + ANTI-CACHE + RELOAD FORZATO -->
-<script>
-  // Rimuove TUTTI i service worker
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(regs => {
-      regs.forEach(r => r.unregister());
-    });
-  }
-
-  // Svuota TUTTE le cache del browser
-  if (window.caches) {
-    caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
-  }
-
-  // Reload forzato solo al primo accesso dopo deploy
-  window.addEventListener("load", () => {
-    if (!sessionStorage.getItem("nocache")) {
-      sessionStorage.setItem("nocache", "1");
-      location.reload(true);
-    }
-  });
-</script>
 
 </body>
 </html>
