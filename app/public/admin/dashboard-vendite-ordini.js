@@ -1,6 +1,6 @@
 // =========================================================
 // Dashboard Admin — Vendite + Ordini (Unificata)
-// Versione 2026.120 — Frontend UTM esteso + Origine sintetica
+// Versione 2026.300 — Rimborso integrato + KPI rimborsati
 // =========================================================
 
 console.log("🔥 dashboard-vendite-ordini.js CARICATO");
@@ -50,7 +50,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 // =========================================================
-// KPI BASE + KPI AVANZATI
+// KPI BASE + KPI AVANZATI + KPI RIMBORSATI
 // =========================================================
 function renderKPI(data) {
   const vendite = data?.vendite?.kpi || {};
@@ -110,6 +110,15 @@ function renderKPI(data) {
   }
 
   document.getElementById("kpi-tempo-completamento").textContent = tempoMedio;
+
+  // ⭐ KPI ORDINI RIMBORSATI
+  const rimborsati = listaOrdini.filter(o => o.stato === "rimborsato").length;
+  const percRimb = ordini.totali
+    ? ((rimborsati / ordini.totali) * 100).toFixed(1)
+    : 0;
+
+  const el = document.getElementById("kpi-ordini-rimborsati");
+  if (el) el.textContent = percRimb + "%";
 }
 
 // =========================================================
@@ -154,7 +163,7 @@ function renderUTM(arr) {
 }
 
 // =========================================================
-// Ordini + colonne nuove (cliente + origine)
+// ORDINI + Rimborso + CF + Azioni
 // =========================================================
 function renderOrdini(arr) {
   const body = document.getElementById("ordini-body");
@@ -167,6 +176,18 @@ function renderOrdini(arr) {
 
     const origine = o.origine_sintetica || "Direct";
     const cliente = o.email || "—";
+    const cf = o.codice_fiscale || "—";
+
+    const motivo = o.rimborso?.motivo || "—";
+    const statoRimborso = o.rimborso?.stato || "—";
+
+    let azione = "—";
+    if (statoRimborso === "in_attesa") {
+      azione = `
+        <button class="btn-rimborsa" data-id="${o.id}">Rimborsa</button>
+        <button class="btn-rifiuta" data-id="${o.id}">Rifiuta</button>
+      `;
+    }
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -176,14 +197,78 @@ function renderOrdini(arr) {
       <td>${o.stato ?? "-"}</td>
       <td>${prodotti}</td>
       <td>${cliente}</td>
-      <td>${origine}</td>
+      <td>${cf}</td>
+      <td>${motivo}</td>
+      <td>${statoRimborso}</td>
+      <td>${azione}</td>
     `;
     body.appendChild(tr);
   });
+
+  bindRimborsoButtons();
 }
 
 // =========================================================
-// Funzione frontend per origine sintetica (coerente col backend)
+// Pulsanti Rimborso / Rifiuta
+// =========================================================
+function bindRimborsoButtons() {
+  document.querySelectorAll(".btn-rimborsa").forEach(btn => {
+    btn.addEventListener("click", () => procediRimborso(btn.dataset.id));
+  });
+
+  document.querySelectorAll(".btn-rifiuta").forEach(btn => {
+    btn.addEventListener("click", () => rifiutaRimborso(btn.dataset.id));
+  });
+}
+
+async function procediRimborso(id) {
+  if (!confirm("Confermi il rimborso dell’ordine #" + id + "?")) return;
+
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(`/api/rimborso/procedi/${id}`, {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer " + token,
+      "Content-Type": "application/json"
+    }
+  });
+
+  const data = await res.json();
+  if (!data.success) {
+    alert(data.error || "Errore rimborso.");
+    return;
+  }
+
+  alert("Rimborso completato.");
+  location.reload();
+}
+
+async function rifiutaRimborso(id) {
+  if (!confirm("Vuoi rifiutare la richiesta di rimborso #" + id + "?")) return;
+
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(`/api/rimborso/rifiuta/${id}`, {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer " + token,
+      "Content-Type": "application/json"
+    }
+  });
+
+  const data = await res.json();
+  if (!data.success) {
+    alert(data.error || "Errore rifiuto.");
+    return;
+  }
+
+  alert("Richiesta rifiutata.");
+  location.reload();
+}
+
+// =========================================================
+// Origine sintetica frontend
 // =========================================================
 function detectOrigine(v) {
   if (!v) return "Direct";
