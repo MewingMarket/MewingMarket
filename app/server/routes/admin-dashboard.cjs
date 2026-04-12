@@ -2,7 +2,7 @@
  * =========================================================
  * File: app/server/routes/admin-dashboard.cjs
  * Dashboard Admin Unificata — Vendite + Ordini
- * Versione 2026.300 — UTM ENGINE + Origine Sintetica Avanzata
+ * Versione 2026.400 — UTM + Origine + Rimborso ready
  * =========================================================
  */
 
@@ -92,7 +92,7 @@ router.get("/dashboard", authUser, (req, res) => {
     `).all();
 
     // =========================================================
-    // SEZIONE ORDINI
+    // SEZIONE ORDINI (+ CF + Rimborso ready)
     // =========================================================
 
     const ordini = db.prepare(`
@@ -104,9 +104,18 @@ router.get("/dashboard", authUser, (req, res) => {
         o.stato,
         o.metodo_pagamento,
         o.data_ordine,
-        u.email AS email_cliente
+        u.email AS email_cliente,
+        u.codice_fiscale AS codice_fiscale,
+        r.motivo AS rimborso_motivo,
+        r.stato AS rimborso_stato
       FROM ordini o
       LEFT JOIN utenti u ON u.id = o.utente_id
+      LEFT JOIN rimborsi r ON r.id = (
+        SELECT id FROM rimborsi
+        WHERE ordine_id = o.id
+        ORDER BY id DESC
+        LIMIT 1
+      )
       ORDER BY o.data_ordine DESC
     `).all();
 
@@ -114,6 +123,7 @@ router.get("/dashboard", authUser, (req, res) => {
       totali: ordini.length,
       completati: ordini.filter(o => o.stato === "completato").length,
       annullati: ordini.filter(o => o.stato === "annullato").length
+      // rimborsati: ordini.filter(o => o.stato === "rimborsato").length // opzionale, il frontend calcola già
     };
 
     // =========================================================
@@ -201,6 +211,11 @@ router.get("/dashboard", authUser, (req, res) => {
         ...o,
         prodotti,
         email: o.email_cliente || null,
+        codice_fiscale: o.codice_fiscale || null,
+        rimborso: {
+          motivo: o.rimborso_motivo || null,
+          stato: o.rimborso_stato || null
+        },
         origine_sintetica: origine
       };
     });
