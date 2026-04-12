@@ -1,9 +1,119 @@
 // =========================================================
 // LOADER HEADER/FOOTER — Versione DEFINITIVA (2026 + PATCH DEPLOY)
 // Carica: auth.js → head → header.html → header.js → carrello.js → footer
+// + SEO / Structured / Tracking (safe)
+// + Versioning / Anti-cache / Deduplica
 // =========================================================
 
 (function () {
+
+  // =========================================================
+  // VERSIONING CENTRALIZZATO
+  // =========================================================
+  const VERSION = "20260412";
+
+  // =========================================================
+  // MINI ANTI-CACHE CLIENT (solo se manca)
+  // =========================================================
+  (function ensureNoCacheMeta() {
+    try {
+      const hasCacheMeta = !!document.querySelector('meta[http-equiv="Cache-Control"]');
+      if (!hasCacheMeta) {
+        const m1 = document.createElement("meta");
+        m1.httpEquiv = "Cache-Control";
+        m1.content = "no-cache, no-store, must-revalidate";
+        document.head.appendChild(m1);
+
+        const m2 = document.createElement("meta");
+        m2.httpEquiv = "Pragma";
+        m2.content = "no-cache";
+        document.head.appendChild(m2);
+
+        const m3 = document.createElement("meta");
+        m3.httpEquiv = "Expires";
+        m3.content = "0";
+        document.head.appendChild(m3);
+
+        console.log("[LOADER] Meta anti-cache aggiunti");
+      }
+    } catch (e) {
+      console.warn("[LOADER] Anti-cache meta error (ignorato):", e);
+    }
+  })();
+
+  // =========================================================
+  // DEDUPLICA SCRIPT (no doppioni, safe)
+  // =========================================================
+  (function dedupeScriptsOnce() {
+    try {
+      const seen = new Set();
+      const toRemove = [];
+
+      document.querySelectorAll("script[src]").forEach(s => {
+        const src = s.getAttribute("src");
+        if (!src) return;
+
+        // Mantieni sempre il loader
+        if (src.includes("loader-header-footer.js")) {
+          if (seen.has(src)) toRemove.push(s);
+          else seen.add(src);
+          return;
+        }
+
+        // Mantieni sempre lo script di pagina (index.js, catalogo.js, prodotto.js ecc.)
+        if (/index\.js|catalogo\.js|prodotto\.js|dashboard|ordini|download|feedback/i.test(src)) {
+          if (seen.has(src)) toRemove.push(s);
+          else seen.add(src);
+          return;
+        }
+
+        // Tutto il resto → deduplica
+        if (seen.has(src)) toRemove.push(s);
+        else seen.add(src);
+      });
+
+      toRemove.forEach(s => {
+        console.log("[LOADER] Rimozione script duplicato:", s.getAttribute("src"));
+        s.remove();
+      });
+
+    } catch (e) {
+      console.warn("[LOADER] Errore dedupe script (ignorato):", e);
+    }
+  })();
+
+  // =========================================================
+  // CARICATORI SAFE PER SEO / STRUCTURED / TRACKING
+  // =========================================================
+  function loadUtilityScript(name) {
+    try {
+      const id = `util-${name}`;
+      if (document.getElementById(id)) {
+        console.log(`[LOADER] ${name}.js già presente, skip`);
+        return;
+      }
+
+      const s = document.createElement("script");
+      s.id = id;
+      s.src = `/${name}.js?v=${VERSION}`;
+      s.async = true;
+      s.onload = () => console.log(`[LOADER] ${name}.js caricato`);
+      s.onerror = () => console.warn(`[LOADER] ${name}.js non trovato (ignorato)`);
+      document.head.appendChild(s);
+
+    } catch (e) {
+      console.warn(`[LOADER] Errore caricamento ${name}.js (ignorato):`, e);
+    }
+  }
+
+  // Carica globalmente (safe)
+  loadUtilityScript("seo");
+  loadUtilityScript("structured-data");
+  loadUtilityScript("tracking");
+
+  // =========================================================
+  // TUA LOGICA ORIGINALE — INALTERATA
+  // =========================================================
 
   function normalize(str) {
     if (!str) return "";
@@ -72,7 +182,7 @@
   // =========================================================
   const authPromise = new Promise((resolve) => {
     const s = document.createElement("script");
-    s.src = "/auth.js"; // ⭐ FIX CRITICO
+    s.src = `/auth.js?v=${VERSION}`;
     s.onload = () => {
       console.log("[LOADER] auth.js caricato (PRIMA DI TUTTO)");
       resolve();
@@ -111,8 +221,8 @@
   }
 
   const headPromise = authPromise.then(() =>
-    safeFetchAppendHead("head.html").catch(() =>
-      safeFetchAppendHead("/head.html")
+    safeFetchAppendHead(`head.html?v=${VERSION}`).catch(() =>
+      safeFetchAppendHead(`/head.html?v=${VERSION}`)
     )
   );
 
@@ -138,8 +248,8 @@
 
   const headerPromise = headPromise.then(() =>
     headerFile
-      ? safeFetchHeader(headerFile).catch(() =>
-          safeFetchHeader("/" + headerFile)
+      ? safeFetchHeader(`${headerFile}?v=${VERSION}`).catch(() =>
+          safeFetchHeader(`/${headerFile}?v=${VERSION}`)
         )
       : Promise.resolve()
   );
@@ -153,7 +263,7 @@
     headerLogicPromise = headerPromise.then(() => {
       return new Promise((resolve) => {
         const s = document.createElement("script");
-        s.src = "header.js";
+        s.src = `header.js?v=${VERSION}`;
         s.onload = () => {
           console.log("[LOADER] header.js caricato");
           resolve();
@@ -179,8 +289,8 @@
       });
   }
 
-  safeFetchFooter("footer.html").catch(() =>
-    safeFetchFooter("/footer.html")
+  safeFetchFooter(`footer.html?v=${VERSION}`).catch(() =>
+    safeFetchFooter(`/footer.html?v=${VERSION}`)
   );
 
   // =========================================================
@@ -192,7 +302,7 @@
     cartPromise = headerLogicPromise.then(() => {
       return new Promise((resolve) => {
         const s = document.createElement("script");
-        s.src = "carrello.js";
+        s.src = `carrello.js?v=${VERSION}`;
         s.onload = () => {
           console.log("[LOADER] carrello.js caricato");
           resolve();
@@ -211,7 +321,6 @@
       return;
     }
 
-    // Su admin non serve aspettare header.js, ma teniamo la stessa catena
     headerLogicPromise.then(() => {
       if (autoLogoutTriggered) {
         console.log("[LOADER] Admin loader BLOCCATO (logout automatico, post-header)");
@@ -221,7 +330,7 @@
       if (window.isAdmin === true && autoLogoutTriggered === false) {
         console.log("[LOADER] Carico admin (utente admin reale, stato verificato post-header)");
         const s = document.createElement("script");
-        s.src = "/admin/loader-admin.js";
+        s.src = `/admin/loader-admin.js?v=${VERSION}`;
         document.body.appendChild(s);
       } else {
         console.log("[LOADER] Admin NON caricato (stato finale non admin)");
