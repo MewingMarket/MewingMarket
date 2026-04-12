@@ -1,89 +1,136 @@
 /**
  * =========================================================
- * EMAIL — Rimborso intelligente (risolvibile / non risolvibile)
- * Versione 2026.960 — Unificato
+ * EMAIL — Rimborso intelligente (premium + categorie)
+ * Versione 2026.995 — Unificato + Template Premium
  * =========================================================
  */
 
 const path = require("path");
-const { inviaEmailLista } = require(path.join(process.cwd(), "app/server/modules/invia-email-lista.cjs"));
-const { SENDER_VENDITE } = require(path.join(process.cwd(), "app/server/modules/email-senders.cjs"));
 
-function generateEmailRimborsoHTML({ tipo, guida, whatsapp }) {
-  let contenuto = "";
+const { inviaEmailLista } = require(path.join(
+  process.cwd(),
+  "app/server/modules/invia-email-lista.cjs"
+));
 
+const { SENDER_VENDITE } = require(path.join(
+  process.cwd(),
+  "app/server/modules/email-senders.cjs"
+));
+
+// Nuovi moduli autorizzati
+const categorieRimborso = require(path.join(
+  process.cwd(),
+  "app/server/modules/rimborso-categorie.cjs"
+));
+
+const { generaRispostaRimborso } = require(path.join(
+  process.cwd(),
+  "app/server/modules/genera-risposta-rimborso.cjs"
+));
+
+// Template premium (già esistente)
+const { templateEmailRisposta } = require(path.join(
+  process.cwd(),
+  "app/server/modules/email-risposta.cjs"
+));
+
+/* ============================================================
+   GENERA EMAIL (risolvibile / non_risolvibile / rifiutato / approvato)
+============================================================ */
+async function inviaEmailRimborso({ email, tipo, motivo, categoriaRecord }) {
+  let rispostaAI = "";
+
+  // ============================================================
+  // 1) RISOLVIBILE → risposta categoria
+  // ============================================================
   if (tipo === "risolvibile") {
-    contenuto = `
-      <p>Abbiamo analizzato la tua richiesta e il problema è risolvibile.</p>
-      <p>${guida}</p>
-      <p>Se il problema persiste, rispondi a questa email e ti assisteremo direttamente.</p>
-    `;
+    rispostaAI = await generaRispostaRimborso({
+      motivo,
+      categoriaRecord
+    });
+
+    const html = templateEmailRisposta({ rispostaAI });
+
+    return await inviaEmailLista({
+      email,
+      listId: 12,
+      subject: "Aggiornamento sulla tua richiesta",
+      html,
+      sender: SENDER_VENDITE,
+      tipo: "rimborso",
+      modalita: "normale"
+    });
   }
 
+  // ============================================================
+  // 2) NON RISOLVIBILE → presa in carico
+  // ============================================================
   if (tipo === "non_risolvibile") {
-    contenuto = `
-      <p>Abbiamo ricevuto la tua richiesta di rimborso.</p>
-      <p>Il nostro team la sta valutando e riceverai una conferma entro poche ore.</p>
-      <p>Se hai urgenza, puoi contattarci su WhatsApp: <a href="${whatsapp}">${whatsapp}</a></p>
-    `;
+    rispostaAI = `
+Ciao,  
+abbiamo ricevuto la tua richiesta di rimborso.  
+Il nostro team la sta valutando e riceverai un aggiornamento entro poche ore.
+`;
+
+    const html = templateEmailRisposta({ rispostaAI });
+
+    return await inviaEmailLista({
+      email,
+      listId: 12,
+      subject: "Richiesta di rimborso ricevuta",
+      html,
+      sender: SENDER_VENDITE,
+      tipo: "rimborso",
+      modalita: "normale"
+    });
   }
 
-  return `
-<!DOCTYPE html>
-<html lang="it">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-</head>
+  // ============================================================
+  // 3) RIFIUTATO (admin) → risposta categoria
+  // ============================================================
+  if (tipo === "rifiutato") {
+    rispostaAI = await generaRispostaRimborso({
+      motivo,
+      categoriaRecord
+    });
 
-<body style="font-family:Arial,sans-serif;background:#f7f7f7;padding:20px;color:#333;">
+    const html = templateEmailRisposta({ rispostaAI });
 
-  <div style="max-width:600px;margin:auto;background:#fff;border-radius:10px;padding:25px;border:1px solid #e5e5e5;">
+    return await inviaEmailLista({
+      email,
+      listId: 12,
+      subject: "Aggiornamento sulla tua richiesta",
+      html,
+      sender: SENDER_VENDITE,
+      tipo: "rimborso",
+      modalita: "normale"
+    });
+  }
 
-    <div style="text-align:center;margin-bottom:25px;">
-      <img src="https://www.mewingmarket.it/logo.png" alt="MewingMarket" style="width:160px;">
-    </div>
-
-    <div style="font-size:16px;line-height:1.6;">
-      ${contenuto}
-    </div>
-
-    <div style="text-align:center;margin-top:30px;">
-      <a href="https://www.instagram.com/mewingmarket">Instagram</a> •
-      <a href="https://tiktok.com/@mewingmarket">TikTok</a> •
-      <a href="https://www.youtube.com/@mewingmarket2">YouTube</a>
-    </div>
-
-    <div style="text-align:center;font-size:13px;color:#777;margin-top:25px;padding-top:15px;border-top:1px solid #ddd;">
-      © ${new Date().getFullYear()} MewingMarket
-    </div>
-
-  </div>
-
-</body>
-</html>
+  // ============================================================
+  // 4) APPROVATO (admin)
+  // ============================================================
+  if (tipo === "approvato") {
+    rispostaAI = `
+Ciao,  
+ti confermiamo che il tuo rimborso è stato approvato.  
+L'importo verrà riaccreditato automaticamente sul metodo di pagamento utilizzato.
 `;
-}
 
-async function inviaEmailRimborso({ email, tipo, guida }) {
-  const html = generateEmailRimborsoHTML({
-    tipo,
-    guida,
-    whatsapp: "https://wa.me/393520266660"
-  });
+    const html = templateEmailRisposta({ rispostaAI });
 
-  return await inviaEmailLista({
-    email,
-    listId: 12,
-    subject: "Aggiornamento sulla tua richiesta",
-    html,
-    sender: SENDER_VENDITE,
-    tipo: "rimborso",
-    modalita: "normale"
-  });
+    return await inviaEmailLista({
+      email,
+      listId: 12,
+      subject: "Rimborso approvato",
+      html,
+      sender: SENDER_VENDITE,
+      tipo: "rimborso",
+      modalita: "normale"
+    });
+  }
 }
 
 module.exports = {
-  inviaEmailRimborso,
-  generateEmailRimborsoHTML
+  inviaEmailRimborso
 };
