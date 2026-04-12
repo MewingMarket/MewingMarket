@@ -2,7 +2,7 @@
  * =========================================================
  * File: app/server/routes/admin-dashboard.cjs
  * Dashboard Admin Unificata — Vendite + Ordini
- * Versione 2026.400 — UTM + Origine + Rimborso ready
+ * Versione 2026.400 — UTM + Origine + Rimborso ready (PATCH 2026.995)
  * =========================================================
  */
 
@@ -14,6 +14,9 @@ const R = (p) => require(path.join(process.cwd(), "app/server", p));
 
 const db = R("db/database.cjs");
 const authUser = R("middleware/auth-user.cjs");
+
+// ⭐ PATCH: categorie rimborso
+const categorieRimborso = R("modules/rimborso-categorie.cjs");
 
 const router = express.Router();
 
@@ -123,7 +126,6 @@ router.get("/dashboard", authUser, (req, res) => {
       totali: ordini.length,
       completati: ordini.filter(o => o.stato === "completato").length,
       annullati: ordini.filter(o => o.stato === "annullato").length
-      // rimborsati: ordini.filter(o => o.stato === "rimborsato").length // opzionale, il frontend calcola già
     };
 
     // =========================================================
@@ -160,41 +162,46 @@ router.get("/dashboard", authUser, (req, res) => {
       const ref = (v.referrer || "").toLowerCase();
       const org = (v.origine || "").toLowerCase();
 
-      // BOT
       if (src.includes("bot") || med.includes("bot") || org.includes("bot")) return "Bot";
-
-      // EMAIL
       if (src.includes("email") || med.includes("email") || ref.includes("mail.")) return "Email";
-
-      // SOCIAL SPECIFICI
       if (src.includes("insta") || ref.includes("instagram")) return "Instagram";
       if (src.includes("tiktok") || ref.includes("tiktok")) return "TikTok";
       if (src.includes("fb") || src.includes("face") || ref.includes("facebook")) return "Facebook";
       if (ref.includes("whatsapp")) return "WhatsApp";
       if (ref.includes("telegram")) return "Telegram";
-
-      // YOUTUBE
       if (src.includes("yt") || src.includes("you") || ref.includes("youtube")) return "YouTube";
 
-      // GOOGLE / ORGANIC
       if (src.includes("goo") || ref.includes("google")) {
         if (med.includes("cpc") || med.includes("ads")) return "Paid Ads";
         return "Organic Search";
       }
 
-      // PAID GENERICO
       if (med.includes("ads") || med.includes("cpc") || med.includes("paid")) return "Paid Ads";
 
-      // REFERRAL
       if (ref && !ref.includes("mewingmarket")) return "Referral";
 
-      // SITO
       if (src.includes("site") || org.includes("sito") || med.includes("product_page")) return "Sito";
 
-      // ORIGINE GREZZA
       if (v.origine) return v.origine;
 
       return "Direct";
+    }
+
+    // =========================================================
+    // ⭐ PATCH: aggiunta categoria rimborso
+    // =========================================================
+    function detectCategoriaRimborso(motivo) {
+      if (!motivo) return null;
+
+      const motivoLower = motivo.toLowerCase();
+
+      const match =
+        categorieRimborso.find(c =>
+          c.keywords.some(k => motivoLower.includes(k.toLowerCase()))
+        ) ||
+        categorieRimborso.find(c => c.categoria === "altro");
+
+      return match.categoria;
     }
 
     const ordiniParsed = ordini.map(o => {
@@ -214,7 +221,8 @@ router.get("/dashboard", authUser, (req, res) => {
         codice_fiscale: o.codice_fiscale || null,
         rimborso: {
           motivo: o.rimborso_motivo || null,
-          stato: o.rimborso_stato || null
+          stato: o.rimborso_stato || null,
+          categoria: detectCategoriaRimborso(o.rimborso_motivo)
         },
         origine_sintetica: origine
       };
