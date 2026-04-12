@@ -1,6 +1,7 @@
 // =========================================================
 // Dashboard Admin — Vendite + Ordini (Unificata)
 // Versione 2026.300 — Rimborso integrato + KPI rimborsati
+// PATCH 2026.995 — Categoria rimborso
 // =========================================================
 
 console.log("🔥 dashboard-vendite-ordini.js CARICATO");
@@ -122,48 +123,7 @@ function renderKPI(data) {
 }
 
 // =========================================================
-// Top prodotti
-// =========================================================
-function renderTopProdotti(arr) {
-  const body = document.getElementById("top-prodotti-body");
-  body.innerHTML = "";
-
-  arr.forEach(p => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${p.prodotto_id ?? "-"}</td>
-      <td>${p.vendite ?? 0}</td>
-      <td>${((p.revenue ?? 0) / 100).toFixed(2)}€</td>
-    `;
-    body.appendChild(tr);
-  });
-}
-
-// =========================================================
-// UTM — VERSIONE ESTESA
-// =========================================================
-function renderUTM(arr) {
-  const body = document.getElementById("utm-body");
-  body.innerHTML = "";
-
-  arr.forEach(u => {
-    const origineSintetica = detectOrigine(u);
-
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${origineSintetica}</td>
-      <td>${u.source || "-"}</td>
-      <td>${u.medium || "-"}</td>
-      <td>${u.campaign || "-"}</td>
-      <td>${u.referrer || "-"}</td>
-      <td>${u.vendite ?? 0}</td>
-    `;
-    body.appendChild(tr);
-  });
-}
-
-// =========================================================
-// ORDINI + Rimborso + CF + Azioni
+// ORDINI + Rimborso + CF + Azioni + Categoria
 // =========================================================
 function renderOrdini(arr) {
   const body = document.getElementById("ordini-body");
@@ -180,6 +140,7 @@ function renderOrdini(arr) {
 
     const motivo = o.rimborso?.motivo || "—";
     const statoRimborso = o.rimborso?.stato || "—";
+    const categoria = o.rimborso?.categoria || "—";
 
     let azione = "—";
     if (statoRimborso === "in_attesa") {
@@ -199,6 +160,7 @@ function renderOrdini(arr) {
       <td>${cliente}</td>
       <td>${cf}</td>
       <td>${motivo}</td>
+      <td>${categoria}</td>
       <td>${statoRimborso}</td>
       <td>${azione}</td>
     `;
@@ -222,7 +184,7 @@ function bindRimborsoButtons() {
 }
 
 async function procediRimborso(id) {
-  if (!confirm("Confermi il rimborso dell’ordine #" + id + "?")) return;
+  if (!confirm("Confermi il rimborso dell’ordine #" + id)) return;
 
   const token = localStorage.getItem("token");
 
@@ -245,7 +207,7 @@ async function procediRimborso(id) {
 }
 
 async function rifiutaRimborso(id) {
-  if (!confirm("Vuoi rifiutare la richiesta di rimborso #" + id + "?")) return;
+  if (!confirm("Vuoi rifiutare la richiesta di rimborso #" + id)) return;
 
   const token = localStorage.getItem("token");
 
