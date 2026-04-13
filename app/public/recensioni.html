@@ -1,9 +1,3 @@
-<!-- =========================================================
-     File: app/public/recensioni.html
-     Dashboard Utente — Le mie recensioni
-     Versione definitiva 2026 (PATCH CREAZIONE)
-========================================================= -->
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -15,7 +9,10 @@
 
 <body>
 
+<!-- HEAD DINAMICO -->
 <div id="head-placeholder"></div>
+
+<!-- HEADER DINAMICO -->
 <div id="header-placeholder"></div>
 
 <main>
@@ -28,15 +25,9 @@
       <a href="index.html" class="btn btn-secondary">← Torna al sito</a>
     </div>
 
-    <!-- ============================
-         LISTA RECENSIONI UTENTE
-    ============================= -->
     <h3>Le tue recensioni</h3>
     <div id="listaRecensioni"></div>
 
-    <!-- ============================
-         FORM CREAZIONE RECENSIONE
-    ============================= -->
     <h3 style="margin-top:40px;">Aggiungi una recensione</h3>
 
     <div id="formRecensione">
@@ -68,13 +59,14 @@
 
 </main>
 
+<!-- FOOTER DINAMICO -->
 <div id="footer-placeholder"></div>
 
-<script src="recensioni.js"></script>
-<script src="loader-header-footer.js"></script>
-<script src="seo.js"></script>
-<script src="structured-data.js"></script>
-<script src="tracking.js"></script>
+<!-- JS SPECIFICO PAGINA -->
+<script src="recensioni.js?v=20260412"></script>
+
+<!-- JS GLOBALI (solo loader con versioning) -->
+<script src="loader-header-footer.js?v=20260412"></script>
 
 </body>
 </html>
