@@ -1,5 +1,5 @@
 // =========================================================
-// LOADER HEADER/FOOTER — Versione DEFINITIVA (2026 + CLEAN)
+// LOADER HEADER/FOOTER — Versione DEFINITIVA (2026 + CLEAN + SAFE)
 // Carica: auth.js → head → header → header.js → carrello → footer
 // + SEO / Structured / Tracking (safe)
 // + Versioning / Anti-cache / Anti-SW
@@ -10,7 +10,7 @@
   const VERSION = "20260412";
 
   // =========================================================
-  // MINI ANTI-CACHE CLIENT (solo se manca)
+  // MINI ANTI-CACHE CLIENT
   // =========================================================
   (function ensureNoCacheMeta() {
     try {
@@ -39,7 +39,7 @@
   })();
 
   // =========================================================
-  // ANTI SERVICE WORKER + CLEAR CACHE (SAFE)
+  // ANTI SERVICE WORKER + CLEAR CACHE
   // =========================================================
   (function removeServiceWorkers() {
     try {
@@ -60,7 +60,7 @@
   })();
 
   // =========================================================
-  // CARICATORI SAFE PER SEO / STRUCTURED / TRACKING
+  // CARICATORI SAFE (NO IMPORT, NO MODULE)
   // =========================================================
   function loadUtilityScript(name) {
     try {
@@ -85,7 +85,7 @@
   loadUtilityScript("tracking");
 
   // =========================================================
-  // TUA LOGICA ORIGINALE — INALTERATA
+  // LOGICA ORIGINALE — INALTERATA
   // =========================================================
 
   function normalize(str) {
@@ -151,7 +151,7 @@
   console.log("[LOADER] Page:", { isHome, isShopPage, isAdminPage, isUserPage, isGlobalPage });
 
   // =========================================================
-  // 0) AUTH — deve essere caricato PRIMA DI TUTTO
+  // 0) AUTH — PRIMA DI TUTTO
   // =========================================================
   const authPromise = new Promise((resolve) => {
     const s = document.createElement("script");
@@ -200,7 +200,7 @@
   );
 
   // =========================================================
-  // 2) HEADER (UNICO, NON SU ADMIN)
+  // 2) HEADER
   // =========================================================
   let headerFile = null;
 
@@ -228,7 +228,7 @@
   );
 
   // =========================================================
-  // 3) HEADER.JS — SOLO SE NON ADMIN
+  // 3) HEADER.JS
   // =========================================================
   let headerLogicPromise = Promise.resolve();
 
@@ -247,7 +247,7 @@
   }
 
   // =========================================================
-  // 4) FOOTER (PUBBLICO)
+  // 4) FOOTER
   // =========================================================
   function safeFetchFooter(url) {
     return fetch(url)
@@ -267,7 +267,7 @@
   );
 
   // =========================================================
-  // 5) CARRELLO — SOLO SE NON ADMIN
+  // 5) CARRELLO
   // =========================================================
   let cartPromise = Promise.resolve();
 
@@ -286,7 +286,7 @@
   }
 
   // =========================================================
-  // 6) ADMIN LOADER — PATCH FINALE
+  // 6) ADMIN LOADER
   // =========================================================
   document.addEventListener("auth-ready", () => {
     if (autoLogoutTriggered) {
