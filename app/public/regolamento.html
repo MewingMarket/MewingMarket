@@ -11,11 +11,11 @@
 
 <body>
 
-  <!-- HEAD -->
-  <div id="head-placeholder"></div>
+<!-- HEAD DINAMICO -->
+<div id="head-placeholder"></div>
 
-  <!-- HEADER -->
-  <div id="header-placeholder"></div>
+<!-- HEADER DINAMICO -->
+<div id="header-placeholder"></div>
 
   <main class="container regolamento-container">
 
@@ -30,17 +30,14 @@
 
   </main>
 
-  <!-- FOOTER -->
-  <div id="footer-placeholder"></div>
+<!-- FOOTER DINAMICO -->
+<div id="footer-placeholder"></div>
 
-  <!-- JS GLOBALI (caricano anche auth.js) -->
-  <script src="loader-header-footer.js"></script>
-  <script src="seo.js"></script>
-  <script src="structured-data.js"></script>
-  <script src="tracking.js"></script>
+<!-- JS SPECIFICO PAGINA -->
+<script src="regole.js?v=20260412"></script>
 
-  <!-- JS SPECIFICO (dopo il loader) -->
-  <script src="regole.js"></script>
+<!-- JS GLOBALI (solo loader con versioning) -->
+<script src="loader-header-footer.js?v=20260412"></script>
 
 </body>
 </html>
