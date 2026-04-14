@@ -1,6 +1,6 @@
 /**
  * app/server/middleware/cache.cjs
- * Middleware per disabilitare la cache + PATCH CORS 2026
+ * Middleware per disabilitare la cache + PATCH CORS 2026 + DEBUG
  */
 
 module.exports = function (app) {
@@ -8,6 +8,11 @@ module.exports = function (app) {
 
   app.use((req, res, next) => {
     try {
+      // =====================================================
+      // 🔵 DEBUG MIDDLEWARE — conferma che il middleware è attivo
+      // =====================================================
+      console.log("🟦 [CACHE+CORS] Middleware attivo →", req.method, req.url);
+
       // =====================================================
       // 🔥 PATCH CORS — permette al frontend di chiamare il backend
       // =====================================================
@@ -18,6 +23,7 @@ module.exports = function (app) {
 
       // Preflight
       if (req.method === "OPTIONS") {
+        console.log("🟧 Preflight OPTIONS intercettato:", req.url);
         return res.sendStatus(200);
       }
 
@@ -29,7 +35,7 @@ module.exports = function (app) {
       res.setHeader("Expires", "0");
 
     } catch (err) {
-      console.error("Errore set cache/CORS headers:", err);
+      console.error("❌ Errore set cache/CORS headers:", err);
     } finally {
       next();
     }
