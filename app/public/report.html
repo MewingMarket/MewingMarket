@@ -1,0 +1,42 @@
+<!-- FILE: app/public/report.html -->
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Report Diagnostico</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    h1 { color: #333; }
+    pre { background: #f4f4f4; padding: 10px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <h1>Report Diagnostico</h1>
+
+  <h2>Health Base</h2>
+  <pre id="health"></pre>
+
+  <h2>Health Avanzato</h2>
+  <pre id="healthAdv"></pre>
+
+  <h2>Info Browser</h2>
+  <pre id="browser"></pre>
+
+  <script>
+    Promise.all([
+      fetch("/health").then(r => r.json()).catch(() => null),
+      fetch("/admin/health-advanced").then(r => r.json()).catch(() => null)
+    ]).then(([h1, h2]) => {
+      document.getElementById("health").textContent = JSON.stringify(h1, null, 2);
+      document.getElementById("healthAdv").textContent = JSON.stringify(h2, null, 2);
+    });
+
+    document.getElementById("browser").textContent = JSON.stringify({
+      userAgent: navigator.userAgent,
+      platform: navigator.platform,
+      language: navigator.language,
+      online: navigator.onLine
+    }, null, 2);
+  </script>
+</body>
+</html>
