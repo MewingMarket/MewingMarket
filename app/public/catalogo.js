@@ -1,13 +1,13 @@
 // =========================================================
 // CATALOGO PREMIUM – MewingMarket
 // Versione SQL definitiva: Categorie JSON + Filtri + Carrello Guest (ID-based)
-// Patch 2026.950 — Diagnostica + Anti-sito-vuoto + CORS fix
+// Patch 2026.960 — Dominio .IT + Diagnostica + Anti-sito-vuoto
 // =========================================================
 
 /* =========================================================
-   0) CONFIG BACKEND (CORS FIX)
+   0) CONFIG BACKEND (DOMINIO .IT)
 ========================================================= */
-const API_BASE = "https://mewingmarket.onrender.com";   // dominio backend
+const API_BASE = "https://www.mewingmarket.it";
 const API_PRODUCTS = API_BASE + "/api/products";
 
 /* =========================================================
@@ -19,7 +19,6 @@ async function loadProducts() {
   try {
     const res = await fetch(API_PRODUCTS, { cache: "no-store" });
 
-    // Diagnostica header CORS
     console.log("🟩 [CORS] Allow-Origin:", res.headers.get("Access-Control-Allow-Origin"));
 
     if (!res.ok) {
@@ -44,7 +43,7 @@ async function loadProducts() {
 }
 
 /* =========================================================
-   2) CARICA CATEGORIE (categories.json)
+   2) CARICA CATEGORIE
 ========================================================= */
 async function loadCategories() {
   try {
@@ -107,7 +106,7 @@ function getImage(p) {
 }
 
 /* =========================================================
-   7) CARD PRODOTTO — PATCH MULTI-CATEGORIA + SOLO ID
+   7) CARD PRODOTTO
 ========================================================= */
 function cardHTML(p) {
   const img = getImage(p);
@@ -237,7 +236,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /* ------------------------------
-     AGGIUNTA / RIMOZIONE CARRELLO (solo ID)
+     AGGIUNTA / RIMOZIONE CARRELLO
   ------------------------------ */
   document.querySelectorAll(".btn-add-cart").forEach(btn => {
     btn.addEventListener("click", () => {
