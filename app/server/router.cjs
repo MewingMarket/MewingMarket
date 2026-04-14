@@ -3,6 +3,7 @@
  * File: app/server/router.cjs
  * Router principale — SOLO API
  * Versione DEFINITIVA 2026.500 — require assoluti + FULL ROUTES
+ * Patch 2026.900 — DEBUG + HOOK diagnostica.cjs
  * =========================================================
  */
 
@@ -12,6 +13,28 @@ const router = express.Router();
 
 /* Helper per require assoluti */
 const R = (p) => require(path.join(process.cwd(), "app/server", p));
+
+/* =========================================================
+   🔵 DEBUG ROUTER — conferma caricamento router
+========================================================= */
+console.log("🟦 [ROUTER] Caricamento router principale avviato");
+
+/* =========================================================
+   🔍 HOOK DIAGNOSTICA (verrà creato dopo)
+   - Non rompe nulla se il file non esiste
+   - Non blocca il router
+========================================================= */
+try {
+  const diagnostica = R("diagnostica.cjs");
+  if (typeof diagnostica?.hookRouter === "function") {
+    diagnostica.hookRouter(router);
+    console.log("🟩 [ROUTER] diagnostica.cjs agganciata");
+  } else {
+    console.log("🟨 [ROUTER] diagnostica.cjs presente ma senza hookRouter()");
+  }
+} catch (err) {
+  console.log("🟧 [ROUTER] diagnostica.cjs non presente (ok):", err.message);
+}
 
 /* =========================================================
    1) ROTTE PUBBLICHE (NO TOKEN)
@@ -86,5 +109,10 @@ router.use(R("routes/paypal-create.cjs"));
 router.use(R("routes/paypal-complete.cjs"));
 router.use(R("routes/paypal-cancel.cjs"));
 router.use(R("routes/paypal-ricrea.cjs"));
+
+/* =========================================================
+   🔵 DEBUG FINALE
+========================================================= */
+console.log("🟩 [ROUTER] Router principale caricato correttamente");
 
 module.exports = router;
