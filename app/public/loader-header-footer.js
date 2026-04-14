@@ -311,4 +311,18 @@
     });
   });
 
+  // =========================================================
+  // 7) DIAGNOSTICA FRONTEND (SAFE, NON BLOCCA NULLA)
+  // =========================================================
+  try {
+    const s = document.createElement("script");
+    s.src = `/frontend-diagnostica.js?v=${VERSION}`;
+    s.async = true;
+    s.onload = () => console.log("[LOADER] frontend-diagnostica.js caricato");
+    s.onerror = () => console.warn("[LOADER] frontend-diagnostica.js non trovato (ignorato)");
+    document.head.appendChild(s);
+  } catch (e) {
+    console.warn("[LOADER] Errore caricamento diagnostica (ignorato):", e);
+  }
+
 })();
