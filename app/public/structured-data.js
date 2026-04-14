@@ -5,9 +5,6 @@
   const params = new URLSearchParams(window.location.search);
   const rawId = params.get("id");
 
-  /* =========================================================
-     SANITIZZAZIONE
-  ========================================================== */
   const clean = (t) =>
     typeof t === "string"
       ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
@@ -31,9 +28,6 @@
     }
   }
 
-  /* =========================================================
-     1) ORGANIZATION (sempre presente)
-  ========================================================== */
   injectSchema({
     "@context": "https://schema.org",
     "@type": "Organization",
@@ -51,9 +45,6 @@
     ]
   });
 
-  /* =========================================================
-     2) HOMEPAGE – WebSite
-  ========================================================== */
   if (path === "/" || path === "/index.html") {
     injectSchema({
       "@context": "https://schema.org",
@@ -68,9 +59,6 @@
     });
   }
 
-  /* =========================================================
-     3) CATALOGO – CollectionPage
-  ========================================================== */
   if (path === "/catalogo.html") {
     injectSchema({
       "@context": "https://schema.org",
@@ -81,9 +69,6 @@
     });
   }
 
-  /* =========================================================
-     4) FAQ – FAQPage
-  ========================================================== */
   if (path === "/faq.html") {
     injectSchema({
       "@context": "https://schema.org",
@@ -109,9 +94,6 @@
     });
   }
 
-  /* =========================================================
-     5) FETCH UNICO PRODUCTS.JSON (solo se serve)
-  ========================================================== */
   let products = [];
   if (id) {
     try {
@@ -125,9 +107,6 @@
     }
   }
 
-  /* =========================================================
-     6) BREADCRUMB – dinamico (catalogo + prodotto)
-  ========================================================== */
   const breadcrumb = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -162,7 +141,7 @@
         },
         {
           "@type": "ListItem",
-          "position": 3",
+          "position": 3,
           "name": clean(p.titolo),
           "item": `https://www.mewingmarket.it/prodotto.html?id=${clean(id)}`
         }
@@ -172,9 +151,6 @@
 
   injectSchema(breadcrumb);
 
-  /* =========================================================
-     7) PRODUCT – dinamico (con AggregateRating)
-  ========================================================== */
   if (id && products.length) {
     const p = products.find(pr => String(pr.id) === String(id));
     if (!p) return;
@@ -183,15 +159,12 @@
       "@context": "https://schema.org/",
       "@type": "Product",
       "name": clean(p.titolo),
-
-      // 🔥 PATCH SEO AI: priorità descrizione_email → breve → lunga
       "description": clean(
         p.descrizioneEmail ||
         p.descrizioneBreve ||
         p.descrizioneLunga ||
         ""
       ),
-
       "image": safeURL(p.immagine),
       "sku": clean(String(p.id)),
       "brand": {
