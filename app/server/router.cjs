@@ -4,6 +4,7 @@
  * Router principale — SOLO API
  * Versione DEFINITIVA 2026.500 — require assoluti + FULL ROUTES
  * Patch 2026.900 — DEBUG + HOOK diagnostica.cjs
+ * Patch 2026.960 — MOUNT /api/products (api-prodotti-new.cjs)
  * =========================================================
  */
 
@@ -20,9 +21,7 @@ const R = (p) => require(path.join(process.cwd(), "app/server", p));
 console.log("🟦 [ROUTER] Caricamento router principale avviato");
 
 /* =========================================================
-   🔍 HOOK DIAGNOSTICA (verrà creato dopo)
-   - Non rompe nulla se il file non esiste
-   - Non blocca il router
+   🔍 HOOK DIAGNOSTICA
 ========================================================= */
 try {
   const diagnostica = R("diagnostica.cjs");
@@ -47,8 +46,13 @@ router.use(R("routes/versione.cjs"));
 router.use(R("routes/system-status.cjs"));
 
 /* =========================================================
+   ⭐ PATCH: MOUNT API PRODOTTI (PUBLIC)
+   Questa è la patch che sblocca /api/products
+========================================================= */
+router.use("/api", R("routes/api-prodotti-new.cjs"));
+
+/* =========================================================
    2) ADMIN (protette da auth-admin)
-   ⭐ PATCH: PRIMA DI auth-user
 ========================================================= */
 const authAdmin = R("middleware/auth-admin.cjs");
 router.use("/admin", authAdmin);
@@ -62,9 +66,9 @@ router.use("/admin", R("routes/admin-utenti.cjs"));
 router.use("/admin", R("routes/api-admin.cjs"));
 
 /* =========================================================
-   ⭐ PATCH: ADMIN RIMBORSI (UNIFICATO)
+   ⭐ PATCH: ADMIN RIMBORSI
 ========================================================= */
-router.use("/admin", R("routes/api-rimborso.cjs")); // unico file rimborso
+router.use("/admin", R("routes/api-rimborso.cjs"));
 
 /* =========================================================
    3) MIDDLEWARE USER (TOKEN OBBLIGATORIO)
@@ -74,7 +78,6 @@ router.use(R("middleware/auth-user.cjs"));
 /* =========================================================
    4) ROTTE UTENTE PROTETTE
 ========================================================= */
-router.use(R("routes/api-prodotti-new.cjs"));
 router.use(R("routes/api-upload.cjs"));
 router.use(R("routes/ordini-utente.cjs"));
 router.use(R("routes/api-feedback.cjs"));
