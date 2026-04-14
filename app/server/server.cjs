@@ -5,6 +5,7 @@
  * Patch 2026 — Restore PRIMA del database + Backup intelligente
  * Patch 2026.600 — Anti-crash router + Monitor DB/Frontend
  * Patch 2026.700 — No-cache index.html (anti-CDN)
+ * Patch 2026.900 — Debug richieste + Hook diagnostica.cjs
  * =========================================================
  */
 
@@ -27,7 +28,7 @@ log(">> SERVER STARTING…");
 
 const express = require("express");
 const path = require("path");
-const cors = require("cors");
+// const cors = require("cors"); // 🔥 NON PIÙ USATO QUI, GESTITO IN cache.cjs
 const cookieParser = require("cookie-parser");
 const crypto = require("crypto");
 const fs = require("fs");
@@ -46,6 +47,11 @@ global.__server_started = true;
 
 let BOOTSTRAP_OK = false;
 
+/**
+ * =========================================================
+ * HEALTH BASE
+ * =========================================================
+ */
 app.get("/health", (req, res) => {
   res.json({
     status: "ok",
@@ -53,6 +59,42 @@ app.get("/health", (req, res) => {
     time: new Date().toISOString()
   });
 });
+
+/**
+ * =========================================================
+ * 🔵 DEBUG REQUEST/RESPONSE — logger globale
+ * =========================================================
+ */
+app.use((req, res, next) => {
+  const start = Date.now();
+  console.log("➡️  REQ:", req.method, req.url);
+
+  res.on("finish", () => {
+    const ms = Date.now() - start;
+    console.log("⬅️  RES:", req.method, req.url, res.statusCode, ms + "ms");
+  });
+
+  next();
+});
+
+/**
+ * =========================================================
+ * 🔍 HOOK DIAGNOSTICA (server-level)
+ * - Non rompe nulla se diagnostica.cjs non esiste
+ * - Quando lo creeremo, potrà agganciarsi qui
+ * =========================================================
+ */
+try {
+  const diagnostica = require("./diagnostica.cjs");
+  if (typeof diagnostica?.hookServer === "function") {
+    diagnostica.hookServer(app, { log, logErr });
+    log("🟩 diagnostica.cjs agganciata a livello server");
+  } else {
+    log("🟨 diagnostica.cjs presente ma senza hookServer()");
+  }
+} catch (err) {
+  log("🟧 diagnostica.cjs non presente (ok per ora):", err.message);
+}
 
 const wait = (ms) => new Promise(res => res(ms));
 
@@ -76,7 +118,10 @@ const wait = (ms) => new Promise(res => res(ms));
   // =========================================================
   log(">> APPLYING PARSER MIDDLEWARE");
   await wait(200);
-  app.use(cors({ origin: true, credentials: true }));
+
+  // 🔥 CORS ORA È GESTITO IN cache.cjs
+  // app.use(cors({ origin: true, credentials: true }));
+
   app.use(express.json());
   app.use(cookieParser());
 
@@ -171,7 +216,9 @@ const wait = (ms) => new Promise(res => res(ms));
   });
 
   app.use(express.static(PUBLIC_DIR));
-  app.use("/data", express.static(DATA_DIR)); // =========================================================
+  app.use("/data", express.static(DATA_DIR));
+
+  // =========================================================
   // ADMIN STATIC
   // =========================================================
   log(">> REGISTER ADMIN ROUTES");
