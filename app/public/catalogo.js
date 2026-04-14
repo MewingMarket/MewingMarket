@@ -1,18 +1,44 @@
 // =========================================================
 // CATALOGO PREMIUM – MewingMarket
 // Versione SQL definitiva: Categorie JSON + Filtri + Carrello Guest (ID-based)
+// Patch 2026.950 — Diagnostica + Anti-sito-vuoto + CORS fix
 // =========================================================
+
+/* =========================================================
+   0) CONFIG BACKEND (CORS FIX)
+========================================================= */
+const API_BASE = "https://mewingmarket.onrender.com";   // dominio backend
+const API_PRODUCTS = API_BASE + "/api/products";
 
 /* =========================================================
    1) CARICA PRODOTTI DAL BACKEND
 ========================================================= */
 async function loadProducts() {
+  console.log("🟦 [CATALOGO] Caricamento prodotti…");
+
   try {
-    const res = await fetch("/api/products", { cache: "no-store" });
+    const res = await fetch(API_PRODUCTS, { cache: "no-store" });
+
+    // Diagnostica header CORS
+    console.log("🟩 [CORS] Allow-Origin:", res.headers.get("Access-Control-Allow-Origin"));
+
+    if (!res.ok) {
+      console.error("❌ [CATALOGO] Risposta non OK:", res.status, res.statusText);
+      return [];
+    }
+
     const data = await res.json();
-    return data.success && Array.isArray(data.prodotti) ? data.prodotti : [];
+
+    if (!data || !data.success || !Array.isArray(data.prodotti)) {
+      console.error("❌ [CATALOGO] Formato dati non valido:", data);
+      return [];
+    }
+
+    console.log("🟩 [CATALOGO] Prodotti ricevuti:", data.prodotti.length);
+    return data.prodotti;
+
   } catch (err) {
-    console.error("Errore caricamento prodotti:", err);
+    console.error("🔥 [CATALOGO] Errore fetch prodotti:", err);
     return [];
   }
 }
@@ -27,7 +53,7 @@ async function loadCategories() {
     const cats = await res.json();
     return Array.isArray(cats) ? cats : [];
   } catch (err) {
-    console.warn("Categorie JSON non disponibili:", err);
+    console.warn("⚠️ [CATALOGO] Categorie JSON non disponibili:", err);
     return [];
   }
 }
@@ -130,13 +156,30 @@ function cardHTML(p) {
 ========================================================= */
 document.addEventListener("DOMContentLoaded", async () => {
 
+  console.log("🟦 [CATALOGO] DOMContentLoaded");
+
   const products = await loadProducts();
   const categoriesFromJson = await loadCategories();
 
   const container = document.getElementById("catalogo");
   const categorieBox = document.getElementById("categorie");
 
-  if (!container || !categorieBox) return;
+  if (!container || !categorieBox) {
+    console.error("❌ [CATALOGO] container o categorieBox non trovati");
+    return;
+  }
+
+  /* ------------------------------
+     FAIL-SAFE: nessun prodotto
+  ------------------------------ */
+  if (!products.length) {
+    container.innerHTML = `
+      <p class="errore-catalogo">
+        Nessun prodotto disponibile.  
+        <br>Se il problema persiste, controlla la connessione o riprova più tardi.
+      </p>`;
+    return;
+  }
 
   /* ------------------------------
      CATEGORIE DINAMICHE
@@ -152,9 +195,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   /* ------------------------------
      GRID PRODOTTI
   ------------------------------ */
-  container.innerHTML = products.length
-    ? products.map(cardHTML).join("")
-    : "<p>Nessun prodotto disponibile.</p>";
+  container.innerHTML = products.map(cardHTML).join("");
 
   /* ------------------------------
      FILTRO CATEGORIA
