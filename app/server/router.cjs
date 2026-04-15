@@ -5,6 +5,7 @@
  * Versione DEFINITIVA 2026.500 — require assoluti + FULL ROUTES
  * Patch 2026.900 — DEBUG + HOOK diagnostica.cjs
  * Patch 2026.960 — MOUNT /api/products (api-prodotti-new.cjs)
+ * Patch 2026.980 — /api/health + PayPal prima di auth-user
  * =========================================================
  */
 
@@ -42,12 +43,19 @@ router.use(R("routes/sitemap.cjs"));
 router.use(R("routes/versione.cjs"));
 router.use(R("routes/system-status.cjs"));
 
-/* =========================================================
-   ⭐ PATCH: API PRODOTTI — PUBBLICA
-   Deve stare PRIMA di auth-user
-   E SENZA /api perché il server monta già /api
-========================================================= */
+/* ⭐ HEALTH API PUBBLICA */
+router.use(R("routes/api-health.cjs"));
+
+/* ⭐ PATCH: API PRODOTTI — PUBBLICA */
 router.use("/", R("routes/api-prodotti-new.cjs"));
+
+/* =========================================================
+   ⭐ PAYPAL (PUBLIC) — spostato PRIMA di auth-user
+========================================================= */
+router.use(R("routes/paypal-create.cjs"));
+router.use(R("routes/paypal-complete.cjs"));
+router.use(R("routes/paypal-cancel.cjs"));
+router.use(R("routes/paypal-ricrea.cjs"));
 
 /* =========================================================
    2) ADMIN (protette da auth-admin)
@@ -102,14 +110,6 @@ router.use(R("routes/meta-feed.cjs"));
    ⭐ PATCH: NEWSLETTER
 ========================================================= */
 router.use(R("routes/newsletter.cjs"));
-
-/* =========================================================
-   5) PAYPAL (PUBLIC)
-========================================================= */
-router.use(R("routes/paypal-create.cjs"));
-router.use(R("routes/paypal-complete.cjs"));
-router.use(R("routes/paypal-cancel.cjs"));
-router.use(R("routes/paypal-ricrea.cjs"));
 
 console.log("🟩 [ROUTER] Router principale caricato correttamente");
 
