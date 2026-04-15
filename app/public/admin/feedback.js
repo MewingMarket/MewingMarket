@@ -1,47 +1,89 @@
 /* =========================================================
+   File: app/public/admin/feedback.js
    Admin — Lista completa feedback clienti
-   Versione 2026.301 (PATCH CHIRURGICA)
-   - Mantiene logica
-   - Aggiunge token admin
-   - Anti-HTML
-   - Anti-502
+   Versione definitiva 2026 (PATCH + DEBUG SUPREMO + KPI)
+   PATCH 2026.999 — fetchCritico + token admin + anti-HTML + anti-502
 ========================================================= */
 
+// Sanitizzazione sicura
 const clean = (t) =>
   typeof t === "string"
     ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
     : t ?? "";
 
+/* =========================================================
+   fetchCritico — retry + anti-HTML + anti-502
+========================================================= */
+async function fetchCritico(url, options = {}, cfg = {}) {
+  const { retries = 3, backoff = 400 } = cfg;
+  let attempt = 0;
+
+  while (attempt <= retries) {
+    try {
+      const res = await fetch(url, options);
+      const ct = res.headers.get("content-type") || "";
+
+      // Anti-HTML
+      if (ct.includes("text/html")) {
+        const html = await res.text();
+        throw new Error("HTML inatteso: " + html.slice(0, 200));
+      }
+
+      // Retry su 502/503/504
+      if (!res.ok) {
+        if ([502, 503, 504].includes(res.status) && attempt < retries) {
+          await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
+          attempt++;
+          continue;
+        }
+        throw new Error("HTTP " + res.status);
+      }
+
+      return res;
+
+    } catch (err) {
+      if (attempt >= retries) throw err;
+      await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
+      attempt++;
+    }
+  }
+}
+
+/* =========================================================
+   FETCH ADMIN (patchata con token + fetchCritico)
+========================================================= */
 async function adminGet(url) {
   console.log("[ADMIN][FETCH] Chiamata a:", url);
 
   const token = localStorage.getItem("token");
 
-  const res = await fetch(url, {
-    headers: {
-      Authorization: token ? `Bearer ${token}` : ""
-    }
-  });
+  const res = await fetchCritico(
+    url,
+    {
+      headers: {
+        Authorization: token ? `Bearer ${token}` : ""
+      }
+    },
+    { retries: 3, backoff: 400 }
+  );
 
-  const ct = res.headers.get("content-type") || "";
+  const json = await res.json();
+  console.log("[ADMIN][FETCH] Risposta JSON:", json);
 
-  if (ct.includes("text/html")) {
-    const html = await res.text();
-    console.error("❌ HTML ricevuto invece di JSON:", html.slice(0, 300));
-    throw new Error("Risposta HTML inattesa");
-  }
-
-  if (!res.ok) {
-    console.error("[ADMIN][FETCH] Errore HTTP:", res.status, res.statusText);
-    throw new Error("Errore fetch admin: " + url);
-  }
-
-  return res.json();
+  return json;
 }
 
+/* =========================================================
+   RENDER KPI
+========================================================= */
 function renderKPI(kpi) {
+  console.log("🟣 [ADMIN] Render KPI:", kpi);
+
   const box = document.querySelector("#kpi-feedback");
-  if (!box) return;
+  if (!box) {
+    console.error("❌ [ADMIN] Manca #kpi-feedback nel DOM");
+    return;
+  }
 
   box.innerHTML = `
     <h3>📊 KPI Feedback</h3>
@@ -70,33 +112,63 @@ function renderKPI(kpi) {
     <h4>Top 5 prodotti</h4>
     <ul>
       ${kpi.prodotti_top
-        .map(p => `<li>${clean(p.titolo)} — ⭐ ${clean(p.media)} (${clean(p.count)} recensioni)</li>`)
+        .map(
+          (p) =>
+            `<li>${clean(p.titolo)} — ⭐ ${clean(p.media)} (${clean(
+              p.count
+            )} recensioni)</li>`
+        )
         .join("")}
     </ul>
 
     <h4>Flop 5 prodotti</h4>
     <ul>
       ${kpi.prodotti_flop
-        .map(p => `<li>${clean(p.titolo)} — ⭐ ${clean(p.media)} (${clean(p.count)} recensioni)</li>`)
+        .map(
+          (p) =>
+            `<li>${clean(p.titolo)} — ⭐ ${clean(p.media)} (${clean(
+              p.count
+            )} recensioni)</li>`
+        )
         .join("")}
     </ul>
   `;
 }
 
+/* =========================================================
+   CARICA FEEDBACK
+========================================================= */
 async function caricaFeedback() {
   console.log("🔵 [ADMIN] Avvio caricaFeedback()");
 
   try {
+    console.log("🔵 [ADMIN] Richiedo /api/admin/feedback/lista…");
+
     const data = await adminGet("/api/admin/feedback/lista");
 
-    if (data.kpi) renderKPI(data.kpi);
+    console.log("🟣 [ADMIN] Dati ricevuti da backend:", data);
 
+    // KPI
+    if (data.kpi) {
+      renderKPI(data.kpi);
+    } else {
+      console.warn("⚠ [ADMIN] Nessuna KPI ricevuta dal backend");
+    }
+
+    // TABELLA FEEDBACK
     const tbody = document.querySelector("#tabella-feedback tbody");
     tbody.innerHTML = "";
 
-    if (!Array.isArray(data.feedback)) return;
+    if (!data || !Array.isArray(data.feedback)) {
+      console.error("❌ [ADMIN] data.feedback NON è un array:", data);
+      return;
+    }
 
-    data.feedback.forEach(f => {
+    console.log("🟢 [ADMIN] Numero feedback:", data.feedback.length);
+
+    data.feedback.forEach((f, idx) => {
+      console.log(`   [ADMIN][ROW ${idx}]`, f);
+
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${clean(f.prodotto_titolo)}</td>
@@ -108,11 +180,17 @@ async function caricaFeedback() {
       tbody.appendChild(tr);
     });
 
+    console.log("🟩 [ADMIN] Feedback renderizzati nella tabella");
+
   } catch (err) {
     console.error("❌ [ADMIN] Errore caricamento feedback:", err);
   }
 }
 
+/* =========================================================
+   INIT
+========================================================= */
 document.addEventListener("admin-header-loaded", () => {
+  console.log("🔵 [ADMIN] Evento admin-header-loaded ricevuto");
   caricaFeedback();
 });
