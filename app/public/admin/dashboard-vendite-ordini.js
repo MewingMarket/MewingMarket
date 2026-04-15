@@ -1,9 +1,47 @@
 // =========================================================
 // Dashboard Admin — Vendite + Ordini (Unificata)
-// Versione 2026.301 (PATCH CHIRURGICA)
+// Versione 2026.302 (PATCH CHIRURGICA + fetchCritico)
 // =========================================================
 
 console.log("🔥 dashboard-vendite-ordini.js CARICATO");
+
+/* =========================================================
+   fetchCritico — retry + anti-HTML + anti-502
+========================================================= */
+async function fetchCritico(url, options = {}, cfg = {}) {
+  const { retries = 3, backoff = 400 } = cfg;
+  let attempt = 0;
+
+  while (attempt <= retries) {
+    try {
+      const res = await fetch(url, options);
+      const ct = res.headers.get("content-type") || "";
+
+      // Anti-HTML
+      if (ct.includes("text/html")) {
+        const html = await res.text();
+        throw new Error("HTML inatteso: " + html.slice(0, 200));
+      }
+
+      // Retry su 502/503/504
+      if (!res.ok) {
+        if ([502, 503, 504].includes(res.status) && attempt < retries) {
+          await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
+          attempt++;
+          continue;
+        }
+        throw new Error("HTTP " + res.status);
+      }
+
+      return res;
+
+    } catch (err) {
+      if (attempt >= retries) throw err;
+      await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
+      attempt++;
+    }
+  }
+}
 
 document.addEventListener("DOMContentLoaded", async () => {
   const token = localStorage.getItem("token");
@@ -16,21 +54,18 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   try {
-    const res = await fetch("/api/admin/dashboard", {
-      method: "GET",
-      headers: {
-        Authorization: "Bearer " + token,
-        "X-Debug": "admin-dashboard"
-      }
-    });
-
-    const ct = res.headers.get("content-type") || "";
-    if (ct.includes("text/html")) {
-      const html = await res.text();
-      console.error("❌ HTML ricevuto:", html.slice(0, 500));
-      alert("Errore server (HTML ricevuto).");
-      return;
-    }
+    // ⭐ PATCH: fetchCritico
+    const res = await fetchCritico(
+      "/api/admin/dashboard",
+      {
+        method: "GET",
+        headers: {
+          Authorization: "Bearer " + token,
+          "X-Debug": "admin-dashboard"
+        }
+      },
+      { retries: 3, backoff: 400 }
+    );
 
     const data = await res.json();
     if (!data.success) {
@@ -79,7 +114,7 @@ function renderKPI(data) {
   document.getElementById("kpi-top-prodotto").textContent =
     top ? `ID ${top.prodotto_id} (${top.vendite} vendite)` : "—";
 
-  // PATCH: tempo completamento (bug fix)
+  // ⭐ PATCH: tempo completamento (bug fix)
   const completati = listaOrdini.filter(o => o.stato === "completato" && o.data_completamento);
   let tempoMedio = "—";
 
