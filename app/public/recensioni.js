@@ -2,7 +2,46 @@
    File: app/public/recensioni.js
    Dashboard Utente — Le mie recensioni
    Versione patchata 2026.3001 + DEBUG
+   Patch 2026.999 — fetchCritico + anti-HTML + anti-502
 ========================================================= */
+
+/* =========================================================
+   fetchCritico — retry + anti-HTML + anti-502
+========================================================= */
+async function fetchCritico(url, options = {}, cfg = {}) {
+  const { retries = 3, backoff = 400 } = cfg;
+  let attempt = 0;
+
+  while (attempt <= retries) {
+    try {
+      const res = await fetch(url, options);
+      const ct = res.headers.get("content-type") || "";
+
+      // Anti-HTML
+      if (ct.includes("text/html")) {
+        const html = await res.text();
+        throw new Error("HTML inatteso: " + html.slice(0, 200));
+      }
+
+      // Retry su 502/503/504
+      if (!res.ok) {
+        if ([502, 503, 504].includes(res.status) && attempt < retries) {
+          await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
+          attempt++;
+          continue;
+        }
+        throw new Error("HTTP " + res.status);
+      }
+
+      return res;
+
+    } catch (err) {
+      if (attempt >= retries) throw err;
+      await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
+      attempt++;
+    }
+  }
+}
 
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("🔵 [DEBUG] recensioni.js caricato");
@@ -26,9 +65,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.log("🔵 [DEBUG] Carico prodotti acquistati...");
 
     try {
-      const res = await fetch("/api/recensioni/prodotti-acquistati", {
-        headers: { "Authorization": "Bearer " + token }
-      });
+      const res = await fetchCritico(
+        "/api/recensioni/prodotti-acquistati",
+        { headers: { "Authorization": "Bearer " + token } },
+        { retries: 3, backoff: 400 }
+      );
 
       const data = await res.json();
 
@@ -129,18 +170,22 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
       console.log("🟦 [DEBUG] Invio fetch /recensioni/crea...");
 
-      const res = await fetch("/api/recensioni/crea", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer " + token
+      const res = await fetchCritico(
+        "/api/recensioni/crea",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+          },
+          body: JSON.stringify({
+            prodotto_id,
+            rating,
+            commento: testo
+          })
         },
-        body: JSON.stringify({
-          prodotto_id,
-          rating,
-          commento: testo
-        })
-      });
+        { retries: 3, backoff: 400 }
+      );
 
       const data = await res.json();
 
@@ -176,9 +221,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     listaRecensioni.innerHTML = "Caricamento…";
 
     try {
-      const res = await fetch("/api/recensioni/utente", {
-        headers: { "Authorization": "Bearer " + token }
-      });
+      const res = await fetchCritico(
+        "/api/recensioni/utente",
+        { headers: { "Authorization": "Bearer " + token } },
+        { retries: 3, backoff: 400 }
+      );
 
       const data = await res.json();
 
@@ -217,14 +264,18 @@ document.addEventListener("DOMContentLoaded", async () => {
           if (!confirm("Vuoi davvero eliminare questa recensione?")) return;
 
           try {
-            const res = await fetch("/api/recensioni/elimina", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer " + token
+            const res = await fetchCritico(
+              "/api/recensioni/elimina",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": "Bearer " + token
+                },
+                body: JSON.stringify({ id })
               },
-              body: JSON.stringify({ id })
-            });
+              { retries: 3, backoff: 400 }
+            );
 
             const data = await res.json();
 
@@ -264,18 +315,22 @@ document.addEventListener("DOMContentLoaded", async () => {
           }
 
           try {
-            const res = await fetch("/api/recensioni/modifica", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer " + token
+            const res = await fetchCritico(
+              "/api/recensioni/modifica",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": "Bearer " + token
+                },
+                body: JSON.stringify({
+                  id,
+                  rating: ratingNum,
+                  commento: nuovoCommento.trim()
+                })
               },
-              body: JSON.stringify({
-                id,
-                rating: ratingNum,
-                commento: nuovoCommento.trim()
-              })
-            });
+              { retries: 3, backoff: 400 }
+            );
 
             const data = await res.json();
 
