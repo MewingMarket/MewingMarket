@@ -5,16 +5,58 @@
    PATCH 2026.400 — Sync Brevo + RegistratoBrevo + ClienteBrevo + ClienteDB
    PATCH 2026.700 — Colonna Bannato + KPI Bannati
    PATCH 2026.900 — Sync Utenti Storici (Brevo Full)
+   PATCH 2026.999 — fetchCritico + anti-HTML + anti-502
 ========================================================= */
 
+/* =========================================================
+   fetchCritico — retry + anti-HTML + anti-502
+========================================================= */
+async function fetchCritico(url, options = {}, cfg = {}) {
+  const { retries = 3, backoff = 400 } = cfg;
+  let attempt = 0;
+
+  while (attempt <= retries) {
+    try {
+      const res = await fetch(url, options);
+      const ct = res.headers.get("content-type") || "";
+
+      // Anti-HTML
+      if (ct.includes("text/html")) {
+        const html = await res.text();
+        throw new Error("HTML inatteso: " + html.slice(0, 200));
+      }
+
+      // Retry su 502/503/504
+      if (!res.ok) {
+        if ([502, 503, 504].includes(res.status) && attempt < retries) {
+          await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
+          attempt++;
+          continue;
+        }
+        throw new Error("HTTP " + res.status);
+      }
+
+      return res;
+
+    } catch (err) {
+      if (attempt >= retries) throw err;
+      await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
+      attempt++;
+    }
+  }
+}
+
+/* =========================================================
+   INIT
+========================================================= */
 document.addEventListener("admin-header-loaded", async () => {
   await syncBrevoAuto();   // ⭐ Sync automatica
   caricaUtenti();          // ⭐ Carica tabella
 });
 
-// ---------------------------------------------------------
-// FETCH ADMIN (senza adminFetch)
-// ---------------------------------------------------------
+/* =========================================================
+   FETCH ADMIN (patchato con fetchCritico)
+========================================================= */
 async function adminGet(url, options = {}) {
   const token = localStorage.getItem("token");
 
@@ -23,15 +65,19 @@ async function adminGet(url, options = {}) {
     Authorization: token ? `Bearer ${token}` : ""
   };
 
-  const res = await fetch(url, { ...options, headers });
+  // ⭐ PATCH: fetchCritico
+  const res = await fetchCritico(
+    url,
+    { ...options, headers },
+    { retries: 3, backoff: 400 }
+  );
 
-  if (!res.ok) throw new Error("Errore admin fetch: " + url);
   return res.json();
 }
 
-// ---------------------------------------------------------
-// SYNC BREVO AUTOMATICA
-// ---------------------------------------------------------
+/* =========================================================
+   SYNC BREVO AUTOMATICA
+========================================================= */
 async function syncBrevoAuto() {
   try {
     await adminGet("/api/admin/utenti/sync-brevo");
@@ -41,9 +87,9 @@ async function syncBrevoAuto() {
   }
 }
 
-// ---------------------------------------------------------
-// SYNC BREVO MANUALE
-// ---------------------------------------------------------
+/* =========================================================
+   SYNC BREVO MANUALE
+========================================================= */
 document.addEventListener("click", async (e) => {
   if (e.target.id === "btn-sync-brevo") {
     try {
@@ -56,9 +102,9 @@ document.addEventListener("click", async (e) => {
   }
 });
 
-// ---------------------------------------------------------
-// ⭐ PATCH — SYNC UTENTI STORICI (una tantum)
-// ---------------------------------------------------------
+/* =========================================================
+   ⭐ PATCH — SYNC UTENTI STORICI (una tantum)
+========================================================= */
 document.addEventListener("click", async (e) => {
   if (e.target.id === "btn-sync-brevo-full") {
     if (!confirm("Sincronizzare tutti gli utenti storici in Brevo?")) return;
@@ -73,9 +119,9 @@ document.addEventListener("click", async (e) => {
   }
 });
 
-// ---------------------------------------------------------
-// Calcolo KPI
-// ---------------------------------------------------------
+/* =========================================================
+   Calcolo KPI
+========================================================= */
 function calcolaKPI(lista) {
   const tot = lista.length;
 
@@ -105,9 +151,9 @@ function calcolaKPI(lista) {
   return kpi;
 }
 
-// ---------------------------------------------------------
-// Stampa KPI
-// ---------------------------------------------------------
+/* =========================================================
+   Stampa KPI
+========================================================= */
 function stampaKPI(kpi) {
   const box = document.getElementById("kpi-container");
 
@@ -126,18 +172,16 @@ function stampaKPI(kpi) {
     <div class="kpi-item"><b>Iscritti NL:</b> ${kpi.iscritto}</div>
     <div class="kpi-item"><b>Disiscritti NL:</b> ${kpi.disiscritto}</div>
 
-    <!-- ⭐ KPI BREVO -->
     <div class="kpi-item"><b>Registrati in Brevo:</b> ${kpi.registratoBrevo}</div>
     <div class="kpi-item"><b>Clienti Brevo:</b> ${kpi.clienteBrevo}</div>
 
-    <!-- ⭐ KPI CLIENTI DB -->
     <div class="kpi-item"><b>Clienti DB:</b> ${kpi.clienteDB}</div>
   `;
 }
 
-// ---------------------------------------------------------
-// Carica utenti + KPI + tabella
-// ---------------------------------------------------------
+/* =========================================================
+   Carica utenti + KPI + tabella
+========================================================= */
 async function caricaUtenti() {
   const tbody = document.querySelector("#tabella-utenti tbody");
   tbody.innerHTML = "<tr><td colspan='15'>Caricamento…</td></tr>";
@@ -145,7 +189,6 @@ async function caricaUtenti() {
   try {
     const data = await adminGet("/api/admin/utenti/lista");
 
-    // ⭐ Determina se utente è bannato
     (data.utenti || []).forEach(u => {
       let bannato = "no";
 
@@ -162,11 +205,9 @@ async function caricaUtenti() {
       u.__bannato = bannato;
     });
 
-    // ⭐ Calcolo KPI
     const kpi = calcolaKPI(data.utenti);
     stampaKPI(kpi);
 
-    // ⭐ Stampa tabella
     tbody.innerHTML = "";
 
     (data.utenti || []).forEach(u => {
@@ -210,9 +251,9 @@ async function caricaUtenti() {
   }
 }
 
-// ---------------------------------------------------------
-// Listener per pulsanti Blocca / Sblocca / Elimina
-// ---------------------------------------------------------
+/* =========================================================
+   Listener per pulsanti Blocca / Sblocca / Elimina
+========================================================= */
 document.addEventListener("click", async (e) => {
   const email = e.target.dataset.email;
   if (!email) return;
