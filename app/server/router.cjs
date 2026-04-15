@@ -7,6 +7,7 @@
  * Patch 2026.960 — MOUNT /api/products (api-prodotti-new.cjs)
  * Patch 2026.980 — /api/health + PayPal prima di auth-user
  * Patch 2026.990 — PRIORITÀ API PRODOTTI (fix routing)
+ * Patch 2026.995 — AUTH-USER PRIMA DI TUTTO (fix totale)
  * =========================================================
  */
 
@@ -35,8 +36,12 @@ try {
 }
 
 /* =========================================================
+   ⭐ PATCH: AUTH USER — DEVE ESSERE PRIMA DI TUTTO
+========================================================= */
+router.use(R("middleware/auth-user.cjs"));
+
+/* =========================================================
    ⭐ PATCH: API PRODOTTI — DEVONO ESSERE LE PRIME
-   (per evitare conflitti con product-page.cjs)
 ========================================================= */
 router.use("/", R("routes/api-prodotti-new.cjs"));
 
@@ -54,7 +59,7 @@ router.use(R("routes/system-status.cjs"));
 router.use(R("routes/api-health.cjs"));
 
 /* =========================================================
-   ⭐ PAYPAL (PUBLIC) — spostato PRIMA di auth-user
+   ⭐ PAYPAL (PUBLIC) — spostato PRIMA di auth-admin
 ========================================================= */
 router.use(R("routes/paypal-create.cjs"));
 router.use(R("routes/paypal-complete.cjs"));
@@ -79,11 +84,6 @@ router.use("/admin", R("routes/api-admin.cjs"));
    ⭐ PATCH: ADMIN RIMBORSI (UNIFICATO)
 ========================================================= */
 router.use("/admin", R("routes/api-rimborso.cjs"));
-
-/* =========================================================
-   3) MIDDLEWARE USER (TOKEN OBBLIGATORIO)
-========================================================= */
-router.use(R("middleware/auth-user.cjs"));
 
 /* =========================================================
    4) ROTTE UTENTE PROTETTE
