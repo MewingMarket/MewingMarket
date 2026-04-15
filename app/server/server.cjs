@@ -238,6 +238,23 @@ const wait = (ms) => new Promise(res => res(ms));
   app.use("/data", express.static(DATA_DIR));
 
   // =========================================================
+  // SPA FALLBACK — serve index.html per tutte le route non-API
+  // =========================================================
+  app.get("*", (req, res, next) => {
+    // NON toccare le API
+    if (req.url.startsWith("/api")) return next();
+
+    // NON toccare l'admin statico
+    if (req.url.startsWith("/admin")) return next();
+
+    // NON toccare i file statici (js, css, immagini, ecc.)
+    if (req.url.includes(".") && !req.url.endsWith(".html")) return next();
+
+    // Tutto il resto → index.html (SPA)
+    res.sendFile(path.join(PUBLIC_DIR, "index.html"));
+  });
+
+  // =========================================================
   // ADMIN STATIC
   // =========================================================
   log(">> REGISTER ADMIN ROUTES");
