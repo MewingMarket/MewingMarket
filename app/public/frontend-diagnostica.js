@@ -1,6 +1,6 @@
 /**
  * FILE: app/public/frontend-diagnostica.js
- * Diagnostica frontend — scanner JS + test API
+ * Diagnostica frontend — scanner JS + test API reali
  */
 
 (function () {
@@ -22,14 +22,37 @@
       .catch(err => console.error("🔥 IMPOSSIBILE LEGGERE:", src, err));
   });
 
-  // Test API corretto (dominio .it, niente OPTIONS)
+  // Test API reale
   fetch("/api/products")
     .then(r => {
-      console.log("🟩 Test API:", r.status);
+      console.log("🟩 Test API /api/products →", r.status);
       return r.json().catch(() => null);
     })
     .then(data => {
-      console.log("🟩 Risposta API:", data);
+      console.log("🟩 Risposta /api/products:", data);
     })
-    .catch(err => console.error("🔥 ERRORE TEST API:", err));
+    .catch(err => console.error("🔥 ERRORE /api/products:", err));
+
+  // Test API ordini utente
+  fetch("/api/ordini/utente")
+    .then(r => {
+      console.log("🟩 Test API /api/ordini/utente →", r.status);
+      return r.json().catch(() => null);
+    })
+    .then(data => {
+      console.log("🟩 Risposta /api/ordini/utente:", data);
+    })
+    .catch(err => console.error("🔥 ERRORE /api/ordini/utente:", err));
+
+  // Test API admin utenti
+  fetch("/api/admin/utenti/lista")
+    .then(r => {
+      console.log("🟩 Test API /api/admin/utenti/lista →", r.status);
+      return r.json().catch(() => null);
+    })
+    .then(data => {
+      console.log("🟩 Risposta /api/admin/utenti/lista:", data);
+    })
+    .catch(err => console.error("🔥 ERRORE /api/admin/utenti/lista:", err));
+
 })();
