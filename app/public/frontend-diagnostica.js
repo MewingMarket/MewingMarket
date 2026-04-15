@@ -22,10 +22,14 @@
       .catch(err => console.error("🔥 IMPOSSIBILE LEGGERE:", src, err));
   });
 
-  // Test API
-  fetch("https://mewingmarket.onrender.com/api/products", { method: "OPTIONS" })
+  // Test API corretto (dominio .it, niente OPTIONS)
+  fetch("/api/products")
     .then(r => {
-      console.log("🟩 CORS:", r.headers.get("Access-Control-Allow-Origin"));
+      console.log("🟩 Test API:", r.status);
+      return r.json().catch(() => null);
+    })
+    .then(data => {
+      console.log("🟩 Risposta API:", data);
     })
     .catch(err => console.error("🔥 ERRORE TEST API:", err));
 })();
