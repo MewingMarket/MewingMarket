@@ -7,6 +7,7 @@
  * Patch 2026.700 — No-cache index.html (anti-CDN)
  * Patch 2026.900 — Debug richieste + Hook diagnostica.cjs
  * Patch 2026.960 — Router FULL ERROR LOG
+ * Patch 2026.970 — Middleware Diagnostico Route Scanner
  * =========================================================
  */
 
@@ -169,7 +170,17 @@ const wait = (ms) => new Promise(res => res(ms));
     log(">> ROUTER API CARICATO");
   } catch (err) {
     console.error("❌ ROUTER LOAD ERROR FULL:", err);
-    throw err; // 🔥 NON NASCONDERE PIÙ L’ERRORE
+    throw err;
+  }
+
+  // =========================================================
+  // ⭐ PATCH: MIDDLEWARE DIAGNOSTICO ROUTES
+  // =========================================================
+  try {
+    require("./middleware/middleware-diagnostico.cjs")(app);
+    console.log("🟩 Middleware diagnostico attivato");
+  } catch (err) {
+    console.error("❌ ERRORE middleware diagnostico:", err);
   }
 
   // =========================================================
@@ -241,65 +252,6 @@ const wait = (ms) => new Promise(res => res(ms));
   } catch (err) {
     logErr("❌ ERRORE FRONTEND ROUTES:", err.message || err);
   }
-
-  // =========================================================
-  // ENDPOINT UNICO BACKUP + RESTORE
-  // =========================================================
-  app.get("/admin/backup-restore", async (req, res) => {
-    try {
-      const { backupGenerale } = require("./modules/backup.cjs");
-      const { restore } = require("./modules/restore.cjs");
-
-      await backupGenerale({ source: "manual", force: true });
-      await restore();
-
-      global.__restore_completed = true;
-
-      res.json({ ok: true, msg: "Backup + Restore eseguiti" });
-    } catch (err) {
-      res.json({ ok: false, error: err.message });
-    }
-  });
-
-  // =========================================================
-  // 🔍 ENDPOINT DIAGNOSTICO
-  // =========================================================
-  app.get("/admin/frontend-status", (req, res) => {
-    try {
-      const dbLocal = require("./db/database.cjs");
-      const countProdotti = dbLocal.prepare("SELECT COUNT(*) AS n FROM prodotti").get().n;
-      const countOrdini = dbLocal.prepare("SELECT COUNT(*) AS n FROM ordini").get().n;
-      const countUtenti = dbLocal.prepare("SELECT COUNT(*) AS n FROM utenti").get().n;
-      const countVendite = dbLocal.prepare("SELECT COUNT(*) AS n FROM vendite").get().n;
-
-      const PUBLIC_DIR = path.resolve("app/public");
-      const indexPath = path.join(PUBLIC_DIR, "index.html");
-      const hasPublic = fs.existsSync(PUBLIC_DIR);
-      const hasIndex = fs.existsSync(indexPath);
-
-      const dbVuoto = (countProdotti + countOrdini + countUtenti + countVendite) === 0;
-
-      res.json({
-        ok: true,
-        db: {
-          prodotti: countProdotti,
-          ordini: countOrdini,
-          utenti: countUtenti,
-          vendite: countVendite,
-          vuoto: dbVuoto
-        },
-        frontend: {
-          publicDir: PUBLIC_DIR,
-          hasPublic,
-          indexPath,
-          hasIndex
-        }
-      });
-    } catch (err) {
-      logErr("❌ ERRORE /admin/frontend-status:", err.message || err);
-      res.json({ ok: false, error: err.message || String(err) });
-    }
-  });
 
   async function startServer() {
     log("====================================");
