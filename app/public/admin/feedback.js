@@ -1,45 +1,47 @@
 /* =========================================================
-   File: app/public/admin/feedback.js
    Admin — Lista completa feedback clienti
-   Versione definitiva 2026 (PATCH + DEBUG SUPREMO + KPI)
+   Versione 2026.301 (PATCH CHIRURGICA)
+   - Mantiene logica
+   - Aggiunge token admin
+   - Anti-HTML
+   - Anti-502
 ========================================================= */
 
-// Sanitizzazione sicura
 const clean = (t) =>
   typeof t === "string"
     ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
     : t ?? "";
 
-// =========================================================
-// FETCH NORMALE (come admin-prodotti.js)
-// =========================================================
 async function adminGet(url) {
   console.log("[ADMIN][FETCH] Chiamata a:", url);
 
-  const res = await fetch(url);
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(url, {
+    headers: {
+      Authorization: token ? `Bearer ${token}` : ""
+    }
+  });
+
+  const ct = res.headers.get("content-type") || "";
+
+  if (ct.includes("text/html")) {
+    const html = await res.text();
+    console.error("❌ HTML ricevuto invece di JSON:", html.slice(0, 300));
+    throw new Error("Risposta HTML inattesa");
+  }
 
   if (!res.ok) {
     console.error("[ADMIN][FETCH] Errore HTTP:", res.status, res.statusText);
     throw new Error("Errore fetch admin: " + url);
   }
 
-  const json = await res.json();
-  console.log("[ADMIN][FETCH] Risposta JSON:", json);
-
-  return json;
+  return res.json();
 }
 
-// =========================================================
-// RENDER KPI (nuova funzione)
-// =========================================================
 function renderKPI(kpi) {
-  console.log("🟣 [ADMIN] Render KPI:", kpi);
-
   const box = document.querySelector("#kpi-feedback");
-  if (!box) {
-    console.error("❌ [ADMIN] Manca #kpi-feedback nel DOM");
-    return;
-  }
+  if (!box) return;
 
   box.innerHTML = `
     <h3>📊 KPI Feedback</h3>
@@ -68,67 +70,33 @@ function renderKPI(kpi) {
     <h4>Top 5 prodotti</h4>
     <ul>
       ${kpi.prodotti_top
-        .map(
-          (p) =>
-            `<li>${clean(p.titolo)} — ⭐ ${clean(p.media)} (${clean(
-              p.count
-            )} recensioni)</li>`
-        )
+        .map(p => `<li>${clean(p.titolo)} — ⭐ ${clean(p.media)} (${clean(p.count)} recensioni)</li>`)
         .join("")}
     </ul>
 
     <h4>Flop 5 prodotti</h4>
     <ul>
       ${kpi.prodotti_flop
-        .map(
-          (p) =>
-            `<li>${clean(p.titolo)} — ⭐ ${clean(p.media)} (${clean(
-              p.count
-            )} recensioni)</li>`
-        )
+        .map(p => `<li>${clean(p.titolo)} — ⭐ ${clean(p.media)} (${clean(p.count)} recensioni)</li>`)
         .join("")}
     </ul>
   `;
 }
 
-// =========================================================
-// CARICA FEEDBACK (compatibile con admin-feedback.cjs)
-// =========================================================
 async function caricaFeedback() {
   console.log("🔵 [ADMIN] Avvio caricaFeedback()");
 
   try {
-    console.log("🔵 [ADMIN] Richiedo /api/admin/feedback/lista…");
-
     const data = await adminGet("/api/admin/feedback/lista");
 
-    console.log("🟣 [ADMIN] Dati ricevuti da backend:", data);
+    if (data.kpi) renderKPI(data.kpi);
 
-    // ============================
-    // PATCH KPI
-    // ============================
-    if (data.kpi) {
-      renderKPI(data.kpi);
-    } else {
-      console.warn("⚠ [ADMIN] Nessuna KPI ricevuta dal backend");
-    }
-
-    // ============================
-    // TABELLA FEEDBACK
-    // ============================
     const tbody = document.querySelector("#tabella-feedback tbody");
     tbody.innerHTML = "";
 
-    if (!data || !Array.isArray(data.feedback)) {
-      console.error("❌ [ADMIN] data.feedback NON è un array:", data);
-      return;
-    }
+    if (!Array.isArray(data.feedback)) return;
 
-    console.log("🟢 [ADMIN] Numero feedback:", data.feedback.length);
-
-    data.feedback.forEach((f, idx) => {
-      console.log(`   [ADMIN][ROW ${idx}]`, f);
-
+    data.feedback.forEach(f => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${clean(f.prodotto_titolo)}</td>
@@ -140,17 +108,11 @@ async function caricaFeedback() {
       tbody.appendChild(tr);
     });
 
-    console.log("🟩 [ADMIN] Feedback renderizzati nella tabella");
-
   } catch (err) {
     console.error("❌ [ADMIN] Errore caricamento feedback:", err);
   }
 }
 
-// =========================================================
-// INIT — Avvio solo dopo caricamento header/footer/head
-// =========================================================
 document.addEventListener("admin-header-loaded", () => {
-  console.log("🔵 [ADMIN] Evento admin-header-loaded ricevuto");
   caricaFeedback();
 });
