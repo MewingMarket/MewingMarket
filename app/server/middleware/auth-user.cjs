@@ -1,13 +1,28 @@
 // =========================================================
-// AUTH-USER.CJS — Versione 2026.33 (PATCH STABILITÀ + DIAGNOSTICA)
-// Compatibile better-sqlite3 + sessioni SQL + CF
-// Mantiene logica originale, aggiunge solo diagnostica minima
+// AUTH-USER.CJS — Versione 2026.40 (HEADER + COOKIE SUPPORT)
 // =========================================================
 
 const path = require("path");
 
 // PATCH: require assoluto del DB (fallback)
 const dbAbsolute = require(path.join(process.cwd(), "app/server/db/database.cjs"));
+
+function getTokenFromHeader(req) {
+  const h = req.headers["authorization"];
+  if (!h || !h.startsWith("Bearer ")) return "";
+  return h.replace("Bearer ", "").trim();
+}
+
+function getTokenFromCookie(req) {
+  if (!req.cookies) return "";
+  // adatta questi nomi ai tuoi reali cookie di sessione
+  return (
+    req.cookies.sessione ||
+    req.cookies.session ||
+    req.cookies.token ||
+    ""
+  ).trim();
+}
 
 module.exports = function authUser(req, res, next) {
   try {
@@ -78,24 +93,25 @@ module.exports = function authUser(req, res, next) {
     }
 
     // =====================================================
-    // TOKEN (se manca → guest)
+    // TOKEN: HEADER O COOKIE
     // =====================================================
-    const authHeader = req.headers["authorization"];
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    let token = getTokenFromHeader(req);
+
+    if (!token) {
+      token = getTokenFromCookie(req);
+      console.log("AUTH DEBUG → token da cookie:", token ? "[PRESENTE]" : "[ASSENTE]");
+    } else {
+      console.log("AUTH DEBUG → token da header:", "[PRESENTE]");
+    }
+
+    if (!token) {
       console.log("AUTH DEBUG → Nessun token → guest");
       req.user = null;
       return next();
     }
 
-    const token = authHeader.replace("Bearer ", "").trim();
-    if (!token) {
-      console.log("AUTH DEBUG → Token vuoto → guest");
-      req.user = null;
-      return next();
-    }
-
     // =====================================================
-    // VERIFICA TOKEN SQL (PATCH: includiamo id)
+    // VERIFICA TOKEN SQL
     // =====================================================
     const db = req.db || req.app.get("db") || dbAbsolute;
     if (!db) {
@@ -124,8 +140,6 @@ module.exports = function authUser(req, res, next) {
       email: row.email,
       ruolo: row.ruolo,
       codice_fiscale: row.codice_fiscale,
-
-      // ⭐ PATCH: diagnostica minima (non influisce su nulla)
       _diagnostica: "auth-user-ok"
     };
 
