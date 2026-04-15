@@ -4,7 +4,46 @@
    - descrizione_lunga (PDF + YouTube)
    - descrizione_breve (riassunto)
    - NESSUNA descrizione_email
+   PATCH 2026.999 — fetchCritico + anti-HTML + anti-502
 ========================================================= */
+
+/* =========================================================
+   fetchCritico — retry + anti-HTML + anti-502
+========================================================= */
+async function fetchCritico(url, options = {}, cfg = {}) {
+  const { retries = 3, backoff = 400 } = cfg;
+  let attempt = 0;
+
+  while (attempt <= retries) {
+    try {
+      const res = await fetch(url, options);
+      const ct = res.headers.get("content-type") || "";
+
+      // Anti-HTML
+      if (ct.includes("text/html")) {
+        const html = await res.text();
+        throw new Error("HTML inatteso: " + html.slice(0, 200));
+      }
+
+      // Retry su 502/503/504
+      if (!res.ok) {
+        if ([502, 503, 504].includes(res.status) && attempt < retries) {
+          await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
+          attempt++;
+          continue;
+        }
+        throw new Error("HTTP " + res.status);
+      }
+
+      return res;
+
+    } catch (err) {
+      if (attempt >= retries) throw err;
+      await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
+      attempt++;
+    }
+  }
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   console.log("[ADMIN] Init admin-prodotti.js");
@@ -42,10 +81,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     console.log("[ADMIN] Upload:", endpoint, file.name);
 
-    const res = await fetch(endpoint, {
-      method: "POST",
-      body: formData
-    });
+    const res = await fetchCritico(
+      endpoint,
+      {
+        method: "POST",
+        body: formData
+      },
+      { retries: 3, backoff: 400 }
+    );
 
     const data = await res.json();
 
@@ -64,7 +107,12 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("[ADMIN] Carico lista prodotti…");
 
     try {
-      const res = await fetch("/api/prodotti");
+      const res = await fetchCritico(
+        "/api/prodotti",
+        { method: "GET" },
+        { retries: 3, backoff: 400 }
+      );
+
       const prodotti = await res.json();
 
       if (!Array.isArray(prodotti) || prodotti.length === 0) {
@@ -109,7 +157,12 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("[ADMIN] Carico prodotto:", id);
 
     try {
-      const res = await fetch(`/api/prodotti/${id}`);
+      const res = await fetchCritico(
+        `/api/prodotti/${id}`,
+        { method: "GET" },
+        { retries: 3, backoff: 400 }
+      );
+
       const p = await res.json();
 
       if (!p) {
@@ -168,9 +221,13 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("[ADMIN] Elimino prodotto:", id);
 
     try {
-      const res = await fetch(`/api/prodotti/${id}`, {
-        method: "DELETE"
-      });
+      const res = await fetchCritico(
+        `/api/prodotti/${id}`,
+        {
+          method: "DELETE"
+        },
+        { retries: 3, backoff: 400 }
+      );
 
       const data = await res.json();
 
@@ -211,14 +268,18 @@ document.addEventListener("DOMContentLoaded", () => {
       aiPreview.textContent = "";
 
       try {
-        const res = await fetch("/api/prodotti/genera-descrizione-ai", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            titolo,
-            contenuto: fDescrizione.value.trim() || ""
-          })
-        });
+        const res = await fetchCritico(
+          "/api/prodotti/genera-descrizione-ai",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              titolo,
+              contenuto: fDescrizione.value.trim() || ""
+            })
+          },
+          { retries: 3, backoff: 400 }
+        );
 
         const data = await res.json();
 
@@ -289,11 +350,15 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("[ADMIN] Payload finale:", payload);
 
     try {
-      const res = await fetch("/api/prodotti", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
+      const res = await fetchCritico(
+        "/api/prodotti",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        },
+        { retries: 3, backoff: 400 }
+      );
 
       const p = await res.json();
 
