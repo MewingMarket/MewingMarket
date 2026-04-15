@@ -9,7 +9,46 @@
    - Download file
    - Stati coerenti con backend 2026
    - UX migliorata
+   Patch 2026.999 — fetchCritico + anti-HTML + anti-502
 ========================================================= */
+
+/* =========================================================
+   fetchCritico — retry + anti-HTML + anti-502
+========================================================= */
+async function fetchCritico(url, options = {}, cfg = {}) {
+  const { retries = 3, backoff = 400 } = cfg;
+  let attempt = 0;
+
+  while (attempt <= retries) {
+    try {
+      const res = await fetch(url, options);
+      const ct = res.headers.get("content-type") || "";
+
+      // Anti-HTML
+      if (ct.includes("text/html")) {
+        const html = await res.text();
+        throw new Error("HTML inatteso: " + html.slice(0, 200));
+      }
+
+      // Retry su 502/503/504
+      if (!res.ok) {
+        if ([502, 503, 504].includes(res.status) && attempt < retries) {
+          await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
+          attempt++;
+          continue;
+        }
+        throw new Error("HTTP " + res.status);
+      }
+
+      return res;
+
+    } catch (err) {
+      if (attempt >= retries) throw err;
+      await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
+      attempt++;
+    }
+  }
+}
 
 document.addEventListener("DOMContentLoaded", async () => {
   const token = localStorage.getItem("token");
@@ -29,11 +68,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   // =========================================================
   let data;
   try {
-    const res = await fetch("/api/ordini/utente", {
-      headers: { Authorization: "Bearer " + token }
-    });
+    // ⭐ PATCH: fetchCritico
+    const res = await fetchCritico(
+      "/api/ordini/utente",
+      { headers: { Authorization: "Bearer " + token } },
+      { retries: 3, backoff: 400 }
+    );
 
     data = await res.json();
+
   } catch (err) {
     console.error("Errore fetch /ordini/utente:", err);
     body.innerHTML = `<tr><td colspan="5">Errore di connessione.</td></tr>`;
@@ -66,17 +109,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       ? new Date(o.data_ordine).toLocaleDateString("it-IT")
       : "—";
 
-    // =========================================================
-    // BOTTONI AZIONE (PATCH 2026.200)
-    // =========================================================
     let azione = "";
 
-    // 🔵 COMPLETA PAGAMENTO
     if (o.stato === "in_attesa_pagamento") {
       azione = `<button class="btn-paga" data-id="${o.id}">Completa pagamento</button>`;
     }
-
-    // 🟢 DOWNLOAD + RICHIEDI RIMBORSO (solo ordini completati)
     else if (o.stato === "completato") {
       const downloadBtn = o.download_token
         ? `<button class="btn-download" data-token="${o.download_token}">Download</button>`
@@ -87,13 +124,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         <button class="btn-rimborso" data-id="${o.id}">Richiedi rimborso</button>
       `;
     }
-
-    // 🟡 RIMBORSATO
     else if (o.stato === "rimborsato") {
       azione = `<span class="badge-rimborsato">Rimborsato</span>`;
     }
-
-    // 🔴 ANNULLA (solo se non completato e non annullato)
     else if (o.stato !== "annullato") {
       azione = `<button class="btn-annulla" data-id="${o.id}">Annulla</button>`;
     }
@@ -121,13 +154,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!confirm("Vuoi annullare questo ordine?")) return;
 
     try {
-      const res = await fetch(`/api/ordini/annulla/${id}`, {
-        method: "POST",
-        headers: {
-          Authorization: "Bearer " + token,
-          "Content-Type": "application/json"
-        }
-      });
+      // ⭐ PATCH: fetchCritico
+      const res = await fetchCritico(
+        `/api/ordini/annulla/${id}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: "Bearer " + token,
+            "Content-Type": "application/json"
+          }
+        },
+        { retries: 3, backoff: 400 }
+      );
 
       const data = await res.json();
 
@@ -155,10 +193,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!id) return;
 
     try {
-      const res = await fetch(`/api/paypal/ricrea/${id}`, {
-        method: "POST",
-        headers: { Authorization: "Bearer " + token }
-      });
+      // ⭐ PATCH: fetchCritico
+      const res = await fetchCritico(
+        `/api/paypal/ricrea/${id}`,
+        {
+          method: "POST",
+          headers: { Authorization: "Bearer " + token }
+        },
+        { retries: 3, backoff: 400 }
+      );
 
       const data = await res.json();
 
