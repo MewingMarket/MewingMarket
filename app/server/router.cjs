@@ -15,9 +15,6 @@ const router = express.Router();
 /* Helper per require assoluti */
 const R = (p) => require(path.join(process.cwd(), "app/server", p));
 
-/* =========================================================
-   🔵 DEBUG ROUTER — conferma caricamento router
-========================================================= */
 console.log("🟦 [ROUTER] Caricamento router principale avviato");
 
 /* =========================================================
@@ -48,8 +45,9 @@ router.use(R("routes/system-status.cjs"));
 /* =========================================================
    ⭐ PATCH: API PRODOTTI — PUBBLICA
    Deve stare PRIMA di auth-user
+   E SENZA /api perché il server monta già /api
 ========================================================= */
-router.use("/api", R("routes/api-prodotti-new.cjs"));
+router.use("/", R("routes/api-prodotti-new.cjs"));
 
 /* =========================================================
    2) ADMIN (protette da auth-admin)
@@ -113,9 +111,6 @@ router.use(R("routes/paypal-complete.cjs"));
 router.use(R("routes/paypal-cancel.cjs"));
 router.use(R("routes/paypal-ricrea.cjs"));
 
-/* =========================================================
-   🔵 DEBUG FINALE
-========================================================= */
 console.log("🟩 [ROUTER] Router principale caricato correttamente");
 
 module.exports = router;
