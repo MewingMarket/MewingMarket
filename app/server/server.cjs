@@ -9,6 +9,7 @@
  * Patch 2026.960 — Router FULL ERROR LOG
  * Patch 2026.970 — Middleware Diagnostico Route Scanner
  * Patch 2026.999 — Cold-start Render (warmup non bloccante)
+ * Patch 2026.9999 — DISATTIVATO debug-db (fix API protette)
  * =========================================================
  */
 
@@ -196,16 +197,16 @@ const wait = (ms) => new Promise(res => res(ms));
   }
 
   // =========================================================
-  // DEBUG-DB PROTETTO
+  // DEBUG-DB PROTETTO — DISATTIVATO (FIX API PROTETTE)
   // =========================================================
-  log(">> LOADING debug-db.cjs");
-  await wait(200);
-  try {
-    app.use("/api", require("./routes/debug-db.cjs"));
-    log(">> DEBUG-DB ROUTE CARICATA");
-  } catch (err) {
-    logErr("❌ ERRORE debug-db.cjs:", err.message || err);
-  }
+  log(">> DEBUG-DB DISATTIVATO (patch 2026.9999)");
+  // await wait(200);
+  // try {
+  //   app.use("/api", require("./routes/debug-db.cjs"));
+  //   log(">> DEBUG-DB ROUTE CARICATA");
+  // } catch (err) {
+  //   logErr("❌ ERRORE debug-db.cjs:", err.message || err);
+  // }
 
   // =========================================================
   // STATIC ROUTES + NO-CACHE INDEX.HTML
@@ -241,16 +242,9 @@ const wait = (ms) => new Promise(res => res(ms));
   // SPA FALLBACK — serve index.html per tutte le route non-API
   // =========================================================
   app.get("*", (req, res, next) => {
-    // NON toccare le API
     if (req.url.startsWith("/api")) return next();
-
-    // NON toccare l'admin statico
     if (req.url.startsWith("/admin")) return next();
-
-    // NON toccare i file statici (js, css, immagini, ecc.)
     if (req.url.includes(".") && !req.url.endsWith(".html")) return next();
-
-    // Tutto il resto → index.html (SPA)
     res.sendFile(path.join(PUBLIC_DIR, "index.html"));
   });
 
