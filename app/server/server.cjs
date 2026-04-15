@@ -6,6 +6,7 @@
  * Patch 2026.600 — Anti-crash router + Monitor DB/Frontend
  * Patch 2026.700 — No-cache index.html (anti-CDN)
  * Patch 2026.900 — Debug richieste + Hook diagnostica.cjs
+ * Patch 2026.960 — Router FULL ERROR LOG
  * =========================================================
  */
 
@@ -28,7 +29,6 @@ log(">> SERVER STARTING…");
 
 const express = require("express");
 const path = require("path");
-// const cors = require("cors"); // 🔥 NON PIÙ USATO QUI, GESTITO IN cache.cjs
 const cookieParser = require("cookie-parser");
 const crypto = require("crypto");
 const fs = require("fs");
@@ -80,8 +80,6 @@ app.use((req, res, next) => {
 /**
  * =========================================================
  * 🔍 HOOK DIAGNOSTICA (server-level)
- * - Non rompe nulla se diagnostica.cjs non esiste
- * - Quando lo creeremo, potrà agganciarsi qui
  * =========================================================
  */
 try {
@@ -104,7 +102,7 @@ const wait = (ms) => new Promise(res => res(ms));
   require("./services/logging.cjs");
 
   // =========================================================
-  // 🔥 RESTORE PRIMA DEL DATABASE (solo se necessario)
+  // 🔥 RESTORE PRIMA DEL DATABASE
   // =========================================================
   log(">> RESTORE DB & FILES (if needed)");
   await wait(200);
@@ -118,9 +116,6 @@ const wait = (ms) => new Promise(res => res(ms));
   // =========================================================
   log(">> APPLYING PARSER MIDDLEWARE");
   await wait(200);
-
-  // 🔥 CORS ORA È GESTITO IN cache.cjs
-  // app.use(cors({ origin: true, credentials: true }));
 
   app.use(express.json());
   app.use(cookieParser());
@@ -163,16 +158,18 @@ const wait = (ms) => new Promise(res => res(ms));
   require("./middleware/context.cjs")(app);
 
   // =========================================================
-  // 🔥 ROUTER API PROTETTO (non blocca frontend se crasha)
+  // 🔥 ROUTER API — PATCH: FULL ERROR LOG
   // =========================================================
   log(">> LOADING router.cjs");
   await wait(200);
   try {
+    console.log("LOADING ROUTER PATH:", path.resolve("app/server/router.cjs"));
     const router = require("./router.cjs");
     app.use("/api", router);
     log(">> ROUTER API CARICATO");
   } catch (err) {
-    logErr("❌ ROUTER ERROR — API disabilitate ma frontend attivo:", err.message || err);
+    console.error("❌ ROUTER LOAD ERROR FULL:", err);
+    throw err; // 🔥 NON NASCONDERE PIÙ L’ERRORE
   }
 
   // =========================================================
@@ -184,7 +181,7 @@ const wait = (ms) => new Promise(res => res(ms));
     app.use("/api", require("./routes/debug-db.cjs"));
     log(">> DEBUG-DB ROUTE CARICATA");
   } catch (err) {
-    logErr("❌ ERRORE debug-db.cjs (ignorato, frontend resta attivo):", err.message || err);
+    logErr("❌ ERRORE debug-db.cjs:", err.message || err);
   }
 
   // =========================================================
@@ -207,7 +204,6 @@ const wait = (ms) => new Promise(res => res(ms));
     }
   }
 
-  // 🔥 NO-CACHE SOLO PER index.html
   app.get("/", (req, res, next) => {
     res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     res.set("Pragma", "no-cache");
@@ -229,7 +225,7 @@ const wait = (ms) => new Promise(res => res(ms));
   app.use("/admin", express.static(path.resolve("app/public/admin")));
 
   // =========================================================
-  // FRONTEND ROUTES (CHAT, NEWSLETTER, ETC.)
+  // FRONTEND ROUTES
   // =========================================================
   log(">> LOADING FRONTEND ROUTES");
   await wait(200);
@@ -243,7 +239,7 @@ const wait = (ms) => new Promise(res => res(ms));
     require("./routes/versione.cjs")(app);
     log("✅ FRONTEND ROUTES CARICATE");
   } catch (err) {
-    logErr("❌ ERRORE FRONTEND ROUTES (ma static resta attivo):", err.message || err);
+    logErr("❌ ERRORE FRONTEND ROUTES:", err.message || err);
   }
 
   // =========================================================
@@ -266,7 +262,7 @@ const wait = (ms) => new Promise(res => res(ms));
   });
 
   // =========================================================
-  // 🔍 ENDPOINT DIAGNOSTICO: STATO DB + FRONTEND
+  // 🔍 ENDPOINT DIAGNOSTICO
   // =========================================================
   app.get("/admin/frontend-status", (req, res) => {
     try {
@@ -327,13 +323,6 @@ const wait = (ms) => new Promise(res => res(ms));
     app.listen(PORT, () => {
       log(`🎉 SERVER LISTENING ON PORT ${PORT}`);
       log("⚡ Server pronto e online");
-
-      // =====================================================
-      // BACKUP + MONITOR (identico al tuo)
-      // =====================================================
-
-      // ... (tutto il tuo codice backup, monitor, sync JSON, sync YouTube)
-
     });
   }
 
