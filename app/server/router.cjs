@@ -6,6 +6,7 @@
  * Patch 2026.900 — DEBUG + HOOK diagnostica.cjs
  * Patch 2026.960 — MOUNT /api/products (api-prodotti-new.cjs)
  * Patch 2026.980 — /api/health + PayPal prima di auth-user
+ * Patch 2026.990 — PRIORITÀ API PRODOTTI (fix routing)
  * =========================================================
  */
 
@@ -34,6 +35,12 @@ try {
 }
 
 /* =========================================================
+   ⭐ PATCH: API PRODOTTI — DEVONO ESSERE LE PRIME
+   (per evitare conflitti con product-page.cjs)
+========================================================= */
+router.use("/", R("routes/api-prodotti-new.cjs"));
+
+/* =========================================================
    1) ROTTE PUBBLICHE (NO TOKEN)
 ========================================================= */
 router.use("/utenti", R("routes/api-utenti.cjs"));
@@ -45,9 +52,6 @@ router.use(R("routes/system-status.cjs"));
 
 /* ⭐ HEALTH API PUBBLICA */
 router.use(R("routes/api-health.cjs"));
-
-/* ⭐ PATCH: API PRODOTTI — PUBBLICA */
-router.use("/", R("routes/api-prodotti-new.cjs"));
 
 /* =========================================================
    ⭐ PAYPAL (PUBLIC) — spostato PRIMA di auth-user
