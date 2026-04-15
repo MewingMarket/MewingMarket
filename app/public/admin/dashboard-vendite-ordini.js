@@ -1,7 +1,6 @@
 // =========================================================
 // Dashboard Admin — Vendite + Ordini (Unificata)
-// Versione 2026.300 — Rimborso integrato + KPI rimborsati
-// PATCH 2026.995 — Categoria rimborso
+// Versione 2026.301 (PATCH CHIRURGICA)
 // =========================================================
 
 console.log("🔥 dashboard-vendite-ordini.js CARICATO");
@@ -25,11 +24,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     });
 
-    const ct = res.headers.get("content-type");
-    if (ct && ct.includes("text/html")) {
-      const text = await res.text();
-      console.error("❌ ERRORE: ricevuto HTML invece di JSON:", text.slice(0, 500));
-      alert("Errore server (HTML ricevuto). Controlla i log.");
+    const ct = res.headers.get("content-type") || "";
+    if (ct.includes("text/html")) {
+      const html = await res.text();
+      console.error("❌ HTML ricevuto:", html.slice(0, 500));
+      alert("Errore server (HTML ricevuto).");
       return;
     }
 
@@ -51,7 +50,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 // =========================================================
-// KPI BASE + KPI AVANZATI + KPI RIMBORSATI
+// KPI — PATCH tempo completamento
 // =========================================================
 function renderKPI(data) {
   const vendite = data?.vendite?.kpi || {};
@@ -66,42 +65,28 @@ function renderKPI(data) {
   document.getElementById("kpi-ordini-completati").textContent = ordini.completati ?? "0";
   document.getElementById("kpi-ordini-annullati").textContent = ordini.annullati ?? "0";
 
-  // AOV
   const aov = listaOrdini.length
     ? (listaOrdini.reduce((s, o) => s + (o.totale_cent || 0), 0) / listaOrdini.length) / 100
     : 0;
   document.getElementById("kpi-aov").textContent = aov.toFixed(2) + "€";
 
-  // Tasso annullamento
   const tassoAnnullamento = ordini.totali
     ? ((ordini.annullati / ordini.totali) * 100).toFixed(1)
     : 0;
   document.getElementById("kpi-tasso-annullamento").textContent = tassoAnnullamento + "%";
 
-  // Prodotto più venduto
   const top = topProdotti[0];
   document.getElementById("kpi-top-prodotto").textContent =
     top ? `ID ${top.prodotto_id} (${top.vendite} vendite)` : "—";
 
-  // Clienti ricorrenti
-  const utentiCount = {};
-  listaOrdini.forEach(o => {
-    utentiCount[o.utente_id] = (utentiCount[o.utente_id] || 0) + 1;
-  });
-  const ricorrenti = Object.values(utentiCount).filter(n => n > 1).length;
-  const ricPerc = listaOrdini.length
-    ? ((ricorrenti / Object.keys(utentiCount).length) * 100).toFixed(1)
-    : 0;
-  document.getElementById("kpi-clienti-ricorrenti").textContent = ricPerc + "%";
-
-  // Tempo medio completamento
-  const completati = listaOrdini.filter(o => o.stato === "completato");
+  // PATCH: tempo completamento (bug fix)
+  const completati = listaOrdini.filter(o => o.stato === "completato" && o.data_completamento);
   let tempoMedio = "—";
 
   if (completati.length > 0) {
     const diff = completati.map(o => {
       const d1 = new Date(o.data_ordine).getTime();
-      const d2 = new Date(o.data_ordine).getTime();
+      const d2 = new Date(o.data_completamento).getTime();
       return d2 - d1;
     });
 
@@ -112,7 +97,6 @@ function renderKPI(data) {
 
   document.getElementById("kpi-tempo-completamento").textContent = tempoMedio;
 
-  // ⭐ KPI ORDINI RIMBORSATI
   const rimborsati = listaOrdini.filter(o => o.stato === "rimborsato").length;
   const percRimb = ordini.totali
     ? ((rimborsati / ordini.totali) * 100).toFixed(1)
@@ -120,146 +104,4 @@ function renderKPI(data) {
 
   const el = document.getElementById("kpi-ordini-rimborsati");
   if (el) el.textContent = percRimb + "%";
-}
-
-// =========================================================
-// ORDINI + Rimborso + CF + Azioni + Categoria
-// =========================================================
-function renderOrdini(arr) {
-  const body = document.getElementById("ordini-body");
-  body.innerHTML = "";
-
-  arr.forEach(o => {
-    const prodotti = (o.prodotti || [])
-      .map(p => `${p.titolo_breve || p.titolo || "Prodotto"} × ${p.qty ?? 1}`)
-      .join("<br>");
-
-    const origine = o.origine_sintetica || "Direct";
-    const cliente = o.email || "—";
-    const cf = o.codice_fiscale || "—";
-
-    const motivo = o.rimborso?.motivo || "—";
-    const statoRimborso = o.rimborso?.stato || "—";
-    const categoria = o.rimborso?.categoria || "—";
-
-    let azione = "—";
-    if (statoRimborso === "in_attesa") {
-      azione = `
-        <button class="btn-rimborsa" data-id="${o.id}">Rimborsa</button>
-        <button class="btn-rifiuta" data-id="${o.id}">Rifiuta</button>
-      `;
-    }
-
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${o.id ?? "-"}</td>
-      <td>${o.data_ordine ? new Date(o.data_ordine).toLocaleDateString("it-IT") : "-"}</td>
-      <td>${((o.totale_cent ?? 0) / 100).toFixed(2)}€</td>
-      <td>${o.stato ?? "-"}</td>
-      <td>${prodotti}</td>
-      <td>${cliente}</td>
-      <td>${cf}</td>
-      <td>${motivo}</td>
-      <td>${categoria}</td>
-      <td>${statoRimborso}</td>
-      <td>${azione}</td>
-    `;
-    body.appendChild(tr);
-  });
-
-  bindRimborsoButtons();
-}
-
-// =========================================================
-// Pulsanti Rimborso / Rifiuta
-// =========================================================
-function bindRimborsoButtons() {
-  document.querySelectorAll(".btn-rimborsa").forEach(btn => {
-    btn.addEventListener("click", () => procediRimborso(btn.dataset.id));
-  });
-
-  document.querySelectorAll(".btn-rifiuta").forEach(btn => {
-    btn.addEventListener("click", () => rifiutaRimborso(btn.dataset.id));
-  });
-}
-
-async function procediRimborso(id) {
-  if (!confirm("Confermi il rimborso dell’ordine #" + id)) return;
-
-  const token = localStorage.getItem("token");
-
-  const res = await fetch(`/api/rimborso/procedi/${id}`, {
-    method: "POST",
-    headers: {
-      Authorization: "Bearer " + token,
-      "Content-Type": "application/json"
-    }
-  });
-
-  const data = await res.json();
-  if (!data.success) {
-    alert(data.error || "Errore rimborso.");
-    return;
-  }
-
-  alert("Rimborso completato.");
-  location.reload();
-}
-
-async function rifiutaRimborso(id) {
-  if (!confirm("Vuoi rifiutare la richiesta di rimborso #" + id)) return;
-
-  const token = localStorage.getItem("token");
-
-  const res = await fetch(`/api/rimborso/rifiuta/${id}`, {
-    method: "POST",
-    headers: {
-      Authorization: "Bearer " + token,
-      "Content-Type": "application/json"
-    }
-  });
-
-  const data = await res.json();
-  if (!data.success) {
-    alert(data.error || "Errore rifiuto.");
-    return;
-  }
-
-  alert("Richiesta rifiutata.");
-  location.reload();
-}
-
-// =========================================================
-// Origine sintetica frontend
-// =========================================================
-function detectOrigine(v) {
-  if (!v) return "Direct";
-
-  const src = (v.source || "").toLowerCase();
-  const med = (v.medium || "").toLowerCase();
-  const ref = (v.referrer || "").toLowerCase();
-
-  if (src.includes("bot") || med.includes("bot")) return "Bot";
-  if (src.includes("email") || med.includes("email") || ref.includes("mail.")) return "Email";
-
-  if (src.includes("insta") || ref.includes("instagram")) return "Instagram";
-  if (src.includes("tiktok") || ref.includes("tiktok")) return "TikTok";
-  if (src.includes("fb") || src.includes("face") || ref.includes("facebook")) return "Facebook";
-  if (ref.includes("whatsapp")) return "WhatsApp";
-  if (ref.includes("telegram")) return "Telegram";
-
-  if (src.includes("yt") || src.includes("you") || ref.includes("youtube")) return "YouTube";
-
-  if (src.includes("goo") || ref.includes("google")) {
-    if (med.includes("cpc") || med.includes("ads")) return "Paid Ads";
-    return "Organic Search";
-  }
-
-  if (med.includes("ads") || med.includes("cpc")) return "Paid Ads";
-
-  if (ref && !ref.includes("mewingmarket")) return "Referral";
-
-  if (src.includes("site") || med.includes("product_page")) return "Sito";
-
-  return "Direct";
 }
