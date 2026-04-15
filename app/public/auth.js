@@ -55,20 +55,33 @@ async function logUserEvent(evento) {
 })();
 
 // ---------------------------------------------------------
-// 1) Wrapper fetch: Authorization Bearer automatico
+// 1) Wrapper fetch: Authorization Bearer automatico (PATCH 2026)
 // ---------------------------------------------------------
 (function () {
   const originalFetch = window.fetch;
 
-  window.fetch = function (url, options = {}) {
-    const token = localStorage.getItem("token");
-    options.headers = options.headers || {};
+  window.fetch = function (input, init) {
+    try {
+      const token = localStorage.getItem("token");
 
-    if (token) {
-      options.headers["Authorization"] = "Bearer " + token;
+      // Clona init senza distruggere quello originale
+      const newInit = init ? { ...init } : {};
+
+      // Clona headers senza sovrascrivere quelli esistenti
+      newInit.headers = init?.headers
+        ? { ...init.headers }
+        : {};
+
+      // Aggiungi Authorization solo se esiste
+      if (token) {
+        newInit.headers["Authorization"] = "Bearer " + token;
+      }
+
+      return originalFetch(input, newInit);
+    } catch (err) {
+      console.error("[AUTH] Errore wrapper fetch:", err);
+      return originalFetch(input, init);
     }
-
-    return originalFetch(url, options);
   };
 })();
 
