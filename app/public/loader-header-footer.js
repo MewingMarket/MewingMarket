@@ -1,5 +1,5 @@
 // =========================================================
-// LOADER HEADER/FOOTER — Versione DEFINITIVA (2026 + CLEAN + SAFE)
+// LOADER HEADER/FOOTER — Versione DEFINITIVA (2026 + CLEAN + SAFE + PATCH)
 // Carica: auth.js → head → header → header.js → carrello → footer
 // + SEO / Structured / Tracking (safe)
 // + Versioning / Anti-cache / Anti-SW
@@ -60,7 +60,7 @@
   })();
 
   // =========================================================
-  // CARICATORI SAFE (NO IMPORT, NO MODULE)
+  // CARICATORI SAFE (NO IMPORT, NO MODULE, NO ASYNC CRITICO)
   // =========================================================
   function loadUtilityScript(name) {
     try {
@@ -70,7 +70,7 @@
       const s = document.createElement("script");
       s.id = id;
       s.src = `/${name}.js?v=${VERSION}`;
-      s.async = true;
+      // niente async: li lasciamo caricarsi in ordine naturale
       s.onload = () => console.log(`[LOADER] ${name}.js caricato`);
       s.onerror = () => console.warn(`[LOADER] ${name}.js non trovato (ignorato)`);
       document.head.appendChild(s);
@@ -146,7 +146,7 @@
     return userRoots.some((root) => norm.startsWith(root));
   })();
 
-  const isGlobalPage = !isAdminPage && !isShopPage && !isUserPage;
+  const isGlobalPage = !isShopPage && !isAdminPage && !isUserPage && !isHome;
 
   console.log("[LOADER] Page:", { isHome, isShopPage, isAdminPage, isUserPage, isGlobalPage });
 
@@ -159,6 +159,10 @@
     s.onload = () => {
       console.log("[LOADER] auth.js caricato (PRIMA DI TUTTO)");
       resolve();
+    };
+    s.onerror = () => {
+      console.error("[LOADER] ERRORE: impossibile caricare auth.js");
+      resolve(); // non blocchiamo tutto il frontend
     };
     document.head.appendChild(s);
   });
@@ -190,6 +194,9 @@
         temp.innerHTML = html;
         [...temp.children].forEach((node) => document.head.appendChild(node));
         document.dispatchEvent(new Event("head-loaded"));
+      })
+      .catch((err) => {
+        console.error("[LOADER] Errore caricamento HEAD:", url, err);
       });
   }
 
@@ -213,9 +220,15 @@
       .then((r) => r.text())
       .then((html) => {
         const ph = document.getElementById("header-placeholder");
-        if (!ph) return;
+        if (!ph) {
+          console.warn("[LOADER] header-placeholder mancante");
+          return;
+        }
         ph.innerHTML = html;
         document.dispatchEvent(new Event("header-loaded"));
+      })
+      .catch((err) => {
+        console.error("[LOADER] Errore caricamento HEADER:", url, err);
       });
   }
 
@@ -241,6 +254,10 @@
           console.log("[LOADER] header.js caricato");
           resolve();
         };
+        s.onerror = () => {
+          console.error("[LOADER] ERRORE: impossibile caricare header.js");
+          resolve();
+        };
         document.body.appendChild(s);
       });
     });
@@ -254,11 +271,17 @@
       .then((r) => r.text())
       .then((html) => {
         const ph = document.getElementById("footer-placeholder");
-        if (!ph) return;
+        if (!ph) {
+          console.warn("[LOADER] footer-placeholder mancante");
+          return;
+        }
         ph.innerHTML = html;
         const year = document.getElementById("anno");
         if (year) year.textContent = new Date().getFullYear();
         document.dispatchEvent(new Event("footer-loaded"));
+      })
+      .catch((err) => {
+        console.error("[LOADER] Errore caricamento FOOTER:", url, err);
       });
   }
 
@@ -278,6 +301,10 @@
         s.src = `carrello.js?v=${VERSION}`;
         s.onload = () => {
           console.log("[LOADER] carrello.js caricato");
+          resolve();
+        };
+        s.onerror = () => {
+          console.error("[LOADER] ERRORE: impossibile caricare carrello.js");
           resolve();
         };
         document.body.appendChild(s);
@@ -304,6 +331,8 @@
         console.log("[LOADER] Carico admin (utente admin reale, stato verificato post-header)");
         const s = document.createElement("script");
         s.src = `/admin/loader-admin.js?v=${VERSION}`;
+        s.onload = () => console.log("[LOADER] loader-admin.js caricato");
+        s.onerror = () => console.error("[LOADER] ERRORE: impossibile caricare loader-admin.js");
         document.body.appendChild(s);
       } else {
         console.log("[LOADER] Admin NON caricato (stato finale non admin)");
@@ -317,7 +346,7 @@
   try {
     const s = document.createElement("script");
     s.src = `/frontend-diagnostica.js?v=${VERSION}`;
-    s.async = true;
+    // niente async: lo lasciamo caricare normalmente, non deve correre davanti a tutto
     s.onload = () => console.log("[LOADER] frontend-diagnostica.js caricato");
     s.onerror = () => console.warn("[LOADER] frontend-diagnostica.js non trovato (ignorato)");
     document.head.appendChild(s);
