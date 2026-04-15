@@ -46,8 +46,8 @@ router.use(R("routes/versione.cjs"));
 router.use(R("routes/system-status.cjs"));
 
 /* =========================================================
-   ⭐ PATCH: MOUNT API PRODOTTI (PUBLIC)
-   Questa è la patch che sblocca /api/products
+   ⭐ PATCH: API PRODOTTI — PUBBLICA
+   Deve stare PRIMA di auth-user
 ========================================================= */
 router.use("/api", R("routes/api-prodotti-new.cjs"));
 
@@ -66,7 +66,7 @@ router.use("/admin", R("routes/admin-utenti.cjs"));
 router.use("/admin", R("routes/api-admin.cjs"));
 
 /* =========================================================
-   ⭐ PATCH: ADMIN RIMBORSI
+   ⭐ PATCH: ADMIN RIMBORSI (UNIFICATO)
 ========================================================= */
 router.use("/admin", R("routes/api-rimborso.cjs"));
 
