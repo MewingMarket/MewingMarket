@@ -8,6 +8,7 @@
  * Patch 2026.900 — Debug richieste + Hook diagnostica.cjs
  * Patch 2026.960 — Router FULL ERROR LOG
  * Patch 2026.970 — Middleware Diagnostico Route Scanner
+ * Patch 2026.999 — Cold-start Render (warmup non bloccante)
  * =========================================================
  */
 
@@ -171,6 +172,17 @@ const wait = (ms) => new Promise(res => res(ms));
   } catch (err) {
     console.error("❌ ROUTER LOAD ERROR FULL:", err);
     throw err;
+  }
+
+  // =========================================================
+  // ❄️  COLD START (warmup Render, non blocca nulla)
+  // =========================================================
+  try {
+    const coldStart = require("./startup/cold-start.cjs");
+    coldStart(app);
+    log("❄️  Cold-start avviato");
+  } catch (err) {
+    logErr("❌ Errore cold-start:", err.message);
   }
 
   // =========================================================
