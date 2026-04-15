@@ -1,7 +1,46 @@
 // =========================================================
-// PRODOTTO PREMIUM – MewingMarket (SQL READY, ID-BASED)
-// Versione: SQL + YouTube + Correlati + Carrello Premium
+/* PRODOTTO PREMIUM – MewingMarket (SQL READY, ID-BASED)
+   Versione: SQL + YouTube + Correlati + Carrello Premium
+   Patch 2026.999 — fetchCritico + anti-HTML + anti-502 */
 // =========================================================
+
+/* =========================================================
+   fetchCritico — retry + anti-HTML + anti-502
+========================================================= */
+async function fetchCritico(url, options = {}, cfg = {}) {
+  const { retries = 3, backoff = 400 } = cfg;
+  let attempt = 0;
+
+  while (attempt <= retries) {
+    try {
+      const res = await fetch(url, options);
+      const ct = res.headers.get("content-type") || "";
+
+      // Anti-HTML
+      if (ct.includes("text/html")) {
+        const html = await res.text();
+        throw new Error("HTML inatteso: " + html.slice(0, 200));
+      }
+
+      // Retry su 502/503/504
+      if (!res.ok) {
+        if ([502, 503, 504].includes(res.status) && attempt < retries) {
+          await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
+          attempt++;
+          continue;
+        }
+        throw new Error("HTTP " + res.status);
+      }
+
+      return res;
+
+    } catch (err) {
+      if (attempt >= retries) throw err;
+      await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
+      attempt++;
+    }
+  }
+}
 
 document.addEventListener("DOMContentLoaded", async () => {
 
@@ -33,7 +72,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   /* =========================================================
      1) ID
-  ========================================================= */
+  ========================================================== */
   const urlParams = new URLSearchParams(window.location.search);
   const id = urlParams.get("id");
 
@@ -44,10 +83,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   /* =========================================================
      2) CARICA PRODOTTO
-  ========================================================= */
+  ========================================================== */
   let p;
   try {
-    const res = await fetch(`/api/products/${id}`, { cache: "no-store" });
+    // ⭐ PATCH: fetchCritico
+    const res = await fetchCritico(`/api/products/${id}`, { cache: "no-store" }, {
+      retries: 3,
+      backoff: 400
+    });
+
     const data = await res.json();
 
     if (!data.success) {
@@ -65,7 +109,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   /* =========================================================
      3) HERO
-  ========================================================= */
+  ========================================================== */
   document.getElementById("product-title").innerText = clean(p.titolo);
 
   const subtitle = (p.titolo || "").split(" ").slice(0, 3).join(" ");
@@ -82,7 +126,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   /* =========================================================
      4) VIDEO YOUTUBE
-  ========================================================= */
+  ========================================================== */
   const ytURL = safeURL(p.youtube_url);
   const videoId = extractYouTubeId(ytURL || p.youtube_video_id);
 
@@ -96,13 +140,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   /* =========================================================
      5) DESCRIZIONE
-  ========================================================= */
+  ========================================================== */
   document.getElementById("product-description").textContent =
     p.descrizione_lunga || "";
 
   /* =========================================================
      6) ACQUISTA ORA — checkout single (ID-based)
-  ========================================================= */
+  ========================================================== */
   document.getElementById("btn-acquista").addEventListener("click", () => {
 
     if (typeof aggiungiAlCarrello === "function") {
@@ -124,7 +168,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   /* =========================================================
      7) AGGIUNGI AL CARRELLO — guest OK (ID-based)
-  ========================================================= */
+  ========================================================== */
   document.getElementById("btn-carrello").addEventListener("click", () => {
 
     if (typeof aggiungiAlCarrello === "function") {
@@ -148,7 +192,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   /* =========================================================
      8) RIMUOVI DAL CARRELLO
-  ========================================================= */
+  ========================================================== */
   const btnRemove = document.getElementById("btn-remove-cart");
   if (btnRemove) {
     btnRemove.addEventListener("click", () => {
@@ -163,9 +207,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   /* =========================================================
      9) CORRELATI — PATCH MULTI-CATEGORIA
-  ========================================================= */
+  ========================================================== */
   try {
-    const res = await fetch(`/api/products`, { cache: "no-store" });
+    // ⭐ PATCH: fetchCritico
+    const res = await fetchCritico(`/api/products`, { cache: "no-store" }, {
+      retries: 3,
+      backoff: 400
+    });
+
     const data = await res.json();
 
     const relatedBox = document.getElementById("related");
