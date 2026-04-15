@@ -5,7 +5,46 @@
    - Token Bearer
    - sessionState = 1
    - Download via fetch + blob
+   Patch 2026.999 — fetchCritico + anti-HTML + anti-502
 ========================================================= */
+
+/* =========================================================
+   fetchCritico — retry + anti-HTML + anti-502
+========================================================= */
+async function fetchCritico(url, options = {}, cfg = {}) {
+  const { retries = 3, backoff = 400 } = cfg;
+  let attempt = 0;
+
+  while (attempt <= retries) {
+    try {
+      const res = await fetch(url, options);
+      const ct = res.headers.get("content-type") || "";
+
+      // Anti-HTML
+      if (ct.includes("text/html")) {
+        const html = await res.text();
+        throw new Error("HTML inatteso: " + html.slice(0, 200));
+      }
+
+      // Retry su 502/503/504
+      if (!res.ok) {
+        if ([502, 503, 504].includes(res.status) && attempt < retries) {
+          await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
+          attempt++;
+          continue;
+        }
+        throw new Error("HTTP " + res.status);
+      }
+
+      return res;
+
+    } catch (err) {
+      if (attempt >= retries) throw err;
+      await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
+      attempt++;
+    }
+  }
+}
 
 document.addEventListener("DOMContentLoaded", async () => {
   const token = localStorage.getItem("token");
@@ -26,11 +65,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   // =========================================================
   let data;
   try {
-    const res = await fetch("/api/ordini/utente", {
-      headers: { Authorization: "Bearer " + token }
-    });
+    // ⭐ PATCH: fetchCritico
+    const res = await fetchCritico(
+      "/api/ordini/utente",
+      {
+        headers: { Authorization: "Bearer " + token }
+      },
+      { retries: 3, backoff: 400 }
+    );
 
     data = await res.json();
+
   } catch (err) {
     console.error("Errore fetch /ordini/utente:", err);
     body.innerHTML = `<tr><td colspan="3">Errore di connessione.</td></tr>`;
@@ -112,15 +157,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!id) return;
 
     try {
-      const res = await fetch(`/api/vendite/download/${id}`, {
-        headers: { Authorization: "Bearer " + token }
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        alert(err.error || "Errore durante il download.");
-        return;
-      }
+      // ⭐ PATCH: fetchCritico
+      const res = await fetchCritico(
+        `/api/vendite/download/${id}`,
+        {
+          headers: { Authorization: "Bearer " + token }
+        },
+        { retries: 3, backoff: 400 }
+      );
 
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
