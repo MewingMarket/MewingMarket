@@ -2,6 +2,7 @@
 // CATALOGO PREMIUM – MewingMarket
 // Versione SQL definitiva: Categorie JSON + Filtri + Carrello Guest (ID-based)
 // Patch 2026.960 — Dominio .IT + Diagnostica + Anti-sito-vuoto
+// Patch 2026.999 — fetchCritico + anti-HTML + anti-502
 // =========================================================
 
 /* =========================================================
@@ -11,20 +12,96 @@ const API_BASE = "https://www.mewingmarket.it";
 const API_PRODUCTS = API_BASE + "/api/products";
 
 /* =========================================================
+   fetchCritico — retry + anti-HTML + anti-502
+========================================================= */
+async function fetchCritico(url, options = {}, cfg = {}) {
+  const { retries = 3, backoff = 400 } = cfg;
+  let attempt = 0;
+
+  while (attempt <= retries) {
+    try {
+      const res = await fetch(url, options);
+      const ct = res.headers.get("content-type") || "";
+
+      // Anti-HTML
+      if (ct.includes("text/html")) {
+        const html = await res.text();
+        throw new Error("HTML inatteso: " + html.slice(0, 200));
+      }
+
+      // Retry su 502/503/504
+      if (!res.ok) {
+        if ([502, 503, 504].includes(res.status) && attempt < retries) {
+          await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
+          attempt++;
+          continue;
+        }
+        throw new Error("HTTP " + res.status);
+      }
+
+      return res;
+
+    } catch (err) {
+      if (attempt >= retries) throw err;
+      await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
+      attempt++;
+    }
+  }
+}
+
+/* =========================================================
    1) CARICA PRODOTTI DAL BACKEND
 ========================================================= */
 async function loadProducts() {
   console.log("🟦 [CATALOGO] Caricamento prodotti…");
 
   try {
-    const res = await fetch(API_PRODUCTS, { cache: "no-store" });
+    // ⭐ PATCH: fetchCritico
+    const res = await fetchCritico(API_PRODUCTS, { cache: "no-store" }, {
+      retries: 3,
+      backoff: 400
+    });
 
     console.log("🟩 [CORS] Allow-Origin:", res.headers.get("Access-Control-Allow-Origin"));
 
-    if (!res.ok) {
-      console.error("❌ [CATALOGO] Risposta non OK:", res.status, res.statusText);
-      return [];
+        const html = await res.text();
+        throw new Error("HTML inatteso: " + html.slice(0, 200));
+      }
+
+      // Retry su 502/503/504
+      if (!res.ok) {
+        if ([502, 503, 504].includes(res.status) && attempt < retries) {
+          await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
+          attempt++;
+          continue;
+        }
+        throw new Error("HTTP " + res.status);
+      }
+
+      return res;
+
+    } catch (err) {
+      if (attempt >= retries) throw err;
+      await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
+      attempt++;
     }
+  }
+}
+
+/* =========================================================
+   1) CARICA PRODOTTI DAL BACKEND
+========================================================= */
+async function loadProducts() {
+  console.log("🟦 [CATALOGO] Caricamento prodotti…");
+
+  try {
+    // ⭐ PATCH: fetchCritico
+    const res = await fetchCritico(API_PRODUCTS, { cache: "no-store" }, {
+      retries: 3,
+      backoff: 400
+    });
+
+    console.log("🟩 [CORS] Allow-Origin:", res.headers.get("Access-Control-Allow-Origin"));
 
     const data = await res.json();
 
