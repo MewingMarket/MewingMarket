@@ -1,6 +1,7 @@
 // =========================================================
-// AUTH-USER.CJS — Versione 2026.32 (PATCH STABILITÀ + ID UTENTE)
+// AUTH-USER.CJS — Versione 2026.33 (PATCH STABILITÀ + DIAGNOSTICA)
 // Compatibile better-sqlite3 + sessioni SQL + CF
+// Mantiene logica originale, aggiunge solo diagnostica minima
 // =========================================================
 
 const path = require("path");
@@ -58,7 +59,11 @@ module.exports = function authUser(req, res, next) {
       "/paypal-cancel",
 
       "/chat",
-      "/chat-voice"
+      "/chat-voice",
+
+      // ⭐ PATCH: health API pubblica
+      "/health",
+      "/api/health"
     ];
 
     const isPublic = publicPaths.some(base =>
@@ -118,7 +123,10 @@ module.exports = function authUser(req, res, next) {
       id: row.id,
       email: row.email,
       ruolo: row.ruolo,
-      codice_fiscale: row.codice_fiscale
+      codice_fiscale: row.codice_fiscale,
+
+      // ⭐ PATCH: diagnostica minima (non influisce su nulla)
+      _diagnostica: "auth-user-ok"
     };
 
     console.log("AUTH DEBUG → UTENTE OK:", req.user.email, req.user.ruolo);
