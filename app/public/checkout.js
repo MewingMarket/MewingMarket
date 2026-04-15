@@ -3,12 +3,51 @@
 // Fix: invio corretto a create-order (email + prodotti + totale)
 // Fix: debug completo
 // Fix: slug eliminato dal carrello (ID-based)
+// Patch 2026.999 — fetchCritico + anti-HTML + anti-502
 // =========================================================
 
 console.log("[CHECKOUT] Caricato");
 
 let authOk = false;
 let cartOk = false;
+
+/* =========================================================
+   fetchCritico — retry + anti-HTML + anti-502
+========================================================= */
+async function fetchCritico(url, options = {}, cfg = {}) {
+  const { retries = 3, backoff = 400 } = cfg;
+  let attempt = 0;
+
+  while (attempt <= retries) {
+    try {
+      const res = await fetch(url, options);
+      const ct = res.headers.get("content-type") || "";
+
+      // Anti-HTML
+      if (ct.includes("text/html")) {
+        const html = await res.text();
+        throw new Error("HTML inatteso: " + html.slice(0, 200));
+      }
+
+      // Retry su 502/503/504
+      if (!res.ok) {
+        if ([502, 503, 504].includes(res.status) && attempt < retries) {
+          await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
+          attempt++;
+          continue;
+        }
+        throw new Error("HTTP " + res.status);
+      }
+
+      return res;
+
+    } catch (err) {
+      if (attempt >= retries) throw err;
+      await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
+      attempt++;
+    }
+  }
+}
 
 // --------------------------------------------------------
 // Attendi auth-ready
@@ -53,7 +92,8 @@ async function initCheckout() {
   let utenteEmail = null;
 
   try {
-    const res = await fetch("/api/utenti/me", {
+    // ⭐ PATCH: fetchCritico
+    const res = await fetchCritico("/api/utenti/me", {
       headers: { "Authorization": "Bearer " + token }
     });
 
@@ -157,16 +197,20 @@ async function initCheckout() {
 
       const payload = Cart.getForCheckout();
 
-      // 🔥 PATCH DEFINITIVA → invio corretto al backend
-      const res = await fetch("/api/paypal/create-order", {
-        method: "POST",
-        headers: authHeaders,
-        body: JSON.stringify({
-          email: utenteEmail,
-          prodotti: payload,
-          totale: totaleEuro
-        })
-      });
+      // ⭐ PATCH: fetchCritico anche qui
+      const res = await fetchCritico(
+        "/api/paypal/create-order",
+        {
+          method: "POST",
+          headers: authHeaders,
+          body: JSON.stringify({
+            email: utenteEmail,
+            prodotti: payload,
+            totale: totaleEuro
+          })
+        },
+        { retries: 3, backoff: 400 }
+      );
 
       const data = await res.json().catch(() => ({}));
       console.log("[CHECKOUT] Risposta create-order:", data);
