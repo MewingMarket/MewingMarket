@@ -2,6 +2,7 @@
    LOGIN.JS — Versione definitiva blindata (2026.10)
    Compatibile con auth.js + sessionState
    PATCH EVENTI UTENTE: registra evento "login"
+   PATCH 2027.300 — usa fetchCritico + apiFetch
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -11,19 +12,19 @@ document.addEventListener("DOMContentLoaded", () => {
   const emailEl = document.getElementById("email");
   const passEl = document.getElementById("password");
 
-  // ---------------------------------------------------------
-  // PATCH — Helper per registrare evento utente
-  // ---------------------------------------------------------
   async function logUserEvent(evento) {
     try {
       const email = localStorage.getItem("email") || "";
       if (!email) return;
 
-      await fetch("/api/utenti/evento", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, evento })
-      });
+      await fetchCritico(
+        "/utenti/evento",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, evento })
+        }
+      );
     } catch (err) {
       console.warn("Log evento fallito:", err);
     }
@@ -44,11 +45,16 @@ document.addEventListener("DOMContentLoaded", () => {
     form.dataset.lock = "1";
 
     try {
-      const res = await fetch("/api/utenti/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
-      });
+      // ⭐ PATCH 2027.300 — fetchCritico + apiFetch
+      const res = await fetchCritico(
+        "/utenti/login",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password })
+        },
+        { retries: 2, backoffMs: 300 }
+      );
 
       const data = await res.json().catch(() => ({}));
 
@@ -71,11 +77,8 @@ document.addEventListener("DOMContentLoaded", () => {
       logUserEvent("login");
 
       // =====================================================
-      // ⭐ PATCH 2026.10 — Sessione attiva
+      // ⭐ Sessione attiva
       // =====================================================
-      // 0 = anonimo
-      // 1 = loggato
-      // 2 = flusso sensibile (reset, registrazione, ecc.)
       localStorage.setItem("sessionState", "1");
 
       // =====================================================
@@ -87,6 +90,7 @@ document.addEventListener("DOMContentLoaded", () => {
       location.href = redirect || "index.html";
 
     } catch (err) {
+      console.error("Errore login:", err);
       alert("Errore di connessione al server");
     } finally {
       form.dataset.lock = "0";
