@@ -6,45 +6,8 @@
    - Sync Brevo + RegistratoBrevo + ClienteBrevo + ClienteDB
    - Colonna Bannato + KPI Bannati
    - Sync Utenti Storici
-   Patch 2026.999 — fetchCritico + anti-HTML + anti-502
-   Patch 2027.010 — ⭐ PATCH CREDENZIALI
-   Patch 2027.100 — ⭐ API UNIVERSALE (apiFetch + alias)
+   Patch 2027.300 — usa fetchCritico globale (api.js)
 ========================================================= */
-
-/* =========================================================
-   fetchCritico — retry + anti-HTML + anti-502 + apiFetch
-========================================================= */
-async function fetchCritico(path, options = {}, cfg = {}) {
-  const { retries = 3, backoff = 400 } = cfg;
-  let attempt = 0;
-
-  while (attempt <= retries) {
-    try {
-      const res = await apiFetch(path, options);
-      const ct = res.headers.get("content-type") || "";
-
-      if (ct.includes("text/html")) {
-        const html = await res.text();
-        throw new Error("HTML inatteso: " + html.slice(0, 200));
-      }
-
-      if (!res.ok) {
-        if ([502, 503, 504].includes(res.status) && attempt < retries) {
-          await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
-          attempt++;
-          continue;
-        }
-        throw new Error("HTTP " + res.status);
-      }
-
-      return res;
-    } catch (err) {
-      if (attempt >= retries) throw err;
-      await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
-      attempt++;
-    }
-  }
-}
 
 /* =========================================================
    INIT
@@ -55,7 +18,7 @@ document.addEventListener("admin-header-loaded", async () => {
 });
 
 /* =========================================================
-   FETCH ADMIN (patchato con fetchCritico + apiFetch)
+   FETCH ADMIN (usa fetchCritico globale)
 ========================================================= */
 async function adminGet(path, options = {}) {
   const token = localStorage.getItem("token");
@@ -65,7 +28,7 @@ async function adminGet(path, options = {}) {
     Authorization: token ? `Bearer ${token}` : ""
   };
 
-  const res = await fetchCritico(
+  const res = await window.fetchCritico(
     path,
     {
       ...options,
