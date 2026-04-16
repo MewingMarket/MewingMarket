@@ -1,6 +1,8 @@
-// =========================================================
-// RESET EMAIL REQUEST — Versione CF (2026.50) — ZERO-INPUT
-// =========================================================
+/* =========================================================
+   RESET EMAIL REQUEST — Versione CF (PATCH 2027.300)
+   - Usa fetchCritico globale + API alias
+   - Nessuna regressione
+========================================================= */
 
 console.log("[RESET-EMAIL-REQ] Versione CF caricata");
 
@@ -28,11 +30,16 @@ btnResetEmail?.addEventListener("click", async () => {
   try {
     console.log("[RESET-EMAIL-REQ] Invio richiesta con CF:", codice_fiscale);
 
-    const res = await fetch("/api/utenti/reset-email-request", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ codice_fiscale })
-    });
+    // ⭐ PATCH 2027.300 — alias + fetchCritico globale
+    const res = await window.fetchCritico(
+      "/utenti/reset-email-request",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codice_fiscale })
+      },
+      { retries: 2, backoffMs: 300 }
+    );
 
     const data = await res.json().catch(() => ({}));
     console.log("[RESET-EMAIL-REQ] Risposta:", data);
