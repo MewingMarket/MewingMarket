@@ -8,7 +8,7 @@
  * Patch 2026.980 — /api/health + PayPal prima di auth-user
  * Patch 2026.990 — PRIORITÀ API PRODOTTI (fix routing)
  * Patch 2026.995 — AUTH-USER PRIMA DI TUTTO (fix totale)
- * Patch 2027.100 — ⭐ UNIVERSAL API ALIAS (v1/v2/latest/API/api)
+ * Patch 2027.100 — ⭐ UNIVERSAL API ALIAS
  * =========================================================
  */
 
@@ -65,7 +65,7 @@ router.use(R("routes/system-status.cjs"));
 router.use(R("routes/api-health.cjs"));
 
 /* =========================================================
-   ⭐ PAYPAL (PUBLIC) — spostato PRIMA di auth-admin
+   ⭐ PAYPAL (PUBLIC)
 ========================================================= */
 router.use(R("routes/paypal-create.cjs"));
 router.use(R("routes/paypal-complete.cjs"));
@@ -87,7 +87,7 @@ router.use("/admin", R("routes/admin-utenti.cjs"));
 router.use("/admin", R("routes/api-admin.cjs"));
 
 /* =========================================================
-   ⭐ PATCH: ADMIN RIMBORSI (UNIFICATO)
+   ⭐ PATCH: ADMIN RIMBORSI
 ========================================================= */
 router.use("/admin", R("routes/api-rimborso.cjs"));
 
