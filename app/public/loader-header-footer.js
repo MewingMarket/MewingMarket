@@ -3,6 +3,7 @@
 // + SEO / Structured / Tracking (safe)
 // + Versioning / Anti-cache / Anti-SW
 // + PATCH 2027.210 — AUTO-INJECT api.js (SAFE)
+// + PATCH 2027.300 — safeFetch* usa fetchCritico se disponibile
 // =========================================================
 
 (function () {
@@ -203,11 +204,24 @@
   });
 
   // =========================================================
-  // 1) HEAD
+  // 1) HEAD (PATCH: usa fetchCritico se disponibile)
   // =========================================================
   function safeFetchAppendHead(url) {
-    return fetch(url)
-      .then((r) => r.text())
+    const doFetch = () => {
+      if (typeof window.fetchCritico === "function") {
+        console.log("[LOADER] HEAD via fetchCritico:", url);
+        return window.fetchCritico(
+          url.replace(/^https?:\/\/[^/]+/, "").replace(/^\/api(\/v1|\/v2|\/latest)?/, ""),
+          {},
+          { retries: 2, backoffMs: 300 }
+        ).then(r => r.text());
+      }
+
+      console.log("[LOADER] HEAD via fetch:", url);
+      return fetch(url).then(r => r.text());
+    };
+
+    return doFetch()
       .then((html) => {
         const temp = document.createElement("div");
         temp.innerHTML = html;
@@ -226,7 +240,7 @@
   );
 
   // =========================================================
-  // 2) HEADER
+  // 2) HEADER (PATCH: usa fetchCritico se disponibile)
   // =========================================================
   let headerFile = null;
 
@@ -235,8 +249,21 @@
   }
 
   function safeFetchHeader(url) {
-    return fetch(url)
-      .then((r) => r.text())
+    const doFetch = () => {
+      if (typeof window.fetchCritico === "function") {
+        console.log("[LOADER] HEADER via fetchCritico:", url);
+        return window.fetchCritico(
+          url.replace(/^https?:\/\/[^/]+/, "").replace(/^\/api(\/v1|\/v2|\/latest)?/, ""),
+          {},
+          { retries: 2, backoffMs: 300 }
+        ).then(r => r.text());
+      }
+
+      console.log("[LOADER] HEADER via fetch:", url);
+      return fetch(url).then(r => r.text());
+    };
+
+    return doFetch()
       .then((html) => {
         const ph = document.getElementById("header-placeholder");
         if (!ph) {
@@ -283,11 +310,24 @@
   }
 
   // =========================================================
-  // 4) FOOTER
+  // 4) FOOTER (PATCH: usa fetchCritico se disponibile)
   // =========================================================
   function safeFetchFooter(url) {
-    return fetch(url)
-      .then((r) => r.text())
+    const doFetch = () => {
+      if (typeof window.fetchCritico === "function") {
+        console.log("[LOADER] FOOTER via fetchCritico:", url);
+        return window.fetchCritico(
+          url.replace(/^https?:\/\/[^/]+/, "").replace(/^\/api(\/v1|\/v2|\/latest)?/, ""),
+          {},
+          { retries: 2, backoffMs: 300 }
+        ).then(r => r.text());
+      }
+
+      console.log("[LOADER] FOOTER via fetch:", url);
+      return fetch(url).then(r => r.text());
+    };
+
+    return doFetch()
       .then((html) => {
         const ph = document.getElementById("footer-placeholder");
         if (!ph) {
