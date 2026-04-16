@@ -1,7 +1,7 @@
 /* =========================================================
-   FILE: /public/thankyou.js
-   THANK YOU PAGE — MewingMarket
-   Versione 2026 — MINIMAL (senza download, senza recensioni)
+   THANK YOU PAGE — Versione 2027.300
+   - Usa fetchCritico globale + API alias
+   - Nessuna regressione
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -20,7 +20,12 @@ document.addEventListener("DOMContentLoaded", async () => {
      1) VERIFICA ORDINE (complete-order)
   ========================================================== */
   try {
-    const res = await fetch(`/api/paypal/complete-order?orderId=${orderId}`);
+    // ⭐ PATCH 2027.300 — alias + fetchCritico globale
+    const res = await window.fetchCritico(
+      `/paypal/complete-order?orderId=${orderId}`,
+      { method: "GET" }
+    );
+
     const data = await res.json();
 
     if (!data.success) {
