@@ -3,7 +3,7 @@
    Patch: ordine garantito, no async, no race condition,
    errori visibili, caricamento sequenziale sicuro.
    Patch 2027.200 — ⭐ AUTO-INJECT api.js + SAFETY CHECK
-   Patch 2027.300 — ⭐ safeLoadHTML usa fetchCritico se presente
+   Patch 2027.300 — ⭐ safeLoadHTML usa fetchCritico se disponibile
 ========================================================= */
 
 console.log("[ADMIN] Loader admin avviato");
@@ -116,7 +116,6 @@ function loadAdminUtilityScript(name) {
 --------------------------------------------------------- */
 function safeLoadHTML(url, placeholderId, eventName) {
   const doFetch = () => {
-    // se fetchCritico esiste, lo usiamo; altrimenti fetch normale
     if (typeof window.fetchCritico === "function") {
       console.log("[ADMIN] safeLoadHTML via fetchCritico:", url);
       return window.fetchCritico(
@@ -150,20 +149,13 @@ function safeLoadHTML(url, placeholderId, eventName) {
 async function startAdminLoader() {
   console.log("[ADMIN] Avvio loader admin…");
 
-  // 1) SEO + Structured Data
   await loadAdminUtilityScript("seo-admin");
   await loadAdminUtilityScript("structured-data-admin");
 
-  // 2) HEAD ADMIN
   await safeLoadHTML(`/admin/head-admin.html?v=${ADMIN_VERSION}`, "head-admin-placeholder", "admin-head-loaded");
-
-  // 3) HEADER ADMIN
   await safeLoadHTML(`/admin/header-admin.html?v=${ADMIN_VERSION}`, "header-admin-placeholder", "admin-header-loaded");
-
-  // 4) FOOTER ADMIN
   await safeLoadHTML(`/admin/footer-admin.html?v=${ADMIN_VERSION}`, "footer-admin-placeholder", "admin-footer-loaded");
 
-  // 5) LOGOUT ADMIN
   document.addEventListener("admin-header-loaded", () => {
     const btn = document.getElementById("logout-admin");
     if (btn) {
@@ -175,7 +167,6 @@ async function startAdminLoader() {
     }
   });
 
-  // 6) TITOLO DINAMICO
   document.addEventListener("admin-head-loaded", () => {
     const metaTitle = document.querySelector('meta[id="dynamic-title"]');
     if (metaTitle) document.title = metaTitle.content.trim();
