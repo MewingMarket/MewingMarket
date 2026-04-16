@@ -1,3 +1,8 @@
+/* =========================================================
+   CANCEL ORDER — Frontend
+   Versione 2027.300 — PATCH fetchCritico + API UNIVERSALE
+========================================================= */
+
 document.addEventListener("DOMContentLoaded", async () => {
   const url = new URL(window.location.href);
   const orderId = url.searchParams.get("orderId");
@@ -10,7 +15,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   try {
-    const res = await fetch(`/api/paypal/cancel-order?orderId=${orderId}`);
+    // ⭐ PATCH 2027.300 — usa fetchCritico globale + alias API
+    const res = await window.fetchCritico(
+      `/paypal/cancel-order?orderId=${orderId}`,
+      { method: "GET" },
+      { retries: 2, backoffMs: 300 }
+    );
+
     const data = await res.json();
 
     if (box) {
