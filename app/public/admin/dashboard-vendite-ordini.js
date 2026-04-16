@@ -1,23 +1,26 @@
 // =========================================================
 // Dashboard Admin — Vendite + Ordini (Unificata)
-// Versione 2026.300 — Rimborso integrato + KPI rimborsati
-// PATCH 2026.995 — Categoria rimborso
-// PATCH 2026.999 — fetchCritico + anti-HTML + anti-502 + redirect corretto
-// PATCH 2027.010 — ⭐ PATCH CREDENZIALI (credentials: "include")
+// Versione 2027.100 — API UNIVERSALE
+// - Rimborso integrato + KPI rimborsati
+// - Stati coerenti con backend 2027
+// - UX migliorata
+// Patch 2026.999 — fetchCritico + anti-HTML + anti-502
+// Patch 2027.010 — ⭐ PATCH CREDENZIALI
+// Patch 2027.100 — ⭐ API UNIVERSALE (apiFetch + alias)
 // =========================================================
 
 console.log("🔥 dashboard-vendite-ordini.js CARICATO");
 
 /* =========================================================
-   fetchCritico — retry + anti-HTML + anti-502
+   fetchCritico — retry + anti-HTML + anti-502 + apiFetch
 ========================================================= */
-async function fetchCritico(url, options = {}, cfg = {}) {
+async function fetchCritico(path, options = {}, cfg = {}) {
   const { retries = 3, backoff = 400 } = cfg;
   let attempt = 0;
 
   while (attempt <= retries) {
     try {
-      const res = await fetch(url, options);
+      const res = await apiFetch(path, options);
       const ct = res.headers.get("content-type") || "";
 
       if (ct.includes("text/html")) {
@@ -55,18 +58,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   try {
-    // ⭐ PATCH: aggiunta credentials: "include"
     const res = await fetchCritico(
-      "/api/admin/dashboard",
+      "/admin/dashboard",
       {
         method: "GET",
         headers: {
           Authorization: "Bearer " + token,
           "X-Debug": "admin-dashboard"
-        },
-        credentials: "include"   // ⭐ PATCH FONDAMENTALE
-      },
-      { retries: 3, backoff: 400 }
+        }
+      }
     );
 
     const data = await res.json();
@@ -218,13 +218,12 @@ async function procediRimborso(id) {
 
   const token = localStorage.getItem("token");
 
-  const res = await fetch(`/api/rimborso/procedi/${id}`, {
+  const res = await apiFetch(`/rimborso/procedi/${id}`, {
     method: "POST",
     headers: {
       Authorization: "Bearer " + token,
       "Content-Type": "application/json"
-    },
-    credentials: "include"   // ⭐ PATCH
+    }
   });
 
   const data = await res.json();
@@ -242,13 +241,12 @@ async function rifiutaRimborso(id) {
 
   const token = localStorage.getItem("token");
 
-  const res = await fetch(`/api/rimborso/rifiuta/${id}`, {
+  const res = await apiFetch(`/rimborso/rifiuta/${id}`, {
     method: "POST",
     headers: {
       Authorization: "Bearer " + token,
       "Content-Type": "application/json"
-    },
-    credentials: "include"   // ⭐ PATCH
+    }
   });
 
   const data = await res.json();
