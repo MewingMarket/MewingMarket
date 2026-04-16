@@ -1,8 +1,8 @@
 /* =========================================================
-   LOGIN.JS — Versione definitiva blindata (2026.10)
+   LOGIN.JS — Versione definitiva blindata (2027.300)
    Compatibile con auth.js + sessionState
    PATCH EVENTI UTENTE: registra evento "login"
-   PATCH 2027.300 — usa fetchCritico + apiFetch
+   PATCH 2027.300 — usa fetchCritico globale + apiFetch alias
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -12,15 +12,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const emailEl = document.getElementById("email");
   const passEl = document.getElementById("password");
 
-  // ---------------------------------------------------------
-  // PATCH — Helper per registrare evento utente
-  // ---------------------------------------------------------
+  /* =========================================================
+     PATCH — Helper per registrare evento utente
+  ========================================================== */
   async function logUserEvent(evento) {
     try {
       const email = localStorage.getItem("email") || "";
       if (!email) return;
 
-      await fetchCritico(
+      await window.fetchCritico(
         "/utenti/evento",
         {
           method: "POST",
@@ -29,14 +29,15 @@ document.addEventListener("DOMContentLoaded", () => {
         },
         { retries: 2, backoffMs: 300 }
       );
+
     } catch (err) {
       console.warn("Log evento fallito:", err);
     }
   }
 
-  // ---------------------------------------------------------
-  // SUBMIT LOGIN
-  // ---------------------------------------------------------
+  /* =========================================================
+     SUBMIT LOGIN
+  ========================================================== */
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -52,8 +53,8 @@ document.addEventListener("DOMContentLoaded", () => {
     form.dataset.lock = "1";
 
     try {
-      // ⭐ PATCH 2027.300 — fetchCritico + apiFetch
-      const res = await fetchCritico(
+      // ⭐ PATCH 2027.300 — fetchCritico globale + alias API
+      const res = await window.fetchCritico(
         "/utenti/login",
         {
           method: "POST",
@@ -71,26 +72,26 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // =====================================================
-      // ⭐ SALVATAGGIO CORRETTO (token + email + ruolo)
-      // =====================================================
+      /* =====================================================
+         SALVATAGGIO CORRETTO (token + email + ruolo)
+      ===================================================== */
       localStorage.setItem("token", data.token);
       localStorage.setItem("email", data.email);
       localStorage.setItem("ruolo", data.ruolo || "user");
 
-      // =====================================================
-      // ⭐ PATCH EVENTO: registra login
-      // =====================================================
+      /* =====================================================
+         PATCH EVENTO: registra login
+      ===================================================== */
       logUserEvent("login");
 
-      // =====================================================
-      // ⭐ Sessione attiva
-      // =====================================================
+      /* =====================================================
+         Sessione attiva
+      ===================================================== */
       localStorage.setItem("sessionState", "1");
 
-      // =====================================================
-      // ⭐ Redirect intelligente
-      // =====================================================
+      /* =====================================================
+         Redirect intelligente
+      ===================================================== */
       const params = new URLSearchParams(location.search);
       const redirect = params.get("redirect");
 
