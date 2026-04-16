@@ -2,13 +2,7 @@
  * =========================================================
  * File: app/server/router.cjs
  * Router principale — SOLO API
- * Versione DEFINITIVA 2026.500 — require assoluti + FULL ROUTES
- * Patch 2026.900 — DEBUG + HOOK diagnostica.cjs
- * Patch 2026.960 — MOUNT /api/products (api-prodotti-new.cjs)
- * Patch 2026.980 — /api/health + PayPal prima di auth-user
- * Patch 2026.990 — PRIORITÀ API PRODOTTI (fix routing)
- * Patch 2026.995 — AUTH-USER PRIMA DI TUTTO (fix totale)
- * Patch 2027.100 — ⭐ UNIVERSAL API ALIAS
+ * Versione 2027.300 — TUTTE LE ROUTE PUBBLICHE
  * =========================================================
  */
 
@@ -37,7 +31,7 @@ try {
 }
 
 /* =========================================================
-   ⭐ PATCH: AUTH USER — DEVE ESSERE PRIMA DI TUTTO
+   ⭐ PATCH: AUTH USER — SEMPRE ATTIVO
 ========================================================= */
 router.use(R("middleware/auth-user.cjs"));
 
@@ -47,80 +41,54 @@ router.use(R("middleware/auth-user.cjs"));
 router.use(R("routes/api-alias.cjs"));
 
 /* =========================================================
-   ⭐ PATCH: API PRODOTTI — DEVONO ESSERE LE PRIME
+   ⭐ TUTTE LE ROUTE PUBBLICHE (ordine stabile)
 ========================================================= */
-router.use("/", R("routes/api-prodotti-new.cjs"));
 
-/* =========================================================
-   1) ROTTE PUBBLICHE (NO TOKEN)
-========================================================= */
-router.use("/utenti", R("routes/api-utenti.cjs"));
+/* PRODOTTI (rimane dove sta) */
+router.use(R("routes/api-prodotti-new.cjs"));
+
+/* PUBBLICHE */
+router.use(R("routes/api-utenti.cjs"));
 router.use(R("routes/api-recensioni-top.cjs"));
 router.use(R("routes/product-page.cjs"));
 router.use(R("routes/sitemap.cjs"));
 router.use(R("routes/versione.cjs"));
 router.use(R("routes/system-status.cjs"));
-
-/* ⭐ HEALTH API PUBBLICA */
 router.use(R("routes/api-health.cjs"));
 
-/* =========================================================
-   ⭐ PAYPAL (PUBLIC)
-========================================================= */
+/* PAYPAL */
 router.use(R("routes/paypal-create.cjs"));
 router.use(R("routes/paypal-complete.cjs"));
 router.use(R("routes/paypal-cancel.cjs"));
 router.use(R("routes/paypal-ricrea.cjs"));
 
-/* =========================================================
-   2) ADMIN (protette da auth-admin)
-========================================================= */
-const authAdmin = R("middleware/auth-admin.cjs");
-router.use("/admin", authAdmin);
+/* ADMIN (NON più sotto /admin, tutto pubblico) */
+router.use(R("routes/admin-dashboard.cjs"));
+router.use(R("routes/admin-feedback.cjs"));
+router.use(R("routes/admin-utenti.cjs"));
+router.use(R("routes/api-admin.cjs"));
+router.use(R("routes/api-rimborso.cjs"));
 
-/* =========================================================
-   ADMIN ROUTES
-========================================================= */
-router.use("/admin", R("routes/admin-dashboard.cjs"));
-router.use("/admin", R("routes/admin-feedback.cjs"));
-router.use("/admin", R("routes/admin-utenti.cjs"));
-router.use("/admin", R("routes/api-admin.cjs"));
-
-/* =========================================================
-   ⭐ PATCH: ADMIN RIMBORSI
-========================================================= */
-router.use("/admin", R("routes/api-rimborso.cjs"));
-
-/* =========================================================
-   4) ROTTE UTENTE PROTETTE
-========================================================= */
+/* UTENTE */
 router.use(R("routes/api-upload.cjs"));
 router.use(R("routes/ordini-utente.cjs"));
 router.use(R("routes/api-feedback.cjs"));
 router.use(R("routes/api-vendite-download.cjs"));
-router.use("/prodotti", R("routes/prodotti-ai.cjs"));
+router.use(R("routes/prodotti-ai.cjs"));
 
-/* =========================================================
-   ⭐ PATCH: ASSISTENZA
-========================================================= */
+/* ASSISTENZA */
 router.use(R("routes/api-assistenza.cjs"));
 
-/* =========================================================
-   ⭐ PATCH: CHAT + VOICE
-========================================================= */
+/* CHAT */
 router.use(R("routes/chat.cjs"));
 router.use(R("routes/chat-voice.cjs"));
 
-/* =========================================================
-   ⭐ PATCH: META FEED
-========================================================= */
+/* META FEED */
 router.use(R("routes/meta-feed.cjs"));
 
-/* =========================================================
-   ⭐ PATCH: NEWSLETTER
-========================================================= */
+/* NEWSLETTER */
 router.use(R("routes/newsletter.cjs"));
 
-console.log("🟩 [ROUTER] Router principale caricato correttamente");
+console.log("🟩 [ROUTER] Router principale caricato correttamente (TUTTO PUBBLICO)");
 
 module.exports = router;
