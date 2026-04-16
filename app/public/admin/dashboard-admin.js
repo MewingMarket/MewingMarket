@@ -1,7 +1,7 @@
 /* =========================================================
    DASHBOARD ADMIN — Versione 2026.70 + PATCH USERNAME + CF
    Gestione profilo admin (email + password)
-   PATCH: adminFetch integrato nel file
+   PATCH 2027.300 — usa adminGet + fetchCritico globale
 ========================================================= */
 
 // Sanitizzazione sicura
@@ -11,10 +11,9 @@ const clean = (t) =>
     : t ?? "";
 
 /* =========================================================
-   PATCH — adminFetch integrato
-   Usa fetch normale ma aggiunge token + controlli admin
+   PATCH — adminGet (usa fetchCritico globale + token)
 ========================================================= */
-async function adminFetch(url, options = {}) {
+async function adminGet(path, options = {}) {
   const token = localStorage.getItem("token");
 
   const headers = {
@@ -22,8 +21,15 @@ async function adminFetch(url, options = {}) {
     Authorization: token ? `Bearer ${token}` : ""
   };
 
-  const res = await fetch(url, { ...options, headers });
+  const res = await window.fetchCritico(
+    path,
+    {
+      ...options,
+      headers
+    }
+  );
 
+  // Gestione accesso negato
   if (res.status === 401 || res.status === 403) {
     console.warn("[ADMIN] Accesso negato → token non valido");
 
@@ -31,7 +37,7 @@ async function adminFetch(url, options = {}) {
     localStorage.removeItem("email");
 
     window.location.href = "/login.html";
-    return;
+    return null;
   }
 
   return res;
@@ -53,7 +59,7 @@ document.addEventListener("admin-header-loaded", () => {
 ========================================================= */
 async function popolaDatiAdmin() {
   try {
-    const res = await adminFetch("/api/utenti/me", { method: "GET" });
+    const res = await adminGet("/api/utenti/me", { method: "GET" });
     if (!res) return;
 
     const data = await res.json();
@@ -101,11 +107,13 @@ function setupCambioEmail() {
     }
 
     try {
-      const res = await adminFetch("/api/admin/cambia-email", {
+      const res = await adminGet("/api/admin/cambia-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nuova, pass })
       });
+
+      if (!res) return;
 
       const data = await res.json();
       msg.textContent = data.message || data.error;
@@ -139,11 +147,13 @@ function setupCambioPassword() {
     }
 
     try {
-      const res = await adminFetch("/api/admin/cambia-password", {
+      const res = await adminGet("/api/admin/cambia-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ oldP, newP })
       });
+
+      if (!res) return;
 
       const data = await res.json();
       msg.textContent = data.message || data.error;
