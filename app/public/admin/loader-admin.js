@@ -1,13 +1,49 @@
 /* =========================================================
-   LOADER ADMIN — Versione 2026.401 (PATCHED)
+   LOADER ADMIN — Versione 2026.401 (PATCHED + API UNIVERSALE)
    Patch: ordine garantito, no async, no race condition,
    errori visibili, caricamento sequenziale sicuro.
+   Patch 2027.200 — ⭐ AUTO-INJECT api.js + SAFETY CHECK
 ========================================================= */
 
 console.log("[ADMIN] Loader admin avviato");
 
 // Versioning centralizzato
 const ADMIN_VERSION = "20260412";
+
+/* ---------------------------------------------------------
+   ⭐ PATCH 2027.200 — AUTO-INJECT api.js
+--------------------------------------------------------- */
+(function ensureApiJs() {
+  try {
+    const exists = [...document.scripts].some(s => s.src.includes("/api.js"));
+    if (!exists) {
+      const s = document.createElement("script");
+      s.src = "/api.js?v=" + ADMIN_VERSION;
+      s.onload = () => console.log("🟩 [ADMIN] api.js caricato automaticamente");
+      s.onerror = () => console.error("🟥 [ADMIN] ERRORE: impossibile caricare api.js");
+      document.head.appendChild(s);
+    } else {
+      console.log("🟦 [ADMIN] api.js già presente");
+    }
+  } catch (e) {
+    console.error("🟥 [ADMIN] Errore auto-inject api.js:", e);
+  }
+})();
+
+/* ---------------------------------------------------------
+   ⭐ PATCH 2027.200 — SAFETY CHECK apiFetch
+--------------------------------------------------------- */
+(function ensureApiFetch() {
+  const check = () => {
+    if (typeof window.apiFetch === "function") {
+      console.log("🟩 [ADMIN] apiFetch OK");
+      return;
+    }
+    console.warn("🟧 [ADMIN] apiFetch NON definito → ritento…");
+    setTimeout(check, 200);
+  };
+  check();
+})();
 
 /* ---------------------------------------------------------
    0) ANTI-CACHE + ANTI-SW
