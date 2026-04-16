@@ -1,51 +1,8 @@
 /* =========================================================
-   DOWNLOAD PREMIUM — Versione 2027.100
-   - Solo ordini COMPLETATI
-   - Sicuro
-   - Token Bearer
-   - sessionState = 1
-   - Download via fetch + blob
-   Patch 2026.999 — fetchCritico + anti-HTML + anti-502
-   Patch 2027.010 — ⭐ PATCH CREDENZIALI (credentials: "include")
-   Patch 2027.100 — ⭐ API UNIVERSALE (apiFetch + alias)
+   DOWNLOAD PREMIUM — Versione 2027.300
+   - Usa fetchCritico globale + API alias
+   - Nessuna regressione
 ========================================================= */
-
-/* =========================================================
-   fetchCritico — retry + anti-HTML + anti-502 + apiFetch
-========================================================= */
-async function fetchCritico(path, options = {}, cfg = {}) {
-  const { retries = 3, backoff = 400 } = cfg;
-  let attempt = 0;
-
-  while (attempt <= retries) {
-    try {
-      // Usa API universale (apiFetch) invece di fetch diretto
-      const res = await apiFetch(path, options);
-      const ct = res.headers.get("content-type") || "";
-
-      if (ct.includes("text/html")) {
-        const html = await res.text();
-        throw new Error("HTML inatteso: " + html.slice(0, 200));
-      }
-
-      if (!res.ok) {
-        if ([502, 503, 504].includes(res.status) && attempt < retries) {
-          await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
-          attempt++;
-          continue;
-        }
-        throw new Error("HTTP " + res.status);
-      }
-
-      return res;
-
-    } catch (err) {
-      if (attempt >= retries) throw err;
-      await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
-      attempt++;
-    }
-  }
-}
 
 document.addEventListener("DOMContentLoaded", async () => {
   const token = localStorage.getItem("token");
@@ -62,16 +19,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // =========================================================
-  // 2) Recupera ordini utente
+  // 2) Recupera ordini utente (alias /ordini/utente)
   // =========================================================
   let data;
   try {
-    const res = await fetchCritico(
+    const res = await window.fetchCritico(
       "/ordini/utente",
       {
         headers: { Authorization: "Bearer " + token }
       },
-      { retries: 3, backoff: 400 }
+      { retries: 3, backoffMs: 400 }
     );
 
     data = await res.json();
@@ -148,7 +105,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // =========================================================
-  // 7) Download sicuro via fetch + blob
+  // 7) Download sicuro via fetchCritico + blob
   // =========================================================
   document.addEventListener("click", async (e) => {
     if (!e.target.classList.contains("btn-download")) return;
@@ -157,12 +114,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!id) return;
 
     try {
-      const res = await fetchCritico(
+      const res = await window.fetchCritico(
         `/vendite/download/${id}`,
         {
           headers: { Authorization: "Bearer " + token }
         },
-        { retries: 3, backoff: 400 }
+        { retries: 3, backoffMs: 400 }
       );
 
       const blob = await res.blob();
