@@ -3,6 +3,7 @@
 // Versione 2026.300 — Rimborso integrato + KPI rimborsati
 // PATCH 2026.995 — Categoria rimborso
 // PATCH 2026.999 — fetchCritico + anti-HTML + anti-502 + redirect corretto
+// PATCH 2027.010 — ⭐ PATCH CREDENZIALI (credentials: "include")
 // =========================================================
 
 console.log("🔥 dashboard-vendite-ordini.js CARICATO");
@@ -19,13 +20,11 @@ async function fetchCritico(url, options = {}, cfg = {}) {
       const res = await fetch(url, options);
       const ct = res.headers.get("content-type") || "";
 
-      // Anti-HTML
       if (ct.includes("text/html")) {
         const html = await res.text();
         throw new Error("HTML inatteso: " + html.slice(0, 200));
       }
 
-      // Retry su 502/503/504
       if (!res.ok) {
         if ([502, 503, 504].includes(res.status) && attempt < retries) {
           await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
@@ -51,14 +50,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   if (!token || sessionState !== "1") {
     alert("Sessione scaduta. Effettua di nuovo il login.");
-
-    // ⭐ PATCH: login admin = login utente
     location.href = "/login";
     return;
   }
 
   try {
-    // ⭐ PATCH: fetchCritico
+    // ⭐ PATCH: aggiunta credentials: "include"
     const res = await fetchCritico(
       "/api/admin/dashboard",
       {
@@ -66,7 +63,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         headers: {
           Authorization: "Bearer " + token,
           "X-Debug": "admin-dashboard"
-        }
+        },
+        credentials: "include"   // ⭐ PATCH FONDAMENTALE
       },
       { retries: 3, backoff: 400 }
     );
@@ -104,24 +102,20 @@ function renderKPI(data) {
   document.getElementById("kpi-ordini-completati").textContent = ordini.completati ?? "0";
   document.getElementById("kpi-ordini-annullati").textContent = ordini.annullati ?? "0";
 
-  // AOV
   const aov = listaOrdini.length
     ? (listaOrdini.reduce((s, o) => s + (o.totale_cent || 0), 0) / listaOrdini.length) / 100
     : 0;
   document.getElementById("kpi-aov").textContent = aov.toFixed(2) + "€";
 
-  // Tasso annullamento
   const tassoAnnullamento = ordini.totali
     ? ((ordini.annullati / ordini.totali) * 100).toFixed(1)
     : 0;
   document.getElementById("kpi-tasso-annullamento").textContent = tassoAnnullamento + "%";
 
-  // Prodotto più venduto
   const top = topProdotti[0];
   document.getElementById("kpi-top-prodotto").textContent =
     top ? `ID ${top.prodotto_id} (${top.vendite} vendite)` : "—";
 
-  // Clienti ricorrenti
   const utentiCount = {};
   listaOrdini.forEach(o => {
     utentiCount[o.utente_id] = (utentiCount[o.utente_id] || 0) + 1;
@@ -132,7 +126,6 @@ function renderKPI(data) {
     : 0;
   document.getElementById("kpi-clienti-ricorrenti").textContent = ricPerc + "%";
 
-  // ⭐ PATCH: Tempo medio completamento (bug fix)
   const completati = listaOrdini.filter(o => o.stato === "completato" && o.data_completamento);
   let tempoMedio = "—";
 
@@ -150,7 +143,6 @@ function renderKPI(data) {
 
   document.getElementById("kpi-tempo-completamento").textContent = tempoMedio;
 
-  // ⭐ KPI ORDINI RIMBORSATI
   const rimborsati = listaOrdini.filter(o => o.stato === "rimborsato").length;
   const percRimb = ordini.totali
     ? ((rimborsati / ordini.totali) * 100).toFixed(1)
@@ -231,7 +223,8 @@ async function procediRimborso(id) {
     headers: {
       Authorization: "Bearer " + token,
       "Content-Type": "application/json"
-    }
+    },
+    credentials: "include"   // ⭐ PATCH
   });
 
   const data = await res.json();
@@ -254,7 +247,8 @@ async function rifiutaRimborso(id) {
     headers: {
       Authorization: "Bearer " + token,
       "Content-Type": "application/json"
-    }
+    },
+    credentials: "include"   // ⭐ PATCH
   });
 
   const data = await res.json();
