@@ -1,47 +1,8 @@
 /* =========================================================
-   File: app/public/recensioni.js
-   Dashboard Utente — Le mie recensioni
-   Versione 2027.100 — API UNIVERSALE + DEBUG
-   Patch 2026.999 — fetchCritico + anti-HTML + anti-502
-   Patch 2027.010 — ⭐ PATCH CREDENZIALI
-   Patch 2027.100 — ⭐ API UNIVERSALE (apiFetch + alias)
+   RECENSIONI — Versione 2027.300
+   - Usa fetchCritico globale + API alias
+   - Nessuna regressione
 ========================================================= */
-
-/* =========================================================
-   fetchCritico — retry + anti-HTML + anti-502 + apiFetch
-========================================================= */
-async function fetchCritico(path, options = {}, cfg = {}) {
-  const { retries = 3, backoff = 400 } = cfg;
-  let attempt = 0;
-
-  while (attempt <= retries) {
-    try {
-      const res = await apiFetch(path, options);
-      const ct = res.headers.get("content-type") || "";
-
-      if (ct.includes("text/html")) {
-        const html = await res.text();
-        throw new Error("HTML inatteso: " + html.slice(0, 200));
-      }
-
-      if (!res.ok) {
-        if ([502, 503, 504].includes(res.status) && attempt < retries) {
-          await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
-          attempt++;
-          continue;
-        }
-        throw new Error("HTTP " + res.status);
-      }
-
-      return res;
-
-    } catch (err) {
-      if (attempt >= retries) throw err;
-      await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
-      attempt++;
-    }
-  }
-}
 
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("🔵 [DEBUG] recensioni.js caricato");
@@ -65,7 +26,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.log("🔵 [DEBUG] Carico prodotti acquistati...");
 
     try {
-      const res = await fetchCritico(
+      const res = await window.fetchCritico(
         "/recensioni/prodotti-acquistati",
         {
           headers: { "Authorization": "Bearer " + token }
@@ -158,7 +119,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     try {
-      const res = await fetchCritico(
+      const res = await window.fetchCritico(
         "/recensioni/crea",
         {
           method: "POST",
@@ -206,7 +167,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     listaRecensioni.innerHTML = "Caricamento…";
 
     try {
-      const res = await fetchCritico(
+      const res = await window.fetchCritico(
         "/recensioni/utente",
         {
           headers: { "Authorization": "Bearer " + token }
@@ -246,7 +207,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           if (!confirm("Vuoi davvero eliminare questa recensione?")) return;
 
           try {
-            const res = await fetchCritico(
+            const res = await window.fetchCritico(
               "/recensioni/elimina",
               {
                 method: "POST",
@@ -292,7 +253,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           }
 
           try {
-            const res = await fetchCritico(
+            const res = await window.fetchCritico(
               "/recensioni/modifica",
               {
                 method: "POST",
