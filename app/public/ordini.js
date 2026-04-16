@@ -1,5 +1,5 @@
 /* =========================================================
-   ORDINI UTENTE — Versione 2026.200 (patch totale)
+   ORDINI UTENTE — Versione 2027.100 (patch totale)
    - Sicuro
    - Token Bearer
    - sessionState = 1
@@ -7,22 +7,24 @@
    - Completa pagamento (ricrea)
    - Richiedi rimborso
    - Download file
-   - Stati coerenti con backend 2026
+   - Stati coerenti con backend 2027
    - UX migliorata
    Patch 2026.999 — fetchCritico + anti-HTML + anti-502
-   Patch 2027.010 — ⭐ PATCH CREDENZIALI (credentials: "include")
+   Patch 2027.010 — ⭐ PATCH CREDENZIALI
+   Patch 2027.100 — ⭐ API UNIVERSALE (apiFetch + alias)
 ========================================================= */
 
 /* =========================================================
-   fetchCritico — retry + anti-HTML + anti-502
+   fetchCritico — retry + anti-HTML + anti-502 + apiFetch
 ========================================================= */
-async function fetchCritico(url, options = {}, cfg = {}) {
+async function fetchCritico(path, options = {}, cfg = {}) {
   const { retries = 3, backoff = 400 } = cfg;
   let attempt = 0;
 
   while (attempt <= retries) {
     try {
-      const res = await fetch(url, options);
+      // Usa API universale
+      const res = await apiFetch(path, options);
       const ct = res.headers.get("content-type") || "";
 
       if (ct.includes("text/html")) {
@@ -68,10 +70,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   let data;
   try {
     const res = await fetchCritico(
-      "/api/ordini/utente",
+      "/ordini/utente",
       {
-        headers: { Authorization: "Bearer " + token },
-        credentials: "include"   // ⭐ PATCH
+        headers: { Authorization: "Bearer " + token }
       },
       { retries: 3, backoff: 400 }
     );
@@ -156,14 +157,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     try {
       const res = await fetchCritico(
-        `/api/ordini/annulla/${id}`,
+        `/ordini/annulla/${id}`,
         {
           method: "POST",
           headers: {
             Authorization: "Bearer " + token,
             "Content-Type": "application/json"
-          },
-          credentials: "include"   // ⭐ PATCH
+          }
         },
         { retries: 3, backoff: 400 }
       );
@@ -195,11 +195,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     try {
       const res = await fetchCritico(
-        `/api/paypal/ricrea/${id}`,
+        `/paypal/ricrea/${id}`,
         {
           method: "POST",
-          headers: { Authorization: "Bearer " + token },
-          credentials: "include"   // ⭐ PATCH
+          headers: { Authorization: "Bearer " + token }
         },
         { retries: 3, backoff: 400 }
       );
