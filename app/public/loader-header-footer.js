@@ -1,13 +1,48 @@
-// =========================================================
 // LOADER HEADER/FOOTER — Versione DEFINITIVA (2026 + CLEAN + SAFE + PATCH)
 // Carica: auth.js → head → header → header.js → carrello → footer
 // + SEO / Structured / Tracking (safe)
 // + Versioning / Anti-cache / Anti-SW
+// + PATCH 2027.200 — AUTO-INJECT api.js + SAFETY CHECK
 // =========================================================
 
 (function () {
 
   const VERSION = "20260412";
+
+  /* =========================================================
+     ⭐ PATCH 2027.200 — AUTO-INJECT api.js
+  ========================================================= */
+  (function ensureApiJs() {
+    try {
+      const exists = [...document.scripts].some(s => s.src.includes("/api.js"));
+      if (!exists) {
+        const s = document.createElement("script");
+        s.src = "/api.js?v=" + VERSION;
+        s.onload = () => console.log("🟩 [LOADER] api.js caricato automaticamente");
+        s.onerror = () => console.error("🟥 [LOADER] ERRORE: impossibile caricare api.js");
+        document.head.appendChild(s);
+      } else {
+        console.log("🟦 [LOADER] api.js già presente");
+      }
+    } catch (e) {
+      console.error("🟥 [LOADER] Errore auto-inject api.js:", e);
+    }
+  })();
+
+  /* =========================================================
+     ⭐ PATCH 2027.200 — SAFETY CHECK apiFetch
+  ========================================================= */
+  (function ensureApiFetch() {
+    const check = () => {
+      if (typeof window.apiFetch === "function") {
+        console.log("🟩 [LOADER] apiFetch OK");
+        return;
+      }
+      console.warn("🟧 [LOADER] apiFetch NON definito → ritento…");
+      setTimeout(check, 200);
+    };
+    check();
+  })();
 
   // =========================================================
   // MINI ANTI-CACHE CLIENT
@@ -70,7 +105,6 @@
       const s = document.createElement("script");
       s.id = id;
       s.src = `/${name}.js?v=${VERSION}`;
-      // niente async: li lasciamo caricarsi in ordine naturale
       s.onload = () => console.log(`[LOADER] ${name}.js caricato`);
       s.onerror = () => console.warn(`[LOADER] ${name}.js non trovato (ignorato)`);
       document.head.appendChild(s);
@@ -162,7 +196,7 @@
     };
     s.onerror = () => {
       console.error("[LOADER] ERRORE: impossibile caricare auth.js");
-      resolve(); // non blocchiamo tutto il frontend
+      resolve();
     };
     document.head.appendChild(s);
   });
@@ -346,7 +380,6 @@
   try {
     const s = document.createElement("script");
     s.src = `/frontend-diagnostica.js?v=${VERSION}`;
-    // niente async: lo lasciamo caricare normalmente, non deve correre davanti a tutto
     s.onload = () => console.log("[LOADER] frontend-diagnostica.js caricato");
     s.onerror = () => console.warn("[LOADER] frontend-diagnostica.js non trovato (ignorato)");
     document.head.appendChild(s);
