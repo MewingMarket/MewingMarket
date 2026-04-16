@@ -12,6 +12,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const emailEl = document.getElementById("email");
   const passEl = document.getElementById("password");
 
+  // ---------------------------------------------------------
+  // PATCH — Helper per registrare evento utente
+  // ---------------------------------------------------------
   async function logUserEvent(evento) {
     try {
       const email = localStorage.getItem("email") || "";
@@ -23,13 +26,17 @@ document.addEventListener("DOMContentLoaded", () => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, evento })
-        }
+        },
+        { retries: 2, backoffMs: 300 }
       );
     } catch (err) {
       console.warn("Log evento fallito:", err);
     }
   }
 
+  // ---------------------------------------------------------
+  // SUBMIT LOGIN
+  // ---------------------------------------------------------
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
