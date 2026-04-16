@@ -1,6 +1,7 @@
 // =========================================================
-// HOME PREMIUM — MewingMarket (SQL READY, ID-BASED)
-// Versione DEFINITIVA — Slider + Novità + Admin Button
+// HOME PREMIUM — MewingMarket (PATCH 2027.300)
+// - Usa fetchCritico globale + alias API
+// - Nessuna regressione
 // =========================================================
 
 // Attende che header e auth siano pronti
@@ -27,11 +28,7 @@ Promise.all([
   // ------------------------------
   const adminTrigger = document.getElementById("admin-trigger");
   if (adminTrigger) {
-    if (window.isAdmin) {
-      adminTrigger.style.display = "inline-block";
-    } else {
-      adminTrigger.style.display = "none";
-    }
+    adminTrigger.style.display = window.isAdmin ? "inline-block" : "none";
   }
 
   // ============================================================
@@ -65,7 +62,13 @@ Promise.all([
   // ============================================================
   (async () => {
     try {
-      const resHero = await fetch("/api/products", { cache: "no-store" });
+      // ⭐ PATCH 2027.300 — alias universale + fetchCritico globale
+      const resHero = await window.fetchCritico(
+        "/products",
+        { cache: "no-store" },
+        { retries: 2, backoffMs: 300 }
+      );
+
       const dataHero = await resHero.json();
 
       if (!dataHero.success) throw new Error("API non disponibile");
@@ -110,7 +113,13 @@ Promise.all([
     if (!grid) return;
 
     try {
-      const res = await fetch("/api/products", { cache: "no-store" });
+      // ⭐ PATCH 2027.300 — alias universale + fetchCritico globale
+      const res = await window.fetchCritico(
+        "/products",
+        { cache: "no-store" },
+        { retries: 2, backoffMs: 300 }
+      );
+
       const data = await res.json();
 
       if (!data.success || !Array.isArray(data.prodotti) || data.prodotti.length === 0) {
