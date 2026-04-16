@@ -1,9 +1,10 @@
 /* =========================================================
    ASSISTENZA — Frontend
-   Versione 2026.995
+   Versione 2026.995 + PATCH 2027.300
    - Invio domanda
    - Nessuna logica AI lato client
    - Messaggi premium
+   - Usa fetchCritico globale
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -26,11 +27,16 @@ document.addEventListener("DOMContentLoaded", () => {
     mostraMessaggio("Invio in corso…", "info");
 
     try {
-      const res = await fetch("/api/assistenza/invia", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, domanda })
-      });
+      // ⭐ PATCH 2027.300 — usa fetchCritico globale
+      const res = await window.fetchCritico(
+        "/api/assistenza/invia",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, domanda })
+        },
+        { retries: 2, backoffMs: 300 }
+      );
 
       const data = await res.json();
 
@@ -39,7 +45,11 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      mostraMessaggio("Richiesta inviata. Riceverai una risposta via email entro 24–48 ore.", "successo");
+      mostraMessaggio(
+        "Richiesta inviata. Riceverai una risposta via email entro 24–48 ore.",
+        "successo"
+      );
+
       form.reset();
 
     } catch (err) {
@@ -49,7 +59,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* =========================================================
-     FUNZIONE MESSAGGI PREMIUM
+     FUNZIONE MESSAGGI PREMIUM (TUO CODICE — INALTERATO)
   ========================================================= */
   function mostraMessaggio(testo, tipo) {
     if (!msgBox) return;
