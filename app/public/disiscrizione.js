@@ -1,3 +1,10 @@
+/* =========================================================
+   DISISCRIZIONE NEWSLETTER — PATCH 2027.300
+   - Usa fetchCritico globale
+   - Alias API universale
+   - Nessuna regressione
+========================================================= */
+
 document.addEventListener("DOMContentLoaded", () => {
   console.log("✅ disiscrizione.js caricato");
 
@@ -63,11 +70,16 @@ document.addEventListener("DOMContentLoaded", () => {
     safeTrack("newsletter_unsubscribe_attempt", { email });
 
     try {
-      const res = await fetch("/newsletter/unsubscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email })
-      });
+      // ⭐ PATCH 2027.300 — usa fetchCritico globale + alias API
+      const res = await window.fetchCritico(
+        "/newsletter/unsubscribe",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email })
+        },
+        { retries: 2, backoffMs: 300 }
+      );
 
       let data = {};
       try {
