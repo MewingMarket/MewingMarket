@@ -1,7 +1,8 @@
 /* =========================================================
    FILE: /public/carrello.js
-   CARRELLO SQL-READY — MODELLO DEFINITIVO (PATCH 2026.90)
-   PATCH: rimosso completamente slug → solo ID
+   CARRELLO SQL-READY — MODELLO DEFINITIVO (PATCH 2027.300)
+   - Nessuna API → nessun fetchCritico necessario
+   - Micro‑patch robustezza senza cambiare logica
 ========================================================= */
 
 const Cart = {
@@ -20,20 +21,26 @@ const Cart = {
   },
 
   /* -----------------------------------------
-     SALVA CARRELLO
+     SALVA CARRELLO (patch: fallback silenzioso)
   ----------------------------------------- */
   save(items) {
-    localStorage.setItem(this.key, JSON.stringify(items));
+    try {
+      localStorage.setItem(this.key, JSON.stringify(items));
+    } catch (err) {
+      console.warn("[CART] Impossibile salvare il carrello:", err);
+    }
     triggerCartUpdate();
   },
 
   /* -----------------------------------------
      AGGIUNGI PRODOTTO (qty++)
-     PATCH: rimosso slug
+     PATCH: rimosso slug + normalizzazione prezzo_cent
   ----------------------------------------- */
   add(product) {
     const items = this.get();
     const existing = items.find(p => p.id === product.id);
+
+    const prezzoCent = Number(product.prezzo_cent) || 0;
 
     if (existing) {
       existing.qty = (existing.qty || 1) + 1;
@@ -41,8 +48,8 @@ const Cart = {
       items.push({
         id: product.id,
         titolo: product.titolo,
-        prezzo_cent: product.prezzo_cent,
-        prezzo: product.prezzo_cent / 100,
+        prezzo_cent: prezzoCent,
+        prezzo: prezzoCent / 100,
         immagine: product.immagine,
         qty: 1
       });
@@ -98,9 +105,16 @@ const Cart = {
 
   /* -----------------------------------------
      TOTALE €
+     PATCH: protezione contro NaN
   ----------------------------------------- */
   total() {
-    return this.get().reduce((sum, p) => sum + (p.prezzo_cent * p.qty), 0) / 100;
+    const items = this.get();
+    const sum = items.reduce((s, p) => {
+      const pc = Number(p.prezzo_cent) || 0;
+      const q = Number(p.qty) || 1;
+      return s + pc * q;
+    }, 0);
+    return sum / 100;
   },
 
   /* -----------------------------------------
@@ -112,15 +126,15 @@ const Cart = {
 
   /* -----------------------------------------
      PAYLOAD PER CHECKOUT SQL
-     PATCH: rimosso slug
+     PATCH: protezione prodotti corrotti
   ----------------------------------------- */
   getForCheckout() {
     return this.get().map(p => ({
       prodotto_id: p.id,
-      prezzo_cent: p.prezzo_cent,
-      qty: p.qty,
-      titolo: p.titolo,
-      immagine: p.immagine
+      prezzo_cent: Number(p.prezzo_cent) || 0,
+      qty: Number(p.qty) || 1,
+      titolo: p.titolo || "",
+      immagine: p.immagine || ""
     }));
   }
 };
