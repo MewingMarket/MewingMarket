@@ -1,7 +1,8 @@
-// =========================================================
-// RESET PASSWORD CONFIRM — Versione ZERO-INPUT (2026.60)
-// PATCH: nuova sessione + token/email + sessionState = 1
-// =========================================================
+/* =========================================================
+   RESET PASSWORD CONFIRM — Versione ZERO-INPUT (PATCH 2027.300)
+   - Usa fetchCritico globale + API alias
+   - Nessuna regressione
+========================================================= */
 
 console.log("[RESET-PASS-CONFIRM] Versione ZERO-INPUT caricata");
 
@@ -46,11 +47,16 @@ btnConfirmReset?.addEventListener("click", async () => {
   try {
     console.log("[RESET-PASS-CONFIRM] Invio conferma ZERO-INPUT…");
 
-    const res = await fetch("/api/utenti/reset-password-confirm", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nuova_password, codice_fiscale })
-    });
+    // ⭐ PATCH 2027.300 — alias + fetchCritico globale
+    const res = await window.fetchCritico(
+      "/utenti/reset-password-confirm",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nuova_password, codice_fiscale })
+      },
+      { retries: 2, backoffMs: 300 }
+    );
 
     const data = await res.json().catch(() => ({}));
     console.log("[RESET-PASS-CONFIRM] Risposta:", data);
@@ -66,7 +72,6 @@ btnConfirmReset?.addEventListener("click", async () => {
         localStorage.setItem("email", data.email);
         localStorage.setItem("sessionState", "1");
       } else {
-        // fallback (non dovrebbe servire)
         localStorage.setItem("sessionState", "1");
       }
 
