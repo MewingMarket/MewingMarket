@@ -1,6 +1,6 @@
 /**
  * =========================================================
- * api.js — Versione 2027.300 (UNIFICATA)
+ * api.js — Versione 2027.300 (UNIFICATO + DEBUG)
  * - apiFetch: alias universale /api/v1/v2/latest/API/api
  * - fetchCritico: retry + anti-HTML + anti-502
  * - Debug integrato
@@ -10,6 +10,9 @@
 
 console.log("🟦 api.js caricato (UNIFICATO)");
 
+/* =========================================================
+   1) API UNIVERSALE — apiFetch
+========================================================= */
 if (typeof window.apiFetch === "undefined") {
   window.apiFetch = async function(path, options = {}) {
     const prefixes = [
@@ -59,6 +62,9 @@ if (typeof window.apiFetch === "undefined") {
   };
 }
 
+/* =========================================================
+   2) FETCH CRITICO — retry + anti-HTML + anti-502
+========================================================= */
 if (typeof window.fetchCritico === "undefined") {
   window.fetchCritico = async function(path, options = {}, cfg = {}) {
     const { retries = 3, backoffMs = 400 } = cfg;
@@ -67,6 +73,7 @@ if (typeof window.fetchCritico === "undefined") {
     while (attempt <= retries) {
       try {
         console.log("🟦 [fetchCritico] Tentativo", attempt, "→", path);
+
         const res = await window.apiFetch(path, options);
         const ct = res.headers.get("content-type") || "";
 
@@ -93,6 +100,7 @@ if (typeof window.fetchCritico === "undefined") {
       } catch (err) {
         console.error("🟥 [fetchCritico] ERRORE:", path, err);
         if (attempt >= retries) throw err;
+
         const wait = backoffMs * (attempt + 1);
         await new Promise(r => setTimeout(r, wait));
         attempt++;
