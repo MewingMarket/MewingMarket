@@ -1,10 +1,8 @@
 /* =========================================================
    File: app/public/admin/feedback.js
    Admin — Lista completa feedback clienti
-   Versione 2027.100 — API UNIVERSALE
-   PATCH 2026.999 — fetchCritico + token admin + anti-HTML + anti-502
-   PATCH 2027.010 — ⭐ PATCH CREDENZIALI
-   PATCH 2027.100 — ⭐ API UNIVERSALE (apiFetch + alias)
+   Versione 2027.300 — API UNIVERSALE (PATCH FINALE)
+   - Usa fetchCritico globale + apiFetch globale
 ========================================================= */
 
 // Sanitizzazione sicura
@@ -14,50 +12,14 @@ const clean = (t) =>
     : t ?? "";
 
 /* =========================================================
-   fetchCritico — retry + anti-HTML + anti-502 + apiFetch
-========================================================= */
-async function fetchCritico(path, options = {}, cfg = {}) {
-  const { retries = 3, backoff = 400 } = cfg;
-  let attempt = 0;
-
-  while (attempt <= retries) {
-    try {
-      const res = await apiFetch(path, options);
-      const ct = res.headers.get("content-type") || "";
-
-      if (ct.includes("text/html")) {
-        const html = await res.text();
-        throw new Error("HTML inatteso: " + html.slice(0, 200));
-      }
-
-      if (!res.ok) {
-        if ([502, 503, 504].includes(res.status) && attempt < retries) {
-          await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
-          attempt++;
-          continue;
-        }
-        throw new Error("HTTP " + res.status);
-      }
-
-      return res;
-
-    } catch (err) {
-      if (attempt >= retries) throw err;
-      await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
-      attempt++;
-    }
-  }
-}
-
-/* =========================================================
-   FETCH ADMIN (patchata con token + fetchCritico + apiFetch)
+   FETCH ADMIN (usa fetchCritico globale + token)
 ========================================================= */
 async function adminGet(path) {
   console.log("[ADMIN][FETCH] Chiamata a:", path);
 
   const token = localStorage.getItem("token");
 
-  const res = await fetchCritico(
+  const res = await window.fetchCritico(
     path,
     {
       headers: {
