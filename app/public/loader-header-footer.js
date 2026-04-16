@@ -4,6 +4,7 @@
 // + Versioning / Anti-cache / Anti-SW
 // + PATCH 2027.210 — AUTO-INJECT api.js (SAFE)
 // + PATCH 2027.300 — safeFetch* usa fetchCritico se disponibile
+// + PATCH 2027.400 — FIX URL: rimosso replace /api* che corrompeva i path
 // =========================================================
 
 (function () {
@@ -81,7 +82,7 @@
   })();
 
   // =========================================================
-  // CARICATORI SAFE (NO IMPORT, NO MODULE, NO ASYNC CRITICO)
+  // CARICATORI SAFE
   // =========================================================
   function loadUtilityScript(name) {
     try {
@@ -105,7 +106,7 @@
   loadUtilityScript("tracking");
 
   // =========================================================
-  // LOGICA ORIGINALE — INALTERATA
+  // LOGICA ORIGINALE
   // =========================================================
 
   function normalize(str) {
@@ -171,7 +172,7 @@
   console.log("[LOADER] Page:", { isHome, isShopPage, isAdminPage, isUserPage, isGlobalPage });
 
   // =========================================================
-  // 0) AUTH — PRIMA DI TUTTO
+  // 0) AUTH
   // =========================================================
   const authPromise = new Promise((resolve) => {
     const s = document.createElement("script");
@@ -188,7 +189,7 @@
   });
 
   // =========================================================
-  // PATCH — Logout automatico da deploy
+  // PATCH — Logout automatico
   // =========================================================
   let autoLogoutTriggered = false;
 
@@ -204,14 +205,14 @@
   });
 
   // =========================================================
-  // 1) HEAD (PATCH: usa fetchCritico se disponibile)
+  // 1) HEAD — PATCH URL FIX
   // =========================================================
   function safeFetchAppendHead(url) {
     const doFetch = () => {
       if (typeof window.fetchCritico === "function") {
         console.log("[LOADER] HEAD via fetchCritico:", url);
         return window.fetchCritico(
-          url.replace(/^https?:\/\/[^/]+/, "").replace(/^\/api(\/v1|\/v2|\/latest)?/, ""),
+          url.replace(/^https?:\/\/[^/]+/, ""),
           {},
           { retries: 2, backoffMs: 300 }
         ).then(r => r.text());
@@ -240,7 +241,7 @@
   );
 
   // =========================================================
-  // 2) HEADER (PATCH: usa fetchCritico se disponibile)
+  // 2) HEADER — PATCH URL FIX
   // =========================================================
   let headerFile = null;
 
@@ -253,7 +254,7 @@
       if (typeof window.fetchCritico === "function") {
         console.log("[LOADER] HEADER via fetchCritico:", url);
         return window.fetchCritico(
-          url.replace(/^https?:\/\/[^/]+/, "").replace(/^\/api(\/v1|\/v2|\/latest)?/, ""),
+          url.replace(/^https?:\/\/[^/]+/, ""),
           {},
           { retries: 2, backoffMs: 300 }
         ).then(r => r.text());
@@ -310,14 +311,14 @@
   }
 
   // =========================================================
-  // 4) FOOTER (PATCH: usa fetchCritico se disponibile)
+  // 4) FOOTER — PATCH URL FIX
   // =========================================================
   function safeFetchFooter(url) {
     const doFetch = () => {
       if (typeof window.fetchCritico === "function") {
         console.log("[LOADER] FOOTER via fetchCritico:", url);
         return window.fetchCritico(
-          url.replace(/^https?:\/\/[^/]+/, "").replace(/^\/api(\/v1|\/v2|\/latest)?/, ""),
+          url.replace(/^https?:\/\/[^/]+/, ""),
           {},
           { retries: 2, backoffMs: 300 }
         ).then(r => r.text());
@@ -400,7 +401,7 @@
   });
 
   // =========================================================
-  // 7) DIAGNOSTICA FRONTEND (SAFE, NON BLOCCA NULLA)
+  // 7) DIAGNOSTICA FRONTEND
   // =========================================================
   try {
     const s = document.createElement("script");
