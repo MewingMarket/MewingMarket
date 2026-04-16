@@ -23,13 +23,11 @@ async function fetchCritico(url, options = {}, cfg = {}) {
       const res = await fetch(url, options);
       const ct = res.headers.get("content-type") || "";
 
-      // Anti-HTML
       if (ct.includes("text/html")) {
         const html = await res.text();
         throw new Error("HTML inatteso: " + html.slice(0, 200));
       }
 
-      // Retry su 502/503/504
       if (!res.ok) {
         if ([502, 503, 504].includes(res.status) && attempt < retries) {
           await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
@@ -56,46 +54,6 @@ async function loadProducts() {
   console.log("🟦 [CATALOGO] Caricamento prodotti…");
 
   try {
-    // ⭐ PATCH: fetchCritico
-    const res = await fetchCritico(API_PRODUCTS, { cache: "no-store" }, {
-      retries: 3,
-      backoff: 400
-    });
-
-    console.log("🟩 [CORS] Allow-Origin:", res.headers.get("Access-Control-Allow-Origin"));
-
-        const html = await res.text();
-        throw new Error("HTML inatteso: " + html.slice(0, 200));
-      }
-
-      // Retry su 502/503/504
-      if (!res.ok) {
-        if ([502, 503, 504].includes(res.status) && attempt < retries) {
-          await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
-          attempt++;
-          continue;
-        }
-        throw new Error("HTTP " + res.status);
-      }
-
-      return res;
-
-    } catch (err) {
-      if (attempt >= retries) throw err;
-      await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
-      attempt++;
-    }
-  }
-}
-
-/* =========================================================
-   1) CARICA PRODOTTI DAL BACKEND
-========================================================= */
-async function loadProducts() {
-  console.log("🟦 [CATALOGO] Caricamento prodotti…");
-
-  try {
-    // ⭐ PATCH: fetchCritico
     const res = await fetchCritico(API_PRODUCTS, { cache: "no-store" }, {
       retries: 3,
       backoff: 400
@@ -245,9 +203,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  /* ------------------------------
-     FAIL-SAFE: nessun prodotto
-  ------------------------------ */
   if (!products.length) {
     container.innerHTML = `
       <p class="errore-catalogo">
@@ -257,9 +212,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  /* ------------------------------
-     CATEGORIE DINAMICHE
-  ------------------------------ */
   let categorie = categoriesFromJson.length
     ? categoriesFromJson
     : [...new Set(products.flatMap(p => Array.isArray(p.categoria) ? p.categoria : []))];
@@ -268,14 +220,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     ? categorie.map(cat => `<button class="btn btn-cat" data-cat="${clean(cat)}">${clean(cat)}</button>`).join("")
     : "<p>Nessuna categoria disponibile</p>";
 
-  /* ------------------------------
-     GRID PRODOTTI
-  ------------------------------ */
   container.innerHTML = products.map(cardHTML).join("");
 
-  /* ------------------------------
-     FILTRO CATEGORIA
-  ------------------------------ */
   categorieBox.addEventListener("click", e => {
     const cat = e.target.dataset.cat;
     if (!cat) return;
@@ -286,9 +232,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
 
-  /* ------------------------------
-     FILTRO PREZZO
-  ------------------------------ */
   document.querySelectorAll(".filtri-prezzo .btn[data-prezzo]").forEach(btn => {
     btn.addEventListener("click", () => {
       const max = Number(btn.dataset.prezzo);
@@ -300,9 +243,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
 
-  /* ------------------------------
-     RESET FILTRI
-  ------------------------------ */
   const resetBtn = document.getElementById("reset");
   if (resetBtn) {
     resetBtn.addEventListener("click", () => {
@@ -312,9 +252,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  /* ------------------------------
-     AGGIUNTA / RIMOZIONE CARRELLO
-  ------------------------------ */
   document.querySelectorAll(".btn-add-cart").forEach(btn => {
     btn.addEventListener("click", () => {
 
@@ -354,9 +291,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
 
-  /* ------------------------------
-     AGGIORNA BADGE ALL’AVVIO
-  ------------------------------ */
   setTimeout(() => {
     if (typeof aggiornaBadgeCarrello === "function") {
       aggiornaBadgeCarrello();
