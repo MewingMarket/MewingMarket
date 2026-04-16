@@ -1,9 +1,7 @@
 // =========================================================
-// CHECKOUT.JS — Versione DEFINITIVA (2026.92)
-// Fix: invio corretto a create-order (email + prodotti + totale)
-// Fix: debug completo
-// Fix: slug eliminato dal carrello (ID-based)
-// Patch 2026.999 — fetchCritico + anti-HTML + anti-502
+// CHECKOUT.JS — Versione DEFINITIVA (PATCH 2027.300)
+// - Usa fetchCritico globale + apiFetch alias
+// - Nessuna regressione
 // =========================================================
 
 console.log("[CHECKOUT] Caricato");
@@ -12,62 +10,18 @@ let authOk = false;
 let cartOk = false;
 
 /* =========================================================
-   fetchCritico — retry + anti-HTML + anti-502
+   EVENTI DI AVVIO
 ========================================================= */
-async function fetchCritico(url, options = {}, cfg = {}) {
-  const { retries = 3, backoff = 400 } = cfg;
-  let attempt = 0;
-
-  while (attempt <= retries) {
-    try {
-      const res = await fetch(url, options);
-      const ct = res.headers.get("content-type") || "";
-
-      // Anti-HTML
-      if (ct.includes("text/html")) {
-        const html = await res.text();
-        throw new Error("HTML inatteso: " + html.slice(0, 200));
-      }
-
-      // Retry su 502/503/504
-      if (!res.ok) {
-        if ([502, 503, 504].includes(res.status) && attempt < retries) {
-          await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
-          attempt++;
-          continue;
-        }
-        throw new Error("HTTP " + res.status);
-      }
-
-      return res;
-
-    } catch (err) {
-      if (attempt >= retries) throw err;
-      await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
-      attempt++;
-    }
-  }
-}
-
-// --------------------------------------------------------
-// Attendi auth-ready
-// --------------------------------------------------------
 document.addEventListener("auth-ready", () => {
   authOk = true;
   tryStartCheckout();
 });
 
-// --------------------------------------------------------
-// Attendi cart-ready
-// --------------------------------------------------------
 document.addEventListener("cart-ready", () => {
   cartOk = true;
   tryStartCheckout();
 });
 
-// --------------------------------------------------------
-// Avvia checkout SOLO quando entrambi sono pronti
-// --------------------------------------------------------
 function tryStartCheckout() {
   if (authOk && cartOk) {
     console.log("[CHECKOUT] auth-ready + cart-ready → initCheckout()");
@@ -75,6 +29,9 @@ function tryStartCheckout() {
   }
 }
 
+/* =========================================================
+   INIT CHECKOUT
+========================================================= */
 async function initCheckout() {
   console.log("[CHECKOUT] initCheckout()");
 
@@ -92,10 +49,14 @@ async function initCheckout() {
   let utenteEmail = null;
 
   try {
-    // ⭐ PATCH: fetchCritico
-    const res = await fetchCritico("/api/utenti/me", {
-      headers: { "Authorization": "Bearer " + token }
-    });
+    // ⭐ PATCH 2027.300 — usa fetchCritico globale
+    const res = await window.fetchCritico(
+      "/utenti/me",
+      {
+        headers: { "Authorization": "Bearer " + token }
+      },
+      { retries: 2, backoffMs: 300 }
+    );
 
     const data = await res.json();
 
@@ -120,7 +81,7 @@ async function initCheckout() {
   };
 
   // -------------------------------------------------------
-  // 2) Carica carrello (ORA SICURO)
+  // 2) Carica carrello
   // -------------------------------------------------------
   const cart = Cart.get();
 
@@ -173,7 +134,7 @@ async function initCheckout() {
   console.log("[CHECKOUT] Totale:", totaleEuro);
 
   // -------------------------------------------------------
-  // 5) Bottone acquista (PayPal fase 3)
+  // 5) Bottone acquista (PayPal)
   // -------------------------------------------------------
   const btn = document.getElementById("btnCheckout");
   if (!btn) return;
@@ -197,9 +158,9 @@ async function initCheckout() {
 
       const payload = Cart.getForCheckout();
 
-      // ⭐ PATCH: fetchCritico anche qui
-      const res = await fetchCritico(
-        "/api/paypal/create-order",
+      // ⭐ PATCH 2027.300 — usa fetchCritico globale
+      const res = await window.fetchCritico(
+        "/paypal/create-order",
         {
           method: "POST",
           headers: authHeaders,
@@ -209,7 +170,7 @@ async function initCheckout() {
             totale: totaleEuro
           })
         },
-        { retries: 3, backoff: 400 }
+        { retries: 3, backoffMs: 400 }
       );
 
       const data = await res.json().catch(() => ({}));
