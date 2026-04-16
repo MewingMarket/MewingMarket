@@ -1,8 +1,8 @@
 console.log("[PROFILO] Caricato");
 
-// =========================================================
-// CAMBIO EMAIL
-// =========================================================
+/* =========================================================
+   CAMBIO EMAIL
+========================================================= */
 document.getElementById("btnCambiaEmail")?.addEventListener("click", async () => {
   const nuova_email = document.getElementById("newEmail").value.trim();
   const password = document.getElementById("passwordEmail").value.trim();
@@ -18,14 +18,19 @@ document.getElementById("btnCambiaEmail")?.addEventListener("click", async () =>
   const token = localStorage.getItem("token");
 
   try {
-    const res = await fetch("/api/utenti/cambia-email", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + token
+    // ⭐ PATCH 2027.300 — usa fetchCritico globale + alias API
+    const res = await window.fetchCritico(
+      "/utenti/cambia-email",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({ nuova_email, password })
       },
-      body: JSON.stringify({ nuova_email, password })
-    });
+      { retries: 2, backoffMs: 300 }
+    );
 
     const data = await res.json();
 
@@ -43,9 +48,9 @@ document.getElementById("btnCambiaEmail")?.addEventListener("click", async () =>
   }
 });
 
-// =========================================================
-// CAMBIO PASSWORD
-// =========================================================
+/* =========================================================
+   CAMBIO PASSWORD
+========================================================= */
 document.getElementById("btnCambiaPassword")?.addEventListener("click", async () => {
   const nuova_password = document.getElementById("newPassword").value.trim();
   const msg = document.getElementById("msgPassword");
@@ -60,14 +65,19 @@ document.getElementById("btnCambiaPassword")?.addEventListener("click", async ()
   const token = localStorage.getItem("token");
 
   try {
-    const res = await fetch("/api/utenti/cambia-password", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + token
+    // ⭐ PATCH 2027.300 — usa fetchCritico globale + alias API
+    const res = await window.fetchCritico(
+      "/utenti/cambia-password",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({ nuova_password })
       },
-      body: JSON.stringify({ nuova_password })
-    });
+      { retries: 2, backoffMs: 300 }
+    );
 
     const data = await res.json();
 
