@@ -8,6 +8,7 @@
  * Patch 2026.980 — /api/health + PayPal prima di auth-user
  * Patch 2026.990 — PRIORITÀ API PRODOTTI (fix routing)
  * Patch 2026.995 — AUTH-USER PRIMA DI TUTTO (fix totale)
+ * Patch 2027.100 — ⭐ UNIVERSAL API ALIAS (v1/v2/latest/API/api)
  * =========================================================
  */
 
@@ -39,6 +40,11 @@ try {
    ⭐ PATCH: AUTH USER — DEVE ESSERE PRIMA DI TUTTO
 ========================================================= */
 router.use(R("middleware/auth-user.cjs"));
+
+/* =========================================================
+   ⭐ PATCH: UNIVERSAL API ALIAS (v1/v2/latest/API/api)
+========================================================= */
+router.use(R("routes/api-alias.cjs"));
 
 /* =========================================================
    ⭐ PATCH: API PRODOTTI — DEVONO ESSERE LE PRIME
