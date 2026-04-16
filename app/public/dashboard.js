@@ -1,7 +1,6 @@
 // =========================================================
-// DASHBOARD.JS — Versione FINALE (2026.10 + PATCH 2026.40)
-// Compatibile con auth-user + api-utenti.cjs + sessionState
-// + updateOrdersUI() + updateDownloadsUI() + refresh_dashboard
+// DASHBOARD.JS — Versione FINALE (PATCH 2027.300)
+// Compatibile con auth-user + apiFetch + fetchCritico globale
 // =========================================================
 
 console.log("[DASHBOARD] Caricato");
@@ -18,16 +17,12 @@ async function initDashboard() {
   const token = localStorage.getItem("token");
   const sessionState = parseInt(localStorage.getItem("sessionState") || "0", 10);
 
-  // Utente NON loggato → redirect
   if (!token || !window.isLogged || sessionState !== 1) {
     console.warn("[DASHBOARD] Nessuna sessione valida → redirect login");
     window.location.href = "login.html";
     return;
   }
 
-  // -------------------------------------------------------
-  // 2) Header Authorization
-  // -------------------------------------------------------
   const authHeaders = {
     "Content-Type": "application/json",
     "Authorization": "Bearer " + token
@@ -37,15 +32,15 @@ async function initDashboard() {
   // 3) Carica dati utente (/me)
   // -------------------------------------------------------
   try {
-    const res = await fetch("/api/utenti/me", {
-      method: "GET",
-      headers: authHeaders
-    });
+    const res = await window.fetchCritico(
+      "/utenti/me",
+      { method: "GET", headers: authHeaders },
+      { retries: 2, backoffMs: 300 }
+    );
 
     const data = await res.json().catch(() => ({}));
     console.log("[DASHBOARD] /me:", data);
 
-    // Sessione scaduta o token invalido
     if (res.status === 401 || !data.success || !data.utente) {
       console.warn("[DASHBOARD] Sessione non valida → logout");
       logoutAndRedirect();
@@ -61,13 +56,14 @@ async function initDashboard() {
   }
 
   // -------------------------------------------------------
-  // 4) Ordini — usa /api/ordini/utente (backend reale)
+  // 4) Ordini — alias /ordini/utente
   // -------------------------------------------------------
   try {
-    const res = await fetch("/api/ordini/utente", {
-      method: "GET",
-      headers: authHeaders
-    });
+    const res = await window.fetchCritico(
+      "/ordini/utente",
+      { method: "GET", headers: authHeaders },
+      { retries: 2, backoffMs: 300 }
+    );
 
     const data = await res.json().catch(() => ({}));
     console.log("[DASHBOARD] /ordini/utente:", data);
@@ -78,11 +74,7 @@ async function initDashboard() {
       return;
     }
 
-    if (data && Array.isArray(data.ordini)) {
-      updateOrdersUI(data.ordini);
-    } else {
-      updateOrdersUI([]);
-    }
+    updateOrdersUI(Array.isArray(data.ordini) ? data.ordini : []);
 
   } catch (err) {
     console.error("[DASHBOARD] Errore ordini:", err);
@@ -90,13 +82,14 @@ async function initDashboard() {
   }
 
   // -------------------------------------------------------
-  // 5) Download — lasciato pronto per /api/download/miei
+  // 5) Download — alias /download/miei
   // -------------------------------------------------------
   try {
-    const res = await fetch("/api/download/miei", {
-      method: "GET",
-      headers: authHeaders
-    });
+    const res = await window.fetchCritico(
+      "/download/miei",
+      { method: "GET", headers: authHeaders },
+      { retries: 2, backoffMs: 300 }
+    );
 
     const data = await res.json().catch(() => ({}));
     console.log("[DASHBOARD] /download/miei:", data);
@@ -107,22 +100,16 @@ async function initDashboard() {
       return;
     }
 
-    if (data && Array.isArray(data.download)) {
-      updateDownloadsUI(data.download);
-    } else {
-      updateDownloadsUI([]);
-    }
+    updateDownloadsUI(Array.isArray(data.download) ? data.download : []);
 
   } catch (err) {
     console.error("[DASHBOARD] Errore download:", err);
-    if (typeof updateDownloadsUI === "function") {
-      updateDownloadsUI([]);
-    }
+    updateDownloadsUI([]);
   }
 }
 
 // =========================================================
-// AGGIORNA UI UTENTE — EMAIL + USERNAME (ricavato) + CF
+// AGGIORNA UI UTENTE — EMAIL + USERNAME + CF
 // =========================================================
 function updateUserUI(utente) {
   if (!utente) return;
@@ -131,7 +118,6 @@ function updateUserUI(utente) {
   const usernameCalc = email ? email.split("@")[0] : "";
   const cf = utente.codice_fiscale || "";
 
-  // --- SIDEBAR ---
   const sidebarEmail = document.getElementById("sidebarEmail");
   const sidebarUsername = document.getElementById("sidebarUsername");
   const sidebarCF = document.getElementById("sidebarCF");
@@ -140,7 +126,6 @@ function updateUserUI(utente) {
   if (sidebarUsername) sidebarUsername.textContent = usernameCalc;
   if (sidebarCF) sidebarCF.textContent = cf;
 
-  // --- PROFILO ---
   const userEmail = document.getElementById("userEmail");
   const userUsername = document.getElementById("username");
   const userCF = document.getElementById("userCF");
@@ -176,9 +161,11 @@ async function updateOrdersUI(ordini = null) {
 
   if (!ordini) {
     try {
-      const res = await fetch("/api/ordini/utente", {
-        headers: { "Authorization": "Bearer " + token }
-      });
+      const res = await window.fetchCritico(
+        "/ordini/utente",
+        { headers: { "Authorization": "Bearer " + token } },
+        { retries: 2, backoffMs: 300 }
+      );
       const data = await res.json();
       ordini = data.ordini || [];
     } catch {
@@ -226,9 +213,11 @@ async function updateDownloadsUI(download = null) {
 
   if (!download) {
     try {
-      const res = await fetch("/api/ordini/utente", {
-        headers: { "Authorization": "Bearer " + token }
-      });
+      const res = await window.fetchCritico(
+        "/ordini/utente",
+        { headers: { "Authorization": "Bearer " + token } },
+        { retries: 2, backoffMs: 300 }
+      );
       const data = await res.json();
       const completati = (data.ordini || []).filter(o => o.stato === "completato");
       download = completati.flatMap(o => o.prodotti);
@@ -248,7 +237,7 @@ async function updateDownloadsUI(download = null) {
       return `
         <div class="download-box">
           <div><strong>${titolo}</strong></div>
-          <a class="btn-download" href="/api/vendite/download/${p.prodotto_id}">
+          <a class="btn-download" href="/vendite/download/${p.prodotto_id}">
             Scarica
           </a>
         </div>
@@ -258,7 +247,7 @@ async function updateDownloadsUI(download = null) {
 }
 
 // =========================================================
-// PATCH — refresh automatico dopo eventi
+// REFRESH AUTOMATICO
 // =========================================================
 window.addEventListener("message", async (event) => {
   if (!event.data) return;
@@ -274,19 +263,15 @@ window.addEventListener("message", async (event) => {
 });
 
 // =========================================================
-// ⭐ PATCH 2026 — MODIFICA PROFILO FUNZIONANTE
+// PATCH — MODIFICA PROFILO
 // =========================================================
-
 document.addEventListener("DOMContentLoaded", () => {
   const btnProfilo = document.getElementById("sidebar-nav-profilo");
   const contentProfilo = document.getElementById("content-profilo");
 
   if (btnProfilo && contentProfilo) {
     btnProfilo.addEventListener("click", () => {
-      // Nasconde tutte le sezioni
       document.querySelectorAll(".content").forEach(c => c.style.display = "none");
-
-      // Mostra la sezione profilo
       contentProfilo.style.display = "block";
     });
   }
