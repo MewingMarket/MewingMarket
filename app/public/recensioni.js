@@ -1,21 +1,22 @@
 /* =========================================================
    File: app/public/recensioni.js
    Dashboard Utente — Le mie recensioni
-   Versione patchata 2026.3001 + DEBUG
+   Versione 2027.100 — API UNIVERSALE + DEBUG
    Patch 2026.999 — fetchCritico + anti-HTML + anti-502
-   Patch 2027.010 — ⭐ PATCH CREDENZIALI (credentials: "include")
+   Patch 2027.010 — ⭐ PATCH CREDENZIALI
+   Patch 2027.100 — ⭐ API UNIVERSALE (apiFetch + alias)
 ========================================================= */
 
 /* =========================================================
-   fetchCritico — retry + anti-HTML + anti-502
+   fetchCritico — retry + anti-HTML + anti-502 + apiFetch
 ========================================================= */
-async function fetchCritico(url, options = {}, cfg = {}) {
+async function fetchCritico(path, options = {}, cfg = {}) {
   const { retries = 3, backoff = 400 } = cfg;
   let attempt = 0;
 
   while (attempt <= retries) {
     try {
-      const res = await fetch(url, options);
+      const res = await apiFetch(path, options);
       const ct = res.headers.get("content-type") || "";
 
       if (ct.includes("text/html")) {
@@ -65,12 +66,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     try {
       const res = await fetchCritico(
-        "/api/recensioni/prodotti-acquistati",
+        "/recensioni/prodotti-acquistati",
         {
-          headers: { "Authorization": "Bearer " + token },
-          credentials: "include"   // ⭐ PATCH
-        },
-        { retries: 3, backoff: 400 }
+          headers: { "Authorization": "Bearer " + token }
+        }
       );
 
       const data = await res.json();
@@ -78,7 +77,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.log("🟣 [DEBUG] Risposta prodotti-acquistati:", data);
 
       if (!data.success || data.prodotti.length === 0) {
-        console.log("🟠 [DEBUG] Nessun prodotto acquistato trovato");
         selectProdotto.innerHTML = `<option value="">Nessun prodotto acquistato</option>`;
         return;
       }
@@ -86,8 +84,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       selectProdotto.innerHTML = data.prodotti
         .map(p => `<option value="${p.id}">${p.titolo_breve}</option>`)
         .join("");
-
-      console.log("🟢 [DEBUG] Prodotti caricati nel select");
 
     } catch (err) {
       console.error("🔴 [DEBUG] Errore caricamento prodotti:", err);
@@ -104,8 +100,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   stars.forEach((star, index) => {
     star.addEventListener("click", () => {
       rating = index + 1;
-
-      console.log("⭐ [DEBUG] Rating selezionato:", rating);
 
       stars.forEach(s => s.classList.remove("active"));
       for (let i = 0; i < rating; i++) stars[i].classList.add("active");
@@ -139,12 +133,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const prodotto_id = Number(selectProdotto.value);
     const testo = commento.value.trim();
 
-    console.log("🟦 [DEBUG] Click INVIA →", {
-      prodotto_id,
-      rating,
-      testo
-    });
-
     if (!prodotto_id) {
       status.textContent = "Seleziona un prodotto.";
       status.classList.add("err");
@@ -170,29 +158,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     try {
-      console.log("🟦 [DEBUG] Invio fetch /recensioni/crea...");
-
       const res = await fetchCritico(
-        "/api/recensioni/crea",
+        "/recensioni/crea",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "Authorization": "Bearer " + token
           },
-          credentials: "include",   // ⭐ PATCH
           body: JSON.stringify({
             prodotto_id,
             rating,
             commento: testo
           })
-        },
-        { retries: 3, backoff: 400 }
+        }
       );
 
       const data = await res.json();
-
-      console.log("🟣 [DEBUG] Risposta /recensioni/crea:", data);
 
       if (data.success) {
         status.textContent = "Recensione inviata!";
@@ -225,17 +207,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     try {
       const res = await fetchCritico(
-        "/api/recensioni/utente",
+        "/recensioni/utente",
         {
-          headers: { "Authorization": "Bearer " + token },
-          credentials: "include"   // ⭐ PATCH
-        },
-        { retries: 3, backoff: 400 }
+          headers: { "Authorization": "Bearer " + token }
+        }
       );
 
       const data = await res.json();
-
-      console.log("🟣 [DEBUG] Risposta /recensioni/utente:", data);
 
       if (!data.success || data.recensioni.length === 0) {
         listaRecensioni.innerHTML = "<p>Nessuna recensione presente.</p>";
@@ -265,28 +243,22 @@ document.addEventListener("DOMContentLoaded", async () => {
         btn.addEventListener("click", async () => {
           const id = btn.dataset.id;
 
-          console.log("🗑️ [DEBUG] Elimina recensione ID:", id);
-
           if (!confirm("Vuoi davvero eliminare questa recensione?")) return;
 
           try {
             const res = await fetchCritico(
-              "/api/recensioni/elimina",
+              "/recensioni/elimina",
               {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
                   "Authorization": "Bearer " + token
                 },
-                credentials: "include",   // ⭐ PATCH
                 body: JSON.stringify({ id })
-              },
-              { retries: 3, backoff: 400 }
+              }
             );
 
             const data = await res.json();
-
-            console.log("🟣 [DEBUG] Risposta elimina:", data);
 
             if (data.success) caricaRecensioni();
             else alert(data.error || "Errore.");
@@ -305,8 +277,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         btn.addEventListener("click", async () => {
           const id = btn.dataset.id;
 
-          console.log("✏️ [DEBUG] Modifica recensione ID:", id);
-
           const nuovoCommento = prompt("Modifica il commento:");
           if (!nuovoCommento || nuovoCommento.trim().length < 5) {
             alert("Commento troppo corto.");
@@ -323,26 +293,22 @@ document.addEventListener("DOMContentLoaded", async () => {
 
           try {
             const res = await fetchCritico(
-              "/api/recensioni/modifica",
+              "/recensioni/modifica",
               {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
                   "Authorization": "Bearer " + token
                 },
-                credentials: "include",   // ⭐ PATCH
                 body: JSON.stringify({
                   id,
                   rating: ratingNum,
                   commento: nuovoCommento.trim()
                 })
-              },
-              { retries: 3, backoff: 400 }
+              }
             );
 
             const data = await res.json();
-
-            console.log("🟣 [DEBUG] Risposta modifica:", data);
 
             if (data.success) caricaRecensioni();
             else alert(data.error || "Errore.");
