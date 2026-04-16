@@ -1,20 +1,16 @@
 /**
  * =========================================================
- * api.js — Versione 2027.200
- * UNIVERSAL API FETCH + FALLBACK + INTERCEPTOR
- * - Prova tutte le versioni API
+ * api.js — Versione 2027.210 (SAFE)
+ * UNIVERSAL API FETCH + FALLBACK
+ * - Prova più prefissi API
  * - Se fallisce → fallback fetchCritico
- * - Se fallisce → fallback fetch normale
- * - Se apiFetch non è definito → lo definisce da solo
- * - Intercetta fetch diretti verso /api e li reindirizza
+ * - Se fallisce → fetch normale
+ * - NON tocca window.fetch
  * =========================================================
  */
 
-console.log("🟦 api.js caricato");
+console.log("🟦 api.js caricato (SAFE)");
 
-/* =========================================================
-   1) DEFINIZIONE apiFetch SE NON ESISTE
-========================================================= */
 if (typeof window.apiFetch === "undefined") {
   window.apiFetch = async function(path, options = {}) {
     const prefixes = [
@@ -53,9 +49,6 @@ if (typeof window.apiFetch === "undefined") {
 
     console.log("🟥 [apiFetch] Nessuna route valida trovata → fallback fetchCritico");
 
-    /* =========================================================
-       FALLBACK 1 — fetchCritico
-    ========================================================= */
     if (typeof window.fetchCritico === "function") {
       try {
         return await window.fetchCritico(path, opts);
@@ -64,28 +57,7 @@ if (typeof window.apiFetch === "undefined") {
       }
     }
 
-    /* =========================================================
-       FALLBACK 2 — fetch normale
-    ========================================================= */
     console.log("🟥 [apiFetch] fallback fetch normale:", path);
     return fetch(path, opts);
   };
 }
-
-/* =========================================================
-   2) INTERCEPTOR FETCH — intercetta fetch diretti verso /api
-========================================================= */
-(function interceptFetch() {
-  const originalFetch = window.fetch;
-
-  window.fetch = async function(url, options = {}) {
-    // Se la URL è stringa e inizia con /api → reindirizza a apiFetch
-    if (typeof url === "string" && url.startsWith("/api")) {
-      console.log("🟦 Intercetto fetch → apiFetch:", url);
-      return window.apiFetch(url.replace("/api", ""), options);
-    }
-
-    // Altrimenti fetch normale
-    return originalFetch(url, options);
-  };
-})();
