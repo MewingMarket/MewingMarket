@@ -1,9 +1,8 @@
-// =========================================================
-// REGISTER — MewingMarket (SQL READY)
-// Versione DEFINITIVA PATCHATA (2026.10)
-// Compatibile con auth.js + sessionState
-// PATCH EVENTI UTENTE: registra evento "registrato"
-// =========================================================
+/* =========================================================
+   REGISTER — MewingMarket (PATCH 2027.300)
+   - Usa fetchCritico globale + API alias
+   - Nessuna regressione
+========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("register-form");
@@ -14,28 +13,35 @@ document.addEventListener("DOMContentLoaded", () => {
   const params = new URLSearchParams(window.location.search);
   const redirect = params.get("redirect") || "dashboard.html";
 
-  // ⭐ PATCH 2026.10 — Entrata in flusso sensibile
-  // (registrazione = sessionState 2)
+  // ⭐ Entrata in flusso sensibile
   localStorage.setItem("sessionState", "2");
 
-  // ---------------------------------------------------------
-  // PATCH — Helper per registrare evento utente
-  // ---------------------------------------------------------
+  /* =========================================================
+     PATCH — Helper per registrare evento utente
+  ========================================================== */
   async function logUserEvent(evento) {
     try {
       const email = localStorage.getItem("email") || "";
       if (!email) return;
 
-      await fetch("/api/utenti/evento", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, evento })
-      });
+      await window.fetchCritico(
+        "/utenti/evento",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, evento })
+        },
+        { retries: 2, backoffMs: 300 }
+      );
+
     } catch (err) {
       console.warn("Log evento fallito:", err);
     }
   }
 
+  /* =========================================================
+     SUBMIT REGISTRAZIONE
+  ========================================================== */
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -80,11 +86,16 @@ document.addEventListener("DOMContentLoaded", () => {
     form.dataset.lock = "1";
 
     try {
-      const res = await fetch("/api/utenti/registrazione", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, codice_fiscale })
-      });
+      // ⭐ PATCH 2027.300 — usa fetchCritico globale + alias API
+      const res = await window.fetchCritico(
+        "/utenti/registrazione",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password, codice_fiscale })
+        },
+        { retries: 2, backoffMs: 300 }
+      );
 
       const data = await res.json().catch(() => ({}));
       console.log("[REGISTER]", data);
@@ -102,15 +113,15 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // =====================================================
-      // ⭐ PATCH 2026.10 — Salvataggio corretto token/email/ruolo
-      // =====================================================
+      /* =====================================================
+         SALVATAGGIO CORRETTO token/email/ruolo
+      ===================================================== */
       if (data.token) {
-        localStorage.setItem("token", data.token);   // ← CORRETTO
+        localStorage.setItem("token", data.token);
         localStorage.setItem("email", email);
         localStorage.setItem("ruolo", "user");
 
-        // ⭐ Dopo registrazione → sessione attiva
+        // Sessione attiva
         localStorage.setItem("sessionState", "1");
       }
 
