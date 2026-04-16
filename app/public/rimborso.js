@@ -8,7 +8,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   // 1) CARICA EMAIL UTENTE + ORDINI COMPLETATI
   // =========================================================
   try {
-    const res = await fetch("/api/ordini/utente");
+    // ⭐ PATCH 2027.300 — alias + fetchCritico globale
+    const res = await window.fetchCritico(
+      "/ordini/utente",
+      { headers: { "Authorization": "Bearer " + localStorage.getItem("token") } }
+    );
+
     const data = await res.json();
 
     if (!data.success) {
@@ -16,12 +21,17 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    // Preleva email utente dal backend (sicuro)
-    const userRes = await fetch("/api/utente/info");
+    // ⭐ Email utente dal backend
+    const userRes = await window.fetchCritico(
+      "/utente/info",
+      { headers: { "Authorization": "Bearer " + localStorage.getItem("token") } }
+    );
+
     const userData = await userRes.json();
+
     if (userData.success && userData.email) {
       emailInput.value = userData.email;
-      emailInput.disabled = true; // L’utente non può modificarla
+      emailInput.disabled = true;
     }
 
     const ordini = data.ordini.filter(o => o.stato === "completato");
@@ -71,11 +81,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     try {
-      const res = await fetch("/api/rimborso/crea", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ordine_id, motivo })
-      });
+      // ⭐ PATCH 2027.300 — alias + fetchCritico globale
+      const res = await window.fetchCritico(
+        "/rimborso/crea",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ordine_id, motivo })
+        }
+      );
 
       const data = await res.json();
 
@@ -84,9 +98,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
 
-      // =========================================================
-      // 🔥 RISOLVIBILE (email premium inviata)
-      // =========================================================
+      // 🔥 RISOLVIBILE
       if (data.message && data.message.includes("risolvibile")) {
         alert(
           "Il problema sembra risolvibile.\n" +
@@ -96,9 +108,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
 
-      // =========================================================
-      // 🔥 NON RISOLVIBILE → ticket aperto
-      // =========================================================
+      // 🔥 NON RISOLVIBILE
       alert("Richiesta inviata. Riceverai una risposta entro poche ore.");
       form.reset();
 
