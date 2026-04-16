@@ -1,9 +1,10 @@
 /* =========================================================
-   CHATBOX — VERSIONE COMPLETA + PATCH DOMINIO
+   CHATBOX — VERSIONE COMPLETA + PATCH 2027.300
+   - Rimosso dominio hardcoded
+   - Usa fetchCritico globale + alias API
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
-  const API_BASE = "https://www.mewingmarket.it"; // ⭐ dominio verificato
 
   const chatBox = document.getElementById("chat-box");
   const chatInput = document.getElementById("chat-input");
@@ -47,14 +48,20 @@ document.addEventListener("DOMContentLoaded", () => {
     chatInput.value = "";
 
     try {
-      const res = await fetch(`${API_BASE}/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message })
-      });
+      // ⭐ PATCH 2027.300 — alias universale + fetchCritico globale
+      const res = await window.fetchCritico(
+        "/chat",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message })
+        },
+        { retries: 2, backoffMs: 300 }
+      );
 
       const data = await res.json();
       addMessage(data.reply || "Errore temporaneo.");
+
     } catch (err) {
       addMessage("Errore di connessione.", "bot");
     }
@@ -132,13 +139,19 @@ document.addEventListener("DOMContentLoaded", () => {
     formData.append("audio", blob, "audio.webm");
 
     try {
-      const res = await fetch(`${API_BASE}/chat/voice`, {
-        method: "POST",
-        body: formData
-      });
+      // ⭐ PATCH 2027.300 — alias universale + fetchCritico globale
+      const res = await window.fetchCritico(
+        "/chat/voice",
+        {
+          method: "POST",
+          body: formData
+        },
+        { retries: 2, backoffMs: 300 }
+      );
 
       const data = await res.json();
       addMessage(data.reply || "Errore durante la trascrizione.");
+
     } catch (err) {
       addMessage("Errore di connessione durante il vocale.", "bot");
     }
@@ -162,13 +175,19 @@ document.addEventListener("DOMContentLoaded", () => {
       formData.append("file", file);
 
       try {
-        const res = await fetch(`${API_BASE}/chat/attachment`, {
-          method: "POST",
-          body: formData
-        });
+        // ⭐ PATCH 2027.300 — alias universale + fetchCritico globale
+        const res = await window.fetchCritico(
+          "/chat/attachment",
+          {
+            method: "POST",
+            body: formData
+          },
+          { retries: 2, backoffMs: 300 }
+        );
 
         const data = await res.json();
         addMessage(data.reply || "Allegato ricevuto.");
+
       } catch (err) {
         addMessage("Errore durante l'invio dell'allegato.", "bot");
       }
