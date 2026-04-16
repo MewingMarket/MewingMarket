@@ -1,5 +1,5 @@
 /* =========================================================
-   DOWNLOAD PREMIUM — Versione 2026.98
+   DOWNLOAD PREMIUM — Versione 2027.100
    - Solo ordini COMPLETATI
    - Sicuro
    - Token Bearer
@@ -7,18 +7,20 @@
    - Download via fetch + blob
    Patch 2026.999 — fetchCritico + anti-HTML + anti-502
    Patch 2027.010 — ⭐ PATCH CREDENZIALI (credentials: "include")
+   Patch 2027.100 — ⭐ API UNIVERSALE (apiFetch + alias)
 ========================================================= */
 
 /* =========================================================
-   fetchCritico — retry + anti-HTML + anti-502
+   fetchCritico — retry + anti-HTML + anti-502 + apiFetch
 ========================================================= */
-async function fetchCritico(url, options = {}, cfg = {}) {
+async function fetchCritico(path, options = {}, cfg = {}) {
   const { retries = 3, backoff = 400 } = cfg;
   let attempt = 0;
 
   while (attempt <= retries) {
     try {
-      const res = await fetch(url, options);
+      // Usa API universale (apiFetch) invece di fetch diretto
+      const res = await apiFetch(path, options);
       const ct = res.headers.get("content-type") || "";
 
       if (ct.includes("text/html")) {
@@ -65,10 +67,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   let data;
   try {
     const res = await fetchCritico(
-      "/api/ordini/utente",
+      "/ordini/utente",
       {
-        headers: { Authorization: "Bearer " + token },
-        credentials: "include"   // ⭐ PATCH
+        headers: { Authorization: "Bearer " + token }
       },
       { retries: 3, backoff: 400 }
     );
@@ -157,10 +158,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     try {
       const res = await fetchCritico(
-        `/api/vendite/download/${id}`,
+        `/vendite/download/${id}`,
         {
-          headers: { Authorization: "Bearer " + token },
-          credentials: "include"   // ⭐ PATCH
+          headers: { Authorization: "Bearer " + token }
         },
         { retries: 3, backoff: 400 }
       );
