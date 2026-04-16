@@ -3,6 +3,7 @@
    Patch: ordine garantito, no async, no race condition,
    errori visibili, caricamento sequenziale sicuro.
    Patch 2027.200 — ⭐ AUTO-INJECT api.js + SAFETY CHECK
+   Patch 2027.300 — ⭐ safeLoadHTML usa fetchCritico se presente
 ========================================================= */
 
 console.log("[ADMIN] Loader admin avviato");
@@ -111,11 +112,25 @@ function loadAdminUtilityScript(name) {
 }
 
 /* ---------------------------------------------------------
-   2) CARICAMENTO HTML SEQUENZIALE (SAFE)
+   2) CARICAMENTO HTML SEQUENZIALE (SAFE + fetchCritico)
 --------------------------------------------------------- */
 function safeLoadHTML(url, placeholderId, eventName) {
-  return fetch(url)
-    .then(r => r.text())
+  const doFetch = () => {
+    // se fetchCritico esiste, lo usiamo; altrimenti fetch normale
+    if (typeof window.fetchCritico === "function") {
+      console.log("[ADMIN] safeLoadHTML via fetchCritico:", url);
+      return window.fetchCritico(
+        url.replace(/^https?:\/\/[^/]+/, "").replace(/^\/api(\/v1|\/v2|\/latest)?/, ""),
+        {},
+        { retries: 2, backoffMs: 300 }
+      ).then(r => r.text());
+    }
+
+    console.log("[ADMIN] safeLoadHTML via fetch:", url);
+    return fetch(url).then(r => r.text());
+  };
+
+  return doFetch()
     .then(html => {
       const ph = document.getElementById(placeholderId);
       if (!ph) {
