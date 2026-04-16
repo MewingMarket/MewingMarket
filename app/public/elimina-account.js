@@ -1,26 +1,32 @@
-// =========================================================
-// Eliminazione Account – MewingMarket (VERSIONE 2026.10)
-// Compatibile con backend SQL + auth.js + sessionState
-// PATCH EVENTI UTENTE: registra evento "eliminato"
-// =========================================================
+/* =========================================================
+   Eliminazione Account – MewingMarket (VERSIONE 2027.300)
+   - Usa fetchCritico globale + alias API
+   - Nessuna regressione
+========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
   const msg = document.getElementById("status");
   const btnElimina = document.getElementById("reset-btn");
 
-  // ---------------------------------------------------------
-  // PATCH — Helper per registrare evento utente
-  // ---------------------------------------------------------
+  /* =========================================================
+     PATCH — Helper per registrare evento utente
+     (usa fetchCritico globale)
+  ========================================================== */
   async function logUserEvent(evento) {
     try {
       const email = localStorage.getItem("email") || "";
       if (!email) return;
 
-      await fetch("/api/utenti/evento", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, evento })
-      });
+      await window.fetchCritico(
+        "/utenti/evento",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, evento })
+        },
+        { retries: 2, backoffMs: 200 }
+      );
+
     } catch (err) {
       console.warn("Log evento fallito:", err);
     }
@@ -32,21 +38,18 @@ document.addEventListener("DOMContentLoaded", () => {
     msg.style.color = ok ? "#4ade80" : "#f97373";
   }
 
-  // =====================================================
-  // PATCH 2026.10 — Listener sicuro (DOM pronto)
-  // =====================================================
   if (!btnElimina) {
     console.warn("Bottone elimina account non trovato");
     return;
   }
 
+  /* =========================================================
+     CLICK ELIMINA ACCOUNT
+  ========================================================== */
   btnElimina.addEventListener("click", async () => {
     console.log("🗑️ Click su elimina account");
     setMsg("Eliminazione account in corso...");
 
-    // =====================================================
-    // ⭐ PATCH 2026.10 — Token corretto + sessionState
-    // =====================================================
     const token = localStorage.getItem("token");
     const password = document.getElementById("password")?.value.trim();
 
@@ -60,26 +63,29 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // L’utente è in un flusso sensibile
+    // Flusso sensibile
     localStorage.setItem("sessionState", "2");
 
     if (btnElimina.disabled) return;
     btnElimina.disabled = true;
 
     try {
-      const res = await fetch("/api/utenti/elimina-account", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          // ⭐ Authorization gestito da auth.js, ma qui lo forziamo per sicurezza
-          "Authorization": "Bearer " + token
+      // ⭐ PATCH 2027.300 — usa fetchCritico globale + alias API
+      const res = await window.fetchCritico(
+        "/utenti/elimina-account",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+          },
+          body: JSON.stringify({ password })
         },
-        body: JSON.stringify({ password })
-      });
+        { retries: 2, backoffMs: 300 }
+      );
 
       const data = await res.json().catch(() => null);
 
-      // ⭐ PATCH — LOG RISPOSTA
       console.log("Risposta elimina-account:", data);
 
       if (res.status === 401) {
@@ -92,9 +98,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // =====================================================
-      // ⭐ PATCH — MOSTRA ERRORE REALE DEL BACKEND
-      // =====================================================
       if (data.error) {
         setMsg(data.error);
         return;
@@ -103,12 +106,10 @@ document.addEventListener("DOMContentLoaded", () => {
       if (data.success) {
         setMsg("Account eliminato. Reindirizzamento...", true);
 
-        // ⭐ PATCH EVENTO: registra eliminazione
+        // ⭐ PATCH — registra evento
         await logUserEvent("eliminato");
 
-        // =====================================================
-        // ⭐ PATCH 2026.10 — Logout pulito + sessionState = 0
-        // =====================================================
+        // Logout pulito
         localStorage.removeItem("token");
         localStorage.removeItem("email");
         localStorage.removeItem("ruolo");
