@@ -1,3 +1,10 @@
+/* =========================================================
+   NEWSLETTER SUBSCRIBE — PATCH 2027.300
+   - Usa fetchCritico globale
+   - Alias API universale
+   - Nessuna regressione
+========================================================= */
+
 document.addEventListener("DOMContentLoaded", () => {
 
   /* =========================================================
@@ -49,11 +56,16 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       try {
-        const res = await fetch("/newsletter/subscribe", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email })
-        });
+        // ⭐ PATCH 2027.300 — usa fetchCritico globale + alias API
+        const res = await window.fetchCritico(
+          "/newsletter/subscribe",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email })
+          },
+          { retries: 2, backoffMs: 300 }
+        );
 
         let data = {};
         try {
