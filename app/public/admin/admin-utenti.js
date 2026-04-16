@@ -1,33 +1,33 @@
 /* =========================================================
    File: app/public/admin/admin-utenti.js
    Admin — Gestione Utenti
-   Versione 2026 — EVENTI COMPLETI + KPI + BREVO + FALLBACK
-   PATCH 2026.400 — Sync Brevo + RegistratoBrevo + ClienteBrevo + ClienteDB
-   PATCH 2026.700 — Colonna Bannato + KPI Bannati
-   PATCH 2026.900 — Sync Utenti Storici (Brevo Full)
-   PATCH 2026.999 — fetchCritico + anti-HTML + anti-502
-   PATCH 2027.010 — ⭐ PATCH CREDENZIALI (credentials: "include")
+   Versione 2027.100 — API UNIVERSALE
+   - EVENTI COMPLETI + KPI + BREVO + FALLBACK
+   - Sync Brevo + RegistratoBrevo + ClienteBrevo + ClienteDB
+   - Colonna Bannato + KPI Bannati
+   - Sync Utenti Storici
+   Patch 2026.999 — fetchCritico + anti-HTML + anti-502
+   Patch 2027.010 — ⭐ PATCH CREDENZIALI
+   Patch 2027.100 — ⭐ API UNIVERSALE (apiFetch + alias)
 ========================================================= */
 
 /* =========================================================
-   fetchCritico — retry + anti-HTML + anti-502
+   fetchCritico — retry + anti-HTML + anti-502 + apiFetch
 ========================================================= */
-async function fetchCritico(url, options = {}, cfg = {}) {
+async function fetchCritico(path, options = {}, cfg = {}) {
   const { retries = 3, backoff = 400 } = cfg;
   let attempt = 0;
 
   while (attempt <= retries) {
     try {
-      const res = await fetch(url, options);
+      const res = await apiFetch(path, options);
       const ct = res.headers.get("content-type") || "";
 
-      // Anti-HTML
       if (ct.includes("text/html")) {
         const html = await res.text();
         throw new Error("HTML inatteso: " + html.slice(0, 200));
       }
 
-      // Retry su 502/503/504
       if (!res.ok) {
         if ([502, 503, 504].includes(res.status) && attempt < retries) {
           await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
@@ -38,7 +38,6 @@ async function fetchCritico(url, options = {}, cfg = {}) {
       }
 
       return res;
-
     } catch (err) {
       if (attempt >= retries) throw err;
       await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
@@ -51,14 +50,14 @@ async function fetchCritico(url, options = {}, cfg = {}) {
    INIT
 ========================================================= */
 document.addEventListener("admin-header-loaded", async () => {
-  await syncBrevoAuto();   // ⭐ Sync automatica
-  caricaUtenti();          // ⭐ Carica tabella
+  await syncBrevoAuto();
+  caricaUtenti();
 });
 
 /* =========================================================
-   FETCH ADMIN (patchato con fetchCritico)
+   FETCH ADMIN (patchato con fetchCritico + apiFetch)
 ========================================================= */
-async function adminGet(url, options = {}) {
+async function adminGet(path, options = {}) {
   const token = localStorage.getItem("token");
 
   const headers = {
@@ -66,15 +65,12 @@ async function adminGet(url, options = {}) {
     Authorization: token ? `Bearer ${token}` : ""
   };
 
-  // ⭐ PATCH: aggiunta credentials: "include"
   const res = await fetchCritico(
-    url,
-    { 
-      ...options, 
-      headers,
-      credentials: "include"   // <<<<<<<<<<<<<<<<<< PATCH FONDAMENTALE
-    },
-    { retries: 3, backoff: 400 }
+    path,
+    {
+      ...options,
+      headers
+    }
   );
 
   return res.json();
@@ -85,7 +81,7 @@ async function adminGet(url, options = {}) {
 ========================================================= */
 async function syncBrevoAuto() {
   try {
-    await adminGet("/api/admin/utenti/sync-brevo");
+    await adminGet("/admin/utenti/sync-brevo");
     console.log("Sync Brevo OK");
   } catch (err) {
     console.warn("Sync Brevo fallita, fallback attivo");
@@ -98,7 +94,7 @@ async function syncBrevoAuto() {
 document.addEventListener("click", async (e) => {
   if (e.target.id === "btn-sync-brevo") {
     try {
-      await adminGet("/api/admin/utenti/sync-brevo");
+      await adminGet("/admin/utenti/sync-brevo");
       alert("Sincronizzazione completata");
       caricaUtenti();
     } catch (err) {
@@ -108,14 +104,14 @@ document.addEventListener("click", async (e) => {
 });
 
 /* =========================================================
-   ⭐ PATCH — SYNC UTENTI STORICI (una tantum)
+   ⭐ PATCH — SYNC UTENTI STORICI
 ========================================================= */
 document.addEventListener("click", async (e) => {
   if (e.target.id === "btn-sync-brevo-full") {
     if (!confirm("Sincronizzare tutti gli utenti storici in Brevo?")) return;
 
     try {
-      await adminGet("/api/admin/utenti/sync-brevo-full");
+      await adminGet("/admin/utenti/sync-brevo-full");
       alert("Sincronizzazione utenti storici completata");
       caricaUtenti();
     } catch (err) {
@@ -130,7 +126,7 @@ document.addEventListener("click", async (e) => {
 function calcolaKPI(lista) {
   const tot = lista.length;
 
-  const kpi = {
+  return {
     totale: tot,
     registrati: lista.filter(u => u.registrato).length,
     login: lista.filter(u => u.login).length,
@@ -138,22 +134,13 @@ function calcolaKPI(lista) {
     eliminati: lista.filter(u => u.eliminato).length,
     bloccati: lista.filter(u => u.bloccato).length,
     sbloccati: lista.filter(u => u.sbloccato).length,
-
-    // ⭐ KPI Bannati
     bannati: lista.filter(u => u.__bannato === "sì").length,
-
     iscritto: lista.filter(u => u.iscritto).length,
     disiscritto: lista.filter(u => u.disiscritto).length,
-
-    // ⭐ KPI BREVO
     registratoBrevo: lista.filter(u => u.registrato_brevo === "presente").length,
     clienteBrevo: lista.filter(u => u.cliente_brevo === "presente").length,
-
-    // ⭐ KPI CLIENTI DB
     clienteDB: lista.filter(u => u.cliente_db === "sì").length
   };
-
-  return kpi;
 }
 
 /* =========================================================
@@ -164,22 +151,17 @@ function stampaKPI(kpi) {
 
   box.innerHTML = `
     <div class="kpi-item"><b>Totale utenti:</b> ${kpi.totale}</div>
-
     <div class="kpi-item"><b>Registrati:</b> ${kpi.registrati}</div>
     <div class="kpi-item"><b>Login:</b> ${kpi.login}</div>
     <div class="kpi-item"><b>Logout:</b> ${kpi.logout}</div>
-
     <div class="kpi-item"><b>Eliminati:</b> ${kpi.eliminati}</div>
     <div class="kpi-item"><b>Bloccati:</b> ${kpi.bloccati}</div>
     <div class="kpi-item"><b>Sbloccati:</b> ${kpi.sbloccati}</div>
     <div class="kpi-item"><b>Bannati:</b> ${kpi.bannati}</div>
-
     <div class="kpi-item"><b>Iscritti NL:</b> ${kpi.iscritto}</div>
     <div class="kpi-item"><b>Disiscritti NL:</b> ${kpi.disiscritto}</div>
-
     <div class="kpi-item"><b>Registrati in Brevo:</b> ${kpi.registratoBrevo}</div>
     <div class="kpi-item"><b>Clienti Brevo:</b> ${kpi.clienteBrevo}</div>
-
     <div class="kpi-item"><b>Clienti DB:</b> ${kpi.clienteDB}</div>
   `;
 }
@@ -192,7 +174,7 @@ async function caricaUtenti() {
   tbody.innerHTML = "<tr><td colspan='15'>Caricamento…</td></tr>";
 
   try {
-    const data = await adminGet("/api/admin/utenti/lista");
+    const data = await adminGet("/admin/utenti/lista");
 
     (data.utenti || []).forEach(u => {
       let bannato = "no";
@@ -221,7 +203,6 @@ async function caricaUtenti() {
       tr.innerHTML = `
         <td>${u.email}</td>
         <td>${u.codice_fiscale}</td>
-
         <td>${u.registrato || ""}</td>
         <td>${u.login || ""}</td>
         <td>${u.logout || ""}</td>
@@ -229,15 +210,11 @@ async function caricaUtenti() {
         <td>${u.bloccato || ""}</td>
         <td>${u.sbloccato || ""}</td>
         <td>${u.__bannato}</td>
-
         <td>${u.iscritto || ""}</td>
         <td>${u.disiscritto || ""}</td>
-
         <td>${u.registrato_brevo}</td>
         <td>${u.cliente_brevo}</td>
-
         <td>${u.cliente_db}</td>
-
         <td>
           ${u.email !== "amministratore" ? `
             <button class="btn-blocca" data-email="${u.email}">Blocca</button>
@@ -265,7 +242,7 @@ document.addEventListener("click", async (e) => {
 
   // BLOCCA
   if (e.target.classList.contains("btn-blocca")) {
-    await adminGet("/api/admin/utenti/blocca", {
+    await adminGet("/admin/utenti/blocca", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email })
@@ -275,7 +252,7 @@ document.addEventListener("click", async (e) => {
 
   // SBLOCCA
   if (e.target.classList.contains("btn-sblocca")) {
-    await adminGet("/api/admin/utenti/sblocca", {
+    await adminGet("/admin/utenti/sblocca", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email })
@@ -287,7 +264,7 @@ document.addEventListener("click", async (e) => {
   if (e.target.classList.contains("btn-elimina")) {
     if (!confirm("Eliminare definitivamente questo utente?")) return;
 
-    await adminGet("/api/admin/utenti/elimina", {
+    await adminGet("/admin/utenti/elimina", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email })
