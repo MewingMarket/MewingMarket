@@ -1,46 +1,8 @@
 // =========================================================
-/* PRODOTTO PREMIUM – MewingMarket (SQL READY, ID-BASED)
-   Versione: SQL + YouTube + Correlati + Carrello Premium
-   Patch 2026.999 — fetchCritico + anti-HTML + anti-502 */
+// PRODOTTO PREMIUM – MewingMarket (PATCH 2027.300)
+// - Usa fetchCritico globale + API alias
+// - Nessuna regressione
 // =========================================================
-
-/* =========================================================
-   fetchCritico — retry + anti-HTML + anti-502
-========================================================= */
-async function fetchCritico(url, options = {}, cfg = {}) {
-  const { retries = 3, backoff = 400 } = cfg;
-  let attempt = 0;
-
-  while (attempt <= retries) {
-    try {
-      const res = await fetch(url, options);
-      const ct = res.headers.get("content-type") || "";
-
-      // Anti-HTML
-      if (ct.includes("text/html")) {
-        const html = await res.text();
-        throw new Error("HTML inatteso: " + html.slice(0, 200));
-      }
-
-      // Retry su 502/503/504
-      if (!res.ok) {
-        if ([502, 503, 504].includes(res.status) && attempt < retries) {
-          await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
-          attempt++;
-          continue;
-        }
-        throw new Error("HTTP " + res.status);
-      }
-
-      return res;
-
-    } catch (err) {
-      if (attempt >= retries) throw err;
-      await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
-      attempt++;
-    }
-  }
-}
 
 document.addEventListener("DOMContentLoaded", async () => {
 
@@ -86,11 +48,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   ========================================================== */
   let p;
   try {
-    // ⭐ PATCH: fetchCritico
-    const res = await fetchCritico(`/api/products/${id}`, { cache: "no-store" }, {
-      retries: 3,
-      backoff: 400
-    });
+    // ⭐ PATCH 2027.300 — alias + fetchCritico globale
+    const res = await window.fetchCritico(
+      `/products/${id}`,
+      { cache: "no-store" },
+      { retries: 3, backoffMs: 400 }
+    );
 
     const data = await res.json();
 
@@ -209,11 +172,11 @@ document.addEventListener("DOMContentLoaded", async () => {
      9) CORRELATI — PATCH MULTI-CATEGORIA
   ========================================================== */
   try {
-    // ⭐ PATCH: fetchCritico
-    const res = await fetchCritico(`/api/products`, { cache: "no-store" }, {
-      retries: 3,
-      backoff: 400
-    });
+    const res = await window.fetchCritico(
+      `/products`,
+      { cache: "no-store" },
+      { retries: 3, backoffMs: 400 }
+    );
 
     const data = await res.json();
 
@@ -251,7 +214,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   /* =========================================================
      10) BADGE ALL'AVVIO
-  ========================================================= */
+  ========================================================== */
   if (typeof aggiornaBadgeCarrello === "function") {
     aggiornaBadgeCarrello();
   }
