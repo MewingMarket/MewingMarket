@@ -3,6 +3,7 @@
    Dashboard Utente — Le mie recensioni
    Versione patchata 2026.3001 + DEBUG
    Patch 2026.999 — fetchCritico + anti-HTML + anti-502
+   Patch 2027.010 — ⭐ PATCH CREDENZIALI (credentials: "include")
 ========================================================= */
 
 /* =========================================================
@@ -17,13 +18,11 @@ async function fetchCritico(url, options = {}, cfg = {}) {
       const res = await fetch(url, options);
       const ct = res.headers.get("content-type") || "";
 
-      // Anti-HTML
       if (ct.includes("text/html")) {
         const html = await res.text();
         throw new Error("HTML inatteso: " + html.slice(0, 200));
       }
 
-      // Retry su 502/503/504
       if (!res.ok) {
         if ([502, 503, 504].includes(res.status) && attempt < retries) {
           await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
@@ -67,7 +66,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
       const res = await fetchCritico(
         "/api/recensioni/prodotti-acquistati",
-        { headers: { "Authorization": "Bearer " + token } },
+        {
+          headers: { "Authorization": "Bearer " + token },
+          credentials: "include"   // ⭐ PATCH
+        },
         { retries: 3, backoff: 400 }
       );
 
@@ -94,7 +96,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /* =========================================================
-     2) SISTEMA STELLE (PATCH robusta + DEBUG)
+     2) SISTEMA STELLE
   ========================================================== */
   const stars = document.querySelectorAll("#stars span");
   let rating = 0;
@@ -124,7 +126,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /* =========================================================
-     4) INVIO RECENSIONE (PATCH + DEBUG)
+     4) INVIO RECENSIONE
   ========================================================== */
   const btnInvia = document.getElementById("btnInvia");
   const commento = document.getElementById("commento");
@@ -178,6 +180,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             "Content-Type": "application/json",
             "Authorization": "Bearer " + token
           },
+          credentials: "include",   // ⭐ PATCH
           body: JSON.stringify({
             prodotto_id,
             rating,
@@ -213,7 +216,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   /* =========================================================
-     5) CARICA RECENSIONI UTENTE (DEBUG)
+     5) CARICA RECENSIONI UTENTE
   ========================================================== */
   async function caricaRecensioni() {
     console.log("🔵 [DEBUG] Carico recensioni utente...");
@@ -223,7 +226,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
       const res = await fetchCritico(
         "/api/recensioni/utente",
-        { headers: { "Authorization": "Bearer " + token } },
+        {
+          headers: { "Authorization": "Bearer " + token },
+          credentials: "include"   // ⭐ PATCH
+        },
         { retries: 3, backoff: 400 }
       );
 
@@ -253,7 +259,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         .join("");
 
       /* ------------------------------
-         ELIMINA (DEBUG)
+         ELIMINA
       ------------------------------ */
       document.querySelectorAll(".btn-delete").forEach(btn => {
         btn.addEventListener("click", async () => {
@@ -272,6 +278,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                   "Content-Type": "application/json",
                   "Authorization": "Bearer " + token
                 },
+                credentials: "include",   // ⭐ PATCH
                 body: JSON.stringify({ id })
               },
               { retries: 3, backoff: 400 }
@@ -292,7 +299,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
 
       /* ------------------------------
-         MODIFICA (DEBUG)
+         MODIFICA
       ------------------------------ */
       document.querySelectorAll(".btn-edit").forEach(btn => {
         btn.addEventListener("click", async () => {
@@ -323,6 +330,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                   "Content-Type": "application/json",
                   "Authorization": "Bearer " + token
                 },
+                credentials: "include",   // ⭐ PATCH
                 body: JSON.stringify({
                   id,
                   rating: ratingNum,
