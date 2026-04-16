@@ -2,7 +2,7 @@
 // Carica: auth.js → head → header → header.js → carrello → footer
 // + SEO / Structured / Tracking (safe)
 // + Versioning / Anti-cache / Anti-SW
-// + PATCH 2027.200 — AUTO-INJECT api.js + SAFETY CHECK
+// + PATCH 2027.210 — AUTO-INJECT api.js (SAFE)
 // =========================================================
 
 (function () {
@@ -10,7 +10,7 @@
   const VERSION = "20260412";
 
   /* =========================================================
-     ⭐ PATCH 2027.200 — AUTO-INJECT api.js
+     ⭐ PATCH 2027.210 — AUTO-INJECT api.js (solo inject, no loop)
   ========================================================= */
   (function ensureApiJs() {
     try {
@@ -27,21 +27,6 @@
     } catch (e) {
       console.error("🟥 [LOADER] Errore auto-inject api.js:", e);
     }
-  })();
-
-  /* =========================================================
-     ⭐ PATCH 2027.200 — SAFETY CHECK apiFetch
-  ========================================================= */
-  (function ensureApiFetch() {
-    const check = () => {
-      if (typeof window.apiFetch === "function") {
-        console.log("🟩 [LOADER] apiFetch OK");
-        return;
-      }
-      console.warn("🟧 [LOADER] apiFetch NON definito → ritento…");
-      setTimeout(check, 200);
-    };
-    check();
   })();
 
   // =========================================================
