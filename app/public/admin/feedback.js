@@ -3,6 +3,7 @@
    Admin — Lista completa feedback clienti
    Versione definitiva 2026 (PATCH + DEBUG SUPREMO + KPI)
    PATCH 2026.999 — fetchCritico + token admin + anti-HTML + anti-502
+   PATCH 2027.010 — ⭐ PATCH CREDENZIALI (credentials: "include")
 ========================================================= */
 
 // Sanitizzazione sicura
@@ -23,13 +24,11 @@ async function fetchCritico(url, options = {}, cfg = {}) {
       const res = await fetch(url, options);
       const ct = res.headers.get("content-type") || "";
 
-      // Anti-HTML
       if (ct.includes("text/html")) {
         const html = await res.text();
         throw new Error("HTML inatteso: " + html.slice(0, 200));
       }
 
-      // Retry su 502/503/504
       if (!res.ok) {
         if ([502, 503, 504].includes(res.status) && attempt < retries) {
           await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
@@ -62,7 +61,8 @@ async function adminGet(url) {
     {
       headers: {
         Authorization: token ? `Bearer ${token}` : ""
-      }
+      },
+      credentials: "include"   // ⭐ PATCH FONDAMENTALE
     },
     { retries: 3, backoff: 400 }
   );
@@ -148,14 +148,12 @@ async function caricaFeedback() {
 
     console.log("🟣 [ADMIN] Dati ricevuti da backend:", data);
 
-    // KPI
     if (data.kpi) {
       renderKPI(data.kpi);
     } else {
       console.warn("⚠ [ADMIN] Nessuna KPI ricevuta dal backend");
     }
 
-    // TABELLA FEEDBACK
     const tbody = document.querySelector("#tabella-feedback tbody");
     tbody.innerHTML = "";
 
