@@ -2,6 +2,7 @@
 // AUTH.JS — Persistenza Intelligente (2026.10 + PATCH DEPLOY)
 // Stato di sessione + versione deploy + logoutReason
 // PATCH EVENTI UTENTE: registra evento "logout"
+// PATCH 2027.300 — RIMOSSO OVERRIDE FETCH (causa blocchi login)
 // =========================================================
 
 console.log("[AUTH] Caricato");
@@ -55,35 +56,12 @@ async function logUserEvent(evento) {
 })();
 
 // ---------------------------------------------------------
-// 1) Wrapper fetch: Authorization Bearer automatico (PATCH 2026)
+// ❌ PATCH 2027.300 — RIMOSSO OVERRIDE FETCH
+// (era la causa del blocco login + blocco API)
 // ---------------------------------------------------------
-(function () {
-  const originalFetch = window.fetch;
-
-  window.fetch = function (input, init) {
-    try {
-      const token = localStorage.getItem("token");
-
-      // Clona init senza distruggere quello originale
-      const newInit = init ? { ...init } : {};
-
-      // Clona headers senza sovrascrivere quelli esistenti
-      newInit.headers = init?.headers
-        ? { ...init.headers }
-        : {};
-
-      // Aggiungi Authorization solo se esiste
-      if (token) {
-        newInit.headers["Authorization"] = "Bearer " + token;
-      }
-
-      return originalFetch(input, newInit);
-    } catch (err) {
-      console.error("[AUTH] Errore wrapper fetch:", err);
-      return originalFetch(input, init);
-    }
-  };
-})();
+// Il wrapper fetch è stato completamente rimosso.
+// Ora fetch rimane nativo e sicuro.
+// apiFetch + fetchCritico gestiscono tutto il resto.
 
 // ---------------------------------------------------------
 // 2) Stato globale utente
@@ -123,19 +101,15 @@ function loadSession() {
 function initAuth() {
   loadSession();
 
-  // PATCH → rileva logout automatico da deploy
   const reason = localStorage.getItem("logoutReason");
 
   if (reason === "deploy") {
     console.log("[AUTH] Logout automatico per nuovo deploy");
 
-    // ⭐ PATCH EVENTO: registra logout
     logUserEvent("logout");
 
-    // Notifica globale
     document.dispatchEvent(new Event("auto-logout"));
 
-    // Rimuovi flag
     localStorage.removeItem("logoutReason");
   }
 
