@@ -1,52 +1,17 @@
 // =========================================================
 // Dashboard Admin — Vendite + Ordini (Unificata)
-// Versione 2027.100 — API UNIVERSALE
+// Versione 2027.300 — API UNIVERSALE (PATCH FINALE)
 // - Rimborso integrato + KPI rimborsati
 // - Stati coerenti con backend 2027
 // - UX migliorata
-// Patch 2026.999 — fetchCritico + anti-HTML + anti-502
-// Patch 2027.010 — ⭐ PATCH CREDENZIALI
-// Patch 2027.100 — ⭐ API UNIVERSALE (apiFetch + alias)
+// - Usa fetchCritico globale + apiFetch globale
 // =========================================================
 
 console.log("🔥 dashboard-vendite-ordini.js CARICATO");
 
 /* =========================================================
-   fetchCritico — retry + anti-HTML + anti-502 + apiFetch
+   INIT SESSIONE
 ========================================================= */
-async function fetchCritico(path, options = {}, cfg = {}) {
-  const { retries = 3, backoff = 400 } = cfg;
-  let attempt = 0;
-
-  while (attempt <= retries) {
-    try {
-      const res = await apiFetch(path, options);
-      const ct = res.headers.get("content-type") || "";
-
-      if (ct.includes("text/html")) {
-        const html = await res.text();
-        throw new Error("HTML inatteso: " + html.slice(0, 200));
-      }
-
-      if (!res.ok) {
-        if ([502, 503, 504].includes(res.status) && attempt < retries) {
-          await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
-          attempt++;
-          continue;
-        }
-        throw new Error("HTTP " + res.status);
-      }
-
-      return res;
-
-    } catch (err) {
-      if (attempt >= retries) throw err;
-      await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
-      attempt++;
-    }
-  }
-}
-
 document.addEventListener("DOMContentLoaded", async () => {
   const token = localStorage.getItem("token");
   const sessionState = localStorage.getItem("sessionState");
@@ -58,7 +23,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   try {
-    const res = await fetchCritico(
+    const res = await window.fetchCritico(
       "/admin/dashboard",
       {
         method: "GET",
@@ -218,7 +183,7 @@ async function procediRimborso(id) {
 
   const token = localStorage.getItem("token");
 
-  const res = await apiFetch(`/rimborso/procedi/${id}`, {
+  const res = await window.apiFetch(`/rimborso/procedi/${id}`, {
     method: "POST",
     headers: {
       Authorization: "Bearer " + token,
@@ -241,7 +206,7 @@ async function rifiutaRimborso(id) {
 
   const token = localStorage.getItem("token");
 
-  const res = await apiFetch(`/rimborso/rifiuta/${id}`, {
+  const res = await window.apiFetch(`/rimborso/rifiuta/${id}`, {
     method: "POST",
     headers: {
       Authorization: "Bearer " + token,
