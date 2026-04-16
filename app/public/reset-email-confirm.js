@@ -1,7 +1,8 @@
-// =========================================================
-// RESET EMAIL CONFIRM — Versione ZERO-INPUT (2026.60)
-// PATCH: nuova sessione + token/email + sessionState = 1
-// =========================================================
+/* =========================================================
+   RESET EMAIL CONFIRM — Versione ZERO-INPUT (PATCH 2027.300)
+   - Usa fetchCritico globale + API alias
+   - Nessuna regressione
+========================================================= */
 
 console.log("[RESET-EMAIL-CONFIRM] Versione ZERO-INPUT caricata");
 
@@ -39,11 +40,16 @@ btnConfirmEmail?.addEventListener("click", async () => {
   try {
     console.log("[RESET-EMAIL-CONFIRM] Invio conferma ZERO-INPUT…");
 
-    const res = await fetch("/api/utenti/reset-email-confirm", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nuova_email, codice_fiscale })
-    });
+    // ⭐ PATCH 2027.300 — alias + fetchCritico globale
+    const res = await window.fetchCritico(
+      "/utenti/reset-email-confirm",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nuova_email, codice_fiscale })
+      },
+      { retries: 2, backoffMs: 300 }
+    );
 
     const data = await res.json().catch(() => ({}));
     console.log("[RESET-EMAIL-CONFIRM] Risposta:", data);
@@ -59,7 +65,6 @@ btnConfirmEmail?.addEventListener("click", async () => {
         localStorage.setItem("email", data.email);
         localStorage.setItem("sessionState", "1");
       } else {
-        // fallback (non dovrebbe servire)
         localStorage.setItem("sessionState", "1");
       }
 
