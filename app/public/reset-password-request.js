@@ -1,6 +1,8 @@
-// =========================================================
-// RESET PASSWORD REQUEST — Versione CF (2026.50) — ZERO-INPUT
-// =========================================================
+/* =========================================================
+   RESET PASSWORD REQUEST — Versione CF (PATCH 2027.300)
+   - Usa fetchCritico globale + API alias
+   - Nessuna regressione
+========================================================= */
 
 console.log("[RESET-PASSWORD-REQ] Versione CF caricata");
 
@@ -28,11 +30,16 @@ btnResetPassword?.addEventListener("click", async () => {
   try {
     console.log("[RESET-PASSWORD-REQ] Invio richiesta con CF:", codice_fiscale);
 
-    const res = await fetch("/api/utenti/reset-password-request", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ codice_fiscale })
-    });
+    // ⭐ PATCH 2027.300 — alias + fetchCritico globale
+    const res = await window.fetchCritico(
+      "/utenti/reset-password-request",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codice_fiscale })
+      },
+      { retries: 2, backoffMs: 300 }
+    );
 
     const data = await res.json().catch(() => ({}));
     console.log("[RESET-PASSWORD-REQ] Risposta:", data);
