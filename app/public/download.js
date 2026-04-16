@@ -6,6 +6,7 @@
    - sessionState = 1
    - Download via fetch + blob
    Patch 2026.999 — fetchCritico + anti-HTML + anti-502
+   Patch 2027.010 — ⭐ PATCH CREDENZIALI (credentials: "include")
 ========================================================= */
 
 /* =========================================================
@@ -20,13 +21,11 @@ async function fetchCritico(url, options = {}, cfg = {}) {
       const res = await fetch(url, options);
       const ct = res.headers.get("content-type") || "";
 
-      // Anti-HTML
       if (ct.includes("text/html")) {
         const html = await res.text();
         throw new Error("HTML inatteso: " + html.slice(0, 200));
       }
 
-      // Retry su 502/503/504
       if (!res.ok) {
         if ([502, 503, 504].includes(res.status) && attempt < retries) {
           await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
@@ -65,11 +64,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   // =========================================================
   let data;
   try {
-    // ⭐ PATCH: fetchCritico
     const res = await fetchCritico(
       "/api/ordini/utente",
       {
-        headers: { Authorization: "Bearer " + token }
+        headers: { Authorization: "Bearer " + token },
+        credentials: "include"   // ⭐ PATCH
       },
       { retries: 3, backoff: 400 }
     );
@@ -157,11 +156,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!id) return;
 
     try {
-      // ⭐ PATCH: fetchCritico
       const res = await fetchCritico(
         `/api/vendite/download/${id}`,
         {
-          headers: { Authorization: "Bearer " + token }
+          headers: { Authorization: "Bearer " + token },
+          credentials: "include"   // ⭐ PATCH
         },
         { retries: 3, backoff: 400 }
       );
