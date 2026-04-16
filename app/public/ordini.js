@@ -1,80 +1,33 @@
 /* =========================================================
-   ORDINI UTENTE — Versione 2027.100 (patch totale)
-   - Sicuro
-   - Token Bearer
-   - sessionState = 1
-   - Annullamento ordine
-   - Completa pagamento (ricrea)
-   - Richiedi rimborso
-   - Download file
-   - Stati coerenti con backend 2027
-   - UX migliorata
-   Patch 2026.999 — fetchCritico + anti-HTML + anti-502
-   Patch 2027.010 — ⭐ PATCH CREDENZIALI
-   Patch 2027.100 — ⭐ API UNIVERSALE (apiFetch + alias)
+   ORDINI UTENTE — Versione 2027.300 (patch totale)
+   - Usa fetchCritico globale + API alias
+   - Nessuna regressione
 ========================================================= */
-
-/* =========================================================
-   fetchCritico — retry + anti-HTML + anti-502 + apiFetch
-========================================================= */
-async function fetchCritico(path, options = {}, cfg = {}) {
-  const { retries = 3, backoff = 400 } = cfg;
-  let attempt = 0;
-
-  while (attempt <= retries) {
-    try {
-      // Usa API universale
-      const res = await apiFetch(path, options);
-      const ct = res.headers.get("content-type") || "";
-
-      if (ct.includes("text/html")) {
-        const html = await res.text();
-        throw new Error("HTML inatteso: " + html.slice(0, 200));
-      }
-
-      if (!res.ok) {
-        if ([502, 503, 504].includes(res.status) && attempt < retries) {
-          await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
-          attempt++;
-          continue;
-        }
-        throw new Error("HTTP " + res.status);
-      }
-
-      return res;
-
-    } catch (err) {
-      if (attempt >= retries) throw err;
-      await new Promise(r => setTimeout(r, backoff * (attempt + 1)));
-      attempt++;
-    }
-  }
-}
 
 document.addEventListener("DOMContentLoaded", async () => {
   const token = localStorage.getItem("token");
   const sessionState = localStorage.getItem("sessionState");
   const body = document.getElementById("ordersBody");
 
-  // =========================================================
-  // 1) Protezione login
-  // =========================================================
+  /* =========================================================
+     1) Protezione login
+  ========================================================== */
   if (!token || sessionState !== "1") {
     body.innerHTML = `<tr><td colspan="5">Devi effettuare il login.</td></tr>`;
     return;
   }
 
-  // =========================================================
-  // 2) Recupera ordini utente
-  // =========================================================
+  /* =========================================================
+     2) Recupera ordini utente (alias /ordini/utente)
+  ========================================================== */
   let data;
   try {
-    const res = await fetchCritico(
+    const res = await window.fetchCritico(
       "/ordini/utente",
       {
         headers: { Authorization: "Bearer " + token }
       },
-      { retries: 3, backoff: 400 }
+      { retries: 3, backoffMs: 400 }
     );
 
     data = await res.json();
@@ -90,9 +43,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  // =========================================================
-  // 3) Render ordini
-  // =========================================================
+  /* =========================================================
+     3) Render ordini
+  ========================================================== */
   data.ordini.forEach(o => {
     const tr = document.createElement("tr");
 
@@ -144,9 +97,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     body.appendChild(tr);
   });
 
-  // =========================================================
-  // 4) Annulla ordine
-  // =========================================================
+  /* =========================================================
+     4) Annulla ordine
+  ========================================================== */
   body.addEventListener("click", async e => {
     if (!e.target.classList.contains("btn-annulla")) return;
 
@@ -156,7 +109,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!confirm("Vuoi annullare questo ordine?")) return;
 
     try {
-      const res = await fetchCritico(
+      const res = await window.fetchCritico(
         `/ordini/annulla/${id}`,
         {
           method: "POST",
@@ -165,7 +118,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             "Content-Type": "application/json"
           }
         },
-        { retries: 3, backoff: 400 }
+        { retries: 3, backoffMs: 400 }
       );
 
       const data = await res.json();
@@ -184,9 +137,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // =========================================================
-  // 5) Completa pagamento (PayPal)
-  // =========================================================
+  /* =========================================================
+     5) Completa pagamento (PayPal)
+  ========================================================== */
   body.addEventListener("click", async e => {
     if (!e.target.classList.contains("btn-paga")) return;
 
@@ -194,13 +147,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!id) return;
 
     try {
-      const res = await fetchCritico(
+      const res = await window.fetchCritico(
         `/paypal/ricrea/${id}`,
         {
           method: "POST",
           headers: { Authorization: "Bearer " + token }
         },
-        { retries: 3, backoff: 400 }
+        { retries: 3, backoffMs: 400 }
       );
 
       const data = await res.json();
@@ -218,10 +171,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // =========================================================
-  // 6) Richiedi rimborso
-  // =========================================================
-  body.addEventListener("click", async e => {
+  /* =========================================================
+     6) Richiedi rimborso
+  ========================================================== */
+  body.addEventListener("click", e => {
     if (!e.target.classList.contains("btn-rimborso")) return;
 
     const id = e.target.dataset.id;
@@ -230,9 +183,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.location.href = `/rimborso.html?id=${id}`;
   });
 
-  // =========================================================
-  // 7) Download file
-  // =========================================================
+  /* =========================================================
+     7) Download file
+  ========================================================== */
   body.addEventListener("click", e => {
     if (!e.target.classList.contains("btn-download")) return;
 
