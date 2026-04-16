@@ -6,6 +6,7 @@
    PATCH 2026.700 — Colonna Bannato + KPI Bannati
    PATCH 2026.900 — Sync Utenti Storici (Brevo Full)
    PATCH 2026.999 — fetchCritico + anti-HTML + anti-502
+   PATCH 2027.010 — ⭐ PATCH CREDENZIALI (credentials: "include")
 ========================================================= */
 
 /* =========================================================
@@ -65,10 +66,14 @@ async function adminGet(url, options = {}) {
     Authorization: token ? `Bearer ${token}` : ""
   };
 
-  // ⭐ PATCH: fetchCritico
+  // ⭐ PATCH: aggiunta credentials: "include"
   const res = await fetchCritico(
     url,
-    { ...options, headers },
+    { 
+      ...options, 
+      headers,
+      credentials: "include"   // <<<<<<<<<<<<<<<<<< PATCH FONDAMENTALE
+    },
     { retries: 3, backoff: 400 }
   );
 
