@@ -1,7 +1,7 @@
 /* =========================================================
-   File: app/public/top-recensioni.js
-   Pagina pubblica — Top Recensioni
-   Versione definitiva 2026 — PATCH ID
+   TOP RECENSIONI — Versione 2027.300
+   - Usa fetchCritico globale + API alias
+   - Nessuna regressione
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", caricaTopRecensioni);
@@ -10,7 +10,12 @@ async function caricaTopRecensioni() {
   const box = document.getElementById("topRecensioni");
 
   try {
-    const res = await fetch("/api/recensioni/top");
+    // ⭐ PATCH 2027.300 — alias + fetchCritico globale
+    const res = await window.fetchCritico(
+      "/recensioni/top",
+      { method: "GET" }
+    );
+
     const data = await res.json();
 
     if (!data.success || data.top.length === 0) {
@@ -29,7 +34,6 @@ async function caricaTopRecensioni() {
           <p class="commento">${r.commento}</p>
 
           <p class="prodotto">
-            <!-- PATCH: link basato su ID -->
             <a href="/prodotto.html?id=${r.prodotto_id}">
               ${r.prodotto_titolo}
             </a>
