@@ -1,9 +1,10 @@
 /* =========================================================
    File: app/public/admin/feedback.js
    Admin — Lista completa feedback clienti
-   Versione definitiva 2026 (PATCH + DEBUG SUPREMO + KPI)
+   Versione 2027.100 — API UNIVERSALE
    PATCH 2026.999 — fetchCritico + token admin + anti-HTML + anti-502
-   PATCH 2027.010 — ⭐ PATCH CREDENZIALI (credentials: "include")
+   PATCH 2027.010 — ⭐ PATCH CREDENZIALI
+   PATCH 2027.100 — ⭐ API UNIVERSALE (apiFetch + alias)
 ========================================================= */
 
 // Sanitizzazione sicura
@@ -13,15 +14,15 @@ const clean = (t) =>
     : t ?? "";
 
 /* =========================================================
-   fetchCritico — retry + anti-HTML + anti-502
+   fetchCritico — retry + anti-HTML + anti-502 + apiFetch
 ========================================================= */
-async function fetchCritico(url, options = {}, cfg = {}) {
+async function fetchCritico(path, options = {}, cfg = {}) {
   const { retries = 3, backoff = 400 } = cfg;
   let attempt = 0;
 
   while (attempt <= retries) {
     try {
-      const res = await fetch(url, options);
+      const res = await apiFetch(path, options);
       const ct = res.headers.get("content-type") || "";
 
       if (ct.includes("text/html")) {
@@ -49,22 +50,20 @@ async function fetchCritico(url, options = {}, cfg = {}) {
 }
 
 /* =========================================================
-   FETCH ADMIN (patchata con token + fetchCritico)
+   FETCH ADMIN (patchata con token + fetchCritico + apiFetch)
 ========================================================= */
-async function adminGet(url) {
-  console.log("[ADMIN][FETCH] Chiamata a:", url);
+async function adminGet(path) {
+  console.log("[ADMIN][FETCH] Chiamata a:", path);
 
   const token = localStorage.getItem("token");
 
   const res = await fetchCritico(
-    url,
+    path,
     {
       headers: {
         Authorization: token ? `Bearer ${token}` : ""
-      },
-      credentials: "include"   // ⭐ PATCH FONDAMENTALE
-    },
-    { retries: 3, backoff: 400 }
+      }
+    }
   );
 
   const json = await res.json();
@@ -142,9 +141,9 @@ async function caricaFeedback() {
   console.log("🔵 [ADMIN] Avvio caricaFeedback()");
 
   try {
-    console.log("🔵 [ADMIN] Richiedo /api/admin/feedback/lista…");
+    console.log("🔵 [ADMIN] Richiedo /admin/feedback/lista…");
 
-    const data = await adminGet("/api/admin/feedback/lista");
+    const data = await adminGet("/admin/feedback/lista");
 
     console.log("🟣 [ADMIN] Dati ricevuti da backend:", data);
 
