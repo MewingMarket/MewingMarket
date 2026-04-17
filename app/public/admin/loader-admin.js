@@ -1,18 +1,23 @@
 /* =========================================================
-   LOADER ADMIN — Versione 2026.401 (PATCHED + API UNIVERSALE)
-   Patch: ordine garantito, no async, no race condition,
-   errori visibili, caricamento sequenziale sicuro.
-   Patch 2027.200 — ⭐ AUTO-INJECT api.js + SAFETY CHECK
-   Patch 2027.300 — ⭐ safeLoadHTML usa fetchCritico se disponibile
+   LOADER ADMIN — CRITICAL VERSION
+   Garantisce SEMPRE:
+   - head-admin
+   - header-admin
+   - footer-admin
+   - seo-admin
+   - structured-data-admin
+   - auth.js
+   - ordine sequenziale
+   - nessun async
+   - nessuna race condition
 ========================================================= */
 
-console.log("[ADMIN] Loader admin avviato");
+console.log("[ADMIN] Critical loader avviato");
 
-// Versioning centralizzato
 const ADMIN_VERSION = "20260412";
 
 /* ---------------------------------------------------------
-   ⭐ PATCH 2027.200 — AUTO-INJECT api.js
+   1) AUTO-INJECT api.js (CRITICAL)
 --------------------------------------------------------- */
 (function ensureApiJs() {
   try {
@@ -32,22 +37,7 @@ const ADMIN_VERSION = "20260412";
 })();
 
 /* ---------------------------------------------------------
-   ⭐ PATCH 2027.200 — SAFETY CHECK apiFetch
---------------------------------------------------------- */
-(function ensureApiFetch() {
-  const check = () => {
-    if (typeof window.apiFetch === "function") {
-      console.log("🟩 [ADMIN] apiFetch OK");
-      return;
-    }
-    console.warn("🟧 [ADMIN] apiFetch NON definito → ritento…");
-    setTimeout(check, 200);
-  };
-  check();
-})();
-
-/* ---------------------------------------------------------
-   0) ANTI-CACHE + ANTI-SW
+   2) ANTI-CACHE + ANTI-SW (CRITICAL)
 --------------------------------------------------------- */
 (function ensureNoCacheMeta() {
   try {
@@ -89,7 +79,7 @@ const ADMIN_VERSION = "20260412";
 })();
 
 /* ---------------------------------------------------------
-   1) CARICAMENTO SEQUENZIALE SCRIPT UTILITY (NO ASYNC)
+   3) CARICAMENTO UTILITY (CRITICAL)
 --------------------------------------------------------- */
 function loadAdminUtilityScript(name) {
   return new Promise(resolve => {
@@ -112,24 +102,11 @@ function loadAdminUtilityScript(name) {
 }
 
 /* ---------------------------------------------------------
-   2) CARICAMENTO HTML SEQUENZIALE (SAFE + fetchCritico)
+   4) SAFE LOAD HTML (CRITICAL, NO fetchCritico)
 --------------------------------------------------------- */
 function safeLoadHTML(url, placeholderId, eventName) {
-  const doFetch = () => {
-    if (typeof window.fetchCritico === "function") {
-      console.log("[ADMIN] safeLoadHTML via fetchCritico:", url);
-      return window.fetchCritico(
-        url.replace(/^https?:\/\/[^/]+/, "").replace(/^\/api(\/v1|\/v2|\/latest)?/, ""),
-        {},
-        { retries: 2, backoffMs: 300 }
-      ).then(r => r.text());
-    }
-
-    console.log("[ADMIN] safeLoadHTML via fetch:", url);
-    return fetch(url).then(r => r.text());
-  };
-
-  return doFetch()
+  return fetch(url)
+    .then(r => r.text())
     .then(html => {
       const ph = document.getElementById(placeholderId);
       if (!ph) {
@@ -144,10 +121,10 @@ function safeLoadHTML(url, placeholderId, eventName) {
 }
 
 /* ---------------------------------------------------------
-   3) FUNZIONE PRINCIPALE
+   5) FUNZIONE PRINCIPALE (CRITICAL)
 --------------------------------------------------------- */
 async function startAdminLoader() {
-  console.log("[ADMIN] Avvio loader admin…");
+  console.log("[ADMIN] Avvio critical loader admin…");
 
   await loadAdminUtilityScript("seo-admin");
   await loadAdminUtilityScript("structured-data-admin");
@@ -172,11 +149,11 @@ async function startAdminLoader() {
     if (metaTitle) document.title = metaTitle.content.trim();
   });
 
-  console.log("[ADMIN] Loader admin completato");
+  console.log("[ADMIN] Critical loader admin completato");
 }
 
 /* ---------------------------------------------------------
-   4) ASSICURA AUTH + AVVIO
+   6) ASSICURA AUTH (CRITICAL)
 --------------------------------------------------------- */
 (function ensureAuthAndStart() {
   if (window.isLogged !== undefined || window.isAdmin !== undefined) {
