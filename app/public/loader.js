@@ -1,10 +1,11 @@
 // LOADER  — Versione DEFINITIVA (2026 + CLEAN + SAFE + PATCH)
-// Carica: auth.js → head → header → header.js → carrello → footer
+// Carica: auth.js → api.js → head → header → header.js → carrello → footer
 // + SEO / Structured / Tracking (safe)
 // + Versioning / Anti-cache / Anti-SW
 // + PATCH 2027.210 — AUTO-INJECT api.js (SAFE)
 // + PATCH 2027.300 — safeFetch* usa fetchCritico se disponibile
 // + PATCH 2027.400 — FIX URL: rimosso replace /api* che corrompeva i path
+// + PATCH 2027.500 — API READY GATE (garantisce ordine assoluto)
 // =========================================================
 
 (function () {
@@ -20,14 +21,22 @@
       if (!exists) {
         const s = document.createElement("script");
         s.src = "/api.js?v=" + VERSION;
-        s.onload = () => console.log("🟩 [LOADER] api.js caricato automaticamente");
-        s.onerror = () => console.error("🟥 [LOADER] ERRORE: impossibile caricare api.js");
+        s.onload = () => {
+          console.log("🟩 [LOADER] api.js caricato automaticamente");
+          document.dispatchEvent(new Event("api-ready"));
+        };
+        s.onerror = () => {
+          console.error("🟥 [LOADER] ERRORE: impossibile caricare api.js");
+          document.dispatchEvent(new Event("api-ready"));
+        };
         document.head.appendChild(s);
       } else {
         console.log("🟦 [LOADER] api.js già presente");
+        document.dispatchEvent(new Event("api-ready"));
       }
     } catch (e) {
       console.error("🟥 [LOADER] Errore auto-inject api.js:", e);
+      document.dispatchEvent(new Event("api-ready"));
     }
   })();
 
