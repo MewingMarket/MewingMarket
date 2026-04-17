@@ -11,6 +11,7 @@
  * Patch 2026.999 — Cold-start Render (warmup non bloccante)
  * Patch 2026.9999 — DISATTIVATO debug-db (fix API protette)
  * Patch 2027.DATA — /data doppia sorgente + backup + log
+ * Patch 2027.CSS  — CSS globali per header/footer
  * =========================================================
  */
 
@@ -225,6 +226,12 @@ const wait = (ms) => new Promise(res => res(ms));
 
   // Statico principale
   app.use(express.static(PUBLIC_DIR));
+
+  // =========================================================
+  // PATCH 2027.CSS — CSS GLOBALI
+  // =========================================================
+  app.use("/*.css", express.static(PUBLIC_DIR));
+  app.use("/css", express.static(PUBLIC_DIR));
 
   // =========================================================
   // PATCH 2027.DATA — doppia sorgente + backup + log
