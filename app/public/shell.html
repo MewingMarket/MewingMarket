@@ -2,13 +2,10 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Shell Diagnostica /var/data</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diagnostica /var/data</title>
   <style>
-    body { font-family: system-ui, sans-serif; background:#111; color:#eee; padding:16px; }
-    pre { background:#000; padding:12px; border-radius:6px; overflow:auto; }
-    h1 { font-size:18px; margin-bottom:8px; }
-    .section { margin-bottom:16px; }
+    body { background:#111; color:#eee; font-family:monospace; padding:20px; }
+    pre { background:#000; padding:10px; border-radius:6px; }
   </style>
 </head>
 <body>
@@ -19,30 +16,12 @@
     fetch("/diagnostica/var-data")
       .then(r => r.json())
       .then(data => {
-        const el = document.getElementById("out");
-        el.innerHTML = "";
-
-        function block(title, obj) {
-          const wrap = document.createElement("div");
-          wrap.className = "section";
-          const h = document.createElement("h2");
-          h.textContent = title;
-          const pre = document.createElement("pre");
-          pre.textContent = JSON.stringify(obj, null, 2);
-          wrap.appendChild(h);
-          wrap.appendChild(pre);
-          el.appendChild(wrap);
-        }
-
-        block("Base", { base: data.base });
-        block("Dirs livello 1", data.dirs_level1);
-        block("Files livello 1", data.files_level1);
-        block("JSON in /var/data/json", data.json_in_json_dir);
-        block("JSON in /var/data/backup/json", data.json_in_backup_json);
+        document.getElementById("out").innerHTML =
+          "<pre>" + JSON.stringify(data, null, 2) + "</pre>";
       })
       .catch(err => {
         document.getElementById("out").innerHTML =
-          "<pre>Errore fetch diagnostica: " + err.message + "</pre>";
+          "<pre>Errore: " + err.message + "</pre>";
       });
   </script>
 </body>
