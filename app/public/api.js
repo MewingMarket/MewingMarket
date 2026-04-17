@@ -1,112 +1,111 @@
 /**
  * =========================================================
- * api.js — Versione 2027.300 (UNIFICATO + DEBUG)
- * - apiFetch: alias universale /api/v1/v2/latest/API/api
- * - fetchCritico: retry + anti-HTML + anti-502
- * - Debug integrato
- * - NON tocca window.fetch
+ * api.js — Versione 2027.900 (FIREWALL UNIVERSALE)
+ * - fetchNormale → apiFetch → fetchCritico
+ * - Normalizzazione HTML → JSON
+ * - Nessun ritorno vuoto
+ * - Nessun errore non gestito
  * =========================================================
  */
 
-console.log("🟦 api.js caricato (UNIFICATO)");
+console.log("🟦 api.js caricato (FIREWALL)");
 
 /* =========================================================
-   1) API UNIVERSALE — apiFetch
+   0) Normalizzatore HTML → JSON
 ========================================================= */
-if (typeof window.apiFetch === "undefined") {
-  window.apiFetch = async function(path, options = {}) {
-    const prefixes = [
-      "/api/v1",
-      "/api/v2",
-      "/api/latest",
-      "/api",
-      "/API",
-      "/Api",
-      "/aPi"
-    ];
+function normalizeToJson(text, status = 500) {
+  if (!text) return { error: "EMPTY_RESPONSE", status };
 
-    const opts = {
-      ...options,
-      credentials: "include"
+  const trimmed = text.trim();
+
+  // Se è già JSON valido → parse
+  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+    try {
+      return JSON.parse(trimmed);
+    } catch (e) {
+      return { error: "INVALID_JSON", raw: trimmed, status };
+    }
+  }
+
+  // Se è HTML → converti
+  if (trimmed.startsWith("<")) {
+    return {
+      error: "HTML_RESPONSE",
+      html: trimmed.slice(0, 500),
+      status
     };
+  }
 
-    console.log("🟦 [apiFetch] START:", path, opts);
-
-    for (const p of prefixes) {
-      const url = p + path;
-
-      try {
-        const res = await fetch(url, opts);
-        const ct = res.headers.get("content-type") || "";
-
-        if (!res.ok) {
-          console.log("🟧 [apiFetch] NOK:", url, res.status);
-          continue;
-        }
-        if (ct.includes("text/html")) {
-          console.log("🟧 [apiFetch] HTML inatteso:", url);
-          continue;
-        }
-
-        console.log("🟩 [apiFetch] MATCH:", url);
-        return res;
-
-      } catch (err) {
-        console.log("🟥 [apiFetch] ERRORE:", url, err);
-        continue;
-      }
-    }
-
-    console.log("🟥 [apiFetch] Nessuna route valida trovata per:", path);
-    throw new Error("Nessuna route API valida per " + path);
-  };
+  // Fallback
+  return { error: "UNKNOWN_FORMAT", raw: trimmed, status };
 }
 
 /* =========================================================
-   2) FETCH CRITICO — retry + anti-HTML + anti-502
+   1) FETCH NORMALE
 ========================================================= */
-if (typeof window.fetchCritico === "undefined") {
-  window.fetchCritico = async function(path, options = {}, cfg = {}) {
-    const { retries = 3, backoffMs = 400 } = cfg;
-    let attempt = 0;
-
-    while (attempt <= retries) {
-      try {
-        console.log("🟦 [fetchCritico] Tentativo", attempt, "→", path);
-
-        const res = await window.apiFetch(path, options);
-        const ct = res.headers.get("content-type") || "";
-
-        if (ct.includes("text/html")) {
-          const html = await res.text();
-          console.error("🟥 [fetchCritico] HTML inatteso:", html.slice(0, 200));
-          throw new Error("HTML inatteso");
-        }
-
-        if (!res.ok) {
-          if ([502, 503, 504].includes(res.status) && attempt < retries) {
-            const wait = backoffMs * (attempt + 1);
-            console.log("🟧 [fetchCritico] Retry tra", wait, "ms");
-            await new Promise(r => setTimeout(r, wait));
-            attempt++;
-            continue;
-          }
-          throw new Error("HTTP " + res.status);
-        }
-
-        console.log("🟩 [fetchCritico] OK:", path);
-        return res;
-
-      } catch (err) {
-        console.error("🟥 [fetchCritico] ERRORE:", path, err);
-        if (attempt >= retries) throw err;
-
-        const wait = backoffMs * (attempt + 1);
-        await new Promise(r => setTimeout(r, wait));
-        attempt++;
-      }
-    }
-
-    throw new Error("Errore fetchCritico su " + path);
-  };
+async function fetchNormale(path, options = {}) {
+  try {
+    const res = await fetch(path, { ...options, credentials: "include" });
+    const text = await res.text();
+    return normalizeToJson(text, res.status);
+  } catch (e) {
+    return { error: "FETCH_ERROR", details: e.toString() };
+  }
 }
+
+/* =========================================================
+   2) API FETCH (PATCHATO)
+========================================================= */
+window.apiFetch = async function(path, options = {}) {
+  const prefixes = ["/api/v1", "/api/v2", "/api/latest", "/api", "/API"];
+
+  for (const p of prefixes) {
+    const url = p + path;
+    try {
+      const res = await fetch(url, { ...options, credentials: "include" });
+      const text = await res.text();
+      const json = normalizeToJson(text, res.status);
+
+      if (!json.error) return json;
+    } catch (e) {}
+  }
+
+  return { error: "API_FETCH_FAILED", path };
+};
+
+/* =========================================================
+   3) FETCH CRITICO (PATCHATO)
+========================================================= */
+window.fetchCritico = async function(path, options = {}, cfg = {}) {
+  const { retries = 2, backoffMs = 200 } = cfg;
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const json = await window.apiFetch(path, options);
+      if (!json.error) return json;
+
+      if (attempt < retries) {
+        await new Promise(r => setTimeout(r, backoffMs * (attempt + 1)));
+      }
+    } catch (e) {}
+  }
+
+  return { error: "FETCH_CRITICO_FAILED", path };
+};
+
+/* =========================================================
+   4) FETCH UNIVERSALE — IL VERO FIREWALL
+========================================================= */
+window.api = async function(path, options = {}) {
+  // 1) fetch normale
+  const normal = await fetchNormale(path, options);
+  if (!normal.error) return normal;
+
+  // 2) apiFetch
+  const api = await window.apiFetch(path, options);
+  if (!api.error) return api;
+
+  // 3) fetchCritico
+  const crit = await window.fetchCritico(path, options);
+  return crit;
+};
