@@ -10,6 +10,7 @@
  * Patch 2026.970 — Middleware Diagnostico Route Scanner
  * Patch 2026.999 — Cold-start Render (warmup non bloccante)
  * Patch 2026.9999 — DISATTIVATO debug-db (fix API protette)
+ * Patch 2027.DATA — /data da var/data + backup in app/data + app/public/data
  * =========================================================
  */
 
@@ -215,7 +216,6 @@ const wait = (ms) => new Promise(res => res(ms));
   await wait(200);
 
   const PUBLIC_DIR = path.resolve("app/public");
-  const DATA_DIR = path.resolve("app/data");
 
   if (!fs.existsSync(PUBLIC_DIR)) {
     logErr("❌ PUBLIC DIR NON TROVATA:", PUBLIC_DIR);
@@ -235,8 +235,63 @@ const wait = (ms) => new Promise(res => res(ms));
     next();
   });
 
+  // Statico principale
   app.use(express.static(PUBLIC_DIR));
-  app.use("/data", express.static(DATA_DIR));
+
+  // =========================================================
+  // PATCH 2027.DATA — /data da var/data + backup in app/data + app/public/data
+  // =========================================================
+  const DATA_PUBLIC = path.join(process.cwd(), "app/public/data");
+  const DATA_BACKUP = path.join(process.cwd(), "app/data");
+  const DATA_PERSIST = "/var/data/json";
+
+  // garantisco che le cartelle esistano (non esplodere mai)
+  [DATA_PUBLIC, DATA_BACKUP].forEach(dir => {
+    try {
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+        log("📁 Creata cartella dati:", dir);
+      }
+    } catch (e) {
+      logErr("❌ Impossibile creare cartella dati:", dir, e.message);
+    }
+  });
+
+  app.use("/data", (req, res) => {
+    const rel = req.path.replace(/^\/+/, "");
+    const publicPath = path.join(DATA_PUBLIC, rel);
+    const backupPath = path.join(DATA_BACKUP, rel);
+    const persistPath = path.join(DATA_PERSIST, rel);
+
+    // 1) Se esiste in app/public/data → serve quello (frontend sempre pieno)
+    if (fs.existsSync(publicPath)) {
+      return res.sendFile(publicPath);
+    }
+
+    // 2) Se esiste in /var/data/json → serve quello e lo copia in app/data + app/public/data
+    if (fs.existsSync(persistPath)) {
+      try {
+        const buf = fs.readFileSync(persistPath);
+        try {
+          fs.writeFileSync(publicPath, buf);
+        } catch (e) {
+          logErr("❌ Errore copia in app/public/data:", publicPath, e.message);
+        }
+        try {
+          fs.writeFileSync(backupPath, buf);
+        } catch (e) {
+          logErr("❌ Errore copia in app/data:", backupPath, e.message);
+        }
+      } catch (e) {
+        logErr("❌ Errore lettura persistente:", persistPath, e.message);
+      }
+      return res.sendFile(persistPath);
+    }
+
+    // 3) Nessuno dei due → 404 JSON
+    logErr("❌ /data file non trovato:", rel);
+    res.status(404).json({ error: "File non trovato" });
+  });
 
   // =========================================================
   // SPA FALLBACK — serve index.html per tutte le route non-API
