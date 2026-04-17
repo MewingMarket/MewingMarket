@@ -1,5 +1,5 @@
 /* =========================================================
-   LOADER ADMIN — CRITICAL VERSION
+   LOADER ADMIN — CRITICAL VERSION (2026.401)
    Garantisce SEMPRE:
    - head-admin
    - header-admin
@@ -17,69 +17,7 @@ console.log("[ADMIN] Critical loader avviato");
 const ADMIN_VERSION = "20260412";
 
 /* ---------------------------------------------------------
-   1) AUTO-INJECT api.js (CRITICAL)
---------------------------------------------------------- */
-(function ensureApiJs() {
-  try {
-    const exists = [...document.scripts].some(s => s.src.includes("/api.js"));
-    if (!exists) {
-      const s = document.createElement("script");
-      s.src = "/api.js?v=" + ADMIN_VERSION;
-      s.onload = () => console.log("🟩 [ADMIN] api.js caricato automaticamente");
-      s.onerror = () => console.error("🟥 [ADMIN] ERRORE: impossibile caricare api.js");
-      document.head.appendChild(s);
-    } else {
-      console.log("🟦 [ADMIN] api.js già presente");
-    }
-  } catch (e) {
-    console.error("🟥 [ADMIN] Errore auto-inject api.js:", e);
-  }
-})();
-
-/* ---------------------------------------------------------
-   2) ANTI-CACHE + ANTI-SW (CRITICAL)
---------------------------------------------------------- */
-(function ensureNoCacheMeta() {
-  try {
-    const m1 = document.createElement("meta");
-    m1.httpEquiv = "Cache-Control";
-    m1.content = "no-cache, no-store, must-revalidate";
-    document.head.appendChild(m1);
-
-    const m2 = document.createElement("meta");
-    m2.httpEquiv = "Pragma";
-    m2.content = "no-cache";
-    document.head.appendChild(m2);
-
-    const m3 = document.createElement("meta");
-    m3.httpEquiv = "Expires";
-    m3.content = "0";
-    document.head.appendChild(m3);
-
-    console.log("[ADMIN] Meta anti-cache OK");
-  } catch (e) {
-    console.warn("[ADMIN] Errore meta anti-cache:", e);
-  }
-})();
-
-(function removeServiceWorkers() {
-  try {
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.getRegistrations().then(regs => {
-        regs.forEach(r => r.unregister());
-      });
-    }
-    if (window.caches) {
-      caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
-    }
-    console.log("[ADMIN] SW + cache rimossi");
-  } catch (e) {
-    console.warn("[ADMIN] Errore rimozione SW/cache:", e);
-  }
-})();
-
-/* ---------------------------------------------------------
-   3) CARICAMENTO UTILITY (CRITICAL)
+   1) CARICAMENTO UTILITY (CRITICAL)
 --------------------------------------------------------- */
 function loadAdminUtilityScript(name) {
   return new Promise(resolve => {
@@ -102,7 +40,7 @@ function loadAdminUtilityScript(name) {
 }
 
 /* ---------------------------------------------------------
-   4) SAFE LOAD HTML (CRITICAL, NO fetchCritico)
+   2) SAFE LOAD HTML (CRITICAL)
 --------------------------------------------------------- */
 function safeLoadHTML(url, placeholderId, eventName) {
   return fetch(url)
@@ -121,18 +59,21 @@ function safeLoadHTML(url, placeholderId, eventName) {
 }
 
 /* ---------------------------------------------------------
-   5) FUNZIONE PRINCIPALE (CRITICAL)
+   3) FUNZIONE PRINCIPALE (CRITICAL)
 --------------------------------------------------------- */
 async function startAdminLoader() {
   console.log("[ADMIN] Avvio critical loader admin…");
 
+  // Utility critiche
   await loadAdminUtilityScript("seo-admin");
   await loadAdminUtilityScript("structured-data-admin");
 
+  // HTML critici
   await safeLoadHTML(`/admin/head-admin.html?v=${ADMIN_VERSION}`, "head-admin-placeholder", "admin-head-loaded");
   await safeLoadHTML(`/admin/header-admin.html?v=${ADMIN_VERSION}`, "header-admin-placeholder", "admin-header-loaded");
   await safeLoadHTML(`/admin/footer-admin.html?v=${ADMIN_VERSION}`, "footer-admin-placeholder", "admin-footer-loaded");
 
+  // Logout admin
   document.addEventListener("admin-header-loaded", () => {
     const btn = document.getElementById("logout-admin");
     if (btn) {
@@ -144,6 +85,7 @@ async function startAdminLoader() {
     }
   });
 
+  // Dynamic title
   document.addEventListener("admin-head-loaded", () => {
     const metaTitle = document.querySelector('meta[id="dynamic-title"]');
     if (metaTitle) document.title = metaTitle.content.trim();
@@ -153,7 +95,7 @@ async function startAdminLoader() {
 }
 
 /* ---------------------------------------------------------
-   6) ASSICURA AUTH (CRITICAL)
+   4) ASSICURA AUTH (CRITICAL)
 --------------------------------------------------------- */
 (function ensureAuthAndStart() {
   if (window.isLogged !== undefined || window.isAdmin !== undefined) {
