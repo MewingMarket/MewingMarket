@@ -1,11 +1,13 @@
 // patcherloader.js
-// Inserisce dynamic-loader.js come ULTIMO script in ogni pagina HTML
-// senza rinominare loader.js e senza duplicare nulla.
+// Patcha TUTTE le pagine frontend + admin
+// Inserisce dynamic-loader.js o dynamic-admin-loader.js come ULTIMO script
+// Versione 20260412
 
 const fs = require("fs");
 const path = require("path");
 
 const ROOT = path.join(__dirname, "public");
+const ADMIN_ROOT = path.join(__dirname, "public/admin");
 
 function getAllHtmlFiles(dir) {
   let results = [];
@@ -25,28 +27,30 @@ function getAllHtmlFiles(dir) {
   return results;
 }
 
-function patchHtml(filePath) {
+function patchHtml(filePath, isAdmin = false) {
   let html = fs.readFileSync(filePath, "utf8");
 
-  // Evita duplicazioni
-  if (html.includes("dynamic-loader.js")) {
+  const dynamicName = isAdmin
+    ? "dynamic-admin-loader.js"
+    : "dynamic-loader.js";
+
+  if (html.includes(dynamicName)) {
     console.log("SKIP (già patchato):", filePath);
     return;
   }
 
-  // Trova l'ultimo </script> prima di </body>
   const scriptRegex = /<\/script>(?![\s\S]*<\/script>)/i;
   const match = html.match(scriptRegex);
 
   if (!match) {
-    console.log("NESSUN <script> trovato, salto:", filePath);
+    console.log("NESSUN <script> trovato:", filePath);
     return;
   }
 
   const insertPos = match.index + match[0].length;
 
   const injection = `
-    <script src="/dynamic-loader.js?v=20260412"></script>
+    <script src="/${isAdmin ? "admin/" : ""}${dynamicName}?v=20260412"></script>
   `;
 
   const patched = html.slice(0, insertPos) + injection + html.slice(insertPos);
@@ -55,7 +59,12 @@ function patchHtml(filePath) {
   console.log("PATCHED:", filePath);
 }
 
-const files = getAllHtmlFiles(ROOT);
-files.forEach(patchHtml);
+console.log("=== PATCHERLOADER AVVIATO ===");
 
-console.log("Patch completata.");
+const frontendFiles = getAllHtmlFiles(ROOT).filter(f => !f.includes("/admin/"));
+frontendFiles.forEach(f => patchHtml(f, false));
+
+const adminFiles = getAllHtmlFiles(ADMIN_ROOT);
+adminFiles.forEach(f => patchHtml(f, true));
+
+console.log("=== PATCH COMPLETATA ===");
