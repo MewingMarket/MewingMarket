@@ -12,7 +12,6 @@
  * Patch 2026.9999 — DISATTIVATO debug-db (fix API protette)
  * Patch 2027.DATA — /data doppia sorgente + backup + log
  * Patch 2027.CSS  — CSS globali per header/footer
- * Patch 2027.FALLBACK — fallback intelligente SOLO emergenza
  * =========================================================
  */
 
@@ -249,7 +248,7 @@ const wait = (ms) => new Promise(res => res(ms));
   });
 
   // =========================================================
-  // 🔵 ROUTE DIAGNOSTICA — PRIMA DEL FALLBACK
+  // 🔵 ROUTE DIAGNOSTICA
   // =========================================================
   require("./routes/var-data.cjs")(app);
 
@@ -278,17 +277,8 @@ const wait = (ms) => new Promise(res => res(ms));
   }
 
   // =========================================================
-  // ⭐ PATCH 2027.FALLBACK — fallback intelligente SOLO emergenza
+  // ❌ NESSUN FALLBACK — DISATTIVATO COMPLETAMENTE
   // =========================================================
-  app.get("*", (req, res, next) => {
-    if (req.url.startsWith("/api")) return next();
-    if (req.url.startsWith("/admin")) return next();
-    if (req.url.startsWith("/diagnostica")) return next();
-    if (req.url.startsWith("/data")) return next();
-    if (req.url.includes(".") && !req.url.endsWith(".html")) return next();
-
-    res.sendFile(path.join(PUBLIC_DIR, "index.html"));
-  });
 
   async function startServer() {
     try {
