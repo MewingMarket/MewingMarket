@@ -6,8 +6,9 @@
 const fs = require("fs");
 const path = require("path");
 
-const ROOT = path.join(__dirname, "public");
-const ADMIN_ROOT = path.join(__dirname, "public/admin");
+// PERCORSI CORRETTI PER IL TUO PROGETTO
+const ROOT = path.join(__dirname, "app/public");
+const ADMIN_ROOT = path.join(__dirname, "app/public/admin");
 
 function getAllHtmlFiles(dir) {
   let results = [];
