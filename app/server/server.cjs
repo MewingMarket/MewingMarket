@@ -324,7 +324,7 @@ const wait = (ms) => new Promise(res => res(ms));
     require("./routes/meta-feed.cjs")(app);
     require("./routes/product-page.cjs")(app);
     require("./routes/system-status.cjs")(app);
-    require("./routes/versione.cjs")(app);
+    require("./routes/versione.cjs")(app);require("./routes/var-data.cjs")(app);
     log("✅ FRONTEND ROUTES CARICATE");
   } catch (err) {
     logErr("❌ ERRORE FRONTEND ROUTES:", err.message || err);
