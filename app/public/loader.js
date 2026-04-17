@@ -1,4 +1,4 @@
-// LOADER HEADER/FOOTER — Versione DEFINITIVA (2026 + CLEAN + SAFE + PATCH)
+// LOADER  — Versione DEFINITIVA (2026 + CLEAN + SAFE + PATCH)
 // Carica: auth.js → head → header → header.js → carrello → footer
 // + SEO / Structured / Tracking (safe)
 // + Versioning / Anti-cache / Anti-SW
