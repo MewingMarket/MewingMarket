@@ -1,10 +1,5 @@
 #!/usr/bin/env node
 
-/**
- * Patch SOLO gli HTML:
- * - sostituisce load-header-footer.js → loader.js
- */
-
 const fs = require("fs");
 const path = require("path");
 
@@ -19,16 +14,16 @@ function walk(dir) {
     const full = path.join(dir, entry.name);
 
     if (entry.isDirectory()) {
-      walk(full); // ← NIENTE return
+      walk(full);
       continue;
     }
 
     if (entry.isFile() && entry.name.endsWith(".html")) {
       let html = fs.readFileSync(full, "utf8");
 
-      if (html.includes("load-header-footer.js")) {
+      if (html.includes("loader-header-footer.js")) {
         console.log("   • Patch:", full);
-        html = html.replace(/load-header-footer\.js/g, "loader.js");
+        html = html.replace(/loader-header-footer\.js/g, "loader.js");
         fs.writeFileSync(full, html, "utf8");
       }
     }
