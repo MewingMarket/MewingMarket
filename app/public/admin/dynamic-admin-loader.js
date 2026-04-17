@@ -13,7 +13,7 @@
   const VERSION = "20260412";
 
   // -------------------------------
-  // 1) AUTO-INJECT API
+  // 1) AUTO-INJECT API (DYNAMIC)
   // -------------------------------
   (function ensureApiJs() {
     try {
@@ -33,7 +33,7 @@
   })();
 
   // -------------------------------
-  // 2) API READY GATE
+  // 2) API READY GATE (DYNAMIC)
   // -------------------------------
   function waitForApiReady(timeoutMs = 8000) {
     return new Promise((resolve) => {
@@ -56,7 +56,7 @@
   waitForApiReady();
 
   // -------------------------------
-  // 3) ANTI-CACHE
+  // 3) ANTI-CACHE (DYNAMIC)
   // -------------------------------
   (function ensureNoCacheMeta() {
     try {
@@ -81,7 +81,7 @@
   })();
 
   // -------------------------------
-  // 4) ANTI SERVICE WORKER
+  // 4) ANTI SERVICE WORKER (DYNAMIC)
   // -------------------------------
   (function removeServiceWorkers() {
     try {
@@ -97,7 +97,7 @@
   })();
 
   // -------------------------------
-  // 5) DIAGNOSTICA ADMIN
+  // 5) DIAGNOSTICA ADMIN (DYNAMIC)
   // -------------------------------
   try {
     const s = document.createElement("script");
