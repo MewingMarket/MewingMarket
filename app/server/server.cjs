@@ -224,7 +224,6 @@ const wait = (ms) => new Promise(res => res(ms));
   // =========================================================
   // PATCH 2027.DATA — doppia sorgente + backup + log
   // =========================================================
-  const DATA_PUBLIC = path.join(process.cwd(), "app/public/data");
   const DATA_BACKUP = path.join(process.cwd(), "app/data");
   const DATA_PERSIST = "/var/data/json";
 
@@ -304,6 +303,16 @@ const wait = (ms) => new Promise(res => res(ms));
     log("✅ FRONTEND ROUTES CARICATE");
   } catch (err) {
     logErr("❌ ERRORE FRONTEND ROUTES:", err.message || err);
+  }
+
+  // =========================================================
+  // 🔁 CRON-SYNC — AGGIUNTO QUI
+  // =========================================================
+  try {
+    require("./startup/cron-sync.cjs")(app, { log, logErr });
+    log("🔁 Cron-sync avviato (10 minuti)");
+  } catch (err) {
+    logErr("❌ Errore cron-sync:", err.message);
   }
 
   // =========================================================
