@@ -12,6 +12,7 @@
  * Patch 2026.9999 — DISATTIVATO debug-db (fix API protette)
  * Patch 2027.DATA — /data doppia sorgente + backup + log
  * Patch 2027.CSS  — CSS globali per header/footer
+ * Patch 2027.FALLBACK — fallback intelligente SOLO emergenza
  * =========================================================
  */
 
@@ -178,7 +179,7 @@ const wait = (ms) => new Promise(res => res(ms));
   }
 
   // =========================================================
-  // ❄️  COLD START (warmup Render, non blocca nulla)
+  // ❄️  COLD START
   // =========================================================
   try {
     const coldStart = require("./startup/cold-start.cjs");
@@ -189,7 +190,7 @@ const wait = (ms) => new Promise(res => res(ms));
   }
 
   // =========================================================
-  // ⭐ PATCH: MIDDLEWARE DIAGNOSTICO ROUTES
+  // ⭐ MIDDLEWARE DIAGNOSTICO ROUTES
   // =========================================================
   try {
     require("./middleware/middleware-diagnostico.cjs")(app);
@@ -206,17 +207,6 @@ const wait = (ms) => new Promise(res => res(ms));
 
   const PUBLIC_DIR = path.resolve("app/public");
 
-  if (!fs.existsSync(PUBLIC_DIR)) {
-    logErr("❌ PUBLIC DIR NON TROVATA:", PUBLIC_DIR);
-  } else {
-    const indexPath = path.join(PUBLIC_DIR, "index.html");
-    if (!fs.existsSync(indexPath)) {
-      logErr("❌ index.html NON TROVATO in PUBLIC:", indexPath);
-    } else {
-      log("✅ index.html trovato:", indexPath);
-    }
-  }
-
   app.get("/", (req, res, next) => {
     res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     res.set("Pragma", "no-cache");
@@ -224,7 +214,6 @@ const wait = (ms) => new Promise(res => res(ms));
     next();
   });
 
-  // Statico principale
   app.use(express.static(PUBLIC_DIR));
 
   // =========================================================
@@ -253,60 +242,20 @@ const wait = (ms) => new Promise(res => res(ms));
     const backupPath = path.join(DATA_BACKUP, rel);
     const persistPath = path.join(DATA_PERSIST, rel);
 
-    // 1) Se esiste in app/public/data → serve quello
-    if (fs.existsSync(publicPath)) {
-      log(`🟦 [DATA] public → ${rel}`);
-      return res.sendFile(publicPath);
-    }
+    if (fs.existsSync(publicPath)) return res.sendFile(publicPath);
+    if (fs.existsSync(persistPath)) return res.sendFile(persistPath);
 
-    // 2) Se esiste in /var/data/json → serve quello + backup
-    if (fs.existsSync(persistPath)) {
-      log(`🟩 [DATA] persist → ${rel}`);
-
-      try {
-        const buf = fs.readFileSync(persistPath);
-
-        try {
-          fs.writeFileSync(publicPath, buf);
-          log(`📁 [DATA] backup app/public/data → ${rel}`);
-        } catch (e) {
-          logErr("❌ Errore copia public:", e.message);
-        }
-
-        try {
-          fs.writeFileSync(backupPath, buf);
-          log(`📁 [DATA] backup app/data → ${rel}`);
-        } catch (e) {
-          logErr("❌ Errore copia app/data:", e.message);
-        }
-
-      } catch (e) {
-        logErr("❌ Errore lettura persistente:", e.message);
-      }
-
-      return res.sendFile(persistPath);
-    }
-
-    // 3) Nessuno dei due → 404
-    logErr(`❌ [DATA] file non trovato: ${rel}`);
     res.status(404).json({ error: "File non trovato" });
   });
 
   // =========================================================
-  // SPA FALLBACK
+  // 🔵 ROUTE DIAGNOSTICA — PRIMA DEL FALLBACK
   // =========================================================
-  app.get("*", (req, res, next) => {
-    if (req.url.startsWith("/api")) return next();
-    if (req.url.startsWith("/admin")) return next();
-    if (req.url.includes(".") && !req.url.endsWith(".html")) return next();
-    res.sendFile(path.join(PUBLIC_DIR, "index.html"));
-  });
+  require("./routes/var-data.cjs")(app);
 
   // =========================================================
   // ADMIN STATIC
   // =========================================================
-  log(">> REGISTER ADMIN ROUTES");
-  await wait(200);
   app.get("/admin/login", (req, res) => {
     res.sendFile(path.resolve("app/public/admin/admin-login.html"));
   });
@@ -315,8 +264,6 @@ const wait = (ms) => new Promise(res => res(ms));
   // =========================================================
   // FRONTEND ROUTES
   // =========================================================
-  log(">> LOADING FRONTEND ROUTES");
-  await wait(200);
   try {
     require("./routes/chat.cjs")(app);
     require("./routes/chat-voice.cjs")(app);
@@ -324,37 +271,40 @@ const wait = (ms) => new Promise(res => res(ms));
     require("./routes/meta-feed.cjs")(app);
     require("./routes/product-page.cjs")(app);
     require("./routes/system-status.cjs")(app);
-    require("./routes/versione.cjs")(app);require("./routes/var-data.cjs")(app);
+    require("./routes/versione.cjs")(app);
     log("✅ FRONTEND ROUTES CARICATE");
   } catch (err) {
     logErr("❌ ERRORE FRONTEND ROUTES:", err.message || err);
   }
 
-  async function startServer() {
-    log("====================================");
-    log("🚀 STARTING BOOTSTRAP");
-    log("====================================");
+  // =========================================================
+  // ⭐ PATCH 2027.FALLBACK — fallback intelligente SOLO emergenza
+  // =========================================================
+  app.get("*", (req, res, next) => {
+    if (req.url.startsWith("/api")) return next();
+    if (req.url.startsWith("/admin")) return next();
+    if (req.url.startsWith("/diagnostica")) return next();
+    if (req.url.startsWith("/data")) return next();
+    if (req.url.includes(".") && !req.url.endsWith(".html")) return next();
 
+    res.sendFile(path.join(PUBLIC_DIR, "index.html"));
+  });
+
+  async function startServer() {
     try {
-      log(">> CALLING bootstrap.cjs");
       await require("./startup/bootstrap.cjs")();
       BOOTSTRAP_OK = true;
-      log(">> BOOTSTRAP COMPLETED");
     } catch (err) {
       logErr("❌ BOOTSTRAP ERROR:", err);
     }
 
     const PORT = process.env.PORT;
-
-    log(">> CALLING app.listen…");
     require("./startup/cron-youtube.cjs")();
 
     app.listen(PORT, () => {
       log(`🎉 SERVER LISTENING ON PORT ${PORT}`);
-      log("⚡ Server pronto e online");
     });
   }
 
-  log(">> CALLING startServer()");
   startServer();
 })();
