@@ -5,7 +5,7 @@
 // + PATCH 2027.210 — AUTO-INJECT api.js (SAFE)
 // + PATCH 2027.300 — safeFetch* usa fetchCritico se disponibile
 // + PATCH 2027.400 — FIX URL: rimosso replace /api* che corrompeva i path
-// + PATCH 2027.500 — API READY GATE (garantisce ordine assoluto)
+// + PATCH 2027.500 — API READY GATE (ordine garantito)
 // =========================================================
 
 (function () {
@@ -39,6 +39,34 @@
       document.dispatchEvent(new Event("api-ready"));
     }
   })();
+
+  /* =========================================================
+     ⭐ PATCH 2027.500 — API READY GATE
+     Garantisce che window.api sia DEFINITO prima di tutto il resto
+  ========================================================= */
+  function waitForApiReady(timeoutMs = 8000) {
+    return new Promise((resolve) => {
+      const start = Date.now();
+
+      function check() {
+        if (window.api && typeof window.api === "object") {
+          console.log("🟩 [LOADER] API pronta");
+          resolve();
+          return;
+        }
+
+        if (Date.now() - start > timeoutMs) {
+          console.warn("🟧 [LOADER] API non pronta dopo timeout, continuo comunque");
+          resolve();
+          return;
+        }
+
+        setTimeout(check, 50);
+      }
+
+      check();
+    });
+  }
 
   // =========================================================
   // MINI ANTI-CACHE CLIENT
@@ -216,6 +244,15 @@
   // =========================================================
   // 1) HEAD — PATCH URL FIX
   // =========================================================
+
+  const headPromise = authPromise
+    .then(() => waitForApiReady())   // ⭐ PATCH API READY GATE QUI
+    .then(() =>
+      safeFetchAppendHead(`head.html?v=${VERSION}`).catch(() =>
+        safeFetchAppendHead(`/head.html?v=${VERSION}`)
+      )
+    );
+
   function safeFetchAppendHead(url) {
     const doFetch = () => {
       if (typeof window.fetchCritico === "function") {
@@ -242,12 +279,6 @@
         console.error("[LOADER] Errore caricamento HEAD:", url, err);
       });
   }
-
-  const headPromise = authPromise.then(() =>
-    safeFetchAppendHead(`head.html?v=${VERSION}`).catch(() =>
-      safeFetchAppendHead(`/head.html?v=${VERSION}`)
-    )
-  );
 
   // =========================================================
   // 2) HEADER — PATCH URL FIX
