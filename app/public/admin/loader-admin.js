@@ -1,7 +1,7 @@
 /* =========================================================
    LOADER ADMIN — CRITICAL VERSION (2026.401 + API PATCH)
    Garantisce SEMPRE:
-   - api.js
+   - api.js (da root)
    - head-admin
    - header-admin
    - footer-admin
@@ -9,7 +9,6 @@
    - structured-data-admin
    - auth.js
    - ordine sequenziale
-   - nessun async
    - nessuna race condition
 ========================================================= */
 
@@ -27,7 +26,14 @@ function loadAdminUtilityScript(name) {
 
     const s = document.createElement("script");
     s.id = id;
-    s.src = `/${name}.js?v=${ADMIN_VERSION}`;   // ⭐ API patch: percorso NON admin
+
+    // ⭐ PATCH: api.js viene da root, tutto il resto da /admin/
+    if (name === "api") {
+      s.src = `/api.js?v=${ADMIN_VERSION}`;
+    } else {
+      s.src = `/admin/${name}.js?v=${ADMIN_VERSION}`;
+    }
+
     s.onload = () => {
       console.log(`[ADMIN] ${name}.js caricato`);
       resolve();
@@ -36,6 +42,7 @@ function loadAdminUtilityScript(name) {
       console.warn(`[ADMIN] ${name}.js non trovato`);
       resolve();
     };
+
     document.head.appendChild(s);
   });
 }
@@ -65,10 +72,10 @@ function safeLoadHTML(url, placeholderId, eventName) {
 async function startAdminLoader() {
   console.log("[ADMIN] Avvio critical loader admin…");
 
-  // ⭐ API.js PRIMA DI TUTTO
+  // ⭐ API.js PRIMA DI TUTTO (da root)
   await loadAdminUtilityScript("api");
 
-  // Utility critiche
+  // Utility critiche (da /admin/)
   await loadAdminUtilityScript("seo-admin");
   await loadAdminUtilityScript("structured-data-admin");
 
