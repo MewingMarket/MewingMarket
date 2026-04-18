@@ -1,12 +1,12 @@
 /* =========================================================
-   DISISCRIZIONE NEWSLETTER — PATCH 2027.300
-   - Usa fetchCritico globale
-   - Alias API universale
+   DISISCRIZIONE NEWSLETTER — PATCH 2027.400
+   - critical-ready
+   - fetchUniversale (fallback chain)
    - Nessuna regressione
 ========================================================= */
 
-document.addEventListener("DOMContentLoaded", () => {
-  console.log("✅ disiscrizione.js caricato");
+document.addEventListener("critical-ready", () => {
+  console.log("✅ disiscrizione.js caricato (CRITICAL READY)");
 
   const form = document.getElementById("unsubscribeForm");
   const emailInput = document.getElementById("email");
@@ -70,8 +70,8 @@ document.addEventListener("DOMContentLoaded", () => {
     safeTrack("newsletter_unsubscribe_attempt", { email });
 
     try {
-      // ⭐ PATCH 2027.300 — usa fetchCritico globale + alias API
-      const res = await window.fetchCritico(
+      // ⭐ PATCH — usa fetchUniversale
+      const res = await window.fetchUniversale(
         "/newsletter/unsubscribe",
         {
           method: "POST",
