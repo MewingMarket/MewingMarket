@@ -228,7 +228,14 @@ const wait = (ms) => new Promise(res => res(ms));
     res.set("Expires", "0");
     next();
   });
-
+/**
+ * =========================================================
+ * ROUTE DIAGNOSTICA — pagina HTML
+ * =========================================================
+ */
+app.get("/diagnostica-routes", (req, res) => {
+  res.sendFile(path.resolve("app/public/diagnostica-routes.html"));
+});
   // 🔵 PATCH MIME — garantisce esecuzione JS su Render Web Service
   app.use((req, res, next) => {
     if (req.url.endsWith(".js")) {
