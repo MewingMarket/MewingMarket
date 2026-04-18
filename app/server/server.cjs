@@ -163,7 +163,7 @@ const wait = (ms) => new Promise(res => res(ms));
   require("./middleware/context.cjs")(app);
 
   // =========================================================
-  // PATCH 2027 — JS con querystring (v=xxxx)
+  // 🟩 PATCH 2027 — JS con querystring (v=xxxx)
   // Fix definitivo: serve SEMPRE il file reale anche con ?v=VERSION
   // =========================================================
   app.get("/*.js", (req, res, next) => {
