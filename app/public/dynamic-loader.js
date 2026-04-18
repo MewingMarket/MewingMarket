@@ -1,8 +1,6 @@
 // ==========================================
 // DYNAMIC LOADER — MewingMarket (Frontend)
 // Carica tutto ciò che NON è critico:
-// - api.js (auto-inject)
-// - API READY GATE
 // - anti-cache
 // - anti-service-worker
 // - diagnostica frontend
@@ -13,50 +11,7 @@
   const VERSION = "20260412";
 
   // -------------------------------
-  // 1) AUTO-INJECT API (DYNAMIC)
-  // -------------------------------
-  (function ensureApiJs() {
-    try {
-      const exists = [...document.scripts].some(s => s.src.includes("/api.js"));
-      if (!exists) {
-        const s = document.createElement("script");
-        s.src = "/api.js?v=" + VERSION;
-        s.onload = () => document.dispatchEvent(new Event("api-ready"));
-        s.onerror = () => document.dispatchEvent(new Event("api-ready"));
-        document.head.appendChild(s);
-      } else {
-        document.dispatchEvent(new Event("api-ready"));
-      }
-    } catch (e) {
-      document.dispatchEvent(new Event("api-ready"));
-    }
-  })();
-
-  // -------------------------------
-  // 2) API READY GATE (DYNAMIC)
-  // -------------------------------
-  function waitForApiReady(timeoutMs = 8000) {
-    return new Promise((resolve) => {
-      const start = Date.now();
-      function check() {
-        if (window.api && typeof window.api === "object") {
-          resolve();
-          return;
-        }
-        if (Date.now() - start > timeoutMs) {
-          resolve();
-          return;
-        }
-        setTimeout(check, 50);
-      }
-      check();
-    });
-  }
-
-  waitForApiReady();
-
-  // -------------------------------
-  // 3) ANTI-CACHE (DYNAMIC)
+  // 1) ANTI-CACHE (DYNAMIC)
   // -------------------------------
   (function ensureNoCacheMeta() {
     try {
@@ -81,7 +36,7 @@
   })();
 
   // -------------------------------
-  // 4) ANTI SERVICE WORKER (DYNAMIC)
+  // 2) ANTI SERVICE WORKER (DYNAMIC)
   // -------------------------------
   (function removeServiceWorkers() {
     try {
@@ -97,7 +52,7 @@
   })();
 
   // -------------------------------
-  // 5) DIAGNOSTICA FRONTEND (DYNAMIC)
+  // 3) DIAGNOSTICA FRONTEND (DYNAMIC)
   // -------------------------------
   try {
     const s = document.createElement("script");
