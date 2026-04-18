@@ -1,14 +1,15 @@
 /**
  * =========================================================
- * api.js — Versione 2027.902 (FIX DEFINITIVO)
+ * api.js — Versione 2027.903 (FIX DEFINITIVO + UNIVERSALE)
  * - Scarta TUTTI i 404
  * - Scarta TUTTI gli HTML
  * - Accetta SOLO il primo 200 valido
  * - Nessun null, nessun {} fantasma
+ * - Aggiunta fetchNormale() + fetchUniversale()
  * =========================================================
  */
 
-console.log("🟦 api.js caricato (FIX DEFINITIVO)");
+console.log("🟦 api.js caricato (FIX DEFINITIVO + UNIVERSALE)");
 
 /* =========================================================
    0) Crea un Response JSON valido da qualsiasi input
@@ -21,7 +22,14 @@ function makeJsonResponse(obj, status = 500) {
 }
 
 /* =========================================================
-   1) API FETCH (VERSIONE FIXATA)
+   1) FETCH NORMALE (nativo)
+========================================================= */
+window.fetchNormale = async function(path, options = {}) {
+  return fetch(path, options);
+};
+
+/* =========================================================
+   2) API FETCH (VERSIONE FIXATA 2027.902)
 ========================================================= */
 window.apiFetch = async function(path, options = {}) {
   const prefixes = ["/api", "/api/v1", "/api/v2", "/api/latest", "/API"];
@@ -59,7 +67,7 @@ window.apiFetch = async function(path, options = {}) {
 };
 
 /* =========================================================
-   2) FETCH CRITICO (VERSIONE FIXATA)
+   3) FETCH CRITICO (VERSIONE FIXATA 2027.902)
 ========================================================= */
 window.fetchCritico = async function(path, options = {}, cfg = {}) {
   const { retries = 2, backoffMs = 200 } = cfg;
@@ -83,4 +91,47 @@ window.fetchCritico = async function(path, options = {}, cfg = {}) {
   }
 
   return makeJsonResponse({ error: "FETCH_CRITICO_FAILED", path });
+};
+
+/* =========================================================
+   4) FETCH UNIVERSALE (fallback chain)
+   - 1) fetchNormale
+   - 2) apiFetch
+   - 3) fetchCritico
+========================================================= */
+window.fetchUniversale = async function(path, options = {}, cfg = {}) {
+
+  // 1) Tentativo — fetch normale
+  try {
+    const res = await window.fetchNormale(path, options);
+    if (res.ok) {
+      console.log("🟩 [UNIVERSALE] fetch normale OK");
+      return res;
+    }
+    console.warn("⚠️ [UNIVERSALE] fetch normale NON ok:", res.status);
+  } catch (e) {
+    console.warn("⚠️ [UNIVERSALE] fetch normale fallita:", e);
+  }
+
+  // 2) Tentativo — apiFetch
+  try {
+    const res = await window.apiFetch(path, options, cfg);
+    if (res.ok) {
+      console.log("🟩 [UNIVERSALE] apiFetch OK");
+      return res;
+    }
+    console.warn("⚠️ [UNIVERSALE] apiFetch NON ok:", res.status);
+  } catch (e) {
+    console.warn("⚠️ [UNIVERSALE] apiFetch fallita:", e);
+  }
+
+  // 3) Tentativo — fetchCritico (modalità resilienza)
+  try {
+    console.warn("🟥 [UNIVERSALE] Attivo fetchCritico (fallback finale)");
+    const res = await window.fetchCritico(path, options, cfg);
+    return res;
+  } catch (e) {
+    console.error("🔥 [UNIVERSALE] fetchCritico fallita:", e);
+    throw e;
+  }
 };
