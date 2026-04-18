@@ -1,19 +1,21 @@
 /**
  * PATCHER HTML – MewingMarket
- * Versione 2027.003 (FULL FIX)
+ * Versione 2027.901 (TUO + PATCH PERFETTA)
  *
  * Funzioni:
  * - Rimuove TUTTI gli script dalle pagine
  * - Ricostruisce l’ordine corretto:
  *   PUBLIC:
- *     loader.js → dynamic-loader.js → js della pagina
+ *     /loader.js → /dynamic-loader.js → js della pagina
  *   ADMIN:
- *     loader-admin.js → dynamic-admin-loader.js → js della pagina
+ *     /admin/loader-admin.js → /admin/dynamic-admin-loader.js → js della pagina
  * - Mantiene TUTTI i JS della pagina (1, 2, 10…)
  * - Supporta JS con nomi diversi
- * - Rimuove doppi versioning (?v=...?...?...).
- * - NON aggiunge doppio versioning.
- * - Idempotente.
+ * - Rimuove doppi versioning
+ * - NON aggiunge doppio versioning
+ * - Percorsi ASSOLUTI
+ * - MIME-SAFE
+ * - Idempotente
  */
 
 const fs = require("fs");
@@ -57,7 +59,6 @@ function removeAllScripts(html) {
 // Utility: pulisce doppi versioning
 // ---------------------------------------------------------
 function cleanVersioning(src) {
-  // rimuove tutto dopo il primo ?v=
   return src.replace(/\?v=\d+.*$/, `?v=${VERSION}`);
 }
 
@@ -67,12 +68,13 @@ function cleanVersioning(src) {
 function buildPublicScripts(jsList) {
   let out = "";
 
-  out += `<script src="loader.js?v=${VERSION}"></script>\n`;
-  out += `<script src="/dynamic-loader.js?v=${VERSION}"></script>\n`;
+  out += `<script src="/loader.js?v=${VERSION}" type="text/javascript" crossorigin="anonymous"></script>\n`;
+  out += `<script src="/dynamic-loader.js?v=${VERSION}" type="text/javascript" crossorigin="anonymous"></script>\n`;
 
   jsList.forEach(js => {
     js = cleanVersioning(js);
-    out += `<script src="${js}"></script>\n`;
+    js = js.startsWith("/") ? js : `/${js}`;
+    out += `<script src="${js}" type="text/javascript" charset="UTF-8" crossorigin="anonymous"></script>\n`;
   });
 
   return out;
@@ -84,12 +86,13 @@ function buildPublicScripts(jsList) {
 function buildAdminScripts(jsList) {
   let out = "";
 
-  out += `<script src="/admin/loader-admin.js?v=${VERSION}"></script>\n`;
-  out += `<script src="/admin/dynamic-admin-loader.js?v=${VERSION}"></script>\n`;
+  out += `<script src="/admin/loader-admin.js?v=${VERSION}" type="text/javascript" crossorigin="anonymous"></script>\n`;
+  out += `<script src="/admin/dynamic-admin-loader.js?v=${VERSION}" type="text/javascript" crossorigin="anonymous"></script>\n`;
 
   jsList.forEach(js => {
     js = cleanVersioning(js);
-    out += `<script src="/admin/${js}"></script>\n`;
+    js = js.replace(/^\/admin\//, "");
+    out += `<script src="/admin/${js}" type="text/javascript" charset="UTF-8" crossorigin="anonymous"></script>\n`;
   });
 
   return out;
@@ -146,3 +149,5 @@ getHtmlFiles(PUBLIC_DIR).forEach(file => {
 getHtmlFiles(ADMIN_DIR).forEach(file => {
   patchPage(file, true);
 });
+
+console.log("✔ Patch HTML completata.");
