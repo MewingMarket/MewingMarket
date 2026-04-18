@@ -186,7 +186,7 @@
       .catch(err => console.error("[CRITICAL] Errore FOOTER:", url, err));
   }
 
-  safeFetchFooter(`footer.html?v=${VERSION}`)
+  const footerPromise = safeFetchFooter(`footer.html?v=${VERSION}`)
     .catch(() => safeFetchFooter(`/footer.html?v=${VERSION}`));
 
   // -------------------------------
@@ -216,14 +216,22 @@
   });
 
   // -------------------------------------------------------
-  // 10) CRITICAL READY EVENT (FRONTEND)
+  // 10) CRITICAL READY EVENT (FRONTEND) — PATCH
   // -------------------------------------------------------
-  try {
-    window.__criticalReady = true;
-    document.dispatchEvent(new Event("critical-ready"));
-    console.log("[CRITICAL] critical-ready emesso");
-  } catch (e) {
-    console.error("[CRITICAL] Errore emissione critical-ready:", e);
-  }
+  Promise.all([
+    authPromise,
+    headPromise,
+    headerPromise,
+    headerLogicPromise,
+    footerPromise
+  ]).then(() => {
+    try {
+      window.__criticalReady = true;
+      document.dispatchEvent(new Event("critical-ready"));
+      console.log("[CRITICAL] critical-ready emesso (DEFINITIVO)");
+    } catch (e) {
+      console.error("[CRITICAL] Errore emissione critical-ready:", e);
+    }
+  });
 
 })();
