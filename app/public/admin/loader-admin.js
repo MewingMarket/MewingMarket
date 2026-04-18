@@ -18,9 +18,9 @@ function loadAdminUtilityScript(name) {
     const s = document.createElement("script");
     s.id = id;
 
-    // api.js viene da root
+    // PATCH: api.js → mm-api.js
     if (name === "api") {
-      s.src = `/api.js?v=${ADMIN_VERSION}`;
+      s.src = `/mm-api.js?v=${ADMIN_VERSION}`;   // PATCH QUI
     } else {
       s.src = `/admin/${name}.js?v=${ADMIN_VERSION}`;
     }
@@ -64,7 +64,7 @@ async function startAdminLoader() {
   console.log("[ADMIN] Avvio critical loader admin…");
 
   // Utility critiche
-  const apiP = loadAdminUtilityScript("api");
+  const apiP = loadAdminUtilityScript("api");          // PATCH: ora carica mm-api.js
   const seoP = loadAdminUtilityScript("seo-admin");
   const sdP  = loadAdminUtilityScript("structured-data-admin");
 
@@ -92,7 +92,7 @@ async function startAdminLoader() {
   });
 
   /* -------------------------------------------------------
-     CRITICAL READY (ADMIN) — PATCH
+     CRITICAL READY (ADMIN)
      ------------------------------------------------------- */
   Promise.all([apiP, seoP, sdP, headP, headerP, footerP]).then(() => {
     try {
