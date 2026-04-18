@@ -161,7 +161,17 @@ const wait = (ms) => new Promise(res => res(ms));
   log(">> LOADING context.cjs");
   await wait(200);
   require("./middleware/context.cjs")(app);
-
+// =========================================================
+// PATCH: Proteggi i file .js dal router API
+// =========================================================
+app.get("/*.js", (req, res, next) => {
+  const filePath = path.join(PUBLIC_DIR, req.path);
+  if (fs.existsSync(filePath)) {
+    res.setHeader("Content-Type", "application/javascript; charset=utf-8");
+    return res.sendFile(filePath);
+  }
+  next();
+});
   // =========================================================
   // 🔥 ROUTER API — PATCH: FULL ERROR LOG
   // =========================================================
