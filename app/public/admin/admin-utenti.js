@@ -1,24 +1,17 @@
 /* =========================================================
-   File: app/public/admin/admin-utenti.js
-   Admin — Gestione Utenti
-   Versione 2027.100 — API UNIVERSALE
-   - EVENTI COMPLETI + KPI + BREVO + FALLBACK
-   - Sync Brevo + RegistratoBrevo + ClienteBrevo + ClienteDB
-   - Colonna Bannato + KPI Bannati
-   - Sync Utenti Storici
-   Patch 2027.300 — usa fetchCritico globale (api.js)
+   ADMIN UTENTI — Versione 2027.400
+   PATCH: critical-ready + fetchUniversale
 ========================================================= */
 
-/* =========================================================
-   INIT
-========================================================= */
-document.addEventListener("admin-header-loaded", async () => {
+document.addEventListener("critical-ready", async () => {
+  console.log("[ADMIN] Init admin-utenti.js (CRITICAL READY)");
+
   await syncBrevoAuto();
   caricaUtenti();
 });
 
 /* =========================================================
-   FETCH ADMIN (usa fetchCritico globale)
+   FETCH ADMIN (usa fetchUniversale)
 ========================================================= */
 async function adminGet(path, options = {}) {
   const token = localStorage.getItem("token");
@@ -28,12 +21,13 @@ async function adminGet(path, options = {}) {
     Authorization: token ? `Bearer ${token}` : ""
   };
 
-  const res = await window.fetchCritico(
+  const res = await window.fetchUniversale(
     path,
     {
       ...options,
       headers
-    }
+    },
+    { retries: 3, backoffMs: 400 }
   );
 
   return res.json();
