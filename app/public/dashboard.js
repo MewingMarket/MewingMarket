@@ -1,12 +1,12 @@
 // =========================================================
-// DASHBOARD.JS — Versione FINALE (PATCH 2027.300)
-// Compatibile con auth-user + apiFetch + fetchCritico globale
+// DASHBOARD.JS — Versione FINALE (PATCH 2027.400)
+// Compatibile con auth-user + apiFetch + fetchUniversale
 // =========================================================
 
 console.log("[DASHBOARD] Caricato");
 
-// La dashboard parte SOLO dopo auth-ready
-document.addEventListener("auth-ready", initDashboard);
+// La dashboard parte SOLO dopo critical-ready
+document.addEventListener("critical-ready", initDashboard);
 
 async function initDashboard() {
   console.log("[DASHBOARD] initDashboard()");
@@ -32,7 +32,7 @@ async function initDashboard() {
   // 3) Carica dati utente (/me)
   // -------------------------------------------------------
   try {
-    const res = await window.fetchCritico(
+    const res = await window.fetchUniversale(
       "/utenti/me",
       { method: "GET", headers: authHeaders },
       { retries: 2, backoffMs: 300 }
@@ -59,7 +59,7 @@ async function initDashboard() {
   // 4) Ordini — alias /ordini/utente
   // -------------------------------------------------------
   try {
-    const res = await window.fetchCritico(
+    const res = await window.fetchUniversale(
       "/ordini/utente",
       { method: "GET", headers: authHeaders },
       { retries: 2, backoffMs: 300 }
@@ -85,7 +85,7 @@ async function initDashboard() {
   // 5) Download — alias /download/miei
   // -------------------------------------------------------
   try {
-    const res = await window.fetchCritico(
+    const res = await window.fetchUniversale(
       "/download/miei",
       { method: "GET", headers: authHeaders },
       { retries: 2, backoffMs: 300 }
@@ -161,7 +161,7 @@ async function updateOrdersUI(ordini = null) {
 
   if (!ordini) {
     try {
-      const res = await window.fetchCritico(
+      const res = await window.fetchUniversale(
         "/ordini/utente",
         { headers: { "Authorization": "Bearer " + token } },
         { retries: 2, backoffMs: 300 }
@@ -213,7 +213,7 @@ async function updateDownloadsUI(download = null) {
 
   if (!download) {
     try {
-      const res = await window.fetchCritico(
+      const res = await window.fetchUniversale(
         "/ordini/utente",
         { headers: { "Authorization": "Bearer " + token } },
         { retries: 2, backoffMs: 300 }
@@ -265,7 +265,7 @@ window.addEventListener("message", async (event) => {
 // =========================================================
 // PATCH — MODIFICA PROFILO
 // =========================================================
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("critical-ready", () => {
   const btnProfilo = document.getElementById("sidebar-nav-profilo");
   const contentProfilo = document.getElementById("content-profilo");
 
