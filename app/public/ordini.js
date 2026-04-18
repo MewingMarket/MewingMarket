@@ -1,10 +1,11 @@
 /* =========================================================
-   ORDINI UTENTE — Versione 2027.300 (patch totale)
-   - Usa fetchCritico globale + API alias
+   ORDINI UTENTE — Versione 2027.400 (patch totale)
+   - critical-ready
+   - fetchUniversale (fallback chain)
    - Nessuna regressione
 ========================================================= */
 
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener("critical-ready", async () => {
   const token = localStorage.getItem("token");
   const sessionState = localStorage.getItem("sessionState");
   const body = document.getElementById("ordersBody");
@@ -22,7 +23,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   ========================================================== */
   let data;
   try {
-    const res = await window.fetchCritico(
+    const res = await window.fetchUniversale(
       "/ordini/utente",
       {
         headers: { Authorization: "Bearer " + token }
@@ -109,7 +110,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!confirm("Vuoi annullare questo ordine?")) return;
 
     try {
-      const res = await window.fetchCritico(
+      const res = await window.fetchUniversale(
         `/ordini/annulla/${id}`,
         {
           method: "POST",
@@ -147,7 +148,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!id) return;
 
     try {
-      const res = await window.fetchCritico(
+      const res = await window.fetchUniversale(
         `/paypal/ricrea/${id}`,
         {
           method: "POST",
