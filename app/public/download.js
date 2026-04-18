@@ -1,10 +1,11 @@
 /* =========================================================
-   DOWNLOAD PREMIUM — Versione 2027.300
-   - Usa fetchCritico globale + API alias
+   DOWNLOAD PREMIUM — Versione 2027.400
+   - critical-ready
+   - fetchUniversale (fallback chain)
    - Nessuna regressione
 ========================================================= */
 
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener("critical-ready", async () => {
   const token = localStorage.getItem("token");
   const sessionState = localStorage.getItem("sessionState");
 
@@ -23,7 +24,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // =========================================================
   let data;
   try {
-    const res = await window.fetchCritico(
+    const res = await window.fetchUniversale(
       "/ordini/utente",
       {
         headers: { Authorization: "Bearer " + token }
@@ -105,7 +106,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // =========================================================
-  // 7) Download sicuro via fetchCritico + blob
+  // 7) Download sicuro via fetchUniversale + blob
   // =========================================================
   document.addEventListener("click", async (e) => {
     if (!e.target.classList.contains("btn-download")) return;
@@ -114,7 +115,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!id) return;
 
     try {
-      const res = await window.fetchCritico(
+      const res = await window.fetchUniversale(
         `/vendite/download/${id}`,
         {
           headers: { Authorization: "Bearer " + token }
