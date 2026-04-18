@@ -1,16 +1,6 @@
 // ===============================
 // CRITICAL LOADER — MewingMarket
 // Versione 2027.700 — COMPLETA + PATCH DEFINITIVA
-// Garantisce SEMPRE:
-// - api.js PRIMA di tutto
-// - auth.js PRIMA di tutto
-// - head / header / footer caricati
-// - header.js caricato
-// - carrello caricato
-// - admin loader caricato
-// - seo / structured-data / tracking caricati
-// - routing critico attivo
-// - critical-ready emesso SOLO quando tutto è pronto
 // ===============================
 
 (function () {
@@ -18,24 +8,24 @@
   const VERSION = "20260412";
 
   // ============================================================
-  // 0) CARICAMENTO API.JS — OBBLIGATORIO E BLOCCANTE
+  // 0) CARICAMENTO mm-api.js — OBBLIGATORIO E BLOCCANTE
   // ============================================================
   const apiPromise = new Promise((resolve) => {
     const s = document.createElement("script");
-    s.src = `/api.js?v=${VERSION}`;
+    s.src = `/mm-api.js?v=${VERSION}`;   // PATCH QUI
     s.onload = () => {
-      console.log("[CRITICAL] api.js caricato");
+      console.log("[CRITICAL] mm-api.js caricato");
       resolve();
     };
     s.onerror = () => {
-      console.error("[CRITICAL] ERRORE: api.js non caricato");
+      console.error("[CRITICAL] ERRORE: mm-api.js non caricato");
       resolve();
     };
     document.head.appendChild(s);
   });
 
   // ============================================================
-  // 1) SEO / STRUCTURED-DATA / TRACKING (NON BLOCCANTI)
+  // 1) SEO / STRUCTURED-DATA / TRACKING
   // ============================================================
   function loadUtility(name) {
     const s = document.createElement("script");
@@ -117,7 +107,7 @@
   });
 
   // ============================================================
-  // 4) HEAD (SAFE FETCH)
+  // 4) HEAD
   // ============================================================
   function safeFetchAppendHead(url) {
     return fetch(url)
@@ -136,7 +126,7 @@
   );
 
   // ============================================================
-  // 5) HEADER (SAFE FETCH)
+  // 5) HEADER
   // ============================================================
   function safeFetchHeader(url) {
     return fetch(url)
@@ -167,7 +157,7 @@
   });
 
   // ============================================================
-  // 7) FOOTER (SAFE FETCH)
+  // 7) FOOTER
   // ============================================================
   function safeFetchFooter(url) {
     return fetch(url)
@@ -223,7 +213,7 @@
   });
 
   // ============================================================
-  // 10) CRITICAL READY — SOLO QUANDO TUTTO È PRONTO
+  // 10) CRITICAL READY
   // ============================================================
   Promise.all([
     apiPromise,
