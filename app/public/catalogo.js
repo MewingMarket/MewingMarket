@@ -3,6 +3,7 @@
 // Versione SQL definitiva + PATCH 2027.300
 // - Usa fetchCritico globale + apiFetch alias
 // - Rimosso dominio hardcoded
+// - Avvio sincronizzato con critical-ready
 // =========================================================
 
 /* =========================================================
@@ -149,11 +150,11 @@ function cardHTML(p) {
 }
 
 /* =========================================================
-   8) INIZIALIZZAZIONE CATALOGO
+   8) INIZIALIZZAZIONE CATALOGO (PATCH: critical-ready)
 ========================================================= */
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener("critical-ready", async () => {
 
-  console.log("🟦 [CATALOGO] DOMContentLoaded");
+  console.log("🟦 [CATALOGO] critical-ready");
 
   const products = await loadProducts();
   const categoriesFromJson = await loadCategories();
