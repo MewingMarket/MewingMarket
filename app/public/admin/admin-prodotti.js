@@ -1,21 +1,17 @@
 /* =========================================================
    ADMIN PRODOTTI — VERSIONE SQL DEFINITIVA + AI 2026.900
-   Sistema descrizioni unificato:
-   - descrizione_lunga (PDF + YouTube)
-   - descrizione_breve (riassunto)
-   - NESSUNA descrizione_email
-   PATCH 2027.300 — usa fetchCritico globale (api.js)
+   PATCH 2027.400 — critical-ready + fetchUniversale
 ========================================================= */
 
-document.addEventListener("DOMContentLoaded", () => {
-  console.log("[ADMIN] Init admin-prodotti.js");
+document.addEventListener("critical-ready", () => {
+  console.log("[ADMIN] Init admin-prodotti.js (CRITICAL READY)");
 
   const listaBox = document.getElementById("lista-prodotti");
   const titoloForm = document.getElementById("titolo-form");
 
   // Campi form
   const fTitolo = document.getElementById("titolo");
-  const fDescrizione = document.getElementById("descrizione"); // descrizione lunga
+  const fDescrizione = document.getElementById("descrizione");
   const fPrezzo = document.getElementById("prezzo");
 
   const fImg = document.getElementById("immagine");
@@ -25,7 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const fFileProdotto = document.getElementById("fileProdotto");
   const fStatus = document.getElementById("status");
 
-  // 🔥 AI: campi e UI
+  // AI
   const btnAiDescrizione = document.getElementById("btn-ai-descrizione");
   const aiStatus = document.getElementById("ai-status");
   const aiPreviewBox = document.getElementById("ai-preview-box");
@@ -35,7 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let prodottoCorrente = null;
 
   /* =========================================================
-     UPLOAD GENERICO (usa fetchCritico globale)
+     UPLOAD GENERICO (usa fetchUniversale)
   ========================================================= */
   async function uploadFile(endpoint, file) {
     const formData = new FormData();
@@ -43,7 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     console.log("[ADMIN] Upload:", endpoint, file.name);
 
-    const res = await window.fetchCritico(
+    const res = await window.fetchUniversale(
       endpoint,
       {
         method: "POST",
@@ -58,7 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
       throw new Error(data.error || "Errore upload");
     }
 
-    return data.filename; // PATCH backend 2026
+    return data.filename;
   }
 
   /* =========================================================
@@ -68,7 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("[ADMIN] Carico lista prodotti…");
 
     try {
-      const res = await window.fetchCritico(
+      const res = await window.fetchUniversale(
         "/api/prodotti",
         { method: "GET" },
         { retries: 3, backoffMs: 400 }
@@ -118,7 +114,7 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("[ADMIN] Carico prodotto:", id);
 
     try {
-      const res = await window.fetchCritico(
+      const res = await window.fetchUniversale(
         `/api/prodotti/${id}`,
         { method: "GET" },
         { retries: 3, backoffMs: 400 }
@@ -182,7 +178,7 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("[ADMIN] Elimino prodotto:", id);
 
     try {
-      const res = await window.fetchCritico(
+      const res = await window.fetchUniversale(
         `/api/prodotti/${id}`,
         { method: "DELETE" },
         { retries: 3, backoffMs: 400 }
@@ -211,7 +207,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* =========================================================
-     AI: GENERA DESCRIZIONE (LUNGA + BREVE)
+     AI: GENERA DESCRIZIONE
   ========================================================= */
   if (btnAiDescrizione) {
     btnAiDescrizione.addEventListener("click", async () => {
@@ -227,7 +223,7 @@ document.addEventListener("DOMContentLoaded", () => {
       aiPreview.textContent = "";
 
       try {
-        const res = await window.fetchCritico(
+        const res = await window.fetchUniversale(
           "/api/prodotti/genera-descrizione-ai",
           {
             method: "POST",
@@ -309,7 +305,7 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("[ADMIN] Payload finale:", payload);
 
     try {
-      const res = await window.fetchCritico(
+      const res = await window.fetchUniversale(
         "/api/prodotti",
         {
           method: "POST",
