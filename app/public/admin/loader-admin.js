@@ -102,6 +102,17 @@ async function startAdminLoader() {
     if (metaTitle) document.title = metaTitle.content.trim();
   });
 
+  /* -------------------------------------------------------
+     CRITICAL READY (ADMIN)
+     ------------------------------------------------------- */
+  try {
+    window.__criticalReady = true;
+    document.dispatchEvent(new Event("critical-ready"));
+    console.log("[ADMIN] critical-ready emesso");
+  } catch (e) {
+    console.error("[ADMIN] Errore emissione critical-ready:", e);
+  }
+
   console.log("[ADMIN] Critical loader admin completato");
 }
 
