@@ -1,10 +1,11 @@
 // =========================================================
-// PRODOTTO PREMIUM – MewingMarket (PATCH 2027.300)
-// - Usa fetchCritico globale + API alias
+// PRODOTTO PREMIUM – MewingMarket (PATCH 2027.400)
+// - critical-ready
+// - fetchUniversale (fallback chain)
 // - Nessuna regressione
 // =========================================================
 
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener("critical-ready", async () => {
 
   /* =========================================================
      SANITIZZAZIONE
@@ -48,8 +49,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   ========================================================== */
   let p;
   try {
-    // ⭐ PATCH 2027.300 — alias + fetchCritico globale
-    const res = await window.fetchCritico(
+    const res = await window.fetchUniversale(
       `/products/${id}`,
       { cache: "no-store" },
       { retries: 3, backoffMs: 400 }
@@ -172,7 +172,7 @@ document.addEventListener("DOMContentLoaded", async () => {
      9) CORRELATI — PATCH MULTI-CATEGORIA
   ========================================================== */
   try {
-    const res = await window.fetchCritico(
+    const res = await window.fetchUniversale(
       `/products`,
       { cache: "no-store" },
       { retries: 3, backoffMs: 400 }
