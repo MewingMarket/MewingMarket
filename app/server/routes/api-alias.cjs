@@ -54,6 +54,9 @@ versions.forEach(v => {
 
   // UPLOAD
   router.use(`${prefix}/upload`, R("routes/api-upload.cjs"));
+
+  // 🟩 PATCH 2027 — UTENTI/EVENTO (mancante)
+  router.use(`${prefix}/utenti`, R("routes/utenti-evento.cjs"));
 });
 
 module.exports = router;
