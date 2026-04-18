@@ -1,7 +1,6 @@
 /* =========================================================
-   DASHBOARD ADMIN — Versione 2026.70 + PATCH USERNAME + CF
-   Gestione profilo admin (email + password)
-   PATCH 2027.300 — usa adminGet + fetchCritico globale
+   DASHBOARD ADMIN — Versione 2027.400
+   PATCH: critical-ready + fetchUniversale
 ========================================================= */
 
 // Sanitizzazione sicura
@@ -11,7 +10,7 @@ const clean = (t) =>
     : t ?? "";
 
 /* =========================================================
-   PATCH — adminGet (usa fetchCritico globale + token)
+   adminGet — usa fetchUniversale + token
 ========================================================= */
 async function adminGet(path, options = {}) {
   const token = localStorage.getItem("token");
@@ -21,15 +20,16 @@ async function adminGet(path, options = {}) {
     Authorization: token ? `Bearer ${token}` : ""
   };
 
-  const res = await window.fetchCritico(
+  const res = await window.fetchUniversale(
     path,
     {
       ...options,
       headers
-    }
+    },
+    { retries: 3, backoffMs: 400 }
   );
 
-  // Gestione accesso negato
+  // Accesso negato
   if (res.status === 401 || res.status === 403) {
     console.warn("[ADMIN] Accesso negato → token non valido");
 
@@ -44,10 +44,10 @@ async function adminGet(path, options = {}) {
 }
 
 /* =========================================================
-   INIT — Avvio solo dopo caricamento header/footer/head
+   INIT — Avvio SOLO dopo critical-ready
 ========================================================= */
-document.addEventListener("admin-header-loaded", () => {
-  console.log("[ADMIN] Dashboard profilo inizializzata");
+document.addEventListener("critical-ready", () => {
+  console.log("[ADMIN] Dashboard profilo inizializzata (CRITICAL READY)");
 
   popolaDatiAdmin();
   setupCambioEmail();
@@ -55,7 +55,7 @@ document.addEventListener("admin-header-loaded", () => {
 });
 
 /* =========================================================
-   1) Popola dati admin nella pagina (EMAIL + USERNAME + CF + RUOLO)
+   1) Popola dati admin nella pagina
 ========================================================= */
 async function popolaDatiAdmin() {
   try {
@@ -70,7 +70,7 @@ async function popolaDatiAdmin() {
     const cf = clean(data.utente.codice_fiscale);
     const ruolo = clean(data.utente.ruolo || "Admin");
 
-    // Salvo email in localStorage per coerenza
+    // Salvo email in localStorage
     localStorage.setItem("email", email);
 
     // Popola UI
