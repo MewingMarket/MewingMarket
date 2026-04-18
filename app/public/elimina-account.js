@@ -1,23 +1,24 @@
 /* =========================================================
-   Eliminazione Account – MewingMarket (VERSIONE 2027.300)
-   - Usa fetchCritico globale + alias API
+   Eliminazione Account – MewingMarket (VERSIONE 2027.400)
+   - critical-ready
+   - fetchUniversale (fallback chain)
    - Nessuna regressione
 ========================================================= */
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("critical-ready", () => {
   const msg = document.getElementById("status");
   const btnElimina = document.getElementById("reset-btn");
 
   /* =========================================================
      PATCH — Helper per registrare evento utente
-     (usa fetchCritico globale)
+     (usa fetchUniversale)
   ========================================================== */
   async function logUserEvent(evento) {
     try {
       const email = localStorage.getItem("email") || "";
       if (!email) return;
 
-      await window.fetchCritico(
+      await window.fetchUniversale(
         "/utenti/evento",
         {
           method: "POST",
@@ -70,8 +71,7 @@ document.addEventListener("DOMContentLoaded", () => {
     btnElimina.disabled = true;
 
     try {
-      // ⭐ PATCH 2027.300 — usa fetchCritico globale + alias API
-      const res = await window.fetchCritico(
+      const res = await window.fetchUniversale(
         "/utenti/elimina-account",
         {
           method: "POST",
