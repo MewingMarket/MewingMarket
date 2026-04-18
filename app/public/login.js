@@ -1,11 +1,17 @@
 /* =========================================================
-   LOGIN.JS — Versione definitiva blindata (2027.400)
-   Compatibile con auth.js + sessionState
-   PATCH EVENTI UTENTE: registra evento "login"
-   PATCH — fetchUniversale (fallback chain)
+   LOGIN.JS — Versione BLINDATA (2027.500)
+   - Parte con critical-ready OPPURE DOMContentLoaded
+   - Evita doppia inizializzazione
+   - Nessuna regressione
 ========================================================= */
 
-document.addEventListener("critical-ready", () => {
+document.addEventListener("critical-ready", initLogin);
+document.addEventListener("DOMContentLoaded", initLogin);
+
+function initLogin() {
+  if (window.__loginInit) return; // evita doppio avvio
+  window.__loginInit = true;
+
   const form = document.getElementById("login-form");
   if (!form) return;
 
@@ -103,4 +109,4 @@ document.addEventListener("critical-ready", () => {
       form.dataset.lock = "0";
     }
   });
-});
+}
