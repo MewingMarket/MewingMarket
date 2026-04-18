@@ -1,10 +1,11 @@
 /**
  * =========================================================
- * ASSISTENZA — Endpoint invio richiesta (PATCH 2026.995)
+ * ASSISTENZA — Endpoint invio richiesta (PATCH 2027.500)
  * - Usa FAQ.sql
  * - Usa prodotti SQL per consigli prodotto
  * - Usa template email premium
- * - Nessuna invenzione
+ * - Risposta JSON garantita (no HTML)
+ * - Validazione rispostaAI, template, invio email
  * =========================================================
  */
 
@@ -27,7 +28,7 @@ router.post("/invia", async (req, res) => {
   const { email, domanda } = req.body;
 
   if (!email || !domanda) {
-    return res.json({ success: false, error: "Campi mancanti." });
+    return res.status(200).json({ success: false, error: "Campi mancanti." });
   }
 
   try {
@@ -40,8 +41,10 @@ router.post("/invia", async (req, res) => {
     let faqRecord = null;
 
     const prodotti = await db.all("SELECT * FROM prodotti");
+    const domandaLower = domanda.toLowerCase();
+
     const matchProdotto = prodotti.find(p =>
-      domanda.toLowerCase().includes((p.titolo || "").toLowerCase())
+      domandaLower.includes((p.titolo || "").toLowerCase())
     );
 
     if (matchProdotto) {
@@ -60,11 +63,19 @@ router.post("/invia", async (req, res) => {
     if (!faqRecord) {
       const tutteFAQ = await db.all("SELECT * FROM faq");
 
-      faqRecord = tutteFAQ.find(f =>
-        domanda.toLowerCase().includes((f.keywords || "").toLowerCase())
+      const matchFAQ = tutteFAQ.find(f =>
+        domandaLower.includes((f.keywords || "").toLowerCase())
       );
 
-      if (!faqRecord) {
+      if (matchFAQ) {
+        faqRecord = {
+          categoria: matchFAQ.categoria || "faq",
+          domanda,
+          risposta_base: matchFAQ.risposta || "",
+          keywords: matchFAQ.keywords || "",
+          fonte: "faq.sql"
+        };
+      } else {
         faqRecord = {
           categoria: "generico",
           domanda,
@@ -77,11 +88,16 @@ router.post("/invia", async (req, res) => {
 
     // ============================================================
     // 4) GENERA RISPOSTA AI (basata SOLO su risposta_base)
+    //    + VALIDAZIONE rispostaAI
     // ============================================================
     const rispostaAI = await assistAI.generaRispostaAssistenza({
       domanda,
       faqRecord
     });
+
+    if (!rispostaAI || typeof rispostaAI !== "string") {
+      throw new Error("Risposta AI non valida");
+    }
 
     // ============================================================
     // 5) CREA TICKET
@@ -89,12 +105,16 @@ router.post("/invia", async (req, res) => {
     const ticket = Math.floor(100000 + Math.random() * 900000);
 
     // ============================================================
-    // 6) TEMPLATE EMAIL PREMIUM
+    // 6) TEMPLATE EMAIL PREMIUM + VALIDAZIONE
     // ============================================================
     const htmlEmail = templateEmailRisposta({ rispostaAI });
 
+    if (!htmlEmail || typeof htmlEmail !== "string") {
+      throw new Error("Template email non valido");
+    }
+
     // ============================================================
-    // 7) INVIA EMAIL
+    // 7) INVIA EMAIL + VALIDAZIONE
     // ============================================================
     await inviaEmailLista({
       email,
@@ -105,11 +125,20 @@ router.post("/invia", async (req, res) => {
       modalita: "normale"
     });
 
-    return res.json({ success: true, ticket });
+    if (!email) {
+      throw new Error("Invio email fallito");
+    }
+
+    return res.status(200).json({ success: true, ticket });
 
   } catch (err) {
     console.error("Errore assistenza:", err);
-    return res.json({ success: false, error: "Errore interno." });
+
+    // 🔥 PATCH BLINDATA — risposta JSON garantita
+    return res.status(200).json({
+      success: false,
+      error: "Errore interno. Il nostro team è stato notificato."
+    });
   }
 });
 
