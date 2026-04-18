@@ -1,7 +1,6 @@
 /* =========================================================
    CANCEL ORDER — Frontend
-   Versione 2027.300 — PATCH fetchCritico + API UNIVERSALE
-   + Avvio sincronizzato con critical-ready
+   Versione 2027.400 — FETCH UNIVERSALE + CRITICAL READY
 ========================================================= */
 
 document.addEventListener("critical-ready", async () => {
@@ -16,8 +15,8 @@ document.addEventListener("critical-ready", async () => {
   }
 
   try {
-    // ⭐ PATCH 2027.300 — usa fetchCritico globale + alias API
-    const res = await window.fetchCritico(
+    // ⭐ PATCH — usa fetchUniversale
+    const res = await window.fetchUniversale(
       `/paypal/cancel-order?orderId=${orderId}`,
       { method: "GET" },
       { retries: 2, backoffMs: 300 }
