@@ -1,5 +1,5 @@
 // =========================================================
-// AUTH-USER.CJS — Versione 2026.40 (HEADER + COOKIE SUPPORT)
+// AUTH-USER.CJS — Versione 2027.500 (SAFE + UNIVERSALE)
 // =========================================================
 
 const path = require("path");
@@ -15,7 +15,6 @@ function getTokenFromHeader(req) {
 
 function getTokenFromCookie(req) {
   if (!req.cookies) return "";
-  // adatta questi nomi ai tuoi reali cookie di sessione
   return (
     req.cookies.sessione ||
     req.cookies.session ||
@@ -29,68 +28,57 @@ module.exports = function authUser(req, res, next) {
     const pathLower = req.path.toLowerCase();
 
     console.log("AUTH DEBUG → req.path:", pathLower);
-    console.log("AUTH DEBUG → headers.authorization:", req.headers["authorization"]);
 
     // =====================================================
-    // ROTTE COMPLETAMENTE PUBBLICHE
+    // ⭐ API PUBBLICHE — NON RICHIEDONO LOGIN
     // =====================================================
-    const publicPaths = [
-      "/", "/index", "/index.html",
-      "/catalogo", "/catalogo.html",
-      "/prodotto", "/prodotto.html",
-      "/categories", "/categories.html",
-      "/login", "/login.html",
-      "/registrazione", "/registrazione.html",
-
-      "/utenti/login",
-      "/utenti/registrazione",
+    const publicApiPrefixes = [
+      "/api/versione",
+      "/api/system-status",
+      "/api/health",
+      "/api/prodotti",
+      "/api/catalogo",
+      "/api/recensioni-top",
+      "/api/product-page",
+      "/api/sitemap",
+      "/api/meta-feed",
+      "/api/newsletter",
+      "/api/chat",
+      "/api/chat-voice",
+      "/api/paypal-create",
+      "/api/paypal-complete",
+      "/api/paypal-cancel",
+      "/api/paypal-ricrea",
       "/api/utenti/login",
       "/api/utenti/registrazione",
-
-      "/products",
-      "/products/",
-      "/products/:id",
-
-      "/reset-password", "/reset-password.html",
-      "/reset-password-request",
-      "/reset-password-confirm",
-      "/utenti/reset-password-request",
-      "/utenti/reset-password-confirm",
-
-      "/reset-email", "/reset-email.html",
-      "/reset-email-request",
-      "/reset-email-confirm",
-      "/utenti/reset-email-request",
-      "/utenti/reset-email-confirm",
-
-      "/sitemap.xml",
-      "/system-status",
-      "/meta-feed",
-      "/newsletter",
-      "/structured-data",
-
-      "/paypal-create",
-      "/paypal-complete",
-      "/paypal-cancel",
-
-      "/chat",
-      "/chat-voice",
-
-      // ⭐ PATCH: health API pubblica
-      "/health",
-      "/api/health"
+      "/api/assistenza",
+      "/api/upload", // upload pubblico
     ];
 
-    const isPublic = publicPaths.some(base =>
-      pathLower === base ||
-      pathLower.startsWith(base + "/") ||
-      req.url.toLowerCase().startsWith(base + "?")
+    const isPublicApi = publicApiPrefixes.some(prefix =>
+      pathLower === prefix || pathLower.startsWith(prefix + "/")
     );
 
-    if (isPublic) {
-      console.log("AUTH DEBUG → PUBLIC MATCH:", pathLower);
+    if (isPublicApi) {
+      console.log("AUTH DEBUG → PUBLIC API:", pathLower);
       return next();
     }
+
+    // =====================================================
+    // ⭐ API CHE RICHIEDONO LOGIN (ADMIN / ORDINI / VENDITE)
+    // =====================================================
+    const protectedApiPrefixes = [
+      "/api/admin",
+      "/api/rimborso",
+      "/api/vendite",
+      "/api/ordini",
+      "/api/feedback",
+      "/api/vendite-download",
+    ];
+
+    const isProtected = protectedApiPrefixes.some(prefix =>
+      pathLower.startsWith(prefix)
+    );
 
     // =====================================================
     // TOKEN: HEADER O COOKIE
@@ -104,10 +92,19 @@ module.exports = function authUser(req, res, next) {
       console.log("AUTH DEBUG → token da header:", "[PRESENTE]");
     }
 
-    if (!token) {
-      console.log("AUTH DEBUG → Nessun token → guest");
+    // Se NON è un'API protetta → passa SEMPRE
+    if (!isProtected) {
+      console.log("AUTH DEBUG → API NON PROTETTA → PASSA");
       req.user = null;
       return next();
+    }
+
+    // =====================================================
+    // SE È PROTETTA → SERVE TOKEN
+    // =====================================================
+    if (!token) {
+      console.log("AUTH DEBUG → Nessun token per API protetta");
+      return res.status(401).json({ error: "Non autorizzato" });
     }
 
     // =====================================================
@@ -130,9 +127,8 @@ module.exports = function authUser(req, res, next) {
     }
 
     if (!row) {
-      console.log("AUTH DEBUG → Token non valido → guest");
-      req.user = null;
-      return next();
+      console.log("AUTH DEBUG → Token non valido per API protetta");
+      return res.status(401).json({ error: "Non autorizzato" });
     }
 
     req.user = {
