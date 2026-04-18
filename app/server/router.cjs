@@ -75,7 +75,7 @@ router.use(R("routes/ordini-utente.cjs"));
 router.use(R("routes/api-feedback.cjs"));
 router.use(R("routes/api-vendite-download.cjs"));
 router.use(R("routes/prodotti-ai.cjs"));
-
+router.use(R("routes/utenti-evento.cjs"));
 /* ASSISTENZA */
 router.use(R("routes/api-assistenza.cjs"));
 
