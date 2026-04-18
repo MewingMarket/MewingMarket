@@ -1,7 +1,5 @@
-// app/server/routes/versione.cjs
-
 module.exports = function (app) {
-  // VERSIONE API STANDARD
+
   app.get("/api/versione", (req, res) => {
     res.json({
       versione: "2027.001",
@@ -10,13 +8,12 @@ module.exports = function (app) {
     });
   });
 
-  // VERSIONE DEBUG
   app.get("/api/debug/version", (req, res) => {
     res.json({
       success: true,
       versione: "2027.001-debug",
-      descrizione: "Endpoint di debug per verificare la build in produzione",
       timestamp: new Date().toISOString()
     });
   });
+
 };
