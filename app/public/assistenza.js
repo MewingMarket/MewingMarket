@@ -5,9 +5,10 @@
    - Nessuna logica AI lato client
    - Messaggi premium
    - Usa fetchCritico globale
+   - Avvio sincronizzato con critical-ready
 ========================================================= */
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("critical-ready", () => {
   const form = document.getElementById("assistenzaForm");
   const msgBox = document.getElementById("msgAssistenza");
 
