@@ -1,66 +1,68 @@
 /* =========================================================
-   RESET PASSWORD REQUEST — Versione CF (PATCH 2027.300)
-   - Usa fetchCritico globale + API alias
+   RESET PASSWORD REQUEST — Versione CF (PATCH 2027.400)
+   - critical-ready
+   - fetchUniversale (fallback chain)
    - Nessuna regressione
 ========================================================= */
 
 console.log("[RESET-PASSWORD-REQ] Versione CF caricata");
 
-const btnResetPassword = document.getElementById("btnResetPassword");
-const msgResetPassword = document.getElementById("msgResetPassword");
+document.addEventListener("critical-ready", () => {
+  const btnResetPassword = document.getElementById("btnResetPassword");
+  const msgResetPassword = document.getElementById("msgResetPassword");
 
-btnResetPassword?.addEventListener("click", async () => {
-  const msg = msgResetPassword;
-  if (!msg) return;
+  btnResetPassword?.addEventListener("click", async () => {
+    const msg = msgResetPassword;
+    if (!msg) return;
 
-  const codice_fiscale = document.getElementById("cf")?.value.trim().toUpperCase();
+    const codice_fiscale = document.getElementById("cf")?.value.trim().toUpperCase();
 
-  if (!codice_fiscale || codice_fiscale.length !== 16) {
-    msg.textContent = "Inserisci un codice fiscale valido.";
-    msg.className = "err";
-    return;
-  }
-
-  if (btnResetPassword.disabled) return;
-  btnResetPassword.disabled = true;
-
-  msg.textContent = "Invio richiesta in corso...";
-  msg.className = "msg";
-
-  try {
-    console.log("[RESET-PASSWORD-REQ] Invio richiesta con CF:", codice_fiscale);
-
-    // ⭐ PATCH 2027.300 — alias + fetchCritico globale
-    const res = await window.fetchCritico(
-      "/utenti/reset-password-request",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ codice_fiscale })
-      },
-      { retries: 2, backoffMs: 300 }
-    );
-
-    const data = await res.json().catch(() => ({}));
-    console.log("[RESET-PASSWORD-REQ] Risposta:", data);
-
-    if (data.success) {
-
-      // 🔥 ZERO-INPUT: salvo il CF per la pagina di conferma
-      localStorage.setItem("cf_reset", codice_fiscale);
-
-      window.location.href = "reset-password-confirm.html";
+    if (!codice_fiscale || codice_fiscale.length !== 16) {
+      msg.textContent = "Inserisci un codice fiscale valido.";
+      msg.className = "err";
       return;
     }
 
-    msg.textContent = data.error || "Errore durante la richiesta di reset password.";
-    msg.className = "err";
+    if (btnResetPassword.disabled) return;
+    btnResetPassword.disabled = true;
 
-  } catch (err) {
-    console.error("[RESET-PASSWORD-REQ] Errore:", err);
-    msg.textContent = "Errore di connessione.";
-    msg.className = "err";
-  } finally {
-    btnResetPassword.disabled = false;
-  }
+    msg.textContent = "Invio richiesta in corso...";
+    msg.className = "msg";
+
+    try {
+      console.log("[RESET-PASSWORD-REQ] Invio richiesta con CF:", codice_fiscale);
+
+      const res = await window.fetchUniversale(
+        "/utenti/reset-password-request",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ codice_fiscale })
+        },
+        { retries: 2, backoffMs: 300 }
+      );
+
+      const data = await res.json().catch(() => ({}));
+      console.log("[RESET-PASSWORD-REQ] Risposta:", data);
+
+      if (data.success) {
+
+        // 🔥 ZERO-INPUT: salvo il CF per la pagina di conferma
+        localStorage.setItem("cf_reset", codice_fiscale);
+
+        window.location.href = "reset-password-confirm.html";
+        return;
+      }
+
+      msg.textContent = data.error || "Errore durante la richiesta di reset password.";
+      msg.className = "err";
+
+    } catch (err) {
+      console.error("[RESET-PASSWORD-REQ] Errore:", err);
+      msg.textContent = "Errore di connessione.";
+      msg.className = "err";
+    } finally {
+      btnResetPassword.disabled = false;
+    }
+  });
 });
