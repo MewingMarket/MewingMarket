@@ -1,6 +1,6 @@
 // =========================================================
-// CHECKOUT.JS — Versione DEFINITIVA (PATCH 2027.300)
-// - Usa fetchCritico globale + apiFetch alias
+// CHECKOUT.JS — Versione DEFINITIVA (PATCH 2027.400)
+// - Usa fetchUniversale (fallback chain)
 // - Nessuna regressione
 // =========================================================
 
@@ -49,8 +49,7 @@ async function initCheckout() {
   let utenteEmail = null;
 
   try {
-    // ⭐ PATCH 2027.300 — usa fetchCritico globale
-    const res = await window.fetchCritico(
+    const res = await window.fetchUniversale(
       "/utenti/me",
       {
         headers: { "Authorization": "Bearer " + token }
@@ -158,8 +157,7 @@ async function initCheckout() {
 
       const payload = Cart.getForCheckout();
 
-      // ⭐ PATCH 2027.300 — usa fetchCritico globale
-      const res = await window.fetchCritico(
+      const res = await window.fetchUniversale(
         "/paypal/create-order",
         {
           method: "POST",
