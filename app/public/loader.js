@@ -1,6 +1,7 @@
 // ===============================
 // CRITICAL LOADER — MewingMarket
 // Garantisce SEMPRE:
+// - api.js
 // - head
 // - header
 // - footer
@@ -36,6 +37,8 @@
     }
   }
 
+  // ⚠️ Ordine: prima api, poi il resto
+  loadUtilityScript("api");
   loadUtilityScript("seo");
   loadUtilityScript("structured-data");
   loadUtilityScript("tracking");
