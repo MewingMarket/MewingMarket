@@ -1,11 +1,6 @@
 /* =========================================================
    ASSISTENZA — Frontend
-   Versione 2026.995 + PATCH 2027.300
-   - Invio domanda
-   - Nessuna logica AI lato client
-   - Messaggi premium
-   - Usa fetchCritico globale
-   - Avvio sincronizzato con critical-ready
+   Versione 2027.400 — critical-ready + fetchUniversale
 ========================================================= */
 
 document.addEventListener("critical-ready", () => {
@@ -28,8 +23,8 @@ document.addEventListener("critical-ready", () => {
     mostraMessaggio("Invio in corso…", "info");
 
     try {
-      // ⭐ PATCH 2027.300 — usa fetchCritico globale
-      const res = await window.fetchCritico(
+      // ⭐ PATCH — usa fetchUniversale
+      const res = await window.fetchUniversale(
         "/api/assistenza/invia",
         {
           method: "POST",
