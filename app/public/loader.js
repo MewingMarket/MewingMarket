@@ -1,6 +1,6 @@
 // ===============================
 // CRITICAL LOADER — MewingMarket
-// Versione 2027.600 — PATCH DEFINITIVA
+// Versione 2027.700 — COMPLETA + PATCH DEFINITIVA
 // Garantisce SEMPRE:
 // - api.js PRIMA di tutto
 // - auth.js PRIMA di tutto
@@ -8,6 +8,8 @@
 // - header.js caricato
 // - carrello caricato
 // - admin loader caricato
+// - seo / structured-data / tracking caricati
+// - routing critico attivo
 // - critical-ready emesso SOLO quando tutto è pronto
 // ===============================
 
@@ -27,13 +29,76 @@
     };
     s.onerror = () => {
       console.error("[CRITICAL] ERRORE: api.js non caricato");
-      resolve(); // comunque risolvo per evitare deadlock
+      resolve();
     };
     document.head.appendChild(s);
   });
 
   // ============================================================
-  // 1) CARICAMENTO AUTH — DOPO API
+  // 1) SEO / STRUCTURED-DATA / TRACKING (NON BLOCCANTI)
+  // ============================================================
+  function loadUtility(name) {
+    const s = document.createElement("script");
+    s.src = `/${name}.js?v=${VERSION}`;
+    s.onload = () => console.log(`[CRITICAL] ${name}.js caricato`);
+    s.onerror = () => console.warn(`[CRITICAL] ${name}.js non trovato`);
+    document.head.appendChild(s);
+  }
+
+  loadUtility("seo");
+  loadUtility("structured-data");
+  loadUtility("tracking");
+
+  // ============================================================
+  // 2) ROUTING CRITICO (TUO CODICE ORIGINALE)
+  // ============================================================
+  function normalize(str) {
+    if (!str) return "";
+    return str.toLowerCase()
+      .replace(/\.[^/.]+$/, "")
+      .replace(/[^a-z0-9]/g, "")
+      .trim();
+  }
+
+  const rawPath = location.pathname || "/";
+  const pathLower = rawPath.toLowerCase();
+  const segments = pathLower.split("/").filter(Boolean);
+  const firstSegment = segments[0] || "";
+
+  let pageName = "";
+  if (pathLower.endsWith(".html")) {
+    pageName = normalize(pathLower.split("/").pop());
+  } else {
+    pageName = normalize(firstSegment);
+  }
+
+  const isHome =
+    pathLower === "/" ||
+    pathLower === "/index" ||
+    pathLower.endsWith("/index.html");
+
+  const isAdminPage =
+    pathLower.includes("/admin/") || firstSegment === "admin";
+
+  const isShopPage = (() => {
+    if (isHome) return true;
+    const shopRoots = ["catalogo", "prodotto", "checkout", "categories", "shop"];
+    return shopRoots.some((root) => pageName.startsWith(root));
+  })();
+
+  const isUserPage = (() => {
+    const userRoots = [
+      "dashboard", "ordini", "download", "resetpassword",
+      "resetemail", "reset", "eliminaaccount",
+      "thankyou", "cancel", "disiscriviti", "iscrizione"
+    ];
+    return userRoots.some((root) => pageName.startsWith(root));
+  })();
+
+  console.log("[CRITICAL] Routing:", { isHome, isShopPage, isAdminPage, isUserPage });
+
+  // ============================================================
+  // 3) AUTH — DOPO API
   // ============================================================
   const authPromise = apiPromise.then(() => {
     return new Promise((resolve) => {
@@ -52,7 +117,7 @@
   });
 
   // ============================================================
-  // 2) HEAD (SAFE FETCH)
+  // 4) HEAD (SAFE FETCH)
   // ============================================================
   function safeFetchAppendHead(url) {
     return fetch(url)
@@ -71,7 +136,7 @@
   );
 
   // ============================================================
-  // 3) HEADER (SAFE FETCH)
+  // 5) HEADER (SAFE FETCH)
   // ============================================================
   function safeFetchHeader(url) {
     return fetch(url)
@@ -89,7 +154,7 @@
   );
 
   // ============================================================
-  // 4) HEADER.JS
+  // 6) HEADER.JS
   // ============================================================
   const headerLogicPromise = headerPromise.then(() => {
     return new Promise((resolve) => {
@@ -102,7 +167,7 @@
   });
 
   // ============================================================
-  // 5) FOOTER (SAFE FETCH)
+  // 7) FOOTER (SAFE FETCH)
   // ============================================================
   function safeFetchFooter(url) {
     return fetch(url)
@@ -120,7 +185,7 @@
     .catch(() => safeFetchFooter(`/footer.html?v=${VERSION}`));
 
   // ============================================================
-  // 6) CARRELLO
+  // 8) CARRELLO
   // ============================================================
   const carrelloPromise = headerLogicPromise.then(() => {
     return new Promise((resolve) => {
@@ -139,7 +204,7 @@
   });
 
   // ============================================================
-  // 7) ADMIN LOADER
+  // 9) ADMIN LOADER
   // ============================================================
   const adminPromise = authPromise.then(() => {
     return new Promise((resolve) => {
@@ -158,7 +223,7 @@
   });
 
   // ============================================================
-  // 8) CRITICAL READY — SOLO QUANDO TUTTO È PRONTO
+  // 10) CRITICAL READY — SOLO QUANDO TUTTO È PRONTO
   // ============================================================
   Promise.all([
     apiPromise,
@@ -172,7 +237,7 @@
   ]).then(() => {
     window.__criticalReady = true;
     document.dispatchEvent(new Event("critical-ready"));
-    console.log("[CRITICAL] critical-ready emesso (2027.600)");
+    console.log("[CRITICAL] critical-ready emesso (2027.700)");
   });
 
 })();
