@@ -1,8 +1,6 @@
 /* =========================================================
-   File: app/public/admin/feedback.js
-   Admin — Lista completa feedback clienti
-   Versione 2027.300 — API UNIVERSALE (PATCH FINALE)
-   - Usa fetchCritico globale + apiFetch globale
+   Admin — Feedback Clienti
+   Versione 2027.400 — CRITICAL READY + FETCH UNIVERSALE
 ========================================================= */
 
 // Sanitizzazione sicura
@@ -12,20 +10,21 @@ const clean = (t) =>
     : t ?? "";
 
 /* =========================================================
-   FETCH ADMIN (usa fetchCritico globale + token)
+   FETCH ADMIN (usa fetchUniversale + token)
 ========================================================= */
 async function adminGet(path) {
   console.log("[ADMIN][FETCH] Chiamata a:", path);
 
   const token = localStorage.getItem("token");
 
-  const res = await window.fetchCritico(
+  const res = await window.fetchUniversale(
     path,
     {
       headers: {
         Authorization: token ? `Bearer ${token}` : ""
       }
-    }
+    },
+    { retries: 3, backoffMs: 400 }
   );
 
   const json = await res.json();
@@ -147,9 +146,9 @@ async function caricaFeedback() {
 }
 
 /* =========================================================
-   INIT
+   INIT — SOLO DOPO CRITICAL READY
 ========================================================= */
-document.addEventListener("admin-header-loaded", () => {
-  console.log("🔵 [ADMIN] Evento admin-header-loaded ricevuto");
+document.addEventListener("critical-ready", () => {
+  console.log("🔵 [ADMIN] critical-ready → carico feedback");
   caricaFeedback();
 });
