@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- CSS SHOP -->
-  <link rel="stylesheet" href="header-shop.css">
+  <link rel="stylesheet" href="/header-shop.css">
 
   <!-- CSS SPECIFICO PAGINA -->
-  <link rel="stylesheet" href="catalogo.css">
+  <link rel="stylesheet" href="/catalogo.css">
 </head>
 
 <body class="pagina-standard-body">
@@ -47,11 +47,14 @@
 <div id="footer-placeholder"></div>
 
 <!-- JS GLOBALI (solo loader con versioning) -->
-<script src="/loader.js?v=20260412"></script>
-<script src="/dynamic-loader.js?v=20260412"></script>
+<script src="/loader.js?v=20260412" type="text/javascript" crossorigin="anonymous"></script>
+<script src="/dynamic-loader.js?v=20260412" type="text/javascript" crossorigin="anonymous"></script>
 
-<!-- JS SPECIFICO PAGINA -->
-<script src="/catalogo.js?v=20260412"></script>
+<!-- JS SPECIFICO PAGINA (MIME-SAFE + CACHE-SAFE) -->
+<script src="/catalogo.js?v=20260412"
+        type="text/javascript"
+        charset="UTF-8"
+        crossorigin="anonymous"></script>
 
 </body>
 </html>
