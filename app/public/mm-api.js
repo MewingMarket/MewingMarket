@@ -135,3 +135,20 @@ window.fetchUniversale = async function(path, options = {}, cfg = {}) {
     throw e;
   }
 };
+/* =========================================================
+   5) API UTENTE — EVENTO (nuova route)
+========================================================= */
+window.apiUtenteEvento = async function(data = {}) {
+  try {
+    const res = await window.fetchUniversale("/utenti/evento", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+
+    return await res.json();
+  } catch (err) {
+    console.error("🔥 apiUtenteEvento errore:", err);
+    return { success: false, error: "API_UTENTE_EVENTO_FAILED" };
+  }
+};
