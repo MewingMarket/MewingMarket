@@ -1,6 +1,6 @@
 /**
  * app/server/middleware/cache.cjs
- * Middleware per disabilitare la cache + PATCH CORS 2026 + DEBUG
+ * Middleware per disabilitare la cache + PATCH CORS 2027 (SAFE)
  */
 
 module.exports = function (app) {
@@ -8,35 +8,36 @@ module.exports = function (app) {
 
   app.use((req, res, next) => {
     try {
-      // =====================================================
-      // 🔵 DEBUG MIDDLEWARE — conferma che il middleware è attivo
-      // =====================================================
+      // DEBUG
       console.log("🟦 [CACHE+CORS] Middleware attivo →", req.method, req.url);
 
       // =====================================================
-      // 🔥 PATCH CORS — permette al frontend di chiamare il backend
+      // 🔥 PATCH CORS — SEMPRE PERMESSO
       // =====================================================
       res.setHeader("Access-Control-Allow-Origin", ALLOWED_ORIGIN);
       res.setHeader("Access-Control-Allow-Credentials", "true");
       res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
       res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
-      // Preflight
+      // =====================================================
+      // 🔥 PATCH 2027 — NON BLOCCARE LE API SU OPTIONS
+      // =====================================================
       if (req.method === "OPTIONS") {
-        console.log("🟧 Preflight OPTIONS intercettato:", req.url);
-        return res.sendStatus(200);
+        console.log("🟧 Preflight OPTIONS → lasciato passare");
+        return next();   // NON risponde, NON blocca, NON interrompe la catena
       }
 
       // =====================================================
-      // 🔥 NO-CACHE (tuo codice originale)
+      // 🔥 NO-CACHE
       // =====================================================
       res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
       res.setHeader("Pragma", "no-cache");
       res.setHeader("Expires", "0");
 
+      next();
+
     } catch (err) {
       console.error("❌ Errore set cache/CORS headers:", err);
-    } finally {
       next();
     }
   });
