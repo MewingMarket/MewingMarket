@@ -1,6 +1,7 @@
 /* =========================================================
-   LOADER ADMIN — CRITICAL VERSION (2026.401)
+   LOADER ADMIN — CRITICAL VERSION (2026.401 + API PATCH)
    Garantisce SEMPRE:
+   - api.js
    - head-admin
    - header-admin
    - footer-admin
@@ -26,7 +27,7 @@ function loadAdminUtilityScript(name) {
 
     const s = document.createElement("script");
     s.id = id;
-    s.src = `/admin/${name}.js?v=${ADMIN_VERSION}`;
+    s.src = `/${name}.js?v=${ADMIN_VERSION}`;   // ⭐ API patch: percorso NON admin
     s.onload = () => {
       console.log(`[ADMIN] ${name}.js caricato`);
       resolve();
@@ -63,6 +64,9 @@ function safeLoadHTML(url, placeholderId, eventName) {
 --------------------------------------------------------- */
 async function startAdminLoader() {
   console.log("[ADMIN] Avvio critical loader admin…");
+
+  // ⭐ API.js PRIMA DI TUTTO
+  await loadAdminUtilityScript("api");
 
   // Utility critiche
   await loadAdminUtilityScript("seo-admin");
