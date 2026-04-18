@@ -1,6 +1,6 @@
 /**
  * =========================================================
- * api.js — Versione 2027.903 (FIX DEFINITIVO + UNIVERSALE)
+ * mm-api.js — Versione 2027.903 (FIX DEFINITIVO + UNIVERSALE)
  * - Scarta TUTTI i 404
  * - Scarta TUTTI gli HTML
  * - Accetta SOLO il primo 200 valido
