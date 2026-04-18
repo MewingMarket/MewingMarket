@@ -1,6 +1,6 @@
 /**
  * PATCHER HTML – MewingMarket
- * Versione 2027.001
+ * Versione 2027.003 (FULL FIX)
  *
  * Funzioni:
  * - Rimuove TUTTI gli script dalle pagine
@@ -9,8 +9,11 @@
  *     loader.js → dynamic-loader.js → js della pagina
  *   ADMIN:
  *     loader-admin.js → dynamic-admin-loader.js → js della pagina
- *
- * Sicuro, idempotente, non distrugge nulla.
+ * - Mantiene TUTTI i JS della pagina (1, 2, 10…)
+ * - Supporta JS con nomi diversi
+ * - Rimuove doppi versioning (?v=...?...?...).
+ * - NON aggiunge doppio versioning.
+ * - Idempotente.
  */
 
 const fs = require("fs");
@@ -51,6 +54,14 @@ function removeAllScripts(html) {
 }
 
 // ---------------------------------------------------------
+// Utility: pulisce doppi versioning
+// ---------------------------------------------------------
+function cleanVersioning(src) {
+  // rimuove tutto dopo il primo ?v=
+  return src.replace(/\?v=\d+.*$/, `?v=${VERSION}`);
+}
+
+// ---------------------------------------------------------
 // Ricostruisce gli script PUBLIC
 // ---------------------------------------------------------
 function buildPublicScripts(jsList) {
@@ -60,7 +71,8 @@ function buildPublicScripts(jsList) {
   out += `<script src="/dynamic-loader.js?v=${VERSION}"></script>\n`;
 
   jsList.forEach(js => {
-    out += `<script src="${js}?v=${VERSION}"></script>\n`;
+    js = cleanVersioning(js);
+    out += `<script src="${js}"></script>\n`;
   });
 
   return out;
@@ -76,7 +88,8 @@ function buildAdminScripts(jsList) {
   out += `<script src="/admin/dynamic-admin-loader.js?v=${VERSION}"></script>\n`;
 
   jsList.forEach(js => {
-    out += `<script src="/admin/${js}?v=${VERSION}"></script>\n`;
+    js = cleanVersioning(js);
+    out += `<script src="/admin/${js}"></script>\n`;
   });
 
   return out;
@@ -92,12 +105,14 @@ function patchPage(filePath, isAdmin = false) {
   const scripts = extractScripts(html);
 
   // 2) Filtra gli script della pagina (escludi loader)
-  const pageScripts = scripts.filter(src => {
-    return !src.includes("loader.js")
-      && !src.includes("dynamic-loader.js")
-      && !src.includes("loader-admin.js")
-      && !src.includes("dynamic-admin-loader.js");
-  });
+  const pageScripts = scripts
+    .filter(src =>
+      !src.includes("loader.js") &&
+      !src.includes("dynamic-loader.js") &&
+      !src.includes("loader-admin.js") &&
+      !src.includes("dynamic-admin-loader.js")
+    )
+    .map(src => src.replace(/^\/admin\//, "")); // normalizza admin
 
   // 3) Rimuovi tutti gli script
   html = removeAllScripts(html);
