@@ -1,17 +1,17 @@
 /* =========================================================
-   TOP RECENSIONI — Versione 2027.300
-   - Usa fetchCritico globale + API alias
+   TOP RECENSIONI — Versione 2027.400
+   - critical-ready
+   - fetchUniversale (fallback chain)
    - Nessuna regressione
 ========================================================= */
 
-document.addEventListener("DOMContentLoaded", caricaTopRecensioni);
+document.addEventListener("critical-ready", caricaTopRecensioni);
 
 async function caricaTopRecensioni() {
   const box = document.getElementById("topRecensioni");
 
   try {
-    // ⭐ PATCH 2027.300 — alias + fetchCritico globale
-    const res = await window.fetchCritico(
+    const res = await window.fetchUniversale(
       "/recensioni/top",
       { method: "GET" }
     );
