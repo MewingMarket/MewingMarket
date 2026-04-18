@@ -213,6 +213,15 @@ const wait = (ms) => new Promise(res => res(ms));
     next();
   });
 
+  // 🔵 PATCH MIME — garantisce esecuzione JS su Render Web Service
+  app.use((req, res, next) => {
+    if (req.url.endsWith(".js")) {
+      res.setHeader("Content-Type", "application/javascript; charset=utf-8");
+    }
+    next();
+  });
+
+  // SERVE FILE STATICI
   app.use(express.static(PUBLIC_DIR));
 
   // =========================================================
@@ -227,31 +236,25 @@ const wait = (ms) => new Promise(res => res(ms));
   const DATA_BACKUP = path.join(process.cwd(), "app/data");
   const DATA_PERSIST = "/var/data/json";
 
-  // Creazione cartella app/data se manca
   if (!fs.existsSync(DATA_BACKUP)) {
     fs.mkdirSync(DATA_BACKUP, { recursive: true });
     log("📁 [DATA] Creata cartella app/data");
   }
 
-  // =========================================================
-  // 🔥 PATCH DEFINITIVA /data — SOLO BACKUP IN app/data
-  // =========================================================
   app.use("/data", (req, res) => {
     const rel = req.path.replace(/^\/+/, "");
 
-    const backupPath  = path.join(DATA_BACKUP, rel);      // app/data
-    const persistPath = path.join(DATA_PERSIST, rel);     // /var/data/json
+    const backupPath  = path.join(DATA_BACKUP, rel);
+    const persistPath = path.join(DATA_PERSIST, rel);
 
     log(`📥 [DATA] richiesta: ${rel}`);
 
-    // 1) Se esiste in /var/data/json → serve quello + backup
     if (fs.existsSync(persistPath)) {
       log(`🟩 [DATA] persistente trovato → ${rel}`);
 
       try {
         const buf = fs.readFileSync(persistPath);
 
-        // Backup in app/data
         try {
           fs.writeFileSync(backupPath, buf);
           log(`📁 [DATA] backup → app/data/${rel}`);
@@ -265,13 +268,11 @@ const wait = (ms) => new Promise(res => res(ms));
       }
     }
 
-    // 2) Se esiste in app/data → fallback
     if (fs.existsSync(backupPath)) {
       log(`🟦 [DATA] fallback app/data → ${rel}`);
       return res.sendFile(backupPath);
     }
 
-    // 3) Nessuno dei due → 404
     logErr(`❌ [DATA] file non trovato: ${rel}`);
     res.status(404).json({ error: "File non trovato" });
   });
