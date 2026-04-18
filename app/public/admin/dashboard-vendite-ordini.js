@@ -1,18 +1,16 @@
 // =========================================================
 // Dashboard Admin — Vendite + Ordini (Unificata)
-// Versione 2027.300 — API UNIVERSALE (PATCH FINALE)
-// - Rimborso integrato + KPI rimborsati
-// - Stati coerenti con backend 2027
-// - UX migliorata
-// - Usa fetchCritico globale + apiFetch globale
+// Versione 2027.400 — CRITICAL READY + FETCH UNIVERSALE
 // =========================================================
 
 console.log("🔥 dashboard-vendite-ordini.js CARICATO");
 
 /* =========================================================
-   INIT SESSIONE
+   INIT SESSIONE — SOLO DOPO CRITICAL READY
 ========================================================= */
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener("critical-ready", async () => {
+  console.log("🔥 [ADMIN] Dashboard vendite/ordini INIT (CRITICAL READY)");
+
   const token = localStorage.getItem("token");
   const sessionState = localStorage.getItem("sessionState");
 
@@ -23,7 +21,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   try {
-    const res = await window.fetchCritico(
+    const res = await window.fetchUniversale(
       "/admin/dashboard",
       {
         method: "GET",
@@ -31,7 +29,8 @@ document.addEventListener("DOMContentLoaded", async () => {
           Authorization: "Bearer " + token,
           "X-Debug": "admin-dashboard"
         }
-      }
+      },
+      { retries: 3, backoffMs: 400 }
     );
 
     const data = await res.json();
@@ -51,9 +50,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
-// =========================================================
-// KPI BASE + KPI AVANZATI + KPI RIMBORSATI
-// =========================================================
+/* =========================================================
+   KPI BASE + KPI AVANZATI + KPI RIMBORSATI
+========================================================= */
 function renderKPI(data) {
   const vendite = data?.vendite?.kpi || {};
   const ordini = data?.ordini?.kpi || {};
@@ -117,9 +116,9 @@ function renderKPI(data) {
   if (el) el.textContent = percRimb + "%";
 }
 
-// =========================================================
-// ORDINI + Rimborso + CF + Azioni + Categoria
-// =========================================================
+/* =========================================================
+   ORDINI + Rimborso + CF + Azioni + Categoria
+========================================================= */
 function renderOrdini(arr) {
   const body = document.getElementById("ordini-body");
   body.innerHTML = "";
@@ -165,9 +164,9 @@ function renderOrdini(arr) {
   bindRimborsoButtons();
 }
 
-// =========================================================
-// Pulsanti Rimborso / Rifiuta
-// =========================================================
+/* =========================================================
+   Pulsanti Rimborso / Rifiuta
+========================================================= */
 function bindRimborsoButtons() {
   document.querySelectorAll(".btn-rimborsa").forEach(btn => {
     btn.addEventListener("click", () => procediRimborso(btn.dataset.id));
@@ -183,13 +182,17 @@ async function procediRimborso(id) {
 
   const token = localStorage.getItem("token");
 
-  const res = await window.apiFetch(`/rimborso/procedi/${id}`, {
-    method: "POST",
-    headers: {
-      Authorization: "Bearer " + token,
-      "Content-Type": "application/json"
-    }
-  });
+  const res = await window.fetchUniversale(
+    `/rimborso/procedi/${id}`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + token,
+        "Content-Type": "application/json"
+      }
+    },
+    { retries: 3, backoffMs: 400 }
+  );
 
   const data = await res.json();
   if (!data.success) {
@@ -206,13 +209,17 @@ async function rifiutaRimborso(id) {
 
   const token = localStorage.getItem("token");
 
-  const res = await window.apiFetch(`/rimborso/rifiuta/${id}`, {
-    method: "POST",
-    headers: {
-      Authorization: "Bearer " + token,
-      "Content-Type": "application/json"
-    }
-  });
+  const res = await window.fetchUniversale(
+    `/rimborso/rifiuta/${id}`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + token,
+        "Content-Type": "application/json"
+      }
+    },
+    { retries: 3, backoffMs: 400 }
+  );
 
   const data = await res.json();
   if (!data.success) {
@@ -224,9 +231,9 @@ async function rifiutaRimborso(id) {
   location.reload();
 }
 
-// =========================================================
-// Origine sintetica frontend
-// =========================================================
+/* =========================================================
+   Origine sintetica frontend
+========================================================= */
 function detectOrigine(v) {
   if (!v) return "Direct";
 
