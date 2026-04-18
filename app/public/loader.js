@@ -215,4 +215,15 @@
     });
   });
 
+  // -------------------------------------------------------
+  // 10) CRITICAL READY EVENT (FRONTEND)
+  // -------------------------------------------------------
+  try {
+    window.__criticalReady = true;
+    document.dispatchEvent(new Event("critical-ready"));
+    console.log("[CRITICAL] critical-ready emesso");
+  } catch (e) {
+    console.error("[CRITICAL] Errore emissione critical-ready:", e);
+  }
+
 })();
