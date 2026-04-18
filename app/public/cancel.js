@@ -1,9 +1,10 @@
 /* =========================================================
    CANCEL ORDER — Frontend
    Versione 2027.300 — PATCH fetchCritico + API UNIVERSALE
+   + Avvio sincronizzato con critical-ready
 ========================================================= */
 
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener("critical-ready", async () => {
   const url = new URL(window.location.href);
   const orderId = url.searchParams.get("orderId");
 
