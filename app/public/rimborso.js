@@ -1,17 +1,18 @@
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener("critical-ready", async () => {
   const form = document.getElementById("rimborsoForm");
   const emailInput = document.getElementById("email");
   const ordineSelect = document.getElementById("ordineSelect");
   const motivoInput = document.getElementById("motivo");
 
+  const token = localStorage.getItem("token");
+
   // =========================================================
   // 1) CARICA EMAIL UTENTE + ORDINI COMPLETATI
   // =========================================================
   try {
-    // ⭐ PATCH 2027.300 — alias + fetchCritico globale
-    const res = await window.fetchCritico(
+    const res = await window.fetchUniversale(
       "/ordini/utente",
-      { headers: { "Authorization": "Bearer " + localStorage.getItem("token") } }
+      { headers: { "Authorization": "Bearer " + token } }
     );
 
     const data = await res.json();
@@ -22,9 +23,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // ⭐ Email utente dal backend
-    const userRes = await window.fetchCritico(
+    const userRes = await window.fetchUniversale(
       "/utente/info",
-      { headers: { "Authorization": "Bearer " + localStorage.getItem("token") } }
+      { headers: { "Authorization": "Bearer " + token } }
     );
 
     const userData = await userRes.json();
@@ -81,8 +82,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     try {
-      // ⭐ PATCH 2027.300 — alias + fetchCritico globale
-      const res = await window.fetchCritico(
+      const res = await window.fetchUniversale(
         "/rimborso/crea",
         {
           method: "POST",
