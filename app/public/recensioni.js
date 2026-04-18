@@ -1,10 +1,11 @@
 /* =========================================================
-   RECENSIONI — Versione 2027.300
-   - Usa fetchCritico globale + API alias
+   RECENSIONI — Versione 2027.400
+   - critical-ready
+   - fetchUniversale (fallback chain)
    - Nessuna regressione
 ========================================================= */
 
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener("critical-ready", async () => {
   console.log("🔵 [DEBUG] recensioni.js caricato");
 
   const token = localStorage.getItem("token");
@@ -26,7 +27,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.log("🔵 [DEBUG] Carico prodotti acquistati...");
 
     try {
-      const res = await window.fetchCritico(
+      const res = await window.fetchUniversale(
         "/recensioni/prodotti-acquistati",
         {
           headers: { "Authorization": "Bearer " + token }
@@ -119,7 +120,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     try {
-      const res = await window.fetchCritico(
+      const res = await window.fetchUniversale(
         "/recensioni/crea",
         {
           method: "POST",
@@ -167,7 +168,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     listaRecensioni.innerHTML = "Caricamento…";
 
     try {
-      const res = await window.fetchCritico(
+      const res = await window.fetchUniversale(
         "/recensioni/utente",
         {
           headers: { "Authorization": "Bearer " + token }
@@ -207,7 +208,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           if (!confirm("Vuoi davvero eliminare questa recensione?")) return;
 
           try {
-            const res = await window.fetchCritico(
+            const res = await window.fetchUniversale(
               "/recensioni/elimina",
               {
                 method: "POST",
@@ -253,7 +254,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           }
 
           try {
-            const res = await window.fetchCritico(
+            const res = await window.fetchUniversale(
               "/recensioni/modifica",
               {
                 method: "POST",
