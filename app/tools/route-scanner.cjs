@@ -1,10 +1,10 @@
 /**
  * =========================================================
- * ROUTE SCANNER UNIVERSALE — Versione 2027.1
+ * ROUTE SCANNER UNIVERSALE — Versione 2027.2
  * Legge:
  *  - Frontend (fetch, axios, URL)
  *  - Backend (router, app.get, router.use)
- *  - Testa le route
+ *  - Testa le route con timeout
  *  - Genera report HTML
  * =========================================================
  */
@@ -68,19 +68,28 @@ function scanBackend() {
 async function testRoutes(routes) {
   const results = [];
 
+  const timeout = (ms) =>
+    new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), ms));
+
   for (const r of routes) {
     try {
-      const res = await fetch("https://www.mewingmarket.it" + r);
+      const res = await Promise.race([
+        fetch("https://www.mewingmarket.it" + r),
+        timeout(3000)
+      ]);
+
       const text = await res.text();
+
       results.push({
         route: r,
         status: res.status,
         preview: text.slice(0, 120)
       });
+
     } catch (err) {
       results.push({
         route: r,
-        status: "ERR",
+        status: "TIMEOUT",
         preview: err.message
       });
     }
