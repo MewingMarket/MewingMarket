@@ -1,20 +1,18 @@
 // =========================================================
 // CATALOGO PREMIUM – MewingMarket
-// Versione SQL definitiva + PATCH 2027.300
-// - Usa fetchCritico globale + apiFetch alias
-// - Rimosso dominio hardcoded
+// Versione SQL definitiva + PATCH 2027.400
+// - Usa fetchUniversale (fallback chain)
 // - Avvio sincronizzato con critical-ready
 // =========================================================
 
 /* =========================================================
-   1) CARICA PRODOTTI DAL BACKEND (PATCH: alias universale)
+   1) CARICA PRODOTTI DAL BACKEND (PATCH: fetchUniversale)
 ========================================================= */
 async function loadProducts() {
   console.log("🟦 [CATALOGO] Caricamento prodotti…");
 
   try {
-    // ⭐ PATCH 2027.300 — usa fetchCritico globale + alias /products
-    const res = await window.fetchCritico(
+    const res = await window.fetchUniversale(
       "/products",
       { cache: "no-store" },
       { retries: 3, backoffMs: 400 }
@@ -37,11 +35,11 @@ async function loadProducts() {
 }
 
 /* =========================================================
-   2) CARICA CATEGORIE (PATCH: fetchCritico)
+   2) CARICA CATEGORIE (PATCH: fetchUniversale)
 ========================================================= */
 async function loadCategories() {
   try {
-    const res = await window.fetchCritico(
+    const res = await window.fetchUniversale(
       "/data/categories.json",
       { cache: "no-store" },
       { retries: 2, backoffMs: 200 }
@@ -150,7 +148,7 @@ function cardHTML(p) {
 }
 
 /* =========================================================
-   8) INIZIALIZZAZIONE CATALOGO (PATCH: critical-ready)
+   8) INIZIALIZZAZIONE CATALOGO (critical-ready)
 ========================================================= */
 document.addEventListener("critical-ready", async () => {
 
