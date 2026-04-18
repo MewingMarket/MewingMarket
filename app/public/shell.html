@@ -12,19 +12,11 @@
   <h1>Diagnostica /var/data</h1>
   <div id="out">Caricamento…</div>
 
-  <script>
-    fetch("/diagnostica/var-data")
-      .then(r => r.json())
-      .then(data => {
-        document.getElementById("out").innerHTML =
-          "<pre>" + JSON.stringify(data, null, 2) + "</pre>";
-      })
-      .catch(err => {
-        document.getElementById("out").innerHTML =
-          "<pre>Errore: " + err.message + "</pre>";
-      });
-  </script>
-    <script src="/dynamic-loader.js?v=20260412"></script>
   
+    
+  
+<script src="loader.js?v=20260412"></script>
+<script src="/dynamic-loader.js?v=20260412"></script>
+
 </body>
 </html>

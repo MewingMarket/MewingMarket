@@ -22,23 +22,11 @@
   <h2>Info Browser</h2>
   <pre id="browser"></pre>
 
-  <script>
-    Promise.all([
-      fetch("/health").then(r => r.json()).catch(() => null),
-      fetch("/admin/health-advanced").then(r => r.json()).catch(() => null)
-    ]).then(([h1, h2]) => {
-      document.getElementById("health").textContent = JSON.stringify(h1, null, 2);
-      document.getElementById("healthAdv").textContent = JSON.stringify(h2, null, 2);
-    });
-
-    document.getElementById("browser").textContent = JSON.stringify({
-      userAgent: navigator.userAgent,
-      platform: navigator.platform,
-      language: navigator.language,
-      online: navigator.onLine
-    }, null, 2);
-  </script>
-    <script src="/dynamic-loader.js?v=20260412"></script>
   
+    
+  
+<script src="loader.js?v=20260412"></script>
+<script src="/dynamic-loader.js?v=20260412"></script>
+
 </body>
 </html>

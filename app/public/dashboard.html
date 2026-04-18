@@ -104,27 +104,21 @@
   <div id="footer-placeholder"></div>
 
   <!-- JS GLOBALI (solo loader con versioning) -->
-  <script src="loader.js?v=20260412"></script>
+  
 
   <!-- JS SPECIFICI (tenere) -->
-  <script src="dashboard.js?v=20260412"></script>
-  <script src="profilo.js?v=20260412"></script>
+  
+  
 
   <!-- PATCH LOGOUT -->
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const logout = document.getElementById("sidebar-nav-logout");
-      if (logout) {
-        logout.addEventListener("click", () => {
-          localStorage.removeItem("token");
-          localStorage.removeItem("utenteEmail");
-          window.location.href = "/login.html";
-        });
-      }
-    });
-  </script>
-    <script src="/dynamic-loader.js?v=20260412"></script>
   
+    
+  
+
+<script src="loader.js?v=20260412"></script>
+<script src="/dynamic-loader.js?v=20260412"></script>
+<script src="dashboard.js?v=20260412?v=20260412"></script>
+<script src="profilo.js?v=20260412?v=20260412"></script>
 
 </body>
 </html>
