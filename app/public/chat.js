@@ -1,10 +1,10 @@
 /* =========================================================
-   CHATBOX — VERSIONE COMPLETA + PATCH 2027.300
-   - Rimosso dominio hardcoded
-   - Usa fetchCritico globale + alias API
+   CHATBOX — VERSIONE COMPLETA + PATCH 2027.400
+   - critical-ready
+   - fetchUniversale (fallback chain)
 ========================================================= */
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("critical-ready", () => {
 
   const chatBox = document.getElementById("chat-box");
   const chatInput = document.getElementById("chat-input");
@@ -48,8 +48,7 @@ document.addEventListener("DOMContentLoaded", () => {
     chatInput.value = "";
 
     try {
-      // ⭐ PATCH 2027.300 — alias universale + fetchCritico globale
-      const res = await window.fetchCritico(
+      const res = await window.fetchUniversale(
         "/chat",
         {
           method: "POST",
@@ -139,8 +138,7 @@ document.addEventListener("DOMContentLoaded", () => {
     formData.append("audio", blob, "audio.webm");
 
     try {
-      // ⭐ PATCH 2027.300 — alias universale + fetchCritico globale
-      const res = await window.fetchCritico(
+      const res = await window.fetchUniversale(
         "/chat/voice",
         {
           method: "POST",
@@ -175,8 +173,7 @@ document.addEventListener("DOMContentLoaded", () => {
       formData.append("file", file);
 
       try {
-        // ⭐ PATCH 2027.300 — alias universale + fetchCritico globale
-        const res = await window.fetchCritico(
+        const res = await window.fetchUniversale(
           "/chat/attachment",
           {
             method: "POST",
