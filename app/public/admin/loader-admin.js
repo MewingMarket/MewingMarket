@@ -1,15 +1,6 @@
 /* =========================================================
    LOADER ADMIN — CRITICAL VERSION (2026.401 + API PATCH)
-   Garantisce SEMPRE:
-   - api.js (da root)
-   - head-admin
-   - header-admin
-   - footer-admin
-   - seo-admin
-   - structured-data-admin
-   - auth.js
-   - ordine sequenziale
-   - nessuna race condition
+   Versione PATCHATA con critical-ready corretto
 ========================================================= */
 
 console.log("[ADMIN] Critical loader avviato");
@@ -27,7 +18,7 @@ function loadAdminUtilityScript(name) {
     const s = document.createElement("script");
     s.id = id;
 
-    // ⭐ PATCH: api.js viene da root, tutto il resto da /admin/
+    // api.js viene da root
     if (name === "api") {
       s.src = `/api.js?v=${ADMIN_VERSION}`;
     } else {
@@ -72,17 +63,15 @@ function safeLoadHTML(url, placeholderId, eventName) {
 async function startAdminLoader() {
   console.log("[ADMIN] Avvio critical loader admin…");
 
-  // ⭐ API.js PRIMA DI TUTTO (da root)
-  await loadAdminUtilityScript("api");
-
-  // Utility critiche (da /admin/)
-  await loadAdminUtilityScript("seo-admin");
-  await loadAdminUtilityScript("structured-data-admin");
+  // Utility critiche
+  const apiP = loadAdminUtilityScript("api");
+  const seoP = loadAdminUtilityScript("seo-admin");
+  const sdP  = loadAdminUtilityScript("structured-data-admin");
 
   // HTML critici
-  await safeLoadHTML(`/admin/head-admin.html?v=${ADMIN_VERSION}`, "head-admin-placeholder", "admin-head-loaded");
-  await safeLoadHTML(`/admin/header-admin.html?v=${ADMIN_VERSION}`, "header-admin-placeholder", "admin-header-loaded");
-  await safeLoadHTML(`/admin/footer-admin.html?v=${ADMIN_VERSION}`, "footer-admin-placeholder", "admin-footer-loaded");
+  const headP = safeLoadHTML(`/admin/head-admin.html?v=${ADMIN_VERSION}`, "head-admin-placeholder", "admin-head-loaded");
+  const headerP = safeLoadHTML(`/admin/header-admin.html?v=${ADMIN_VERSION}`, "header-admin-placeholder", "admin-header-loaded");
+  const footerP = safeLoadHTML(`/admin/footer-admin.html?v=${ADMIN_VERSION}`, "footer-admin-placeholder", "admin-footer-loaded");
 
   // Logout admin
   document.addEventListener("admin-header-loaded", () => {
@@ -103,15 +92,17 @@ async function startAdminLoader() {
   });
 
   /* -------------------------------------------------------
-     CRITICAL READY (ADMIN)
+     CRITICAL READY (ADMIN) — PATCH
      ------------------------------------------------------- */
-  try {
-    window.__criticalReady = true;
-    document.dispatchEvent(new Event("critical-ready"));
-    console.log("[ADMIN] critical-ready emesso");
-  } catch (e) {
-    console.error("[ADMIN] Errore emissione critical-ready:", e);
-  }
+  Promise.all([apiP, seoP, sdP, headP, headerP, footerP]).then(() => {
+    try {
+      window.__criticalReady = true;
+      document.dispatchEvent(new Event("critical-ready"));
+      console.log("[ADMIN] critical-ready emesso (DEFINITIVO)");
+    } catch (e) {
+      console.error("[ADMIN] Errore emissione critical-ready:", e);
+    }
+  });
 
   console.log("[ADMIN] Critical loader admin completato");
 }
