@@ -1,10 +1,11 @@
 /* =========================================================
-   THANK YOU PAGE — Versione 2027.300
-   - Usa fetchCritico globale + API alias
+   THANK YOU PAGE — Versione 2027.400
+   - critical-ready
+   - fetchUniversale (fallback chain)
    - Nessuna regressione
 ========================================================= */
 
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener("critical-ready", async () => {
 
   const url = new URL(window.location.href);
   const orderId = url.searchParams.get("orderId");
@@ -20,8 +21,7 @@ document.addEventListener("DOMContentLoaded", async () => {
      1) VERIFICA ORDINE (complete-order)
   ========================================================== */
   try {
-    // ⭐ PATCH 2027.300 — alias + fetchCritico globale
-    const res = await window.fetchCritico(
+    const res = await window.fetchUniversale(
       `/paypal/complete-order?orderId=${orderId}`,
       { method: "GET" }
     );
