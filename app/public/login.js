@@ -1,11 +1,11 @@
 /* =========================================================
-   LOGIN.JS — Versione definitiva blindata (2027.300)
+   LOGIN.JS — Versione definitiva blindata (2027.400)
    Compatibile con auth.js + sessionState
    PATCH EVENTI UTENTE: registra evento "login"
-   PATCH 2027.300 — usa fetchCritico globale + apiFetch alias
+   PATCH — fetchUniversale (fallback chain)
 ========================================================= */
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("critical-ready", () => {
   const form = document.getElementById("login-form");
   if (!form) return;
 
@@ -20,7 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const email = localStorage.getItem("email") || "";
       if (!email) return;
 
-      await window.fetchCritico(
+      await window.fetchUniversale(
         "/utenti/evento",
         {
           method: "POST",
@@ -53,8 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
     form.dataset.lock = "1";
 
     try {
-      // ⭐ PATCH 2027.300 — fetchCritico globale + alias API
-      const res = await window.fetchCritico(
+      const res = await window.fetchUniversale(
         "/utenti/login",
         {
           method: "POST",
