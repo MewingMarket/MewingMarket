@@ -36,15 +36,10 @@ try {
 router.use(R("middleware/auth-user.cjs"));
 
 /* =========================================================
-   ⭐ PATCH: UNIVERSAL API ALIAS (v1/v2/latest/API/api)
-========================================================= */
-router.use(R("routes/api-alias.cjs"));
-
-/* =========================================================
    ⭐ TUTTE LE ROUTE PUBBLICHE (ordine stabile)
 ========================================================= */
 
-/* PRODOTTI (rimane dove sta) */
+/* PRODOTTI */
 router.use(R("routes/api-prodotti-new.cjs"));
 
 /* PUBBLICHE */
@@ -62,7 +57,7 @@ router.use(R("routes/paypal-complete.cjs"));
 router.use(R("routes/paypal-cancel.cjs"));
 router.use(R("routes/paypal-ricrea.cjs"));
 
-/* ADMIN (NON più sotto /admin, tutto pubblico) */
+/* ADMIN */
 router.use(R("routes/admin-dashboard.cjs"));
 router.use(R("routes/admin-feedback.cjs"));
 router.use(R("routes/admin-utenti.cjs"));
@@ -76,6 +71,7 @@ router.use(R("routes/api-feedback.cjs"));
 router.use(R("routes/api-vendite-download.cjs"));
 router.use(R("routes/prodotti-ai.cjs"));
 router.use(R("routes/utenti-evento.cjs"));
+
 /* ASSISTENZA */
 router.use(R("routes/api-assistenza.cjs"));
 
@@ -88,6 +84,12 @@ router.use(R("routes/meta-feed.cjs"));
 
 /* NEWSLETTER */
 router.use(R("routes/newsletter.cjs"));
+
+/* =========================================================
+   ⭐ API ALIAS — ***SPOSTATO IN FONDO***
+   (prima intercettava tutto e rispondeva "{}")
+========================================================= */
+router.use(R("routes/api-alias.cjs"));
 
 console.log("🟩 [ROUTER] Router principale caricato correttamente (TUTTO PUBBLICO)");
 
