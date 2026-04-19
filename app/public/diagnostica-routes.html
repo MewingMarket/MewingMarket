@@ -20,19 +20,25 @@
 
 <div id="output"></div>
 
+
 <script>
 async function test(url) {
   try {
     const r = await fetch(url);
     const text = await r.text();
+
     let type = "json";
+    let parsed = null;
 
-    try { JSON.parse(text); }
-    catch { type = "html"; }
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      type = "html";
+    }
 
-    return { url, status: r.status, text, type };
+    return { url, status: r.status, text, parsed, type };
   } catch (e) {
-    return { url, status: "ERR", text: e.message, type: "error" };
+    return { url, status: "ERR", text: e.message, parsed: null, type: "error" };
   }
 }
 
@@ -55,38 +61,22 @@ async function run() {
 
   const out = document.getElementById("output");
 
-  // ============================
-  // SEZIONE 1 — RISULTATI GREZZI
-  // ============================
   out.innerHTML += `<div class="box"><h2>1) Risultati grezzi</h2><pre>${JSON.stringify(results, null, 2)}</pre></div>`;
 
-  // ============================
-  // SEZIONE 2 — API OK
-  // ============================
   const ok = results.filter(r => r.status == 200 && r.type == "json" && r.text.trim() !== "{}");
   out.innerHTML += `<div class="box"><h2 class="ok">2) API OK</h2>${ok.map(r => `<div>🟩 ${r.url}</div>`).join("")}</div>`;
 
-  // ============================
-  // SEZIONE 3 — JSON VUOTO
-  // ============================
   const empty = results.filter(r => r.status == 200 && r.text.trim() === "{}");
   out.innerHTML += `<div class="box"><h2 class="warn">3) API che rispondono JSON vuoto</h2>${empty.map(r => `<div>🟧 ${r.url}</div>`).join("")}</div>`;
 
-  // ============================
-  // SEZIONE 4 — HTML
-  // ============================
   const html = results.filter(r => r.type == "html");
-  out.innerHTML += `<div class="box"><h2 class="err">4) API che rispondono HTML (ERRORE)</h2>${html.map(r => `<div>🟥 ${r.url}</div>`).join("")}</div>`;
+  out.innerHTML += `<div class="box"><h2 class="err">4) API che rispondono HTML</h2>${html.map(r => `<div>🟥 ${r.url}</div>`).join("")}</div>`;
 
-  // ============================
-  // SEZIONE 5 — ERRORI
-  // ============================
   const errors = results.filter(r => r.status === "ERR");
   out.innerHTML += `<div class="box"><h2 class="err">5) API con errore</h2>${errors.map(r => `<div>🟥 ${r.url} → ${r.text}</div>`).join("")}</div>`;
 }
 
 run();
 </script>
-
 </body>
 </html>
