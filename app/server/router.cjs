@@ -2,13 +2,24 @@
  * =========================================================
  * File: app/server/router.cjs
  * Router principale — SOLO API
- * Versione 2027.301 — PATCH UTENTI + ALIAS IN FONDO
+ * Versione 2027.910 — DIAGNOSTICA + FAILSAFE
  * =========================================================
  */
 
 const express = require("express");
 const path = require("path");
 const router = express.Router();
+
+/* =========================================================
+   ⭐ LOGGING DIAGNOSTICO — SCOPRE QUALSIASI ERRORE NASCOSTO
+========================================================= */
+process.on("uncaughtException", (err) => {
+  console.error("❌ [ROUTER] uncaughtException:", err);
+});
+
+process.on("unhandledRejection", (err) => {
+  console.error("❌ [ROUTER] unhandledRejection:", err);
+});
 
 /* Helper per require assoluti */
 const R = (p) => require(path.join(process.cwd(), "app/server", p));
@@ -93,14 +104,13 @@ router.use(R("routes/newsletter.cjs"));
 router.use(R("routes/api-alias.cjs"));
 
 console.log("🟩 [ROUTER] Router principale caricato correttamente (TUTTO PUBBLICO)");
+
 /* =========================================================
    ⭐ PATCH FINALE — IGNORA ROUTE ROTTE / ERRORI / CRASH
-   - Nessuna route può più bloccare il router
-   - Nessuna eccezione arriva al frontend
-   - Tutto ciò che è rotto → restituisce {}
 ========================================================= */
 router.use((err, req, res, next) => {
   console.error("❌ [ROUTER] Errore nella route:", req.path, err.message);
   return res.json({});
 });
+
 module.exports = router;
