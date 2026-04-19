@@ -1,7 +1,8 @@
 /**
  * =========================================================
- * mm-api.js — Versione STABILE (rollback compatibile)
+ * mm-api.js — Versione STABILE + PATCH fetchSafe (2027.920)
  * - Mantiene fetchNormale, apiFetch, fetchCritico, fetchUniversale
+ * - Aggiunge fetchSafe come sotto-funzione interna
  * - NON tocca login, NON cambia le chiamate esistenti
  * =========================================================
  */
@@ -15,12 +16,40 @@ function makeJsonResponse(obj, status = 500) {
   });
 }
 
-/* 1) FETCH NORMALE */
+/* =========================================================
+   0) FETCH SAFE — fallback automatico a JSON statici
+========================================================= */
+async function fetchSafe(apiUrl, staticUrl) {
+  try {
+    const r = await fetch(apiUrl, { cache: "no-store" });
+    if (!r.ok) throw new Error("API non ok");
+
+    const data = await r.json();
+    if (!data || (Array.isArray(data) && data.length === 0)) {
+      throw new Error("API vuota");
+    }
+
+    return data;
+  } catch (err) {
+    console.warn("⚠️ API FALLITA:", apiUrl, "→ uso statico:", staticUrl);
+
+    if (!staticUrl) return null;
+
+    const r2 = await fetch(staticUrl + "?v=" + Date.now());
+    return r2.json();
+  }
+}
+
+/* =========================================================
+   1) FETCH NORMALE
+========================================================= */
 window.fetchNormale = async function(path, options = {}) {
   return fetch(path, options);
 };
 
-/* 2) API FETCH (multi-prefix, ma senza filtri aggressivi) */
+/* =========================================================
+   2) API FETCH (multi-prefix)
+========================================================= */
 window.apiFetch = async function(path, options = {}) {
   const prefixes = ["/api", "/api/v1", "/api/v2", "/api/latest", "/API"];
 
@@ -31,15 +60,15 @@ window.apiFetch = async function(path, options = {}) {
       const res = await fetch(url, { ...options, credentials: "include" });
       if (!res.ok) continue;
       return res;
-    } catch (err) {
-      // prova il prossimo prefix
-    }
+    } catch (err) {}
   }
 
   return makeJsonResponse({ error: "API_FETCH_FAILED", path });
 };
 
-/* 3) FETCH CRITICO (retry su apiFetch) */
+/* =========================================================
+   3) FETCH CRITICO (retry)
+========================================================= */
 window.fetchCritico = async function(path, options = {}, cfg = {}) {
   const { retries = 2, backoffMs = 200 } = cfg;
 
@@ -57,8 +86,23 @@ window.fetchCritico = async function(path, options = {}, cfg = {}) {
   return makeJsonResponse({ error: "FETCH_CRITICO_FAILED", path });
 };
 
-/* 4) FETCH UNIVERSALE (catena semplice, NON distruttiva) */
+/* =========================================================
+   4) FETCH UNIVERSALE — potenziato con fetchSafe
+========================================================= */
 window.fetchUniversale = async function(path, options = {}, cfg = {}) {
+
+  /* PATCH: fallback automatico per catalogo */
+  if (path === "/catalogo" || path === "/api/catalogo") {
+    const data = await fetchSafe("/api/catalogo", "/data/catalog.json");
+    return makeJsonResponse(data, 200);
+  }
+
+  /* PATCH: fallback automatico per pagina prodotto */
+  if (path.startsWith("/product-page/") || path.startsWith("/api/product-page/")) {
+    const data = await fetchSafe(path, "/data/products.json");
+    return makeJsonResponse(data, 200);
+  }
+
   // 1) fetch normale
   try {
     const res = await window.fetchNormale(path, options);
@@ -80,7 +124,9 @@ window.fetchUniversale = async function(path, options = {}, cfg = {}) {
   }
 };
 
-/* 5) API UTENTE — EVENTO (lasciata com’è, ma semplice) */
+/* =========================================================
+   5) API UTENTE — EVENTO
+========================================================= */
 window.apiUtenteEvento = async function(data = {}) {
   try {
     const res = await window.fetchUniversale("/utenti/evento", {
@@ -91,7 +137,7 @@ window.apiUtenteEvento = async function(data = {}) {
 
     return await res.json();
   } catch (err) {
-      console.error("🔥 apiUtenteEvento errore:", err);
-      return { success: false, error: "API_UTENTE_EVENTO_FAILED" };
+    console.error("🔥 apiUtenteEvento errore:", err);
+    return { success: false, error: "API_UTENTE_EVENTO_FAILED" };
   }
 };
