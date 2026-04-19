@@ -5,44 +5,16 @@
 <title>Diagnostica Route — MewingMarket</title>
 <style>
   body { font-family: Arial; padding: 20px; background: #fafafa; }
-  h1 { margin-top: 0; }
-  .ok { color: green; }
-  .err { color: red; }
-  .warn { color: orange; }
-  pre { background: #eee; padding: 10px; border-radius: 6px; }
-  .box { background: white; padding: 15px; border-radius: 8px; margin-bottom: 25px; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
+  .box { background: white; padding: 15px; margin-bottom: 20px; border-radius: 8px; }
 </style>
 </head>
 <body>
 
 <h1>Diagnostica Route — MewingMarket</h1>
-<p>Analisi automatica delle API, route mancanti, risposte vuote, HTML, errori silenziosi.</p>
-
-<div id="output"></div>
-
+<div id="output">Caricamento…</div>
 
 <script>
-async function test(url) {
-  try {
-    const r = await fetch(url);
-    const text = await r.text();
-
-    let type = "json";
-    let parsed = null;
-
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      type = "html";
-    }
-
-    return { url, status: r.status, text, parsed, type };
-  } catch (e) {
-    return { url, status: "ERR", text: e.message, parsed: null, type: "error" };
-  }
-}
-
-async function run() {
+(async () => {
   const routes = [
     "/api/prodotti",
     "/api/catalogo",
@@ -53,30 +25,25 @@ async function run() {
     "/api/product-page",
     "/api/system-status",
     "/api/meta-feed",
-    "/api/newsletter",
+    "/api/newsletter"
   ];
 
   const results = [];
-  for (const r of routes) results.push(await test(r));
 
-  const out = document.getElementById("output");
+  for (const url of routes) {
+    try {
+      const r = await fetch(url);
+      const text = await r.text();
+      results.push({ url, status: r.status, text });
+    } catch (e) {
+      results.push({ url, status: "ERR", text: e.message });
+    }
+  }
 
-  out.innerHTML += `<div class="box"><h2>1) Risultati grezzi</h2><pre>${JSON.stringify(results, null, 2)}</pre></div>`;
-
-  const ok = results.filter(r => r.status == 200 && r.type == "json" && r.text.trim() !== "{}");
-  out.innerHTML += `<div class="box"><h2 class="ok">2) API OK</h2>${ok.map(r => `<div>🟩 ${r.url}</div>`).join("")}</div>`;
-
-  const empty = results.filter(r => r.status == 200 && r.text.trim() === "{}");
-  out.innerHTML += `<div class="box"><h2 class="warn">3) API che rispondono JSON vuoto</h2>${empty.map(r => `<div>🟧 ${r.url}</div>`).join("")}</div>`;
-
-  const html = results.filter(r => r.type == "html");
-  out.innerHTML += `<div class="box"><h2 class="err">4) API che rispondono HTML</h2>${html.map(r => `<div>🟥 ${r.url}</div>`).join("")}</div>`;
-
-  const errors = results.filter(r => r.status === "ERR");
-  out.innerHTML += `<div class="box"><h2 class="err">5) API con errore</h2>${errors.map(r => `<div>🟥 ${r.url} → ${r.text}</div>`).join("")}</div>`;
-}
-
-run();
+  document.getElementById("output").innerHTML =
+    "<div class='box'><pre>" + JSON.stringify(results, null, 2) + "</pre></div>";
+})();
 </script>
+
 </body>
 </html>
