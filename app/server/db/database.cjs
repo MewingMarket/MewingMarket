@@ -3,6 +3,7 @@
  * =========================================================
  * Database SQLite persistente su Render Disk
  * Versione 2026.300 — FIX: inizializzazione sempre garantita
+ * + PATCH 2027.1 — Reintroduzione db.hasFlag / db.setFlag
  * =========================================================
  */
 
@@ -76,6 +77,42 @@ files.forEach(file => {
     console.error("❌ Errore caricando schema", file, err.message);
   }
 });
+
+/* =========================================================
+ * PATCH 2027.1 — FUNZIONI FLAG (retrocompatibilità email)
+ * =========================================================
+ * Usa la tabella newsletter_log come storage dei flag.
+ * - hasFlag(flag, email) → true/false
+ * - setFlag(flag, email) → registra invio
+ * =========================================================
+ */
+
+db.hasFlag = function(flag, email) {
+  try {
+    const row = db.prepare(`
+      SELECT 1 
+      FROM newsletter_log
+      WHERE email = ? AND tipo = ?
+      LIMIT 1
+    `).get(email, flag);
+
+    return Boolean(row);
+  } catch (err) {
+    console.error("❌ db.hasFlag errore:", err.message);
+    return false;
+  }
+};
+
+db.setFlag = function(flag, email) {
+  try {
+    db.prepare(`
+      INSERT INTO newsletter_log (email, tipo, created_at)
+      VALUES (?, ?, datetime('now'))
+    `).run(email, flag);
+  } catch (err) {
+    console.error("❌ db.setFlag errore:", err.message);
+  }
+};
 
 // =========================================================
 // ESPORTA IL DB
