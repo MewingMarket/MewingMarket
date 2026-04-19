@@ -1,15 +1,15 @@
 /* =========================================================
-   LOGIN.JS — Versione BLINDATA (2027.500)
-   - Parte con critical-ready OPPURE DOMContentLoaded
-   - Evita doppia inizializzazione
-   - Nessuna regressione
+   LOGIN.JS — Versione BLINDATA (2027.600)
+   - Protezione totale contro API rotte / vuote / HTML
+   - Usa fetchUniversale potenziato
+   - Nessun blocco, nessuno spinner infinito
 ========================================================= */
 
 document.addEventListener("critical-ready", initLogin);
 document.addEventListener("DOMContentLoaded", initLogin);
 
 function initLogin() {
-  if (window.__loginInit) return; // evita doppio avvio
+  if (window.__loginInit) return;
   window.__loginInit = true;
 
   const form = document.getElementById("login-form");
@@ -42,7 +42,7 @@ function initLogin() {
   }
 
   /* =========================================================
-     SUBMIT LOGIN
+     SUBMIT LOGIN — VERSIONE BLINDATA
   ========================================================== */
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -69,10 +69,27 @@ function initLogin() {
         { retries: 2, backoffMs: 300 }
       );
 
-      const data = await res.json().catch(() => ({}));
+      /* =====================================================
+         PATCH: protezione contro risposte HTML / vuote / {}
+      ===================================================== */
+      let data = {};
+      try {
+        data = await res.json();
+      } catch (err) {
+        console.warn("⚠️ Login: risposta non JSON:", err);
+        alert("Servizio login non disponibile al momento.");
+        form.dataset.lock = "0";
+        return;
+      }
+
+      if (!data || typeof data !== "object") {
+        alert("Errore login (risposta non valida).");
+        form.dataset.lock = "0";
+        return;
+      }
 
       if (!data.success) {
-        alert(data.error || "Errore login");
+        alert(data.error || "Credenziali non valide.");
         form.dataset.lock = "0";
         return;
       }
@@ -104,7 +121,7 @@ function initLogin() {
 
     } catch (err) {
       console.error("Errore login:", err);
-      alert("Errore di connessione al server");
+      alert("Errore di connessione al server.");
     } finally {
       form.dataset.lock = "0";
     }
