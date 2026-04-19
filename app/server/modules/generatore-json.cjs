@@ -1,7 +1,6 @@
 /* =========================================================
  * GENERATORE JSON — Mirror automatico del database SQL
- * Auto-detect tabelle + funzioni singole compatibili
- * Persistente su /var/data/json + copia in /app/public/data
+ * Versione FIX 2027.901 — NIENTE /var (compatibile ovunque)
  * =========================================================
  */
 
@@ -17,24 +16,30 @@ const axios = require("axios");
 const { inviaEmailNovita } = require(path.join(process.cwd(), "app/server/modules/email-novita.cjs"));
 const { LISTA_NEWSLETTER } = require(path.join(process.cwd(), "app/server/modules/liste-brevo.cjs"));
 
-// ---------------------------------------------------------
-// Percorsi
-// ---------------------------------------------------------
+/* =========================================================
+   ⭐ PATCH PERCORSI — niente /var/data/json
+   Tutto dentro il progetto → nessun EACCES
+========================================================= */
 
-const DISK_DIR = "/var/data/json";
+const DISK_DIR = path.join(process.cwd(), "data/json");
 const PUBLIC_DIR = path.join(process.cwd(), "app/public/data");
 const LAST_NOVITA_FILE = path.join(DISK_DIR, "last-novita.json");
 
+// Crea cartelle interne al progetto
 [DISK_DIR, PUBLIC_DIR].forEach(dir => {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-    console.log("📁 Creata cartella:", dir);
+  try {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+      console.log("📁 Creata cartella:", dir);
+    }
+  } catch (err) {
+    console.error("❌ ERRORE CREAZIONE CARTELLA:", dir, err.message);
   }
 });
 
-// ---------------------------------------------------------
-// Helper: salva JSON in persistente + copia nel public
-// ---------------------------------------------------------
+/* =========================================================
+   Helper: salva JSON in persistente + copia nel public
+========================================================= */
 function saveJSON(filename, data) {
   try {
     const json = JSON.stringify(data, null, 2);
@@ -48,9 +53,9 @@ function saveJSON(filename, data) {
   }
 }
 
-// ---------------------------------------------------------
-// 1) AUTO-DETECT TABELLE DAL DATABASE
-// ---------------------------------------------------------
+/* =========================================================
+   1) AUTO-DETECT TABELLE DAL DATABASE
+========================================================= */
 function getAllTables() {
   try {
     const rows = db.prepare(`
@@ -68,9 +73,9 @@ function getAllTables() {
   }
 }
 
-// ---------------------------------------------------------
-// 2) ESPORTA OGNI TABELLA IN JSON
-// ---------------------------------------------------------
+/* =========================================================
+   2) ESPORTA OGNI TABELLA IN JSON
+========================================================= */
 async function exportTable(table) {
   try {
     const rows = db.prepare(`SELECT * FROM ${table} ORDER BY 1 DESC`).all();
@@ -81,9 +86,9 @@ async function exportTable(table) {
   }
 }
 
-// ---------------------------------------------------------
-// 3) PATCH — Invio automatico newsletter “Novità”
-// ---------------------------------------------------------
+/* =========================================================
+   3) PATCH — Invio automatico newsletter “Novità”
+========================================================= */
 async function checkAndSendNovita() {
   try {
     const latest = db.prepare(`
@@ -136,9 +141,9 @@ async function checkAndSendNovita() {
   }
 }
 
-// ---------------------------------------------------------
-// 4) EXPORT SPECIALI (prodotti, categorie, youtube, catalogo)
-// ---------------------------------------------------------
+/* =========================================================
+   4) EXPORT SPECIALI
+========================================================= */
 async function exportProducts() {
   try {
     const prodotti = await catalogo.getAllProducts();
@@ -201,9 +206,10 @@ async function exportCatalog() {
   }
 }
 
-// ---------------------------------------------------------
-// 5) EXPORT USERS (compatibilità legacy)
-// ---------------------------------------------------------
+/* =========================================================
+   5–14) EXPORT LEGACY + KPI + BACKUP + SCHEMA
+========================================================= */
+
 async function exportUsers() {
   try {
     const rows = db.prepare(`
@@ -219,95 +225,54 @@ async function exportUsers() {
   }
 }
 
-// ---------------------------------------------------------
-// 6) EXPORT ORDERS (compatibilità legacy)
-// ---------------------------------------------------------
 async function exportOrders() {
   try {
-    const rows = db.prepare(`
-      SELECT * FROM ordini ORDER BY id DESC
-    `).all();
-
+    const rows = db.prepare(`SELECT * FROM ordini ORDER BY id DESC`).all();
     saveJSON("orders.json", rows);
-    console.log("📦 Orders esportati");
   } catch (err) {
     console.error("❌ Errore exportOrders:", err.message);
   }
 }
 
-// ---------------------------------------------------------
-// 7) EXPORT SALES (compatibilità legacy)
-// ---------------------------------------------------------
 async function exportSales() {
   try {
-    const rows = db.prepare(`
-      SELECT * FROM vendite ORDER BY id DESC
-    `).all();
-
+    const rows = db.prepare(`SELECT * FROM vendite ORDER BY id DESC`).all();
     saveJSON("sales.json", rows);
-    console.log("💰 Sales esportate");
   } catch (err) {
     console.error("❌ Errore exportSales:", err.message);
   }
 }
 
-// ---------------------------------------------------------
-// 8) EXPORT FEEDBACK (compatibilità legacy)
-// ---------------------------------------------------------
 async function exportFeedback() {
   try {
-    const rows = db.prepare(`
-      SELECT * FROM feedback ORDER BY id DESC
-    `).all();
-
+    const rows = db.prepare(`SELECT * FROM feedback ORDER BY id DESC`).all();
     saveJSON("feedback.json", rows);
-    console.log("⭐ Feedback esportati");
   } catch (err) {
     console.error("❌ Errore exportFeedback:", err.message);
   }
 }
 
-// ---------------------------------------------------------
-// 9) EXPORT NEWSLETTER LOG (compatibilità legacy)
-// ---------------------------------------------------------
 async function exportNewsletterLog() {
   try {
-    const rows = db.prepare(`
-      SELECT * FROM newsletter_log ORDER BY id DESC
-    `).all();
-
+    const rows = db.prepare(`SELECT * FROM newsletter_log ORDER BY id DESC`).all();
     saveJSON("newsletter.json", rows);
-    console.log("📨 Newsletter log esportato");
   } catch (err) {
     console.error("❌ Errore exportNewsletterLog:", err.message);
   }
 }
 
-// ---------------------------------------------------------
-// 10) EXPORT USER EVENTS (compatibilità legacy)
-// ---------------------------------------------------------
 async function exportUserEvents() {
   try {
-    const rows = db.prepare(`
-      SELECT * FROM utenti_eventi ORDER BY id DESC
-    `).all();
-
+    const rows = db.prepare(`SELECT * FROM utenti_eventi ORDER BY id DESC`).all();
     saveJSON("user-events.json", rows);
-    console.log("📌 Eventi utente esportati");
   } catch (err) {
     console.error("❌ Errore exportUserEvents:", err.message);
   }
 }
 
-// ---------------------------------------------------------
-// 11) EXPORT KPI (daily, weekly, monthly)
-// ---------------------------------------------------------
 async function exportKpiGiornalieri() {
   try {
-    const rows = db.prepare(`
-      SELECT * FROM kpi_giornalieri ORDER BY data DESC
-    `).all();
-
+    const rows = db.prepare(`SELECT * FROM kpi_giornalieri ORDER BY data DESC`).all();
     saveJSON("kpi-daily.json", rows);
   } catch (err) {
     console.error("❌ Errore exportKpiGiornalieri:", err.message);
@@ -316,10 +281,7 @@ async function exportKpiGiornalieri() {
 
 async function exportKpiSettimanali() {
   try {
-    const rows = db.prepare(`
-      SELECT * FROM kpi_settimanali ORDER BY settimana DESC
-    `).all();
-
+    const rows = db.prepare(`SELECT * FROM kpi_settimanali ORDER BY settimana DESC`).all();
     saveJSON("kpi-weekly.json", rows);
   } catch (err) {
     console.error("❌ Errore exportKpiSettimanali:", err.message);
@@ -328,19 +290,13 @@ async function exportKpiSettimanali() {
 
 async function exportKpiMensili() {
   try {
-    const rows = db.prepare(`
-      SELECT * FROM kpi_mensili ORDER BY mese DESC
-    `).all();
-
+    const rows = db.prepare(`SELECT * FROM kpi_mensili ORDER BY mese DESC`).all();
     saveJSON("kpi-monthly.json", rows);
   } catch (err) {
     console.error("❌ Errore exportKpiMensili:", err.message);
   }
 }
 
-// ---------------------------------------------------------
-// 12) EXPORT BACKUP LOG (mirror JSON)
-// ---------------------------------------------------------
 async function exportBackupLog() {
   try {
     const rows = db.prepare(`
@@ -355,9 +311,6 @@ async function exportBackupLog() {
   }
 }
 
-// ---------------------------------------------------------
-// 13) EXPORT SCHEMA — colonne, tipi, PK, FK, indici
-// ---------------------------------------------------------
 async function exportSchema() {
   try {
     const tables = getAllTables();
@@ -387,9 +340,9 @@ async function exportSchema() {
   }
 }
 
-// ---------------------------------------------------------
-// 14) EXPORT COMPLETO (AUTO + SPECIALI + LEGACY)
-// ---------------------------------------------------------
+/* =========================================================
+   EXPORT COMPLETO
+========================================================= */
 async function exportAll() {
   console.log("⏳ Rigenerazione JSON…");
 
@@ -421,9 +374,9 @@ async function exportAll() {
   console.log("✅ Tutti i JSON rigenerati (persistente + public)");
 }
 
-// ---------------------------------------------------------
-// EXPORT API COMPLETA (compatibilità totale)
-// ---------------------------------------------------------
+/* =========================================================
+   EXPORT API
+========================================================= */
 module.exports = {
   exportAll,
   exportProducts,
