@@ -2,7 +2,7 @@
  * =========================================================
  * File: app/server/router.cjs
  * Router principale — SOLO API
- * Versione 2027.300 — TUTTE LE ROUTE PUBBLICHE
+ * Versione 2027.301 — PATCH UTENTI + ALIAS IN FONDO
  * =========================================================
  */
 
@@ -42,8 +42,10 @@ router.use(R("middleware/auth-user.cjs"));
 /* PRODOTTI */
 router.use(R("routes/api-prodotti-new.cjs"));
 
+/* UTENTI — PATCH FONDAMENTALE */
+router.use("/api/utenti", R("routes/api-utenti.cjs"));
+
 /* PUBBLICHE */
-router.use(R("routes/api-utenti.cjs"));
 router.use(R("routes/api-recensioni-top.cjs"));
 router.use(R("routes/product-page.cjs"));
 router.use(R("routes/sitemap.cjs"));
@@ -87,7 +89,6 @@ router.use(R("routes/newsletter.cjs"));
 
 /* =========================================================
    ⭐ API ALIAS — ***SPOSTATO IN FONDO***
-   (prima intercettava tutto e rispondeva "{}")
 ========================================================= */
 router.use(R("routes/api-alias.cjs"));
 
