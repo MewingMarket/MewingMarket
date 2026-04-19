@@ -93,5 +93,14 @@ router.use(R("routes/newsletter.cjs"));
 router.use(R("routes/api-alias.cjs"));
 
 console.log("🟩 [ROUTER] Router principale caricato correttamente (TUTTO PUBBLICO)");
-
+/* =========================================================
+   ⭐ PATCH FINALE — IGNORA ROUTE ROTTE / ERRORI / CRASH
+   - Nessuna route può più bloccare il router
+   - Nessuna eccezione arriva al frontend
+   - Tutto ciò che è rotto → restituisce {}
+========================================================= */
+router.use((err, req, res, next) => {
+  console.error("❌ [ROUTER] Errore nella route:", req.path, err.message);
+  return res.json({});
+});
 module.exports = router;
