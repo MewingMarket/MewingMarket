@@ -1,15 +1,14 @@
 /**
  * =========================================================
- * mm-api.js — Versione 2027.903 (FIX DEFINITIVO + UNIVERSALE)
- * - Scarta TUTTI i 404
- * - Scarta TUTTI gli HTML
- * - Accetta SOLO il primo 200 valido
- * - Nessun null, nessun {} fantasma
- * - Aggiunta fetchNormale() + fetchUniversale()
+ * mm-api.js — Versione 2027.904 (FUNZIONI + FALLBACK REALI)
+ * - Scarta 404, HTML, {}, risposte vuote
+ * - Accetta SOLO JSON pieno
+ * - Fallback: fetchNormale → apiFetch → fetchCritico
+ * - Fallback per FUNZIONE, non per route
  * =========================================================
  */
 
-console.log("🟦 api.js caricato (FIX DEFINITIVO + UNIVERSALE)");
+console.log("🟦 mm-api.js caricato (FUNZIONI + FALLBACK DEFINITIVO)");
 
 /* =========================================================
    0) Crea un Response JSON valido da qualsiasi input
@@ -22,14 +21,14 @@ function makeJsonResponse(obj, status = 500) {
 }
 
 /* =========================================================
-   1) FETCH NORMALE (nativo)
+   1) FETCH NORMALE
 ========================================================= */
 window.fetchNormale = async function(path, options = {}) {
   return fetch(path, options);
 };
 
 /* =========================================================
-   2) API FETCH (VERSIONE FIXATA 2027.902)
+   2) API FETCH (multi-prefix)
 ========================================================= */
 window.apiFetch = async function(path, options = {}) {
   const prefixes = ["/api", "/api/v1", "/api/v2", "/api/latest", "/API"];
@@ -41,33 +40,23 @@ window.apiFetch = async function(path, options = {}) {
       const res = await fetch(url, { ...options, credentials: "include" });
       const text = await res.text();
 
-      // HTML → SCARTATO
-      if (text.trim().startsWith("<")) {
-        throw new Error("HTML_RESPONSE");
-      }
+      if (text.trim().startsWith("<")) continue;
+      if (!res.ok) continue;
+      if (!text || text.trim() === "{}") continue;
 
-      // Se non è 200 → SCARTATO
-      if (!res.ok) {
-        throw new Error("BAD_STATUS");
-      }
-
-      // JSON valido → OK
       return new Response(text, {
         status: 200,
         headers: { "Content-Type": "application/json" }
       });
 
-    } catch (err) {
-      // prova il prossimo prefix
-    }
+    } catch (err) {}
   }
 
-  // Nessun prefix valido
   return makeJsonResponse({ error: "API_FETCH_FAILED", path });
 };
 
 /* =========================================================
-   3) FETCH CRITICO (VERSIONE FIXATA 2027.902)
+   3) FETCH CRITICO (retry)
 ========================================================= */
 window.fetchCritico = async function(path, options = {}, cfg = {}) {
   const { retries = 2, backoffMs = 200 } = cfg;
@@ -76,18 +65,11 @@ window.fetchCritico = async function(path, options = {}, cfg = {}) {
     try {
       const res = await window.apiFetch(path, options);
 
-      // Se è un Response 200 → OK
-      if (res && res.status === 200) {
-        return res;
-      }
+      if (res && res.status === 200) return res;
 
-      throw new Error("BAD_RESPONSE");
+    } catch (err) {}
 
-    } catch (err) {
-      if (attempt < retries) {
-        await new Promise(r => setTimeout(r, backoffMs * (attempt + 1)));
-      }
-    }
+    await new Promise(r => setTimeout(r, backoffMs * (attempt + 1)));
   }
 
   return makeJsonResponse({ error: "FETCH_CRITICO_FAILED", path });
@@ -95,60 +77,86 @@ window.fetchCritico = async function(path, options = {}, cfg = {}) {
 
 /* =========================================================
    4) FETCH UNIVERSALE (fallback chain)
-   - 1) fetchNormale
-   - 2) apiFetch
-   - 3) fetchCritico
 ========================================================= */
 window.fetchUniversale = async function(path, options = {}, cfg = {}) {
 
-  // 1) Tentativo — fetch normale
+  // 1) fetch normale
   try {
     const res = await window.fetchNormale(path, options);
-    if (res.ok) {
-      console.log("🟩 [UNIVERSALE] fetch normale OK");
-      return res;
+    const text = await res.text();
+    if (res.ok && text && text.trim() !== "{}" && !text.trim().startsWith("<")) {
+      return new Response(text, { status: 200, headers: { "Content-Type": "application/json" } });
     }
-    console.warn("⚠️ [UNIVERSALE] fetch normale NON ok:", res.status);
-  } catch (e) {
-    console.warn("⚠️ [UNIVERSALE] fetch normale fallita:", e);
-  }
+  } catch (e) {}
 
-  // 2) Tentativo — apiFetch
+  // 2) apiFetch
   try {
-    const res = await window.apiFetch(path, options, cfg);
-    if (res.ok) {
-      console.log("🟩 [UNIVERSALE] apiFetch OK");
-      return res;
+    const res = await window.apiFetch(path, options);
+    const text = await res.text();
+    if (res.ok && text && text.trim() !== "{}" && !text.trim().startsWith("<")) {
+      return new Response(text, { status: 200, headers: { "Content-Type": "application/json" } });
     }
-    console.warn("⚠️ [UNIVERSALE] apiFetch NON ok:", res.status);
-  } catch (e) {
-    console.warn("⚠️ [UNIVERSALE] apiFetch fallita:", e);
-  }
+  } catch (e) {}
 
-  // 3) Tentativo — fetchCritico (modalità resilienza)
+  // 3) fetchCritico
   try {
-    console.warn("🟥 [UNIVERSALE] Attivo fetchCritico (fallback finale)");
     const res = await window.fetchCritico(path, options, cfg);
-    return res;
-  } catch (e) {
-    console.error("🔥 [UNIVERSALE] fetchCritico fallita:", e);
-    throw e;
+    const text = await res.text();
+    if (res.ok && text && text.trim() !== "{}" && !text.trim().startsWith("<")) {
+      return new Response(text, { status: 200, headers: { "Content-Type": "application/json" } });
+    }
+  } catch (e) {}
+
+  return makeJsonResponse({ error: "UNIVERSALE_FAILED", path });
+};
+
+/* =========================================================
+   5) FUNZIONI UNIVERSALI (NON ROUTE)
+   Il frontend chiama:
+   mmAPI.call("versione")
+   mmAPI.call("product-page", { id: 9 })
+========================================================= */
+window.mmAPI = {
+  async call(fn, payload = {}) {
+
+    const candidates = [
+      `/` + fn,
+      `/` + fn.replace(/-/g, ""),
+      `/` + fn.replace(/_/g, ""),
+      `/` + fn.toLowerCase(),
+      `/` + fn.toUpperCase(),
+      `/` + fn + "/run",
+      `/` + fn + "/exec",
+      `/` + fn + "/call"
+    ];
+
+    for (const path of candidates) {
+      try {
+        const res = await window.fetchUniversale(path, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const text = await res.text();
+        if (!text || text.trim() === "{}" || text.trim().startsWith("<")) continue;
+
+        try {
+          return JSON.parse(text);
+        } catch (e) {
+          continue;
+        }
+
+      } catch (e) {}
+    }
+
+    return { success: false, error: "FUNZIONE_NON_TROVATA", fn };
   }
 };
+
 /* =========================================================
-   5) API UTENTE — EVENTO (nuova route)
+   6) API UTENTE — EVENTO (usa FUNZIONI)
 ========================================================= */
 window.apiUtenteEvento = async function(data = {}) {
-  try {
-    const res = await window.fetchUniversale("/utenti/evento", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
-    });
-
-    return await res.json();
-  } catch (err) {
-    console.error("🔥 apiUtenteEvento errore:", err);
-    return { success: false, error: "API_UTENTE_EVENTO_FAILED" };
-  }
+  return await window.mmAPI.call("utenti/evento", data);
 };
