@@ -246,7 +246,15 @@ app.get("/diagnostica-routes", (req, res) => {
 
   // SERVE FILE STATICI
   app.use(express.static(PUBLIC_DIR));
-
+// =========================================================
+// ALIAS ENGINE (GET+HEAD + fallback statico + backup)
+// =========================================================
+try {
+  require("./alias-engine.cjs")(app, { log, logErr });
+  log("🟩 Alias Engine attivato");
+} catch (err) {
+  logErr("❌ Errore Alias Engine:", err.message);
+}
   // =========================================================
   // PATCH 2027.CSS — CSS GLOBALI
   // =========================================================
