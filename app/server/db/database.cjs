@@ -106,8 +106,8 @@ db.hasFlag = function(flag, email) {
 db.setFlag = function(flag, email) {
   try {
     db.prepare(`
-      INSERT INTO newsletter_log (email, tipo, created_at)
-      VALUES (?, ?, datetime('now'))
+      INSERT INTO newsletter_log (email, tipo, azione, created_at)
+      VALUES (?, ?, 'flag', datetime('now'))
     `).run(email, flag);
   } catch (err) {
     console.error("❌ db.setFlag errore:", err.message);
