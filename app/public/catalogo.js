@@ -1,9 +1,9 @@
 // =========================================================
 // CATALOGO PREMIUM – MewingMarket
-// Versione SQL definitiva + PATCH 2027.900
+// Versione SQL definitiva + PATCH 2027.901
 // - Compatibile con fetchUniversale + alias-engine
 // - Compatibile con JSON statici + API SQL
-// - Avvio sincronizzato con critical-ready
+// - Avvio con DOMContentLoaded (stabile)
 // =========================================================
 
 /* =========================================================
@@ -22,19 +22,13 @@ async function loadProducts() {
     const data = await res.json();
     let prodotti = [];
 
-    // JSON statico
     if (Array.isArray(data)) {
       prodotti = data;
-    }
-    // Vecchio formato
-    else if (data && Array.isArray(data.prodotti)) {
+    } else if (data && Array.isArray(data.prodotti)) {
       prodotti = data.prodotti;
-    }
-    // Formato API SQL moderno
-    else if (data && Array.isArray(data.data)) {
+    } else if (data && Array.isArray(data.data)) {
       prodotti = data.data;
-    }
-    else {
+    } else {
       console.error("❌ [CATALOGO] Formato dati non valido:", data);
       return [];
     }
@@ -49,7 +43,7 @@ async function loadProducts() {
 }
 
 /* =========================================================
-   2) CARICA CATEGORIE (fallback automatico)
+   2) CARICA CATEGORIE
 ========================================================= */
 async function loadCategories() {
   try {
@@ -162,11 +156,11 @@ function cardHTML(p) {
 }
 
 /* =========================================================
-   8) INIZIALIZZAZIONE CATALOGO (critical-ready)
+   8) INIZIALIZZAZIONE CATALOGO (DOMContentLoaded)
 ========================================================= */
-document.addEventListener("critical-ready", async () => {
+document.addEventListener("DOMContentLoaded", async () => {
 
-  console.log("🟦 [CATALOGO] critical-ready");
+  console.log("🟦 [CATALOGO] DOMContentLoaded");
 
   const products = await loadProducts();
   const categoriesFromJson = await loadCategories();
