@@ -1,6 +1,7 @@
 /* =========================================================
  * GENERATORE JSON — Mirror automatico del database SQL
  * Versione FIX 2027.901 — NIENTE /var (compatibile ovunque)
+ * + PATCH MIRROR → copia TUTTI i JSON in app/data
  * =========================================================
  */
 
@@ -23,10 +24,11 @@ const { LISTA_NEWSLETTER } = require(path.join(process.cwd(), "app/server/module
 
 const DISK_DIR = path.join(process.cwd(), "data/json");
 const PUBLIC_DIR = path.join(process.cwd(), "app/public/data");
+const APPDATA_DIR = path.join(process.cwd(), "app/data"); // ⭐ PATCH NUOVA DESTINAZIONE
 const LAST_NOVITA_FILE = path.join(DISK_DIR, "last-novita.json");
 
 // Crea cartelle interne al progetto
-[DISK_DIR, PUBLIC_DIR].forEach(dir => {
+[DISK_DIR, PUBLIC_DIR, APPDATA_DIR].forEach(dir => {
   try {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
@@ -38,7 +40,24 @@ const LAST_NOVITA_FILE = path.join(DISK_DIR, "last-novita.json");
 });
 
 /* =========================================================
-   Helper: salva JSON in persistente + copia nel public
+   ⭐ PATCH — MIRROR AUTOMATICO → app/data
+========================================================= */
+function mirrorToAppData(filename) {
+  try {
+    const src = path.join(DISK_DIR, filename);
+    const dest = path.join(APPDATA_DIR, filename);
+
+    if (fs.existsSync(src)) {
+      fs.copyFileSync(src, dest);
+      console.log(`🟩 [MIRROR] Copiato in app/data → ${filename}`);
+    }
+  } catch (err) {
+    console.error(`❌ Errore mirrorToAppData (${filename}):`, err.message);
+  }
+}
+
+/* =========================================================
+   Helper: salva JSON in persistente + copia nel public + mirror
 ========================================================= */
 function saveJSON(filename, data) {
   try {
@@ -47,7 +66,11 @@ function saveJSON(filename, data) {
     fs.writeFileSync(path.join(DISK_DIR, filename), json, "utf8");
     fs.writeFileSync(path.join(PUBLIC_DIR, filename), json, "utf8");
 
+    // ⭐ PATCH: mirror automatico
+    mirrorToAppData(filename);
+
     console.log(`💾 JSON aggiornato: ${filename}`);
+
   } catch (err) {
     console.error(`❌ ERRORE CRITICO salvataggio JSON (${filename}):`, err.message);
   }
@@ -74,13 +97,18 @@ function getAllTables() {
 }
 
 /* =========================================================
-   2) ESPORTA OGNI TABELLA IN JSON
+   2) ESPORTA OGNI TABELLA IN JSON + LOG PREMIUM
 ========================================================= */
 async function exportTable(table) {
   try {
     const rows = db.prepare(`SELECT * FROM ${table} ORDER BY 1 DESC`).all();
-    saveJSON(`${table}.json`, rows);
-    console.log(`📄 Tabella esportata: ${table}`);
+    const filename = `${table}.json`;
+
+    saveJSON(filename, rows);
+
+    // ⭐ LOG PREMIUM RICHIESTO
+    console.log(`🟩 [JSON] Lo schema SQL "${table}" corrisponde a "${filename}" ed è stato creato con successo`);
+
   } catch (err) {
     console.error(`❌ Errore exportTable (${table}):`, err.message);
   }
@@ -245,7 +273,7 @@ async function exportSales() {
 
 async function exportFeedback() {
   try {
-    const rows = db.prepare(`SELECT * FROM feedback ORDER BY id DESC`).all();
+    const rows = db.prepare(`SELECT * FROM feedback ORDER ORDER BY id DESC`).all();
     saveJSON("feedback.json", rows);
   } catch (err) {
     console.error("❌ Errore exportFeedback:", err.message);
@@ -371,7 +399,7 @@ async function exportAll() {
   await exportBackupLog();
   await exportSchema();
 
-  console.log("✅ Tutti i JSON rigenerati (persistente + public)");
+  console.log("✅ Tutti i JSON rigenerati (persistente + public + app/data)");
 }
 
 /* =========================================================
