@@ -1,12 +1,13 @@
 // =========================================================
 // CATALOGO PREMIUM – MewingMarket
-// Versione SQL definitiva + PATCH 2027.400
-// - Usa fetchUniversale (fallback chain)
+// Versione SQL definitiva + PATCH 2027.900
+// - Compatibile con fetchUniversale + alias-engine
+// - Compatibile con JSON statici + API SQL
 // - Avvio sincronizzato con critical-ready
 // =========================================================
 
 /* =========================================================
-   1) CARICA PRODOTTI DAL BACKEND (PATCH: fetchUniversale)
+   1) CARICA PRODOTTI (compatibile con TUTTI i formati)
 ========================================================= */
 async function loadProducts() {
   console.log("🟦 [CATALOGO] Caricamento prodotti…");
@@ -19,14 +20,27 @@ async function loadProducts() {
     );
 
     const data = await res.json();
+    let prodotti = [];
 
-    if (!data || !data.success || !Array.isArray(data.prodotti)) {
+    // JSON statico
+    if (Array.isArray(data)) {
+      prodotti = data;
+    }
+    // Vecchio formato
+    else if (data && Array.isArray(data.prodotti)) {
+      prodotti = data.prodotti;
+    }
+    // Formato API SQL moderno
+    else if (data && Array.isArray(data.data)) {
+      prodotti = data.data;
+    }
+    else {
       console.error("❌ [CATALOGO] Formato dati non valido:", data);
       return [];
     }
 
-    console.log("🟩 [CATALOGO] Prodotti ricevuti:", data.prodotti.length);
-    return data.prodotti;
+    console.log("🟩 [CATALOGO] Prodotti ricevuti:", prodotti.length);
+    return prodotti;
 
   } catch (err) {
     console.error("🔥 [CATALOGO] Errore fetch prodotti:", err);
@@ -35,12 +49,12 @@ async function loadProducts() {
 }
 
 /* =========================================================
-   2) CARICA CATEGORIE (PATCH: fetchUniversale)
+   2) CARICA CATEGORIE (fallback automatico)
 ========================================================= */
 async function loadCategories() {
   try {
     const res = await window.fetchUniversale(
-      "/data/categories.json",
+      "/categories",
       { cache: "no-store" },
       { retries: 2, backoffMs: 200 }
     );
@@ -49,7 +63,7 @@ async function loadCategories() {
     return Array.isArray(cats) ? cats : [];
 
   } catch (err) {
-    console.warn("⚠️ [CATALOGO] Categorie JSON non disponibili:", err);
+    console.warn("⚠️ [CATALOGO] Categorie non disponibili:", err);
     return [];
   }
 }
