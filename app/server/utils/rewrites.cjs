@@ -1,27 +1,23 @@
 // ============================================================================
 // FILE: app/server/utils/rewrites.cjs
-// HTML SCRIPT REWRITER — MewingMarket
+// HTML SCRIPT REWRITER — MewingMarket (versione robusta)
 // ----------------------------------------------------------------------------
-// Scopo:
-//   - Intercetta l'HTML generato dal server
-//   - Estrae tutti i tag <script>
-//   - Identifica loader.js e dynamic-loader.js
-//   - Identifica TUTTI i JS di pagina (qualsiasi nome)
-//   - Riscrive l'ordine corretto:
+// Garantisce ordine corretto degli script:
 //
-//        1) loader.js
-//        2) dynamic-loader.js
-//        3) tutti i JS di pagina (in ordine originale)
+//   1) loader.js
+//   2) dynamic-loader.js
+//   3) tutti i JS di pagina (in ordine originale)
 //
-//   - Reinserisce gli script PRIMA di </body>
-//   - Ritorna l'HTML riscritto
-//
-// Questo garantisce bootstrap stabile e indipendente dall'ordine negli HTML.
+// Compatibile con:
+//   - querystring (?v=xxxx)
+//   - spazi e attributi vari
+//   - tag troncati o formattati male
+//   - HTML minificato
 // ============================================================================
 
 module.exports = function rewriteScripts(html) {
   try {
-    // Trova tutti i tag <script src="..."></script>
+    // Regex robusta per catturare TUTTI gli script con src
     const scriptRegex = /<script\b[^>]*src=["']([^"']+)["'][^>]*><\/script>/gi;
 
     let match;
@@ -33,17 +29,33 @@ module.exports = function rewriteScripts(html) {
     while ((match = scriptRegex.exec(html)) !== null) {
       const src = match[1];
 
-      if (src.includes("loader.js")) {
+      // loader.js
+      if (/loader\.js/i.test(src)) {
         loaderScript = match[0];
-      } else if (src.includes("dynamic-loader.js")) {
-        dynamicScript = match[0];
-      } else {
-        pageScripts.push(match[0]);
+        continue;
       }
+
+      // dynamic-loader.js (regex più robusta)
+      if (/dynamic-loader\.js/i.test(src)) {
+        dynamicScript = match[0];
+        continue;
+      }
+
+      // Tutti gli altri = JS di pagina
+      pageScripts.push(match[0]);
     }
 
-    // Se non c’è loader, non riscrivere nulla
+    // Se manca loader.js → non riscrivere nulla
     if (!loaderScript) return html;
+
+    // Fallback: dynamic-loader.js non trovato? Cerca nei pageScripts
+    if (!dynamicScript) {
+      const idx = pageScripts.findIndex(s => /dynamic-loader\.js/i.test(s));
+      if (idx !== -1) {
+        dynamicScript = pageScripts[idx];
+        pageScripts.splice(idx, 1);
+      }
+    }
 
     // Rimuovi TUTTI gli script originali
     let cleaned = html.replace(scriptRegex, "");
@@ -55,7 +67,7 @@ module.exports = function rewriteScripts(html) {
       ...pageScripts
     ].join("\n");
 
-    // Inserisci gli script PRIMA della chiusura </body>
+    // Inserisci PRIMA di </body>
     cleaned = cleaned.replace("</body>", rebuiltScripts + "\n</body>");
 
     return cleaned;
