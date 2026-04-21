@@ -254,7 +254,27 @@ try {
   log("🟩 Alias Engine attivato");
 } catch (err) {
   logErr("❌ Errore Alias Engine:", err.message);
-}
+} // =========================================================
+// PATCH 2027.HTML — Rewriter ordine script (loader + pagina)
+// =========================================================
+const rewriteScripts = require("./utils/rewrites.cjs");
+
+app.use((req, res, next) => {
+  // intercetta solo HTML
+  const send = res.send;
+  res.send = function (body) {
+    try {
+      const type = res.getHeader("Content-Type") || "";
+      if (type.includes("text/html")) {
+        body = rewriteScripts(body.toString());
+      }
+    } catch (err) {
+      logErr("❌ rewriteScripts ERROR:", err.message);
+    }
+    return send.call(this, body);
+  };
+  next();
+});
   // =========================================================
   // PATCH 2027.CSS — CSS GLOBALI
   // =========================================================
