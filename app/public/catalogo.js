@@ -3,7 +3,7 @@
 // Versione SQL definitiva + PATCH 2027.901
 // - Compatibile con fetchUniversale + alias-engine
 // - Compatibile con JSON statici + API SQL
-// - Avvio con DOMContentLoaded (stabile)
+// - Avvio con critical-ready (stabile)
 // =========================================================
 
 /* =========================================================
@@ -156,11 +156,11 @@ function cardHTML(p) {
 }
 
 /* =========================================================
-   8) INIZIALIZZAZIONE CATALOGO (DOMContentLoaded)
+   8) INIZIALIZZAZIONE CATALOGO (critical-ready)
 ========================================================= */
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener("critical-ready", async () => {
 
-  console.log("🟦 [CATALOGO] DOMContentLoaded");
+  console.log("🟦 [CATALOGO] critical-ready → avvio catalogo");
 
   const products = await loadProducts();
   const categoriesFromJson = await loadCategories();
