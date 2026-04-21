@@ -154,13 +154,12 @@ function cardHTML(p) {
     </div>
   `;
 }
-
 /* =========================================================
-   8) INIZIALIZZAZIONE CATALOGO (critical-ready)
+   8) AVVIO CATALOGO (robusto, compatibile con rewriter)
 ========================================================= */
-document.addEventListener("critical-ready", async () => {
 
-  console.log("🟦 [CATALOGO] critical-ready → avvio catalogo");
+async function avviaCatalogo() {
+  console.log("🟦 [CATALOGO] AVVIO CATALOGO");
 
   const products = await loadProducts();
   const categoriesFromJson = await loadCategories();
@@ -192,6 +191,7 @@ document.addEventListener("critical-ready", async () => {
 
   container.innerHTML = products.map(cardHTML).join("");
 
+  // FILTRI CATEGORIA
   categorieBox.addEventListener("click", e => {
     const cat = e.target.dataset.cat;
     if (!cat) return;
@@ -202,6 +202,7 @@ document.addEventListener("critical-ready", async () => {
     });
   });
 
+  // FILTRI PREZZO
   document.querySelectorAll(".filtri-prezzo .btn[data-prezzo]").forEach(btn => {
     btn.addEventListener("click", () => {
       const max = Number(btn.dataset.prezzo);
@@ -213,6 +214,7 @@ document.addEventListener("critical-ready", async () => {
     });
   });
 
+  // RESET
   const resetBtn = document.getElementById("reset");
   if (resetBtn) {
     resetBtn.addEventListener("click", () => {
@@ -222,6 +224,7 @@ document.addEventListener("critical-ready", async () => {
     });
   }
 
+  // CARRELLO
   document.querySelectorAll(".btn-add-cart").forEach(btn => {
     btn.addEventListener("click", () => {
 
@@ -266,4 +269,16 @@ document.addEventListener("critical-ready", async () => {
       aggiornaBadgeCarrello();
     }
   }, 50);
-});
+}
+
+/* =========================================================
+   9) BOOTSTRAP CATALOGO (compatibile con timing asincrono)
+========================================================= */
+
+if (window.__criticalReady) {
+  // Evento già emesso → avvio immediato
+  avviaCatalogo();
+} else {
+  // Aspetto l’evento
+  document.addEventListener("critical-ready", avviaCatalogo);
+}
