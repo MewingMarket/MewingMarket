@@ -1,6 +1,6 @@
 // ===============================
 // CRITICAL LOADER — MewingMarket
-// Versione 2027.700 — COMPLETA + PATCH DEFINITIVA
+// Versione 2027.701 — COMPLETA + PATCH DEFINITIVA
 // ===============================
 
 (function () {
@@ -117,6 +117,11 @@
         temp.innerHTML = html;
         [...temp.children].forEach((node) => document.head.appendChild(node));
         document.dispatchEvent(new Event("head-loaded"));
+        return true;
+      })
+      .catch(err => {
+        console.error("[CRITICAL] head non caricato:", err);
+        return true;
       });
   }
 
@@ -135,6 +140,11 @@
         const ph = document.getElementById("header-placeholder");
         if (ph) ph.innerHTML = html;
         document.dispatchEvent(new Event("header-loaded"));
+        return true;
+      })
+      .catch(err => {
+        console.error("[CRITICAL] header non caricato:", err);
+        return true;
       });
   }
 
@@ -157,7 +167,7 @@
   });
 
   // ============================================================
-  // 7) FOOTER (PATCH: return fetch)
+  // 7) FOOTER — PATCH DEFINITIVA
   // ============================================================
   function safeFetchFooter(url) {
     return fetch(url)
@@ -168,6 +178,11 @@
         const year = document.getElementById("anno");
         if (year) year.textContent = new Date().getFullYear();
         document.dispatchEvent(new Event("footer-loaded"));
+        return true; // PATCH
+      })
+      .catch(err => {
+        console.error("[CRITICAL] footer non caricato:", err);
+        return true; // PATCH
       });
   }
 
@@ -213,7 +228,7 @@
   });
 
   // ============================================================
-  // 10) CRITICAL READY
+  // 10) CRITICAL READY — ORA GARANTITO
   // ============================================================
   Promise.all([
     apiPromise,
@@ -227,7 +242,7 @@
   ]).then(() => {
     window.__criticalReady = true;
     document.dispatchEvent(new Event("critical-ready"));
-    console.log("[CRITICAL] critical-ready emesso (2027.700)");
+    console.log("[CRITICAL] critical-ready emesso (2027.701)");
   });
 
 })();
