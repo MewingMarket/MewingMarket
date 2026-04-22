@@ -8,13 +8,22 @@
   const VERSION = "20260412";
 
   // ============================================================
-  // 0) CARICAMENTO mm-api.js — OBBLIGATORIO E BLOCCANTE
+  // 0) CARICAMENTO mm-api.js — ORA GESTITO DAL DOM
+  //    Qui ci limitiamo solo a verificare che esista
   // ============================================================
   const apiPromise = new Promise((resolve) => {
+    if (window.fetchUniversale && window.apiFetch && window.fetchCritico && window.fetchSafe) {
+      console.log("[CRITICAL] mm-api.js già caricato dal DOM");
+      resolve();
+      return;
+    }
+
+    // Fallback di sicurezza: se per qualche motivo non è nel DOM,
+    // proviamo comunque a caricarlo una sola volta.
     const s = document.createElement("script");
-    s.src = `/mm-api.js?v=${VERSION}`;   // PATCH QUI
+    s.src = `/mm-api.js?v=${VERSION}`;
     s.onload = () => {
-      console.log("[CRITICAL] mm-api.js caricato");
+      console.log("[CRITICAL] mm-api.js caricato via loader (fallback)");
       resolve();
     };
     s.onerror = () => {
