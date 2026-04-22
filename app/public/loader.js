@@ -8,22 +8,13 @@
   const VERSION = "20260412";
 
   // ============================================================
-  // 0) CARICAMENTO mm-api.js — ORA GESTITO DAL DOM
-  //    Qui ci limitiamo solo a verificare che esista
+  // 0) CARICAMENTO mm-api.js — OBBLIGATORIO E BLOCCANTE
   // ============================================================
   const apiPromise = new Promise((resolve) => {
-    if (window.fetchUniversale && window.apiFetch && window.fetchCritico && window.fetchSafe) {
-      console.log("[CRITICAL] mm-api.js già caricato dal DOM");
-      resolve();
-      return;
-    }
-
-    // Fallback di sicurezza: se per qualche motivo non è nel DOM,
-    // proviamo comunque a caricarlo una sola volta.
     const s = document.createElement("script");
     s.src = `/mm-api.js?v=${VERSION}`;
     s.onload = () => {
-      console.log("[CRITICAL] mm-api.js caricato via loader (fallback)");
+      console.log("[CRITICAL] mm-api.js caricato");
       resolve();
     };
     s.onerror = () => {
@@ -166,7 +157,7 @@
   });
 
   // ============================================================
-  // 7) FOOTER
+  // 7) FOOTER (PATCH: return fetch)
   // ============================================================
   function safeFetchFooter(url) {
     return fetch(url)
