@@ -46,10 +46,21 @@
   <!-- FOOTER DINAMICO -->
   <div id="footer-placeholder"></div>
 
-  <!-- JS GLOBALI + JS DI PAGINA (ordine gestito dal rewriter) -->
-  <script src="/loader.js?v=20260412" type="text/javascript" crossorigin="anonymous"></script>
-  <script src="/catalogo.js?v=20260420" type="text/javascript" charset="UTF-8" crossorigin="anonymous"></script>
-  <script src="/dynamic-loader.js?v=20260412" type="text/javascript" crossorigin="anonymous"></script>
+  <!-- ============================= -->
+  <!--  ORDINE SCRIPT DEFINITIVO     -->
+  <!-- ============================= -->
+
+  <!-- 1) mm-api.js → DEVE essere PRIMA del loader -->
+  <script src="/mm-api.js?v=20260412"></script>
+
+  <!-- 2) loader.js → carica auth, head, header, footer, carrello -->
+  <script src="/loader.js?v=20260412"></script>
+
+  <!-- 3) dynamic-loader.js → patcha e completa -->
+  <script src="/dynamic-loader.js?v=20260412"></script>
+
+  <!-- 4) catalogo.js → parte con fallback su critical-ready -->
+  <script src="/catalogo.js?v=20260420"></script>
 
 </body>
 </html>
