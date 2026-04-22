@@ -8,10 +8,11 @@
 //   2) dynamic-loader.js
 //   3) tutti i JS di pagina (in ordine originale)
 //
-// PATCH 2027.800:
+// PATCH 2027.900:
 //   - Disattiva rewriter per tutte le pagine che usano il critical-loader
 //     (mm-api.js, loader.js, dynamic-loader.js)
 //   - Evita rimozione/duplicazione script critici
+//   - Mantiene rewriter attivo solo per pagine legacy
 // ============================================================================
 
 module.exports = function rewriteScripts(html) {
