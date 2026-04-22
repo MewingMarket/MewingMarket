@@ -2,7 +2,7 @@
 // FILE: app/server/utils/rewrites.cjs
 // HTML SCRIPT REWRITER — DISATTIVATO PER PAGINE HTML
 // ============================================================================
-
+console.log(">>> REWRITER ATTIVO:", __filename);
 module.exports = function rewriteScripts(html) {
   try {
 
