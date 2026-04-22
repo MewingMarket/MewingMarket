@@ -1,23 +1,19 @@
 // ============================================================================
 // FILE: app/server/utils/rewrites.cjs
-// HTML SCRIPT REWRITER — DISATTIVATO PER PAGINE HTML
+// HTML SCRIPT REWRITER — MewingMarket (versione robusta + PATCH DEFINITIVA)
+// ----------------------------------------------------------------------------
+// Disattiva completamente la riscrittura per le pagine HTML che usano il critical-loader.
+// Evita rimozione, duplicazione o riordinamento degli script.
 // ============================================================================
-console.log(">>> REWRITER ATTIVO:", __filename);
+
 module.exports = function rewriteScripts(html) {
   try {
-
-    // ============================================================================
-    // 🔥 PATCH DEFINITIVA
-    // NON riscrivere MAI pagine HTML
-    // (il critical-loader gestisce già tutto)
-    // ============================================================================
-    if (html.includes("<html") || html.includes("<!DOCTYPE html")) {
+    // 🔥 PATCH CRITICA — NON riscrivere pagine HTML
+    if (html.includes("<html")) {
       return html;
     }
 
-    // ============================================================================
-    // Se non è HTML → NON toccare nulla
-    // ============================================================================
+    // Se non è HTML, restituisci invariato
     return html;
 
   } catch (err) {
