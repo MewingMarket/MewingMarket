@@ -1,5 +1,4 @@
-/
- * =========================================================
+/* =========================================================
  * mm-api.js — Versione STABILE + PATCH fetchSafe (2027.920)
  * - Mantiene fetchNormale, apiFetch, fetchCritico, fetchUniversale
  * - Aggiunge fetchSafe come sotto-funzione interna
@@ -63,7 +62,7 @@ window.apiFetch = async function(path, options = {}) {
     } catch (err) {}
   }
 
-  return makeJsonResponse({ error: "APIFETCHFAILED", path });
+  return makeJsonResponse({ error: "API_FETCH_FAILED", path });
 };
 
 /* =========================================================
@@ -83,7 +82,7 @@ window.fetchCritico = async function(path, options = {}, cfg = {}) {
     }
   }
 
-  return makeJsonResponse({ error: "FETCHCRITICOFAILED", path });
+  return makeJsonResponse({ error: "FETCH_CRITICO_FAILED", path });
 };
 
 /* =========================================================
@@ -142,10 +141,8 @@ window.fetchUniversale = async function(path, options = {}, cfg = {}) {
       "/api/versione-sito": "/api/versione"
     };
 
-    // alias esatti
     if (map[p]) return map[p];
 
-    // alias dinamici product-page
     if (p.startsWith("/product-page/")) {
       return p.replace("/product-page/", "/api/product-page/");
     }
@@ -153,7 +150,6 @@ window.fetchUniversale = async function(path, options = {}, cfg = {}) {
     return p;
   }
 
-  // Applica alias
   path = resolveAlias(path);
 
   /* =========================================================
@@ -226,19 +222,16 @@ window.fetchUniversale = async function(path, options = {}, cfg = {}) {
      FALLBACK STANDARD (normale → apiFetch → critico)
   ========================================================== */
 
-  // 1) fetch normale
   try {
     const res = await window.fetchNormale(path, options);
     if (res && res.ok) return res;
   } catch (e) {}
 
-  // 2) apiFetch
   try {
     const res = await window.apiFetch(path, options);
     if (res && res.ok) return res;
   } catch (e) {}
 
-  // 3) fetchCritico
   try {
     const res = await window.fetchCritico(path, options, cfg);
     return res;
@@ -261,6 +254,6 @@ window.apiUtenteEvento = async function(data = {}) {
     return await res.json();
   } catch (err) {
     console.error("🔥 apiUtenteEvento errore:", err);
-    return { success: false, error: "APIUTENTEEVENTO_FAILED" };
+    return { success: false, error: "API_UTENTE_EVENTO_FAILED" };
   }
 };
