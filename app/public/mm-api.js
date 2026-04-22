@@ -1,4 +1,4 @@
-/**
+/
  * =========================================================
  * mm-api.js — Versione STABILE + PATCH fetchSafe (2027.920)
  * - Mantiene fetchNormale, apiFetch, fetchCritico, fetchUniversale
@@ -63,7 +63,7 @@ window.apiFetch = async function(path, options = {}) {
     } catch (err) {}
   }
 
-  return makeJsonResponse({ error: "API_FETCH_FAILED", path });
+  return makeJsonResponse({ error: "APIFETCHFAILED", path });
 };
 
 /* =========================================================
@@ -83,7 +83,7 @@ window.fetchCritico = async function(path, options = {}, cfg = {}) {
     }
   }
 
-  return makeJsonResponse({ error: "FETCH_CRITICO_FAILED", path });
+  return makeJsonResponse({ error: "FETCHCRITICOFAILED", path });
 };
 
 /* =========================================================
@@ -261,6 +261,6 @@ window.apiUtenteEvento = async function(data = {}) {
     return await res.json();
   } catch (err) {
     console.error("🔥 apiUtenteEvento errore:", err);
-    return { success: false, error: "API_UTENTE_EVENTO_FAILED" };
+    return { success: false, error: "APIUTENTEEVENTO_FAILED" };
   }
 };
