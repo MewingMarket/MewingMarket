@@ -1,9 +1,9 @@
 // =========================================================
 // CATALOGO PREMIUM – MewingMarket
-// Versione SQL definitiva + PATCH 2027.901
+// Versione SQL definitiva + PATCH 2027.902
 // - Compatibile con fetchUniversale + alias-engine
 // - Compatibile con JSON statici + API SQL
-// - Avvio con critical-ready (stabile)
+// - Avvio con critical-ready (stabile, anti-race)
 // =========================================================
 
 /* =========================================================
@@ -154,6 +154,7 @@ function cardHTML(p) {
     </div>
   `;
 }
+
 /* =========================================================
    8) AVVIO CATALOGO (robusto, compatibile con rewriter)
 ========================================================= */
@@ -272,13 +273,19 @@ async function avviaCatalogo() {
 }
 
 /* =========================================================
-   9) BOOTSTRAP CATALOGO (compatibile con timing asincrono)
+   9) BOOTSTRAP CATALOGO — PATCH ANTI-RACE DEFINITIVA
 ========================================================= */
 
-if (window.__criticalReady) {
-  // Evento già emesso → avvio immediato
+function bootstrapCatalogo() {
+  if (window.__catalogoStarted) return;
+  window.__catalogoStarted = true;
   avviaCatalogo();
-} else {
-  // Aspetto l’evento
-  document.addEventListener("critical-ready", avviaCatalogo);
 }
+
+// Caso 1: critical-ready è già stato emesso PRIMA che arrivi catalogo.js
+if (window.__criticalReady === true) {
+  bootstrapCatalogo();
+}
+
+// Caso 2: critical-ready arriva DOPO
+document.addEventListener("critical-ready", bootstrapCatalogo);
