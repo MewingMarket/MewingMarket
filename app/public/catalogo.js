@@ -1,11 +1,10 @@
 // =========================================================
 // CATALOGO PREMIUM – MewingMarket
-// Versione SQL definitiva + PATCH ANTI-CRASH 2027
-// BOOTSTRAP AGGRESSIVO INTEGRATO
+// Versione SQL definitiva + PATCH NUCLEARE 2027
 // =========================================================
 
 /* =========================================================
-   1) CARICA PRODOTTI
+   1) CARICA PRODOTTI (Flessibile)
 ========================================================= */
 async function loadProducts() {
   console.log("🟦 [CATALOGO] Caricamento prodotti…");
@@ -19,6 +18,7 @@ async function loadProducts() {
     const data = await res.json();
     let prodotti = [];
 
+    // Gestione diversi formati di risposta API
     if (Array.isArray(data)) {
       prodotti = data;
     } else if (data && Array.isArray(data.prodotti)) {
@@ -49,7 +49,7 @@ async function loadCategories() {
     const cats = await res.json();
     return Array.isArray(cats) ? cats : [];
   } catch (err) {
-    console.warn("⚠️ [CATALOGO] Categorie non disponibili:", err);
+    console.warn("⚠️ [CATALOGO] Categorie non disponibili, uso fallback.");
     return [];
   }
 }
@@ -62,39 +62,48 @@ function clean(t) {
 }
 
 function getImage(p) {
-  if (p.immagine && p.immagine.startsWith("http")) return p.immagine;
-  if (p.immagine_url && p.immagine_url.startsWith("http")) return p.immagine_url;
-  return "/placeholder.webp";
+  const url = p.immagine || p.immagine_url || "";
+  return (typeof url === "string" && url.startsWith("http")) ? url : "/placeholder.webp";
 }
 
 /* =========================================================
-   4) CARD PRODOTTO (HTML)
+   4) CARD PRODOTTO (Logica Adattiva Nucleare)
 ========================================================= */
 function cardHTML(p) {
-  // Se il prodotto è malformato, generiamo un errore intercettabile dal ciclo
-  if (!p || !p.id) throw new Error("Dati prodotto mancanti o ID assente");
+  if (!p || !p.id) return ""; // Salta prodotti corrotti
 
+  const id = p.id;
+  const titolo = clean(p.titolo_breve || p.titolo || "Prodotto");
   const img = getImage(p);
-  const titoloBreve = clean(p.titolo_breve || p.titolo || "Prodotto");
-  const descrizione = p.descrizione_breve ? clean(p.descrizione_breve) : "";
-  const prezzo_cent = Number(p.prezzo_cent) || 0;
-  const prezzo = (prezzo_cent / 100).toFixed(2);
+  
+  // Gestione flessibile del prezzo (centisimi o euro diretti)
+  let prezzoMostrato = "0.00";
+  let prezzoCent = 0;
+
+  if (p.prezzo_cent) {
+      prezzoCent = Number(p.prezzo_cent);
+      prezzoMostrato = (prezzoCent / 100).toFixed(2);
+  } else if (p.prezzo) {
+      prezzoMostrato = Number(p.prezzo).toFixed(2);
+      prezzoCent = Math.round(prezzoMostrato * 100);
+  }
+
+  const descrizione = clean(p.descrizione_breve || p.descrizione || "");
   const categorie = Array.isArray(p.categoria) ? p.categoria : [];
   const categorieAttr = categorie.map(clean).join(" ");
-  const id = p.id;
 
   return `
-    <div class="product-card" data-cat="${categorieAttr}" data-prezzo="${prezzo}" data-id="${id}">
-      <img src="${img}" alt="${titoloBreve}" loading="lazy">
-      <h2>${titoloBreve}</h2>
+    <div class="product-card" data-cat="${categorieAttr}" data-id="${id}">
+      <img src="${img}" alt="${titolo}" loading="lazy">
+      <h2>${titolo}</h2>
       <p>${descrizione}</p>
-      <p class="prezzo">€${prezzo}</p>
+      <p class="prezzo">€${prezzoMostrato}</p>
       <div class="card-buttons">
         <a href="prodotto.html?id=${encodeURIComponent(id)}" class="btn">Dettagli</a>
         <button class="btn-secondario btn-add-cart" 
           data-id="${id}"
-          data-title="${titoloBreve}" 
-          data-price-cent="${prezzo_cent}"
+          data-title="${titolo}" 
+          data-price-cent="${prezzoCent}"
           data-img="${img}">
           🛒 Aggiungi
         </button>
@@ -104,7 +113,7 @@ function cardHTML(p) {
 }
 
 /* =========================================================
-   5) LOGICA CORE - PATCHATA (ANTI "CAPA DURA")
+   5) LOGICA CORE - RENDERING SICURO
 ========================================================= */
 async function avviaCatalogo() {
   console.log("🟦 [CATALOGO] Esecuzione avviaCatalogo()");
@@ -116,37 +125,35 @@ async function avviaCatalogo() {
   const categoriesFromJson = await loadCategories();
 
   if (!products.length) {
-    container.innerHTML = `<p>Nessun prodotto trovato.</p>`;
+    container.innerHTML = `<p>Nessun prodotto disponibile.</p>`;
     return;
   }
 
-  // --- INIZIO PATCH ANTI-CRASH ---
+  // Ciclo di rendering con protezione anti-crash
   let htmlAccumulato = "";
   products.forEach((p, index) => {
     try {
-      // Proviamo a generare il pezzetto di codice per ogni prodotto
       htmlAccumulato += cardHTML(p);
     } catch (err) {
-      // Se un prodotto fallisce (es. dati null), logghiamo ma non fermiamo gli altri
       console.error(`⚠️ Errore al prodotto index ${index}:`, err);
     }
   });
 
-  // Scriviamo nel DOM solo alla fine
-  container.innerHTML = htmlAccumulato || "<h2>Errore nel rendering dei prodotti</h2>";
-  // --- FINE PATCH ---
-
+  // Iniezione nel DOM (L'altezza si adatterà automaticamente)
+  container.innerHTML = htmlAccumulato || "<h2>Errore nel caricamento prodotti</h2>";
+  
   // Gestione Categorie
   const categorieBox = document.getElementById("categorie");
   if (categorieBox) {
     let categorie = categoriesFromJson.length ? categoriesFromJson : [...new Set(products.flatMap(p => Array.isArray(p.categoria) ? p.categoria : []))];
     categorieBox.innerHTML = categorie.map(cat => `<button class="btn btn-cat" data-cat="${clean(cat)}">${clean(cat)}</button>`).join("");
+    
     categorieBox.addEventListener("click", e => {
       const cat = e.target.dataset.cat;
       if (!cat) return;
       document.querySelectorAll(".product-card").forEach(card => {
-        const cats = card.dataset.cat.split(" ");
-        card.style.display = cats.includes(cat) ? "block" : "none";
+        const cats = (card.dataset.cat || "").split(" ");
+        card.style.display = (cat === "all" || cats.includes(cat)) ? "block" : "none";
       });
     });
   }
@@ -155,18 +162,23 @@ async function avviaCatalogo() {
   container.addEventListener("click", e => {
     const btn = e.target.closest(".btn-add-cart");
     if (!btn) return;
-    const prodotto = { id: Number(btn.dataset.id), titolo: btn.dataset.title, prezzo_cent: Number(btn.dataset.priceCent), immagine: btn.dataset.img };
+    const prodotto = { 
+        id: btn.dataset.id, 
+        titolo: btn.dataset.title, 
+        prezzo_cent: Number(btn.dataset.priceCent), 
+        immagine: btn.dataset.img 
+    };
     if (typeof window.aggiungiAlCarrello === "function") {
       window.aggiungiAlCarrello(prodotto);
       if (typeof window.aggiornaBadgeCarrello === "function") window.aggiornaBadgeCarrello();
     }
   });
   
-  console.log("🎨 [CATALOGO] Render completato con successo.");
+  console.log("🎨 [CATALOGO] Render completato.");
 }
 
 /* =========================================================
-   6) BOOTSTRAP
+   6) BOOTSTRAP (Sincronizzazione API)
 ========================================================= */
 window.renderProdotti = avviaCatalogo;
 
