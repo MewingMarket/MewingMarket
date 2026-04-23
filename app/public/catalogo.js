@@ -1,15 +1,14 @@
 // =========================================================
 // CATALOGO PREMIUM – MewingMarket
-// Versione SQL definitiva + PATCH 2027.902 + BOOTSTRAP AGGRESSIVO
-// INTEGRATA: Patch Anti-Crash & Silent Fail-Safe
+// Versione SQL definitiva + PATCH ANTI-CRASH 2027
+// BOOTSTRAP AGGRESSIVO INTEGRATO
 // =========================================================
 
 /* =========================================================
-   1) CARICA PRODOTTI (compatibile con TUTTI i formati)
+   1) CARICA PRODOTTI
 ========================================================= */
 async function loadProducts() {
   console.log("🟦 [CATALOGO] Caricamento prodotti…");
-
   try {
     const res = await window.fetchUniversale(
       "/products",
@@ -26,15 +25,11 @@ async function loadProducts() {
       prodotti = data.prodotti;
     } else if (data && Array.isArray(data.data)) {
       prodotti = data.data;
-    } else {
-      console.error("❌ [CATALOGO] Formato dati non valido:", data);
-      return [];
     }
 
     console.log("🟩 [CATALOGO] Prodotti ricevuti:", prodotti.length);
     window.prodotti = prodotti;
     return prodotti;
-
   } catch (err) {
     console.error("🔥 [CATALOGO] Errore fetch prodotti:", err);
     return [];
@@ -51,10 +46,8 @@ async function loadCategories() {
       { cache: "no-store" },
       { retries: 2, backoffMs: 200 }
     );
-
     const cats = await res.json();
     return Array.isArray(cats) ? cats : [];
-
   } catch (err) {
     console.warn("⚠️ [CATALOGO] Categorie non disponibili:", err);
     return [];
@@ -65,13 +58,7 @@ async function loadCategories() {
    3) UTILITY DI FORMATTAZIONE
 ========================================================= */
 function clean(t) {
-  return typeof t === "string"
-    ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
-    : "";
-}
-
-function safeURL(u) {
-  return typeof u === "string" && u.startsWith("http") ? u : "";
+  return typeof t === "string" ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim() : "";
 }
 
 function getImage(p) {
@@ -81,22 +68,19 @@ function getImage(p) {
 }
 
 /* =========================================================
-   4) CARD PRODOTTO (HTML) - Con protezione campi nulli
+   4) CARD PRODOTTO (HTML)
 ========================================================= */
 function cardHTML(p) {
-  // Se il prodotto è nullo o non ha ID, saltiamo per evitare crash
-  if (!p || !p.id) throw new Error("Dati prodotto incompleti");
+  // Se il prodotto è malformato, generiamo un errore intercettabile dal ciclo
+  if (!p || !p.id) throw new Error("Dati prodotto mancanti o ID assente");
 
   const img = getImage(p);
-  const titoloBreve = clean(p.titolo_breve || p.titolo || "Prodotto senza nome");
+  const titoloBreve = clean(p.titolo_breve || p.titolo || "Prodotto");
   const descrizione = p.descrizione_breve ? clean(p.descrizione_breve) : "";
-
   const prezzo_cent = Number(p.prezzo_cent) || 0;
   const prezzo = (prezzo_cent / 100).toFixed(2);
-
   const categorie = Array.isArray(p.categoria) ? p.categoria : [];
   const categorieAttr = categorie.map(clean).join(" ");
-
   const id = p.id;
 
   return `
@@ -105,12 +89,6 @@ function cardHTML(p) {
       <h2>${titoloBreve}</h2>
       <p>${descrizione}</p>
       <p class="prezzo">€${prezzo}</p>
-
-      ${p.youtube_url ? `
-        <div class="video-link">
-          <a href="${safeURL(p.youtube_url)}" target="_blank">🎥 Video Prodotto</a>
-        </div>` : ""}
-
       <div class="card-buttons">
         <a href="prodotto.html?id=${encodeURIComponent(id)}" class="btn">Dettagli</a>
         <button class="btn-secondario btn-add-cart" 
@@ -126,89 +104,75 @@ function cardHTML(p) {
 }
 
 /* =========================================================
-   5) LOGICA CORE - INTEGRATA CON PATCH RENDERING
+   5) LOGICA CORE - PATCHATA (ANTI "CAPA DURA")
 ========================================================= */
 async function avviaCatalogo() {
   console.log("🟦 [CATALOGO] Esecuzione avviaCatalogo()");
 
   const container = document.getElementById("catalogo");
-  if (!container) {
-    console.warn("⚠️ [CATALOGO] Elemento #catalogo non trovato");
-    return;
-  }
+  if (!container) return;
 
   const products = await loadProducts();
   const categoriesFromJson = await loadCategories();
 
   if (!products.length) {
-    container.innerHTML = `<p class="errore-catalogo">Nessun prodotto disponibile al momento.</p>`;
+    container.innerHTML = `<p>Nessun prodotto trovato.</p>`;
     return;
   }
 
-  // PATCH: Rendering sicuro con gestione errori per singolo prodotto
-  let htmlGenerato = "";
+  // --- INIZIO PATCH ANTI-CRASH ---
+  let htmlAccumulato = "";
   products.forEach((p, index) => {
     try {
-      htmlGenerato += cardHTML(p);
+      // Proviamo a generare il pezzetto di codice per ogni prodotto
+      htmlAccumulato += cardHTML(p);
     } catch (err) {
-      console.error(`❌ [RENDER ERROR] Prodotto index ${index} ignorato:`, err);
+      // Se un prodotto fallisce (es. dati null), logghiamo ma non fermiamo gli altri
+      console.error(`⚠️ Errore al prodotto index ${index}:`, err);
     }
   });
 
-  // Iniezione finale
-  container.innerHTML = htmlGenerato || "<h1>Errore nella generazione dei prodotti</h1>";
+  // Scriviamo nel DOM solo alla fine
+  container.innerHTML = htmlAccumulato || "<h2>Errore nel rendering dei prodotti</h2>";
+  // --- FINE PATCH ---
 
   // Gestione Categorie
   const categorieBox = document.getElementById("categorie");
   if (categorieBox) {
-    let categorie = categoriesFromJson.length
-      ? categoriesFromJson
-      : [...new Set(products.flatMap(p => Array.isArray(p.categoria) ? p.categoria : []))];
-
-    categorieBox.innerHTML = categorie.map(cat => 
-      `<button class="btn btn-cat" data-cat="${clean(cat)}">${clean(cat)}</button>`
-    ).join("");
-
+    let categorie = categoriesFromJson.length ? categoriesFromJson : [...new Set(products.flatMap(p => Array.isArray(p.categoria) ? p.categoria : []))];
+    categorieBox.innerHTML = categorie.map(cat => `<button class="btn btn-cat" data-cat="${clean(cat)}">${clean(cat)}</button>`).join("");
     categorieBox.addEventListener("click", e => {
       const cat = e.target.dataset.cat;
       if (!cat) return;
       document.querySelectorAll(".product-card").forEach(card => {
         const cats = card.dataset.cat.split(" ");
-        card.style.display = (cat === "all" || cats.includes(cat)) ? "block" : "none";
+        card.style.display = cats.includes(cat) ? "block" : "none";
       });
     });
   }
 
-  // Carrello Event Delegation
+  // Eventi Carrello
   container.addEventListener("click", e => {
     const btn = e.target.closest(".btn-add-cart");
     if (!btn) return;
-
-    const prodotto = {
-      id: Number(btn.dataset.id),
-      titolo: btn.dataset.title,
-      prezzo_cent: Number(btn.dataset.priceCent),
-      immagine: btn.dataset.img
-    };
-
+    const prodotto = { id: Number(btn.dataset.id), titolo: btn.dataset.title, prezzo_cent: Number(btn.dataset.priceCent), immagine: btn.dataset.img };
     if (typeof window.aggiungiAlCarrello === "function") {
       window.aggiungiAlCarrello(prodotto);
       if (typeof window.aggiornaBadgeCarrello === "function") window.aggiornaBadgeCarrello();
     }
   });
   
-  console.log("🎨 [CATALOGO] Rendering completato!");
+  console.log("🎨 [CATALOGO] Render completato con successo.");
 }
 
 /* =========================================================
-   6) BOOTSTRAP "SUPER AGGRESSIVO" (Invariato)
+   6) BOOTSTRAP
 ========================================================= */
 window.renderProdotti = avviaCatalogo;
 
 function bootstrapCatalogo() {
   if (window.__catalogoStarted) return;
   window.__catalogoStarted = true;
-  
   if (document.readyState === "complete" || document.readyState === "interactive") {
     avviaCatalogo();
   } else {
@@ -216,15 +180,6 @@ function bootstrapCatalogo() {
   }
 }
 
-if (window.fetchUniversale) {
-  bootstrapCatalogo();
-}
-
+if (window.fetchUniversale) bootstrapCatalogo();
 document.addEventListener("critical-ready", bootstrapCatalogo);
-
-setTimeout(() => {
-  if (!window.__catalogoStarted) {
-    console.warn("⚠️ [CATALOGO] Avvio di emergenza via Timeout");
-    bootstrapCatalogo();
-  }
-}, 1500);
+setTimeout(() => { if (!window.__catalogoStarted) bootstrapCatalogo(); }, 1500);
