@@ -5,15 +5,25 @@
 
 const path = require("path");
 
-// PATCH: require assoluti basati su process.cwd()
-const { safeText } = require(path.join(process.cwd(), "app/modules/utils.cjs"));
-const Context = require(path.join(process.cwd(), "app/modules/context.cjs"));
+// PATCH: require assoluti basati su process.cwd() con gestione errori
+let safeText = (t) => t;
+let Context = { update: () => {} };
+let trackGA4 = () => {};
 
-// PATCH DEBUG — conferma che il middleware è stato caricato
-console.log("### CONTEXT_MIDDLEWARE_LOADED ###", __filename);
-
-// PATCH: GA4 assoluto (mai relativo nei middleware)
-const { trackGA4 } = require(path.join(process.cwd(), "app/server/services/ga4.cjs"));
+try {
+  const utils = require(path.join(process.cwd(), "app/modules/utils.cjs"));
+  if (utils.safeText) safeText = utils.safeText;
+  
+  Context = require(path.join(process.cwd(), "app/modules/context.cjs"));
+  
+  const ga4 = require(path.join(process.cwd(), "app/server/services/ga4.cjs"));
+  if (ga4.trackGA4) trackGA4 = ga4.trackGA4;
+  
+  // PATCH DEBUG — conferma che il middleware è stato caricato
+  console.log("### CONTEXT_MIDDLEWARE_LOADED ###", __filename);
+} catch (e) {
+  console.error("### CONTEXT_IMPORT_CRITICAL_ERROR ###", e.message);
+}
 
 module.exports = function (app) {
   // PATCH DEBUG — conferma che il middleware è stato registrato
@@ -21,7 +31,7 @@ module.exports = function (app) {
 
   app.use((req, res, next) => {
     try {
-      const uid = req.uid;
+      const uid = req.uid || "guest"; // Fallback per evitare crash se uid è assente
       req.body = req.body || {};
       req.query = req.query || {};
 
@@ -38,7 +48,9 @@ module.exports = function (app) {
       if (page) {
         try {
           // PATCH: rimosso slug
-          Context.update(uid, page);
+          if (Context && typeof Context.update === "function") {
+            Context.update(uid, page);
+          }
         } catch (err) {
           console.error("Context.update error:", err);
 
@@ -51,24 +63,33 @@ module.exports = function (app) {
         }
 
         // GA4 può continuare a ricevere slug, ma non lo salviamo più
-        trackGA4("page_view", { uid, page: page || "" });
+        try {
+          trackGA4("page_view", { uid, page: page || "" });
+        } catch (gaErr) {
+          console.error("GA4 tracking error:", gaErr.message);
+        }
       }
 
-      if (typeof req.body.message === "string") {
+      if (req.body.message && typeof req.body.message === "string") {
         req.body.message = safeText(req.body.message);
       }
 
+      // Prosegue verso il prossimo middleware/rotta
       next();
 
     } catch (err) {
       console.error("Middleware context error:", err);
 
       if (typeof global.logEvent === "function") {
-        global.logEvent("middleware_context_error", {
-          error: err?.message || "unknown"
-        });
+        try {
+          global.logEvent("middleware_context_error", {
+            error: err?.message || "unknown"
+          });
+        } catch (e) {}
       }
 
+      // CRITICO: Anche in caso di errore totale, dobbiamo chiamare next()
+      // altrimenti la richiesta rimane in "loading" infinito
       next();
     }
   });
