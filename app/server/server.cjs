@@ -40,6 +40,7 @@ const fs = require("fs");
 
 const app = express();
 app.disable("x-powered-by");
+
 /**
  * =========================================================
  * 🟩 PATCH — JS con querystring (v=xxxx) — REGISTRATA SUBITO
@@ -56,6 +57,7 @@ app.get("/*.js", (req, res) => {
 
   return res.status(404).send("// JS NOT FOUND: " + cleanPath);
 });
+
 const ROOT = path.resolve("app");
 log(">> ROOT PATH:", ROOT);
 
@@ -114,7 +116,7 @@ try {
   log("🟧 diagnostica.cjs non presente (ok per ora):", err.message);
 }
 
-const wait = (ms) => new Promise(res => res(ms));
+const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 (async () => {
   log(">> LOADING logging.cjs");
@@ -143,14 +145,16 @@ const wait = (ms) => new Promise(res => res(ms));
   // =========================================================
   // 🔥 CARICAMENTO DB DOPO RESTORE — DB NULL-SAFE
   // =========================================================
-  let db = require("./db/database.cjs");
+  let db;
+  try {
+    db = require("./db/database.cjs");
+  } catch (err) {
+    logErr("❌ Errore caricamento database.cjs:", err.message);
+  }
 
- /db/database.cjs");
-
-    if (!db) {
-      logErr("❌ ERRORE FATALE: DB ancora null dopo restore");
-      process.exit(1);
-    }
+  if (!db) {
+    logErr("❌ ERRORE FATALE: DB ancora null dopo restore");
+    process.exit(1);
   }
 
   app.set("db", db);
@@ -170,7 +174,6 @@ const wait = (ms) => new Promise(res => res(ms));
   log(">> LOADING context.cjs");
   await wait(200);
   require("./middleware/context.cjs")(app);
-
 
   // =========================================================
   // 🔥 ROUTER API — PATCH: FULL ERROR LOG
@@ -222,14 +225,16 @@ const wait = (ms) => new Promise(res => res(ms));
     res.set("Expires", "0");
     next();
   });
-/**
- * =========================================================
- * ROUTE DIAGNOSTICA — pagina HTML
- * =========================================================
- */
-app.get("/diagnostica-routes", (req, res) => {
-  res.sendFile(path.resolve("app/public/diagnostica-routes.html"));
-});
+
+  /**
+   * =========================================================
+   * ROUTE DIAGNOSTICA — pagina HTML
+   * =========================================================
+   */
+  app.get("/diagnostica-routes", (req, res) => {
+    res.sendFile(path.resolve("app/public/diagnostica-routes.html"));
+  });
+
   // 🔵 PATCH MIME — garantisce esecuzione JS su Render Web Service
   app.use((req, res, next) => {
     if (req.url.endsWith(".js")) {
@@ -240,35 +245,41 @@ app.get("/diagnostica-routes", (req, res) => {
 
   // SERVE FILE STATICI
   app.use(express.static(PUBLIC_DIR));
-// =========================================================
-// ALIAS ENGINE (GET+HEAD + fallback statico + backup)
-// =========================================================
-try {
-  require("./alias-engine.cjs")(app, { log, logErr });
-  log("🟩 Alias Engine attivato");
-} catch (err) {
-  logErr("❌ Errore Alias Engine:", err.message);
-} // =========================================================
-// PATCH 2027.HTML — Rewriter ordine script (loader + pagina)
-// =========================================================
-const rewriteScripts = require("./utils/rewrites.cjs");
 
-app.use((req, res, next) => {
-  // intercetta solo HTML
-  const send = res.send;
-  res.send = function (body) {
-    try {
-      const type = res.getHeader("Content-Type") || "";
-      if (type.includes("text/html")) {
-        body = rewriteScripts(body.toString());
-      }
-    } catch (err) {
-      logErr("❌ rewriteScripts ERROR:", err.message);
-    }
-    return send.call(this, body);
-  };
-  next();
-});
+  // =========================================================
+  // ALIAS ENGINE (GET+HEAD + fallback statico + backup)
+  // =========================================================
+  try {
+    require("./alias-engine.cjs")(app, { log, logErr });
+    log("🟩 Alias Engine attivato");
+  } catch (err) {
+    logErr("❌ Errore Alias Engine:", err.message);
+  }
+
+  // =========================================================
+  // PATCH 2027.HTML — Rewriter ordine script (loader + pagina)
+  // =========================================================
+  try {
+    const rewriteScripts = require("./utils/rewrites.cjs");
+    app.use((req, res, next) => {
+      const send = res.send;
+      res.send = function (body) {
+        try {
+          const type = res.getHeader("Content-Type") || "";
+          if (type.includes("text/html") && body) {
+            body = rewriteScripts(body.toString());
+          }
+        } catch (err) {
+          logErr("❌ rewriteScripts ERROR:", err.message);
+        }
+        return send.call(this, body);
+      };
+      next();
+    });
+  } catch (e) {
+    logErr("⚠️ Modulo rewrites.cjs non trovato.");
+  }
+
   // =========================================================
   // PATCH 2027.CSS — CSS GLOBALI
   // =========================================================
@@ -288,7 +299,6 @@ app.use((req, res, next) => {
 
   app.use("/data", (req, res) => {
     const rel = req.path.replace(/^\/+/, "");
-
     const backupPath  = path.join(DATA_BACKUP, rel);
     const persistPath = path.join(DATA_PERSIST, rel);
 
@@ -296,17 +306,14 @@ app.use((req, res, next) => {
 
     if (fs.existsSync(persistPath)) {
       log(`🟩 [DATA] persistente trovato → ${rel}`);
-
       try {
         const buf = fs.readFileSync(persistPath);
-
         try {
           fs.writeFileSync(backupPath, buf);
           log(`📁 [DATA] backup → app/data/${rel}`);
         } catch (e) {
           logErr(`❌ Errore backup app/data: ${e.message}`);
         }
-
         return res.sendFile(persistPath);
       } catch (e) {
         logErr(`❌ Errore lettura persistente: ${e.message}`);
@@ -352,7 +359,7 @@ app.use((req, res, next) => {
   }
 
   // =========================================================
-  // 🔁 CRON-SYNC — AGGIUNTO QUI
+  // 🔁 CRON-SYNC
   // =========================================================
   try {
     require("./startup/cron-sync.cjs")(app, { log, logErr });
@@ -360,10 +367,6 @@ app.use((req, res, next) => {
   } catch (err) {
     logErr("❌ Errore cron-sync:", err.message);
   }
-
-  // =========================================================
-  // ❌ NESSUN FALLBACK — DISATTIVATO COMPLETAMENTE
-  // =========================================================
 
   async function startServer() {
     try {
@@ -373,8 +376,12 @@ app.use((req, res, next) => {
       logErr("❌ BOOTSTRAP ERROR:", err);
     }
 
-    const PORT = process.env.PORT;
-    require("./startup/cron-youtube.cjs")();
+    const PORT = process.env.PORT || 3000;
+    try {
+        require("./startup/cron-youtube.cjs")();
+    } catch(e) {
+        logErr("⚠️ cron-youtube non avviato");
+    }
 
     app.listen(PORT, () => {
       log(`🎉 SERVER LISTENING ON PORT ${PORT}`);
