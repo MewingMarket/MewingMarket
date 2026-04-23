@@ -40,7 +40,22 @@ const fs = require("fs");
 
 const app = express();
 app.disable("x-powered-by");
+/**
+ * =========================================================
+ * 🟩 PATCH — JS con querystring (v=xxxx) — REGISTRATA SUBITO
+ * =========================================================
+ */
+app.get("/*.js", (req, res) => {
+  const cleanPath = req.path.replace(/\?.*$/, "");
+  const filePath = path.join(process.cwd(), "app/public", cleanPath);
 
+  if (fs.existsSync(filePath)) {
+    res.setHeader("Content-Type", "application/javascript; charset=utf-8");
+    return res.sendFile(filePath);
+  }
+
+  return res.status(404).send("// JS NOT FOUND: " + cleanPath);
+});
 const ROOT = path.resolve("app");
 log(">> ROOT PATH:", ROOT);
 
@@ -130,13 +145,7 @@ const wait = (ms) => new Promise(res => res(ms));
   // =========================================================
   let db = require("./db/database.cjs");
 
-  if (!db) {
-    log("⚠️ DB non inizializzato → forzo restore");
-    const { restore } = require("./modules/restore.cjs");
-    await restore();
-    global.__restore_completed = true;
-
-    db = require("./db/database.cjs");
+ /db/database.cjs");
 
     if (!db) {
       logErr("❌ ERRORE FATALE: DB ancora null dopo restore");
@@ -162,21 +171,6 @@ const wait = (ms) => new Promise(res => res(ms));
   await wait(200);
   require("./middleware/context.cjs")(app);
 
-  // =========================================================
-  // 🟩 PATCH 2027 — JS con querystring (v=xxxx)
-  // Fix definitivo: serve SEMPRE il file reale anche con ?v=VERSION
-  // =========================================================
-  app.get("/*.js", (req, res, next) => {
-    const cleanPath = req.path.replace(/\?.*$/, ""); // /loader.js?v=20260412 → /loader.js
-    const filePath = path.join(process.cwd(), "app/public", cleanPath);
-
-    if (fs.existsSync(filePath)) {
-      res.setHeader("Content-Type", "application/javascript; charset=utf-8");
-      return res.sendFile(filePath);
-    }
-
-    return res.status(404).send("// JS NOT FOUND: " + cleanPath);
-  });
 
   // =========================================================
   // 🔥 ROUTER API — PATCH: FULL ERROR LOG
