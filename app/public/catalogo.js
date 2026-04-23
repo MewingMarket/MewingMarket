@@ -1,9 +1,6 @@
 // =========================================================
 // CATALOGO PREMIUM – MewingMarket
-// Versione SQL definitiva + PATCH 2027.902
-// - Compatibile con fetchUniversale + alias-engine
-// - Compatibile con JSON statici + API SQL
-// - Avvio con critical-ready (stabile, anti-race)
+// Versione SQL definitiva + PATCH 2027.902 + BOOTSTRAP AGGRESSIVO
 // =========================================================
 
 /* =========================================================
@@ -13,6 +10,7 @@ async function loadProducts() {
   console.log("🟦 [CATALOGO] Caricamento prodotti…");
 
   try {
+    // Utilizza il fetchUniversale iniettato da mm-api.js
     const res = await window.fetchUniversale(
       "/products",
       { cache: "no-store" },
@@ -34,6 +32,8 @@ async function loadProducts() {
     }
 
     console.log("🟩 [CATALOGO] Prodotti ricevuti:", prodotti.length);
+    // Salviamo in window per debug e per altri componenti
+    window.prodotti = prodotti;
     return prodotti;
 
   } catch (err) {
@@ -63,7 +63,7 @@ async function loadCategories() {
 }
 
 /* =========================================================
-   3) SANITIZZAZIONE
+   3) UTILITY DI FORMATTAZIONE
 ========================================================= */
 function clean(t) {
   return typeof t === "string"
@@ -75,51 +75,22 @@ function safeURL(u) {
   return typeof u === "string" && u.startsWith("http") ? u : "";
 }
 
-/* =========================================================
-   4) VIDEO YOUTUBE
-========================================================= */
-function renderYouTubeLink(p) {
-  const url = safeURL(p.youtube_url);
-  if (!url) return "";
-  return `
-    <div class="video-link">
-      <a href="${url}" target="_blank" rel="noopener noreferrer">
-        🎥 Guarda il video su YouTube
-      </a>
-    </div>
-  `;
-}
-
-/* =========================================================
-   5) DESCRIZIONE BREVE
-========================================================= */
-function getShortDescription(p) {
-  if (p.descrizione_breve) return clean(p.descrizione_breve);
-  const full = p.descrizione_lunga || "";
-  const short = full.length > 120 ? full.slice(0, 120) + "…" : full;
-  return clean(short);
-}
-
-/* =========================================================
-   6) IMMAGINE
-========================================================= */
 function getImage(p) {
-  if (p.immagine && p.immagine.startsWith("http")) {
-    return p.immagine;
-  }
+  if (p.immagine && p.immagine.startsWith("http")) return p.immagine;
+  if (p.immagine_url && p.immagine_url.startsWith("http")) return p.immagine_url;
   return "/placeholder.webp";
 }
 
 /* =========================================================
-   7) CARD PRODOTTO
+   4) CARD PRODOTTO (HTML)
 ========================================================= */
 function cardHTML(p) {
   const img = getImage(p);
-  const titoloBreve = clean(p.titolo_breve || p.titolo || "");
-  const descrizione = getShortDescription(p);
+  const titoloBreve = clean(p.titolo_breve || p.titolo || "Prodotto");
+  const descrizione = p.descrizione_breve ? clean(p.descrizione_breve) : "";
 
   const prezzo_cent = Number(p.prezzo_cent) || 0;
-  const prezzo = prezzo_cent / 100;
+  const prezzo = (prezzo_cent / 100).toFixed(2);
 
   const categorie = Array.isArray(p.categoria) ? p.categoria : [];
   const categorieAttr = categorie.map(clean).join(" ");
@@ -133,22 +104,19 @@ function cardHTML(p) {
       <p>${descrizione}</p>
       <p class="prezzo">€${prezzo}</p>
 
-      ${renderYouTubeLink(p)}
+      ${p.youtube_url ? `
+        <div class="video-link">
+          <a href="${safeURL(p.youtube_url)}" target="_blank">🎥 Video Prodotto</a>
+        </div>` : ""}
 
       <div class="card-buttons">
-        <a href="prodotto.html?id=${encodeURIComponent(id)}" class="btn">Scopri di più</a>
-
+        <a href="prodotto.html?id=${encodeURIComponent(id)}" class="btn">Dettagli</a>
         <button class="btn-secondario btn-add-cart" 
           data-id="${id}"
           data-title="${titoloBreve}" 
           data-price-cent="${prezzo_cent}"
           data-img="${img}">
-          Aggiungi al carrello
-        </button>
-
-        <button class="btn-secondario btn-remove-cart"
-          data-id="${id}">
-          Rimuovi dal carrello
+          🛒 Aggiungi
         </button>
       </div>
     </div>
@@ -156,11 +124,10 @@ function cardHTML(p) {
 }
 
 /* =========================================================
-   8) AVVIO CATALOGO (robusto, compatibile con rewriter)
+   5) LOGICA CORE DEL CATALOGO
 ========================================================= */
-
 async function avviaCatalogo() {
-  console.log("🟦 [CATALOGO] AVVIO CATALOGO");
+  console.log("🟦 [CATALOGO] Esecuzione avviaCatalogo()");
 
   const products = await loadProducts();
   const categoriesFromJson = await loadCategories();
@@ -168,124 +135,96 @@ async function avviaCatalogo() {
   const container = document.getElementById("catalogo");
   const categorieBox = document.getElementById("categorie");
 
-  if (!container || !categorieBox) {
-    console.error("❌ [CATALOGO] container o categorieBox non trovati");
+  if (!container) {
+    console.warn("⚠️ [CATALOGO] Elemento #catalogo non trovato nel DOM");
     return;
   }
 
   if (!products.length) {
-    container.innerHTML = `
-      <p class="errore-catalogo">
-        Nessun prodotto disponibile.  
-        <br>Se il problema persiste, controlla la connessione o riprova più tardi.
-      </p>`;
+    container.innerHTML = `<p class="errore-catalogo">Nessun prodotto trovato.</p>`;
     return;
   }
 
-  let categorie = categoriesFromJson.length
-    ? categoriesFromJson
-    : [...new Set(products.flatMap(p => Array.isArray(p.categoria) ? p.categoria : []))];
+  // Gestione Categorie
+  if (categorieBox) {
+    let categorie = categoriesFromJson.length
+      ? categoriesFromJson
+      : [...new Set(products.flatMap(p => Array.isArray(p.categoria) ? p.categoria : []))];
 
-  categorieBox.innerHTML = categorie.length
-    ? categorie.map(cat => `<button class="btn btn-cat" data-cat="${clean(cat)}">${clean(cat)}</button>`).join("")
-    : "<p>Nessuna categoria disponibile</p>";
+    categorieBox.innerHTML = categorie.map(cat => 
+      `<button class="btn btn-cat" data-cat="${clean(cat)}">${clean(cat)}</button>`
+    ).join("");
 
-  container.innerHTML = products.map(cardHTML).join("");
-
-  // FILTRI CATEGORIA
-  categorieBox.addEventListener("click", e => {
-    const cat = e.target.dataset.cat;
-    if (!cat) return;
-
-    document.querySelectorAll(".product-card").forEach(card => {
-      const cats = card.dataset.cat.split(" ");
-      card.style.display = cats.includes(cat) ? "block" : "none";
-    });
-  });
-
-  // FILTRI PREZZO
-  document.querySelectorAll(".filtri-prezzo .btn[data-prezzo]").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const max = Number(btn.dataset.prezzo);
-
+    categorieBox.addEventListener("click", e => {
+      const cat = e.target.dataset.cat;
+      if (!cat) return;
       document.querySelectorAll(".product-card").forEach(card => {
-        const prezzo = Number(card.dataset.prezzo);
-        card.style.display = prezzo <= max ? "block" : "none";
-      });
-    });
-  });
-
-  // RESET
-  const resetBtn = document.getElementById("reset");
-  if (resetBtn) {
-    resetBtn.addEventListener("click", () => {
-      document.querySelectorAll(".product-card").forEach(card => {
-        card.style.display = "block";
+        const cats = card.dataset.cat.split(" ");
+        card.style.display = cats.includes(cat) ? "block" : "none";
       });
     });
   }
 
-  // CARRELLO
-  document.querySelectorAll(".btn-add-cart").forEach(btn => {
-    btn.addEventListener("click", () => {
+  // Render Card
+  container.innerHTML = products.map(cardHTML).join("");
 
-      const prodotto = {
-        id: Number(btn.dataset.id),
-        titolo: btn.dataset.title,
-        prezzo_cent: Number(btn.dataset.priceCent),
-        prezzo: Number(btn.dataset.priceCent) / 100,
-        immagine: btn.dataset.img
-      };
+  // Eventi Carrello
+  container.addEventListener("click", e => {
+    const btn = e.target.closest(".btn-add-cart");
+    if (!btn) return;
 
-      if (typeof aggiungiAlCarrello === "function") {
-        aggiungiAlCarrello(prodotto);
-      }
+    const prodotto = {
+      id: Number(btn.dataset.id),
+      titolo: btn.dataset.title,
+      prezzo_cent: Number(btn.dataset.priceCent),
+      immagine: btn.dataset.img
+    };
 
-      if (typeof aggiornaBadgeCarrello === "function") {
-        aggiornaBadgeCarrello();
-      }
-
-      if (typeof isLogged === "function" && !isLogged()) {
-        alert("Per completare l'acquisto dovrai fare login in checkout.");
-      }
-    });
-  });
-
-  document.querySelectorAll(".btn-remove-cart").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const id = Number(btn.dataset.id);
-
-      if (typeof rimuoviDalCarrello === "function") {
-        rimuoviDalCarrello(id);
-      }
-
-      if (typeof aggiornaBadgeCarrello === "function") {
-        aggiornaBadgeCarrello();
-      }
-    });
-  });
-
-  setTimeout(() => {
-    if (typeof aggiornaBadgeCarrello === "function") {
-      aggiornaBadgeCarrello();
+    if (typeof window.aggiungiAlCarrello === "function") {
+      window.aggiungiAlCarrello(prodotto);
+      if (typeof window.aggiornaBadgeCarrello === "function") window.aggiornaBadgeCarrello();
+    } else {
+      console.error("❌ Funzione aggiungiAlCarrello non trovata!");
     }
-  }, 50);
+  });
 }
 
 /* =========================================================
-   9) BOOTSTRAP CATALOGO — PATCH ANTI-RACE DEFINITIVA
+   6) BOOTSTRAP "SUPER AGGRESSIVO" (Anti-Race Condition)
 ========================================================= */
+
+// Rendiamo la funzione disponibile globalmente per test manuali in console
+window.renderProdotti = avviaCatalogo;
 
 function bootstrapCatalogo() {
   if (window.__catalogoStarted) return;
+  
+  console.log("🚀 [CATALOGO] Inizializzazione bootstrap...");
   window.__catalogoStarted = true;
-  avviaCatalogo();
+  
+  if (document.readyState === "complete" || document.readyState === "interactive") {
+    avviaCatalogo();
+  } else {
+    document.addEventListener("DOMContentLoaded", avviaCatalogo);
+  }
 }
 
-// Caso 1: critical-ready è già stato emesso PRIMA che arrivi catalogo.js
-if (window.__criticalReady === true) {
+// Innesco 1: mm-api è già pronto
+if (window.fetchUniversale) {
+  console.log("⚡ [CATALOGO] mm-api rilevato, avvio...");
   bootstrapCatalogo();
 }
 
-// Caso 2: critical-ready arriva DOPO
-document.addEventListener("critical-ready", bootstrapCatalogo);
+// Innesco 2: Aspetta il segnale dal Loader
+document.addEventListener("critical-ready", () => {
+  console.log("🎯 [CATALOGO] Segnale critical-ready ricevuto");
+  bootstrapCatalogo();
+});
+
+// Innesco 3: Fail-safe (Se nulla accade, forza l'avvio dopo 1.5s)
+setTimeout(() => {
+  if (!window.__catalogoStarted) {
+    console.warn("⚠️ [CATALOGO] Avvio di emergenza (Fail-safe)");
+    bootstrapCatalogo();
+  }
+}, 1500);
