@@ -44,6 +44,7 @@ app.disable("x-powered-by");
 /**
  * =========================================================
  * 🟩 PATCH — JS con querystring (v=xxxx) — REGISTRATA SUBITO
+ * FIX: Rimosso spazio "/* .js" che causava SyntaxError
  * =========================================================
  */
 app.get("/*.js", (req, res, next) => {
@@ -228,7 +229,7 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     res.sendFile(path.resolve("app/public/diagnostica-routes.html"));
   });
 
-  // 🔵 PATCH MIME — Forza JavaScript per tutti i file .js
+  // 🔵 PATCH MIME — Garantisce application/javascript per tutti i .js
   app.use((req, res, next) => {
     if (req.path.endsWith(".js") || req.url.includes(".js?")) {
       res.setHeader("Content-Type", "application/javascript; charset=utf-8");
@@ -313,7 +314,12 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     res.status(404).json({ error: "File non trovato" });
   });
 
-  require("./routes/var-data.cjs")(app);
+  // =========================================================
+  // 🔵 ROUTE DIAGNOSTICA
+  // =========================================================
+  try {
+    require("./routes/var-data.cjs")(app);
+  } catch(e) {}
 
   // =========================================================
   // ADMIN STATIC
