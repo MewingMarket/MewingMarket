@@ -46,16 +46,15 @@ app.disable("x-powered-by");
  * 🟩 PATCH — JS con querystring (v=xxxx) — REGISTRATA SUBITO
  * =========================================================
  */
-app.get("/*.js", (req, res) => {
-  const cleanPath = req.path.replace(/\?.*$/, "");
-  const filePath = path.join(process.cwd(), "app/public", cleanPath);
+app.get("/* .js", (req, res, next) => {
+  const clearPath = req.path.replace(/\/?\?.*$/, ""); // /loader.js?v=28268412 -> /loader.js
+  const filePath = path.join(process.cwd(), "app/public", clearPath);
 
   if (fs.existsSync(filePath)) {
     res.setHeader("Content-Type", "application/javascript; charset=utf-8");
     return res.sendFile(filePath);
   }
-
-  return res.status(404).send("// JS NOT FOUND: " + cleanPath);
+  next();
 });
 
 const ROOT = path.resolve("app");
