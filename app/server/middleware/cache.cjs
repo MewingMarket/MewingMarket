@@ -17,14 +17,14 @@ module.exports = function (app) {
       res.setHeader("Access-Control-Allow-Origin", ALLOWED_ORIGIN);
       res.setHeader("Access-Control-Allow-Credentials", "true");
       res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
 
       // =====================================================
-      // 🔥 PATCH 2027 — NON BLOCCARE LE API SU OPTIONS
+      // 🔥 PATCH 2027 — RISPOSTA IMMEDIATA SU OPTIONS
       // =====================================================
       if (req.method === "OPTIONS") {
-        console.log("🟧 Preflight OPTIONS → lasciato passare");
-        return next();   // NON risponde, NON blocca, NON interrompe la catena
+        console.log("🟧 Preflight OPTIONS → Risposta 204 (OK)");
+        return res.sendStatus(204); // Deve rispondere, non può solo fare next()
       }
 
       // =====================================================
