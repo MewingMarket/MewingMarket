@@ -3,33 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MewingMarket - Catalogo</title>
 
-  <!-- CSS SHOP -->
-  <link rel="stylesheet" href="/header-shop.css">
-
-  <!-- CSS SPECIFICO PAGINA -->
-  <link rel="stylesheet" href="/catalogo.css">
+  <link rel="stylesheet" href="./header-shop.css">
+  <link rel="stylesheet" href="./catalogo.css">
 </head>
 
 <body class="pagina-standard-body">
 
-  <!-- HEAD DINAMICO -->
   <div id="head-placeholder"></div>
-
-  <!-- HEADER DINAMICO (blindato) -->
   <div id="header-placeholder"></div>
 
   <main class="pagina-standard">
-
     <h1>Catalogo Prodotti</h1>
-
-    <!-- FILTRI -->
+    
     <section class="filtri-catalogo">
-
-      <!-- CATEGORIE DINAMICHE -->
       <div id="categorie" class="categorie-box"></div>
-
-      <!-- FILTRI PREZZO -->
       <div class="filtri-prezzo">
         <button class="btn" data-prezzo="10">Fino a 10€</button>
         <button class="btn" data-prezzo="20">Fino a 20€</button>
@@ -38,29 +27,19 @@
       </div>
     </section>
 
-    <!-- GRID PRODOTTI -->
-    <section id="catalogo" class="catalogo-grid"></section>
-
+    <section id="catalogo" class="catalogo-grid">
+      </section>
   </main>
 
-  <!-- FOOTER DINAMICO -->
   <div id="footer-placeholder"></div>
 
-  <!-- ============================= -->
-  <!--  ORDINE SCRIPT DEFINITIVO     -->
-  <!-- ============================= -->
+  <script src="./mm-api.js?v=20260412"></script>
 
-  <!-- 1) mm-api.js → DEVE essere PRIMA del loader -->
-  <script src="/mm-api.js?v=20260412"></script>
+  <script src="./loader.js?v=20260412"></script>
 
-  <!-- 2) loader.js → carica auth, head, header, footer, carrello -->
-  <script src="/loader.js?v=20260412"></script>
+  <script src="./dynamic-loader.js?v=20260412"></script>
 
-  <!-- 3) dynamic-loader.js → patcha e completa -->
-  <script src="/dynamic-loader.js?v=20260412"></script>
-
-  <!-- 4) catalogo.js → parte con fallback su critical-ready -->
-  <script src="/catalogo.js?v=20260420"></script>
+  <script src="./catalogo.js?v=20260420"></script>
 
 </body>
 </html>
