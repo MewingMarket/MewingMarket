@@ -46,12 +46,13 @@ app.disable("x-powered-by");
  * 🟩 PATCH — JS con querystring (v=xxxx) — REGISTRATA SUBITO
  * =========================================================
  */
-app.get("/* .js", (req, res, next) => {
-  const clearPath = req.path.replace(/\/?\?.*$/, ""); // /loader.js?v=28268412 -> /loader.js
+app.get("/*.js", (req, res, next) => {
+  const clearPath = req.path.replace(/\/?\?.*$/, ""); 
   const filePath = path.join(process.cwd(), "app/public", clearPath);
 
   if (fs.existsSync(filePath)) {
     res.setHeader("Content-Type", "application/javascript; charset=utf-8");
+    res.setHeader("X-Content-Type-Options", "nosniff");
     return res.sendFile(filePath);
   }
   next();
@@ -180,13 +181,11 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
   log(">> LOADING router.cjs");
   await wait(200);
   try {
-    console.log("LOADING ROUTER PATH:", path.resolve("app/server/router.cjs"));
     const router = require("./router.cjs");
     app.use("/api", router);
     log(">> ROUTER API CARICATO");
   } catch (err) {
     console.error("❌ ROUTER LOAD ERROR FULL:", err);
-    throw err;
   }
 
   // =========================================================
@@ -225,19 +224,15 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     next();
   });
 
-  /**
-   * =========================================================
-   * ROUTE DIAGNOSTICA — pagina HTML
-   * =========================================================
-   */
   app.get("/diagnostica-routes", (req, res) => {
     res.sendFile(path.resolve("app/public/diagnostica-routes.html"));
   });
 
-  // 🔵 PATCH MIME — garantisce esecuzione JS su Render Web Service
+  // 🔵 PATCH MIME — Forza JavaScript per tutti i file .js
   app.use((req, res, next) => {
-    if (req.url.endsWith(".js")) {
+    if (req.path.endsWith(".js") || req.url.includes(".js?")) {
       res.setHeader("Content-Type", "application/javascript; charset=utf-8");
+      res.setHeader("X-Content-Type-Options", "nosniff");
     }
     next();
   });
@@ -246,7 +241,7 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
   app.use(express.static(PUBLIC_DIR));
 
   // =========================================================
-  // ALIAS ENGINE (GET+HEAD + fallback statico + backup)
+  // ALIAS ENGINE
   // =========================================================
   try {
     require("./alias-engine.cjs")(app, { log, logErr });
@@ -256,7 +251,7 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
   }
 
   // =========================================================
-  // PATCH 2027.HTML — Rewriter ordine script (loader + pagina)
+  // PATCH 2027.HTML — Rewriter ordine script
   // =========================================================
   try {
     const rewriteScripts = require("./utils/rewrites.cjs");
@@ -280,7 +275,7 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
   }
 
   // =========================================================
-  // PATCH 2027.CSS — CSS GLOBALI
+  // PATCH 2027.CSS
   // =========================================================
   app.use("/*.css", express.static(PUBLIC_DIR));
   app.use("/css", express.static(PUBLIC_DIR));
@@ -301,18 +296,10 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     const backupPath  = path.join(DATA_BACKUP, rel);
     const persistPath = path.join(DATA_PERSIST, rel);
 
-    log(`📥 [DATA] richiesta: ${rel}`);
-
     if (fs.existsSync(persistPath)) {
-      log(`🟩 [DATA] persistente trovato → ${rel}`);
       try {
         const buf = fs.readFileSync(persistPath);
-        try {
-          fs.writeFileSync(backupPath, buf);
-          log(`📁 [DATA] backup → app/data/${rel}`);
-        } catch (e) {
-          logErr(`❌ Errore backup app/data: ${e.message}`);
-        }
+        fs.writeFileSync(backupPath, buf);
         return res.sendFile(persistPath);
       } catch (e) {
         logErr(`❌ Errore lettura persistente: ${e.message}`);
@@ -320,17 +307,12 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     }
 
     if (fs.existsSync(backupPath)) {
-      log(`🟦 [DATA] fallback app/data → ${rel}`);
       return res.sendFile(backupPath);
     }
 
-    logErr(`❌ [DATA] file non trovato: ${rel}`);
     res.status(404).json({ error: "File non trovato" });
   });
 
-  // =========================================================
-  // 🔵 ROUTE DIAGNOSTICA
-  // =========================================================
   require("./routes/var-data.cjs")(app);
 
   // =========================================================
