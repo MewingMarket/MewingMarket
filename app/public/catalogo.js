@@ -1,6 +1,7 @@
 // =========================================================
 // CATALOGO PREMIUM – MewingMarket
 // Versione SQL definitiva + PATCH 2027.902 + BOOTSTRAP AGGRESSIVO
+// INTEGRATA: Patch Anti-Crash & Silent Fail-Safe
 // =========================================================
 
 /* =========================================================
@@ -10,7 +11,6 @@ async function loadProducts() {
   console.log("🟦 [CATALOGO] Caricamento prodotti…");
 
   try {
-    // Utilizza il fetchUniversale iniettato da mm-api.js
     const res = await window.fetchUniversale(
       "/products",
       { cache: "no-store" },
@@ -32,7 +32,6 @@ async function loadProducts() {
     }
 
     console.log("🟩 [CATALOGO] Prodotti ricevuti:", prodotti.length);
-    // Salviamo in window per debug e per altri componenti
     window.prodotti = prodotti;
     return prodotti;
 
@@ -82,11 +81,14 @@ function getImage(p) {
 }
 
 /* =========================================================
-   4) CARD PRODOTTO (HTML)
+   4) CARD PRODOTTO (HTML) - Con protezione campi nulli
 ========================================================= */
 function cardHTML(p) {
+  // Se il prodotto è nullo o non ha ID, saltiamo per evitare crash
+  if (!p || !p.id) throw new Error("Dati prodotto incompleti");
+
   const img = getImage(p);
-  const titoloBreve = clean(p.titolo_breve || p.titolo || "Prodotto");
+  const titoloBreve = clean(p.titolo_breve || p.titolo || "Prodotto senza nome");
   const descrizione = p.descrizione_breve ? clean(p.descrizione_breve) : "";
 
   const prezzo_cent = Number(p.prezzo_cent) || 0;
@@ -124,28 +126,40 @@ function cardHTML(p) {
 }
 
 /* =========================================================
-   5) LOGICA CORE DEL CATALOGO
+   5) LOGICA CORE - INTEGRATA CON PATCH RENDERING
 ========================================================= */
 async function avviaCatalogo() {
   console.log("🟦 [CATALOGO] Esecuzione avviaCatalogo()");
 
+  const container = document.getElementById("catalogo");
+  if (!container) {
+    console.warn("⚠️ [CATALOGO] Elemento #catalogo non trovato");
+    return;
+  }
+
   const products = await loadProducts();
   const categoriesFromJson = await loadCategories();
 
-  const container = document.getElementById("catalogo");
-  const categorieBox = document.getElementById("categorie");
-
-  if (!container) {
-    console.warn("⚠️ [CATALOGO] Elemento #catalogo non trovato nel DOM");
-    return;
-  }
-
   if (!products.length) {
-    container.innerHTML = `<p class="errore-catalogo">Nessun prodotto trovato.</p>`;
+    container.innerHTML = `<p class="errore-catalogo">Nessun prodotto disponibile al momento.</p>`;
     return;
   }
+
+  // PATCH: Rendering sicuro con gestione errori per singolo prodotto
+  let htmlGenerato = "";
+  products.forEach((p, index) => {
+    try {
+      htmlGenerato += cardHTML(p);
+    } catch (err) {
+      console.error(`❌ [RENDER ERROR] Prodotto index ${index} ignorato:`, err);
+    }
+  });
+
+  // Iniezione finale
+  container.innerHTML = htmlGenerato || "<h1>Errore nella generazione dei prodotti</h1>";
 
   // Gestione Categorie
+  const categorieBox = document.getElementById("categorie");
   if (categorieBox) {
     let categorie = categoriesFromJson.length
       ? categoriesFromJson
@@ -160,15 +174,12 @@ async function avviaCatalogo() {
       if (!cat) return;
       document.querySelectorAll(".product-card").forEach(card => {
         const cats = card.dataset.cat.split(" ");
-        card.style.display = cats.includes(cat) ? "block" : "none";
+        card.style.display = (cat === "all" || cats.includes(cat)) ? "block" : "none";
       });
     });
   }
 
-  // Render Card
-  container.innerHTML = products.map(cardHTML).join("");
-
-  // Eventi Carrello
+  // Carrello Event Delegation
   container.addEventListener("click", e => {
     const btn = e.target.closest(".btn-add-cart");
     if (!btn) return;
@@ -183,23 +194,19 @@ async function avviaCatalogo() {
     if (typeof window.aggiungiAlCarrello === "function") {
       window.aggiungiAlCarrello(prodotto);
       if (typeof window.aggiornaBadgeCarrello === "function") window.aggiornaBadgeCarrello();
-    } else {
-      console.error("❌ Funzione aggiungiAlCarrello non trovata!");
     }
   });
+  
+  console.log("🎨 [CATALOGO] Rendering completato!");
 }
 
 /* =========================================================
-   6) BOOTSTRAP "SUPER AGGRESSIVO" (Anti-Race Condition)
+   6) BOOTSTRAP "SUPER AGGRESSIVO" (Invariato)
 ========================================================= */
-
-// Rendiamo la funzione disponibile globalmente per test manuali in console
 window.renderProdotti = avviaCatalogo;
 
 function bootstrapCatalogo() {
   if (window.__catalogoStarted) return;
-  
-  console.log("🚀 [CATALOGO] Inizializzazione bootstrap...");
   window.__catalogoStarted = true;
   
   if (document.readyState === "complete" || document.readyState === "interactive") {
@@ -209,22 +216,15 @@ function bootstrapCatalogo() {
   }
 }
 
-// Innesco 1: mm-api è già pronto
 if (window.fetchUniversale) {
-  console.log("⚡ [CATALOGO] mm-api rilevato, avvio...");
   bootstrapCatalogo();
 }
 
-// Innesco 2: Aspetta il segnale dal Loader
-document.addEventListener("critical-ready", () => {
-  console.log("🎯 [CATALOGO] Segnale critical-ready ricevuto");
-  bootstrapCatalogo();
-});
+document.addEventListener("critical-ready", bootstrapCatalogo);
 
-// Innesco 3: Fail-safe (Se nulla accade, forza l'avvio dopo 1.5s)
 setTimeout(() => {
   if (!window.__catalogoStarted) {
-    console.warn("⚠️ [CATALOGO] Avvio di emergenza (Fail-safe)");
+    console.warn("⚠️ [CATALOGO] Avvio di emergenza via Timeout");
     bootstrapCatalogo();
   }
 }, 1500);
