@@ -1,17 +1,7 @@
 /* FILE: app/server/server.cjs */
 /**
  * =========================================================
- * Entry point del server — versione DEFINITIVA
- * Patch 2026 — Restore PRIMA del database + Backup intelligente
- * Patch 2026.600 — Anti-crash router + Monitor DB/Frontend
- * Patch 2026.700 — No-cache index.html (anti-CDN)
- * Patch 2026.900 — Debug richieste + Hook diagnostica.cjs
- * Patch 2026.960 — Router FULL ERROR LOG
- * Patch 2026.970 — Middleware Diagnostico Route Scanner
- * Patch 2026.999 — Cold-start Render (warmup non bloccante)
- * Patch 2026.9999 — DISATTIVATO debug-db (fix API protette)
- * Patch 2027.DATA — /data doppia sorgente + backup + log
- * Patch 2027.CSS  — CSS globali per header/footer
+ * Entry point del server — versione DEFINITIVA + PATCH ROOT-FINDER
  * =========================================================
  */
 
@@ -43,18 +33,26 @@ app.disable("x-powered-by");
 
 /**
  * =========================================================
- * 🟩 PATCH — JS con querystring (v=xxxx) — REGISTRATA SUBITO
- * FIX: Rimosso spazio "/* .js" che causava SyntaxError
+ * 🟩 PATCH AGGRESSIVA — JS ROOT-FINDER (Fix 404 de coccio)
+ * Questa versione trova i file JS ovunque siano in public
  * =========================================================
  */
-app.get("/*.js", (req, res, next) => {
-  const clearPath = req.path.replace(/\/?\?.*$/, ""); 
-  const filePath = path.join(process.cwd(), "app/public", clearPath);
+app.use((req, res, next) => {
+  if (req.path.endsWith(".js") || req.url.includes(".js?")) {
+    const cleanName = path.basename(req.path.split('?')[0]);
+    const pathsToTry = [
+      path.join(process.cwd(), "app/public", cleanName),
+      path.join(process.cwd(), "app/public/js", cleanName),
+      path.join(process.cwd(), "app/public", req.path.split('?')[0])
+    ];
 
-  if (fs.existsSync(filePath)) {
-    res.setHeader("Content-Type", "application/javascript; charset=utf-8");
-    res.setHeader("X-Content-Type-Options", "nosniff");
-    return res.sendFile(filePath);
+    for (let p of pathsToTry) {
+      if (fs.existsSync(p)) {
+        res.setHeader("Content-Type", "application/javascript; charset=utf-8");
+        res.setHeader("X-Content-Type-Options", "nosniff");
+        return res.sendFile(p);
+      }
+    }
   }
   next();
 });
@@ -124,9 +122,6 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
   await wait(200);
   require("./services/logging.cjs");
 
-  // =========================================================
-  // 🔥 RESTORE PRIMA DEL DATABASE
-  // =========================================================
   log(">> RESTORE DB & FILES (if needed)");
   await wait(200);
   const { restore } = require("./modules/restore.cjs");
@@ -134,18 +129,11 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
   global.__restore_completed = true;
 
-  // =========================================================
-  // MIDDLEWARE
-  // =========================================================
   log(">> APPLYING PARSER MIDDLEWARE");
   await wait(200);
-
   app.use(express.json());
   app.use(cookieParser());
 
-  // =========================================================
-  // 🔥 CARICAMENTO DB DOPO RESTORE — DB NULL-SAFE
-  // =========================================================
   let db;
   try {
     db = require("./db/database.cjs");
@@ -161,9 +149,6 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
   app.set("db", db);
   log(">> DB REGISTRATO SU app.set('db')");
 
-  // =========================================================
-  // MIDDLEWARE VARI
-  // =========================================================
   log(">> LOADING cache.cjs");
   await wait(200);
   require("./middleware/cache.cjs")(app);
@@ -176,9 +161,6 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
   await wait(200);
   require("./middleware/context.cjs")(app);
 
-  // =========================================================
-  // 🔥 ROUTER API — PATCH: FULL ERROR LOG
-  // =========================================================
   log(">> LOADING router.cjs");
   await wait(200);
   try {
@@ -189,9 +171,6 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     console.error("❌ ROUTER LOAD ERROR FULL:", err);
   }
 
-  // =========================================================
-  // ❄️  COLD START
-  // =========================================================
   try {
     const coldStart = require("./startup/cold-start.cjs");
     coldStart(app);
@@ -200,9 +179,6 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     logErr("❌ Errore cold-start:", err.message);
   }
 
-  // =========================================================
-  // ⭐ MIDDLEWARE DIAGNOSTICO ROUTES
-  // =========================================================
   try {
     require("./middleware/middleware-diagnostico.cjs")(app);
     console.log("🟩 Middleware diagnostico attivato");
@@ -210,12 +186,8 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     console.error("❌ ERRORE middleware diagnostico:", err);
   }
 
-  // =========================================================
-  // STATIC ROUTES + NO-CACHE INDEX.HTML
-  // =========================================================
   log(">> REGISTER STATIC ROUTES");
   await wait(200);
-
   const PUBLIC_DIR = path.resolve("app/public");
 
   app.get("/", (req, res, next) => {
@@ -229,21 +201,8 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     res.sendFile(path.resolve("app/public/diagnostica-routes.html"));
   });
 
-  // 🔵 PATCH MIME — Garantisce application/javascript per tutti i .js
-  app.use((req, res, next) => {
-    if (req.path.endsWith(".js") || req.url.includes(".js?")) {
-      res.setHeader("Content-Type", "application/javascript; charset=utf-8");
-      res.setHeader("X-Content-Type-Options", "nosniff");
-    }
-    next();
-  });
-
-  // SERVE FILE STATICI
   app.use(express.static(PUBLIC_DIR));
 
-  // =========================================================
-  // ALIAS ENGINE
-  // =========================================================
   try {
     require("./alias-engine.cjs")(app, { log, logErr });
     log("🟩 Alias Engine attivato");
@@ -251,9 +210,6 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     logErr("❌ Errore Alias Engine:", err.message);
   }
 
-  // =========================================================
-  // PATCH 2027.HTML — Rewriter ordine script
-  // =========================================================
   try {
     const rewriteScripts = require("./utils/rewrites.cjs");
     app.use((req, res, next) => {
@@ -275,15 +231,9 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     logErr("⚠️ Modulo rewrites.cjs non trovato.");
   }
 
-  // =========================================================
-  // PATCH 2027.CSS
-  // =========================================================
   app.use("/*.css", express.static(PUBLIC_DIR));
   app.use("/css", express.static(PUBLIC_DIR));
 
-  // =========================================================
-  // PATCH 2027.DATA — doppia sorgente + backup + log
-  // =========================================================
   const DATA_BACKUP = path.join(process.cwd(), "app/data");
   const DATA_PERSIST = "/var/data/json";
 
@@ -314,24 +264,15 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     res.status(404).json({ error: "File non trovato" });
   });
 
-  // =========================================================
-  // 🔵 ROUTE DIAGNOSTICA
-  // =========================================================
   try {
     require("./routes/var-data.cjs")(app);
   } catch(e) {}
 
-  // =========================================================
-  // ADMIN STATIC
-  // =========================================================
   app.get("/admin/login", (req, res) => {
     res.sendFile(path.resolve("app/public/admin/admin-login.html"));
   });
   app.use("/admin", express.static(path.resolve("app/public/admin")));
 
-  // =========================================================
-  // FRONTEND ROUTES
-  // =========================================================
   try {
     require("./routes/chat.cjs")(app);
     require("./routes/chat-voice.cjs")(app);
@@ -345,9 +286,6 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     logErr("❌ ERRORE FRONTEND ROUTES:", err.message || err);
   }
 
-  // =========================================================
-  // 🔁 CRON-SYNC
-  // =========================================================
   try {
     require("./startup/cron-sync.cjs")(app, { log, logErr });
     log("🔁 Cron-sync avviato (10 minuti)");
