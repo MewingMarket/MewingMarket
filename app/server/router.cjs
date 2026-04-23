@@ -1,25 +1,14 @@
+/* FILE: app/server/router.cjs */
 /**
  * =========================================================
- * File: app/server/router.cjs
  * Router principale — SOLO API
- * Versione 2027.910 — DIAGNOSTICA + FAILSAFE
+ * Versione 2027.910 — FIXED PATHS + FAILSAFE
  * =========================================================
  */
 
 const express = require("express");
 const path = require("path");
 const router = express.Router();
-
-/* =========================================================
-   ⭐ LOGGING DIAGNOSTICO — SCOPRE QUALSIASI ERRORE NASCOSTO
-========================================================= */
-process.on("uncaughtException", (err) => {
-  console.error("❌ [ROUTER] uncaughtException:", err);
-});
-
-process.on("unhandledRejection", (err) => {
-  console.error("❌ [ROUTER] unhandledRejection:", err);
-});
 
 /* Helper per require assoluti */
 const R = (p) => require(path.join(process.cwd(), "app/server", p));
@@ -33,28 +22,25 @@ try {
   const diagnostica = R("diagnostica.cjs");
   if (typeof diagnostica?.hookRouter === "function") {
     diagnostica.hookRouter(router);
-    console.log("🟩 [ROUTER] diagnostica.cjs agganciata");
-  } else {
-    console.log("🟨 [ROUTER] diagnostica.cjs presente ma senza hookRouter()");
   }
 } catch (err) {
-  console.log("🟧 [ROUTER] diagnostica.cjs non presente (ok):", err.message);
+  console.log("🟧 [ROUTER] diagnostica.cjs non presente:", err.message);
 }
 
 /* =========================================================
-   ⭐ PATCH: AUTH USER — SEMPRE ATTIVO
+   ⭐ PATCH: AUTH USER — Middleware identità
 ========================================================= */
 router.use(R("middleware/auth-user.cjs"));
 
 /* =========================================================
-   ⭐ TUTTE LE ROUTE PUBBLICHE (ordine stabile)
+   ⭐ ROTTE API (Rimosso prefisso /api/ interno perché già in server.cjs)
 ========================================================= */
 
 /* PRODOTTI */
 router.use(R("routes/api-prodotti-new.cjs"));
 
-/* UTENTI — PATCH FONDAMENTALE */
-router.use("/api/utenti", R("routes/api-utenti.cjs"));
+/* UTENTI — CORRETTO: server.cjs mette già /api, qui usiamo solo /utenti */
+router.use("/utenti", R("routes/api-utenti.cjs"));
 
 /* PUBBLICHE */
 router.use(R("routes/api-recensioni-top.cjs"));
@@ -98,19 +84,18 @@ router.use(R("routes/meta-feed.cjs"));
 /* NEWSLETTER */
 router.use(R("routes/newsletter.cjs"));
 
-/* =========================================================
-   ⭐ API ALIAS — ***SPOSTATO IN FONDO***
-========================================================= */
+/* ALIAS */
 router.use(R("routes/api-alias.cjs"));
 
-console.log("🟩 [ROUTER] Router principale caricato correttamente (TUTTO PUBBLICO)");
+console.log("🟩 [ROUTER] Router principale caricato (Paths Fixed)");
 
 /* =========================================================
-   ⭐ PATCH FINALE — IGNORA ROUTE ROTTE / ERRORI / CRASH
+   ⭐ FAILSAFE FINALE
 ========================================================= */
 router.use((err, req, res, next) => {
-  console.error("❌ [ROUTER] Errore nella route:", req.path, err.message);
-  return res.json({});
+  console.error("❌ [ROUTER ERROR]:", req.path, err.message);
+  // Restituisce un oggetto vuoto ma con status 200 per non rompere il frontend
+  return res.status(200).json({ success: false, error: "Route error" });
 });
 
 module.exports = router;
