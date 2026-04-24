@@ -1,7 +1,7 @@
 // =========================================================
 // CATALOGO PREMIUM – MewingMarket
 // Versione SQL definitiva + PATCH NUCLEARE 2027
-// Full Logic: Categorie, Prezzi, Aggiungi & Rimuovi
+// Full Logic: Categorie, Prezzi, Aggiungi (+) & Rimuovi (-)
 // =========================================================
 
 /* 1) CARICA PRODOTTI */
@@ -57,16 +57,12 @@ function cardHTML(p) {
       <p>${desc}</p>
       <p class="prezzo">€${pMostrato}</p>
       <div class="card-buttons">
-        <a href="prodotto.html?id=${id}" class="btn">Dettagli</a>
+        <a href="prodotto.html?id=${id}" class="btn-dettagli">Dettagli</a>
         <div class="cart-controls">
-          <button class="btn-secondario btn-add-cart" 
+          <button class="btn-add-cart" 
             data-id="${id}" data-title="${titolo}" 
-            data-price-cent="${pCent}" data-img="${img}">
-            🛒 +
-          </button>
-          <button class="btn-remove-cart" data-id="${id}" title="Rimuovi">
-            🗑️
-          </button>
+            data-price-cent="${pCent}" data-img="${img}">+</button>
+          <button class="btn-remove-cart" data-id="${id}">-</button>
         </div>
       </div>
     </div>`;
@@ -92,7 +88,7 @@ async function avviaCatalogo(prodottiDaMostrare = null) {
   }
 }
 
-/* 5) GESTIONE EVENTI (Filtri & Carrello) */
+/* 5) GESTIONE EVENTI */
 function inizializzaListeners() {
   // FILTRI PREZZO
   document.querySelectorAll(".filtri-prezzo .btn[data-prezzo]").forEach(btn => {
@@ -121,28 +117,19 @@ function inizializzaListeners() {
     };
   }
 
-  // AGGIUNTA E RIMOZIONE CARRELLO (Delegated)
+  // AGGIUNTA E RIMOZIONE CARRELLO
   document.getElementById("catalogo").onclick = (e) => {
-    // Gestione AGGIUNGI
     const btnAdd = e.target.closest(".btn-add-cart");
     if (btnAdd) {
       const p = { id: btnAdd.dataset.id, titolo: btnAdd.dataset.title, prezzo_cent: Number(btnAdd.dataset.priceCent), immagine: btnAdd.dataset.img };
-      if (window.aggiungiAlCarrello) {
-        window.aggiungiAlCarrello(p);
-        if (window.aggiornaBadgeCarrello) window.aggiornaBadgeCarrello();
-      }
+      if (window.aggiungiAlCarrello) { window.aggiungiAlCarrello(p); if (window.aggiornaBadgeCarrello) window.aggiornaBadgeCarrello(); }
       return;
     }
 
-    // Gestione RIMUOVI [NOVITÀ]
     const btnRem = e.target.closest(".btn-remove-cart");
     if (btnRem) {
       const id = btnRem.dataset.id;
-      if (window.rimuoviDalCarrello) {
-        window.rimuoviDalCarrello(id);
-        if (window.aggiornaBadgeCarrello) window.aggiornaBadgeCarrello();
-        console.log("🗑️ Prodotto rimosso ID:", id);
-      }
+      if (window.rimuoviDalCarrello) { window.rimuoviDalCarrello(id); if (window.aggiornaBadgeCarrello) window.aggiornaBadgeCarrello(); }
     }
   };
 }
