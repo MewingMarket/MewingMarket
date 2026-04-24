@@ -1,22 +1,20 @@
 // =========================================================
 // CATALOGO PREMIUM – MewingMarket
 // Versione SQL definitiva + PATCH NUCLEARE 2027
-// Con Estrazione Automatica Categorie dai Prodotti
+// Full Logic: Categorie, Prezzi, Aggiungi & Rimuovi
 // =========================================================
 
-/* 1) CARICA PRODOTTI (Flessibile) */
+/* 1) CARICA PRODOTTI */
 async function loadProducts() {
   console.log("🟦 [CATALOGO] Caricamento prodotti…");
   try {
     const res = await window.fetchUniversale("/products", { cache: "no-store" });
     const data = await res.json();
     let prodotti = Array.isArray(data) ? data : (data.prodotti || data.data || []);
-    
-    console.log("🟩 [CATALOGO] Prodotti ricevuti:", prodotti.length);
-    window.prodottiOriginali = prodotti; // Backup fondamentale per filtri e reset
+    window.prodottiOriginali = prodotti; 
     return prodotti;
   } catch (err) {
-    console.error("🔥 [CATALOGO] Errore fetch prodotti:", err);
+    console.error("🔥 [CATALOGO] Errore fetch:", err);
     return [];
   }
 }
@@ -39,9 +37,7 @@ function cardHTML(p) {
   const titolo = clean(p.titolo_breve || p.titolo || "Prodotto");
   const img = getImage(p);
   
-  let pMostrato = "0.00";
-  let pCent = 0;
-
+  let pMostrato = "0.00", pCent = 0;
   if (p.prezzo_cent) {
       pCent = Number(p.prezzo_cent);
       pMostrato = (pCent / 100).toFixed(2);
@@ -51,12 +47,8 @@ function cardHTML(p) {
   }
 
   const desc = clean(p.descrizione_breve || p.descrizione || "");
-  
-  // Normalizzazione categorie per il data-attribute
-  let catArray = [];
-  if (Array.isArray(p.categoria)) catArray = p.categoria;
-  else if (p.categoria) catArray = p.categoria.split(',').map(c => c.trim());
-  const catsAttr = catArray.map(clean).join(" ");
+  let catArray = Array.isArray(p.categoria) ? p.categoria : (p.categoria ? p.categoria.split(',') : []);
+  const catsAttr = catArray.map(c => clean(c.trim())).join(" ");
 
   return `
     <div class="product-card" data-cat="${catsAttr}" data-id="${id}">
@@ -66,11 +58,16 @@ function cardHTML(p) {
       <p class="prezzo">€${pMostrato}</p>
       <div class="card-buttons">
         <a href="prodotto.html?id=${id}" class="btn">Dettagli</a>
-        <button class="btn-secondario btn-add-cart" 
-          data-id="${id}" data-title="${titolo}" 
-          data-price-cent="${pCent}" data-img="${img}">
-          🛒 Aggiungi
-        </button>
+        <div class="cart-controls">
+          <button class="btn-secondario btn-add-cart" 
+            data-id="${id}" data-title="${titolo}" 
+            data-price-cent="${pCent}" data-img="${img}">
+            🛒 +
+          </button>
+          <button class="btn-remove-cart" data-id="${id}" title="Rimuovi">
+            🗑️
+          </button>
+        </div>
       </div>
     </div>`;
 }
@@ -81,91 +78,71 @@ async function avviaCatalogo(prodottiDaMostrare = null) {
   if (!container) return;
 
   const products = prodottiDaMostrare || await loadProducts();
+  container.innerHTML = products.length ? products.map(p => cardHTML(p)).join("") : `<p>Nessun prodotto trovato.</p>`;
 
-  if (!products.length) {
-    container.innerHTML = `<p>Nessun prodotto trovato per questa selezione.</p>`;
-    return;
-  }
-
-  // Render dei prodotti
-  let html = "";
-  products.forEach((p) => {
-    try { html += cardHTML(p); } catch (e) {}
-  });
-  container.innerHTML = html;
-
-  // Gestione Categorie: le estraiamo dai prodotti solo al primo caricamento
   const catBox = document.getElementById("categorie");
   if (catBox && !prodottiDaMostrare) {
-    const tutteLeCat = window.prodottiOriginali.flatMap(p => {
-      if (Array.isArray(p.categoria)) return p.categoria;
-      if (typeof p.categoria === 'string') return p.categoria.split(',').map(c => c.trim());
-      return [];
-    });
+    const tutteLeCat = window.prodottiOriginali.flatMap(p => 
+      Array.isArray(p.categoria) ? p.categoria : (p.categoria ? p.categoria.split(',') : [])
+    );
+    const categorieUniche = [...new Set(tutteLeCat.map(c => c.trim()))].filter(c => c !== "");
 
-    const categorieUniche = [...new Set(tutteLeCat)].filter(c => c !== "");
-
-    let htmlBottoni = `<button class="btn btn-cat active" data-cat="all">Tutti</button>`;
-    htmlBottoni += categorieUniche.map(c => `
-      <button class="btn btn-cat" data-cat="${clean(c)}">${clean(c)}</button>
-    `).join("");
-
-    catBox.innerHTML = htmlBottoni;
+    catBox.innerHTML = `<button class="btn btn-cat active" data-cat="all">Tutti</button>` + 
+      categorieUniche.map(c => `<button class="btn btn-cat" data-cat="${clean(c)}">${clean(c)}</button>`).join("");
   }
 }
 
-/* 5) GESTIONE EVENTI (Filtri Prezzo, Categorie & Carrello) */
+/* 5) GESTIONE EVENTI (Filtri & Carrello) */
 function inizializzaListeners() {
   // FILTRI PREZZO
   document.querySelectorAll(".filtri-prezzo .btn[data-prezzo]").forEach(btn => {
     btn.onclick = () => {
       const soglia = parseFloat(btn.dataset.prezzo);
-      const filtrati = window.prodottiOriginali.filter(p => {
-        const prezzo = p.prezzo_cent ? (p.prezzo_cent / 100) : (Number(p.prezzo) || 0);
-        return prezzo <= soglia;
-      });
-      avviaCatalogo(filtrati);
+      avviaCatalogo(window.prodottiOriginali.filter(p => (p.prezzo_cent ? p.prezzo_cent/100 : p.prezzo) <= soglia));
     };
   });
 
   // RESET
-  const btnReset = document.getElementById("reset");
-  if (btnReset) btnReset.onclick = () => avviaCatalogo(window.prodottiOriginali);
+  const br = document.getElementById("reset");
+  if (br) br.onclick = () => avviaCatalogo(window.prodottiOriginali);
 
-  // CLICK CATEGORIE (Filtro Reale)
-  const catBox = document.getElementById("categorie");
-  if (catBox) {
-    catBox.onclick = (e) => {
-      const btn = e.target.closest(".btn-cat");
-      if (!btn) return;
-
-      document.querySelectorAll(".btn-cat").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-
-      const scelta = btn.dataset.cat;
-      if (scelta === "all") {
-        avviaCatalogo(window.prodottiOriginali);
-      } else {
-        const filtrati = window.prodottiOriginali.filter(p => {
-          const pCats = Array.isArray(p.categoria) ? p.categoria : (p.categoria || "").split(',').map(c => c.trim());
-          return pCats.includes(scelta);
-        });
-        avviaCatalogo(filtrati);
-      }
+  // CLICK CATEGORIE
+  const cb = document.getElementById("categorie");
+  if (cb) {
+    cb.onclick = (e) => {
+      const b = e.target.closest(".btn-cat");
+      if (!b) return;
+      document.querySelectorAll(".btn-cat").forEach(x => x.classList.remove("active"));
+      b.classList.add("active");
+      const s = b.dataset.cat;
+      avviaCatalogo(s === "all" ? window.prodottiOriginali : window.prodottiOriginali.filter(p => 
+        (Array.isArray(p.categoria) ? p.categoria : (p.categoria || "").split(',')).map(c => c.trim()).includes(s)
+      ));
     };
   }
 
-  // AGGIUNTA CARRELLO
+  // AGGIUNTA E RIMOZIONE CARRELLO (Delegated)
   document.getElementById("catalogo").onclick = (e) => {
-    const btn = e.target.closest(".btn-add-cart");
-    if (!btn) return;
-    const prod = { 
-      id: btn.dataset.id, titolo: btn.dataset.title, 
-      prezzo_cent: Number(btn.dataset.priceCent), immagine: btn.dataset.img 
-    };
-    if (window.aggiungiAlCarrello) {
-      window.aggiungiAlCarrello(prod);
-      if (window.aggiornaBadgeCarrello) window.aggiornaBadgeCarrello();
+    // Gestione AGGIUNGI
+    const btnAdd = e.target.closest(".btn-add-cart");
+    if (btnAdd) {
+      const p = { id: btnAdd.dataset.id, titolo: btnAdd.dataset.title, prezzo_cent: Number(btnAdd.dataset.priceCent), immagine: btnAdd.dataset.img };
+      if (window.aggiungiAlCarrello) {
+        window.aggiungiAlCarrello(p);
+        if (window.aggiornaBadgeCarrello) window.aggiornaBadgeCarrello();
+      }
+      return;
+    }
+
+    // Gestione RIMUOVI [NOVITÀ]
+    const btnRem = e.target.closest(".btn-remove-cart");
+    if (btnRem) {
+      const id = btnRem.dataset.id;
+      if (window.rimuoviDalCarrello) {
+        window.rimuoviDalCarrello(id);
+        if (window.aggiornaBadgeCarrello) window.aggiornaBadgeCarrello();
+        console.log("🗑️ Prodotto rimosso ID:", id);
+      }
     }
   };
 }
@@ -178,7 +155,5 @@ async function bootstrap() {
   inizializzaListeners();
 }
 
-window.renderProdotti = avviaCatalogo;
 document.addEventListener("DOMContentLoaded", bootstrap);
-if (window.fetchUniversale) bootstrap();
-setTimeout(bootstrap, 1200); // Fail-safe per loader asincroni
+setTimeout(bootstrap, 1200);
