@@ -7,27 +7,27 @@
 
   <link rel="stylesheet" href="header-shop.css">
   <link rel="stylesheet" href="prodotto.css">
-  <link rel="stylesheet" href="catalogo.css"> </head>
+  <link rel="stylesheet" href="catalogo.css"> 
+</head>
 
 <body>
 
   <div id="head-placeholder"></div>
-
   <div id="header-placeholder"></div>
 
   <main id="page-product" class="pagina-standard">
 
     <section id="hero" class="hero-premium">
       <div class="hero-left">
-        <img id="product-image" src="/placeholder.webp" alt="Caricamento prodotto...">
+        <img id="prodotto-immagine" src="/placeholder.webp" alt="Caricamento prodotto...">
       </div>
 
       <div class="hero-right">
-        <h1 id="product-title">Caricamento...</h1>
-        <p id="product-subtitle" class="subtitle"></p>
+        <h1 id="prodotto-titolo">Caricamento...</h1>
+        <p id="prodotto-subtitle" class="subtitle"></p>
 
         <div class="price-box">
-          <span id="product-price">--,--€</span>
+          <span id="prodotto-prezzo">--,--€</span>
         </div>
 
         <div class="trust-badges">
@@ -37,7 +37,7 @@
         </div>
 
         <div class="cta-box-hero" style="margin-top: 25px; display: flex; gap: 10px;">
-          <button id="btn-acquista-hero" class="btn-primario" onclick="document.getElementById('btn-acquista').click()">
+          <button id="btn-acquista-hero" class="btn-primario" onclick="document.getElementById('btn-paga-subito').click()">
             Acquista Ora
           </button>
         </div>
@@ -48,17 +48,19 @@
 
       <div id="video-section" class="video-wrapper" style="display:none;">
         <h2>Video Approfondimento</h2>
-        <iframe id="product-video" frameborder="0" allowfullscreen></iframe>
+        <iframe id="prodotto-video" frameborder="0" allowfullscreen></iframe>
       </div>
 
       <div id="descrizione">
         <h2>Descrizione Completa</h2>
-        <div id="product-description" class="testo-ai-content"></div>
+        <div id="prodotto-descrizione" class="testo-ai-content">
+          <p>Caricamento descrizione in corso...</p>
+        </div>
 
         <div class="cta-box sotto-descrizione">
-          <button id="btn-acquista" class="btn-primario">Procedi al pagamento</button>
-          <button id="btn-carrello" class="btn-secondario">Aggiungi al carrello</button>
-          <button id="btn-remove-cart" class="btn-secondario">Rimuovi (-1)</button>
+          <button id="btn-paga-subito" class="btn-primario">Procedi al pagamento</button>
+          <button id="btn-aggiungi" class="btn-secondario">Aggiungi al carrello</button>
+          <button id="btn-rimuovi" class="btn-secondario">Rimuovi (-1)</button>
         </div>
       </div>
 
@@ -77,8 +79,6 @@
 
   <script src="/loader.js?v=20260412" type="text/javascript" crossorigin="anonymous"></script>
   <script src="/dynamic-loader.js?v=20260412" type="text/javascript" crossorigin="anonymous"></script>
-  
-  <script src="/carrello.js?v=20260412" type="text/javascript"></script>
   
   <script src="/prodotto.js?v=20260412" type="text/javascript" charset="UTF-8" crossorigin="anonymous"></script>
 
