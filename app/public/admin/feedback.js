@@ -1,97 +1,80 @@
 /* =========================================================
-   Admin — Feedback Clienti
-   Versione 2027.400 — CRITICAL READY + FETCH UNIVERSALE
+   ADMIN FEEDBACK — Versione SQL 2027.980
+   Sincronizzata con admin-feedback.cjs (JOIN + KPI)
 ========================================================= */
 
-// Sanitizzazione sicura
 const clean = (t) =>
   typeof t === "string"
     ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
     : t ?? "";
 
+// Formattazione data italiana
+const fDate = (d) => {
+  if(!d) return "—";
+  try {
+    const date = new Date(d);
+    return date.toLocaleDateString('it-IT') + " " + date.toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'});
+  } catch(e) { return d; }
+};
+
 /* =========================================================
-   FETCH ADMIN (usa fetchUniversale + token)
+   FETCH ADMIN (Versione Unificata)
 ========================================================= */
 async function adminGet(path) {
-  console.log("[ADMIN][FETCH] Chiamata a:", path);
-
-  const token = localStorage.getItem("token");
-
-  const res = await window.fetchUniversale(
-    path,
-    {
-      headers: {
-        Authorization: token ? `Bearer ${token}` : ""
-      }
-    },
-    { retries: 3, backoffMs: 400 }
-  );
-
-  const json = await res.json();
-  console.log("[ADMIN][FETCH] Risposta JSON:", json);
-
-  return json;
+  const fullPath = path.startsWith("/api") ? path : `/api${path}`;
+  const res = await window.fetchUniversale(fullPath, { method: "GET" }, { retries: 2 });
+  return res.json();
 }
 
 /* =========================================================
-   RENDER KPI
+   RENDER KPI (Barre percentuali + Top/Flop)
 ========================================================= */
 function renderKPI(kpi) {
-  console.log("🟣 [ADMIN] Render KPI:", kpi);
-
   const box = document.querySelector("#kpi-feedback");
-  if (!box) {
-    console.error("❌ [ADMIN] Manca #kpi-feedback nel DOM");
-    return;
-  }
+  if (!box || !kpi) return;
 
   box.innerHTML = `
-    <h3>📊 KPI Feedback</h3>
-
-    <div class="kpi-row">
-      <div class="kpi-box">
-        <div class="kpi-label">Totale recensioni</div>
-        <div class="kpi-value">${clean(kpi.totale)}</div>
+    <div class="kpi-header-grid">
+      <div class="kpi-card main">
+        <span class="label">Totale Recensioni</span>
+        <span class="value">${kpi.totale || 0}</span>
       </div>
-
-      <div class="kpi-box">
-        <div class="kpi-label">Media stelle</div>
-        <div class="kpi-value">${clean(kpi.media_stelle)}</div>
+      <div class="kpi-card main">
+        <span class="label">Media Valutazioni</span>
+        <span class="value">⭐ ${kpi.media_stelle || "0.00"}</span>
       </div>
     </div>
 
-    <h4>Distribuzione stelle</h4>
-    <ul>
-      <li>⭐ 5 stelle: ${clean(kpi.percentuali[5])}%</li>
-      <li>⭐ 4 stelle: ${clean(kpi.percentuali[4])}%</li>
-      <li>⭐ 3 stelle: ${clean(kpi.percentuali[3])}%</li>
-      <li>⭐ 2 stelle: ${clean(kpi.percentuali[2])}%</li>
-      <li>⭐ 1 stella: ${clean(kpi.percentuali[1])}%</li>
-    </ul>
-
-    <h4>Top 5 prodotti</h4>
-    <ul>
-      ${kpi.prodotti_top
-        .map(
-          (p) =>
-            `<li>${clean(p.titolo)} — ⭐ ${clean(p.media)} (${clean(
-              p.count
-            )} recensioni)</li>`
-        )
-        .join("")}
-    </ul>
-
-    <h4>Flop 5 prodotti</h4>
-    <ul>
-      ${kpi.prodotti_flop
-        .map(
-          (p) =>
-            `<li>${clean(p.titolo)} — ⭐ ${clean(p.media)} (${clean(
-              p.count
-            )} recensioni)</li>`
-        )
-        .join("")}
-    </ul>
+    <div class="kpi-details-grid">
+      <div class="kpi-section">
+        <h4>Distribuzione Valutazioni</h4>
+        <div class="stars-distribution">
+          ${[5, 4, 3, 2, 1].map(s => {
+            const perc = kpi.percentuali?.[s] || 0;
+            return `
+              <div class="star-row">
+                <span class="star-label">${s} ⭐</span>
+                <div class="progress-bar"><div class="fill" style="width: ${perc}%"></div></div>
+                <span class="star-perc">${perc}%</span>
+              </div>`;
+          }).join("")}
+        </div>
+      </div>
+      
+      <div class="kpi-section">
+        <h4>Top & Flop Prodotti</h4>
+        <div class="rank-flex">
+          <div class="rank-col">
+            <small>TOP 5</small>
+            <ul>${(kpi.prodotti_top || []).map(p => `<li>${clean(p.titolo)} (⭐${p.media})</li>`).join("")}</ul>
+          </div>
+          <div class="rank-col">
+            <small>FLOP 5</small>
+            <ul>${(kpi.prodotti_flop || []).map(p => `<li>${clean(p.titolo)} (⭐${p.media})</li>`).join("")}</ul>
+          </div>
+        </div>
+      </div>
+    </div>
   `;
 }
 
@@ -99,56 +82,48 @@ function renderKPI(kpi) {
    CARICA FEEDBACK
 ========================================================= */
 async function caricaFeedback() {
-  console.log("🔵 [ADMIN] Avvio caricaFeedback()");
+  const tbody = document.querySelector("#tabella-feedback tbody");
+  if (!tbody) return;
+
+  tbody.innerHTML = "<tr><td colspan='5'>Interrogazione database SQL...</td></tr>";
 
   try {
-    console.log("🔵 [ADMIN] Richiedo /admin/feedback/lista…");
-
     const data = await adminGet("/admin/feedback/lista");
+    console.log("🟢 [ADMIN] Feedback caricati:", data);
 
-    console.log("🟣 [ADMIN] Dati ricevuti da backend:", data);
+    if (data.kpi) renderKPI(data.kpi);
 
-    if (data.kpi) {
-      renderKPI(data.kpi);
-    } else {
-      console.warn("⚠ [ADMIN] Nessuna KPI ricevuta dal backend");
-    }
-
-    const tbody = document.querySelector("#tabella-feedback tbody");
+    const feedbackLista = data.feedback || [];
     tbody.innerHTML = "";
 
-    if (!data || !Array.isArray(data.feedback)) {
-      console.error("❌ [ADMIN] data.feedback NON è un array:", data);
+    if (feedbackLista.length === 0) {
+      tbody.innerHTML = "<tr><td colspan='5'>Nessuna recensione presente nel database.</td></tr>";
       return;
     }
 
-    console.log("🟢 [ADMIN] Numero feedback:", data.feedback.length);
-
-    data.feedback.forEach((f, idx) => {
-      console.log(`   [ADMIN][ROW ${idx}]`, f);
-
+    feedbackLista.forEach((f) => {
       const tr = document.createElement("tr");
+      
+      // I nomi delle colonne ora matchano la query SELECT del backend
+      const prodotto = f.prodotto_titolo || "Prodotto rimosso";
+      const utente = f.utente_email || "Anonimo";
+
       tr.innerHTML = `
-        <td>${clean(f.prodotto_titolo)}</td>
-        <td>${clean(f.rating)}</td>
-        <td>${clean(f.commento)}</td>
-        <td>${clean(f.utente_email)}</td>
-        <td>${clean(f.data)}</td>
+        <td><b>${clean(prodotto)}</b></td>
+        <td><span class="stars-visual">${"⭐".repeat(f.rating)}</span> <small>(${f.rating}/5)</small></td>
+        <td class="cell-comment"><em>"${clean(f.commento)}"</em></td>
+        <td><small>${clean(utente)}</small></td>
+        <td><small>${fDate(f.data)}</small></td>
       `;
       tbody.appendChild(tr);
     });
 
-    console.log("🟩 [ADMIN] Feedback renderizzati nella tabella");
-
   } catch (err) {
     console.error("❌ [ADMIN] Errore caricamento feedback:", err);
+    tbody.innerHTML = "<tr><td colspan='5'>Errore tecnico nel recupero dei feedback.</td></tr>";
   }
 }
 
-/* =========================================================
-   INIT — SOLO DOPO CRITICAL READY
-========================================================= */
 document.addEventListener("critical-ready", () => {
-  console.log("🔵 [ADMIN] critical-ready → carico feedback");
   caricaFeedback();
 });
