@@ -1,6 +1,14 @@
+/* =========================================================
+   CATALOGO CSS – MewingMarket (PATCH 2027.400)
+   - Layout Grid Responsivo
+   - Card ad altezza uniforme
+   - UI Bottoni coerente
+   ========================================================= */
+
 /* LAYOUT GRIGLIA */
 .catalogo-grid {
   display: grid;
+  /* Crea colonne dinamiche: minimo 250px, massimo occupa lo spazio libero */
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 25px;
   padding: 20px 0;
@@ -16,17 +24,19 @@
   display: flex;
   flex-direction: column;
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  height: 100%; /* Assicura che tutte le card siano alte uguali nella riga */
 }
 
 .product-card:hover {
   transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
 }
 
 .product-card img {
   width: 100%;
   height: 200px;
-  object-fit: contain; /* Mantiene le proporzioni delle copertine */
+  object-fit: contain; /* Rispetta le proporzioni delle copertine dei libri/prodotti */
   border-radius: 8px;
   background: #f8f9fa;
   margin-bottom: 15px;
@@ -37,65 +47,28 @@
   color: #222;
   margin: 10px 0;
   line-height: 1.4;
+  /* Limita il titolo a 2 righe per mantenere l'allineamento */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .product-card p {
   font-size: 0.9rem;
   color: #666;
   margin-bottom: 15px;
+  flex-grow: 1; /* Spinge il prezzo e i bottoni verso il basso */
 }
 
 .product-card .prezzo {
   font-size: 1.3rem;
   font-weight: 700;
-  color: #2ecc71;
-  margin-top: auto; /* Spinge il prezzo in fondo */
+  color: #2ecc71; /* Verde MewingMarket */
   margin-bottom: 15px;
 }
 
-/* BOTTONI CARD */
-.card-buttons {
-  display: flex;
-  gap: 10px;
-}
-
-.card-buttons .btn, .card-buttons .btn-secondario {
-  flex: 1;
-  padding: 10px;
-  font-size: 0.85rem;
-  text-align: center;
-  text-decoration: none;
-  border-radius: 6px;
-  cursor: pointer;
-  border: none;
-}
-
-.btn { background: #3498db; color: white; }
-.btn-secondario { background: #2c3e50; color: white; }
-
-/* FILTRI E CATEGORIE */
-.categorie-box { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
-.filtri-prezzo { display: flex; gap: 10px; margin-bottom: 30px; }
-.cart-controls {
-  display: flex;
-  gap: 5px;
-  flex: 1;
-}
-
-.btn-remove-cart {
-  background: #e74c3c;
-  color: white;
-  border: none;
-  padding: 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.btn-remove-cart:hover {
-  opacity: 0.8;
-}
-/* Container pulsanti card */
+/* CONTENITORE PULSANTI (Allineato in fondo) */
 .card-buttons {
   display: flex;
   align-items: center;
@@ -109,20 +82,26 @@
   color: white;
   text-align: center;
   text-decoration: none;
-  padding: 8px;
+  padding: 10px 8px;
   border-radius: 6px;
   font-size: 0.9rem;
+  font-weight: 600;
+  transition: background 0.2s;
 }
 
-/* Controlli carrello (+ / -) */
+.btn-dettagli:hover {
+  background: #2980b9;
+}
+
+/* CONTROLLI CARRELLO (+ / -) */
 .cart-controls {
   display: flex;
-  gap: 4px;
+  gap: 6px;
 }
 
 .btn-add-cart, .btn-remove-cart {
-  width: 35px;
-  height: 35px;
+  width: 38px;
+  height: 38px;
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -131,7 +110,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.2s;
+  transition: transform 0.1s, opacity 0.2s;
 }
 
 .btn-add-cart {
@@ -145,5 +124,40 @@
 }
 
 .btn-add-cart:hover, .btn-remove-cart:hover {
-  opacity: 0.8;
-  }
+  opacity: 0.9;
+  transform: scale(1.05);
+}
+
+.btn-add-cart:active, .btn-remove-cart:active {
+  transform: scale(0.95);
+}
+
+/* FILTRI E CATEGORIE */
+.categorie-box { 
+  display: flex; 
+  gap: 10px; 
+  flex-wrap: wrap; 
+  margin-bottom: 20px; 
+}
+
+.filtri-prezzo { 
+  display: flex; 
+  gap: 10px; 
+  margin-bottom: 30px; 
+  flex-wrap: wrap;
+}
+
+.btn-cat {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid #3498db;
+  background: white;
+  color: #3498db;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cat.active, .btn-cat:hover {
+  background: #3498db;
+  color: white;
+}
