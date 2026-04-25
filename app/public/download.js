@@ -1,143 +1,140 @@
 /* =========================================================
-   DOWNLOAD PREMIUM — Versione 2027.400
-   - critical-ready
-   - fetchUniversale (fallback chain)
-   - Nessuna regressione
+   DOWNLOAD PREMIUM — Versione SQL SYNC
+   Mapping: ordini.prodotti_json + ordini.stato
 ========================================================= */
 
 document.addEventListener("critical-ready", async () => {
   const token = localStorage.getItem("token");
-  const sessionState = localStorage.getItem("sessionState");
-
   const body = document.getElementById("downloadBody");
 
-  // =========================================================
+  if (!body) return;
+
   // 1) Protezione login
-  // =========================================================
-  if (!token || sessionState !== "1") {
-    body.innerHTML = `<tr><td colspan="3">Devi effettuare il login.</td></tr>`;
+  if (!token) {
+    body.innerHTML = `<tr><td colspan="3">Devi effettuare il login per accedere ai tuoi file.</td></tr>`;
     return;
   }
 
-  // =========================================================
-  // 2) Recupera ordini utente (alias /ordini/utente)
-  // =========================================================
-  let data;
+  // 2) Recupera ordini utente tramite API sincronizzata
   try {
-    const res = await window.fetchUniversale(
-      "/ordini/utente",
-      {
-        headers: { Authorization: "Bearer " + token }
-      },
-      { retries: 3, backoffMs: 400 }
-    );
+    const res = await window.fetchUniversale("/api/ordini/utente", {
+      headers: { "Authorization": "Bearer " + token }
+    });
 
-    data = await res.json();
+    const data = await res.json();
+
+    if (!data.success || !Array.isArray(data.ordini) || data.ordini.length === 0) {
+      body.innerHTML = `<tr><td colspan="3">Nessun ordine trovato nel tuo account.</td></tr>`;
+      return;
+    }
+
+    // 3) FILTRA SOLO ORDINI PAGATI (Verifica colonna 'stato' della tabella ordini)
+    // Nota: Il tuo SQL usa 'pagato', non 'completato'
+    const ordiniValidi = data.ordini.filter(o => o.stato === "pagato" || o.stato === "completato");
+
+    if (ordiniValidi.length === 0) {
+      body.innerHTML = `<tr><td colspan="3">I tuoi ordini sono in attesa di conferma o annullati.</td></tr>`;
+      return;
+    }
+
+    // 4) Estrai e PARSA prodotti_json
+    const listaProdotti = [];
+
+    ordiniValidi.forEach(o => {
+      try {
+        // PATCH CRITICA: Trasformiamo la stringa SQL prodotti_json in un array JS
+        const prodottiAcquistati = typeof o.prodotti_json === 'string' 
+          ? JSON.parse(o.prodotti_json) 
+          : (o.prodotti || []);
+
+        if (Array.isArray(prodottiAcquistati)) {
+          prodottiAcquistati.forEach(p => {
+            listaProdotti.push({
+              prodotto_id: p.prodotto_id,
+              titolo: p.titolo || "Prodotto Digitale",
+              data: o.data_ordine || o.created_at || null
+            });
+          });
+        }
+      } catch (e) {
+        console.error("❌ Errore parsing prodotti_json per ordine:", o.id);
+      }
+    });
+
+    // 5) Deduplica (Evitiamo doppioni se l'utente ha comprato lo stesso ebook due volte)
+    const unici = [];
+    const visti = new Set();
+
+    listaProdotti.forEach(p => {
+      if (!visti.has(p.prodotto_id)) {
+        visti.add(p.prodotto_id);
+        unici.push(p);
+      }
+    });
+
+    if (unici.length === 0) {
+      body.innerHTML = `<tr><td colspan="3">Nessun file disponibile per il download.</td></tr>`;
+      return;
+    }
+
+    // 6) Render Tabella
+    body.innerHTML = "";
+    unici.forEach(p => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><b>${p.titolo}</b></td>
+        <td><small>${p.data ? new Date(p.data).toLocaleDateString("it-IT") : "—"}</small></td>
+        <td><button class="btn-download" data-id="${p.prodotto_id}">Scarica PDF</button></td>
+      `;
+      body.appendChild(tr);
+    });
 
   } catch (err) {
-    console.error("Errore fetch /ordini/utente:", err);
-    body.innerHTML = `<tr><td colspan="3">Errore di connessione.</td></tr>`;
-    return;
+    console.error("🔥 [DOWNLOAD] Errore:", err);
+    body.innerHTML = `<tr><td colspan="3">Errore tecnico durante il recupero dei file.</td></tr>`;
   }
 
-  if (!data.success || !Array.isArray(data.ordini) || data.ordini.length === 0) {
-    body.innerHTML = `<tr><td colspan="3">Nessun prodotto acquistato.</td></tr>`;
-    return;
-  }
-
-  // =========================================================
-  // 3) FILTRA SOLO ORDINI COMPLETATI
-  // =========================================================
-  const ordiniCompletati = data.ordini.filter(o => o.stato === "completato");
-
-  if (ordiniCompletati.length === 0) {
-    body.innerHTML = `<tr><td colspan="3">Nessun prodotto disponibile al download.</td></tr>`;
-    return;
-  }
-
-  // =========================================================
-  // 4) Estrai prodotti acquistati
-  // =========================================================
-  const prodotti = [];
-
-  ordiniCompletati.forEach(o => {
-    if (Array.isArray(o.prodotti)) {
-      o.prodotti.forEach(p => {
-        prodotti.push({
-          prodotto_id: p.prodotto_id,
-          titolo: p.titolo || p.titolo_breve || "Prodotto digitale",
-          data: o.data_ordine || null
-        });
-      });
-    }
-  });
-
-  if (prodotti.length === 0) {
-    body.innerHTML = `<tr><td colspan="3">Nessun prodotto disponibile.</td></tr>`;
-    return;
-  }
-
-  // =========================================================
-  // 5) Deduplica prodotti
-  // =========================================================
-  const unici = [];
-  const visti = new Set();
-
-  prodotti.forEach(p => {
-    if (!visti.has(p.prodotto_id)) {
-      visti.add(p.prodotto_id);
-      unici.push(p);
-    }
-  });
-
-  // =========================================================
-  // 6) Render tabella + download sicuro
-  // =========================================================
-  unici.forEach(p => {
-    const tr = document.createElement("tr");
-
-    tr.innerHTML = `
-      <td>${p.titolo}</td>
-      <td>${p.data ? new Date(p.data).toLocaleDateString("it-IT") : "—"}</td>
-      <td><button class="btn-download" data-id="${p.prodotto_id}">Scarica</button></td>
-    `;
-
-    body.appendChild(tr);
-  });
-
-  // =========================================================
-  // 7) Download sicuro via fetchUniversale + blob
-  // =========================================================
+  // 7) Sistema di Download Sicuro (Blob)
   document.addEventListener("click", async (e) => {
     if (!e.target.classList.contains("btn-download")) return;
 
-    const id = e.target.dataset.id;
-    if (!id) return;
+    const btn = e.target;
+    const id = btn.dataset.id;
+    const originalText = btn.textContent;
 
     try {
-      const res = await window.fetchUniversale(
-        `/vendite/download/${id}`,
-        {
-          headers: { Authorization: "Bearer " + token }
-        },
-        { retries: 3, backoffMs: 400 }
-      );
+      btn.textContent = "Preparazione...";
+      btn.disabled = true;
+
+      // Chiamata all'endpoint di download (che deve verificare il possesso nel DB)
+      const res = await window.fetchUniversale(`/api/vendite/download/${id}`, {
+        headers: { "Authorization": "Bearer " + token }
+      });
+
+      if (!res.ok) throw new Error("Accesso negato o file non trovato");
 
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
 
       const a = document.createElement("a");
       a.href = url;
-      a.download = `prodotto-${id}.pdf`;
+      // Il nome del file può essere dinamico, qui usiamo un default
+      a.download = `MewingMarket_Prodotto_${id}.pdf`;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
 
       URL.revokeObjectURL(url);
-
-      window.postMessage("refresh_dashboard");
-
+      btn.textContent = "Completato!";
+      
     } catch (err) {
-      console.error("Errore download:", err);
-      alert("Errore di connessione.");
+      console.error("❌ Download fallito:", err);
+      alert("Non è stato possibile scaricare il file. Verifica di aver completato il pagamento.");
+    } finally {
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }, 2000);
     }
   });
 });
