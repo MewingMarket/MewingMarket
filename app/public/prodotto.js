@@ -1,151 +1,76 @@
 /* =========================================================
-   PRODOTTO.JS — MODELLO DEFINITIVO (SYNC SQL)
-   PATCH 2027.500 — Full Compatibility & Critical-Ready
+   PRODOTTO.JS — PATCH 2027.600 (YouTube Fix + UI Buttons)
    ========================================================= */
 
 async function caricaDettaglioProdotto() {
   const params = new URLSearchParams(window.location.search);
   const id = params.get("id");
 
-  if (!id) {
-    console.error("[PRODOTTO] ID Prodotto mancante nell'URL");
-    return;
-  }
-
-  console.log(`[PRODOTTO] Caricamento dati per ID: ${id}...`);
+  if (!id) return;
 
   try {
-    // 1) Fetch dei dati tramite fetchUniversale (garantita da critical-ready)
-    const res = await window.fetchUniversale(`/api/products/${id}`, {
-      method: "GET"
-    }, { retries: 3 });
-
-    if (!res.ok) throw new Error(`Errore Server: ${res.status}`);
-
+    const res = await window.fetchUniversale(`/api/products/${id}`);
     const data = await res.json();
-
-    // Il backend SQL risponde solitamente con { success: true, prodotto: {...} } o direttamente l'oggetto
     const p = data.prodotto || data.data || data;
 
-    if (!p || (!p.id && !p._id)) {
-      console.error("[PRODOTTO] Dati non validi o prodotto inesistente");
-      const container = document.getElementById("page-product");
-      if (container) container.innerHTML = "<h1 style='text-align:center; margin-top:50px;'>Prodotto non trovato</h1>";
-      return;
-    }
+    if (!p || !p.id) throw new Error("Prodotto non trovato");
 
-    // 2) Update UI - Mapping campi SQL
+    // 1) Update Testi e Prezzi
     document.title = `${p.titolo} | MewingMarket`;
+    document.getElementById("prodotto-titolo").textContent = p.titolo;
+    document.getElementById("prodotto-subtitle").textContent = p.descrizione_breve || "";
+    document.getElementById("prodotto-descrizione").innerHTML = p.descrizione_lunga || p.descrizione;
     
-    const elTitolo = document.getElementById("prodotto-titolo");
-    const elPrezzo = document.getElementById("prodotto-prezzo");
-    const elDesc = document.getElementById("prodotto-descrizione");
-    const elImg = document.getElementById("prodotto-immagine");
-    const elSubtitle = document.getElementById("prodotto-subtitle");
+    const prezzoEuro = p.prezzo_cent ? (p.prezzo_cent / 100).toFixed(2) : Number(p.prezzo).toFixed(2);
+    document.getElementById("prodotto-prezzo").textContent = `€${prezzoEuro}`;
+    document.getElementById("prodotto-immagine").src = p.immagine || "/placeholder.webp";
 
-    if (elTitolo) elTitolo.textContent = p.titolo;
-    if (elSubtitle) elSubtitle.textContent = p.descrizione_breve || "";
-    
-    // Iniezione descrizione (Lunga se presente, altrimenti standard)
-    if (elDesc) {
-      elDesc.innerHTML = p.descrizione_lunga || p.descrizione || "Nessuna descrizione disponibile.";
-    }
-    
-    // Gestione prezzo: trasforma centesimi SQL in Euro decimale
-    if (elPrezzo) {
-      const prezzoEuro = p.prezzo_cent ? (p.prezzo_cent / 100).toFixed(2) : (Number(p.prezzo) || 0).toFixed(2);
-      elPrezzo.textContent = `€${prezzoEuro}`;
-    }
-
-    // Fallback immagine
-    if (elImg) {
-      elImg.src = p.immagine || p.immagine_url || "/placeholder.webp";
-      elImg.alt = p.titolo;
-    }
-
-    // 3) Gestione Video YouTube (se presente nel DB)
+    // 2) FIX YOUTUBE
+    // Controlla se esiste un campo youtube_id o video_url nel database
     const videoId = p.youtube_id || p.video_id;
-    const videoBox = document.getElementById("video-section");
+    const videoSection = document.getElementById("video-section");
     const videoIframe = document.getElementById("prodotto-video");
 
-    if (videoId && videoBox && videoIframe) {
+    if (videoId && videoSection && videoIframe) {
       videoIframe.src = `https://www.youtube.com/embed/${videoId}`;
-      videoBox.style.display = "block";
+      videoSection.style.display = "block"; // Lo rende visibile solo se c'è il video
     }
 
-    // 4) Configurazione Bottoni Carrello
+    // 3) Setup Bottoni
     setupCartButtons(p);
 
-    console.log("[PRODOTTO] Render completato con successo.");
-
   } catch (err) {
-    console.error("[PRODOTTO] Errore critico:", err);
-    const elTitolo = document.getElementById("prodotto-titolo");
-    if (elTitolo) elTitolo.textContent = "Errore nel caricamento.";
+    console.error("[PRODOTTO] Errore:", err);
+    document.getElementById("prodotto-descrizione").textContent = "Errore durante il recupero dei dati.";
   }
 }
 
-/**
- * Collega i tasti dell'HTML alle funzioni globali del carrello
- */
 function setupCartButtons(p) {
-  const btnAdd = document.getElementById("btn-aggiungi");
-  const btnRem = document.getElementById("btn-rimuovi");
+  const btnPlus = document.getElementById("btn-aggiungi");
+  const btnMinus = document.getElementById("btn-rimuovi");
   const btnPay = document.getElementById("btn-paga-subito");
 
-  // Prepariamo l'oggetto normalizzato per il carrello
-  const prodottoCarrello = {
+  const prodCarrello = {
     id: p.id,
     titolo: p.titolo,
     prezzo_cent: p.prezzo_cent || Math.round(Number(p.prezzo) * 100),
-    immagine: p.immagine || p.immagine_url || "/placeholder.webp"
+    immagine: p.immagine
   };
 
-  // Aggiungi al carrello (+)
-  if (btnAdd) {
-    btnAdd.onclick = () => {
-      if (typeof window.aggiungiAlCarrello === "function") {
-        window.aggiungiAlCarrello(prodottoCarrello);
-      } else {
-        console.error("[PRODOTTO] Funzione aggiungiAlCarrello non trovata");
-      }
-    };
+  if (btnPlus) {
+    btnPlus.onclick = () => window.aggiungiAlCarrello(prodCarrello);
   }
 
-  // Rimuovi unità (-1)
-  if (btnRem) {
-    btnRem.onclick = () => {
-      if (typeof window.rimuoviSingoloDalCarrello === "function") {
-        window.rimuoviSingoloDalCarrello(p.id);
-      }
-    };
+  if (btnMinus) {
+    btnMinus.onclick = () => window.rimuoviSingoloDalCarrello(p.id);
   }
 
-  // Acquista Ora (Aggiunge e va al checkout)
   if (btnPay) {
     btnPay.onclick = () => {
-      if (typeof window.aggiungiAlCarrello === "function") {
-        window.aggiungiAlCarrello(prodottoCarrello);
-        window.location.href = "/checkout.html";
-      }
+      window.aggiungiAlCarrello(prodCarrello);
+      window.location.href = "checkout.html";
     };
   }
 }
 
-/* =========================================================
-   BOOTSTRAP SINCRONIZZATO
-   Si avvia solo quando il loader ha caricato mm-api e carrello
-   ========================================================= */
-document.addEventListener("critical-ready", () => {
-  console.log("🟢 [PRODOTTO] Critical Ready! Avvio logica pagina...");
-  caricaDettaglioProdotto();
-});
-
-// Fallback di sicurezza: se dopo 3 secondi critical-ready non è arrivato, prova comunque
-setTimeout(() => {
-  if (typeof window.fetchUniversale === "function" && !document.getElementById("prodotto-titolo").textContent.includes("...")) {
-      // Già avviato, non fare nulla
-  } else if (window.__criticalReady) {
-      caricaDettaglioProdotto();
-  }
-}, 3000);
+document.addEventListener("critical-ready", caricaDettaglioProdotto);
