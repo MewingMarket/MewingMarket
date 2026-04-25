@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catalogo Prodotti | MewingMarket</title>
   
   <link rel="stylesheet" href="./header-shop.css">
   <link rel="stylesheet" href="./catalogo.css">
@@ -16,16 +17,19 @@
     <h1>Catalogo Prodotti</h1>
     
     <section class="filtri-catalogo">
-      <div id="categorie" class="categorie-box"></div>
+      <div id="categorie" class="categorie-box">
+        </div>
       <div class="filtri-prezzo">
         <button class="btn" data-prezzo="10">Fino a 10€</button>
         <button class="btn" data-prezzo="20">Fino a 20€</button>
         <button class="btn" data-prezzo="50">Fino a 50€</button>
-        <button class="btn" id="reset">Reset</button>
+        <button class="btn" id="reset">Tutti i prezzi</button>
       </div>
     </section>
 
-    <section id="catalogo" class="catalogo-grid"></section>
+    <section id="catalogo" class="catalogo-grid">
+      <p class="loading-text">Caricamento prodotti in corso...</p>
+    </section>
   </main>
 
   <div id="footer-placeholder"></div>
@@ -33,6 +37,9 @@
   <script src="./mm-api.js?v=20260412"></script>
   <script src="./loader.js?v=20260412"></script>
   <script src="./dynamic-loader.js?v=20260412"></script>
-  <script src="./catalogo.js?v=20260420"></script>
+  
+  <script src="./carrello.js?v=20260425"></script>
+  
+  <script src="./catalogo.js?v=20260425"></script>
 </body>
 </html>
