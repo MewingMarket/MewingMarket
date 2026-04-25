@@ -1,293 +1,160 @@
 /* =========================================================
-   RECENSIONI — Versione 2027.400
-   - critical-ready
-   - fetchUniversale (fallback chain)
-   - Nessuna regressione
+   RECENSIONI UTENTE — Versione SQL Definitiva
+   Mapping: feedback.prodotto_id -> prodotti.id
 ========================================================= */
 
 document.addEventListener("critical-ready", async () => {
-  console.log("🔵 [DEBUG] recensioni.js caricato");
+  console.log("🔵 [RECENSIONI] Init sistema feedback...");
 
-  const token = localStorage.getItem("token");
   const listaRecensioni = document.getElementById("listaRecensioni");
-
-  console.log("🔵 [DEBUG] Token:", token);
-
-  if (!token) {
-    listaRecensioni.innerHTML = "<p>Devi effettuare il login.</p>";
-    return;
-  }
-
-  /* =========================================================
-     1) CARICA PRODOTTI ACQUISTATI
-  ========================================================== */
   const selectProdotto = document.getElementById("selectProdotto");
+  const btnInvia = document.getElementById("btnInvia");
+  const commentoArea = document.getElementById("commento");
+  const status = document.getElementById("status");
+  const stars = document.querySelectorAll("#stars span");
+  
+  let ratingSelezionato = 0;
 
+  // 1) CARICA PRODOTTI ACQUISTATI (per la select)
   async function caricaProdottiAcquistati() {
-    console.log("🔵 [DEBUG] Carico prodotti acquistati...");
-
     try {
-      const res = await window.fetchUniversale(
-        "/recensioni/prodotti-acquistati",
-        {
-          headers: { "Authorization": "Bearer " + token }
-        }
-      );
-
+      // Nota: Il backend scansiona la tabella 'ordini' e 'prodotti_json'
+      const res = await window.fetchUniversale("/api/recensioni/prodotti-acquistati");
       const data = await res.json();
 
-      console.log("🟣 [DEBUG] Risposta prodotti-acquistati:", data);
-
-      if (!data.success || data.prodotti.length === 0) {
-        selectProdotto.innerHTML = `<option value="">Nessun prodotto acquistato</option>`;
+      if (!data.success || !data.prodotti || data.prodotti.length === 0) {
+        selectProdotto.innerHTML = `<option value="">Nessun prodotto da recensire</option>`;
+        btnInvia.disabled = true;
         return;
       }
 
       selectProdotto.innerHTML = data.prodotti
-        .map(p => `<option value="${p.id}">${p.titolo_breve}</option>`)
+        .map(p => `<option value="${p.id}">${p.titolo_breve || p.titolo}</option>`)
         .join("");
-
+      
+      btnInvia.disabled = false;
     } catch (err) {
-      console.error("🔴 [DEBUG] Errore caricamento prodotti:", err);
-      selectProdotto.innerHTML = `<option value="">Errore caricamento</option>`;
+      console.error("🔴 [RECENSIONI] Errore prodotti acquistati:", err);
+      selectProdotto.innerHTML = `<option value="">Errore caricamento prodotti</option>`;
     }
   }
 
-  /* =========================================================
-     2) SISTEMA STELLE
-  ========================================================== */
-  const stars = document.querySelectorAll("#stars span");
-  let rating = 0;
-
+  // 2) GESTIONE STELLE (UI)
   stars.forEach((star, index) => {
     star.addEventListener("click", () => {
-      rating = index + 1;
-
-      stars.forEach(s => s.classList.remove("active"));
-      for (let i = 0; i < rating; i++) stars[i].classList.add("active");
+      ratingSelezionato = index + 1;
+      stars.forEach((s, i) => {
+        s.classList.toggle("active", i < ratingSelezionato);
+      });
     });
   });
 
-  /* =========================================================
-     3) FILTRO PAROLACCE
-  ========================================================== */
-  const paroleVietate = [
-    "cazzo", "merda", "stronzo", "troia", "puttana", "vaffanculo",
-    "bastardo", "cretino", "deficiente", "idiota"
-  ];
-
-  function contieneParoleVietate(testo) {
-    const lower = testo.toLowerCase();
-    return paroleVietate.some(p => lower.includes(p));
-  }
-
-  /* =========================================================
-     4) INVIO RECENSIONE
-  ========================================================== */
-  const btnInvia = document.getElementById("btnInvia");
-  const commento = document.getElementById("commento");
-  const status = document.getElementById("status");
-
+  // 3) INVIO RECENSIONE (Tabella 'feedback')
   btnInvia.addEventListener("click", async () => {
-    status.textContent = "";
-    status.classList.remove("ok", "err");
-
     const prodotto_id = Number(selectProdotto.value);
-    const testo = commento.value.trim();
+    const testo = commentoArea.value.trim();
 
-    if (!prodotto_id) {
-      status.textContent = "Seleziona un prodotto.";
-      status.classList.add("err");
-      return;
-    }
-
-    if (rating === 0) {
-      status.textContent = "Seleziona un numero di stelle.";
-      status.classList.add("err");
-      return;
-    }
-
-    if (testo.length < 3) {
-      status.textContent = "Scrivi un commento più dettagliato.";
-      status.classList.add("err");
-      return;
-    }
-
-    if (contieneParoleVietate(testo)) {
-      status.textContent = "Recensione rifiutata: linguaggio non consentito.";
-      status.classList.add("err");
+    if (!prodotto_id || ratingSelezionato === 0 || testo.length < 3) {
+      status.textContent = "Compila tutti i campi e seleziona le stelle.";
+      status.className = "status-msg err";
       return;
     }
 
     try {
-      const res = await window.fetchUniversale(
-        "/recensioni/crea",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + token
-          },
-          body: JSON.stringify({
-            prodotto_id,
-            rating,
-            commento: testo
-          })
-        }
-      );
+      const res = await window.fetchUniversale("/api/recensioni/crea", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prodotto_id,
+          rating: ratingSelezionato,
+          commento: testo
+        })
+      });
 
       const data = await res.json();
 
       if (data.success) {
-        status.textContent = "Recensione inviata!";
-        status.classList.add("ok");
-
-        commento.value = "";
-        rating = 0;
+        status.textContent = "Recensione pubblicata con successo!";
+        status.className = "status-msg ok";
+        commentoArea.value = "";
+        ratingSelezionato = 0;
         stars.forEach(s => s.classList.remove("active"));
-
-        caricaRecensioni();
+        caricaRecensioni(); // Refresh lista
       } else {
-        status.textContent = data.error || "Errore.";
-        status.classList.add("err");
+        status.textContent = data.error || "Errore durante l'invio.";
+        status.className = "status-msg err";
       }
-
     } catch (err) {
-      console.error("🔴 [DEBUG] Errore invio recensione:", err);
-      status.textContent = "Errore di connessione.";
-      status.classList.add("err");
+      status.textContent = "Errore di connessione al database.";
+      status.className = "status-msg err";
     }
   });
 
-  /* =========================================================
-     5) CARICA RECENSIONI UTENTE
-  ========================================================== */
+  // 4) CARICA LISTA RECENSIONI (Tabella 'feedback' + JOIN 'prodotti')
   async function caricaRecensioni() {
-    console.log("🔵 [DEBUG] Carico recensioni utente...");
-
-    listaRecensioni.innerHTML = "Caricamento…";
+    listaRecensioni.innerHTML = "<div class='loader'>Caricamento i tuoi feedback...</div>";
 
     try {
-      const res = await window.fetchUniversale(
-        "/recensioni/utente",
-        {
-          headers: { "Authorization": "Bearer " + token }
-        }
-      );
-
+      const res = await window.fetchUniversale("/api/recensioni/utente");
       const data = await res.json();
 
-      if (!data.success || data.recensioni.length === 0) {
-        listaRecensioni.innerHTML = "<p>Nessuna recensione presente.</p>";
+      if (!data.success || !data.recensioni || data.recensioni.length === 0) {
+        listaRecensioni.innerHTML = "<p class='info-vuoto'>Non hai ancora scritto recensioni.</p>";
         return;
       }
 
-      listaRecensioni.innerHTML = data.recensioni
-        .map(r => `
-          <div class="review-item">
-            <strong>${r.prodotto_titolo}</strong><br>
-            ⭐ ${r.rating}/5<br>
-            <em>${new Date(r.data).toLocaleDateString("it-IT")}</em><br><br>
-            <p>${r.commento}</p>
-
+      listaRecensioni.innerHTML = data.recensioni.map(r => `
+        <div class="review-card">
+          <div class="review-header">
+            <strong>${r.prodotto_titolo || "Prodotto"}</strong>
+            <span class="stars">${"★".repeat(r.rating)}${"☆".repeat(5-r.rating)}</span>
+          </div>
+          <p class="review-body">${r.commento}</p>
+          <div class="review-footer">
+            <small>${new Date(r.data).toLocaleDateString("it-IT")}</small>
             <div class="review-actions">
-              <button class="btn-mini btn-edit" data-id="${r.id}">Modifica</button>
-              <button class="btn-mini btn-delete" data-id="${r.id}">Elimina</button>
+              <button class="btn-edit" onclick="modificaRecensione(${r.id})">Modifica</button>
+              <button class="btn-delete" onclick="eliminaRecensione(${r.id})">Elimina</button>
             </div>
           </div>
-        `)
-        .join("");
-
-      /* ------------------------------
-         ELIMINA
-      ------------------------------ */
-      document.querySelectorAll(".btn-delete").forEach(btn => {
-        btn.addEventListener("click", async () => {
-          const id = btn.dataset.id;
-
-          if (!confirm("Vuoi davvero eliminare questa recensione?")) return;
-
-          try {
-            const res = await window.fetchUniversale(
-              "/recensioni/elimina",
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "Authorization": "Bearer " + token
-                },
-                body: JSON.stringify({ id })
-              }
-            );
-
-            const data = await res.json();
-
-            if (data.success) caricaRecensioni();
-            else alert(data.error || "Errore.");
-
-          } catch (err) {
-            console.error("🔴 [DEBUG] Errore eliminazione:", err);
-            alert("Errore di connessione.");
-          }
-        });
-      });
-
-      /* ------------------------------
-         MODIFICA
-      ------------------------------ */
-      document.querySelectorAll(".btn-edit").forEach(btn => {
-        btn.addEventListener("click", async () => {
-          const id = btn.dataset.id;
-
-          const nuovoCommento = prompt("Modifica il commento:");
-          if (!nuovoCommento || nuovoCommento.trim().length < 5) {
-            alert("Commento troppo corto.");
-            return;
-          }
-
-          const nuovoRating = prompt("Modifica il voto (1-5):");
-          const ratingNum = Number(nuovoRating);
-
-          if (!ratingNum || ratingNum < 1 || ratingNum > 5) {
-            alert("Voto non valido.");
-            return;
-          }
-
-          try {
-            const res = await window.fetchUniversale(
-              "/recensioni/modifica",
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "Authorization": "Bearer " + token
-                },
-                body: JSON.stringify({
-                  id,
-                  rating: ratingNum,
-                  commento: nuovoCommento.trim()
-                })
-              }
-            );
-
-            const data = await res.json();
-
-            if (data.success) caricaRecensioni();
-            else alert(data.error || "Errore.");
-
-          } catch (err) {
-            console.error("🔴 [DEBUG] Errore modifica:", err);
-            alert("Errore di connessione.");
-          }
-        });
-      });
+        </div>
+      `).join("");
 
     } catch (err) {
-      console.error("🔴 [DEBUG] Errore caricamento recensioni:", err);
-      listaRecensioni.innerHTML = "<p>Errore caricamento recensioni.</p>";
+      listaRecensioni.innerHTML = "<p>Errore nel recupero delle recensioni.</p>";
     }
   }
 
+  // 5) FUNZIONI DI AZIONE (Globali per onclick)
+  window.eliminaRecensione = async (id) => {
+    if (!confirm("Vuoi eliminare questa recensione?")) return;
+    try {
+      const res = await window.fetchUniversale("/api/recensioni/elimina", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id })
+      });
+      const data = await res.json();
+      if (data.success) caricaRecensioni();
+    } catch (e) { alert("Errore eliminazione."); }
+  };
+
+  window.modificaRecensione = async (id) => {
+    const nuovoTesto = prompt("Inserisci il nuovo commento:");
+    if (!nuovoTesto || nuovoTesto.length < 5) return;
+    
+    try {
+      const res = await window.fetchUniversale("/api/recensioni/modifica", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, commento: nuovoTesto })
+      });
+      const data = await res.json();
+      if (data.success) caricaRecensioni();
+    } catch (e) { alert("Errore modifica."); }
+  };
+
+  // Avvio
   caricaProdottiAcquistati();
   caricaRecensioni();
 });
