@@ -1,8 +1,7 @@
 // =========================================================
 // File: app/server/routes/api-prodotti-new.cjs
 // Catalogo prodotti — Versione SQL definitiva (ID-based)
-// Con mirroring JSON automatico
-// Versione 2026.200 — require assoluti
+// PATCH 2027.500 — Sync AI + YouTube + Categories
 // =========================================================
 
 const express = require("express");
@@ -12,14 +11,14 @@ const router = express.Router();
 // Helper require assoluto
 const R = (p) => require(path.join(process.cwd(), "app", p));
 
-// PATCH: catalogo sta in app/modules/
 const catalogo = R("modules/catalogo-sql.cjs");
-
-// PATCH: generatore JSON (percorso assoluto)
 const jsonGen = R("server/modules/generatore-json.cjs");
 
+// Se hai un modulo AI separato, caricalo qui, altrimenti usa un placeholder
+// const aiService = R("server/modules/ai-service.cjs");
+
 // =========================================================
-// GET — LISTA PRODOTTI (SQL) — ADMIN
+// ADMIN: GET LISTA & SINGOLO
 // =========================================================
 router.get("/prodotti", async (req, res) => {
   try {
@@ -31,105 +30,122 @@ router.get("/prodotti", async (req, res) => {
   }
 });
 
-// =========================================================
-// GET — SINGOLO PRODOTTO PER ID (SQL) — ADMIN
-// =========================================================
 router.get("/prodotti/:id", async (req, res) => {
   try {
     const prodotto = await catalogo.getProductById(req.params.id);
-
-    if (!prodotto) {
-      return res.status(404).json({ error: "Prodotto non trovato" });
-    }
-
+    if (!prodotto) return res.status(404).json({ error: "Prodotto non trovato" });
     return res.json(prodotto);
   } catch (err) {
-    console.error("API /prodotti/:id ERROR:", err);
     return res.status(500).json({ error: "Errore server" });
   }
 });
 
 // =========================================================
-// POST — CREA O MODIFICA PRODOTTO (SQL) — ADMIN
+// ADMIN: SALVA (CREA O MODIFICA)
 // =========================================================
 router.post("/prodotti", async (req, res) => {
   try {
     const data = req.body || {};
 
-    if (!data.titolo || !data.prezzo) {
+    if (!data.titolo || (!data.prezzo && !data.prezzo_cent)) {
       return res.status(400).json({ error: "Titolo e prezzo obbligatori" });
     }
 
-    data.immagine = data.immagine || null;
-    data.fileProdotto = data.fileProdotto || null;
+    // Normalizzazione campi per il DB SQL
+    const payload = {
+      id: data.id || null,
+      titolo: data.titolo,
+      titolo_breve: data.titolo_breve || data.titolo,
+      descrizione_lunga: data.descrizione_lunga || "",
+      descrizione_breve: data.descrizione_breve || "",
+      // Gestione prezzo in centesimi per evitare errori floating point
+      prezzo_cent: data.prezzo_cent || Math.round(parseFloat(data.prezzo) * 100),
+      immagine: data.immagine || null,
+      fileProdotto: data.fileProdotto || null,
+      categoria: data.categoria || "Generale",
+      youtube_video_id: data.youtube_video_id || null
+    };
 
-    const prodotto = await catalogo.saveProduct(data);
+    const prodotto = await catalogo.saveProduct(payload);
 
-    // MIRROR JSON
-    await jsonGen.exportProducts();
-    await jsonGen.exportCategories();
-    await jsonGen.exportCatalog();
+    // MIRROR JSON (Rigenera i file statici per il frontend)
+    try {
+      await jsonGen.exportProducts();
+      await jsonGen.exportCategories();
+      await jsonGen.exportCatalog();
+    } catch (errJson) {
+      console.warn("⚠️ Mirror JSON fallito, ma SQL ok:", errJson.message);
+    }
 
     return res.json(prodotto);
 
   } catch (err) {
     console.error("API POST /prodotti ERROR:", err);
-    return res.status(500).json({ error: "Errore server" });
+    return res.status(500).json({ error: "Errore durante il salvataggio" });
   }
 });
 
 // =========================================================
-// DELETE — ELIMINA PRODOTTO (SQL) — ADMIN
+// ADMIN: GENERA DESCRIZIONE AI
+// =========================================================
+router.post("/prodotti/genera-descrizione-ai", async (req, res) => {
+  try {
+    const { titolo, contenuto } = req.body;
+    if (!titolo) return res.status(400).json({ success: false, error: "Titolo mancante" });
+
+    // Qui chiameresti il tuo servizio Llama/OpenAI
+    // Simuliamo una risposta strutturata
+    const AI_RESULT = {
+      success: true,
+      descrizione_lunga: `<h3>Scopri ${titolo}</h3><p>Contenuto ottimizzato generato automaticamente...</p>`,
+      descrizione_breve: `La guida definitiva a ${titolo}.`
+    };
+
+    return res.json(AI_RESULT);
+  } catch (err) {
+    return res.status(500).json({ success: false, error: "AI Service indisponibile" });
+  }
+});
+
+// =========================================================
+// ADMIN: DELETE
 // =========================================================
 router.delete("/prodotti/:id", async (req, res) => {
   try {
     const ok = await catalogo.deleteProduct(req.params.id);
+    if (!ok) return res.status(404).json({ error: "Prodotto non trovato" });
 
-    if (!ok) {
-      return res.status(404).json({ error: "Prodotto non trovato" });
-    }
-
-    // MIRROR JSON
     await jsonGen.exportProducts();
     await jsonGen.exportCategories();
     await jsonGen.exportCatalog();
 
-    return res.json({ ok: true });
-
+    return res.json({ ok: true, success: true });
   } catch (err) {
-    console.error("API DELETE /prodotti/:id ERROR:", err);
     return res.status(500).json({ error: "Errore server" });
   }
 });
 
 // =========================================================
-// FRONTEND API — /api/products
+// FRONTEND: API PUBBLICHE
 // =========================================================
 
-// LISTA PRODOTTI (frontend)
 router.get("/products", async (req, res) => {
   try {
     const prodotti = await catalogo.getAllProducts();
+    // Wrap coerente con quello che si aspetta catalogo.js
     return res.json({ success: true, prodotti });
   } catch (err) {
-    console.error("API /products ERROR:", err);
-    return res.status(500).json({ success: false, error: "Errore server" });
+    return res.status(500).json({ success: false, error: "Errore" });
   }
 });
 
-// SINGOLO PRODOTTO (frontend)
 router.get("/products/:id", async (req, res) => {
   try {
     const prodotto = await catalogo.getProductById(req.params.id);
-
-    if (!prodotto) {
-      return res.status(404).json({ success: false, error: "Prodotto non trovato" });
-    }
-
+    if (!prodotto) return res.status(404).json({ success: false, error: "Non trovato" });
     return res.json({ success: true, prodotto });
   } catch (err) {
-    console.error("API /products/:id ERROR:", err);
-    return res.status(500).json({ success: false, error: "Errore server" });
+    return res.status(500).json({ success: false, error: "Errore" });
   }
 });
 
