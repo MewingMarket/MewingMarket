@@ -1,7 +1,6 @@
 /* =========================================================
    ADMIN PRODOTTI — VERSIONE SQL DEFINITIVA + AI 2026.900
-   PATCH 2027.400 — critical-ready + fetchUniversale
-   FIX: Sincronizzazione campi SQL e rendering AI
+   PATCH 2027.500 — Full Sync SQL & AI
 ========================================================= */
 
 document.addEventListener("critical-ready", () => {
@@ -47,7 +46,7 @@ document.addEventListener("critical-ready", () => {
 
     const data = await res.json();
     if (!data.success) throw new Error(data.error || "Errore upload");
-    return data.filename; // Ritorna il path dell'immagine salvata
+    return data.filename; // Path dell'immagine o file salvato
   }
 
   /* =========================================================
@@ -64,12 +63,12 @@ document.addEventListener("critical-ready", () => {
       }
 
       listaBox.innerHTML = prodotti.map(p => {
-        // Calcolo prezzo per visualizzazione admin
-        const prezzoMostrato = p.prezzo_cent ? (p.prezzo_cent / 100).toFixed(2) : (p.prezzo || "0.00");
+        // Calcolo prezzo per visualizzazione admin coerente con SQL
+        const prezzoMostrato = p.prezzo_cent ? (p.prezzo_cent / 100).toFixed(2) : (Number(p.prezzo) || 0).toFixed(2);
         
         return `
           <div class="admin-card">
-            <img src="${p.immagine || "/placeholder.webp"}" alt="Prodotto">
+            <img src="${p.immagine || p.immagine_url || "/placeholder.webp"}" alt="Prodotto">
             <div class="admin-card-info">
               <h3>${p.titolo_breve || p.titolo}</h3>
               <p>€${prezzoMostrato}</p>
@@ -82,11 +81,12 @@ document.addEventListener("critical-ready", () => {
         `;
       }).join("");
 
-      // Bind eventi
+      // Bind eventi dinamici
       document.querySelectorAll(".btn-modifica").forEach(b => b.onclick = () => caricaProdotto(b.dataset.id));
       document.querySelectorAll(".btn-elimina").forEach(b => b.onclick = () => eliminaProdotto(b.dataset.id));
 
     } catch (err) {
+      console.error("Errore lista:", err);
       listaBox.innerHTML = "<p>Errore durante il caricamento della lista.</p>";
     }
   }
@@ -105,22 +105,24 @@ document.addEventListener("critical-ready", () => {
 
       fTitolo.value = p.titolo || "";
       fDescrizione.value = p.descrizione_lunga || "";
-      fPrezzo.value = p.prezzo_cent ? p.prezzo_cent / 100 : p.prezzo;
+      
+      // Caricamento prezzo (gestisce sia centesimi che decimali)
+      fPrezzo.value = p.prezzo_cent ? (p.prezzo_cent / 100).toFixed(2) : (Number(p.prezzo) || 0).toFixed(2);
+      
       fDescrizioneBreve.value = p.descrizione_breve || "";
+      fImgUrl.value = p.immagine || p.immagine_url || "";
 
-      fImgUrl.value = p.immagine || "";
-      if (p.immagine) {
-        fPreview.src = p.immagine;
+      if (p.immagine || p.immagine_url) {
+        fPreview.src = p.immagine || p.immagine_url;
         fPreview.style.display = "block";
       }
 
-      // Preview AI se esistente
       if (p.descrizione_lunga) {
         aiPreview.innerHTML = p.descrizione_lunga;
         aiPreviewBox.style.display = "block";
       }
 
-      fStatus.textContent = "Prodotto pronto per la modifica.";
+      fStatus.textContent = "Prodotto caricato correttamente.";
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
     } catch (err) {
@@ -140,7 +142,7 @@ document.addEventListener("critical-ready", () => {
       if (data.ok || data.success) {
         fStatus.textContent = "Prodotto rimosso.";
         caricaListaProdotti();
-        if (prodottoCorrente?.id == id) resetForm();
+        if (prodottoCorrente && prodottoCorrente.id == id) resetForm();
       }
     } catch (err) {
       alert("Errore durante l'eliminazione.");
@@ -155,7 +157,7 @@ document.addEventListener("critical-ready", () => {
       const titolo = fTitolo.value.trim();
       if (!titolo) return alert("Inserisci un titolo per guidare l'AI.");
 
-      aiStatus.textContent = "Llama 3.1 sta scrivendo...";
+      aiStatus.textContent = "Llama sta scrivendo...";
       
       try {
         const res = await window.fetchUniversale("/api/prodotti/genera-descrizione-ai", {
@@ -187,25 +189,29 @@ document.addEventListener("critical-ready", () => {
     try {
       let immagineURL = fImgUrl.value.trim();
       
-      // Se c'è un file fisico, ha la precedenza
+      // Gestione Upload Immagine
       if (fImg.files.length > 0) {
         immagineURL = await uploadFile("/api/upload/immagine", fImg.files[0]);
       }
 
-      let fileURL = prodottoCorrente?.fileProdotto || "";
+      // Gestione Upload File Prodotto
+      let fileURL = prodottoCorrente?.fileProdotto || prodottoCorrente?.file_consegna_url || "";
       if (fFileProdotto.files.length > 0) {
         fileURL = await uploadFile("/api/upload/file", fFileProdotto.files[0]);
       }
 
+      // Costruzione Payload per SQL
       const payload = {
         id: prodottoCorrente?.id || null,
         titolo: fTitolo.value.trim(),
         descrizione_lunga: fDescrizione.value.trim(),
         descrizione_breve: fDescrizioneBreve.value.trim(),
-        prezzo: parseFloat(fPrezzo.value),
-        prezzo_cent: Math.round(parseFloat(fPrezzo.value) * 100),
+        // Il backend SQL userà prezzo_cent, lo calcoliamo qui per sicurezza
+        prezzo: parseFloat(fPrezzo.value) || 0,
+        prezzo_cent: Math.round(parseFloat(fPrezzo.value) * 100) || 0,
         immagine: immagineURL,
         fileProdotto: fileURL
+        // Categoria e YouTube verranno gestiti automaticamente dal server
       };
 
       const res = await window.fetchUniversale("/api/prodotti", {
@@ -233,8 +239,9 @@ document.addEventListener("critical-ready", () => {
     if (formProdotto) formProdotto.reset();
     fPreview.style.display = "none";
     aiPreviewBox.style.display = "none";
+    fStatus.textContent = "Form resettato.";
   }
 
-  // Avvio iniziale
+  // Inizializzazione Manuale
   caricaListaProdotti();
 });
