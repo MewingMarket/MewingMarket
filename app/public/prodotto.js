@@ -2,13 +2,13 @@
 // PRODOTTO PREMIUM – MewingMarket (PATCH 2027.400)
 // - critical-ready
 // - fetchUniversale (fallback chain)
-// - Nessuna regressione
+// - FIX: innerHTML per AI & rimozione singola qty
 // =========================================================
 
 document.addEventListener("critical-ready", async () => {
 
   /* =========================================================
-     SANITIZZAZIONE
+     SANITIZZAZIONE & UTILS
   ========================================================== */
   const clean = (t) =>
     typeof t === "string"
@@ -20,32 +20,29 @@ document.addEventListener("critical-ready", async () => {
 
   const extractYouTubeId = (url) => {
     if (!url) return null;
-
     const classic = url.match(/v=([^&]+)/);
     if (classic) return classic[1];
-
     const shorts = url.match(/shorts\/([^?]+)/);
     if (shorts) return shorts[1];
-
     const embed = url.match(/embed\/([^?]+)/);
     if (embed) return embed[1];
-
     return null;
   };
 
   /* =========================================================
-     1) ID
+     1) ID PRODOTTO
   ========================================================== */
   const urlParams = new URLSearchParams(window.location.search);
   const id = urlParams.get("id");
 
   if (!id) {
-    document.getElementById("product-title").innerText = "ID mancante";
+    const titleEl = document.getElementById("product-title");
+    if (titleEl) titleEl.innerText = "ID prodotto mancante";
     return;
   }
 
   /* =========================================================
-     2) CARICA PRODOTTO
+     2) CARICA DATI DAL SERVER (SQL)
   ========================================================== */
   let p;
   try {
@@ -57,7 +54,7 @@ document.addEventListener("critical-ready", async () => {
 
     const data = await res.json();
 
-    if (!data.success) {
+    if (!data || !data.success) {
       document.getElementById("product-title").innerText = "Prodotto non trovato";
       return;
     }
@@ -65,30 +62,31 @@ document.addEventListener("critical-ready", async () => {
     p = data.prodotto;
 
   } catch (err) {
-    console.error(err);
-    document.getElementById("product-title").innerText = "Errore caricamento prodotto";
+    console.error("[PRODOTTO] Errore fetch:", err);
+    document.getElementById("product-title").innerText = "Errore di connessione";
     return;
   }
 
   /* =========================================================
-     3) HERO
+     3) RENDERING HERO (Immagine, Titolo, Prezzo)
   ========================================================== */
   document.getElementById("product-title").innerText = clean(p.titolo);
 
-  const subtitle = (p.titolo || "").split(" ").slice(0, 3).join(" ");
+  // Genera un sottotitolo dinamico se non presente
+  const subtitle = p.descrizione_breve || (p.titolo || "").split(" ").slice(0, 3).join(" ");
   document.getElementById("product-subtitle").innerText = clean(subtitle);
 
   const prezzo_cent = Number(p.prezzo_cent) || 0;
-  const prezzo = prezzo_cent / 100;
+  const prezzo = (prezzo_cent / 100).toFixed(2);
 
   document.getElementById("product-price").innerText = `${prezzo}€`;
 
-  const img = p.immagine || "/placeholder.webp";
-  document.getElementById("product-image").src = img;
-  document.getElementById("product-image").alt = clean(p.titolo);
+  const imgEl = document.getElementById("product-image");
+  imgEl.src = p.immagine || "/placeholder.webp";
+  imgEl.alt = clean(p.titolo);
 
   /* =========================================================
-     4) VIDEO YOUTUBE
+     4) VIDEO YOUTUBE (Sync Service)
   ========================================================== */
   const ytURL = safeURL(p.youtube_url);
   const videoId = extractYouTubeId(ytURL || p.youtube_video_id);
@@ -96,126 +94,92 @@ document.addEventListener("critical-ready", async () => {
   if (videoId) {
     const videoSection = document.getElementById("video-section");
     const iframe = document.getElementById("product-video");
-
-    iframe.src = `https://www.youtube.com/embed/${videoId}`;
-    videoSection.style.display = "block";
+    if (videoSection && iframe) {
+      iframe.src = `https://www.youtube.com/embed/${videoId}`;
+      videoSection.style.display = "block";
+    }
   }
 
   /* =========================================================
-     5) DESCRIZIONE
+     5) DESCRIZIONE LUNGA (AI Content)
+     PATCH: innerHTML per supportare la formattazione AI
   ========================================================== */
-  document.getElementById("product-description").textContent =
-    p.descrizione_lunga || "";
+  const descEl = document.getElementById("product-description");
+  if (descEl) {
+    descEl.innerHTML = p.descrizione_lunga || "Nessuna descrizione disponibile.";
+  }
 
   /* =========================================================
-     6) ACQUISTA ORA — checkout single (ID-based)
+     6) AZIONI CARRELLO (Acquista, Aggiungi, Rimuovi)
   ========================================================== */
+  const payloadCarrello = {
+    id: p.id,
+    titolo: p.titolo,
+    prezzo_cent: prezzo_cent,
+    prezzo: prezzo,
+    immagine: p.immagine
+  };
+
+  // BOTTONE ACQUISTA ORA
   document.getElementById("btn-acquista").addEventListener("click", () => {
-
     if (typeof aggiungiAlCarrello === "function") {
-      aggiungiAlCarrello({
-        id: p.id,
-        titolo: p.titolo,
-        prezzo_cent: prezzo_cent,
-        prezzo: prezzo,
-        immagine: p.immagine
-      });
+      aggiungiAlCarrello(payloadCarrello);
     }
-
-    if (typeof aggiornaBadgeCarrello === "function") {
-      aggiornaBadgeCarrello();
-    }
-
     window.location.href = `checkout.html?id=${p.id}`;
   });
 
-  /* =========================================================
-     7) AGGIUNGI AL CARRELLO — guest OK (ID-based)
-  ========================================================== */
+  // BOTTONE AGGIUNGI AL CARRELLO
   document.getElementById("btn-carrello").addEventListener("click", () => {
-
     if (typeof aggiungiAlCarrello === "function") {
-      aggiungiAlCarrello({
-        id: p.id,
-        titolo: p.titolo,
-        prezzo_cent: prezzo_cent,
-        prezzo: prezzo,
-        immagine: p.immagine
-      });
-    }
-
-    if (typeof aggiornaBadgeCarrello === "function") {
-      aggiornaBadgeCarrello();
-    }
-
-    if (typeof isLogged === "function" && !isLogged()) {
-      alert("Per completare l'acquisto dovrai fare login in checkout.");
+      aggiungiAlCarrello(payloadCarrello);
+      if (typeof aggiornaBadgeCarrello === "function") aggiornaBadgeCarrello();
     }
   });
 
-  /* =========================================================
-     8) RIMUOVI DAL CARRELLO
-  ========================================================== */
+  // BOTTONE RIMUOVI (Fix: Rimuove 1 unità alla volta)
   const btnRemove = document.getElementById("btn-remove-cart");
   if (btnRemove) {
     btnRemove.addEventListener("click", () => {
-      if (typeof rimuoviDalCarrello === "function") {
-        rimuoviDalCarrello(p.id);
-      }
-      if (typeof aggiornaBadgeCarrello === "function") {
-        aggiornaBadgeCarrello();
+      if (typeof rimuoviSingoloDalCarrello === "function") {
+        rimuoviSingoloDalCarrello(p.id);
+        if (typeof aggiornaBadgeCarrello === "function") aggiornaBadgeCarrello();
       }
     });
   }
 
   /* =========================================================
-     9) CORRELATI — PATCH MULTI-CATEGORIA
+     7) PRODOTTI CORRELATI (Patch Categorie)
   ========================================================== */
   try {
-    const res = await window.fetchUniversale(
-      `/products`,
-      { cache: "no-store" },
-      { retries: 3, backoffMs: 400 }
-    );
-
-    const data = await res.json();
-
+    const resProd = await window.fetchUniversale(`/products`, { cache: "no-store" });
+    const dataProd = await resProd.json();
     const relatedBox = document.getElementById("related");
 
-    if (data.success && Array.isArray(data.prodotti)) {
-
-      const categorieProdotto = Array.isArray(p.categoria) ? p.categoria : [];
-
-      const correlati = data.prodotti
+    if (relatedBox && dataProd.success && Array.isArray(dataProd.prodotti)) {
+      const categorieProdotto = Array.isArray(p.categoria) ? p.categoria : (p.categoria || "").split(",");
+      
+      const correlati = dataProd.prodotti
         .filter(x => x.id !== p.id)
         .filter(x => {
-          const cats = Array.isArray(x.categoria) ? x.categoria : [];
-          return cats.some(c => categorieProdotto.includes(c));
+          const xCats = Array.isArray(x.categoria) ? x.categoria : (x.categoria || "").split(",");
+          return xCats.some(c => categorieProdotto.includes(c.trim()));
         })
         .slice(0, 4);
 
       relatedBox.innerHTML = correlati.length
-        ? correlati
-            .map(
-              (c) => `
+        ? correlati.map(c => `
             <div class="product-card">
               <img src="${c.immagine || "/placeholder.webp"}" alt="${clean(c.titolo)}">
               <h3>${clean(c.titolo_breve || c.titolo)}</h3>
-              <a href="prodotto.html?id=${encodeURIComponent(c.id)}" class="btn">Scopri</a>
+              <a href="prodotto.html?id=${c.id}" class="btn-dettagli">Scopri di più</a>
             </div>
-          `
-            )
-            .join("")
-        : "<p>Nessun prodotto correlato.</p>";
+          `).join("")
+        : "<p>Nessun prodotto correlato trovato.</p>";
     }
   } catch (err) {
-    console.warn("Errore correlati:", err);
+    console.warn("[PRODOTTO] Errore caricamento correlati:", err);
   }
 
-  /* =========================================================
-     10) BADGE ALL'AVVIO
-  ========================================================== */
-  if (typeof aggiornaBadgeCarrello === "function") {
-    aggiornaBadgeCarrello();
-  }
+  // Update badge iniziale
+  if (typeof aggiornaBadgeCarrello === "function") aggiornaBadgeCarrello();
 });
