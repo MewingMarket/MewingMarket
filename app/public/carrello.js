@@ -3,6 +3,7 @@
    CARRELLO SQL-READY — MODELLO DEFINITIVO (PATCH 2027.300)
    - Nessuna API → nessun fetchCritico necessario
    - Micro‑patch robustezza senza cambiare logica
+   - FIX: Sincronizzazione funzioni globali per catalogo/prodotto
 ========================================================= */
 
 const Cart = {
@@ -38,15 +39,17 @@ const Cart = {
   ----------------------------------------- */
   add(product) {
     const items = this.get();
-    const existing = items.find(p => p.id === product.id);
+    // Assicuriamoci che l'ID sia trattato come stringa o numero in modo coerente
+    const idCercato = product.id;
+    const existing = items.find(p => p.id == idCercato);
 
     const prezzoCent = Number(product.prezzo_cent) || 0;
 
     if (existing) {
-      existing.qty = (existing.qty || 1) + 1;
+      existing.qty = (Number(existing.qty) || 1) + 1;
     } else {
       items.push({
-        id: product.id,
+        id: idCercato,
         titolo: product.titolo,
         prezzo_cent: prezzoCent,
         prezzo: prezzoCent / 100,
@@ -62,7 +65,7 @@ const Cart = {
      RIMUOVI PRODOTTO COMPLETAMENTE
   ----------------------------------------- */
   remove(id) {
-    const items = this.get().filter(p => p.id !== id);
+    const items = this.get().filter(p => p.id != id);
     this.save(items);
   },
 
@@ -71,13 +74,13 @@ const Cart = {
   ----------------------------------------- */
   updateQty(id, delta) {
     const items = this.get();
-    const p = items.find(i => i.id === id);
+    const p = items.find(i => i.id == id);
     if (!p) return;
 
-    p.qty = (p.qty || 1) + delta;
+    p.qty = (Number(p.qty) || 1) + delta;
 
     if (p.qty <= 0) {
-      this.remove(id);
+      this.remove(id); // Se scende a 0 o meno, rimuove del tutto
       return;
     }
 
@@ -89,7 +92,7 @@ const Cart = {
   ----------------------------------------- */
   setQty(id, qty) {
     const items = this.get();
-    const p = items.find(i => i.id === id);
+    const p = items.find(i => i.id == id);
     if (!p) return;
 
     p.qty = Math.max(1, Number(qty) || 1);
@@ -112,16 +115,16 @@ const Cart = {
     const sum = items.reduce((s, p) => {
       const pc = Number(p.prezzo_cent) || 0;
       const q = Number(p.qty) || 1;
-      return s + pc * q;
+      return s + (pc * q);
     }, 0);
     return sum / 100;
   },
 
   /* -----------------------------------------
-     NUMERO TOTALE ARTICOLI
+     NUMERO TOTALE ARTICOLI (per badge)
   ----------------------------------------- */
   count() {
-    return this.get().reduce((sum, p) => sum + (p.qty || 1), 0);
+    return this.get().reduce((sum, p) => sum + (Number(p.qty) || 1), 0);
   },
 
   /* -----------------------------------------
@@ -140,19 +143,27 @@ const Cart = {
 };
 
 /* =========================================================
-   EVENTI GLOBALI
+   EVENTI E FUNZIONI GLOBALI (Interfaccia per HTML/JS)
 ========================================================= */
 
 function triggerCartUpdate() {
   document.dispatchEvent(new Event("cart-updated"));
 }
 
+// Chiamata da Catalogo e Pagina Prodotto (+)
 function aggiungiAlCarrello(prodotto) {
   Cart.add(prodotto);
 }
 
+// Chiamata da Checkout (Cestino/Delete)
 function rimuoviDalCarrello(id) {
   Cart.remove(id);
+}
+
+// Chiamata da Catalogo e Pagina Prodotto (-)
+// FIX: Implementata per scalare solo di 1 unità
+function rimuoviSingoloDalCarrello(id) {
+  Cart.updateQty(id, -1);
 }
 
 /* =========================================================
@@ -163,14 +174,12 @@ function aggiornaBadgeCarrello() {
   if (!badge) return;
 
   const path = location.pathname.toLowerCase();
-  const isHome =
-    path === "/" ||
-    path.endsWith("/index.html") ||
-    path.endsWith("/index");
+  // Se siamo in home spesso il badge è nascosto per design, 
+  // ma lo lasciamo attivo se preferisci vederlo sempre
+  const isHome = path === "/" || path.endsWith("/index.html") || path.endsWith("/index");
 
   if (isHome) {
-    badge.style.display = "none";
-    return;
+    // badge.style.display = "none"; // Decommenta se vuoi nasconderlo in home
   }
 
   const count = Cart.count();
@@ -194,13 +203,16 @@ document.addEventListener("click", (e) => {
 });
 
 /* =========================================================
-   EVENTI
+   EVENTI DI SINCRONIZZAZIONE
 ========================================================= */
 document.addEventListener("cart-updated", aggiornaBadgeCarrello);
 document.addEventListener("header-loaded", aggiornaBadgeCarrello);
 document.addEventListener("auth-ready", aggiornaBadgeCarrello);
 
+// Badge al caricamento immediato
+document.addEventListener("DOMContentLoaded", aggiornaBadgeCarrello);
+
 /* =========================================================
-   CART-READY — Segnala che Cart è pronto
+   CART-READY — Segnala che Cart è pronto per gli altri script
 ========================================================= */
 document.dispatchEvent(new Event("cart-ready"));
