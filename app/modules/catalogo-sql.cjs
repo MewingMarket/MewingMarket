@@ -20,7 +20,8 @@ function makeTitoloBreve(titolo) {
 
 function makeDescrizioneBreve(descrizione) {
   if (!descrizione) return "";
-  const t = descrizione.trim();
+  // Rimuove eventuale HTML per il calcolo della lunghezza
+  const t = descrizione.replace(/<[^>]*>/g, '').trim();
   return t.length > 160 ? t.slice(0, 160) + "…" : t;
 }
 
@@ -75,7 +76,7 @@ function generaCategorieAutomatiche(titolo, descrizione = "") {
 }
 
 // =========================================================
-// NORMALIZZAZIONE PRODOTTO
+// NORMALIZZAZIONE PRODOTTO (Mappatura Frontend-Ready)
 // =========================================================
 function normalizeProduct(row) {
   let categorie = [];
@@ -91,18 +92,22 @@ function normalizeProduct(row) {
     id: row.id,
 
     titolo: row.titolo,
-    titolo_breve: row.titolo_breve,
+    titolo_breve: row.titolo_breve || makeTitoloBreve(row.titolo),
 
-    descrizione_breve: row.descrizione_breve,
+    descrizione_breve: row.descrizione_breve || makeDescrizioneBreve(row.descrizione_lunga || ""),
     descrizione_lunga: row.descrizione_lunga,
 
     prezzo_cent: row.prezzo_cent,
-    prezzo: row.prezzo_cent / 100,
+    // Prezzo formattato per il frontend
+    prezzo: (row.prezzo_cent / 100).toFixed(2),
 
     categoria: categorie, // ARRAY
 
+    // DOPPIA MAPPATURA: database_name e frontend_name
     immagine: row.immagine_url,
+    immagine_url: row.immagine_url,
     fileProdotto: row.file_consegna_url,
+    file_consegna_url: row.file_consegna_url,
 
     youtube_url: row.youtube_url,
     youtube_title: row.youtube_title,
@@ -126,15 +131,14 @@ function getAllProducts() {
   `).all();
 
   for (const r of rows) {
-    let categorie;
-
+    let currentCat;
     try {
-      categorie = JSON.parse(r.categoria || "[]");
+      currentCat = JSON.parse(r.categoria || "[]");
     } catch {
-      categorie = [];
+      currentCat = [];
     }
 
-    if (!Array.isArray(categorie) || categorie.length === 0) {
+    if (!Array.isArray(currentCat) || currentCat.length === 0) {
       const arr = generaCategorieAutomatiche(r.titolo, r.descrizione_lunga);
       const json = JSON.stringify(arr);
       db.prepare(`UPDATE prodotti SET categoria = ? WHERE id = ?`).run(json, r.id);
@@ -157,15 +161,14 @@ function getProductById(id) {
 
   if (!row) return null;
 
-  let categorie;
-
+  let currentCat;
   try {
-    categorie = JSON.parse(row.categoria || "[]");
+    currentCat = JSON.parse(row.categoria || "[]");
   } catch {
-    categorie = [];
+    currentCat = [];
   }
 
-  if (!Array.isArray(categorie) || categorie.length === 0) {
+  if (!Array.isArray(currentCat) || currentCat.length === 0) {
     const arr = generaCategorieAutomatiche(row.titolo, row.descrizione_lunga);
     const json = JSON.stringify(arr);
     db.prepare(`UPDATE prodotti SET categoria = ? WHERE id = ?`).run(json, id);
@@ -205,18 +208,19 @@ function getAllCategories() {
 function saveProduct(data) {
   const titolo = (data.titolo || "").trim();
   const descrizione_lunga = (data.descrizione_lunga || "").trim();
-  const prezzoNum = Number(data.prezzo) || 0;
-  const prezzo_cent = Math.round(prezzoNum * 100);
+  
+  // Gestione flessibile del prezzo (cent o decimale)
+  const prezzo_cent = data.prezzo_cent || Math.round((Number(data.prezzo) || 0) * 100);
 
-  const immagine_url = (data.immagine || "").trim() || null;
-  const file_consegna_url = (data.fileProdotto || "").trim() || null;
+  const immagine_url = (data.immagine || data.immagine_url || "").trim() || null;
+  const file_consegna_url = (data.fileProdotto || data.file_consegna_url || "").trim() || null;
 
   // CATEGORIE AUTOMATICHE
   let categorie = data.categoria;
 
-  if (!categorie) {
+  if (!categorie || (Array.isArray(categorie) && categorie.length === 0)) {
     const arr = generaCategorieAutomatiche(titolo, descrizione_lunga);
-    categorie = JSON.stringify(arr); // JSON minificato
+    categorie = JSON.stringify(arr);
   } else if (Array.isArray(categorie)) {
     categorie = JSON.stringify(categorie);
   }
