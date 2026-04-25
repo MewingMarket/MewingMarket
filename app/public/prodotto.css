@@ -1,43 +1,173 @@
-.hero-premium {
+/* =========================================================
+   PRODOTTO PREMIUM – MewingMarket
+   Layout per Landing Page ad alta conversione
+   ========================================================= */
+
+/* Layout Principale */
+.pagina-standard {
   max-width: 1200px;
-  margin: auto;
-  padding: 40px 20px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* HERO SECTION (Immagine + Info Rapide) */
+.hero-premium {
   display: flex;
   gap: 40px;
+  padding: 40px 0;
+  align-items: flex-start;
+}
+
+.hero-left {
+  flex: 1.2;
 }
 
 .hero-left img {
   width: 100%;
   border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  background: #fff;
+  object-fit: cover;
 }
 
 .hero-right {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+#product-title {
+  font-size: 2.5rem;
+  margin-bottom: 10px;
+  color: #222;
+}
+
+.subtitle {
+  font-size: 1.1rem;
+  color: #666;
+  line-height: 1.5;
+  margin-bottom: 20px;
 }
 
 .price-box {
-  font-size: 26px;
-  font-weight: bold;
-  margin: 20px 0;
+  font-size: 32px;
+  font-weight: 800;
+  color: #2ecc71; /* Verde MewingMarket */
+  margin: 15px 0;
 }
 
+/* Trust Badges */
+.trust-badges {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 20px 0;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #3498db;
+}
+
+.trust-badges span {
+  font-size: 0.9rem;
+  color: #444;
+  font-weight: 500;
+}
+
+/* VIDEO E DESCRIZIONE (Griglia 2 Colonne) */
 .video-descrizione-wrapper {
-  max-width: 1200px;
-  margin: auto;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 40px;
-  padding: 20px;
+  gap: 50px;
+  padding: 60px 0;
+  border-top: 1px solid #eee;
+}
+
+.video-wrapper h2, #descrizione h2 {
+  font-size: 1.5rem;
+  margin-bottom: 20px;
 }
 
 .video-wrapper iframe {
   width: 100%;
   aspect-ratio: 16/9;
   border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
 }
 
+/* Formattazione Testo AI */
+#product-description {
+  line-height: 1.7;
+  color: #333;
+  font-size: 1.05rem;
+}
+
+#product-description p { margin-bottom: 15px; }
+#product-description strong { color: #000; }
+#product-description ul { padding-left: 20px; margin-bottom: 15px; }
+
+/* CTAs E BOTTONI */
+.cta-box {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 30px;
+}
+
+.btn-primario, .btn-secondario {
+  padding: 15px 25px;
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.btn-primario {
+  background: #3498db;
+  color: white;
+  box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+}
+
+.btn-primario:hover {
+  background: #2980b9;
+  transform: translateY(-2px);
+}
+
+.btn-secondario {
+  background: #f1f2f6;
+  color: #2c3e50;
+}
+
+.btn-secondario:hover {
+  background: #dfe4ea;
+}
+
+/* SEZIONE CORRELATI */
 .related-section {
-  max-width: 1200px;
-  margin: 40px auto;
-  padding: 20px;
+  padding: 60px 0;
+}
+
+.related-section h2 {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+/* RESPONSIVE DESIGN */
+@media (max-width: 992px) {
+  .hero-premium, .video-descrizione-wrapper {
+    flex-direction: column;
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+  
+  .hero-left, .hero-right {
+    width: 100%;
+  }
+
+  #product-title {
+    font-size: 2rem;
+  }
 }
