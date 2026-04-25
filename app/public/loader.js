@@ -12,6 +12,7 @@
   // ============================================================
   const apiPromise = new Promise((resolve) => {
     const s = document.createElement("script");
+    s.id = "critical-api";
     s.src = `/mm-api.js?v=${VERSION}`;
     s.onload = () => {
       console.log("[CRITICAL] mm-api.js caricato");
@@ -25,11 +26,12 @@
   });
 
   // ============================================================
-  // 1) SEO / STRUCTURED-DATA / TRACKING
+  // 1) SEO / STRUCTURED-DATA / TRACKING (ASINCRONI)
   // ============================================================
   function loadUtility(name) {
     const s = document.createElement("script");
     s.src = `/${name}.js?v=${VERSION}`;
+    s.async = true;
     s.onload = () => console.log(`[CRITICAL] ${name}.js caricato`);
     s.onerror = () => console.warn(`[CRITICAL] ${name}.js non trovato`);
     document.head.appendChild(s);
@@ -40,7 +42,7 @@
   loadUtility("tracking");
 
   // ============================================================
-  // 2) ROUTING CRITICO (TUO CODICE ORIGINALE)
+  // 2) ROUTING CRITICO 
   // ============================================================
   function normalize(str) {
     if (!str) return "";
@@ -55,44 +57,20 @@
   const segments = pathLower.split("/").filter(Boolean);
   const firstSegment = segments[0] || "";
 
-  let pageName = "";
-  if (pathLower.endsWith(".html")) {
-    pageName = normalize(pathLower.split("/").pop());
-  } else {
-    pageName = normalize(firstSegment);
-  }
+  let pageName = pathLower.endsWith(".html") ? normalize(pathLower.split("/").pop()) : normalize(firstSegment);
 
-  const isHome =
-    pathLower === "/" ||
-    pathLower === "/index" ||
-    pathLower.endsWith("/index.html");
+  const isHome = pathLower === "/" || pathLower === "/index" || pathLower.endsWith("/index.html");
+  const isAdminPage = pathLower.includes("/admin/") || firstSegment === "admin";
 
-  const isAdminPage =
-    pathLower.includes("/admin/") || firstSegment === "admin";
-
-  const isShopPage = (() => {
-    if (isHome) return true;
-    const shopRoots = ["catalogo", "prodotto", "checkout", "categories", "shop"];
-    return shopRoots.some((root) => pageName.startsWith(root));
-  })();
-
-  const isUserPage = (() => {
-    const userRoots = [
-      "dashboard", "ordini", "download", "resetpassword",
-      "resetemail", "reset", "eliminaaccount",
-      "thankyou", "cancel", "disiscriviti", "iscrizione"
-    ];
-    return userRoots.some((root) => pageName.startsWith(root));
-  })();
-
-  console.log("[CRITICAL] Routing:", { isHome, isShopPage, isAdminPage, isUserPage });
+  console.log("[CRITICAL] Routing:", { pageName, isHome, isAdminPage });
 
   // ============================================================
-  // 3) AUTH — DOPO API
+  // 3) AUTH — PARTE DOPO API
   // ============================================================
   const authPromise = apiPromise.then(() => {
     return new Promise((resolve) => {
       const s = document.createElement("script");
+      s.id = "critical-auth";
       s.src = `/auth.js?v=${VERSION}`;
       s.onload = () => {
         console.log("[CRITICAL] auth.js caricato");
@@ -107,7 +85,7 @@
   });
 
   // ============================================================
-  // 4) HEAD
+  // 4) HEAD (META, CSS DINAMICI)
   // ============================================================
   function safeFetchAppendHead(url) {
     return fetch(url)
@@ -115,13 +93,21 @@
       .then(html => {
         const temp = document.createElement("div");
         temp.innerHTML = html;
-        [...temp.children].forEach((node) => document.head.appendChild(node));
+        [...temp.children].forEach((node) => {
+            if (node.tagName === "SCRIPT") {
+                const s = document.createElement("script");
+                s.text = node.text;
+                document.head.appendChild(s);
+            } else {
+                document.head.appendChild(node);
+            }
+        });
         document.dispatchEvent(new Event("head-loaded"));
         return true;
       })
       .catch(err => {
         console.error("[CRITICAL] head non caricato:", err);
-        return true;
+        throw err;
       });
   }
 
@@ -131,7 +117,7 @@
   );
 
   // ============================================================
-  // 5) HEADER
+  // 5) HEADER HTML
   // ============================================================
   function safeFetchHeader(url) {
     return fetch(url)
@@ -144,7 +130,7 @@
       })
       .catch(err => {
         console.error("[CRITICAL] header non caricato:", err);
-        return true;
+        throw err;
       });
   }
 
@@ -154,12 +140,12 @@
   );
 
   // ============================================================
-  // 6) HEADER.JS
+  // 6) HEADER.JS (LOGICA MENU/UI)
   // ============================================================
   const headerLogicPromise = headerPromise.then(() => {
     return new Promise((resolve) => {
       const s = document.createElement("script");
-      s.src = `header.js?v=${VERSION}`;
+      s.src = `/header.js?v=${VERSION}`;
       s.onload = resolve;
       s.onerror = resolve;
       document.body.appendChild(s);
@@ -178,11 +164,11 @@
         const year = document.getElementById("anno");
         if (year) year.textContent = new Date().getFullYear();
         document.dispatchEvent(new Event("footer-loaded"));
-        return true; // PATCH
+        return true; 
       })
       .catch(err => {
         console.error("[CRITICAL] footer non caricato:", err);
-        return true; // PATCH
+        return true; 
       });
   }
 
@@ -190,12 +176,13 @@
     .catch(() => safeFetchFooter(`/footer.html?v=${VERSION}`));
 
   // ============================================================
-  // 8) CARRELLO
+  // 8) CARRELLO — CARICAMENTO AUTOMATICO GLOBALE
   // ============================================================
   const carrelloPromise = headerLogicPromise.then(() => {
     return new Promise((resolve) => {
       const s = document.createElement("script");
-      s.src = `carrello.js?v=${VERSION}`;
+      s.id = "critical-carrello";
+      s.src = `/carrello.js?v=${VERSION}`;
       s.onload = () => {
         console.log("[CRITICAL] carrello.js caricato");
         resolve();
@@ -209,11 +196,11 @@
   });
 
   // ============================================================
-  // 9) ADMIN LOADER
+  // 9) ADMIN LOADER (SOLO SE NECESSARIO)
   // ============================================================
   const adminPromise = authPromise.then(() => {
     return new Promise((resolve) => {
-      document.addEventListener("auth-ready", () => {
+      const checkAdmin = () => {
         if (window.isAdmin === true) {
           const s = document.createElement("script");
           s.src = `/admin/loader-admin.js?v=${VERSION}`;
@@ -223,12 +210,20 @@
         } else {
           resolve();
         }
-      });
+      };
+
+      if (window.isAdmin !== undefined) {
+          checkAdmin();
+      } else {
+          document.addEventListener("auth-ready", checkAdmin, { once: true });
+          // Timeout di sicurezza per non bloccare il critical-ready
+          setTimeout(resolve, 2000);
+      }
     });
   });
 
   // ============================================================
-  // 10) CRITICAL READY — ORA GARANTITO
+  // 10) CRITICAL READY — EMISSIONE FINALE
   // ============================================================
   Promise.all([
     apiPromise,
