@@ -1,45 +1,47 @@
 /* =========================================================
-   HOME PREMIUM — MewingMarket (PATCH 2027.600)
-   - YouTube Auto-Link nelle 3 card
-   - Sincronizzazione SQL (data.success fix)
+   HOME PREMIUM — MewingMarket (PATCH 2027.750)
+   - Mapping SQL: youtube_video_id + immagine_url
+   - Sincronizzazione automatica con Database
    ========================================================= */
 
 document.addEventListener("critical-ready", () => {
-  console.log("[HOME] Inizializzazione homepage con Patch YouTube...");
+  console.log("[HOME] Inizializzazione homepage con Mapping SQL...");
 
   // ------------------------------
-  // 1) GRID HOMEPAGE (Top 3 Prodotti con YouTube)
+  // 1) GRID HOMEPAGE (Top 3 Prodotti)
   // ------------------------------
   (async () => {
     const grid = document.getElementById("products-grid");
     if (!grid) return;
 
     try {
-      // Usiamo fetchUniversale che è già patchata per il token e alias
+      // Caricamento prodotti tramite fetchUniversale (gestisce Token e /api/)
       const res = await window.fetchUniversale("/api/products");
       const data = await res.json();
 
-      // Normalizzazione SQL: gestisce sia {success:true, prodotti:[]} che l'array diretto
+      // Normalizzazione SQL: supporta sia array che oggetto {prodotti:[]}
       const products = Array.isArray(data) ? data : (data.prodotti || data.data || []);
 
       if (products.length === 0) {
-        grid.innerHTML = `<p>Il catalogo sarà presto disponibile.</p>`;
+        grid.innerHTML = `<p class="info-msg">Il catalogo prodotti è in fase di aggiornamento.</p>`;
         return;
       }
 
       grid.innerHTML = "";
 
+      // Prendiamo i primi 3 per la vetrina
       products.slice(0, 3).forEach((p) => {
-        const img = p.immagine || p.immagine_url || "/placeholder.webp";
+        // MAPPING SQL: immagine_url
+        const img = p.immagine_url || p.immagine || "/placeholder.webp";
         const titolo = p.titolo || "Prodotto";
         const descrizione = p.descrizione_breve || "";
         const prezzo = (Number(p.prezzo_cent || 0) / 100).toFixed(2);
         const id = p.id;
 
-        // --- PATCH YOUTUBE ---
-        const videoId = p.youtube_id || p.video_id;
-        const linkYouTube = videoId 
-          ? `<a href="https://www.youtube.com/watch?v=${videoId}" target="_blank" class="yt-link-home">📺 Guarda video su YouTube</a>` 
+        // --- PATCH YOUTUBE (Mapping: youtube_video_id) ---
+        const vId = p.youtube_video_id || p.video_id;
+        const linkYouTube = vId 
+          ? `<a href="https://www.youtube.com/watch?v=${vId}" target="_blank" class="yt-link-home">📺 Guarda video su YouTube</a>` 
           : "";
 
         const card = document.createElement("article");
@@ -48,34 +50,43 @@ document.addEventListener("critical-ready", () => {
           <div class="img-container">
             <img src="${img}" alt="${titolo}" loading="lazy">
           </div>
-          <h3>${titolo}</h3>
-          <p class="desc-breve">${descrizione}</p>
-          ${linkYouTube}
-          <p class="price">€${prezzo}</p>
+          <div class="card-body">
+            <h3>${titolo}</h3>
+            <p class="desc-breve">${descrizione}</p>
+            ${linkYouTube}
+            <p class="price">€${prezzo}</p>
 
-          <div class="card-buttons">
-            <a href="prodotto.html?id=${id}" class="btn-dettagli">Scopri</a>
-            <button class="btn-add-cart" onclick="window.aggiungiAlCarrello({id:'${id}', titolo:'${titolo}', prezzo_cent:${p.prezzo_cent}, immagine:'${img}'})">+</button>
+            <div class="card-buttons">
+              <a href="prodotto.html?id=${id}" class="btn-dettagli">Scopri</a>
+              <button class="btn-add-cart" 
+                onclick="window.aggiungiAlCarrello({id:'${id}', titolo:'${titolo}', prezzo_cent:${p.prezzo_cent || 0}, immagine:'${img}'})">
+                +
+              </button>
+            </div>
           </div>
         `;
         grid.appendChild(card);
       });
 
     } catch (err) {
-      console.error("Errore caricamento prodotti home:", err);
-      grid.innerHTML = `<p>Al momento il catalogo non è raggiungibile.</p>`;
+      console.error("🔥 [HOME] Errore SQL:", err);
+      grid.innerHTML = `<p>Al momento non è possibile caricare i prodotti in evidenza.</p>`;
     }
   })();
 
   // ------------------------------
-  // 2) SLIDER HERO (Sincronizzato)
+  // 2) SLIDER HERO (Immagini dinamiche da SQL)
   // ------------------------------
   (async () => {
     try {
       const resHero = await window.fetchUniversale("/api/products");
       const dataHero = await resHero.json();
       const productsHero = Array.isArray(dataHero) ? dataHero : (dataHero.prodotti || []);
-      const images = productsHero.map(p => p.immagine || p.immagine_url).filter(img => img && img.length > 5);
+      
+      // Usa immagine_url per lo slider
+      const images = productsHero
+        .map(p => p.immagine_url || p.immagine)
+        .filter(img => img && img.length > 5);
 
       const slider = document.getElementById("hero-slider");
       if (slider && images.length > 0) {
@@ -89,8 +100,10 @@ document.addEventListener("critical-ready", () => {
           }, 400);
         };
         rotate();
-        setInterval(rotate, 5000);
+        setInterval(rotate, 6000); // Cambio ogni 6 secondi
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn("[HOME] Slider non disponibile.");
+    }
   })();
 });
