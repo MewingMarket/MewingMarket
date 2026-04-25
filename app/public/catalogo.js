@@ -4,12 +4,13 @@
 // Full Logic: Categorie, Prezzi, Aggiungi (+) & Rimuovi (-)
 // =========================================================
 
-/* 1) CARICA PRODOTTI */
+/* 1) CARICA PRODOTTI DAL SERVER */
 async function loadProducts() {
   console.log("🟦 [CATALOGO] Caricamento prodotti…");
   try {
     const res = await window.fetchUniversale("/products", { cache: "no-store" });
     const data = await res.json();
+    // Supporta vari formati di risposta del server
     let prodotti = Array.isArray(data) ? data : (data.prodotti || data.data || []);
     window.prodottiOriginali = prodotti; 
     return prodotti;
@@ -29,7 +30,9 @@ function getImage(p) {
   return (typeof url === "string" && url.startsWith("http")) ? url : "/placeholder.webp";
 }
 
-/* 3) CARD PRODOTTO (HTML) */
+/* 3) CARD PRODOTTO (HTML) 
+   PATCH: Aggiornata CTA e ID per sincronia carrello
+*/
 function cardHTML(p) {
   if (!p || !p.id) return "";
 
@@ -57,7 +60,7 @@ function cardHTML(p) {
       <p>${desc}</p>
       <p class="prezzo">€${pMostrato}</p>
       <div class="card-buttons">
-        <a href="prodotto.html?id=${id}" class="btn-dettagli">Dettagli</a>
+        <a href="prodotto.html?id=${id}" class="btn-dettagli">Scopri di più</a>
         <div class="cart-controls">
           <button class="btn-add-cart" 
             data-id="${id}" data-title="${titolo}" 
@@ -76,6 +79,7 @@ async function avviaCatalogo(prodottiDaMostrare = null) {
   const products = prodottiDaMostrare || await loadProducts();
   container.innerHTML = products.length ? products.map(p => cardHTML(p)).join("") : `<p>Nessun prodotto trovato.</p>`;
 
+  // Genera i bottoni delle categorie solo al primo avvio
   const catBox = document.getElementById("categorie");
   if (catBox && !prodottiDaMostrare) {
     const tutteLeCat = window.prodottiOriginali.flatMap(p => 
@@ -94,11 +98,14 @@ function inizializzaListeners() {
   document.querySelectorAll(".filtri-prezzo .btn[data-prezzo]").forEach(btn => {
     btn.onclick = () => {
       const soglia = parseFloat(btn.dataset.prezzo);
-      avviaCatalogo(window.prodottiOriginali.filter(p => (p.prezzo_cent ? p.prezzo_cent/100 : p.prezzo) <= soglia));
+      avviaCatalogo(window.prodottiOriginali.filter(p => {
+        const prezzo = p.prezzo_cent ? p.prezzo_cent/100 : p.prezzo;
+        return prezzo <= soglia;
+      }));
     };
   });
 
-  // RESET
+  // RESET FILTRI
   const br = document.getElementById("reset");
   if (br) br.onclick = () => avviaCatalogo(window.prodottiOriginali);
 
@@ -117,21 +124,38 @@ function inizializzaListeners() {
     };
   }
 
-  // AGGIUNTA E RIMOZIONE CARRELLO
-  document.getElementById("catalogo").onclick = (e) => {
-    const btnAdd = e.target.closest(".btn-add-cart");
-    if (btnAdd) {
-      const p = { id: btnAdd.dataset.id, titolo: btnAdd.dataset.title, prezzo_cent: Number(btnAdd.dataset.priceCent), immagine: btnAdd.dataset.img };
-      if (window.aggiungiAlCarrello) { window.aggiungiAlCarrello(p); if (window.aggiornaBadgeCarrello) window.aggiornaBadgeCarrello(); }
-      return;
-    }
+  // AGGIUNTA E RIMOZIONE CARRELLO (Delegation)
+  const catalogoContainer = document.getElementById("catalogo");
+  if (catalogoContainer) {
+    catalogoContainer.onclick = (e) => {
+      // AGGIUNGI (+)
+      const btnAdd = e.target.closest(".btn-add-cart");
+      if (btnAdd) {
+        const p = { 
+          id: btnAdd.dataset.id, 
+          titolo: btnAdd.dataset.title, 
+          prezzo_cent: Number(btnAdd.dataset.priceCent), 
+          immagine: btnAdd.dataset.img 
+        };
+        if (window.aggiungiAlCarrello) { 
+          window.aggiungiAlCarrello(p); 
+          if (window.aggiornaBadgeCarrello) window.aggiornaBadgeCarrello(); 
+        }
+        return;
+      }
 
-    const btnRem = e.target.closest(".btn-remove-cart");
-    if (btnRem) {
-      const id = btnRem.dataset.id;
-      if (window.rimuoviDalCarrello) { window.rimuoviDalCarrello(id); if (window.aggiornaBadgeCarrello) window.aggiornaBadgeCarrello(); }
-    }
-  };
+      // RIMUOVI (-)
+      const btnRem = e.target.closest(".btn-remove-cart");
+      if (btnRem) {
+        const id = btnRem.dataset.id;
+        // PATCH: Usa rimuoviSingoloDalCarrello invece di rimuoviDalCarrello (che svuota tutto)
+        if (window.rimuoviSingoloDalCarrello) { 
+          window.rimuoviSingoloDalCarrello(id); 
+          if (window.aggiornaBadgeCarrello) window.aggiornaBadgeCarrello(); 
+        }
+      }
+    };
+  }
 }
 
 /* 6) BOOTSTRAP */
@@ -142,5 +166,7 @@ async function bootstrap() {
   inizializzaListeners();
 }
 
+// Doppio check per caricamento script dinamici
 document.addEventListener("DOMContentLoaded", bootstrap);
+if (document.readyState === "complete") bootstrap();
 setTimeout(bootstrap, 1200);
