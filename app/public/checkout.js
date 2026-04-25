@@ -1,7 +1,7 @@
 // =========================================================
 // CHECKOUT.JS — Versione DEFINITIVA (PATCH 2027.400)
 // - Usa fetchUniversale (fallback chain)
-// - Nessuna regressione
+// - Sincronizzazione Totale Centesimi per PayPal
 // =========================================================
 
 console.log("[CHECKOUT] Caricato");
@@ -35,11 +35,7 @@ function tryStartCheckout() {
 async function initCheckout() {
   console.log("[CHECKOUT] initCheckout()");
 
-  // -------------------------------------------------------
-  // 1) Verifica login tramite /me
-  // -------------------------------------------------------
   const token = localStorage.getItem("token");
-
   if (!token) {
     console.warn("[CHECKOUT] Nessun token → redirect login");
     window.location.href = "login.html";
@@ -51,9 +47,7 @@ async function initCheckout() {
   try {
     const res = await window.fetchUniversale(
       "/utenti/me",
-      {
-        headers: { "Authorization": "Bearer " + token }
-      },
+      { headers: { "Authorization": "Bearer " + token } },
       { retries: 2, backoffMs: 300 }
     );
 
@@ -83,9 +77,6 @@ async function initCheckout() {
   // 2) Carica carrello
   // -------------------------------------------------------
   const cart = Cart.get();
-
-  console.log("[CHECKOUT] Cart.get() →", cart);
-
   if (!Array.isArray(cart) || cart.length === 0) {
     console.warn("[CHECKOUT] Carrello vuoto → redirect catalogo");
     window.location.href = "catalogo.html";
@@ -93,67 +84,55 @@ async function initCheckout() {
   }
 
   // -------------------------------------------------------
-  // 3) Rendering prodotti
+  // 3) Rendering prodotti e calcolo Totale
   // -------------------------------------------------------
   const container = document.getElementById("checkout-container");
-  container.innerHTML = cart.map(item => {
-    const prezzo = (item.prezzo_cent / 100).toFixed(2);
-    const subtotal = ((item.prezzo_cent * item.qty) / 100).toFixed(2);
-
-    return `
-      <div class="checkout-item">
-        <img src="${item.immagine}" alt="${item.titolo}">
-        <div class="info">
-          <h3>${item.titolo}</h3>
-          <p>Prezzo: €${prezzo}</p>
-          <p>Quantità: ${item.qty}</p>
-          <p>Subtotale: €${subtotal}</p>
-        </div>
-      </div>
-    `;
-  }).join("");
-
-  // -------------------------------------------------------
-  // 4) Calcolo totale
-  // -------------------------------------------------------
   let totaleCent = 0;
 
-  cart.forEach((item) => {
-    totaleCent += item.prezzo_cent * item.qty;
-  });
+  if (container) {
+    container.innerHTML = cart.map(item => {
+      const pc = Number(item.prezzo_cent) || 0;
+      const q = Number(item.qty) || 1;
+      totaleCent += (pc * q);
+
+      const prezzo = (pc / 100).toFixed(2);
+      const subtotal = ((pc * q) / 100).toFixed(2);
+
+      return `
+        <div class="checkout-item">
+          <img src="${item.immagine || '/placeholder.webp'}" alt="${item.titolo}">
+          <div class="info">
+            <h3>${item.titolo}</h3>
+            <p>Prezzo: €${prezzo}</p>
+            <p>Quantità: ${q}</p>
+            <p>Subtotale: <strong>€${subtotal}</strong></p>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
 
   const totaleEuro = (totaleCent / 100).toFixed(2);
-
   const elTotale = document.getElementById("totale");
   const elDaPagare = document.getElementById("da-pagare");
 
   if (elTotale) elTotale.textContent = totaleEuro;
   if (elDaPagare) elDaPagare.textContent = totaleEuro;
 
-  console.log("[CHECKOUT] Totale:", totaleEuro);
+  console.log("[CHECKOUT] Totale Calcolato:", totaleEuro);
 
   // -------------------------------------------------------
-  // 5) Bottone acquista (PayPal)
+  // 4) Bottone acquista (PayPal)
   // -------------------------------------------------------
   const btn = document.getElementById("btnCheckout");
   if (!btn) return;
 
   btn.onclick = async () => {
-
     try {
-      console.log("[CHECKOUT] Creazione ordine PayPal…");
-
-      // 🔥 DEBUG COMPLETO PRIMA DELLA FETCH
-      console.log("======================================");
-      console.log("[CHECKOUT] DEBUG PRIMA DELLA FETCH");
-      console.log("Email:", utenteEmail);
-      console.log("Token:", localStorage.getItem("token"));
-      console.log("SessionState:", localStorage.getItem("sessionState"));
-      console.log("isLogged:", window.isLogged);
-      console.log("Cart.get():", Cart.get());
-      console.log("Cart.getForCheckout():", Cart.getForCheckout());
-      console.log("Totale:", totaleEuro);
-      console.log("======================================");
+      btn.disabled = true;
+      btn.textContent = "Reindirizzamento...";
+      
+      console.log("[CHECKOUT] Creazione ordine PayPal per:", utenteEmail);
 
       const payload = Cart.getForCheckout();
 
@@ -165,25 +144,27 @@ async function initCheckout() {
           body: JSON.stringify({
             email: utenteEmail,
             prodotti: payload,
-            totale: totaleEuro
+            totale: totaleEuro // Inviamo il totale come stringa "XX.XX" per PayPal
           })
         },
         { retries: 3, backoffMs: 400 }
       );
 
       const data = await res.json().catch(() => ({}));
-      console.log("[CHECKOUT] Risposta create-order:", data);
 
-      if (!data.success || !data.paypalUrl) {
-        alert("Errore nella creazione dell'ordine.");
-        return;
+      if (data.success && data.paypalUrl) {
+        window.location.href = data.paypalUrl;
+      } else {
+        btn.disabled = false;
+        btn.textContent = "Acquista ora";
+        alert("Errore PayPal: " + (data.error || "Impossibile creare l'ordine."));
       }
 
-      window.location.href = data.paypalUrl;
-
     } catch (err) {
-      console.error("[CHECKOUT] Errore:", err);
-      alert("Errore di connessione.");
+      console.error("[CHECKOUT] Errore critico:", err);
+      btn.disabled = false;
+      btn.textContent = "Acquista ora";
+      alert("Errore di connessione. Riprova tra poco.");
     }
   };
 }
