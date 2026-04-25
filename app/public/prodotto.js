@@ -1,6 +1,6 @@
 /* =========================================================
    PRODOTTO.JS — MODELLO DEFINITIVO (SYNC SQL)
-   PATCH 2027.500 — Full Compatibility
+   PATCH 2027.500 — Full Compatibility & Critical-Ready
    ========================================================= */
 
 async function caricaDettaglioProdotto() {
@@ -12,81 +12,102 @@ async function caricaDettaglioProdotto() {
     return;
   }
 
+  console.log(`[PRODOTTO] Caricamento dati per ID: ${id}...`);
+
   try {
-    // 1) Fetch dei dati dal nuovo endpoint SQL tramite fetchUniversale
-    // Puntiamo a /api/products/ per coerenza con il router backend
+    // 1) Fetch dei dati tramite fetchUniversale (garantita da critical-ready)
     const res = await window.fetchUniversale(`/api/products/${id}`, {
       method: "GET"
     }, { retries: 3 });
 
+    if (!res.ok) throw new Error(`Errore Server: ${res.status}`);
+
     const data = await res.json();
 
-    // Il backend risponde con { success: true, prodotto: {...} }
-    // Gestiamo entrambi i casi per sicurezza
-    const p = data.prodotto || data;
+    // Il backend SQL risponde solitamente con { success: true, prodotto: {...} } o direttamente l'oggetto
+    const p = data.prodotto || data.data || data;
 
-    if (!p || !p.id) {
-      console.error("[PRODOTTO] Dati non validi");
-      const container = document.querySelector(".pagina-standard");
-      if (container) container.innerHTML = "<h1>Prodotto non trovato</h1>";
+    if (!p || (!p.id && !p._id)) {
+      console.error("[PRODOTTO] Dati non validi o prodotto inesistente");
+      const container = document.getElementById("page-product");
+      if (container) container.innerHTML = "<h1 style='text-align:center; margin-top:50px;'>Prodotto non trovato</h1>";
       return;
     }
 
-    // 2) Update UI
+    // 2) Update UI - Mapping campi SQL
     document.title = `${p.titolo} | MewingMarket`;
     
     const elTitolo = document.getElementById("prodotto-titolo");
     const elPrezzo = document.getElementById("prodotto-prezzo");
     const elDesc = document.getElementById("prodotto-descrizione");
     const elImg = document.getElementById("prodotto-immagine");
+    const elSubtitle = document.getElementById("prodotto-subtitle");
 
     if (elTitolo) elTitolo.textContent = p.titolo;
+    if (elSubtitle) elSubtitle.textContent = p.descrizione_breve || "";
     
-    // Pulisce HTML e inietta descrizione lunga
+    // Iniezione descrizione (Lunga se presente, altrimenti standard)
     if (elDesc) {
       elDesc.innerHTML = p.descrizione_lunga || p.descrizione || "Nessuna descrizione disponibile.";
     }
     
-    // Gestione prezzo: trasforma centesimi SQL in formato Euro decimale
+    // Gestione prezzo: trasforma centesimi SQL in Euro decimale
     if (elPrezzo) {
       const prezzoEuro = p.prezzo_cent ? (p.prezzo_cent / 100).toFixed(2) : (Number(p.prezzo) || 0).toFixed(2);
       elPrezzo.textContent = `€${prezzoEuro}`;
     }
 
-    // Fallback immagine: controlla sia 'immagine' che 'immagine_url' dal DB
+    // Fallback immagine
     if (elImg) {
       elImg.src = p.immagine || p.immagine_url || "/placeholder.webp";
       elImg.alt = p.titolo;
     }
 
-    // 3) Configurazione Bottoni Carrello
+    // 3) Gestione Video YouTube (se presente nel DB)
+    const videoId = p.youtube_id || p.video_id;
+    const videoBox = document.getElementById("video-section");
+    const videoIframe = document.getElementById("prodotto-video");
+
+    if (videoId && videoBox && videoIframe) {
+      videoIframe.src = `https://www.youtube.com/embed/${videoId}`;
+      videoBox.style.display = "block";
+    }
+
+    // 4) Configurazione Bottoni Carrello
     setupCartButtons(p);
 
-    console.log("[PRODOTTO] Render completato per:", p.titolo);
+    console.log("[PRODOTTO] Render completato con successo.");
 
   } catch (err) {
-    console.error("[PRODOTTO] Errore caricamento:", err);
-    const elDesc = document.getElementById("prodotto-descrizione");
-    if (elDesc) elDesc.textContent = "Errore durante il recupero dei dati dal server.";
+    console.error("[PRODOTTO] Errore critico:", err);
+    const elTitolo = document.getElementById("prodotto-titolo");
+    if (elTitolo) elTitolo.textContent = "Errore nel caricamento.";
   }
 }
 
+/**
+ * Collega i tasti dell'HTML alle funzioni globali del carrello
+ */
 function setupCartButtons(p) {
   const btnAdd = document.getElementById("btn-aggiungi");
   const btnRem = document.getElementById("btn-rimuovi");
   const btnPay = document.getElementById("btn-paga-subito");
 
+  // Prepariamo l'oggetto normalizzato per il carrello
+  const prodottoCarrello = {
+    id: p.id,
+    titolo: p.titolo,
+    prezzo_cent: p.prezzo_cent || Math.round(Number(p.prezzo) * 100),
+    immagine: p.immagine || p.immagine_url || "/placeholder.webp"
+  };
+
   // Aggiungi al carrello (+)
   if (btnAdd) {
     btnAdd.onclick = () => {
-      if (window.aggiungiAlCarrello) {
-        window.aggiungiAlCarrello({
-          id: p.id,
-          titolo: p.titolo,
-          prezzo_cent: p.prezzo_cent || Math.round(Number(p.prezzo) * 100),
-          immagine: p.immagine || p.immagine_url
-        });
-        alert("Aggiunto al carrello!");
+      if (typeof window.aggiungiAlCarrello === "function") {
+        window.aggiungiAlCarrello(prodottoCarrello);
+      } else {
+        console.error("[PRODOTTO] Funzione aggiungiAlCarrello non trovata");
       }
     };
   }
@@ -94,32 +115,37 @@ function setupCartButtons(p) {
   // Rimuovi unità (-1)
   if (btnRem) {
     btnRem.onclick = () => {
-      if (window.rimuoviSingoloDalCarrello) {
+      if (typeof window.rimuoviSingoloDalCarrello === "function") {
         window.rimuoviSingoloDalCarrello(p.id);
-        alert("Rimosso 1 unità.");
       }
     };
   }
 
-  // Acquista Ora (Redirect a Checkout)
+  // Acquista Ora (Aggiunge e va al checkout)
   if (btnPay) {
     btnPay.onclick = () => {
-      if (window.aggiungiAlCarrello) {
-        window.aggiungiAlCarrello({
-          id: p.id,
-          titolo: p.titolo,
-          prezzo_cent: p.prezzo_cent || Math.round(Number(p.prezzo) * 100),
-          immagine: p.immagine || p.immagine_url
-        });
-        window.location.href = "checkout.html";
+      if (typeof window.aggiungiAlCarrello === "function") {
+        window.aggiungiAlCarrello(prodottoCarrello);
+        window.location.href = "/checkout.html";
       }
     };
   }
 }
 
-// Avvio automatico
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", caricaDettaglioProdotto);
-} else {
+/* =========================================================
+   BOOTSTRAP SINCRONIZZATO
+   Si avvia solo quando il loader ha caricato mm-api e carrello
+   ========================================================= */
+document.addEventListener("critical-ready", () => {
+  console.log("🟢 [PRODOTTO] Critical Ready! Avvio logica pagina...");
   caricaDettaglioProdotto();
-}
+});
+
+// Fallback di sicurezza: se dopo 3 secondi critical-ready non è arrivato, prova comunque
+setTimeout(() => {
+  if (typeof window.fetchUniversale === "function" && !document.getElementById("prodotto-titolo").textContent.includes("...")) {
+      // Già avviato, non fare nulla
+  } else if (window.__criticalReady) {
+      caricaDettaglioProdotto();
+  }
+}, 3000);
