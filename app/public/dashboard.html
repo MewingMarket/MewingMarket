@@ -1,29 +1,17 @@
-<!-- =========================================================
-     File: app/public/dashboard.html
-     Dashboard Utente — Profilo
-     Versione definitiva 2026 (PATCH SIDEBAR + EMAIL/USERNAME/CF)
-========================================================= -->
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- CSS SPECIFICO DASHBOARD -->
   <link rel="stylesheet" href="dashboard.css">
 </head>
 
 <body class="dashboard-body">
 
-  <!-- HEAD DINAMICO -->
   <div id="head-placeholder"></div>
-
-  <!-- HEADER DINAMICO -->
   <div id="header-placeholder"></div>
 
   <main>
-
     <aside class="sidebar">
       <h2>Area utente</h2>
 
@@ -34,33 +22,13 @@
       </div>
 
       <div style="margin-top:16px;">
+        <a href="profilo.html" class="nav-item" id="sidebar-nav-profilo">Modifica profilo</a>
 
-        <!-- Modifica profilo -->
-        <div class="nav-item" id="sidebar-nav-profilo">Modifica profilo</div>
+        <a href="download.html" class="nav-item" id="sidebar-nav-download">Download</a>
+        <a href="ordini.html" class="nav-item" id="sidebar-nav-ordini">I miei ordini</a>
+        <a href="recensioni.html" class="nav-item" id="sidebar-nav-recensioni">Le mie recensioni</a>
 
-        <!-- Download -->
-        <a href="download.html" class="nav-item" id="sidebar-nav-download">
-          Download
-        </a>
-
-        <!-- I miei ordini -->
-        <a href="ordini.html" class="nav-item" id="sidebar-nav-ordini">
-          I miei ordini
-        </a>
-
-        <!-- ⭐ PATCH: Le mie recensioni -->
-        <a href="recensioni.html" class="nav-item" id="sidebar-nav-recensioni">
-          Le mie recensioni
-        </a>
-
-        <!-- Logout -->
-        <div class="nav-item" id="sidebar-nav-logout">Logout</div>
-
-        <!-- Elimina account -->
-        <a href="elimina-account.html" class="nav-item danger" id="sidebar-nav-elimina">
-          Elimina account
-        </a>
-
+        <a href="elimina-account.html" class="nav-item danger" id="sidebar-nav-elimina">Elimina account</a>
       </div>
 
       <div class="nav-site">
@@ -68,67 +36,17 @@
       </div>
     </aside>
 
-    <section class="content" id="content-profilo">
-      <h1>Profilo utente</h1>
-
-      <p class="user-meta">
-        Email: <span id="userEmail"></span><br>
-        Username: <span id="username"></span><br>
-        Codice fiscale: <span id="userCF"></span>
-      </p>
-
-      <div class="field-group">
-        <h3>Cambia email</h3>
-        <label for="newEmail">Nuova email</label>
-        <input type="email" id="newEmail" placeholder="Nuova email">
-        <label for="passwordEmail">Password attuale</label>
-        <input type="password" id="passwordEmail" placeholder="Password attuale">
-        <button class="btn btn-primary" id="btnCambiaEmail">Aggiorna email</button>
-        <div class="status" id="msgEmail"></div>
-      </div>
-
-      <div class="field-group">
-        <h3>Cambia password</h3>
-        <label for="oldPassword">Password attuale</label>
-        <input type="password" id="oldPassword" placeholder="Password attuale">
-        <label for="newPassword">Nuova password</label>
-        <input type="password" id="newPassword" placeholder="Nuova password">
-        <button class="btn btn-primary" id="btnCambiaPassword">Aggiorna password</button>
-        <div class="status" id="msgPassword"></div>
-      </div>
+    <section class="content">
+      <h1>Benvenuto nella tua Area Riservata</h1>
+      <p>Usa il menu laterale per gestire i tuoi dati, i tuoi acquisti e i download.</p>
     </section>
-
   </main>
 
-  <!-- FOOTER DINAMICO -->
   <div id="footer-placeholder"></div>
 
-  <!-- JS GLOBALI (solo loader con versioning) -->
-  
-
-  <!-- JS SPECIFICI (tenere) -->
-  
-  
-
-  <!-- PATCH LOGOUT -->
-  
-    
-  
-
-
-
-
-
-
-
-
-
-
-
-<script src="/loader.js?v=20260412" type="text/javascript" crossorigin="anonymous"></script>
-<script src="/dynamic-loader.js?v=20260412" type="text/javascript" crossorigin="anonymous"></script>
-<script src="/dashboard.js?v=20260412" type="text/javascript" charset="UTF-8" crossorigin="anonymous"></script>
-<script src="/profilo.js?v=20260412" type="text/javascript" charset="UTF-8" crossorigin="anonymous"></script>
+  <script src="/loader.js?v=20260412" type="text/javascript" crossorigin="anonymous"></script>
+  <script src="/dynamic-loader.js?v=20260412" type="text/javascript" crossorigin="anonymous"></script>
+  <script src="/dashboard.js?v=20260412" type="text/javascript" charset="UTF-8" crossorigin="anonymous"></script>
 
 </body>
 </html>
