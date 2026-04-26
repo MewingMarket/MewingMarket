@@ -9,7 +9,7 @@ console.log("🔥 dashboard-vendite-ordini.js CARICATO");
    INIT SESSIONE — SOLO DOPO CRITICAL READY
 ========================================================= */
 document.addEventListener("critical-ready", async () => {
-  console.log("🔥 [ADMIN] Dashboard vendite/ordini INIT (CRITICAL READY)");
+  console.log("🔥 [ADMIN] Dashboard INIT");
 
   const token = localStorage.getItem("token");
   const sessionState = localStorage.getItem("sessionState");
@@ -21,37 +21,38 @@ document.addEventListener("critical-ready", async () => {
   }
 
   try {
-    console.log("📡 TENTATIVO FETCH SU: /api/admin/dashboard");
+    // ⭐ Usiamo fetch standard puntando esplicitamente a /api/admin/dashboard
+    // Questo risolve i problemi di compatibilità con fetchUniversale su Render
+    console.log("📡 Tentativo fetch su: /api/admin/dashboard");
     
-    // ⭐ Utilizzo fetch standard per bypassare eventuali limiti di fetchUniversale
-    const res = await fetch("/api/admin/dashboard", {
+    const response = await fetch("/api/admin/dashboard", {
       method: "GET",
       headers: {
         "Authorization": "Bearer " + token,
-        "Content-Type": "application/json",
-        "X-Debug": "admin-dashboard"
+        "Content-Type": "application/json"
       }
     });
 
-    console.log("📡 STATUS RISPOSTA:", res.status);
+    console.log("📡 Status risposta:", response.status);
 
-    const data = await res.json();
-    console.log("📦 DATI RICEVUTI:", data);
-
+    const data = await response.json();
+    console.log("📦 Dati ricevuti dal server:", data);
+    
     if (!data.success) {
-      console.error("❌ ERRORE BACKEND:", data.error);
-      alert("Errore: " + (data.error || "Accesso negato"));
+      console.error("❌ Errore Backend:", data.error);
+      alert("Accesso negato: " + (data.error || "Verifica i permessi admin"));
       return;
     }
 
-    // Rendering dei dati
+    // Se arriviamo qui, i dati sono pronti
     renderKPI(data);
     renderTopProdotti(data?.vendite?.topProdotti || []);
+    renderUTM(data?.vendite?.utm || []); // Aggiunto renderUTM se presente nel data
     renderOrdini(data?.ordini?.lista || []);
 
   } catch (err) {
-    console.error("❌ ERRORE GENERALE DASHBOARD:", err);
-    alert("Errore di connessione o errore nel parsing dei dati.");
+    console.error("❌ ERRORE FETCH DASHBOARD:", err);
+    alert("Errore di connessione al server.");
   }
 });
 
@@ -122,7 +123,7 @@ function renderKPI(data) {
 }
 
 /* =========================================================
-   ORDINI + Rendering Tabella
+   ORDINI + Rimborso + CF + Azioni + Categoria
 ========================================================= */
 function renderOrdini(arr) {
   const body = document.getElementById("ordini-body");
@@ -130,7 +131,7 @@ function renderOrdini(arr) {
   body.innerHTML = "";
 
   if (arr.length === 0) {
-    body.innerHTML = `<tr><td colspan="11" style="text-align:center;">Nessun ordine trovato</td></tr>`;
+    body.innerHTML = `<tr><td colspan="11" style="text-align:center;">Nessun ordine trovato.</td></tr>`;
     return;
   }
 
@@ -139,8 +140,10 @@ function renderOrdini(arr) {
       .map(p => `${p.titolo_breve || p.titolo || "Prodotto"} × ${p.qty ?? 1}`)
       .join("<br>");
 
+    const origine = o.origine_sintetica || "Direct";
     const cliente = o.email || "—";
     const cf = o.codice_fiscale || "—";
+
     const motivo = o.rimborso?.motivo || "—";
     const statoRimborso = o.rimborso?.stato || "—";
     const categoria = o.rimborso?.categoria || "—";
@@ -183,20 +186,24 @@ function bindRimborsoButtons() {
   });
 }
 
-// Funzioni TOP PRODOTTI (stub per evitare errori se mancano nel file originale)
-function renderTopProdotti(top) {
-    const container = document.getElementById("top-prodotti-body");
-    if(!container) return;
-    container.innerHTML = top.map(p => `
-        <tr>
-            <td>${p.prodotto_id}</td>
-            <td>${p.vendite}</td>
-            <td>${(p.revenue / 100).toFixed(2)}€</td>
-        </tr>
-    `).join("");
+/* =========================================================
+   STUB PER FUNZIONI MANCANTI (Evita errori console)
+========================================================= */
+function renderTopProdotti(arr) {
+  const el = document.getElementById("top-prodotti-body");
+  if (!el) return;
+  el.innerHTML = arr.map(p => `<tr><td>${p.prodotto_id}</td><td>${p.vendite}</td><td>${(p.revenue/100).toFixed(2)}€</td></tr>`).join("");
 }
 
-// Funzione procediRimborso e rifiutaRimborso (Uso fetch standard)
+function renderUTM(arr) {
+  const el = document.getElementById("utm-body");
+  if (!el) return;
+  el.innerHTML = arr.map(u => `<tr><td>${u.source || "-"}</td><td>${u.medium || "-"}</td><td>${u.vendite}</td></tr>`).join("");
+}
+
+/* =========================================================
+   Azioni Rimborso (Fetch Standard)
+========================================================= */
 async function procediRimborso(id) {
   if (!confirm("Confermi il rimborso dell’ordine #" + id)) return;
   const token = localStorage.getItem("token");
@@ -207,7 +214,7 @@ async function procediRimborso(id) {
     });
     const data = await res.json();
     if (data.success) { alert("Rimborso completato."); location.reload(); }
-    else { alert(data.error || "Errore rimborso."); }
+    else alert(data.error || "Errore rimborso.");
   } catch (e) { alert("Errore connessione."); }
 }
 
@@ -221,6 +228,6 @@ async function rifiutaRimborso(id) {
     });
     const data = await res.json();
     if (data.success) { alert("Richiesta rifiutata."); location.reload(); }
-    else { alert(data.error || "Errore rifiuto."); }
+    else alert(data.error || "Errore rifiuto.");
   } catch (e) { alert("Errore connessione."); }
 }
