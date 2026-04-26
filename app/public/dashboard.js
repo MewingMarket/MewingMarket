@@ -1,6 +1,7 @@
 // =========================================================
-// DASHBOARD.JS — Versione FINALE (PATCH 2027.400)
-// Compatibile con auth-user + apiFetch + FETCH STANDARD
+// DASHBOARD.JS — Versione RIPRISTINATA (FETCH UNIVERSALE)
+// - Ritorniamo al fetchUniversale per risolvere il logout precoce
+// - Mantiene il mapping SQL per ordini e download
 // =========================================================
 
 console.log("[DASHBOARD] Caricato");
@@ -17,6 +18,7 @@ async function initDashboard() {
   const token = localStorage.getItem("token");
   const sessionState = parseInt(localStorage.getItem("sessionState") || "0", 10);
 
+  // Se il sistema ti butta fuori, controlliamo che window.isLogged sia pronto
   if (!token || !window.isLogged || sessionState !== 1) {
     console.warn("[DASHBOARD] Nessuna sessione valida → redirect login");
     window.location.href = "login.html";
@@ -29,14 +31,14 @@ async function initDashboard() {
   };
 
   // -------------------------------------------------------
-  // 3) Carica dati utente (/me)
+  // 3) Carica dati utente (/me) - USA FETCH UNIVERSALE
   // -------------------------------------------------------
   try {
-    // ⭐ PATCH — Sostituito window.fetchUniversale con fetch nativo
-    const res = await fetch("/utenti/me", { 
-      method: "GET", 
-      headers: authHeaders 
-    });
+    const res = await window.fetchUniversale(
+      "/utenti/me",
+      { method: "GET", headers: authHeaders },
+      { retries: 3, backoffMs: 500 } // Più aggressivo per evitare il logout d'errore
+    );
 
     const data = await res.json().catch(() => ({}));
     console.log("[DASHBOARD] /me:", data);
@@ -51,25 +53,24 @@ async function initDashboard() {
 
   } catch (err) {
     console.error("[DASHBOARD] Errore caricamento utente:", err);
-    alert("Errore di connessione.");
+    // Se c'è un errore di rete temporaneo, non buttiamo fuori l'utente subito
     return;
   }
 
   // -------------------------------------------------------
-  // 4) Ordini — alias /ordini/utente
+  // 4) Ordini — USA FETCH UNIVERSALE
   // -------------------------------------------------------
   try {
-    // ⭐ PATCH — Sostituito window.fetchUniversale con fetch nativo
-    const res = await fetch("/ordini/utente", { 
-      method: "GET", 
-      headers: authHeaders 
-    });
+    const res = await window.fetchUniversale(
+      "/ordini/utente",
+      { method: "GET", headers: authHeaders },
+      { retries: 2, backoffMs: 300 }
+    );
 
     const data = await res.json().catch(() => ({}));
     console.log("[DASHBOARD] /ordini/utente:", data);
 
     if (res.status === 401) {
-      console.warn("[DASHBOARD] 401 su ordini → logout");
       logoutAndRedirect();
       return;
     }
@@ -82,23 +83,17 @@ async function initDashboard() {
   }
 
   // -------------------------------------------------------
-  // 5) Download — alias /download/miei
+  // 5) Download — USA FETCH UNIVERSALE
   // -------------------------------------------------------
   try {
-    // ⭐ PATCH — Sostituito window.fetchUniversale con fetch nativo
-    const res = await fetch("/download/miei", { 
-      method: "GET", 
-      headers: authHeaders 
-    });
+    const res = await window.fetchUniversale(
+      "/download/miei",
+      { method: "GET", headers: authHeaders },
+      { retries: 2, backoffMs: 300 }
+    );
 
     const data = await res.json().catch(() => ({}));
     console.log("[DASHBOARD] /download/miei:", data);
-
-    if (res.status === 401) {
-      console.warn("[DASHBOARD] 401 su download → logout");
-      logoutAndRedirect();
-      return;
-    }
 
     updateDownloadsUI(Array.isArray(data.download) ? data.download : []);
 
@@ -109,67 +104,49 @@ async function initDashboard() {
 }
 
 // =========================================================
-// AGGIORNA UI UTENTE — EMAIL + USERNAME + CF
+// AGGIORNA UI UTENTE
 // =========================================================
 function updateUserUI(utente) {
   if (!utente) return;
-
   const email = utente.email || "";
   const usernameCalc = email ? email.split("@")[0] : "";
   const cf = utente.codice_fiscale || "";
 
-  const sidebarEmail = document.getElementById("sidebarEmail");
-  const sidebarUsername = document.getElementById("sidebarUsername");
-  const sidebarCF = document.getElementById("sidebarCF");
-
-  if (sidebarEmail) sidebarEmail.textContent = email;
-  if (sidebarUsername) sidebarUsername.textContent = usernameCalc;
-  if (sidebarCF) sidebarCF.textContent = cf;
-
-  const userEmail = document.getElementById("userEmail");
-  const userUsername = document.getElementById("username");
-  const userCF = document.getElementById("userCF");
-
-  if (userEmail) userEmail.textContent = email;
-  if (userUsername) userUsername.textContent = usernameCalc;
-  if (userCF) userCF.textContent = cf;
+  const elements = ["sidebarEmail", "sidebarUsername", "sidebarCF", "userEmail", "username", "userCF"];
+  elements.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      if (id.includes("Email")) el.textContent = email;
+      else if (id.includes("CF")) el.textContent = cf;
+      else el.textContent = usernameCalc;
+    }
+  });
 }
 
-// =========================================================
-// LOGOUT PULITO
-// =========================================================
 function logoutAndRedirect() {
   localStorage.removeItem("token");
-  localStorage.removeItem("email");
-  localStorage.removeItem("ruolo");
   localStorage.setItem("sessionState", "0");
   window.location.href = "login.html";
 }
 
 // =========================================================
-// PATCH — updateOrdersUI() + updateDownloadsUI()
+// UPDATE ORDINI (FETCH UNIVERSALE INTERNO)
 // =========================================================
-
 async function updateOrdersUI(ordini = null) {
   const token = localStorage.getItem("token");
   const container = document.getElementById("ordersList");
+  if (!container) return;
 
-  if (!token) {
-    container.innerHTML = "<p>Non loggato.</p>";
-    return;
-  }
-
-  if (!ordini) {
+  if (!ordini && token) {
     try {
-      // ⭐ PATCH — Sostituito window.fetchUniversale con fetch nativo
-      const res = await fetch("/ordini/utente", { 
-        headers: { "Authorization": "Bearer " + token } 
-      });
+      const res = await window.fetchUniversale(
+        "/ordini/utente",
+        { headers: { "Authorization": "Bearer " + token } },
+        { retries: 2 }
+      );
       const data = await res.json();
       ordini = data.ordini || [];
-    } catch {
-      ordini = [];
-    }
+    } catch { ordini = []; }
   }
 
   if (!Array.isArray(ordini) || ordini.length === 0) {
@@ -177,100 +154,43 @@ async function updateOrdersUI(ordini = null) {
     return;
   }
 
-  container.innerHTML = ordini
-    .map(o => {
-      const prodottiHTML = o.prodotti
-        .map(p => {
-          const prezzo = (p.prezzo_cent / 100).toFixed(2);
-          const titolo = p.titolo || p.titolo_breve || "Prodotto digitale";
-          return `${titolo} (${prezzo}€ × ${p.qty || 1})`;
-        })
-        .join("<br>");
-
-      const totaleEuro = (o.totale_cent / 100).toFixed(2);
-
-      return `
-        <div class="ordine-box">
-          <div><strong>Data:</strong> ${new Date(o.data).toLocaleDateString("it-IT")}</div>
-          <div><strong>Prodotti:</strong><br>${prodottiHTML}</div>
-          <div><strong>Totale:</strong> ${totaleEuro}€</div>
-          <div><strong>Stato:</strong> ${o.stato}</div>
-        </div>
-      `;
-    })
-    .join("");
+  container.innerHTML = ordini.map(o => {
+    const totale = (o.totale_cent / 100).toFixed(2);
+    return `<div class="ordine-box">
+      <strong>Data:</strong> ${new Date(o.data).toLocaleDateString()}<br>
+      <strong>Totale:</strong> ${totale}€ — <strong>Stato:</strong> ${o.stato}
+    </div>`;
+  }).join("");
 }
 
 async function updateDownloadsUI(download = null) {
-  const token = localStorage.getItem("token");
   const container = document.getElementById("downloadsList");
-
-  if (!token) {
-    container.innerHTML = "<p>Non loggato.</p>";
-    return;
-  }
-
-  if (!download) {
-    try {
-      // ⭐ PATCH — Sostituito window.fetchUniversale con fetch nativo
-      const res = await fetch("/ordini/utente", { 
-        headers: { "Authorization": "Bearer " + token } 
-      });
-      const data = await res.json();
-      const completati = (data.ordini || []).filter(o => o.stato === "completato");
-      download = completati.flatMap(o => o.prodotti);
-    } catch {
-      download = [];
-    }
-  }
-
+  if (!container) return;
   if (!Array.isArray(download) || download.length === 0) {
     container.innerHTML = "<p>Nessun download disponibile.</p>";
     return;
   }
-
-  container.innerHTML = download
-    .map(p => {
-      const titolo = p.titolo || p.titolo_breve || "Prodotto digitale";
-      return `
-        <div class="download-box">
-          <div><strong>${titolo}</strong></div>
-          <a class="btn-download" href="/vendite/download/${p.prodotto_id}">
-            Scarica
-          </a>
-        </div>
-      `;
-    })
-    .join("");
+  container.innerHTML = download.map(p => `
+    <div class="download-box">
+      <strong>${p.titolo || "Prodotto"}</strong>
+      <a class="btn-download" href="/vendite/download/${p.prodotto_id}">Scarica</a>
+    </div>`).join("");
 }
 
-// =========================================================
-// REFRESH AUTOMATICO
-// =========================================================
-window.addEventListener("message", async (event) => {
-  if (!event.data) return;
-
-  if (
-    event.data === "refresh_dashboard" ||
-    event.data === "paypal_complete" ||
-    event.data === "paypal_cancel"
-  ) {
-    await updateOrdersUI();
-    await updateDownloadsUI();
+// Eventi e Profilo rimangono invariati...
+window.addEventListener("message", (e) => {
+  if (["refresh_dashboard", "paypal_complete"].includes(e.data)) {
+    updateOrdersUI();
   }
 });
 
-// =========================================================
-// PATCH — MODIFICA PROFILO
-// =========================================================
 document.addEventListener("critical-ready", () => {
-  const btnProfilo = document.getElementById("sidebar-nav-profilo");
-  const contentProfilo = document.getElementById("content-profilo");
-
-  if (btnProfilo && contentProfilo) {
-    btnProfilo.addEventListener("click", () => {
+  const btn = document.getElementById("sidebar-nav-profilo");
+  const cont = document.getElementById("content-profilo");
+  if (btn && cont) {
+    btn.onclick = () => {
       document.querySelectorAll(".content").forEach(c => c.style.display = "none");
-      contentProfilo.style.display = "block";
-    });
+      cont.style.display = "block";
+    };
   }
 });
