@@ -1,6 +1,7 @@
 /* =========================================================
    RECENSIONI UTENTE — Versione SQL Definitiva
    Mapping: feedback.prodotto_id -> prodotti.id
+   PATCH: Sostituito fetchUniversale con fetch standard
 ========================================================= */
 
 document.addEventListener("critical-ready", async () => {
@@ -18,8 +19,8 @@ document.addEventListener("critical-ready", async () => {
   // 1) CARICA PRODOTTI ACQUISTATI (per la select)
   async function caricaProdottiAcquistati() {
     try {
-      // Nota: Il backend scansiona la tabella 'ordini' e 'prodotti_json'
-      const res = await window.fetchUniversale("/api/recensioni/prodotti-acquistati");
+      // ⭐ PATCH — fetch nativo
+      const res = await fetch("/api/recensioni/prodotti-acquistati");
       const data = await res.json();
 
       if (!data.success || !data.prodotti || data.prodotti.length === 0) {
@@ -61,7 +62,8 @@ document.addEventListener("critical-ready", async () => {
     }
 
     try {
-      const res = await window.fetchUniversale("/api/recensioni/crea", {
+      // ⭐ PATCH — fetch nativo
+      const res = await fetch("/api/recensioni/crea", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -95,7 +97,8 @@ document.addEventListener("critical-ready", async () => {
     listaRecensioni.innerHTML = "<div class='loader'>Caricamento i tuoi feedback...</div>";
 
     try {
-      const res = await window.fetchUniversale("/api/recensioni/utente");
+      // ⭐ PATCH — fetch nativo
+      const res = await fetch("/api/recensioni/utente");
       const data = await res.json();
 
       if (!data.success || !data.recensioni || data.recensioni.length === 0) {
@@ -129,7 +132,8 @@ document.addEventListener("critical-ready", async () => {
   window.eliminaRecensione = async (id) => {
     if (!confirm("Vuoi eliminare questa recensione?")) return;
     try {
-      const res = await window.fetchUniversale("/api/recensioni/elimina", {
+      // ⭐ PATCH — fetch nativo
+      const res = await fetch("/api/recensioni/elimina", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id })
@@ -144,7 +148,8 @@ document.addEventListener("critical-ready", async () => {
     if (!nuovoTesto || nuovoTesto.length < 5) return;
     
     try {
-      const res = await window.fetchUniversale("/api/recensioni/modifica", {
+      // ⭐ PATCH — fetch nativo
+      const res = await fetch("/api/recensioni/modifica", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, commento: nuovoTesto })
