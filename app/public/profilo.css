@@ -1,0 +1,137 @@
+/* PROFILO.CSS — Layout centrato e pulito senza sidebar */
+
+.container-internal {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+
+.top-nav {
+  margin-bottom: 20px;
+}
+
+.btn-back {
+  text-decoration: none;
+  color: #4a5568;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: color 0.2s;
+}
+
+.btn-back:hover {
+  color: #2b6cb0;
+}
+
+.content-header {
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.content-header h1 {
+  font-size: 2rem;
+  color: #1a202c;
+}
+
+/* Banner dati correnti */
+.info-banner {
+  display: flex;
+  justify-content: space-around;
+  background: #edf2f7;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.info-item small {
+  color: #718096;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+}
+
+.info-item span {
+  font-weight: bold;
+  color: #2d3748;
+}
+
+/* Griglia dei Form */
+.forms-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 25px;
+}
+
+.card-form {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+.card-form h3 {
+  margin-bottom: 20px;
+  font-size: 1.1rem;
+  color: #2d3748;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #4a5568;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+.btn-action {
+  width: 100%;
+  background: #3182ce;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.btn-action:hover {
+  background: #2b6cb0;
+}
+
+.status-msg {
+  margin-top: 15px;
+  font-size: 0.85rem;
+  text-align: center;
+  min-height: 1.2rem;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .forms-container {
+    grid-template-columns: 1fr;
+  }
+  .info-banner {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+}
