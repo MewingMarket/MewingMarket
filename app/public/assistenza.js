@@ -22,15 +22,12 @@ document.addEventListener("critical-ready", () => {
     mostraMessaggio("Invio in corso…", "info");
 
     try {
-      const res = await window.fetchUniversale(
-        "/api/assistenza/invia",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, domanda })
-        },
-        { retries: 2, backoffMs: 300 }
-      );
+      // PATCH: Sostituito window.fetchUniversale con fetch nativo
+      const res = await fetch("/api/assistenza/invia", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, domanda })
+      });
 
       const data = await res.json();
 
