@@ -143,7 +143,9 @@ router.post("/registrazione", async (req, res) => {
     console.error("Registrazione:", err);
     return res.json({ success: false, error: "Errore server" });
   }
-}); /* =========================================================
+}); 
+
+/* =========================================================
    LOGIN — PATCH 2026.71 (sessione stabile)
 ========================================================= */
 router.post("/login", (req, res) => {
@@ -247,15 +249,16 @@ router.post("/cambia-email", async (req, res) => {
 });
 
 /* =========================================================
-   CAMBIO PASSWORD
+   CAMBIO PASSWORD — PATCHATA (Verifica Vecchia Password)
 ========================================================= */
 router.post("/cambia-password", async (req, res) => {
   const sessione = getSessionToken(req);
-  let { nuova_password } = req.body || {};
+  let { vecchia_password, nuova_password } = req.body || {};
 
+  vecchia_password = normalizePassword(vecchia_password);
   nuova_password = normalizePassword(nuova_password);
 
-  if (!sessione || !nuova_password) {
+  if (!sessione || !vecchia_password || !nuova_password) {
     return res.json({ success: false, error: "Dati mancanti" });
   }
 
@@ -264,6 +267,11 @@ router.post("/cambia-password", async (req, res) => {
 
     if (!user) {
       return res.json({ success: false, error: "Sessione non valida" });
+    }
+
+    const oldHash = hash(vecchia_password);
+    if (normalizePassword(user.password_hash) !== oldHash) {
+      return res.json({ success: false, error: "La password attuale non è corretta" });
     }
 
     const newHash = hash(nuova_password);
@@ -285,7 +293,9 @@ router.post("/cambia-password", async (req, res) => {
     console.error("Cambio password:", err);
     return res.json({ success: false, error: "Errore server" });
   }
-}); /* =========================================================
+}); 
+
+/* =========================================================
    ELIMINAZIONE ACCOUNT — VERSIONE COMPLETA PATCHATA 2026.200
 ========================================================= */
 router.post("/elimina-account", async (req, res) => {
@@ -417,7 +427,9 @@ router.post("/reset-password-confirm", (req, res) => {
     console.error("Reset password confirm:", err);
     return res.json({ success: false, error: "Errore server" });
   }
-}); /* =========================================================
+}); 
+
+/* =========================================================
    RESET EMAIL REQUEST — ZERO-INPUT + CF CHECK
 ========================================================= */
 router.post("/reset-email-request", (req, res) => {
@@ -502,7 +514,7 @@ router.post("/reset-email-confirm", async (req, res) => {
 });
 
 /* =========================================================
-   /me — DATI UTENTE PER DASHBOARD
+   /me — DATI UTENTE PER DASHBOARD E PROFILO
 ========================================================= */
 router.get("/me", (req, res) => {
   try {
@@ -530,4 +542,4 @@ router.get("/me", (req, res) => {
   }
 });
 
-module.exports = router; 
+module.exports = router;
