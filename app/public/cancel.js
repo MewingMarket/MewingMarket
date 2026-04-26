@@ -1,6 +1,6 @@
 /* =========================================================
    CANCEL ORDER — Frontend
-   Versione 2027.400 — FETCH UNIVERSALE + CRITICAL READY
+   Versione 2027.400 — FETCH STANDARD + CRITICAL READY
 ========================================================= */
 
 document.addEventListener("critical-ready", async () => {
@@ -15,12 +15,10 @@ document.addEventListener("critical-ready", async () => {
   }
 
   try {
-    // ⭐ PATCH — usa fetchUniversale
-    const res = await window.fetchUniversale(
-      `/paypal/cancel-order?orderId=${orderId}`,
-      { method: "GET" },
-      { retries: 2, backoffMs: 300 }
-    );
+    // ⭐ PATCH — Riportato a fetch standard per massima stabilità
+    const res = await fetch(`/paypal/cancel-order?orderId=${orderId}`, {
+      method: "GET"
+    });
 
     const data = await res.json();
 
