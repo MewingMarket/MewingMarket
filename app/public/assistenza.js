@@ -1,6 +1,5 @@
 /* =========================================================
-   ASSISTENZA — Frontend
-   Versione 2027.400 — critical-ready + fetchUniversale
+   ASSISTENZA — Frontend (Versione Patchata)
 ========================================================= */
 
 document.addEventListener("critical-ready", () => {
@@ -23,7 +22,6 @@ document.addEventListener("critical-ready", () => {
     mostraMessaggio("Invio in corso…", "info");
 
     try {
-      // ⭐ PATCH — usa fetchUniversale
       const res = await window.fetchUniversale(
         "/api/assistenza/invia",
         {
@@ -36,16 +34,18 @@ document.addEventListener("critical-ready", () => {
 
       const data = await res.json();
 
+      // Se il server risponde con successo: false
       if (!data.success) {
         mostraMessaggio(data.error || "Errore durante l'invio.", "errore");
         return;
       }
 
-      mostraMessaggio(
-        "Richiesta inviata. Riceverai una risposta via email entro 24–48 ore.",
-        "successo"
-      );
+      // Se l'AI ha generato una risposta immediata, la mostriamo, altrimenti messaggio standard
+      const testoRisposta = data.risposta 
+        ? `Risposta: ${data.risposta}` 
+        : "Richiesta inviata. Riceverai una risposta via email entro 24–48 ore.";
 
+      mostraMessaggio(testoRisposta, "successo");
       form.reset();
 
     } catch (err) {
@@ -54,17 +54,10 @@ document.addEventListener("critical-ready", () => {
     }
   });
 
-  /* =========================================================
-     FUNZIONE MESSAGGI PREMIUM (TUO CODICE — INALTERATO)
-  ========================================================= */
   function mostraMessaggio(testo, tipo) {
     if (!msgBox) return;
-
     msgBox.textContent = testo;
-
-    msgBox.className = ""; // reset classi
-    msgBox.classList.add("status");
-
+    msgBox.className = "status"; // Reset classi base
     if (tipo === "errore") msgBox.classList.add("errore");
     if (tipo === "successo") msgBox.classList.add("successo");
     if (tipo === "info") msgBox.classList.add("info");
