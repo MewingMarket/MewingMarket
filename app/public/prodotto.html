@@ -8,18 +8,21 @@
   <link rel="stylesheet" href="prodotto.css">
   <link rel="stylesheet" href="catalogo.css"> 
   <style>
-    /* Stile rapido per i tasti +/- */
-    .qty-controls { display: flex; align-items: center; justify-content: center; gap: 15px; margin-top: 10px; }
-    .btn-qty { 
-      width: 35px; height: 35px; border-radius: 50%; border: 1px solid #ccc; 
-      background: white; cursor: pointer; font-size: 18px; font-weight: bold;
-      transition: all 0.2s; display: flex; align-items: center; justify-content: center;
+    /* Layout per video e descrizione */
+    .video-container { 
+      position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; 
+      border-radius: 12px; background: #000; margin-top: 15px;
     }
-    .btn-qty:hover { background: #f0f0f0; border-color: #000; }
-    .btn-qty.plus { background: #000; color: #fff; border: none; }
-    .btn-qty.plus:hover { background: #333; }
-    .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; background: #000; }
     .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+    
+    /* Spaziatura CTA finale */
+    .cta-box.sotto-descrizione {
+      margin-top: 40px;
+      padding: 20px;
+      background: #f9f9f9;
+      border-radius: 12px;
+      text-align: center;
+    }
   </style>
 </head>
 
@@ -36,6 +39,7 @@
       <div class="hero-right">
         <h1 id="prodotto-titolo">Caricamento...</h1>
         <p id="prodotto-subtitle" class="subtitle"></p>
+        
         <div class="price-box">
           <span id="prodotto-prezzo">--,--€</span>
         </div>
@@ -46,7 +50,7 @@
         </div>
 
         <div class="cta-box-hero" style="margin-top: 25px;">
-          <button id="btn-acquista-hero" class="btn-primario" onclick="document.getElementById('btn-paga-subito').click()">
+          <button id="btn-acquista-hero" class="btn-primario" style="width: 100%;">
             Acquista Ora
           </button>
         </div>
@@ -54,7 +58,7 @@
     </section>
 
     <section class="video-descrizione-wrapper">
-      <div id="video-section" class="video-wrapper" style="display:none; margin-bottom: 30px;">
+      <div id="video-section" class="video-wrapper" style="display:none; margin-bottom: 40px;">
         <h2>Video Approfondimento</h2>
         <div class="video-container">
           <iframe id="prodotto-video" frameborder="0" allowfullscreen></iframe>
@@ -68,13 +72,8 @@
         </div>
 
         <div class="cta-box sotto-descrizione">
-          <button id="btn-paga-subito" class="btn-primario">Procedi al pagamento</button>
-          
-          <div class="qty-controls">
-            <button id="btn-rimuovi" class="btn-qty minus">−</button>
-            <span style="font-size: 0.9em; color: #666;">Quantità</span>
-            <button id="btn-aggiungi" class="btn-qty plus">+</button>
-          </div>
+          <p style="margin-bottom: 15px; color: #666; font-size: 0.9em;">Hai dubbi? Consulta la nostra assistenza.</p>
+          <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="btn-secondario">Torna su</button>
         </div>
       </div>
     </section>
