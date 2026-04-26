@@ -1,10 +1,10 @@
 /* =========================================================
-   Router principale — Versione PERFETTA 2027
+   Router principale — Versione PERFETTA 2027.1
    - API PUBBLICHE prima
    - auth-user SOLO per le API private
    - Admin protetto
    - Prodotti pubblici
-   - Nessun conflitto, nessuna pagina vuota
+   - API admin montate correttamente
 ========================================================= */
 
 const express = require("express");
@@ -44,6 +44,9 @@ router.use(R("middleware/auth-user.cjs"));
 /* =========================================================
    4) API PRIVATE (richiedono token)
 ========================================================= */
+
+// ⭐ API ADMIN (cambia email, password, /me)
+router.use("/admin", R("routes/api-admin.cjs"));
 
 // Dashboard Admin
 router.use(R("routes/admin-dashboard.cjs"));
