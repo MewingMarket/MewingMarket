@@ -1,6 +1,6 @@
 // =========================================================
 // DASHBOARD.JS — Versione FINALE (PATCH 2027.400)
-// Compatibile con auth-user + apiFetch + fetchUniversale
+// Compatibile con auth-user + apiFetch + FETCH STANDARD
 // =========================================================
 
 console.log("[DASHBOARD] Caricato");
@@ -32,11 +32,11 @@ async function initDashboard() {
   // 3) Carica dati utente (/me)
   // -------------------------------------------------------
   try {
-    const res = await window.fetchUniversale(
-      "/utenti/me",
-      { method: "GET", headers: authHeaders },
-      { retries: 2, backoffMs: 300 }
-    );
+    // ⭐ PATCH — Sostituito window.fetchUniversale con fetch nativo
+    const res = await fetch("/utenti/me", { 
+      method: "GET", 
+      headers: authHeaders 
+    });
 
     const data = await res.json().catch(() => ({}));
     console.log("[DASHBOARD] /me:", data);
@@ -59,11 +59,11 @@ async function initDashboard() {
   // 4) Ordini — alias /ordini/utente
   // -------------------------------------------------------
   try {
-    const res = await window.fetchUniversale(
-      "/ordini/utente",
-      { method: "GET", headers: authHeaders },
-      { retries: 2, backoffMs: 300 }
-    );
+    // ⭐ PATCH — Sostituito window.fetchUniversale con fetch nativo
+    const res = await fetch("/ordini/utente", { 
+      method: "GET", 
+      headers: authHeaders 
+    });
 
     const data = await res.json().catch(() => ({}));
     console.log("[DASHBOARD] /ordini/utente:", data);
@@ -85,11 +85,11 @@ async function initDashboard() {
   // 5) Download — alias /download/miei
   // -------------------------------------------------------
   try {
-    const res = await window.fetchUniversale(
-      "/download/miei",
-      { method: "GET", headers: authHeaders },
-      { retries: 2, backoffMs: 300 }
-    );
+    // ⭐ PATCH — Sostituito window.fetchUniversale con fetch nativo
+    const res = await fetch("/download/miei", { 
+      method: "GET", 
+      headers: authHeaders 
+    });
 
     const data = await res.json().catch(() => ({}));
     console.log("[DASHBOARD] /download/miei:", data);
@@ -161,11 +161,10 @@ async function updateOrdersUI(ordini = null) {
 
   if (!ordini) {
     try {
-      const res = await window.fetchUniversale(
-        "/ordini/utente",
-        { headers: { "Authorization": "Bearer " + token } },
-        { retries: 2, backoffMs: 300 }
-      );
+      // ⭐ PATCH — Sostituito window.fetchUniversale con fetch nativo
+      const res = await fetch("/ordini/utente", { 
+        headers: { "Authorization": "Bearer " + token } 
+      });
       const data = await res.json();
       ordini = data.ordini || [];
     } catch {
@@ -213,11 +212,10 @@ async function updateDownloadsUI(download = null) {
 
   if (!download) {
     try {
-      const res = await window.fetchUniversale(
-        "/ordini/utente",
-        { headers: { "Authorization": "Bearer " + token } },
-        { retries: 2, backoffMs: 300 }
-      );
+      // ⭐ PATCH — Sostituito window.fetchUniversale con fetch nativo
+      const res = await fetch("/ordini/utente", { 
+        headers: { "Authorization": "Bearer " + token } 
+      });
       const data = await res.json();
       const completati = (data.ordini || []).filter(o => o.stato === "completato");
       download = completati.flatMap(o => o.prodotti);
