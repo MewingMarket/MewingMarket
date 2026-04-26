@@ -1,6 +1,7 @@
 /* =========================================================
    DOWNLOAD PREMIUM — Versione SQL SYNC
    Mapping: ordini.prodotti_json + ordini.stato
+   PATCH: Sostituito fetchUniversale con fetch standard
 ========================================================= */
 
 document.addEventListener("critical-ready", async () => {
@@ -17,7 +18,8 @@ document.addEventListener("critical-ready", async () => {
 
   // 2) Recupera ordini utente tramite API sincronizzata
   try {
-    const res = await window.fetchUniversale("/api/ordini/utente", {
+    // ⭐ PATCH — fetch nativo
+    const res = await fetch("/api/ordini/utente", {
       headers: { "Authorization": "Bearer " + token }
     });
 
@@ -29,7 +31,6 @@ document.addEventListener("critical-ready", async () => {
     }
 
     // 3) FILTRA SOLO ORDINI PAGATI (Verifica colonna 'stato' della tabella ordini)
-    // Nota: Il tuo SQL usa 'pagato', non 'completato'
     const ordiniValidi = data.ordini.filter(o => o.stato === "pagato" || o.stato === "completato");
 
     if (ordiniValidi.length === 0) {
@@ -42,7 +43,6 @@ document.addEventListener("critical-ready", async () => {
 
     ordiniValidi.forEach(o => {
       try {
-        // PATCH CRITICA: Trasformiamo la stringa SQL prodotti_json in un array JS
         const prodottiAcquistati = typeof o.prodotti_json === 'string' 
           ? JSON.parse(o.prodotti_json) 
           : (o.prodotti || []);
@@ -61,7 +61,7 @@ document.addEventListener("critical-ready", async () => {
       }
     });
 
-    // 5) Deduplica (Evitiamo doppioni se l'utente ha comprato lo stesso ebook due volte)
+    // 5) Deduplica
     const unici = [];
     const visti = new Set();
 
@@ -106,8 +106,8 @@ document.addEventListener("critical-ready", async () => {
       btn.textContent = "Preparazione...";
       btn.disabled = true;
 
-      // Chiamata all'endpoint di download (che deve verificare il possesso nel DB)
-      const res = await window.fetchUniversale(`/api/vendite/download/${id}`, {
+      // ⭐ PATCH — fetch nativo con gestione Blob
+      const res = await fetch(`/api/vendite/download/${id}`, {
         headers: { "Authorization": "Bearer " + token }
       });
 
@@ -118,7 +118,6 @@ document.addEventListener("critical-ready", async () => {
 
       const a = document.createElement("a");
       a.href = url;
-      // Il nome del file può essere dinamico, qui usiamo un default
       a.download = `MewingMarket_Prodotto_${id}.pdf`;
       document.body.appendChild(a);
       a.click();
