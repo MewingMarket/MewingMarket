@@ -1,132 +1,62 @@
 /* =========================================================
-   File: app/public/profilo.js
-   Gestione Modifica Email e Password
-   Versione: 2027.400 — FETCH UNIVERSALE + CRITICAL READY
+   PROFILO.JS — Gestione Banner Dati + Form Modifica
 ========================================================= */
+document.addEventListener("critical-ready", async () => {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    window.location.href = "login.html";
+    return;
+  }
 
-console.log("[PROFILO] Caricato");
+  // --- 1) Caricamento dati nel Banner (come da foto) ---
+  try {
+    const res = await window.fetchUniversale("/api/utenti/me", {
+      headers: { "Authorization": "Bearer " + token }
+    });
+    const data = await res.json();
 
-/* =========================================================
-   INIT — Avvio sincronizzato con critical-ready
-========================================================= */
-document.addEventListener("critical-ready", () => {
+    if (data.success && data.utente) {
+      const u = data.utente;
+      document.getElementById("username").textContent = u.username || u.email.split('@')[0];
+      document.getElementById("userEmail").textContent = u.email;
+      document.getElementById("userCF").textContent = u.codice_fiscale || "";
+    }
+  } catch (err) {
+    console.error("Errore caricamento dati profilo:", err);
+  }
 
-  /* =========================================================
-     1) CAMBIO EMAIL
-  ========================================================== */
+  // --- 2) Logica Cambio Email ---
   document.getElementById("btnCambiaEmail")?.addEventListener("click", async () => {
     const nuova_email = document.getElementById("newEmail").value.trim();
     const password = document.getElementById("passwordEmail").value.trim();
     const msg = document.getElementById("msgEmail");
 
-    if (!msg) return;
-    msg.textContent = "";
-    msg.className = "status"; // Reset classi CSS
-
-    if (!nuova_email || !password) {
-      msg.textContent = "Compila tutti i campi.";
-      msg.classList.add("err");
-      return;
-    }
-
-    const token = localStorage.getItem("token");
-
     try {
-      const res = await window.fetchUniversale(
-        "/utenti/cambia-email",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + token
-          },
-          body: JSON.stringify({ nuova_email, password })
-        },
-        { retries: 2, backoffMs: 300 }
-      );
-
-      const data = await res.json();
-
-      if (!data.success) {
-        msg.textContent = data.error || "Errore durante l'aggiornamento.";
-        msg.classList.add("err");
-        return;
-      }
-
-      msg.textContent = "Email aggiornata con successo.";
-      msg.classList.add("ok");
-      
-      // Pulisce i campi
-      document.getElementById("newEmail").value = "";
-      document.getElementById("passwordEmail").value = "";
-
-      // Opzionale: Aggiorna l'email salvata localmente se necessario
-      // localStorage.setItem("email", nuova_email);
-
-    } catch (err) {
-      console.error("[PROFILO] Errore cambio email:", err);
-      msg.textContent = "Errore di connessione.";
-      msg.classList.add("err");
-    }
+      const res = await window.fetchUniversale("/api/utenti/cambia-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+        body: JSON.stringify({ nuova_email, password })
+      });
+      const resData = await res.json();
+      msg.textContent = resData.success ? "Email aggiornata!" : resData.error;
+      if (resData.success) setTimeout(() => location.reload(), 1000);
+    } catch (e) { msg.textContent = "Errore di connessione."; }
   });
 
-  /* =========================================================
-     2) CAMBIO PASSWORD
-  ========================================================== */
+  // --- 3) Logica Cambio Password ---
   document.getElementById("btnCambiaPassword")?.addEventListener("click", async () => {
-    const vecchia_password = document.getElementById("oldPassword")?.value.trim();
-    const nuova_password = document.getElementById("newPassword")?.value.trim();
+    const vecchia_password = document.getElementById("oldPassword").value;
+    const nuova_password = document.getElementById("newPassword").value;
     const msg = document.getElementById("msgPassword");
 
-    if (!msg) return;
-    msg.textContent = "";
-    msg.className = "status";
-
-    if (!nuova_password || !vecchia_password) {
-      msg.textContent = "Inserisci la password attuale e quella nuova.";
-      msg.classList.add("err");
-      return;
-    }
-
-    const token = localStorage.getItem("token");
-
     try {
-      const res = await window.fetchUniversale(
-        "/utenti/cambia-password",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + token
-          },
-          body: JSON.stringify({ 
-            vecchia_password, // Aggiunto per matchare solitamente il backend
-            nuova_password 
-          })
-        },
-        { retries: 2, backoffMs: 300 }
-      );
-
-      const data = await res.json();
-
-      if (!data.success) {
-        msg.textContent = data.error || "Errore durante l'aggiornamento.";
-        msg.classList.add("err");
-        return;
-      }
-
-      msg.textContent = "Password aggiornata con successo.";
-      msg.classList.add("ok");
-      
-      // Pulisce i campi
-      if (document.getElementById("oldPassword")) document.getElementById("oldPassword").value = "";
-      if (document.getElementById("newPassword")) document.getElementById("newPassword").value = "";
-
-    } catch (err) {
-      console.error("[PROFILO] Errore cambio password:", err);
-      msg.textContent = "Errore di connessione.";
-      msg.classList.add("err");
-    }
+      const res = await window.fetchUniversale("/api/utenti/cambia-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+        body: JSON.stringify({ vecchia_password, nuova_password })
+      });
+      const resData = await res.json();
+      msg.textContent = resData.success ? "Password aggiornata!" : resData.error;
+    } catch (e) { msg.textContent = "Errore di connessione."; }
   });
-
 });
