@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modifica Profilo — MewingMarket</title>
+  <link rel="stylesheet" href="profilo.css">
+</head>
+
+<body class="dashboard-body">
+  <div id="head-placeholder"></div>
+  <div id="header-placeholder"></div>
+
+  <main class="container-internal">
+    
+    <div class="top-nav">
+      <a href="dashboard.html" class="btn-back">← Torna alla Dashboard</a>
+    </div>
+
+    <section class="profile-content">
+      <header class="content-header">
+        <h1>Impostazioni Profilo</h1>
+        <p>Visualizza i tuoi dati e aggiorna le tue credenziali di accesso.</p>
+      </header>
+
+      <div class="info-banner">
+        <div class="info-item">
+          <small>Username</small>
+          <span id="username">...</span>
+        </div>
+        <div class="info-item">
+          <small>Email Corrente</small>
+          <span id="userEmail">...</span>
+        </div>
+        <div class="info-item">
+          <small>Codice Fiscale</small>
+          <span id="userCF">...</span>
+        </div>
+      </div>
+
+      <div class="forms-container">
+        <div class="card-form">
+          <h3>Cambia Indirizzo Email</h3>
+          <div class="form-group">
+            <label for="newEmail">Nuova Email</label>
+            <input type="email" id="newEmail" placeholder="Inserisci la nuova email">
+          </div>
+          <div class="form-group">
+            <label for="passwordEmail">Conferma Password</label>
+            <input type="password" id="passwordEmail" placeholder="La tua password attuale">
+          </div>
+          <button class="btn-action" id="btnCambiaEmail">Aggiorna Email</button>
+          <div class="status-msg" id="msgEmail"></div>
+        </div>
+
+        <div class="card-form">
+          <h3>Aggiorna Password</h3>
+          <div class="form-group">
+            <label for="oldPassword">Password Attuale</label>
+            <input type="password" id="oldPassword" placeholder="••••••••">
+          </div>
+          <div class="form-group">
+            <label for="newPassword">Nuova Password</label>
+            <input type="password" id="newPassword" placeholder="Nuova password sicura">
+          </div>
+          <button class="btn-action" id="btnCambiaPassword">Salva Nuova Password</button>
+          <div class="status-msg" id="msgPassword"></div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <div id="footer-placeholder"></div>
+
+  <script src="/loader.js?v=2026" type="text/javascript"></script>
+  <script src="/dynamic-loader.js?v=2026" type="text/javascript"></script>
+<script src="/profilo.js?v=2026" type="text/javascript" charset="UTF-8"></script>
+</body>
+</html>
