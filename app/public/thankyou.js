@@ -1,7 +1,7 @@
 /* =========================================================
    THANK YOU PAGE — Versione 2027.400
    - critical-ready
-   - fetchUniversale (fallback chain)
+   - FETCH STANDARD (Patch Stabilità)
    - Nessuna regressione
 ========================================================= */
 
@@ -21,10 +21,10 @@ document.addEventListener("critical-ready", async () => {
      1) VERIFICA ORDINE (complete-order)
   ========================================================== */
   try {
-    const res = await window.fetchUniversale(
-      `/paypal/complete-order?orderId=${orderId}`,
-      { method: "GET" }
-    );
+    // ⭐ PATCH — Riportato a fetch standard per massima stabilità
+    const res = await fetch(`/paypal/complete-order?orderId=${orderId}`, { 
+      method: "GET" 
+    });
 
     const data = await res.json();
 
@@ -79,14 +79,16 @@ document.addEventListener("critical-ready", async () => {
   /* =========================================================
      3) SVUOTA CARRELLO
   ========================================================== */
-  Cart.clear();
+  if (window.Cart && typeof Cart.clear === "function") {
+    Cart.clear();
+  }
   if (typeof aggiornaBadgeCarrello === "function") aggiornaBadgeCarrello();
 
   /* =========================================================
      4) TRACKING EVENTO
   ========================================================== */
   if (window.trackEvent) {
-    trackEvent("order_completed", {
+    window.trackEvent("order_completed", {
       orderId,
       totale: ordine.totale_cent / 100,
       prodotti: ordine.prodotti.length
