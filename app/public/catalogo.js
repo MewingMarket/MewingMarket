@@ -1,10 +1,11 @@
 /* =========================================================
-   CATALOGO — VERSIONE COMPLETA (Rendering + Categorie + Carrello)
+   CATALOGO — VERSIONE DEFINITIVA
+   Filtri + Categorie + Carrello + YouTube + SQL Mapping
 ========================================================= */
 
 const clean = (t) => typeof t === "string" ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim() : "";
 
-// 1. HTML della Card con tasti + e -
+// 1. HTML della Card
 function cardHTML(p) {
     if (!p) return "";
     const id = p.id;
@@ -14,8 +15,17 @@ function cardHTML(p) {
     const pCent = p.prezzo_cent || 0;
     const desc = clean(p.descrizione_breve || "");
     
-    // Gestione Categorie per il filtro CSS/JS
-    let catArray = Array.isArray(p.categoria) ? p.categoria : (p.categoria ? JSON.parse(p.categoria) : []);
+    // --- PATCH YOUTUBE ---
+    const vId = p.youtube_video_id || p.video_id;
+    const linkYouTube = vId 
+      ? `<a href="https://www.youtube.com/watch?v=${vId}" target="_blank" class="yt-link-card">📺 Guarda video</a>` 
+      : "";
+
+    // Gestione Categorie
+    let catArray = [];
+    try {
+        catArray = Array.isArray(p.categoria) ? p.categoria : (p.categoria ? JSON.parse(p.categoria) : []);
+    } catch(e) { catArray = []; }
     const catsAttr = catArray.map(c => clean(c)).join(" ");
 
     return `
@@ -24,6 +34,7 @@ function cardHTML(p) {
       <div class="card-content">
         <h2>${titolo}</h2>
         <p class="desc-breve">${desc}</p>
+        ${linkYouTube}
         <p class="prezzo">€${prezzoEuro}</p>
         <div class="card-buttons">
           <a href="prodotto.html?id=${id}" class="btn-dettagli">Scopri</a>
@@ -38,28 +49,25 @@ function cardHTML(p) {
     </div>`;
 }
 
-// 2. Funzione Principale di Caricamento
+// 2. Caricamento Dati
 async function avviaIlCatalogoOra() {
     const grid = document.getElementById("catalogo") || document.getElementById("grid-prodotti");
     const catBox = document.getElementById("categorie");
-    
     if (!grid) return;
 
     try {
         const res = await fetch("/api/products");
         const data = await res.json();
         const prodotti = Array.isArray(data) ? data : (data.prodotti || data.data || []);
-
         window.prodottiOriginali = prodotti;
 
-        // Rendering Prodotti
         grid.innerHTML = prodotti.map(p => cardHTML(p)).join("");
 
-        // Rendering Categorie Dinamiche
         if (catBox) {
             const tutteLeCat = new Set();
             prodotti.forEach(p => {
-                let c = Array.isArray(p.categoria) ? p.categoria : (p.categoria ? JSON.parse(p.categoria) : []);
+                let c = [];
+                try { c = Array.isArray(p.categoria) ? p.categoria : (p.categoria ? JSON.parse(p.categoria) : []); } catch(e){}
                 c.forEach(cat => tutteLeCat.add(cat));
             });
 
@@ -69,35 +77,32 @@ async function avviaIlCatalogoOra() {
             });
             setupFiltri();
         }
-
     } catch (err) {
         console.error("🔥 Errore:", err);
-        grid.innerHTML = "<p>Errore nel caricamento.</p>";
+        grid.innerHTML = "<p>Errore nel caricamento del catalogo.</p>";
     }
 }
 
-// 3. Logica Filtri (Categorie e Prezzo)
+// 3. Setup Filtri
 function setupFiltri() {
     const grid = document.getElementById("catalogo") || document.getElementById("grid-prodotti");
     
-    // Filtro Categorie
     document.querySelectorAll(".btn-cat").forEach(btn => {
         btn.onclick = () => {
             document.querySelectorAll(".btn-cat").forEach(b => b.classList.remove("active"));
             btn.classList.add("active");
-            
             const selectedCat = btn.getAttribute("data-cat");
             const filtrati = selectedCat === "all" 
                 ? window.prodottiOriginali 
                 : window.prodottiOriginali.filter(p => {
-                    let c = Array.isArray(p.categoria) ? p.categoria : (p.categoria ? JSON.parse(p.categoria) : []);
+                    let c = [];
+                    try { c = Array.isArray(p.categoria) ? p.categoria : (p.categoria ? JSON.parse(p.categoria) : []); } catch(e){}
                     return c.includes(selectedCat);
                 });
             grid.innerHTML = filtrati.map(p => cardHTML(p)).join("");
         };
     });
 
-    // Filtro Prezzo (Bottoni Fino a 10€, ecc.)
     document.querySelectorAll(".btn-filtro").forEach(btn => {
         btn.onclick = () => {
             const limite = btn.getAttribute("data-prezzo");
@@ -111,7 +116,7 @@ function setupFiltri() {
     });
 }
 
-// 4. Start
+// 4. Inizializzazione
 if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", avviaIlCatalogoOra);
 } else {
