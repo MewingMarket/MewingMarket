@@ -1,6 +1,7 @@
 /* =========================================================
    PRODOTTO.JS — Versione SQL SYNC (PATCH 2027.800)
    Mapping: youtube_video_id + immagine_url
+   Focus: Solo Acquista Ora -> Checkout
    ========================================================= */
 
 async function caricaDettaglioProdotto() {
@@ -9,16 +10,16 @@ async function caricaDettaglioProdotto() {
   if (!id) return;
 
   try {
-    // Usiamo fetchUniversale che gestisce automaticamente il Token SQL
+    // Gestione Token SQL tramite fetchUniversale
     const res = await window.fetchUniversale(`/api/products/${id}`);
     const data = await res.json();
     
-    // Normalizzazione SQL: estrae il prodotto dall'oggetto di risposta
+    // Normalizzazione dati dal Backend
     const p = data.prodotto || data.data || data;
 
     if (!p || !p.id) throw new Error("Prodotto non trovato nel database SQL");
 
-    // 1) Update UI: Testi e Immagini (Mapping immagine_url)
+    // 1) Update UI: Titoli, Descrizione, Prezzo
     document.title = `${p.titolo} | MewingMarket`;
     
     const elTitolo = document.getElementById("prodotto-titolo");
@@ -30,62 +31,66 @@ async function caricaDettaglioProdotto() {
     if (elTitolo) elTitolo.textContent = p.titolo;
     if (elSub) elSub.textContent = p.descrizione_breve || "";
     if (elDesc) elDesc.innerHTML = p.descrizione_lunga || p.descrizione || "";
-    if (elPrezzo) {
-      const prezzoEuro = p.prezzo_cent ? (p.prezzo_cent / 100).toFixed(2) : Number(p.prezzo || 0).toFixed(2);
-      elPrezzo.textContent = `€${prezzoEuro}`;
-    }
     
-    // FIX IMMAGINE: Mapping esatto su immagine_url
+    const prezzoEuro = p.prezzo_cent ? (p.prezzo_cent / 100).toFixed(2) : Number(p.prezzo || 0).toFixed(2);
+    if (elPrezzo) elPrezzo.textContent = `€${prezzoEuro}`;
+    
+    // Immagine con mapping immagine_url
     if (elImg) {
       elImg.src = p.immagine_url || p.immagine || "/placeholder.webp";
     }
 
-    // 2) FIX YOUTUBE AUTOMATICO (Mapping youtube_video_id)
-    const videoId = p.youtube_video_id || p.video_id; // Cerca la colonna SQL specifica
+    // 2) Gestione Video YouTube
+    const videoId = p.youtube_video_id || p.video_id;
     const videoSection = document.getElementById("video-section");
     const videoIframe = document.getElementById("prodotto-video");
 
     if (videoId && videoSection && videoIframe) {
-      // Caricamento dinamico dell'embed
       videoIframe.src = `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`;
       videoSection.style.display = "block";
-      console.log("🎬 [PRODOTTO] Video YouTube caricato:", videoId);
-    } else {
-      if (videoSection) videoSection.style.display = "none";
+    } else if (videoSection) {
+      videoSection.style.display = "none";
     }
 
-    // 3) Setup Bottoni Carrello
-    setupCartButtons(p);
+    // 3) Setup unico tasto Acquista Ora
+    setupAcquistoDiretto(p);
 
   } catch (err) {
     console.error("🔥 [PRODOTTO] Errore caricamento SQL:", err);
     const container = document.getElementById("prodotto-descrizione");
-    if (container) container.textContent = "Errore: Prodotto non disponibile o database non connesso.";
+    if (container) container.textContent = "Errore: Prodotto non disponibile.";
   }
 }
 
-function setupCartButtons(p) {
-  const btnPlus = document.getElementById("btn-aggiungi");
-  const btnMinus = document.getElementById("btn-rimuovi");
-  const btnPay = document.getElementById("btn-paga-subito");
+/**
+ * Configura il tasto Acquista Ora per aggiungere al carrello e andare al checkout
+ */
+function setupAcquistoDiretto(p) {
+  // Selezioniamo il tasto principale definito nell'HTML
+  const btnAcquista = document.getElementById("btn-acquista-hero");
 
-  const prodCarrello = {
-    id: p.id,
-    titolo: p.titolo,
-    // Usa sempre i centesimi per precisione nel carrello
-    prezzo_cent: p.prezzo_cent || Math.round(Number(p.prezzo) * 100),
-    immagine: p.immagine_url || p.immagine || "/placeholder.webp"
-  };
+  if (btnAcquista) {
+    btnAcquista.onclick = () => {
+      // Prepariamo l'oggetto per il carrello
+      const prodCarrello = {
+        id: p.id,
+        titolo: p.titolo,
+        prezzo_cent: p.prezzo_cent || Math.round(Number(p.prezzo) * 100),
+        immagine: p.immagine_url || p.immagine || "/placeholder.webp"
+      };
 
-  if (btnPlus) btnPlus.onclick = () => window.aggiungiAlCarrello(prodCarrello);
-  if (btnMinus) btnMinus.onclick = () => window.rimuoviSingoloDalCarrello(p.id);
-  if (btnPay) {
-    btnPay.onclick = () => {
-      window.aggiungiAlCarrello(prodCarrello);
+      console.log("🛒 Aggiunta al carrello e reindirizzamento...");
+      
+      // Funzione globale del carrello
+      if (typeof window.aggiungiAlCarrello === "function") {
+        window.aggiungiAlCarrello(prodCarrello);
+      }
+
+      // Reindirizzamento immediato al checkout
       window.location.href = "checkout.html";
     };
   }
 }
 
-// Avvio sincronizzato con il sistema di autenticazione
+// Avvio al segnale di sistema pronto
 document.addEventListener("critical-ready", caricaDettaglioProdotto);
