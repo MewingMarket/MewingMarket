@@ -1,165 +1,72 @@
 /* =========================================================
-   DASHBOARD ADMIN — Versione 2027.400
-   PATCH: critical-ready + fetchUniversale
+   DASHBOARD ADMIN — GESTIONE PROFILO
 ========================================================= */
 
-// Sanitizzazione sicura
-const clean = (t) =>
-  typeof t === "string"
-    ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
-    : t ?? "";
+const clean = (t) => typeof t === "string" ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim() : t ?? "";
 
-/* =========================================================
-   adminGet — usa fetchUniversale + token
-========================================================= */
 async function adminGet(path, options = {}) {
   const token = localStorage.getItem("token");
-
-  const headers = {
-    ...(options.headers || {}),
-    Authorization: token ? `Bearer ${token}` : ""
-  };
-
-  const res = await window.fetchUniversale(
-    path,
-    {
-      ...options,
-      headers
-    },
-    { retries: 3, backoffMs: 400 }
-  );
-
-  // Accesso negato
+  const headers = { ...(options.headers || {}), Authorization: token ? `Bearer ${token}` : "" };
+  const res = await window.fetchUniversale(path, { ...options, headers }, { retries: 3, backoffMs: 400 });
+  
   if (res.status === 401 || res.status === 403) {
-    console.warn("[ADMIN] Accesso negato → token non valido");
-
     localStorage.removeItem("token");
-    localStorage.removeItem("email");
-
     window.location.href = "/login.html";
     return null;
   }
-
   return res;
 }
 
-/* =========================================================
-   INIT — Avvio SOLO dopo critical-ready
-========================================================= */
 document.addEventListener("critical-ready", () => {
-  console.log("[ADMIN] Dashboard profilo inizializzata (CRITICAL READY)");
-
   popolaDatiAdmin();
   setupCambioEmail();
   setupCambioPassword();
 });
 
-/* =========================================================
-   1) Popola dati admin nella pagina
-========================================================= */
 async function popolaDatiAdmin() {
-  try {
-    const res = await adminGet("/api/utenti/me", { method: "GET" });
-    if (!res) return;
-
-    const data = await res.json();
-    if (!data.success || !data.utente) return;
-
-    const email = clean(data.utente.email);
-    const username = email.split("@")[0];
-    const cf = clean(data.utente.codice_fiscale);
-    const ruolo = clean(data.utente.ruolo || "Admin");
-
-    // Salvo email in localStorage
-    localStorage.setItem("email", email);
-
-    // Popola UI
-    const emailSpan = document.getElementById("adminEmailMain");
-    const usernameSpan = document.getElementById("adminUsernameMain");
-    const cfSpan = document.getElementById("adminCFMain");
-    const ruoloSpan = document.getElementById("adminRoleMain");
-
-    if (emailSpan) emailSpan.textContent = email;
-    if (usernameSpan) usernameSpan.textContent = username;
-    if (cfSpan) cfSpan.textContent = cf;
-    if (ruoloSpan) ruoloSpan.textContent = ruolo;
-
-  } catch (err) {
-    console.error("[ADMIN] Errore caricamento dati admin:", err);
+  const res = await adminGet("/api/admin/me");
+  if (!res) return;
+  const data = await res.json();
+  if (data.success && data.admin) {
+    const a = data.admin;
+    if (document.getElementById("adminEmailMain")) document.getElementById("adminEmailMain").textContent = a.email;
+    if (document.getElementById("adminUsernameMain")) document.getElementById("adminUsernameMain").textContent = a.email.split("@")[0];
+    if (document.getElementById("adminCFMain")) document.getElementById("adminCFMain").textContent = a.codice_fiscale;
+    if (document.getElementById("adminRoleMain")) document.getElementById("adminRoleMain").textContent = a.ruolo;
   }
 }
 
-/* =========================================================
-   2) Cambia email admin
-========================================================= */
 function setupCambioEmail() {
-  const btn = document.getElementById("btnAdminCambiaEmail");
-  if (!btn) return;
-
-  btn.addEventListener("click", async () => {
+  document.getElementById("btnAdminCambiaEmail")?.addEventListener("click", async () => {
     const nuova = clean(document.getElementById("newAdminEmail").value);
     const pass = clean(document.getElementById("passwordAdminEmail").value);
     const msg = document.getElementById("msgAdminEmail");
 
-    if (!nuova || !pass) {
-      msg.textContent = "Compila tutti i campi.";
-      return;
-    }
-
-    try {
-      const res = await adminGet("/api/admin/cambia-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nuova, pass })
-      });
-
-      if (!res) return;
-
-      const data = await res.json();
-      msg.textContent = data.message || data.error;
-
-      if (data.success) {
-        localStorage.setItem("email", nuova);
-        popolaDatiAdmin();
-      }
-
-    } catch (err) {
-      msg.textContent = "Errore di connessione.";
-    }
+    const res = await adminGet("/api/admin/cambia-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nuova, pass })
+    });
+    if (!res) return;
+    const data = await res.json();
+    msg.textContent = data.message || data.error;
+    if (data.success) setTimeout(() => location.reload(), 1000);
   });
 }
 
-/* =========================================================
-   3) Cambia password admin
-========================================================= */
 function setupCambioPassword() {
-  const btn = document.getElementById("btnAdminCambiaPassword");
-  if (!btn) return;
-
-  btn.addEventListener("click", async () => {
+  document.getElementById("btnAdminCambiaPassword")?.addEventListener("click", async () => {
     const oldP = clean(document.getElementById("oldAdminPassword").value);
     const newP = clean(document.getElementById("newAdminPassword").value);
     const msg = document.getElementById("msgAdminPassword");
 
-    if (!oldP || !newP) {
-      msg.textContent = "Compila tutti i campi.";
-      return;
-    }
-
-    try {
-      const res = await adminGet("/api/admin/cambia-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ oldP, newP })
-      });
-
-      if (!res) return;
-
-      const data = await res.json();
-      msg.textContent = data.message || data.error;
-
-    } catch (err) {
-      msg.textContent = "Errore di connessione.";
-    }
+    const res = await adminGet("/api/admin/cambia-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ oldP, newP })
+    });
+    if (!res) return;
+    const data = await res.json();
+    msg.textContent = data.message || data.error;
   });
 }
