@@ -1,6 +1,7 @@
 /* =========================================================
    ORDINI UTENTE — Versione SQL Sincronizzata
    Mapping: ordini.prodotti_json + stati SQL
+   PATCH: Sostituito fetchUniversale con fetch standard
 ========================================================= */
 
 document.addEventListener("critical-ready", async () => {
@@ -17,7 +18,8 @@ document.addEventListener("critical-ready", async () => {
 
   // 2) Recupera ordini utente tramite API
   try {
-    const res = await window.fetchUniversale("/api/ordini/utente", {
+    // ⭐ PATCH — fetch nativo
+    const res = await fetch("/api/ordini/utente", {
       headers: { Authorization: "Bearer " + token }
     });
 
@@ -101,7 +103,11 @@ document.addEventListener("critical-ready", async () => {
     if (e.target.classList.contains("btn-annulla")) {
       if (!confirm("Vuoi annullare l'ordine?")) return;
       try {
-        const res = await window.fetchUniversale(`/api/ordini/annulla/${id}`, { method: "POST" });
+        // ⭐ PATCH — fetch nativo
+        const res = await fetch(`/api/ordini/annulla/${id}`, { 
+            method: "POST",
+            headers: { Authorization: "Bearer " + token }
+        });
         const resData = await res.json();
         if (resData.success) location.reload();
       } catch (err) { alert("Errore di connessione."); }
@@ -110,7 +116,11 @@ document.addEventListener("critical-ready", async () => {
     // COMPLETA PAGAMENTO (PayPal)
     if (e.target.classList.contains("btn-paga")) {
       try {
-        const res = await window.fetchUniversale(`/api/paypal/ricrea/${id}`, { method: "POST" });
+        // ⭐ PATCH — fetch nativo
+        const res = await fetch(`/api/paypal/ricrea/${id}`, { 
+            method: "POST",
+            headers: { Authorization: "Bearer " + token }
+        });
         const resData = await res.json();
         if (resData.success && resData.url) window.location.href = resData.url;
         else alert("Impossibile rigenerare il pagamento.");
