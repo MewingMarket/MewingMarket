@@ -1,6 +1,6 @@
 // =========================================================
 // CHECKOUT.JS — Versione DEFINITIVA (PATCH 2027.400)
-// - Usa fetchUniversale (fallback chain)
+// - Usa fetch standard (Massima Stabilità)
 // - Sincronizzazione Totale Centesimi per PayPal
 // =========================================================
 
@@ -45,11 +45,10 @@ async function initCheckout() {
   let utenteEmail = null;
 
   try {
-    const res = await window.fetchUniversale(
-      "/utenti/me",
-      { headers: { "Authorization": "Bearer " + token } },
-      { retries: 2, backoffMs: 300 }
-    );
+    // ⭐ PATCH — Sostituito window.fetchUniversale con fetch nativo
+    const res = await fetch("/utenti/me", {
+      headers: { "Authorization": "Bearer " + token }
+    });
 
     const data = await res.json();
 
@@ -136,19 +135,16 @@ async function initCheckout() {
 
       const payload = Cart.getForCheckout();
 
-      const res = await window.fetchUniversale(
-        "/paypal/create-order",
-        {
-          method: "POST",
-          headers: authHeaders,
-          body: JSON.stringify({
-            email: utenteEmail,
-            prodotti: payload,
-            totale: totaleEuro // Inviamo il totale come stringa "XX.XX" per PayPal
-          })
-        },
-        { retries: 3, backoffMs: 400 }
-      );
+      // ⭐ PATCH — Sostituito window.fetchUniversale con fetch nativo
+      const res = await fetch("/paypal/create-order", {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify({
+          email: utenteEmail,
+          prodotti: payload,
+          totale: totaleEuro // Inviamo il totale come stringa "XX.XX" per PayPal
+        })
+      });
 
       const data = await res.json().catch(() => ({}));
 
