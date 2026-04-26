@@ -1,7 +1,7 @@
 /* =========================================================
    HOME PREMIUM — MewingMarket (PATCH 2027.750)
    - Mapping SQL: youtube_video_id + immagine_url
-   - Sincronizzazione automatica con Database
+   - UI: Rimosso tasto "+" (Solo tasto Scopri)
    ========================================================= */
 
 document.addEventListener("critical-ready", () => {
@@ -15,11 +15,11 @@ document.addEventListener("critical-ready", () => {
     if (!grid) return;
 
     try {
-      // Caricamento prodotti tramite fetchUniversale (gestisce Token e /api/)
-      const res = await window.fetchUniversale("/api/products");
+      // ⭐ PATCH: Usiamo fetch standard per bypassare i blocchi di fetchUniversale
+      const res = await fetch("/api/products");
       const data = await res.json();
 
-      // Normalizzazione SQL: supporta sia array che oggetto {prodotti:[]}
+      // Normalizzazione dati SQL
       const products = Array.isArray(data) ? data : (data.prodotti || data.data || []);
 
       if (products.length === 0) {
@@ -31,14 +31,14 @@ document.addEventListener("critical-ready", () => {
 
       // Prendiamo i primi 3 per la vetrina
       products.slice(0, 3).forEach((p) => {
-        // MAPPING SQL: immagine_url
+        // MAPPING SQL
         const img = p.immagine_url || p.immagine || "/placeholder.webp";
         const titolo = p.titolo || "Prodotto";
         const descrizione = p.descrizione_breve || "";
         const prezzo = (Number(p.prezzo_cent || 0) / 100).toFixed(2);
         const id = p.id;
 
-        // --- PATCH YOUTUBE (Mapping: youtube_video_id) ---
+        // PATCH YOUTUBE
         const vId = p.youtube_video_id || p.video_id;
         const linkYouTube = vId 
           ? `<a href="https://www.youtube.com/watch?v=${vId}" target="_blank" class="yt-link-home">📺 Guarda video su YouTube</a>` 
@@ -57,11 +57,7 @@ document.addEventListener("critical-ready", () => {
             <p class="price">€${prezzo}</p>
 
             <div class="card-buttons">
-              <a href="prodotto.html?id=${id}" class="btn-dettagli">Scopri</a>
-              <button class="btn-add-cart" 
-                onclick="window.aggiungiAlCarrello({id:'${id}', titolo:'${titolo}', prezzo_cent:${p.prezzo_cent || 0}, immagine:'${img}'})">
-                +
-              </button>
+              <a href="prodotto.html?id=${id}" class="btn-dettagli" style="width: 100%; text-align: center;">Scopri di più</a>
             </div>
           </div>
         `;
@@ -79,11 +75,10 @@ document.addEventListener("critical-ready", () => {
   // ------------------------------
   (async () => {
     try {
-      const resHero = await window.fetchUniversale("/api/products");
+      const resHero = await fetch("/api/products");
       const dataHero = await resHero.json();
       const productsHero = Array.isArray(dataHero) ? dataHero : (dataHero.prodotti || []);
       
-      // Usa immagine_url per lo slider
       const images = productsHero
         .map(p => p.immagine_url || p.immagine)
         .filter(img => img && img.length > 5);
@@ -100,7 +95,7 @@ document.addEventListener("critical-ready", () => {
           }, 400);
         };
         rotate();
-        setInterval(rotate, 6000); // Cambio ogni 6 secondi
+        setInterval(rotate, 6000);
       }
     } catch (e) {
       console.warn("[HOME] Slider non disponibile.");
