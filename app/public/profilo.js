@@ -1,5 +1,5 @@
 /* =========================================================
-   PROFILO.JS — Gestione Banner Dati + Aggiornamenti
+   PROFILO.JS — Gestione Dati Utente + Moduli
 ========================================================= */
 console.log("[PROFILO] Inizializzazione...");
 
@@ -10,7 +10,7 @@ document.addEventListener("critical-ready", async () => {
     return;
   }
 
-  // 1. Caricamento dati per il Banner (Username, Email, CF)
+  // 1. Caricamento dati utente (Popola sidebarEmail, sidebarUsername, sidebarCF)
   try {
     const res = await window.fetchUniversale("/api/utenti/me", {
       method: "GET",
@@ -20,13 +20,15 @@ document.addEventListener("critical-ready", async () => {
 
     if (data.success && data.utente) {
       const u = data.utente;
-      // Popoliamo esattamente come da foto
-      document.getElementById("username").textContent = u.username || u.email.split('@')[0];
-      document.getElementById("userEmail").textContent = u.email || "";
-      document.getElementById("userCF").textContent = u.codice_fiscale || "N/A";
+      if (document.getElementById("sidebarEmail")) 
+          document.getElementById("sidebarEmail").textContent = u.email;
+      if (document.getElementById("sidebarUsername")) 
+          document.getElementById("sidebarUsername").textContent = u.username || u.email.split('@')[0];
+      if (document.getElementById("sidebarCF")) 
+          document.getElementById("sidebarCF").textContent = u.codice_fiscale || "";
     }
   } catch (err) {
-    console.error("[PROFILO] Errore caricamento banner:", err);
+    console.error("[PROFILO] Errore caricamento dati:", err);
   }
 
   // 2. Logica Cambio Email
@@ -35,12 +37,6 @@ document.addEventListener("critical-ready", async () => {
     const password = document.getElementById("passwordEmail").value.trim();
     const msg = document.getElementById("msgEmail");
 
-    if (!nuova_email || !password) {
-      msg.textContent = "Compila tutti i campi.";
-      msg.className = "status-msg err";
-      return;
-    }
-
     try {
       const res = await window.fetchUniversale("/api/utenti/cambia-email", {
         method: "POST",
@@ -48,19 +44,9 @@ document.addEventListener("critical-ready", async () => {
         body: JSON.stringify({ nuova_email, password })
       });
       const resData = await res.json();
-      
-      if (resData.success) {
-        msg.textContent = "Email aggiornata con successo!";
-        msg.className = "status-msg ok";
-        setTimeout(() => location.reload(), 1500); // Ricarica per aggiornare il banner
-      } else {
-        msg.textContent = resData.error || "Errore.";
-        msg.className = "status-msg err";
-      }
-    } catch (e) {
-      msg.textContent = "Errore di connessione.";
-      msg.className = "status-msg err";
-    }
+      msg.textContent = resData.success ? "Email aggiornata!" : (resData.error || "Errore.");
+      if (resData.success) setTimeout(() => location.reload(), 1000);
+    } catch (e) { msg.textContent = "Errore di connessione."; }
   });
 
   // 3. Logica Cambio Password
@@ -69,12 +55,6 @@ document.addEventListener("critical-ready", async () => {
     const nuova_password = document.getElementById("newPassword").value.trim();
     const msg = document.getElementById("msgPassword");
 
-    if (!vecchia_password || !nuova_password) {
-      msg.textContent = "Inserisci entrambe le password.";
-      msg.className = "status-msg err";
-      return;
-    }
-
     try {
       const res = await window.fetchUniversale("/api/utenti/cambia-password", {
         method: "POST",
@@ -82,19 +62,11 @@ document.addEventListener("critical-ready", async () => {
         body: JSON.stringify({ vecchia_password, nuova_password })
       });
       const resData = await res.json();
-
+      msg.textContent = resData.success ? "Password aggiornata!" : (resData.error || "Errore.");
       if (resData.success) {
-        msg.textContent = "Password aggiornata!";
-        msg.className = "status-msg ok";
         document.getElementById("oldPassword").value = "";
         document.getElementById("newPassword").value = "";
-      } else {
-        msg.textContent = resData.error || "Errore.";
-        msg.className = "status-msg err";
       }
-    } catch (e) {
-      msg.textContent = "Errore di connessione.";
-      msg.className = "status-msg err";
-    }
+    } catch (e) { msg.textContent = "Errore di connessione."; }
   });
 });
