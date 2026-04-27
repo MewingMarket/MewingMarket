@@ -1,27 +1,24 @@
-/**
- * =========================================================
- * File: app/server/routes/paypal-cancel.cjs
- * Annulla ordine PayPal (SQL) + email annullamento + JSON mirror
- * Versione 2026.950 — require assoluti + FIX sicurezza + FIX stato
- * =========================================================
- */
+/* =========================================================
+   FILE: app/server/routes/paypal-cancel.cjs
+   MODALITÀ: Java‑mode (funzioni, no Express)
+   DESCRIZIONE:
+   - Annulla ordine PayPal
+   - Aggiorna DB
+   - Aggiorna JSON mirror
+   - Invia email annullamento
+========================================================= */
 
-const express = require("express");
 const path = require("path");
 
-// PATCH: require assoluto
 const R = (p) => require(path.join(process.cwd(), "app/server", p));
 
 const db = R("db/database.cjs");
 const jsonGen = R("modules/generatore-json.cjs");
 const { inviaEmailOrdineAnnullato } = R("modules/email-ordine-annullato.cjs");
-const authUser = R("middleware/auth-user.cjs");
 
-const router = express.Router();
-
-/**
- * Helper sicuro per JSON
- */
+/* =========================================================
+   Helper JSON
+========================================================= */
 function safeParse(str) {
   try {
     return JSON.parse(str);
@@ -30,25 +27,23 @@ function safeParse(str) {
   }
 }
 
-/**
- * =========================================================
- * GET /api/paypal/cancel-order?orderId=xxxx
- * Protetto da auth-user
- * =========================================================
- */
-router.get("/paypal/cancel-order", authUser, async (req, res) => {
+/* =========================================================
+   FUNZIONE: paypalCancelOrder
+   (ex GET /api/paypal/cancel-order?orderId=xxxx)
+========================================================= */
+async function paypalCancelOrder(req) {
   try {
     const orderId = req.query.orderId;
     const userId = req.user.id;
 
     if (!orderId || !userId) {
-      return res.json({ success: false, error: "Parametri mancanti" });
+      return { success: false, error: "Parametri mancanti" };
     }
 
     // =========================================================
     // 1) Recupera ordine dal DB
     // =========================================================
-    const stmtFind = db.prepare(`
+    const ordine = db.prepare(`
       SELECT 
         o.id,
         o.utente_id,
@@ -60,25 +55,23 @@ router.get("/paypal/cancel-order", authUser, async (req, res) => {
       LEFT JOIN utenti u ON u.id = o.utente_id
       WHERE o.id = ? AND o.utente_id = ?
       LIMIT 1
-    `);
-
-    const ordine = stmtFind.get(orderId, userId);
+    `).get(orderId, userId);
 
     if (!ordine) {
-      return res.json({ success: false, error: "Ordine non trovato" });
+      return { success: false, error: "Ordine non trovato" };
     }
 
     // Se già completato → non annullabile
     if (ordine.stato === "completato") {
-      return res.json({
+      return {
         success: false,
         error: "Ordine già completato, non annullabile"
-      });
+      };
     }
 
     // Se già annullato → ritorna ordine
     if (ordine.stato === "annullato") {
-      return res.json({
+      return {
         success: true,
         message: "Ordine già annullato",
         order: {
@@ -87,7 +80,7 @@ router.get("/paypal/cancel-order", authUser, async (req, res) => {
           totale: ordine.totale_cent / 100,
           stato: ordine.stato
         }
-      });
+      };
     }
 
     // =========================================================
@@ -110,7 +103,7 @@ router.get("/paypal/cancel-order", authUser, async (req, res) => {
     const emailUtente = ordine.utente_email || "";
 
     // =========================================================
-    // 3) Email annullamento (Brevo o sandbox fallback)
+    // 3) Email annullamento
     // =========================================================
     try {
       if (emailUtente) {
@@ -129,9 +122,9 @@ router.get("/paypal/cancel-order", authUser, async (req, res) => {
     }
 
     // =========================================================
-    // 4) Risposta al frontend
+    // 4) Risposta
     // =========================================================
-    return res.json({
+    return {
       success: true,
       message: "Ordine annullato correttamente",
       order: {
@@ -140,15 +133,20 @@ router.get("/paypal/cancel-order", authUser, async (req, res) => {
         totale: ordine.totale_cent / 100,
         stato: "annullato"
       }
-    });
+    };
 
   } catch (err) {
-    console.error("❌ Errore cancel-order:", err);
-    return res.json({
+    console.error("❌ Errore paypalCancelOrder:", err);
+    return {
       success: false,
       error: "Errore server"
-    });
+    };
   }
-});
+}
 
-module.exports = router;
+/* =========================================================
+   EXPORT — stile Java
+========================================================= */
+module.exports = {
+  paypalCancelOrder
+};
