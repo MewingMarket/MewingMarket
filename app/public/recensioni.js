@@ -1,7 +1,7 @@
 /* =========================================================
-   RECENSIONI UTENTE — Versione SQL Definitiva 2027.990
+   RECENSIONI UTENTE — Versione SQL Definitiva 2027.900
    Mapping: feedback.prodotto_id -> prodotti.id
-   PATCH: Token + Gestione 401/403 + Coerenza auth-user
+   PATCH: Endpoint Java‑mode + Token + Gestione 401/403
 ========================================================= */
 
 document.addEventListener("critical-ready", async () => {
@@ -17,7 +17,6 @@ document.addEventListener("critical-ready", async () => {
   const token = localStorage.getItem("token");
   let ratingSelezionato = 0;
 
-  // Protezione base: se non c'è token, blocco UI
   if (!token) {
     if (selectProdotto) {
       selectProdotto.innerHTML = `<option value="">Effettua il login per recensire</option>`;
@@ -38,10 +37,10 @@ document.addEventListener("critical-ready", async () => {
     return res;
   }
 
-  // 1) CARICA PRODOTTI ACQUISTATI (per la select)
+  // 1) CARICA PRODOTTI ACQUISTATI
   async function caricaProdottiAcquistati() {
     try {
-      const resRaw = await fetch("/api/recensioni/prodotti-acquistati", {
+      const resRaw = await fetch("/api/recensioni/getProdottiAcquistati", {
         headers: { Authorization: "Bearer " + token }
       });
       const res = await handleAuthResponse(resRaw);
@@ -66,7 +65,7 @@ document.addEventListener("critical-ready", async () => {
     }
   }
 
-  // 2) GESTIONE STELLE (UI)
+  // 2) GESTIONE STELLE
   stars.forEach((star, index) => {
     star.addEventListener("click", () => {
       ratingSelezionato = index + 1;
@@ -88,7 +87,7 @@ document.addEventListener("critical-ready", async () => {
     }
 
     try {
-      const resRaw = await fetch("/api/recensioni/crea", {
+      const resRaw = await fetch("/api/recensioni/creaRecensione", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -127,7 +126,7 @@ document.addEventListener("critical-ready", async () => {
     listaRecensioni.innerHTML = "<div class='loader'>Caricamento i tuoi feedback...</div>";
 
     try {
-      const resRaw = await fetch("/api/recensioni/utente", {
+      const resRaw = await fetch("/api/recensioni/getRecensioniUtente", {
         headers: { Authorization: "Bearer " + token }
       });
       const res = await handleAuthResponse(resRaw);
@@ -166,7 +165,7 @@ document.addEventListener("critical-ready", async () => {
   window.eliminaRecensione = async (id) => {
     if (!confirm("Vuoi eliminare questa recensione?")) return;
     try {
-      const resRaw = await fetch("/api/recensioni/elimina", {
+      const resRaw = await fetch("/api/recensioni/eliminaRecensione", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -189,7 +188,7 @@ document.addEventListener("critical-ready", async () => {
     if (!nuovoTesto || nuovoTesto.length < 5) return;
 
     try {
-      const resRaw = await fetch("/api/recensioni/modifica", {
+      const resRaw = await fetch("/api/recensioni/modificaRecensione", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
