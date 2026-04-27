@@ -1,8 +1,8 @@
 /* =========================================================
-   LOGIN.JS — Versione BLINDATA (2027.600)
+   LOGIN.JS — Versione BLINDATA (2027.900)
    - Protezione totale contro API rotte / vuote / HTML
-   - Usa fetchUniversale potenziato
-   - Nessun blocco, nessuno spinner infinito
+   - Usa fetch nativo
+   - Endpoint Java‑mode
 ========================================================= */
 
 document.addEventListener("critical-ready", initLogin);
@@ -26,15 +26,11 @@ function initLogin() {
       const email = localStorage.getItem("email") || "";
       if (!email) return;
 
-      await window.fetchUniversale(
-        "/utenti/evento",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, evento })
-        },
-        { retries: 2, backoffMs: 300 }
-      );
+      await fetch("/api/utenti/evento", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, evento })
+      });
 
     } catch (err) {
       console.warn("Log evento fallito:", err);
@@ -59,15 +55,12 @@ function initLogin() {
     form.dataset.lock = "1";
 
     try {
-      const res = await window.fetchUniversale(
-        "/utenti/login",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password })
-        },
-        { retries: 2, backoffMs: 300 }
-      );
+      // ⭐ PATCH — fetch nativo + endpoint Java‑mode
+      const res = await fetch("/api/utenti/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
 
       /* =====================================================
          PATCH: protezione contro risposte HTML / vuote / {}
