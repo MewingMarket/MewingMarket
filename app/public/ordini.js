@@ -1,7 +1,6 @@
 /* =========================================================
-   ORDINI UTENTE — Versione SQL Sincronizzata
-   Mapping: ordini.prodotti_json + stati SQL
-   PATCH: Sostituito fetchUniversale con fetch standard
+   ORDINI UTENTE — Versione SQL Sincronizzata 2027.990
+   PATCH: Token + Gestione 401/403 + Coerenza Sistema
 ========================================================= */
 
 document.addEventListener("critical-ready", async () => {
@@ -10,18 +9,28 @@ document.addEventListener("critical-ready", async () => {
 
   if (!body) return;
 
-  // 1) Protezione login
+  /* =========================================================
+     1) Protezione login
+  ========================================================== */
   if (!token) {
     body.innerHTML = `<tr><td colspan="5">Effettua il login per vedere i tuoi ordini.</td></tr>`;
     return;
   }
 
-  // 2) Recupera ordini utente tramite API
+  /* =========================================================
+     2) Recupera ordini utente
+  ========================================================== */
   try {
-    // ⭐ PATCH — fetch nativo
     const res = await fetch("/api/ordini/utente", {
       headers: { Authorization: "Bearer " + token }
     });
+
+    // Token scaduto → logout
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem("token");
+      window.location.href = "/login";
+      return;
+    }
 
     const data = await res.json();
 
@@ -30,17 +39,18 @@ document.addEventListener("critical-ready", async () => {
       return;
     }
 
-    body.innerHTML = ""; // Pulizia loader
+    body.innerHTML = "";
 
-    // 3) Render ordini
+    /* =========================================================
+       3) Render ordini
+    ========================================================== */
     data.ordini.forEach(o => {
       const tr = document.createElement("tr");
 
-      // PATCH CRITICA: Parsing del JSON prodotti dalla tabella SQL
       let prodottiHTML = "-";
       try {
-        const prodottiArray = typeof o.prodotti_json === 'string' 
-          ? JSON.parse(o.prodotti_json) 
+        const prodottiArray = typeof o.prodotti_json === "string"
+          ? JSON.parse(o.prodotti_json)
           : (o.prodotti || []);
 
         if (Array.isArray(prodottiArray)) {
@@ -60,18 +70,19 @@ document.addEventListener("critical-ready", async () => {
         ? new Date(o.data_ordine || o.created_at).toLocaleDateString("it-IT")
         : "—";
 
-      // 4) Gestione Azioni basata sugli stati SQL reali
-      let azione = "";
       const stato = o.stato ? o.stato.toLowerCase() : "in_attesa";
 
+      let azione = "";
       if (stato === "pagato" || stato === "completato") {
         azione = `
           <button class="btn-download-diretto" onclick="location.href='/download.html'">Vai ai Download</button>
           <button class="btn-rimborso-link" onclick="location.href='/rimborso.html?id=${o.id}'">Assistenza</button>
         `;
       } else if (stato === "in_attesa_pagamento" || stato === "creato") {
-        azione = `<button class="btn-paga" data-id="${o.id}">Paga Ora</button>
-                  <button class="btn-annulla" data-id="${o.id}">Annulla</button>`;
+        azione = `
+          <button class="btn-paga" data-id="${o.id}">Paga Ora</button>
+          <button class="btn-annulla" data-id="${o.id}">Annulla</button>
+        `;
       } else if (stato === "rimborsato") {
         azione = `<span class="badge rimborsato">Rimborsato</span>`;
       } else {
@@ -94,7 +105,9 @@ document.addEventListener("critical-ready", async () => {
     body.innerHTML = `<tr><td colspan="5">Errore tecnico durante il recupero degli ordini.</td></tr>`;
   }
 
-  // 5) Delegazione Eventi per i pulsanti dinamici
+  /* =========================================================
+     5) Delegazione Eventi
+  ========================================================== */
   body.addEventListener("click", async e => {
     const id = e.target.dataset.id;
     if (!id) return;
@@ -102,29 +115,46 @@ document.addEventListener("critical-ready", async () => {
     // ANNULLA ORDINE
     if (e.target.classList.contains("btn-annulla")) {
       if (!confirm("Vuoi annullare l'ordine?")) return;
+
       try {
-        // ⭐ PATCH — fetch nativo
-        const res = await fetch(`/api/ordini/annulla/${id}`, { 
-            method: "POST",
-            headers: { Authorization: "Bearer " + token }
+        const res = await fetch(`/api/ordini/annulla/${id}`, {
+          method: "POST",
+          headers: { Authorization: "Bearer " + token }
         });
+
+        if (res.status === 401 || res.status === 403) {
+          localStorage.removeItem("token");
+          window.location.href = "/login";
+          return;
+        }
+
         const resData = await res.json();
         if (resData.success) location.reload();
-      } catch (err) { alert("Errore di connessione."); }
+      } catch (err) {
+        alert("Errore di connessione.");
+      }
     }
 
     // COMPLETA PAGAMENTO (PayPal)
     if (e.target.classList.contains("btn-paga")) {
       try {
-        // ⭐ PATCH — fetch nativo
-        const res = await fetch(`/api/paypal/ricrea/${id}`, { 
-            method: "POST",
-            headers: { Authorization: "Bearer " + token }
+        const res = await fetch(`/api/paypal/ricrea/${id}`, {
+          method: "POST",
+          headers: { Authorization: "Bearer " + token }
         });
+
+        if (res.status === 401 || res.status === 403) {
+          localStorage.removeItem("token");
+          window.location.href = "/login";
+          return;
+        }
+
         const resData = await res.json();
         if (resData.success && resData.url) window.location.href = resData.url;
         else alert("Impossibile rigenerare il pagamento.");
-      } catch (err) { alert("Errore di connessione."); }
+      } catch (err) {
+        alert("Errore di connessione.");
+      }
     }
   });
 });
