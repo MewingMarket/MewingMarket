@@ -1,8 +1,8 @@
 /* =========================================================
-   REGISTER — MewingMarket (PATCH 2027.400)
+   REGISTER — MewingMarket (PATCH 2027.900)
    - critical-ready
-   - fetchUniversale (fallback chain)
-   - Nessuna regressione
+   - fetch nativo
+   - Endpoint Java‑mode
 ========================================================= */
 
 document.addEventListener("critical-ready", () => {
@@ -25,15 +25,11 @@ document.addEventListener("critical-ready", () => {
       const email = localStorage.getItem("email") || "";
       if (!email) return;
 
-      await window.fetchUniversale(
-        "/utenti/evento",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, evento })
-        },
-        { retries: 2, backoffMs: 300 }
-      );
+      await fetch("/api/utenti/evento", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, evento })
+      });
 
     } catch (err) {
       console.warn("Log evento fallito:", err);
@@ -87,15 +83,12 @@ document.addEventListener("critical-ready", () => {
     form.dataset.lock = "1";
 
     try {
-      const res = await window.fetchUniversale(
-        "/utenti/registrazione",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password, codice_fiscale })
-        },
-        { retries: 2, backoffMs: 300 }
-      );
+      // ⭐ PATCH — fetch nativo + endpoint Java‑mode
+      const res = await fetch("/api/utenti/registrazione", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, codice_fiscale })
+      });
 
       const data = await res.json().catch(() => ({}));
       console.log("[REGISTER]", data);
