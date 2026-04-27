@@ -1,7 +1,8 @@
 /* =========================================================
-   CHATBOX — VERSIONE COMPLETA + PATCH 2027.400
+   CHATBOX — VERSIONE COMPLETA + PATCH 2027.900
    - critical-ready
-   - fetchUniversale (fallback chain)
+   - fetch nativo
+   - API universali Java‑mode
 ========================================================= */
 
 document.addEventListener("critical-ready", () => {
@@ -48,15 +49,12 @@ document.addEventListener("critical-ready", () => {
     chatInput.value = "";
 
     try {
-      const res = await window.fetchUniversale(
-        "/chat",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message })
-        },
-        { retries: 2, backoffMs: 300 }
-      );
+      // ⭐ PATCH 2027 — nuovo endpoint Java‑mode
+      const res = await fetch("/api/chat/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message })
+      });
 
       const data = await res.json();
       addMessage(data.reply || "Errore temporaneo.");
@@ -138,14 +136,11 @@ document.addEventListener("critical-ready", () => {
     formData.append("audio", blob, "audio.webm");
 
     try {
-      const res = await window.fetchUniversale(
-        "/chat/voice",
-        {
-          method: "POST",
-          body: formData
-        },
-        { retries: 2, backoffMs: 300 }
-      );
+      // ⭐ PATCH 2027 — nuovo endpoint Java‑mode
+      const res = await fetch("/api/chat/chatVoice", {
+        method: "POST",
+        body: formData
+      });
 
       const data = await res.json();
       addMessage(data.reply || "Errore durante la trascrizione.");
@@ -173,14 +168,11 @@ document.addEventListener("critical-ready", () => {
       formData.append("file", file);
 
       try {
-        const res = await window.fetchUniversale(
-          "/chat/attachment",
-          {
-            method: "POST",
-            body: formData
-          },
-          { retries: 2, backoffMs: 300 }
-        );
+        // ⭐ PATCH 2027 — nuovo endpoint Java‑mode
+        const res = await fetch("/api/chat/chatAttachment", {
+          method: "POST",
+          body: formData
+        });
 
         const data = await res.json();
         addMessage(data.reply || "Allegato ricevuto.");
