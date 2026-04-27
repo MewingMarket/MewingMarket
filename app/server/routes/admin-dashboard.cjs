@@ -1,57 +1,30 @@
-/**
- * =========================================================
- * File: app/server/routes/admin-dashboard.cjs
- * Dashboard Admin Unificata — Vendite + Ordini
- * Versione 2026.400 — UTM + Origine + Rimborso ready (PATCH 2026.995)
- * =========================================================
- */
+/* =========================================================
+   FUNZIONE: adminDashboard
+   FILE ORIGINALE: app/server/routes/admin-dashboard.cjs
+   DESCRIZIONE: Dashboard Admin Unificata — Vendite + Ordini
+========================================================= */
 
-const express = require("express");
 const path = require("path");
-
-// Helper require assoluto
 const R = (p) => require(path.join(process.cwd(), "app/server", p));
 
 const db = R("db/database.cjs");
-const authUser = R("middleware/auth-user.cjs");
-
-// ⭐ PATCH: categorie rimborso
 const categorieRimborso = R("modules/rimborso-categorie.cjs");
 
-const router = express.Router();
-
-/**
- * =========================================================
- * GET /api/admin/dashboard
- * Richiede ruolo admin
- * =========================================================
- */
-router.get("/dashboard", authUser, (req, res) => {
+module.exports = async function adminDashboard(req) {
   try {
-    res.setHeader("Content-Type", "application/json");
-
-    console.log("📊 /api/admin/dashboard → admin:", req.user?.email);
-
+    // Controllo ruolo admin
     if (req.user?.ruolo !== "admin") {
-      return res.json({ success: false, error: "Accesso negato" });
+      return { success: false, error: "Accesso negato" };
     }
 
-    // =========================================================
-    // ⭐ PATCH: se la tabella ordini è vuota → svuota vendite
-    // =========================================================
+    // Se ordini vuoti → pulizia vendite
     const countOrdini = db.prepare(`SELECT COUNT(*) AS n FROM ordini`).get().n;
-
     if (countOrdini === 0) {
-      console.log("⚠️ Nessun ordine nel DB → pulizia vendite automatica");
-
       db.prepare(`DELETE FROM vendite`).run();
       db.prepare(`DELETE FROM sqlite_sequence WHERE name='vendite'`).run();
     }
 
-    // =========================================================
-    // SEZIONE VENDITE
-    // =========================================================
-
+    // KPI vendite
     const venditeKPI = db.prepare(`
       SELECT 
         COUNT(*) AS venditeTotali,
@@ -94,10 +67,7 @@ router.get("/dashboard", authUser, (req, res) => {
       ORDER BY vendite DESC
     `).all();
 
-    // =========================================================
-    // SEZIONE ORDINI (+ CF + Rimborso ready)
-    // =========================================================
-
+    // ORDINI
     const ordini = db.prepare(`
       SELECT 
         o.id,
@@ -128,10 +98,7 @@ router.get("/dashboard", authUser, (req, res) => {
       annullati: ordini.filter(o => o.stato === "annullato").length
     };
 
-    // =========================================================
-    // PATCH — ORIGINE SINTETICA AVANZATA
-    // =========================================================
-
+    // Origine sintetica
     const venditeByUID = db.prepare(`
       SELECT 
         uid,
@@ -187,9 +154,7 @@ router.get("/dashboard", authUser, (req, res) => {
       return "Direct";
     }
 
-    // =========================================================
-    // ⭐ PATCH: aggiunta categoria rimborso
-    // =========================================================
+    // Categoria rimborso
     function detectCategoriaRimborso(motivo) {
       if (!motivo) return null;
 
@@ -202,6 +167,11 @@ router.get("/dashboard", authUser, (req, res) => {
         categorieRimborso.find(c => c.categoria === "altro");
 
       return match.categoria;
+    }
+
+    function safeParse(str) {
+      try { return JSON.parse(str); }
+      catch { return []; }
     }
 
     const ordiniParsed = ordini.map(o => {
@@ -228,12 +198,9 @@ router.get("/dashboard", authUser, (req, res) => {
       };
     });
 
-    // =========================================================
-    // RISPOSTA UNIFICATA
-    // =========================================================
-    return res.json({
+    // RISPOSTA
+    return {
       success: true,
-
       vendite: {
         kpi: {
           venditeTotali: venditeKPI.venditeTotali,
@@ -244,28 +211,14 @@ router.get("/dashboard", authUser, (req, res) => {
         topProdotti,
         utm
       },
-
       ordini: {
         kpi: ordiniKPI,
         lista: ordiniParsed
       }
-    });
+    };
 
   } catch (err) {
-    console.error("❌ Errore /admin/dashboard:", err);
-    return res.json({ success: false, error: "Errore server" });
+    console.error("❌ Errore adminDashboard:", err);
+    return { success: false, error: "Errore server" };
   }
-});
-
-/**
- * Helper sicuro per JSON
- */
-function safeParse(str) {
-  try {
-    return JSON.parse(str);
-  } catch {
-    return [];
-  }
-}
-
-module.exports = router;
+};
