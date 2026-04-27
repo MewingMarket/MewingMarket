@@ -56,8 +56,10 @@ async function avviaIlCatalogoOra() {
     if (!grid) return;
 
     try {
-        const res = await fetch("/api/products");
+        // ⭐ PATCH 2027 — nuovo endpoint Java‑mode
+        const res = await fetch("/api/prodotti/getProdotti");
         const data = await res.json();
+
         const prodotti = Array.isArray(data) ? data : (data.prodotti || data.data || []);
         window.prodottiOriginali = prodotti;
 
@@ -67,7 +69,9 @@ async function avviaIlCatalogoOra() {
             const tutteLeCat = new Set();
             prodotti.forEach(p => {
                 let c = [];
-                try { c = Array.isArray(p.categoria) ? p.categoria : (p.categoria ? JSON.parse(p.categoria) : []); } catch(e){}
+                try { 
+                    c = Array.isArray(p.categoria) ? p.categoria : (p.categoria ? JSON.parse(p.categoria) : []); 
+                } catch(e){}
                 c.forEach(cat => tutteLeCat.add(cat));
             });
 
@@ -96,7 +100,9 @@ function setupFiltri() {
                 ? window.prodottiOriginali 
                 : window.prodottiOriginali.filter(p => {
                     let c = [];
-                    try { c = Array.isArray(p.categoria) ? p.categoria : (p.categoria ? JSON.parse(p.categoria) : []); } catch(e){}
+                    try { 
+                        c = Array.isArray(p.categoria) ? p.categoria : (p.categoria ? JSON.parse(p.categoria) : []); 
+                    } catch(e){}
                     return c.includes(selectedCat);
                 });
             grid.innerHTML = filtrati.map(p => cardHTML(p)).join("");
