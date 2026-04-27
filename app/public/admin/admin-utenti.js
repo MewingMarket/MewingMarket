@@ -1,6 +1,6 @@
 /* =========================================================
-   ADMIN UTENTI — Versione SQL Definitiva 2027.990
-   PATCH TOKEN + Coerenza con admin-utenti.cjs
+   ADMIN UTENTI — Versione SQL Definitiva 2027.900
+   PATCH TOKEN + Coerenza con admin-utenti.cjs + fetch nativo
 ========================================================= */
 
 document.addEventListener("critical-ready", async () => {
@@ -28,7 +28,7 @@ function fDate(d) {
 }
 
 /* =========================================================
-   FETCH ADMIN — Versione con TOKEN + FALLBACK LOGIN
+   FETCH ADMIN — Token + fallback login
 ========================================================= */
 async function adminGet(path, options = {}) {
   const token = localStorage.getItem("token");
@@ -40,11 +40,7 @@ async function adminGet(path, options = {}) {
 
   const fullPath = path.startsWith("/api") ? path : `/api${path}`;
 
-  const res = await window.fetchUniversale(
-    fullPath,
-    { ...options, headers },
-    { retries: 2 }
-  );
+  const res = await fetch(fullPath, { ...options, headers });
 
   if (res.status === 401 || res.status === 403) {
     localStorage.removeItem("token");
@@ -60,7 +56,7 @@ async function adminGet(path, options = {}) {
 ========================================================= */
 async function syncBrevoAuto() {
   try {
-    const res = await adminGet("/api/admin/utenti/sync-brevo");
+    const res = await adminGet("/api/admin/utenti/syncBrevo");
     if (res) console.log("🟢 [BREVO] Sync OK");
   } catch (err) {
     console.warn("🟡 [BREVO] Sync fallito o non necessario");
@@ -78,7 +74,7 @@ async function caricaUtenti() {
     "<tr><td colspan='15'>Interrogazione SQL in corso...</td></tr>";
 
   try {
-    const res = await adminGet("/api/admin/utenti/lista");
+    const res = await adminGet("/api/admin/utenti/getListaUtenti");
     if (!res) return;
 
     const data = await res.json();
@@ -147,11 +143,11 @@ document.addEventListener("click", async (e) => {
   const btn = e.target;
   let azione = "";
 
-  if (btn.classList.contains("btn-blocca")) azione = "blocca";
-  if (btn.classList.contains("btn-sblocca")) azione = "sblocca";
+  if (btn.classList.contains("btn-blocca")) azione = "bloccaUtente";
+  if (btn.classList.contains("btn-sblocca")) azione = "sbloccaUtente";
   if (btn.classList.contains("btn-elimina")) {
     if (!confirm(`Eliminare definitivamente ${email}?`)) return;
-    azione = "elimina";
+    azione = "eliminaUtente";
   }
 
   if (azione) {
