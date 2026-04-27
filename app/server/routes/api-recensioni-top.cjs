@@ -1,27 +1,25 @@
 /* =========================================================
-   File: app/server/routes/api-recensioni-top.cjs
-   Top recensioni globali — Versione definitiva PATCH ID
-   Versione 2026.200 — require assoluti
+   FILE: app/server/routes/api-recensioni-top.cjs
+   MODALITÀ: Java‑mode (funzioni, no Express)
+   DESCRIZIONE: Top recensioni globali — Versione definitiva
+   ORIGINALE: ex GET /recensioni/top
 ========================================================= */
 
-const express = require("express");
 const path = require("path");
-
 const R = (p) => require(path.join(process.cwd(), "app/server", p));
 
-const router = express.Router();
 const db = R("db/database.cjs");
 
 /* =========================================================
-   GET /recensioni/top
-   Restituisce le migliori recensioni globali
+   FUNZIONE: recensioniTop
+   (ex GET /recensioni/top)
 ========================================================= */
-router.get("/recensioni/top", (req, res) => {
+async function recensioniTop(req) {
   try {
     const stmt = db.prepare(`
       SELECT 
         f.id,
-        f.prodotto_id,          -- PATCH: aggiunto ID prodotto
+        f.prodotto_id,
         f.rating,
         f.commento,
         f.data,
@@ -36,12 +34,17 @@ router.get("/recensioni/top", (req, res) => {
 
     const top = stmt.all();
 
-    return res.json({ success: true, top });
+    return { success: true, top };
 
   } catch (err) {
-    console.error("❌ Errore /recensioni/top:", err);
-    return res.json({ success: false, error: "Errore server" });
+    console.error("❌ Errore recensioniTop:", err);
+    return { success: false, error: "Errore server" };
   }
-});
+}
 
-module.exports = router;
+/* =========================================================
+   EXPORT — stile Java
+========================================================= */
+module.exports = {
+  recensioniTop
+};
