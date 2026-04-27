@@ -1,6 +1,6 @@
 /* =========================================================
-   ORDINI UTENTE — Versione SQL Sincronizzata 2027.990
-   PATCH: Token + Gestione 401/403 + Coerenza Sistema
+   ORDINI UTENTE — Versione SQL Sincronizzata 2027.900
+   PATCH: Endpoint Java‑mode + Token + Gestione 401/403
 ========================================================= */
 
 document.addEventListener("critical-ready", async () => {
@@ -18,14 +18,13 @@ document.addEventListener("critical-ready", async () => {
   }
 
   /* =========================================================
-     2) Recupera ordini utente
+     2) Recupera ordini utente (PATCH endpoint)
   ========================================================== */
   try {
-    const res = await fetch("/api/ordini/utente", {
+    const res = await fetch("/api/ordini/getOrdiniUtente", {
       headers: { Authorization: "Bearer " + token }
     });
 
-    // Token scaduto → logout
     if (res.status === 401 || res.status === 403) {
       localStorage.removeItem("token");
       window.location.href = "/login";
@@ -117,7 +116,7 @@ document.addEventListener("critical-ready", async () => {
       if (!confirm("Vuoi annullare l'ordine?")) return;
 
       try {
-        const res = await fetch(`/api/ordini/annulla/${id}`, {
+        const res = await fetch(`/api/ordini/annullaOrdine/${id}`, {
           method: "POST",
           headers: { Authorization: "Bearer " + token }
         });
@@ -138,7 +137,7 @@ document.addEventListener("critical-ready", async () => {
     // COMPLETA PAGAMENTO (PayPal)
     if (e.target.classList.contains("btn-paga")) {
       try {
-        const res = await fetch(`/api/paypal/ricrea/${id}`, {
+        const res = await fetch(`/api/paypal/paypalRicrea/${id}`, {
           method: "POST",
           headers: { Authorization: "Bearer " + token }
         });
