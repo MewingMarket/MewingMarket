@@ -1,6 +1,6 @@
 /* =========================================================
    ADMIN PRODOTTI — VERSIONE SQL DEFINITIVA + YOUTUBE FIX
-   PATCH 2027.700 — Token Fix + Coerenza Admin
+   PATCH 2027.900 — Token Fix + Coerenza Admin + fetch nativo
 ========================================================= */
 
 /* =========================================================
@@ -14,11 +14,7 @@ async function adminGet(path, options = {}) {
     Authorization: token ? `Bearer ${token}` : ""
   };
 
-  const res = await window.fetchUniversale(
-    path,
-    { ...options, headers },
-    { retries: 3, backoffMs: 400 }
-  );
+  const res = await fetch(path, { ...options, headers });
 
   if (res.status === 401 || res.status === 403) {
     localStorage.removeItem("token");
@@ -57,7 +53,7 @@ document.addEventListener("critical-ready", () => {
   ========================================================== */
   async function caricaListaProdotti() {
     try {
-      const res = await adminGet("/api/prodotti", { method: "GET" });
+      const res = await adminGet("/api/prodotti/getProdottiAdmin", { method: "GET" });
       if (!res) return;
 
       const data = await res.json();
@@ -109,7 +105,7 @@ document.addEventListener("critical-ready", () => {
   ========================================================== */
   async function caricaProdotto(id) {
     try {
-      const res = await adminGet(`/api/prodotti/${id}`);
+      const res = await adminGet(`/api/prodotti/getProdottoAdminById/${id}`);
       if (!res) return;
 
       const data = await res.json();
@@ -138,7 +134,6 @@ document.addEventListener("critical-ready", () => {
       }
 
       fStatus.textContent = "Dati caricati.";
-
       window.scrollTo({ top: 0, behavior: "smooth" });
 
     } catch (err) {
@@ -164,7 +159,7 @@ document.addEventListener("critical-ready", () => {
         categoria: fCategoria ? fCategoria.value.trim() : ""
       };
 
-      const res = await adminGet("/api/prodotti", {
+      const res = await adminGet("/api/prodotti/salvaProdottoAdmin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -182,6 +177,29 @@ document.addEventListener("critical-ready", () => {
       fStatus.textContent = "Errore durante il salvataggio.";
     }
   };
+
+  /* =========================================================
+     4) ELIMINA PRODOTTO
+  ========================================================== */
+  async function eliminaProdotto(id) {
+    if (!confirm("Vuoi eliminare questo prodotto?")) return;
+
+    try {
+      const res = await adminGet(`/api/prodotti/eliminaProdottoAdmin/${id}`, {
+        method: "DELETE"
+      });
+
+      if (!res) return;
+
+      const data = await res.json();
+      if (data.success) {
+        caricaListaProdotti();
+      }
+
+    } catch (err) {
+      alert("Errore eliminazione prodotto.");
+    }
+  }
 
   /* =========================================================
      RESET FORM
