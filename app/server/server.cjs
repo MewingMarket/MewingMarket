@@ -1,7 +1,7 @@
 /* FILE: app/server/server.cjs */
 /**
  * =========================================================
- * Entry point del server — versione DEFINITIVA (2027)
+ * Entry point del server — versione DEFINITIVA (2027.950)
  * =========================================================
  */
 
@@ -32,26 +32,25 @@ app.disable("x-powered-by");
 
 /**
  * =========================================================
- * JS ROOT-FINDER (Fix 404)
+ * JS STATIC FIX — VERSIONE COMPATIBILE RENDER
  * =========================================================
  */
-app.use((req, res, next) => {
-  if (req.path.endsWith(".js") || req.url.includes(".js?")) {
-    const cleanName = path.basename(req.path.split('?')[0]);
-    const pathsToTry = [
-      path.join(process.cwd(), "app/public", cleanName),
-      path.join(process.cwd(), "app/public/js", cleanName),
-      path.join(process.cwd(), "app/public", req.path.split('?')[0])
-    ];
+const PUBLIC_JS = path.join(__dirname, "../public");
 
-    for (let p of pathsToTry) {
-      if (fs.existsSync(p)) {
-        res.setHeader("Content-Type", "application/javascript; charset=utf-8");
-        res.setHeader("X-Content-Type-Options", "nosniff");
-        return res.sendFile(p);
-      }
-    }
+app.use((req, res, next) => {
+  if (!req.path.endsWith(".js") && !req.url.includes(".js?")) {
+    return next();
   }
+
+  const clean = req.path.split("?")[0]; // rimuove ?v=20260412
+  const filePath = path.join(PUBLIC_JS, clean);
+
+  if (fs.existsSync(filePath)) {
+    res.setHeader("Content-Type", "application/javascript; charset=utf-8");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    return res.sendFile(filePath);
+  }
+
   next();
 });
 
@@ -68,7 +67,7 @@ let BOOTSTRAP_OK = false;
 
 /**
  * =========================================================
- * HEALTH BASE (rimane, NON è api-health)
+ * HEALTH BASE
  * =========================================================
  */
 app.get("/health", (req, res) => {
@@ -226,7 +225,7 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
   /**
    * =========================================================
-   * REWRITE SCRIPTS (rimane)
+   * REWRITE SCRIPTS
    * =========================================================
    */
   try {
