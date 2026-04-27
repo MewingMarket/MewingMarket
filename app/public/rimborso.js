@@ -28,8 +28,8 @@ document.addEventListener("critical-ready", async () => {
   // 1) CARICA EMAIL UTENTE + ORDINI COMPLETATI
   // =========================================================
   try {
-    // ORDINI
-    const resOrdRaw = await fetch("/api/ordini/utente", {
+    // ⭐ PATCH — nuovo endpoint Java‑mode
+    const resOrdRaw = await fetch("/api/ordini/getOrdiniUtente", {
       headers: { Authorization: "Bearer " + token }
     });
     const resOrd = await handleAuth(resOrdRaw);
@@ -41,16 +41,16 @@ document.addEventListener("critical-ready", async () => {
       return;
     }
 
-    // EMAIL UTENTE
-    const resUserRaw = await fetch("/api/utente/info", {
+    // ⭐ PATCH — nuovo endpoint Java‑mode
+    const resUserRaw = await fetch("/api/utenti/me", {
       headers: { Authorization: "Bearer " + token }
     });
     const resUser = await handleAuth(resUserRaw);
     if (!resUser) return;
 
     const userData = await resUser.json();
-    if (userData.success && userData.email) {
-      emailInput.value = userData.email;
+    if (userData.success && userData.utente?.email) {
+      emailInput.value = userData.utente.email;
       emailInput.disabled = true;
     }
 
@@ -102,7 +102,8 @@ document.addEventListener("critical-ready", async () => {
     }
 
     try {
-      const resRaw = await fetch("/api/rimborso/crea", {
+      // ⭐ PATCH — nuovo endpoint Java‑mode
+      const resRaw = await fetch("/api/rimborso/creaRichiesta", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
