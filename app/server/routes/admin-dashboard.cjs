@@ -1,7 +1,7 @@
 /* =========================================================
-   FUNZIONE: adminDashboard
-   FILE ORIGINALE: app/server/routes/admin-dashboard.cjs
-   DESCRIZIONE: Dashboard Admin Unificata — Vendite + Ordini
+   FILE: app/server/routes/admin-dashboard.cjs
+   MODALITÀ: Java‑mode (funzioni, no Express)
+   DESCRIZIONE: Dashboard Admin — Vendite + Ordini + KPI
 ========================================================= */
 
 const path = require("path");
@@ -10,21 +10,22 @@ const R = (p) => require(path.join(process.cwd(), "app/server", p));
 const db = R("db/database.cjs");
 const categorieRimborso = R("modules/rimborso-categorie.cjs");
 
-module.exports = async function adminDashboard(req) {
+/* =========================================================
+   FUNZIONE: adminDashboard
+   (ex GET /admin/dashboard)
+========================================================= */
+async function adminDashboard(req) {
   try {
-    // Controllo ruolo admin
     if (req.user?.ruolo !== "admin") {
       return { success: false, error: "Accesso negato" };
     }
 
-    // Se ordini vuoti → pulizia vendite
     const countOrdini = db.prepare(`SELECT COUNT(*) AS n FROM ordini`).get().n;
     if (countOrdini === 0) {
       db.prepare(`DELETE FROM vendite`).run();
       db.prepare(`DELETE FROM sqlite_sequence WHERE name='vendite'`).run();
     }
 
-    // KPI vendite
     const venditeKPI = db.prepare(`
       SELECT 
         COUNT(*) AS venditeTotali,
@@ -34,9 +35,7 @@ module.exports = async function adminDashboard(req) {
     `).get();
 
     const vendite30 = db.prepare(`
-      SELECT 
-        DATE(created_at) AS giorno,
-        SUM(prezzo_cent) AS revenue
+      SELECT DATE(created_at) AS giorno, SUM(prezzo_cent) AS revenue
       FROM vendite
       WHERE DATE(created_at) >= DATE('now', '-30 days')
       GROUP BY DATE(created_at)
@@ -44,10 +43,7 @@ module.exports = async function adminDashboard(req) {
     `).all();
 
     const topProdotti = db.prepare(`
-      SELECT 
-        prodotto_id,
-        COUNT(*) AS vendite,
-        SUM(prezzo_cent) AS revenue
+      SELECT prodotto_id, COUNT(*) AS vendite, SUM(prezzo_cent) AS revenue
       FROM vendite
       GROUP BY prodotto_id
       ORDER BY vendite DESC
@@ -55,39 +51,24 @@ module.exports = async function adminDashboard(req) {
     `).all();
 
     const utm = db.prepare(`
-      SELECT 
-        utm_source AS source,
-        utm_medium AS medium,
-        utm_campaign AS campaign,
-        referrer,
-        COUNT(*) AS vendite
+      SELECT utm_source AS source, utm_medium AS medium, utm_campaign AS campaign,
+             referrer, COUNT(*) AS vendite
       FROM vendite
       WHERE utm_source IS NOT NULL OR referrer IS NOT NULL
       GROUP BY utm_source, utm_medium, utm_campaign, referrer
       ORDER BY vendite DESC
     `).all();
 
-    // ORDINI
     const ordini = db.prepare(`
       SELECT 
-        o.id,
-        o.utente_id,
-        o.prodotti_json,
-        o.totale_cent,
-        o.stato,
-        o.metodo_pagamento,
-        o.data_ordine,
-        u.email AS email_cliente,
-        u.codice_fiscale AS codice_fiscale,
-        r.motivo AS rimborso_motivo,
-        r.stato AS rimborso_stato
+        o.id, o.utente_id, o.prodotti_json, o.totale_cent, o.stato,
+        o.metodo_pagamento, o.data_ordine,
+        u.email AS email_cliente, u.codice_fiscale,
+        r.motivo AS rimborso_motivo, r.stato AS rimborso_stato
       FROM ordini o
       LEFT JOIN utenti u ON u.id = o.utente_id
       LEFT JOIN rimborsi r ON r.id = (
-        SELECT id FROM rimborsi
-        WHERE ordine_id = o.id
-        ORDER BY id DESC
-        LIMIT 1
+        SELECT id FROM rimborsi WHERE ordine_id = o.id ORDER BY id DESC LIMIT 1
       )
       ORDER BY o.data_ordine DESC
     `).all();
@@ -98,32 +79,16 @@ module.exports = async function adminDashboard(req) {
       annullati: ordini.filter(o => o.stato === "annullato").length
     };
 
-    // Origine sintetica
     const venditeByUID = db.prepare(`
-      SELECT 
-        uid,
-        origine,
-        utm_source,
-        utm_medium,
-        utm_campaign,
-        referrer
+      SELECT uid, origine, utm_source, utm_medium, utm_campaign, referrer
       FROM vendite
     `).all();
 
     const origineMap = {};
-    venditeByUID.forEach(v => {
-      origineMap[v.uid] = {
-        origine: v.origine,
-        utm_source: v.utm_source,
-        utm_medium: v.utm_medium,
-        utm_campaign: v.utm_campaign,
-        referrer: v.referrer
-      };
-    });
+    venditeByUID.forEach(v => origineMap[v.uid] = v);
 
     function origineSintetica(v) {
       if (!v) return "Direct";
-
       const src = (v.utm_source || "").toLowerCase();
       const med = (v.utm_medium || "").toLowerCase();
       const ref = (v.referrer || "").toLowerCase();
@@ -144,28 +109,20 @@ module.exports = async function adminDashboard(req) {
       }
 
       if (med.includes("ads") || med.includes("cpc") || med.includes("paid")) return "Paid Ads";
-
       if (ref && !ref.includes("mewingmarket")) return "Referral";
-
       if (src.includes("site") || org.includes("sito") || med.includes("product_page")) return "Sito";
 
-      if (v.origine) return v.origine;
-
-      return "Direct";
+      return v.origine || "Direct";
     }
 
-    // Categoria rimborso
     function detectCategoriaRimborso(motivo) {
       if (!motivo) return null;
-
       const motivoLower = motivo.toLowerCase();
-
       const match =
         categorieRimborso.find(c =>
           c.keywords.some(k => motivoLower.includes(k.toLowerCase()))
         ) ||
         categorieRimborso.find(c => c.categoria === "altro");
-
       return match.categoria;
     }
 
@@ -176,29 +133,21 @@ module.exports = async function adminDashboard(req) {
 
     const ordiniParsed = ordini.map(o => {
       const prodotti = safeParse(o.prodotti_json);
-
-      let uid = null;
-      if (prodotti.length > 0) {
-        uid = prodotti[0].uid || null;
-      }
-
+      const uid = prodotti[0]?.uid || null;
       const origine = origineSintetica(origineMap[uid]);
 
       return {
         ...o,
         prodotti,
-        email: o.email_cliente || null,
-        codice_fiscale: o.codice_fiscale || null,
         rimborso: {
-          motivo: o.rimborso_motivo || null,
-          stato: o.rimborso_stato || null,
+          motivo: o.rimborso_motivo,
+          stato: o.rimborso_stato,
           categoria: detectCategoriaRimborso(o.rimborso_motivo)
         },
         origine_sintetica: origine
       };
     });
 
-    // RISPOSTA
     return {
       success: true,
       vendite: {
@@ -221,4 +170,11 @@ module.exports = async function adminDashboard(req) {
     console.error("❌ Errore adminDashboard:", err);
     return { success: false, error: "Errore server" };
   }
+}
+
+/* =========================================================
+   EXPORT — stile Java
+========================================================= */
+module.exports = {
+  adminDashboard
 };
