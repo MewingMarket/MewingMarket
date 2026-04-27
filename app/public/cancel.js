@@ -1,6 +1,6 @@
 /* =========================================================
    CANCEL ORDER — Frontend
-   Versione 2027.400 — FETCH STANDARD + CRITICAL READY
+   Versione 2027.900 — API UNIVERSALE + CRITICAL READY
 ========================================================= */
 
 document.addEventListener("critical-ready", async () => {
@@ -15,8 +15,8 @@ document.addEventListener("critical-ready", async () => {
   }
 
   try {
-    // ⭐ PATCH — Riportato a fetch standard per massima stabilità
-    const res = await fetch(`/paypal/cancel-order?orderId=${orderId}`, {
+    // ⭐ PATCH 2027 — Nuovo endpoint Java‑mode
+    const res = await fetch(`/api/paypal/paypalCancelOrder?orderId=${orderId}`, {
       method: "GET"
     });
 
