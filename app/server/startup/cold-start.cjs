@@ -1,12 +1,12 @@
 /**
  * =========================================================
- * COLD-START — Versione 2026.100
- * Render-friendly warmup:
+ * COLD-START — Versione 2027.1
+ * Warmup ottimizzato per Render:
  * - Precarica DB
- * - Precarica router
- * - Precarica moduli lenti
- * - Evita cold start Render
- * - Nessun blocco del server
+ * - Precarica router universale
+ * - Precarica index.cjs (tutte le funzioni)
+ * - Precarica moduli critici (YouTube, logging)
+ * - Evita cold start senza caricare router Express
  * =========================================================
  */
 
@@ -19,11 +19,11 @@ module.exports = async function coldStart(app) {
 
   try {
     /* =========================================================
-       1) WARMUP DB (query velocissima)
+       1) WARMUP DB
     ========================================================== */
     console.log("🗄️  Warmup DB…");
-    const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
     try {
+      const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
       db.prepare("SELECT 1").get();
       console.log("   ✅ DB pronto");
     } catch (err) {
@@ -31,30 +31,27 @@ module.exports = async function coldStart(app) {
     }
 
     /* =========================================================
-       2) WARMUP ROUTER (precarica tutte le route)
+       2) WARMUP ROUTER UNIVERSALE
+       (carica index.cjs + router.cjs)
     ========================================================== */
-    console.log("🛣️  Warmup router…");
+    console.log("🛣️  Warmup router universale…");
     try {
+      require(path.join(process.cwd(), "app/server/index.cjs"));
       require(path.join(process.cwd(), "app/server/router.cjs"));
-      console.log("   ✅ Router precaricato");
+      console.log("   ✅ Router universale precaricato");
     } catch (err) {
       console.error("   ❌ Errore warmup router:", err.message);
     }
 
     /* =========================================================
-       3) WARMUP MODULI LENTI (richiesti spesso)
+       3) WARMUP MODULI LENTI REALI
+       (solo moduli che fanno I/O o API esterne)
     ========================================================== */
-    console.log("📦 Warmup moduli…");
+    console.log("📦 Warmup moduli critici…");
 
     const modulesToWarm = [
       "services/youtube.cjs",
-      "routes/api-prodotti-new.cjs",
-      "routes/product-page.cjs",
-      "routes/api-feedback.cjs",
-      "routes/ordini-utente.cjs",
-      "routes/api-vendite-download.cjs",
-      "routes/admin-dashboard.cjs",
-      "routes/admin-feedback.cjs"
+      "services/logging.cjs"
     ];
 
     for (const m of modulesToWarm) {
