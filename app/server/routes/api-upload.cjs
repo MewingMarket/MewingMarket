@@ -1,36 +1,30 @@
 /* =========================================================
-   File: app/server/routes/api-upload.cjs
-   Upload File Prodotto — Versione 2026.200 (FULL PATCHED)
-   - require assoluti
-   - percorso upload assoluto (PATCH OPZIONE A)
+   FILE: app/server/routes/api-upload.cjs
+   MODALITÀ: Java‑mode (funzioni, no Express)
+   DESCRIZIONE: Upload file prodotto (pdf, zip, mp4, immagini)
+   ORIGINALE: ex POST /upload/file
 ========================================================= */
 
-const express = require("express");
 const path = require("path");
 const fs = require("fs");
 
-const router = express.Router();
-
-// Helper require assoluto
 const R = (p) => require(path.join(process.cwd(), "app/server", p));
 
-// Middleware per tipo upload
+// Middleware originale (ora funzione da chiamare manualmente)
 const setUploadType = R("middleware/upload-type.cjs");
 
-// =========================================================
 // PATCH 2026 — CARTELLA UPLOAD DEFINITIVA
-// Upload e Download ora usano la STESSA cartella
-// =========================================================
 const uploadFiles = "/var/data/uploads/files";
 
-/**
- * =========================================================
- * POST /upload/file
- * Upload file prodotto (pdf, zip, mp4, immagini)
- * =========================================================
- */
-router.post("/upload/file", setUploadType("file"), (req, res) => {
+/* =========================================================
+   FUNZIONE: uploadFileProdotto
+   (ex POST /upload/file)
+========================================================= */
+async function uploadFileProdotto(req, res) {
   try {
+    // Applica il middleware originale (Java‑mode)
+    await setUploadType("file")(req, res, () => {});
+
     // Nome file unico
     const filename = Date.now() + "-" + Math.round(Math.random() * 1e9);
 
@@ -46,7 +40,7 @@ router.post("/upload/file", setUploadType("file"), (req, res) => {
 
     const finalName = filename + ext;
 
-    // Percorso finale assoluto (PATCH)
+    // Percorso finale assoluto
     const filePath = path.join(uploadFiles, finalName);
 
     console.log("📁 Upload file prodotto →", finalName);
@@ -64,7 +58,7 @@ router.post("/upload/file", setUploadType("file"), (req, res) => {
     req.pipe(writeStream);
 
     writeStream.on("finish", () => {
-      return res.json({
+      res.json({
         success: true,
         filename: finalName
       });
@@ -72,13 +66,18 @@ router.post("/upload/file", setUploadType("file"), (req, res) => {
 
     writeStream.on("error", (err) => {
       console.error("❌ Errore stream upload:", err);
-      return res.json({ success: false, error: "Errore scrittura file" });
+      res.json({ success: false, error: "Errore scrittura file" });
     });
 
   } catch (err) {
-    console.error("❌ Errore upload:", err);
-    return res.json({ success: false, error: "Errore upload" });
+    console.error("❌ Errore uploadFileProdotto:", err);
+    res.json({ success: false, error: "Errore upload" });
   }
-});
+}
 
-module.exports = router;
+/* =========================================================
+   EXPORT — stile Java
+========================================================= */
+module.exports = {
+  uploadFileProdotto
+};
