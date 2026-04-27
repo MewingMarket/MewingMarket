@@ -1,10 +1,9 @@
 /* =========================================================
-   Router principale — Versione PERFETTA 2027.1
-   - API PUBBLICHE prima
-   - auth-user SOLO per le API private
-   - Admin protetto
-   - Prodotti pubblici
-   - API admin montate correttamente
+   ROUTER PRINCIPALE — Versione PERFETTA 2027.2
+   - API pubbliche
+   - API private con auth-user
+   - Admin con auth-admin
+   - Namespace /api corretto
 ========================================================= */
 
 const express = require("express");
@@ -14,57 +13,51 @@ const router = express.Router();
 const R = (p) => require(path.join(process.cwd(), "app/server", p));
 
 /* =========================================================
-   1) DIAGNOSTICA (sempre in alto)
-========================================================= */
-try {
-  const diagnostica = R("diagnostica.cjs");
-  if (typeof diagnostica?.hookRouter === "function") diagnostica.hookRouter(router);
-} catch (err) {}
-
-/* =========================================================
-   2) API PUBBLICHE (NON devono passare da auth-user)
+   1) API PUBBLICHE
 ========================================================= */
 
-// Prodotti pubblici (catalogo + product-page)
-router.use(R("routes/api-prodotti-new.cjs"));     // /api/products, /api/prodotti
-router.use(R("routes/product-page.cjs"));         // /api/product-page/:id
+// Prodotti pubblici
+router.use("/api", R("routes/api-prodotti-new.cjs"));
+router.use("/api", R("routes/product-page.cjs"));
 
-// Health & System Status (pubbliche)
-router.use(R("routes/api-health.cjs"));           // /api/health
-router.use(R("routes/system-status.cjs"));        // /api/system-status
+// Health
+router.use("/api", R("routes/api-health.cjs"));
+router.use("/api", R("routes/system-status.cjs"));
 
-// Assistenza pubblica (invio messaggi)
-router.use(R("routes/api-assistenza.cjs"));       // /api/assistenza/invia
+// Assistenza pubblica
+router.use("/api", R("routes/api-assistenza.cjs"));
 
 /* =========================================================
-   3) MIDDLEWARE IDENTITÀ (SOLO da qui in poi)
+   2) ADMIN (protetto da auth-admin)
 ========================================================= */
-router.use(R("middleware/auth-user.cjs"));
+router.use("/api/admin", R("routes/api-admin.cjs"));
+router.use("/api/admin", R("routes/admin-dashboard.cjs"));
+router.use("/api/admin", R("routes/admin-feedback.cjs"));
+router.use("/api/admin", R("routes/admin-utenti.cjs"));
 
 /* =========================================================
-   4) API PRIVATE (richiedono token)
+   3) API PRIVATE (auth-user)
 ========================================================= */
 
-// ⭐ API ADMIN (cambia email, password, /me)
-router.use("/admin", R("routes/api-admin.cjs"));
+const authUser = R("middleware/auth-user.cjs");
 
-// Dashboard Admin
-router.use(R("routes/admin-dashboard.cjs"));
+// Utente
+router.use("/api/utente", authUser, R("routes/api-utente.cjs"));
 
-// Admin feedback
-router.use(R("routes/admin-feedback.cjs"));
+// Ordini
+router.use("/api/ordini", authUser, R("routes/ordini-utente.cjs"));
 
-// Admin utenti
-router.use(R("routes/admin-utenti.cjs"));
+// Download
+router.use("/api/vendite", authUser, R("routes/api-vendite-download.cjs"));
 
-// Ordini utente (privati)
-router.use(R("routes/ordini-utente.cjs"));
+// Recensioni
+router.use("/api/recensioni", authUser, R("routes/api-feedback.cjs"));
 
-// Download vendite (privato)
-router.use(R("routes/api-vendite-download.cjs"));
+// Rimborso
+router.use("/api/rimborso", authUser, R("routes/rimborso.cjs"));
 
 /* =========================================================
-   5) FAILSAFE
+   4) FAILSAFE
 ========================================================= */
 router.use((err, req, res, next) => {
   console.error("❌ [ROUTER ERROR]:", req.path, err.message);
