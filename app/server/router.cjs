@@ -1,5 +1,5 @@
 /* =========================================================
-   ROUTER PRINCIPALE — Versione PERFETTA 2027.7
+   ROUTER PRINCIPALE — Versione PERFETTA 2027.8
    SENZA /api — server.cjs lo aggiunge già
 ========================================================= */
 
@@ -38,23 +38,20 @@ router.use("/admin", R("routes/admin-utenti.cjs"));
 
 const authUser = R("middleware/auth-user.cjs");
 
-// Utente
-router.use("/utente", authUser, R("routes/api-utente.cjs"));
+// Utente (FILE REALE: api-utenti.cjs)
+router.use("/utente", authUser, R("routes/api-utenti.cjs"));
 
-// Ordini
+/* =========================================================
+   4) ORDINI, DOWNLOAD, RECENSIONI, RIMBORSO
+========================================================= */
+
 router.use("/ordini", authUser, R("routes/ordini-utente.cjs"));
-
-// Download
 router.use("/vendite", authUser, R("routes/api-vendite-download.cjs"));
-
-// Recensioni
 router.use("/recensioni", authUser, R("routes/api-feedback.cjs"));
-
-// Rimborso
 router.use("/rimborso", authUser, R("routes/rimborso.cjs"));
 
 /* =========================================================
-   4) FAILSAFE
+   5) FAILSAFE
 ========================================================= */
 router.use((err, req, res, next) => {
   console.error("❌ [ROUTER ERROR]:", req.path, err.message);
