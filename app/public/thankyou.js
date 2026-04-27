@@ -1,8 +1,8 @@
 /* =========================================================
-   THANK YOU PAGE — Versione 2027.400
+   THANK YOU PAGE — Versione 2027.900
    - critical-ready
-   - FETCH STANDARD (Patch Stabilità)
-   - Nessuna regressione
+   - FETCH STANDARD
+   - Endpoint Java‑mode
 ========================================================= */
 
 document.addEventListener("critical-ready", async () => {
@@ -21,8 +21,8 @@ document.addEventListener("critical-ready", async () => {
      1) VERIFICA ORDINE (complete-order)
   ========================================================== */
   try {
-    // ⭐ PATCH — Riportato a fetch standard per massima stabilità
-    const res = await fetch(`/paypal/complete-order?orderId=${orderId}`, { 
+    // ⭐ PATCH — nuovo endpoint Java‑mode
+    const res = await fetch(`/api/paypal/paypalCompleteOrder?orderId=${orderId}`, { 
       method: "GET" 
     });
 
