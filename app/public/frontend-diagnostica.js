@@ -1,11 +1,11 @@
 /* =========================================================
-   FRONTEND DIAGNOSTICA — Versione 2027.300 (UNIFICATA)
+   FRONTEND DIAGNOSTICA — Versione 2027.900 (UNIFICATA)
    - Non blocca nulla
    - Non modifica nulla
    - Logga tutto in modo elegante
-   - Compatibile con apiFetch + fetchCritico
+   - Compatibile con fetch nativo
    - Scanner sintassi JS
-   - Test API reali
+   - Test API reali (PATCHATI)
 ========================================================= */
 
 console.log("🟦 Diagnostica frontend attiva");
@@ -62,7 +62,7 @@ document.addEventListener("header-reset", () => {
 })();
 
 /* ---------------------------------------------------------
-   3) LOG apiFetch
+   3) LOG apiFetch (se esiste)
 --------------------------------------------------------- */
 if (typeof window.apiFetch === "function") {
   const originalApiFetch = window.apiFetch;
@@ -76,7 +76,7 @@ if (typeof window.apiFetch === "function") {
 }
 
 /* ---------------------------------------------------------
-   4) LOG fetchCritico
+   4) LOG fetchCritico (se esiste)
 --------------------------------------------------------- */
 if (typeof window.fetchCritico === "function") {
   const originalFetchCritico = window.fetchCritico;
@@ -109,7 +109,7 @@ if (typeof window.fetchCritico === "function") {
 })();
 
 /* =========================================================
-   6) SCANNER SINTASSI JS (TUO CODICE ORIGINALE)
+   6) SCANNER SINTASSI JS
 ========================================================= */
 (function () {
   console.log("🟦 [FRONTEND DIAGNOSTICA] Scanner JS avviato");
@@ -131,7 +131,7 @@ if (typeof window.fetchCritico === "function") {
 })();
 
 /* =========================================================
-   7) TEST API REALI (PATCHATI)
+   7) TEST API REALI (PATCHATI 2027)
 ========================================================= */
 
 function testAPI(label, path) {
@@ -157,10 +157,10 @@ function testAPI(label, path) {
 }
 
 // Prodotti pubblici
-testAPI("/api/products", "/products");
+testAPI("Prodotti pubblici", "/api/prodotti/getProdotti");
 
-// Ordini utente (richiede token)
-testAPI("/api/ordini/utente", "/ordini/utente");
+// Ordini utente
+testAPI("Ordini utente", "/api/ordini/getOrdiniUtente");
 
-// Admin utenti (richiede admin)
-testAPI("/api/admin/utenti/lista", "/admin/utenti/lista");
+// Admin utenti
+testAPI("Admin utenti", "/api/admin/getUtenti");
