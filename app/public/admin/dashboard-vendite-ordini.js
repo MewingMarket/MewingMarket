@@ -1,5 +1,5 @@
 // =========================================================
-// Dashboard Admin — Versione 2026.FINAL (No api.js)
+// Dashboard Admin — Versione 2027.900 (Java‑mode + Token Fix)
 // =========================================================
 
 document.addEventListener("critical-ready", async () => {
@@ -13,8 +13,8 @@ document.addEventListener("critical-ready", async () => {
   }
 
   try {
-    // Chiamata diretta al server
-    const response = await fetch("/api/admin/dashboard", {
+    // ⭐ PATCH — nuovo endpoint Java‑mode + protezione token
+    const response = await fetch("/api/admin/dashboard/getDashboard", {
       method: "GET",
       headers: {
         "Authorization": "Bearer " + token,
@@ -23,6 +23,13 @@ document.addEventListener("critical-ready", async () => {
     });
 
     console.log("📡 Status:", response.status);
+
+    if (response.status === 401 || response.status === 403) {
+      localStorage.removeItem("token");
+      location.href = "/admin/login";
+      return;
+    }
+
     const data = await response.json();
 
     if (!data.success) {
@@ -86,7 +93,7 @@ function renderOrdini(lista) {
       <td>${ord.rimborso?.stato || '—'}</td>
       <td>
         ${ord.rimborso?.stato === 'in_attesa' ? 
-          `<button onclick="azioneRimborso(${ord.id}, 'procedi')">OK</button>` : '—'}
+          `<button onclick="azioneRimborso(${ord.id}, 'procediRichiesta')">OK</button>` : '—'}
       </td>
     `;
     body.appendChild(tr);
@@ -95,13 +102,23 @@ function renderOrdini(lista) {
 
 // Global per i bottoni
 async function azioneRimborso(id, tipo) {
-    if(!confirm("Sei sicuro?")) return;
-    const token = localStorage.getItem("token");
-    const res = await fetch(`/api/rimborso/${tipo}/${id}`, { 
-        method: 'POST', 
-        headers: { "Authorization": "Bearer " + token } 
-    });
-    const d = await res.json();
-    if(d.success) location.reload();
-    else alert(d.error);
+  if(!confirm("Sei sicuro?")) return;
+
+  const token = localStorage.getItem("token");
+
+  // ⭐ PATCH — endpoint Java‑mode
+  const res = await fetch(`/api/rimborso/${tipo}/${id}`, { 
+    method: 'POST', 
+    headers: { "Authorization": "Bearer " + token } 
+  });
+
+  if (res.status === 401 || res.status === 403) {
+    localStorage.removeItem("token");
+    location.href = "/admin/login";
+    return;
+  }
+
+  const d = await res.json();
+  if(d.success) location.reload();
+  else alert(d.error);
 }
