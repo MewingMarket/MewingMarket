@@ -1,6 +1,6 @@
 /* =========================================================
-   DOWNLOAD PREMIUM — Versione SQL SYNC 2027.990
-   PATCH: Token + Gestione 401/403 + Coerenza Admin
+   DOWNLOAD PREMIUM — Versione SQL SYNC 2027.990 (PATCH 2027.900)
+   PATCH: Endpoint Java‑mode + Token + Gestione 401/403
 ========================================================= */
 
 document.addEventListener("critical-ready", async () => {
@@ -18,10 +18,10 @@ document.addEventListener("critical-ready", async () => {
   }
 
   /* =========================================================
-     2) Recupera ordini utente
+     2) Recupera ordini utente (PATCH endpoint)
   ========================================================== */
   try {
-    const res = await fetch("/api/ordini/utente", {
+    const res = await fetch("/api/ordini/getOrdiniUtente", {
       headers: { Authorization: "Bearer " + token }
     });
 
@@ -114,7 +114,7 @@ document.addEventListener("critical-ready", async () => {
   }
 
   /* =========================================================
-     7) Download Sicuro (Blob)
+     7) Download Sicuro (Blob) — PATCH endpoint
   ========================================================== */
   document.addEventListener("click", async (e) => {
     if (!e.target.classList.contains("btn-download")) return;
@@ -127,7 +127,8 @@ document.addEventListener("critical-ready", async () => {
       btn.textContent = "Preparazione...";
       btn.disabled = true;
 
-      const res = await fetch(`/api/vendite/download/${id}`, {
+      // ⭐ PATCH 2027 — nuovo endpoint Java‑mode
+      const res = await fetch(`/api/vendite/downloadFile/${id}`, {
         headers: { Authorization: "Bearer " + token }
       });
 
