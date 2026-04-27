@@ -1,8 +1,8 @@
 /* =========================================================
-   PRODOTTO.JS — Versione SQL SYNC (PATCH 2027.800)
+   PRODOTTO.JS — Versione SQL SYNC (PATCH 2027.900)
    Mapping: youtube_video_id + immagine_url
    Focus: Solo Acquista Ora -> Checkout
-   ========================================================= */
+========================================================= */
 
 async function caricaDettaglioProdotto() {
   const params = new URLSearchParams(window.location.search);
@@ -10,8 +10,8 @@ async function caricaDettaglioProdotto() {
   if (!id) return;
 
   try {
-    // Gestione Token SQL tramite fetchUniversale
-    const res = await window.fetchUniversale(`/api/products/${id}`);
+    // ⭐ PATCH — fetch nativo + endpoint Java‑mode
+    const res = await fetch(`/api/prodotti/getProdottoById/${id}`);
     const data = await res.json();
     
     // Normalizzazione dati dal Backend
@@ -32,7 +32,10 @@ async function caricaDettaglioProdotto() {
     if (elSub) elSub.textContent = p.descrizione_breve || "";
     if (elDesc) elDesc.innerHTML = p.descrizione_lunga || p.descrizione || "";
     
-    const prezzoEuro = p.prezzo_cent ? (p.prezzo_cent / 100).toFixed(2) : Number(p.prezzo || 0).toFixed(2);
+    const prezzoEuro = p.prezzo_cent
+      ? (p.prezzo_cent / 100).toFixed(2)
+      : Number(p.prezzo || 0).toFixed(2);
+
     if (elPrezzo) elPrezzo.textContent = `€${prezzoEuro}`;
     
     // Immagine con mapping immagine_url
@@ -66,12 +69,10 @@ async function caricaDettaglioProdotto() {
  * Configura il tasto Acquista Ora per aggiungere al carrello e andare al checkout
  */
 function setupAcquistoDiretto(p) {
-  // Selezioniamo il tasto principale definito nell'HTML
   const btnAcquista = document.getElementById("btn-acquista-hero");
 
   if (btnAcquista) {
     btnAcquista.onclick = () => {
-      // Prepariamo l'oggetto per il carrello
       const prodCarrello = {
         id: p.id,
         titolo: p.titolo,
@@ -81,12 +82,10 @@ function setupAcquistoDiretto(p) {
 
       console.log("🛒 Aggiunta al carrello e reindirizzamento...");
       
-      // Funzione globale del carrello
       if (typeof window.aggiungiAlCarrello === "function") {
         window.aggiungiAlCarrello(prodCarrello);
       }
 
-      // Reindirizzamento immediato al checkout
       window.location.href = "checkout.html";
     };
   }
