@@ -1,7 +1,8 @@
 /* =========================================================
-   NEWSLETTER SUBSCRIBE — PATCH 2027.400
+   NEWSLETTER SUBSCRIBE — PATCH 2027.900
    - critical-ready
-   - fetchUniversale (fallback chain)
+   - fetch nativo
+   - API Java‑mode
    - Nessuna regressione
 ========================================================= */
 
@@ -55,16 +56,12 @@ document.addEventListener("critical-ready", () => {
     }
 
     try {
-      // ⭐ PATCH — usa fetchUniversale
-      const res = await window.fetchUniversale(
-        "/newsletter/subscribe",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email })
-        },
-        { retries: 2, backoffMs: 300 }
-      );
+      // ⭐ PATCH 2027 — fetch nativo + endpoint Java‑mode
+      const res = await fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email })
+      });
 
       let data = {};
       try {
