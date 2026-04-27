@@ -1,28 +1,29 @@
-/**
- * =========================================================
- * File: app/server/routes/paypal-complete.cjs
- * Completa ordine PayPal (SQL) + email + vendite + JSON mirror
- * Versione 2026.950 — require assoluti + FIX totale + FIX sicurezza
- * =========================================================
- */
+/* =========================================================
+   FILE: app/server/routes/paypal-complete.cjs
+   MODALITÀ: Java‑mode (funzioni, no Express)
+   DESCRIZIONE:
+   - Completa ordine PayPal
+   - Cattura pagamento
+   - Aggiorna DB
+   - Aggiorna JSON mirror
+   - Salva vendite
+   - Invia email acquisto
+========================================================= */
 
-const express = require("express");
+const path = require("path");
 const fetch = require("node-fetch");
 const crypto = require("crypto");
-const path = require("path");
 
-// PATCH: require assoluto
 const R = (p) => require(path.join(process.cwd(), "app/server", p));
 
 const db = R("db/database.cjs");
 const jsonGen = R("modules/generatore-json.cjs");
 const { inviaEmailAcquisto } = R("modules/email-acquisto.cjs");
 const { trackGA4 } = R("services/ga4.cjs");
-const authUser = R("middleware/auth-user.cjs");
 
-/**
- * Helper sicuro per JSON
- */
+/* =========================================================
+   Helper JSON
+========================================================= */
 function safeParse(str) {
   try {
     return JSON.parse(str);
@@ -31,56 +32,49 @@ function safeParse(str) {
   }
 }
 
-const router = express.Router();
-
-/**
- * =========================================================
- * GET /api/paypal/complete-order?orderId=xxxx
- * Protetto da auth-user
- * =========================================================
- */
-router.get("/paypal/complete-order", authUser, async (req, res) => {
+/* =========================================================
+   FUNZIONE: paypalCompleteOrder
+   (ex GET /api/paypal/complete-order?orderId=xxxx)
+========================================================= */
+async function paypalCompleteOrder(req) {
   try {
     const orderId = req.query.orderId;
     const userId = req.user.id;
 
     if (!orderId || !userId) {
-      return res.json({ success: false, error: "Parametri mancanti" });
+      return { success: false, error: "Parametri mancanti" };
     }
 
     // =========================================================
     // 1) Recupera ordine dal DB
     // =========================================================
-    const stmtFind = db.prepare(`
+    const ordine = db.prepare(`
       SELECT *
       FROM ordini
       WHERE id = ? AND utente_id = ?
       LIMIT 1
-    `);
-
-    const ordine = stmtFind.get(orderId, userId);
+    `).get(orderId, userId);
 
     if (!ordine) {
-      return res.json({ success: false, error: "Ordine non trovato" });
+      return { success: false, error: "Ordine non trovato" };
     }
 
     const paypalId = ordine.paypal_transaction_id;
 
     if (!paypalId) {
-      return res.json({ success: false, error: "Transazione PayPal mancante" });
+      return { success: false, error: "Transazione PayPal mancante" };
     }
 
     // =========================================================
     // 2) Recupera email utente
     // =========================================================
-    const stmtUser = db.prepare(`
+    const utente = db.prepare(`
       SELECT email, codice_fiscale
       FROM utenti
       WHERE id = ?
       LIMIT 1
-    `);
+    `).get(userId);
 
-    const utente = stmtUser.get(userId);
     const emailUtente = utente?.email || "";
     const codiceFiscale = utente?.codice_fiscale || "";
 
@@ -88,14 +82,14 @@ router.get("/paypal/complete-order", authUser, async (req, res) => {
     // 3) Se già completato → ritorna ordine
     // =========================================================
     if (ordine.stato === "completato") {
-      return res.json({
+      return {
         success: true,
         order: {
           ...ordine,
           prodotti: safeParse(ordine.prodotti_json),
           totale: ordine.totale_cent / 100
         }
-      });
+      };
     }
 
     // =========================================================
@@ -138,20 +132,14 @@ router.get("/paypal/complete-order", authUser, async (req, res) => {
     }
 
     if (!captureData || captureData.status !== "COMPLETED") {
-      return res.json({
-        success: false,
-        error: "Pagamento non completato"
-      });
+      return { success: false, error: "Pagamento non completato" };
     }
 
     const paypalCaptureId =
       captureData?.purchase_units?.[0]?.payments?.captures?.[0]?.id || null;
 
     if (!paypalCaptureId) {
-      return res.json({
-        success: false,
-        error: "Capture PayPal non valida"
-      });
+      return { success: false, error: "Capture PayPal non valida" };
     }
 
     // =========================================================
@@ -176,7 +164,6 @@ router.get("/paypal/complete-order", authUser, async (req, res) => {
       WHERE id = ?
     `).run(orderId);
 
-    // Aggiorna JSON mirror
     try {
       await jsonGen.exportOrders();
     } catch (err) {
@@ -248,7 +235,7 @@ router.get("/paypal/complete-order", authUser, async (req, res) => {
     });
 
     // =========================================================
-    // 10) Email acquisto (Brevo o sandbox fallback)
+    // 10) Email acquisto
     // =========================================================
     try {
       await inviaEmailAcquisto({
@@ -260,20 +247,22 @@ router.get("/paypal/complete-order", authUser, async (req, res) => {
     }
 
     // =========================================================
-    // 11) Risposta al frontend
+    // 11) Risposta
     // =========================================================
-    return res.json({
+    return {
       success: true,
       order: ordineFinale
-    });
+    };
 
   } catch (err) {
-    console.error("❌ Errore complete-order:", err);
-    return res.json({
-      success: false,
-      error: "Errore server"
-    });
+    console.error("❌ Errore paypalCompleteOrder:", err);
+    return { success: false, error: "Errore server" };
   }
-});
+}
 
-module.exports = router; 
+/* =========================================================
+   EXPORT — stile Java
+========================================================= */
+module.exports = {
+  paypalCompleteOrder
+};
