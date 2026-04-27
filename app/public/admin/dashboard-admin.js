@@ -1,6 +1,6 @@
 /* =========================================================
    DASHBOARD ADMIN — GESTIONE PROFILO (Versione Coerente 2027)
-   Allineata 1:1 con api-admin.cjs
+   PATCH 2027.900 — fetch nativo + endpoint Java‑mode
 ========================================================= */
 
 const clean = (t) =>
@@ -19,13 +19,8 @@ async function adminGet(path, options = {}) {
     Authorization: token ? `Bearer ${token}` : ""
   };
 
-  const res = await window.fetchUniversale(
-    path,
-    { ...options, headers },
-    { retries: 3, backoffMs: 400 }
-  );
+  const res = await fetch(path, { ...options, headers });
 
-  // Token scaduto / invalido → logout
   if (res.status === 401 || res.status === 403) {
     localStorage.removeItem("token");
     window.location.href = "/admin/login";
@@ -46,7 +41,7 @@ document.addEventListener("critical-ready", () => {
 
 /* =========================================================
    1) POPOLA DATI PROFILO ADMIN
-   /api/admin/me  ← coerente con api-admin.cjs
+   /api/admin/me
 ========================================================= */
 async function popolaDatiAdmin() {
   const res = await adminGet("/api/admin/me");
@@ -71,7 +66,7 @@ async function popolaDatiAdmin() {
 
 /* =========================================================
    2) CAMBIO EMAIL
-   /api/admin/cambia-email  ← coerente con api-admin.cjs
+   /api/admin/cambiaEmail
 ========================================================= */
 function setupCambioEmail() {
   const btn = document.getElementById("btnAdminCambiaEmail");
@@ -82,7 +77,7 @@ function setupCambioEmail() {
     const pass = clean(document.getElementById("passwordAdminEmail").value);
     const msg = document.getElementById("msgAdminEmail");
 
-    const res = await adminGet("/api/admin/cambia-email", {
+    const res = await adminGet("/api/admin/cambiaEmail", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ nuova, pass })
@@ -101,7 +96,7 @@ function setupCambioEmail() {
 
 /* =========================================================
    3) CAMBIO PASSWORD
-   /api/admin/cambia-password  ← coerente con api-admin.cjs
+   /api/admin/cambiaPassword
 ========================================================= */
 function setupCambioPassword() {
   const btn = document.getElementById("btnAdminCambiaPassword");
@@ -112,7 +107,7 @@ function setupCambioPassword() {
     const newP = clean(document.getElementById("newAdminPassword").value);
     const msg = document.getElementById("msgAdminPassword");
 
-    const res = await adminGet("/api/admin/cambia-password", {
+    const res = await adminGet("/api/admin/cambiaPassword", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ oldP, newP })
