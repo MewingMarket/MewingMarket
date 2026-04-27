@@ -7,34 +7,54 @@ document.addEventListener("critical-ready", async () => {
   const token = localStorage.getItem("token");
 
   // =========================================================
+  // Protezione login
+  // =========================================================
+  if (!token) {
+    alert("Devi effettuare il login per richiedere un rimborso.");
+    window.location.href = "/login";
+    return;
+  }
+
+  async function handleAuth(res) {
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem("token");
+      window.location.href = "/login";
+      return null;
+    }
+    return res;
+  }
+
+  // =========================================================
   // 1) CARICA EMAIL UTENTE + ORDINI COMPLETATI
   // =========================================================
   try {
-    const res = await window.fetchUniversale(
-      "/ordini/utente",
-      { headers: { "Authorization": "Bearer " + token } }
-    );
+    // ORDINI
+    const resOrdRaw = await fetch("/api/ordini/utente", {
+      headers: { Authorization: "Bearer " + token }
+    });
+    const resOrd = await handleAuth(resOrdRaw);
+    if (!resOrd) return;
 
-    const data = await res.json();
-
+    const data = await resOrd.json();
     if (!data.success) {
       alert("Errore nel caricamento degli ordini.");
       return;
     }
 
-    // ⭐ Email utente dal backend
-    const userRes = await window.fetchUniversale(
-      "/utente/info",
-      { headers: { "Authorization": "Bearer " + token } }
-    );
+    // EMAIL UTENTE
+    const resUserRaw = await fetch("/api/utente/info", {
+      headers: { Authorization: "Bearer " + token }
+    });
+    const resUser = await handleAuth(resUserRaw);
+    if (!resUser) return;
 
-    const userData = await userRes.json();
-
+    const userData = await resUser.json();
     if (userData.success && userData.email) {
       emailInput.value = userData.email;
       emailInput.disabled = true;
     }
 
+    // ORDINI COMPLETATI
     const ordini = data.ordini.filter(o => o.stato === "completato");
 
     ordineSelect.innerHTML = "";
@@ -46,7 +66,7 @@ document.addEventListener("critical-ready", async () => {
       ordini.forEach(o => {
         const opt = document.createElement("option");
         opt.value = o.id;
-        opt.textContent = `Ordine #${o.id} — €${o.totale}`;
+        opt.textContent = `Ordine #${o.id} — €${(o.totale_cent / 100).toFixed(2)}`;
         ordineSelect.appendChild(opt);
       });
     }
@@ -68,7 +88,7 @@ document.addEventListener("critical-ready", async () => {
   }
 
   // =========================================================
-  // 3) INVIO RICHIESTA RIMBORSO (INTELLIGENTE 2026.995)
+  // 3) INVIO RICHIESTA RIMBORSO
   // =========================================================
   form.addEventListener("submit", async e => {
     e.preventDefault();
@@ -82,14 +102,17 @@ document.addEventListener("critical-ready", async () => {
     }
 
     try {
-      const res = await window.fetchUniversale(
-        "/rimborso/crea",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ordine_id, motivo })
-        }
-      );
+      const resRaw = await fetch("/api/rimborso/crea", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token
+        },
+        body: JSON.stringify({ ordine_id, motivo })
+      });
+
+      const res = await handleAuth(resRaw);
+      if (!res) return;
 
       const data = await res.json();
 
