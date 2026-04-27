@@ -1,27 +1,25 @@
-/**
- * =========================================================
- * File: app/server/routes/paypal-ricrea.cjs
- * PAYPAL — Rigenera pagamento ordine in attesa
- * Versione 2026.950 — require assoluti + FIX DB + FIX sicurezza
- * =========================================================
- */
+/* =========================================================
+   FILE: app/server/routes/paypal-ricrea.cjs
+   MODALITÀ: Java‑mode (funzioni, no Express)
+   DESCRIZIONE:
+   - Rigenera pagamento PayPal per ordini in attesa
+   - Aggiorna DB
+   - Aggiorna JSON mirror
+   - Aggiunge utente a lista Brevo
+   - Invia email attesa pagamento
+========================================================= */
 
-const express = require("express");
 const path = require("path");
 
-const router = express.Router();
-
-// PATCH: require assoluti
 const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
 const paypal = require(path.join(process.cwd(), "app/server/modules/paypal.cjs"));
 const { inviaEmailAttesa } = require(path.join(process.cwd(), "app/server/modules/email-attesa.cjs"));
 const { addToList } = require(path.join(process.cwd(), "app/server/modules/liste-brevo.cjs"));
-const authUser = require(path.join(process.cwd(), "app/server/middleware/auth-user.cjs"));
 const jsonGen = require(path.join(process.cwd(), "app/server/modules/generatore-json.cjs"));
 
-/**
- * Helper sicuro per prodotti_json
- */
+/* =========================================================
+   Helper JSON
+========================================================= */
 function safeParse(str) {
   try {
     if (!str) return [];
@@ -31,23 +29,21 @@ function safeParse(str) {
   }
 }
 
-/**
- * =========================================================
- * POST /api/paypal/ricrea/:id
- * Protetto da auth-user
- * =========================================================
- */
-router.post("/paypal/ricrea/:id", authUser, async (req, res) => {
+/* =========================================================
+   FUNZIONE: paypalRicrea
+   (ex POST /api/paypal/ricrea/:id)
+========================================================= */
+async function paypalRicrea(req) {
   const userId = req.user?.id;
   const orderId = req.params.id;
 
   if (!userId || !orderId) {
-    return res.json({ success: false, error: "Parametri mancanti." });
+    return { success: false, error: "Parametri mancanti." };
   }
 
   try {
-    // 1) Recupera ordine dal DB, vincolato all'utente
-    const stmtOrdine = db.prepare(`
+    // 1) Recupera ordine dal DB
+    const ordine = db.prepare(`
       SELECT 
         o.id,
         o.utente_id,
@@ -60,20 +56,18 @@ router.post("/paypal/ricrea/:id", authUser, async (req, res) => {
       LEFT JOIN utenti u ON u.id = o.utente_id
       WHERE o.id = ? AND o.utente_id = ?
       LIMIT 1
-    `);
-
-    const ordine = stmtOrdine.get(orderId, userId);
+    `).get(orderId, userId);
 
     if (!ordine) {
-      return res.json({ success: false, error: "Ordine non trovato." });
+      return { success: false, error: "Ordine non trovato." };
     }
 
     // Solo ordini non completati possono essere rigenerati
     if (ordine.stato === "completato") {
-      return res.json({
+      return {
         success: false,
         error: "Ordine già completato, non rigenerabile."
-      });
+      };
     }
 
     // 2) Prepara dati per PayPal
@@ -85,21 +79,19 @@ router.post("/paypal/ricrea/:id", authUser, async (req, res) => {
     });
 
     if (!paypalOrder || !paypalOrder.id || !paypalOrder.url) {
-      return res.json({ success: false, error: "Errore PayPal." });
+      return { success: false, error: "Errore PayPal." };
     }
 
-    // 3) Aggiorna ordine → in_attesa_pagamento + nuovo paypal_transaction_id
-    const stmtUpdate = db.prepare(`
+    // 3) Aggiorna ordine → in_attesa_pagamento
+    db.prepare(`
       UPDATE ordini
       SET stato = 'in_attesa_pagamento',
           paypal_transaction_id = ?,
           data_ordine = CURRENT_TIMESTAMP
       WHERE id = ? AND utente_id = ?
-    `);
+    `).run(paypalOrder.id, orderId, userId);
 
-    stmtUpdate.run(paypalOrder.id, orderId, userId);
-
-    // 🔥 Aggiorna JSON mirror ordini
+    // Aggiorna JSON mirror
     try {
       await jsonGen.exportOrders();
     } catch (err) {
@@ -117,7 +109,7 @@ router.post("/paypal/ricrea/:id", authUser, async (req, res) => {
       console.error("⚠️ Errore addToList (lista 12):", err);
     }
 
-    // 5) Email premium (logo + social) — via inviaEmailLista (Brevo o sandbox)
+    // 5) Email premium (logo + social)
     try {
       if (emailUtente) {
         await inviaEmailAttesa({
@@ -129,16 +121,21 @@ router.post("/paypal/ricrea/:id", authUser, async (req, res) => {
       console.error("⚠️ Errore inviaEmailAttesa:", err);
     }
 
-    // 6) Risposta al frontend
-    return res.json({
+    // 6) Risposta
+    return {
       success: true,
       url: paypalOrder.url
-    });
+    };
 
   } catch (err) {
-    console.error("❌ Errore ricrea ordine:", err);
-    return res.json({ success: false, error: "Errore interno." });
+    console.error("❌ Errore paypalRicrea:", err);
+    return { success: false, error: "Errore interno." };
   }
-});
+}
 
-module.exports = router;
+/* =========================================================
+   EXPORT — stile Java
+========================================================= */
+module.exports = {
+  paypalRicrea
+};
