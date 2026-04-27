@@ -1,5 +1,5 @@
 /* =========================================================
-   ADMIN FEEDBACK — Versione SQL 2027.990 (PATCH TOKEN)
+   ADMIN FEEDBACK — Versione SQL 2027.900 (PATCH TOKEN)
    Sincronizzata con admin-feedback.cjs + auth-user.cjs
 ========================================================= */
 
@@ -24,7 +24,7 @@ const fDate = (d) => {
 };
 
 /* =========================================================
-   FETCH ADMIN — Versione con TOKEN + FALLBACK LOGIN
+   FETCH ADMIN — Token + fallback login
 ========================================================= */
 async function adminGet(path, options = {}) {
   const token = localStorage.getItem("token");
@@ -36,13 +36,8 @@ async function adminGet(path, options = {}) {
 
   const fullPath = path.startsWith("/api") ? path : `/api${path}`;
 
-  const res = await window.fetchUniversale(
-    fullPath,
-    { ...options, headers },
-    { retries: 2 }
-  );
+  const res = await fetch(fullPath, { ...options, headers });
 
-  // Token scaduto / invalido → logout
   if (res.status === 401 || res.status === 403) {
     localStorage.removeItem("token");
     window.location.href = "/admin/login";
@@ -120,7 +115,8 @@ async function caricaFeedback() {
   tbody.innerHTML = "<tr><td colspan='5'>Interrogazione database SQL...</td></tr>";
 
   try {
-    const res = await adminGet("/api/admin/feedback/lista");
+    // ⭐ PATCH — endpoint Java‑mode
+    const res = await adminGet("/api/admin/feedback/getListaFeedback");
     if (!res) return;
 
     const data = await res.json();
