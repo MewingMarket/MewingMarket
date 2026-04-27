@@ -8,16 +8,21 @@ console.log("🔐 [AUTH] Sistema di autenticazione avviato");
 const APP_VERSION = "2026.10"; // Cambia questo per forzare il logout di tutti in caso di bug
 
 // ---------------------------------------------------------
-// Helper: registra evento utente (Sincronizzato con mm-api)
+// Helper: registra evento utente (Sincronizzato con nuovo backend)
 // ---------------------------------------------------------
 async function logUserEvent(evento) {
   try {
     const email = localStorage.getItem("email") || "";
-    if (!email || !window.fetchUniversale) return;
+    if (!email) return;
 
-    await window.fetchUniversale("/api/utenti/evento", {
+    await fetch("/api/utenti/evento", {
       method: "POST",
-      body: JSON.stringify({ email, evento, timestamp: new Date().toISOString() })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        evento,
+        timestamp: new Date().toISOString()
+      })
     });
   } catch (err) {
     console.warn("[AUTH] Log evento fallito:", err);
@@ -34,8 +39,7 @@ async function logUserEvent(evento) {
     console.warn("[AUTH] Nuova versione: Reset sessione per compatibilità SQL.");
 
     localStorage.setItem("logoutReason", "deploy");
-    
-    // Pulizia totale chiavi vecchie e nuove
+
     const keysToRemove = ["token", "mewing_token", "email", "ruolo", "sessionState", "user"];
     keysToRemove.forEach(k => localStorage.removeItem(k));
 
@@ -59,7 +63,6 @@ window.sessionState = 0;
 // 3) Carica sessione da localStorage
 // ---------------------------------------------------------
 function loadSession() {
-  // PATCH: Cerchiamo sia 'token' che 'mewing_token' per compatibilità
   const token = localStorage.getItem("mewing_token") || localStorage.getItem("token") || "";
   const email = localStorage.getItem("email") || "";
   const ruolo = localStorage.getItem("ruolo") || "";
@@ -68,16 +71,15 @@ function loadSession() {
 
   window.isLogged = Boolean(token);
   window.userEmail = email;
-  window.isAdmin = (ruolo === "admin" || ruolo === "1"); // Gestisce sia stringa che flag SQL
+  window.isAdmin = (ruolo === "admin" || ruolo === "1");
   window.sessionState = state;
-  
+
   try {
     window.userData = userJson ? JSON.parse(userJson) : null;
-  } catch (e) {
+  } catch {
     window.userData = null;
   }
 
-  // Sincronizziamo 'mewing_token' come chiave principale per mm-api.js
   if (token && !localStorage.getItem("mewing_token")) {
     localStorage.setItem("mewing_token", token);
   }
@@ -101,14 +103,11 @@ function initAuth() {
     localStorage.removeItem("logoutReason");
   }
 
-  // Notifica al sistema che Auth è pronto
   document.dispatchEvent(new Event("auth-ready"));
-  
-  // Se siamo loggati, emettiamo anche l'evento per sbloccare le fetch protette
+
   if (window.isLogged) {
     document.dispatchEvent(new Event("user-logged-in"));
   }
 }
 
-// Avvio
 initAuth();
