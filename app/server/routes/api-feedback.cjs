@@ -1,30 +1,31 @@
-/**
- * =========================================================
- * File: app/server/routes/api-feedback.cjs
- * Sistema recensioni utenti — Versione SQL definitiva (PATCH 2026.3002)
- * Versione 2026.200 — require assoluti
- * =========================================================
- */
+/* =========================================================
+   FILE: app/server/routes/api-feedback.cjs
+   MODALITÀ: Java‑mode (funzioni, no Express)
+   DESCRIZIONE: Sistema recensioni utenti — SQL definitivo
+   ORIGINALE: ex /recensioni/prodotti-acquistati, /utente, /crea, /modifica, /elimina
+========================================================= */
 
-const express = require("express");
 const path = require("path");
-
 const R = (p) => require(path.join(process.cwd(), "app/server", p));
 
 const db = R("db/database.cjs");
-const authUser = R("middleware/auth-user.cjs");
 const { inviaEmailFeedback } = R("modules/email-feedback.cjs");
 
-const router = express.Router();
+/* =========================================================
+   UTILS
+========================================================= */
+function safeParse(str) {
+  try { return JSON.parse(str); }
+  catch { return []; }
+}
 
 /* =========================================================
-   GET /api/recensioni/prodotti-acquistati
+   FUNZIONE 1 — prodottiAcquistati
+   (ex GET /recensioni/prodotti-acquistati)
 ========================================================= */
-router.get("/recensioni/prodotti-acquistati", authUser, (req, res) => {
+async function prodottiAcquistati(req) {
   try {
     const userId = req.user.id;
-
-    console.log("🔍 [DEBUG] /prodotti-acquistati → userId:", userId);
 
     const stmt = db.prepare(`
       SELECT DISTINCT p.id, p.titolo_breve
@@ -37,24 +38,21 @@ router.get("/recensioni/prodotti-acquistati", authUser, (req, res) => {
 
     const prodotti = stmt.all(userId);
 
-    console.log("🔍 [DEBUG] Prodotti trovati:", prodotti);
-
-    return res.json({ success: true, prodotti });
+    return { success: true, prodotti };
 
   } catch (err) {
-    console.error("❌ Errore GET /recensioni/prodotti-acquistati:", err);
-    return res.json({ success: false, error: "Errore server" });
+    console.error("❌ Errore prodottiAcquistati:", err);
+    return { success: false, error: "Errore server" };
   }
-});
+}
 
 /* =========================================================
-   GET /api/recensioni/utente
+   FUNZIONE 2 — recensioniUtente
+   (ex GET /recensioni/utente)
 ========================================================= */
-router.get("/recensioni/utente", authUser, (req, res) => {
+async function recensioniUtente(req) {
   try {
     const userId = req.user.id;
-
-    console.log("🔍 [DEBUG] /recensioni/utente → userId:", userId);
 
     const stmt = db.prepare(`
       SELECT 
@@ -72,34 +70,26 @@ router.get("/recensioni/utente", authUser, (req, res) => {
 
     const recensioni = stmt.all(userId);
 
-    console.log("🔍 [DEBUG] Recensioni trovate:", recensioni);
-
-    return res.json({ success: true, recensioni });
+    return { success: true, recensioni };
 
   } catch (err) {
-    console.error("❌ Errore GET /recensioni/utente:", err);
-    return res.json({ success: false, error: "Errore server" });
+    console.error("❌ Errore recensioniUtente:", err);
+    return { success: false, error: "Errore server" };
   }
-});
+}
 
 /* =========================================================
-   POST /api/recensioni/crea
+   FUNZIONE 3 — creaRecensione
+   (ex POST /recensioni/crea)
 ========================================================= */
-router.post("/recensioni/crea", authUser, (req, res) => {
+async function creaRecensione(req) {
   try {
     const userId = req.user.id;
     const userEmail = req.user.email;
     const { prodotto_id, rating, commento } = req.body;
 
-    console.log("📝 [DEBUG] CREA RECENSIONE →", {
-      userId,
-      prodotto_id,
-      rating,
-      commento
-    });
-
     if (!prodotto_id || !rating || !commento) {
-      return res.json({ success: false, error: "Dati mancanti" });
+      return { success: false, error: "Dati mancanti" };
     }
 
     const paroleVietate = [
@@ -109,69 +99,42 @@ router.post("/recensioni/crea", authUser, (req, res) => {
 
     const lower = commento.toLowerCase();
     if (paroleVietate.some(p => lower.includes(p))) {
-      return res.json({
-        success: false,
-        error: "Linguaggio non consentito"
-      });
+      return { success: false, error: "Linguaggio non consentito" };
     }
 
-    /* ------------------------------
-       VERIFICA ACQUISTO
-    ------------------------------ */
-    const stmtOrdini = db.prepare(`
+    // Verifica acquisto
+    const ordini = db.prepare(`
       SELECT prodotti_json
       FROM ordini
       WHERE utente_id = ?
-    `);
-
-    const ordini = stmtOrdini.all(userId);
-
-    console.log("🔍 [DEBUG] Ordini utente:", ordini);
+    `).all(userId);
 
     let haAcquistato = false;
 
     for (const o of ordini) {
       const prodotti = safeParse(o.prodotti_json);
-      console.log("🔍 [DEBUG] Prodotti ordine:", prodotti);
-
       if (prodotti.some(p => Number(p.prodotto_id) === Number(prodotto_id))) {
         haAcquistato = true;
         break;
       }
     }
 
-    console.log("🔍 [DEBUG] Ha acquistato?", haAcquistato);
-
     if (!haAcquistato) {
-      return res.json({
-        success: false,
-        error: "Non hai acquistato questo prodotto"
-      });
+      return { success: false, error: "Non hai acquistato questo prodotto" };
     }
 
-    /* ------------------------------
-       BLOCCO DOPPIE RECENSIONI
-    ------------------------------ */
-    const stmtCheck = db.prepare(`
+    // Blocco doppie recensioni
+    const esiste = db.prepare(`
       SELECT id FROM feedback
       WHERE utente_id = ? AND prodotto_id = ?
-    `);
-
-    const esiste = stmtCheck.get(userId, prodotto_id);
-
-    console.log("🔍 [DEBUG] Recensione già esistente?", esiste);
+    `).get(userId, prodotto_id);
 
     if (esiste) {
-      return res.json({
-        success: false,
-        error: "Hai già recensito questo prodotto"
-      });
+      return { success: false, error: "Hai già recensito questo prodotto" };
     }
 
-    /* ------------------------------
-       INSERIMENTO RECENSIONE
-    ------------------------------ */
-    const stmtInsert = db.prepare(`
+    // Inserimento recensione
+    db.prepare(`
       INSERT INTO feedback (
         utente_id,
         prodotto_id,
@@ -179,117 +142,105 @@ router.post("/recensioni/crea", authUser, (req, res) => {
         commento,
         data
       ) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-    `);
+    `).run(userId, prodotto_id, Number(rating), commento);
 
-    stmtInsert.run(userId, prodotto_id, Number(rating), commento);
-
-    console.log("✅ [DEBUG] Recensione inserita");
-
-    /* =========================================================
-       PATCH — INVIO EMAIL FEEDBACK (non blocca la risposta)
-    ========================================================= */
+    // Email ringraziamento (non blocca)
     try {
-      console.log("📨 [DEBUG] Invio email ringraziamento feedback →", userEmail);
-
       inviaEmailFeedback({
         email: userEmail,
         prodotto_id,
         rating,
         commento
       });
-
     } catch (err) {
-      console.error("❌ [DEBUG] Errore invio email feedback:", err);
+      console.error("❌ Errore invio email feedback:", err);
     }
 
-    return res.json({ success: true });
+    return { success: true };
 
   } catch (err) {
-    console.error("❌ Errore POST /recensioni/crea:", err);
-    return res.json({ success: false, error: "Errore server" });
+    console.error("❌ Errore creaRecensione:", err);
+    return { success: false, error: "Errore server" };
   }
-});
+}
 
 /* =========================================================
-   POST /api/recensioni/modifica
+   FUNZIONE 4 — modificaRecensione
+   (ex POST /recensioni/modifica)
 ========================================================= */
-router.post("/recensioni/modifica", authUser, (req, res) => {
+async function modificaRecensione(req) {
   try {
     const userId = req.user.id;
     const { id, rating, commento } = req.body;
 
-    const stmtFind = db.prepare(`
+    const rec = db.prepare(`
       SELECT utente_id
       FROM feedback
       WHERE id = ?
-    `);
-
-    const rec = stmtFind.get(id);
+    `).get(id);
 
     if (!rec) {
-      return res.json({ success: false, error: "Recensione non trovata" });
+      return { success: false, error: "Recensione non trovata" };
     }
 
     if (rec.utente_id !== userId) {
-      return res.json({ success: false, error: "Non autorizzato" });
+      return { success: false, error: "Non autorizzato" };
     }
 
-    const stmtUpdate = db.prepare(`
+    db.prepare(`
       UPDATE feedback
       SET rating = ?, commento = ?, data = CURRENT_TIMESTAMP
       WHERE id = ?
-    `);
+    `).run(Number(rating), commento, id);
 
-    stmtUpdate.run(Number(rating), commento, id);
-
-    return res.json({ success: true });
+    return { success: true };
 
   } catch (err) {
-    console.error("❌ Errore POST /recensioni/modifica:", err);
-    return res.json({ success: false, error: "Errore server" });
+    console.error("❌ Errore modificaRecensione:", err);
+    return { success: false, error: "Errore server" };
   }
-});
+}
 
 /* =========================================================
-   POST /api/recensioni/elimina
+   FUNZIONE 5 — eliminaRecensione
+   (ex POST /recensioni/elimina)
 ========================================================= */
-router.post("/recensioni/elimina", authUser, (req, res) => {
+async function eliminaRecensione(req) {
   try {
     const userId = req.user.id;
     const { id } = req.body;
 
-    const stmtFind = db.prepare(`
+    const rec = db.prepare(`
       SELECT utente_id
       FROM feedback
       WHERE id = ?
-    `);
-
-    const rec = stmtFind.get(id);
+    `).get(id);
 
     if (!rec) {
-      return res.json({ success: false, error: "Recensione non trovata" });
+      return { success: false, error: "Recensione non trovata" };
     }
 
     if (rec.utente_id !== userId) {
-      return res.json({ success: false, error: "Non autorizzato" });
+      return { success: false, error: "Non autorizzato" };
     }
 
     db.prepare(`DELETE FROM feedback WHERE id = ?`).run(id);
 
-    return res.json({ success: true });
+    return { success: true };
 
   } catch (err) {
-    console.error("❌ Errore POST /recensioni/elimina:", err);
-    return res.json({ success: false, error: "Errore server" });
-  }
-});
-
-function safeParse(str) {
-  try {
-    return JSON.parse(str);
-  } catch {
-    return [];
+    console.error("❌ Errore eliminaRecensione:", err);
+    return { success: false, error: "Errore server" };
   }
 }
 
-module.exports = router;
+/* =========================================================
+   EXPORT — stile Java
+========================================================= */
+module.exports = {
+  prodottiAcquistati,
+  recensioniUtente,
+  creaRecensione,
+  modificaRecensione,
+  eliminaRecensione
+};
