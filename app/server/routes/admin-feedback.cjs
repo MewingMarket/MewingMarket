@@ -1,25 +1,22 @@
 /* =========================================================
-   File: app/server/routes/admin-feedback.cjs
-   Lista completa feedback per Admin — DEBUG SUPREMO + FALLBACK
-   Versione 2026.200 — require assoluti
+   FILE: app/server/funzioni/admin-feedback.cjs
+   DESCRIZIONE: Funzioni Admin Feedback (Java‑mode)
+   ORIGINALE: app/server/routes/admin-feedback.cjs
 ========================================================= */
 
-const express = require("express");
 const path = require("path");
-
 const R = (p) => require(path.join(process.cwd(), "app/server", p));
 
-const router = express.Router();
 const db = R("db/database.cjs");
 
 /* =========================================================
-   1) ROTTA PRINCIPALE: FEEDBACK LISTA + DEBUG SUPREMO
+   FUNZIONE 1 — Lista Feedback + KPI + Fallback Email
 ========================================================= */
-router.get("/feedback/lista", (req, res) => {
+async function lista(req) {
   try {
-    console.log("🔵 [ADMIN] GET /admin/feedback/lista chiamato");
+    console.log("🔵 [ADMIN] FUNZIONE adminFeedback.lista chiamata");
 
-    const stmt = db.prepare(`
+    const lista = db.prepare(`
       SELECT 
         f.id,
         f.rating,
@@ -33,44 +30,15 @@ router.get("/feedback/lista", (req, res) => {
       LEFT JOIN utenti u ON u.id = f.utente_id
       LEFT JOIN prodotti p ON p.id = f.prodotto_id
       ORDER BY f.id DESC
-    `);
-
-    const lista = stmt.all();
-
-    console.log("🔵 [ADMIN] Feedback trovati:", lista.length);
-    lista.forEach((f, i) => {
-      console.log(`   [${i}]`, {
-        id: f.id,
-        rating: f.rating,
-        commento: f.commento,
-        prodotto_id: f.prodotto_id,
-        utente_id: f.utente_id,
-        prodotto_titolo: f.prodotto_titolo,
-        utente_email: f.utente_email
-      });
-    });
+    `).all();
 
     const ordini = db.prepare(`
       SELECT id, utente_id, prodotti_json
       FROM ordini
     `).all();
 
-    console.log("🔵 [ADMIN] Ordini trovati:", ordini.length);
-
-    const output = lista.map((f, idx) => {
-      let email = f.utente_email;
-
-      console.log(`🟡 [MAP] Feedback #${idx} prima del fallback`, {
-        id: f.id,
-        prodotto_id: f.prodotto_id,
-        utente_id: f.utente_id,
-        utente_email: f.utente_email
-      });
-
-      if (email) {
-        console.log(`   ✅ Email diretta trovata per feedback #${idx}:`, email);
-        return { ...f, utente_email: email };
-      }
+    const output = lista.map((f) => {
+      if (f.utente_email) return f;
 
       for (const o of ordini) {
         try {
@@ -78,33 +46,15 @@ router.get("/feedback/lista", (req, res) => {
           if (Array.isArray(prodotti)) {
             const match = prodotti.find(p => p.prodotto_id === f.prodotto_id);
             if (match) {
-              console.log(`   🟢 Match ordine trovato per feedback #${idx}:`, {
-                ordine_id: o.id,
-                ordine_utente_id: o.utente_id,
-                prodotto_id: f.prodotto_id
-              });
-
               const u = db.prepare(`SELECT email FROM utenti WHERE id = ?`).get(o.utente_id);
-              if (u && u.email) {
-                console.log(`   ✅ Email da ordini per feedback #${idx}:`, u.email);
-                return { ...f, utente_email: u.email };
-              } else {
-                console.log(`   ⚠ Nessuna email trovata in utenti per utente_id`, o.utente_id);
-              }
+              if (u?.email) return { ...f, utente_email: u.email };
             }
           }
-        } catch (e) {
-          console.error("   ❌ Errore parse prodotti_json ordine", o.id, e);
-        }
+        } catch {}
       }
 
-      console.log(`   ⚪ Nessun utente trovato per feedback #${idx} → Anonimo`);
       return { ...f, utente_email: "Anonimo" };
     });
-
-    /* =========================================================
-       PATCH KPI FEEDBACK — STATISTICHE PER ADMIN
-    ========================================================== */
 
     const kpi = {
       totale: output.length,
@@ -121,9 +71,7 @@ router.get("/feedback/lista", (req, res) => {
 
       output.forEach(f => {
         const r = Number(f.rating);
-        if (kpi.percentuali[r] !== undefined) {
-          kpi.percentuali[r]++;
-        }
+        if (kpi.percentuali[r] !== undefined) kpi.percentuali[r]++;
       });
 
       Object.keys(kpi.percentuali).forEach(k => {
@@ -154,46 +102,44 @@ router.get("/feedback/lista", (req, res) => {
       kpi.prodotti_flop = arr.sort((a, b) => a.media - b.media).slice(0, 5);
     }
 
-    console.log("🟣 [ADMIN] KPI Feedback:", kpi);
-
-    return res.json({
-      success: true,
-      feedback: output,
-      kpi
-    });
+    return { success: true, feedback: output, kpi };
 
   } catch (err) {
-    console.error("❌ [ADMIN] Errore /admin/feedback/lista:", err);
-    return res.json({ success: false, error: "Errore server" });
+    console.error("❌ Errore adminFeedback.lista:", err);
+    return { success: false, error: "Errore server" };
   }
-});
+}
 
 /* =========================================================
-   2) ROTTA DEBUG GREZZO DB
+   FUNZIONE 2 — DEBUG DB COMPLETO
 ========================================================= */
-router.get("/feedback/debug-db", (req, res) => {
+async function debugDB(req) {
   try {
-    console.log("🔍 [ADMIN] DEBUG-DB chiamato");
+    console.log("🔍 [ADMIN] FUNZIONE adminFeedback.debugDB chiamata");
 
     const feedback = db.prepare(`SELECT * FROM feedback`).all();
     const ordini = db.prepare(`SELECT * FROM ordini`).all();
     const prodotti = db.prepare(`SELECT * FROM prodotti`).all();
     const utenti = db.prepare(`SELECT * FROM utenti`).all();
 
-    return res.json({
+    return {
       success: true,
       feedback,
       ordini,
       prodotti,
       utenti
-    });
+    };
+
   } catch (err) {
-    console.error("❌ [ADMIN] Errore /admin/feedback/debug-db:", err);
-    return res.json({ success: false, error: "Errore debug-db" });
+    console.error("❌ Errore adminFeedback.debugDB:", err);
+    return { success: false, error: "Errore debug-db" };
   }
-});
+}
 
 /* =========================================================
-   3) EXPORT
+   EXPORT — stile Java (metodi della classe AdminFeedback)
 ========================================================= */
-module.exports = router;
+module.exports = {
+  lista,
+  debugDB
+};
