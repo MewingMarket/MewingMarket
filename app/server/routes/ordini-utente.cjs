@@ -1,28 +1,22 @@
-/**
- * =========================================================
- * File: app/server/routes/ordini-utente.cjs
- * Restituisce gli ordini dell'utente loggato (SQL)
- * + Annulla ordine (SQL)
- * Versione 2026.950 — require assoluti + FIX sicurezza + FIX stato
- * =========================================================
- */
+/* =========================================================
+   FILE: app/server/routes/ordini-utente.cjs
+   MODALITÀ: Java‑mode (funzioni, no Express)
+   DESCRIZIONE:
+   - Restituisce ordini utente loggato
+   - Annulla ordine
+========================================================= */
 
-const express = require("express");
 const path = require("path");
 
-// PATCH: require assoluto
 const R = (p) => require(path.join(process.cwd(), "app/server", p));
 
 const db = R("db/database.cjs");
-const authUser = R("middleware/auth-user.cjs");
 const jsonGen = R("modules/generatore-json.cjs");
 const { inviaEmailOrdineAnnullato } = R("modules/email-ordine-annullato.cjs");
 
-const router = express.Router();
-
-/**
- * Helper sicuro per JSON
- */
+/* =========================================================
+   Helper JSON
+========================================================= */
 function safeParse(str) {
   try {
     if (!str) return [];
@@ -32,17 +26,15 @@ function safeParse(str) {
   }
 }
 
-/**
- * =========================================================
- * GET /api/ordini/utente
- * Protetto da auth-user
- * =========================================================
- */
-router.get("/ordini/utente", authUser, (req, res) => {
+/* =========================================================
+   FUNZIONE 1 — getOrdiniUtente
+   (ex GET /ordini/utente)
+========================================================= */
+async function getOrdiniUtente(req) {
   try {
     const userId = req.user.id;
 
-    const stmt = db.prepare(`
+    const rows = db.prepare(`
       SELECT 
         id,
         utente_id,
@@ -56,9 +48,7 @@ router.get("/ordini/utente", authUser, (req, res) => {
       FROM ordini
       WHERE utente_id = ?
       ORDER BY id DESC
-    `);
-
-    const rows = stmt.all(userId);
+    `).all(userId);
 
     const ordini = rows.map(o => {
       const prodotti = safeParse(o.prodotti_json).map(p => {
@@ -98,59 +88,55 @@ router.get("/ordini/utente", authUser, (req, res) => {
       };
     });
 
-    return res.json({
+    return {
       success: true,
       ordini
-    });
+    };
 
   } catch (err) {
-    console.error("❌ Errore /ordini/utente:", err);
-    return res.json({
+    console.error("❌ Errore getOrdiniUtente:", err);
+    return {
       success: false,
       error: "Errore server"
-    });
+    };
   }
-});
+}
 
-/**
- * =========================================================
- * POST /api/ordini/annulla/:id
- * Protetto da auth-user
- * =========================================================
- */
-router.post("/ordini/annulla/:id", authUser, async (req, res) => {
+/* =========================================================
+   FUNZIONE 2 — annullaOrdine
+   (ex POST /ordini/annulla/:id)
+========================================================= */
+async function annullaOrdine(req) {
   try {
     const ordineId = req.params.id;
     const userId = req.user.id;
 
-    const stmtFind = db.prepare(`
+    const ordine = db.prepare(`
       SELECT *
       FROM ordini
       WHERE id = ? AND utente_id = ?
       LIMIT 1
-    `);
-
-    const ordine = stmtFind.get(ordineId, userId);
+    `).get(ordineId, userId);
 
     if (!ordine) {
-      return res.json({ success: false, error: "Ordine non trovato" });
+      return { success: false, error: "Ordine non trovato" };
     }
 
     if (ordine.stato === "completato") {
-      return res.json({
+      return {
         success: false,
         error: "Ordine già completato, non annullabile"
-      });
+      };
     }
 
     if (ordine.stato === "annullato") {
-      return res.json({
+      return {
         success: true,
         message: "Ordine già annullato"
-      });
+      };
     }
 
-    // Aggiorna stato → annullato
+    // Aggiorna stato
     db.prepare(`
       UPDATE ordini
       SET stato = 'annullato',
@@ -166,17 +152,16 @@ router.post("/ordini/annulla/:id", authUser, async (req, res) => {
     }
 
     // Recupera email utente
-    const stmtUser = db.prepare(`
+    const utente = db.prepare(`
       SELECT email
       FROM utenti
       WHERE id = ?
       LIMIT 1
-    `);
+    `).get(userId);
 
-    const utente = stmtUser.get(userId);
     const emailUtente = utente?.email || "";
 
-    // Email annullamento (Brevo o sandbox fallback)
+    // Email annullamento
     try {
       await inviaEmailOrdineAnnullato({
         email: emailUtente,
@@ -190,18 +175,24 @@ router.post("/ordini/annulla/:id", authUser, async (req, res) => {
       console.error("⚠️ Errore invio email annullamento:", err);
     }
 
-    return res.json({
+    return {
       success: true,
       message: "Ordine annullato correttamente"
-    });
+    };
 
   } catch (err) {
-    console.error("❌ Errore annulla ordine:", err);
-    return res.json({
+    console.error("❌ Errore annullaOrdine:", err);
+    return {
       success: false,
       error: "Errore server"
-    });
+    };
   }
-});
+}
 
-module.exports = router;
+/* =========================================================
+   EXPORT — stile Java
+========================================================= */
+module.exports = {
+  getOrdiniUtente,
+  annullaOrdine
+};
