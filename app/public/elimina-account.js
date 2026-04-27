@@ -1,8 +1,8 @@
 /* =========================================================
-   Eliminazione Account – MewingMarket (VERSIONE 2027.400)
+   Eliminazione Account – MewingMarket (VERSIONE 2027.900)
    - critical-ready
-   - fetchUniversale (fallback chain)
-   - Nessuna regressione
+   - fetch nativo
+   - API Java‑mode
 ========================================================= */
 
 document.addEventListener("critical-ready", () => {
@@ -11,22 +11,18 @@ document.addEventListener("critical-ready", () => {
 
   /* =========================================================
      PATCH — Helper per registrare evento utente
-     (usa fetchUniversale)
+     (fetch nativo + endpoint Java‑mode)
   ========================================================== */
   async function logUserEvent(evento) {
     try {
       const email = localStorage.getItem("email") || "";
       if (!email) return;
 
-      await window.fetchUniversale(
-        "/utenti/evento",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, evento })
-        },
-        { retries: 2, backoffMs: 200 }
-      );
+      await fetch("/api/utenti/evento", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, evento })
+      });
 
     } catch (err) {
       console.warn("Log evento fallito:", err);
@@ -71,18 +67,15 @@ document.addEventListener("critical-ready", () => {
     btnElimina.disabled = true;
 
     try {
-      const res = await window.fetchUniversale(
-        "/utenti/elimina-account",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + token
-          },
-          body: JSON.stringify({ password })
+      // ⭐ PATCH — nuovo endpoint Java‑mode + fetch nativo
+      const res = await fetch("/api/utenti/eliminaAccount", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
         },
-        { retries: 2, backoffMs: 300 }
-      );
+        body: JSON.stringify({ password })
+      });
 
       const data = await res.json().catch(() => null);
 
