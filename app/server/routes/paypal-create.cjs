@@ -1,36 +1,31 @@
-/**
- * =========================================================
- * File: app/server/routes/paypal-create.cjs
- * Crea ordine PayPal (SQL) + salva ordine in DB + JSON mirror
- * Versione 2026.950 — require assoluti + FIX totale + FIX sicurezza
- * =========================================================
- */
+/* =========================================================
+   FILE: app/server/routes/paypal-create.cjs
+   MODALITÀ: Java‑mode (funzioni, no Express)
+   DESCRIZIONE:
+   - Crea ordine PayPal
+   - Salva ordine nel DB
+   - Aggiorna JSON mirror
+   - Restituisce paypalUrl + orderId
+========================================================= */
 
-const express = require("express");
-const fetch = require("node-fetch");
 const path = require("path");
+const fetch = require("node-fetch");
 
-// PATCH: require assoluto
 const R = (p) => require(path.join(process.cwd(), "app/server", p));
 
 const db = R("db/database.cjs");
-const authUser = R("middleware/auth-user.cjs");
 const jsonGen = R("modules/generatore-json.cjs");
 
-const router = express.Router();
-
-/**
- * =========================================================
- * POST /api/paypal/create-order
- * Protetto da auth-user
- * =========================================================
- */
-router.post("/paypal/create-order", authUser, async (req, res) => {
+/* =========================================================
+   FUNZIONE: paypalCreateOrder
+   (ex POST /api/paypal/create-order)
+========================================================= */
+async function paypalCreateOrder(req) {
   try {
     const { email, prodotti, totale } = req.body || {};
 
     if (!email || !Array.isArray(prodotti) || prodotti.length === 0) {
-      return res.json({ success: false, error: "Dati ordine mancanti" });
+      return { success: false, error: "Dati ordine mancanti" };
     }
 
     // totale arriva in EURO → convertiamo in centesimi
@@ -38,9 +33,9 @@ router.post("/paypal/create-order", authUser, async (req, res) => {
     const totaleEuro = (totaleCent / 100).toFixed(2);
 
     // =========================================================
-    // 1) CREA ORDINE NEL DB (stato: in_attesa_pagamento)
+    // 1) CREA ORDINE NEL DB
     // =========================================================
-    const stmtInsert = db.prepare(`
+    const result = db.prepare(`
       INSERT INTO ordini (
         utente_id,
         prodotti_json,
@@ -49,9 +44,7 @@ router.post("/paypal/create-order", authUser, async (req, res) => {
         metodo_pagamento,
         data_ordine
       ) VALUES (?, ?, ?, 'in_attesa_pagamento', 'PayPal', CURRENT_TIMESTAMP)
-    `);
-
-    const result = stmtInsert.run(
+    `).run(
       req.user.id,
       JSON.stringify(prodotti),
       totaleCent
@@ -59,7 +52,7 @@ router.post("/paypal/create-order", authUser, async (req, res) => {
 
     const ordineId = result.lastInsertRowid;
 
-    // 🔥 Aggiorna JSON mirror ordini
+    // Aggiorna JSON mirror
     try {
       await jsonGen.exportOrders();
     } catch (err) {
@@ -67,9 +60,8 @@ router.post("/paypal/create-order", authUser, async (req, res) => {
     }
 
     // =========================================================
-    // 2) CREA ORDINE PAYPAL — PATCH COMPLETA (SANDBOX + LIVE)
+    // 2) CREA ORDINE PAYPAL (SANDBOX + LIVE)
     // =========================================================
-
     const MODE = process.env.PAYPAL_MODE || "sandbox";
 
     const PAYPAL_API = MODE === "sandbox"
@@ -113,9 +105,6 @@ router.post("/paypal/create-order", authUser, async (req, res) => {
       }
     );
 
-    // =========================================================
-    // 🔥 LOG RAW PAYPAL RESPONSE
-    // =========================================================
     const raw = await paypalRes.text();
     console.log("PAYPAL RAW RESPONSE:", raw);
 
@@ -127,10 +116,7 @@ router.post("/paypal/create-order", authUser, async (req, res) => {
     }
 
     if (!paypalData || !paypalData.id) {
-      return res.json({
-        success: false,
-        error: "Errore PayPal"
-      });
+      return { success: false, error: "Errore PayPal" };
     }
 
     const paypalTransactionId = paypalData.id;
@@ -138,15 +124,13 @@ router.post("/paypal/create-order", authUser, async (req, res) => {
     // =========================================================
     // 3) SALVA TRANSACTION ID PAYPAL NEL DB
     // =========================================================
-    const stmtUpdate = db.prepare(`
+    db.prepare(`
       UPDATE ordini
       SET paypal_transaction_id = ?
       WHERE id = ?
-    `);
+    `).run(paypalTransactionId, ordineId);
 
-    stmtUpdate.run(paypalTransactionId, ordineId);
-
-    // 🔥 Aggiorna JSON mirror ordini
+    // Aggiorna JSON mirror
     try {
       await jsonGen.exportOrders();
     } catch (err) {
@@ -159,28 +143,27 @@ router.post("/paypal/create-order", authUser, async (req, res) => {
     const approveLink = paypalData.links?.find(l => l.rel === "approve");
 
     if (!approveLink) {
-      return res.json({
-        success: false,
-        error: "Nessun link PayPal trovato"
-      });
+      return { success: false, error: "Nessun link PayPal trovato" };
     }
 
     // =========================================================
-    // 🔥 PATCH 2026.1001 — ritorno anche orderId al frontend
+    // 5) RISPOSTA
     // =========================================================
-    return res.json({
+    return {
       success: true,
       paypalUrl: approveLink.href,
       orderId: ordineId
-    });
+    };
 
   } catch (err) {
-    console.error("❌ Errore create-order:", err);
-    return res.json({
-      success: false,
-      error: "Errore server"
-    });
+    console.error("❌ Errore paypalCreateOrder:", err);
+    return { success: false, error: "Errore server" };
   }
-});
+}
 
-module.exports = router;
+/* =========================================================
+   EXPORT — stile Java
+========================================================= */
+module.exports = {
+  paypalCreateOrder
+};
