@@ -1,5 +1,5 @@
 /* =========================================================
-   ASSISTENZA — Frontend (Versione Patchata)
+   ASSISTENZA — Frontend (Versione Patchata 2027)
 ========================================================= */
 
 document.addEventListener("critical-ready", () => {
@@ -22,8 +22,8 @@ document.addEventListener("critical-ready", () => {
     mostraMessaggio("Invio in corso…", "info");
 
     try {
-      // PATCH: Sostituito window.fetchUniversale con fetch nativo
-      const res = await fetch("/api/assistenza/invia", {
+      // PATCH 2027 — nuovo endpoint Java‑mode
+      const res = await fetch("/api/assistenza/inviaAssistenza", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, domanda })
@@ -31,13 +31,11 @@ document.addEventListener("critical-ready", () => {
 
       const data = await res.json();
 
-      // Se il server risponde con successo: false
       if (!data.success) {
         mostraMessaggio(data.error || "Errore durante l'invio.", "errore");
         return;
       }
 
-      // Se l'AI ha generato una risposta immediata, la mostriamo, altrimenti messaggio standard
       const testoRisposta = data.risposta 
         ? `Risposta: ${data.risposta}` 
         : "Richiesta inviata. Riceverai una risposta via email entro 24–48 ore.";
@@ -54,7 +52,7 @@ document.addEventListener("critical-ready", () => {
   function mostraMessaggio(testo, tipo) {
     if (!msgBox) return;
     msgBox.textContent = testo;
-    msgBox.className = "status"; // Reset classi base
+    msgBox.className = "status";
     if (tipo === "errore") msgBox.classList.add("errore");
     if (tipo === "successo") msgBox.classList.add("successo");
     if (tipo === "info") msgBox.classList.add("info");
