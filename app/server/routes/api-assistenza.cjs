@@ -1,43 +1,35 @@
-/**
- * =========================================================
- * ASSISTENZA — Endpoint invio richiesta (PATCH 2027.500)
- * - Usa FAQ.sql
- * - Usa prodotti SQL per consigli prodotto
- * - Usa template email premium
- * - Risposta JSON garantita (no HTML)
- * - Validazione rispostaAI, template, invio email
- * =========================================================
- */
+/* =========================================================
+   FILE: app/server/routes/api-assistenza.cjs
+   MODALITÀ: Java‑mode (funzioni, no Express)
+   DESCRIZIONE: Invio richiesta assistenza + AI + FAQ + Email
+   ORIGINALE: ex POST /assistenza/invia
+========================================================= */
 
-const express = require("express");
-const router = express.Router();
 const path = require("path");
-const db = require(path.join(process.cwd(), "app/server/db/database.cjs")); // PATCH: DB SQL
+const R = (p) => require(path.join(process.cwd(), "app/server", p));
 
-const assistAI = require(path.join(process.cwd(), "app/server/modules/assistenza-ai.cjs"));
-const { inviaEmailLista } = require(path.join(process.cwd(), "app/server/modules/invia-email-lista.cjs"));
-const { addToList } = require(path.join(process.cwd(), "app/server/modules/liste-brevo.cjs"));
+const db = R("db/database.cjs");
+const assistAI = R("modules/assistenza-ai.cjs");
+const { inviaEmailLista } = R("modules/invia-email-lista.cjs");
+const { addToList } = R("modules/liste-brevo.cjs");
+const { templateEmailRisposta } = R("modules/email-risposta.cjs");
 
-// PATCH: Template email premium
-const { templateEmailRisposta } = require(path.join(
-  process.cwd(),
-  "app/server/modules/email-risposta.cjs"
-));
-
-router.post("/invia", async (req, res) => {
-  const { email, domanda } = req.body;
-
-  if (!email || !domanda) {
-    return res.status(200).json({ success: false, error: "Campi mancanti." });
-  }
-
+/* =========================================================
+   FUNZIONE: assistenzaInvia
+   (ex POST /assistenza/invia)
+========================================================= */
+async function assistenzaInvia(req) {
   try {
-    // 1) Salva in lista 15 (FAQ)
+    const { email, domanda } = req.body || {};
+
+    if (!email || !domanda) {
+      return { success: false, error: "Campi mancanti." };
+    }
+
+    // 1) Salva in lista 15
     await addToList(15, email);
 
-    // ============================================================
-    // 2) RICONOSCIMENTO PRODOTTO (consigli prodotto)
-    // ============================================================
+    // 2) RICONOSCIMENTO PRODOTTO
     let faqRecord = null;
 
     const prodotti = await db.all("SELECT * FROM prodotti");
@@ -57,9 +49,7 @@ router.post("/invia", async (req, res) => {
       };
     }
 
-    // ============================================================
-    // 3) SE NON È UN PRODOTTO → CERCA IN FAQ.sql
-    // ============================================================
+    // 3) SE NON È PRODOTTO → CERCA IN FAQ.sql
     if (!faqRecord) {
       const tutteFAQ = await db.all("SELECT * FROM faq");
 
@@ -86,36 +76,27 @@ router.post("/invia", async (req, res) => {
       }
     }
 
-    // ============================================================
-    // 4) GENERA RISPOSTA AI (basata SOLO su risposta_base)
-    //    + VALIDAZIONE rispostaAI
-    // ============================================================
+    // 4) GENERA RISPOSTA AI
     const rispostaAI = await assistAI.generaRispostaAssistenza({
       domanda,
       faqRecord
     });
 
     if (!rispostaAI || typeof rispostaAI !== "string") {
-      throw new Error("Risposta AI non valida");
+      return { success: false, error: "Risposta AI non valida" };
     }
 
-    // ============================================================
     // 5) CREA TICKET
-    // ============================================================
     const ticket = Math.floor(100000 + Math.random() * 900000);
 
-    // ============================================================
-    // 6) TEMPLATE EMAIL PREMIUM + VALIDAZIONE
-    // ============================================================
+    // 6) TEMPLATE EMAIL PREMIUM
     const htmlEmail = templateEmailRisposta({ rispostaAI });
 
     if (!htmlEmail || typeof htmlEmail !== "string") {
-      throw new Error("Template email non valido");
+      return { success: false, error: "Template email non valido" };
     }
 
-    // ============================================================
-    // 7) INVIA EMAIL + VALIDAZIONE
-    // ============================================================
+    // 7) INVIA EMAIL
     await inviaEmailLista({
       email,
       listId: 15,
@@ -125,21 +106,21 @@ router.post("/invia", async (req, res) => {
       modalita: "normale"
     });
 
-    if (!email) {
-      throw new Error("Invio email fallito");
-    }
-
-    return res.status(200).json({ success: true, ticket });
+    return { success: true, ticket };
 
   } catch (err) {
-    console.error("Errore assistenza:", err);
+    console.error("❌ Errore assistenzaInvia:", err);
 
-    // 🔥 PATCH BLINDATA — risposta JSON garantita
-    return res.status(200).json({
+    return {
       success: false,
       error: "Errore interno. Il nostro team è stato notificato."
-    });
+    };
   }
-});
+}
 
-module.exports = router;
+/* =========================================================
+   EXPORT — stile Java
+========================================================= */
+module.exports = {
+  assistenzaInvia
+};
