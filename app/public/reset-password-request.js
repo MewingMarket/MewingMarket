@@ -1,8 +1,8 @@
 /* =========================================================
-   RESET PASSWORD REQUEST — Versione CF (PATCH 2027.400)
+   RESET PASSWORD REQUEST — Versione CF (PATCH 2027.900)
    - critical-ready
-   - fetchUniversale (fallback chain)
-   - Nessuna regressione
+   - fetch nativo
+   - Endpoint Java‑mode
 ========================================================= */
 
 console.log("[RESET-PASSWORD-REQ] Versione CF caricata");
@@ -32,15 +32,12 @@ document.addEventListener("critical-ready", () => {
     try {
       console.log("[RESET-PASSWORD-REQ] Invio richiesta con CF:", codice_fiscale);
 
-      const res = await window.fetchUniversale(
-        "/utenti/reset-password-request",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ codice_fiscale })
-        },
-        { retries: 2, backoffMs: 300 }
-      );
+      // ⭐ PATCH — fetch nativo + endpoint Java‑mode
+      const res = await fetch("/api/utenti/resetPasswordRequest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codice_fiscale })
+      });
 
       const data = await res.json().catch(() => ({}));
       console.log("[RESET-PASSWORD-REQ] Risposta:", data);
