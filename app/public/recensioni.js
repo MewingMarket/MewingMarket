@@ -1,7 +1,7 @@
 /* =========================================================
-   RECENSIONI UTENTE — Versione SQL Definitiva
+   RECENSIONI UTENTE — Versione SQL Definitiva 2027.990
    Mapping: feedback.prodotto_id -> prodotti.id
-   PATCH: Sostituito fetchUniversale con fetch standard
+   PATCH: Token + Gestione 401/403 + Coerenza auth-user
 ========================================================= */
 
 document.addEventListener("critical-ready", async () => {
@@ -13,14 +13,40 @@ document.addEventListener("critical-ready", async () => {
   const commentoArea = document.getElementById("commento");
   const status = document.getElementById("status");
   const stars = document.querySelectorAll("#stars span");
-  
+
+  const token = localStorage.getItem("token");
   let ratingSelezionato = 0;
+
+  // Protezione base: se non c'è token, blocco UI
+  if (!token) {
+    if (selectProdotto) {
+      selectProdotto.innerHTML = `<option value="">Effettua il login per recensire</option>`;
+    }
+    if (btnInvia) btnInvia.disabled = true;
+    if (listaRecensioni) {
+      listaRecensioni.innerHTML = `<p class='info-vuoto'>Effettua il login per vedere le tue recensioni.</p>`;
+    }
+    return;
+  }
+
+  async function handleAuthResponse(res) {
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem("token");
+      window.location.href = "/login";
+      return null;
+    }
+    return res;
+  }
 
   // 1) CARICA PRODOTTI ACQUISTATI (per la select)
   async function caricaProdottiAcquistati() {
     try {
-      // ⭐ PATCH — fetch nativo
-      const res = await fetch("/api/recensioni/prodotti-acquistati");
+      const resRaw = await fetch("/api/recensioni/prodotti-acquistati", {
+        headers: { Authorization: "Bearer " + token }
+      });
+      const res = await handleAuthResponse(resRaw);
+      if (!res) return;
+
       const data = await res.json();
 
       if (!data.success || !data.prodotti || data.prodotti.length === 0) {
@@ -32,7 +58,7 @@ document.addEventListener("critical-ready", async () => {
       selectProdotto.innerHTML = data.prodotti
         .map(p => `<option value="${p.id}">${p.titolo_breve || p.titolo}</option>`)
         .join("");
-      
+
       btnInvia.disabled = false;
     } catch (err) {
       console.error("🔴 [RECENSIONI] Errore prodotti acquistati:", err);
@@ -50,7 +76,7 @@ document.addEventListener("critical-ready", async () => {
     });
   });
 
-  // 3) INVIO RECENSIONE (Tabella 'feedback')
+  // 3) INVIO RECENSIONE
   btnInvia.addEventListener("click", async () => {
     const prodotto_id = Number(selectProdotto.value);
     const testo = commentoArea.value.trim();
@@ -62,16 +88,20 @@ document.addEventListener("critical-ready", async () => {
     }
 
     try {
-      // ⭐ PATCH — fetch nativo
-      const res = await fetch("/api/recensioni/crea", {
+      const resRaw = await fetch("/api/recensioni/crea", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token
+        },
         body: JSON.stringify({
           prodotto_id,
           rating: ratingSelezionato,
           commento: testo
         })
       });
+      const res = await handleAuthResponse(resRaw);
+      if (!res) return;
 
       const data = await res.json();
 
@@ -81,7 +111,7 @@ document.addEventListener("critical-ready", async () => {
         commentoArea.value = "";
         ratingSelezionato = 0;
         stars.forEach(s => s.classList.remove("active"));
-        caricaRecensioni(); // Refresh lista
+        caricaRecensioni();
       } else {
         status.textContent = data.error || "Errore durante l'invio.";
         status.className = "status-msg err";
@@ -92,13 +122,17 @@ document.addEventListener("critical-ready", async () => {
     }
   });
 
-  // 4) CARICA LISTA RECENSIONI (Tabella 'feedback' + JOIN 'prodotti')
+  // 4) CARICA LISTA RECENSIONI
   async function caricaRecensioni() {
     listaRecensioni.innerHTML = "<div class='loader'>Caricamento i tuoi feedback...</div>";
 
     try {
-      // ⭐ PATCH — fetch nativo
-      const res = await fetch("/api/recensioni/utente");
+      const resRaw = await fetch("/api/recensioni/utente", {
+        headers: { Authorization: "Bearer " + token }
+      });
+      const res = await handleAuthResponse(resRaw);
+      if (!res) return;
+
       const data = await res.json();
 
       if (!data.success || !data.recensioni || data.recensioni.length === 0) {
@@ -110,7 +144,7 @@ document.addEventListener("critical-ready", async () => {
         <div class="review-card">
           <div class="review-header">
             <strong>${r.prodotto_titolo || "Prodotto"}</strong>
-            <span class="stars">${"★".repeat(r.rating)}${"☆".repeat(5-r.rating)}</span>
+            <span class="stars">${"★".repeat(r.rating)}${"☆".repeat(5 - r.rating)}</span>
           </div>
           <p class="review-body">${r.commento}</p>
           <div class="review-footer">
@@ -128,35 +162,49 @@ document.addEventListener("critical-ready", async () => {
     }
   }
 
-  // 5) FUNZIONI DI AZIONE (Globali per onclick)
+  // 5) FUNZIONI GLOBALI
   window.eliminaRecensione = async (id) => {
     if (!confirm("Vuoi eliminare questa recensione?")) return;
     try {
-      // ⭐ PATCH — fetch nativo
-      const res = await fetch("/api/recensioni/elimina", {
+      const resRaw = await fetch("/api/recensioni/elimina", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token
+        },
         body: JSON.stringify({ id })
       });
+      const res = await handleAuthResponse(resRaw);
+      if (!res) return;
+
       const data = await res.json();
       if (data.success) caricaRecensioni();
-    } catch (e) { alert("Errore eliminazione."); }
+    } catch (e) {
+      alert("Errore eliminazione.");
+    }
   };
 
   window.modificaRecensione = async (id) => {
     const nuovoTesto = prompt("Inserisci il nuovo commento:");
     if (!nuovoTesto || nuovoTesto.length < 5) return;
-    
+
     try {
-      // ⭐ PATCH — fetch nativo
-      const res = await fetch("/api/recensioni/modifica", {
+      const resRaw = await fetch("/api/recensioni/modifica", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token
+        },
         body: JSON.stringify({ id, commento: nuovoTesto })
       });
+      const res = await handleAuthResponse(resRaw);
+      if (!res) return;
+
       const data = await res.json();
       if (data.success) caricaRecensioni();
-    } catch (e) { alert("Errore modifica."); }
+    } catch (e) {
+      alert("Errore modifica.");
+    }
   };
 
   // Avvio
