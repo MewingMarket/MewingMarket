@@ -13,7 +13,7 @@ function loadAdminUtilityScript(name) {
     s.id = id;
     s.src = `/admin/${name}.js?v=${ADMIN_VERSION}`;
     s.onload = () => resolve();
-    s.onerror = () => resolve(); // Non bloccare il caricamento se un'utility fallisce
+    s.onerror = () => resolve(); // Non blocca nulla
     document.head.appendChild(s);
   });
 }
@@ -27,15 +27,16 @@ function safeLoadHTML(url, placeholderId, eventName) {
         ph.innerHTML = html;
         document.dispatchEvent(new Event(eventName));
       }
-    }).catch(() => console.warn(`[ADMIN] Componente ${url} non caricato`));
+    })
+    .catch(() => console.warn(`[ADMIN] Componente ${url} non caricato`));
 }
 
 async function startAdminLoader() {
-  // Utility SEO e Dati (Rimosso 'api')
+  // Utility SEO e Structured Data
   const seoP = loadAdminUtilityScript("seo-admin");
   const sdP  = loadAdminUtilityScript("structured-data-admin");
 
-  // HTML Components
+  // Componenti HTML
   const headP = safeLoadHTML(`/admin/head-admin.html?v=${ADMIN_VERSION}`, "head-admin-placeholder", "admin-head-loaded");
   const headerP = safeLoadHTML(`/admin/header-admin.html?v=${ADMIN_VERSION}`, "header-admin-placeholder", "admin-header-loaded");
   const footerP = safeLoadHTML(`/admin/footer-admin.html?v=${ADMIN_VERSION}`, "footer-admin-placeholder", "admin-footer-loaded");
@@ -48,10 +49,19 @@ async function startAdminLoader() {
 }
 
 // Auth Check & Bootstrap
-(function() {
-  if (window.isAdmin) { startAdminLoader(); return; }
+(function () {
+  // ⭐ Nessun mm-api, nessun loader esterno
+  if (window.isAdmin) {
+    startAdminLoader();
+    return;
+  }
+
+  // Carica auth.js solo se necessario
   const s = document.createElement("script");
   s.src = `/auth.js?v=${ADMIN_VERSION}`;
-  s.onload = () => { if (window.isAdmin) startAdminLoader(); };
+  s.onload = () => {
+    if (window.isAdmin) startAdminLoader();
+    else console.warn("🟥 [ADMIN] Accesso negato — isAdmin = false");
+  };
   document.head.appendChild(s);
 })();
