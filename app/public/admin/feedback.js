@@ -1,6 +1,6 @@
 /* =========================================================
-   ADMIN FEEDBACK — Versione SQL 2027.980
-   Sincronizzata con admin-feedback.cjs (JOIN + KPI)
+   ADMIN FEEDBACK — Versione SQL 2027.990 (PATCH TOKEN)
+   Sincronizzata con admin-feedback.cjs + auth-user.cjs
 ========================================================= */
 
 const clean = (t) =>
@@ -10,20 +10,46 @@ const clean = (t) =>
 
 // Formattazione data italiana
 const fDate = (d) => {
-  if(!d) return "—";
+  if (!d) return "—";
   try {
     const date = new Date(d);
-    return date.toLocaleDateString('it-IT') + " " + date.toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'});
-  } catch(e) { return d; }
+    return (
+      date.toLocaleDateString("it-IT") +
+      " " +
+      date.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })
+    );
+  } catch (e) {
+    return d;
+  }
 };
 
 /* =========================================================
-   FETCH ADMIN (Versione Unificata)
+   FETCH ADMIN — Versione con TOKEN + FALLBACK LOGIN
 ========================================================= */
-async function adminGet(path) {
+async function adminGet(path, options = {}) {
+  const token = localStorage.getItem("token");
+
+  const headers = {
+    ...(options.headers || {}),
+    Authorization: token ? `Bearer ${token}` : ""
+  };
+
   const fullPath = path.startsWith("/api") ? path : `/api${path}`;
-  const res = await window.fetchUniversale(fullPath, { method: "GET" }, { retries: 2 });
-  return res.json();
+
+  const res = await window.fetchUniversale(
+    fullPath,
+    { ...options, headers },
+    { retries: 2 }
+  );
+
+  // Token scaduto / invalido → logout
+  if (res.status === 401 || res.status === 403) {
+    localStorage.removeItem("token");
+    window.location.href = "/admin/login";
+    return null;
+  }
+
+  return res;
 }
 
 /* =========================================================
@@ -49,15 +75,17 @@ function renderKPI(kpi) {
       <div class="kpi-section">
         <h4>Distribuzione Valutazioni</h4>
         <div class="stars-distribution">
-          ${[5, 4, 3, 2, 1].map(s => {
-            const perc = kpi.percentuali?.[s] || 0;
-            return `
+          ${[5, 4, 3, 2, 1]
+            .map((s) => {
+              const perc = kpi.percentuali?.[s] || 0;
+              return `
               <div class="star-row">
                 <span class="star-label">${s} ⭐</span>
                 <div class="progress-bar"><div class="fill" style="width: ${perc}%"></div></div>
                 <span class="star-perc">${perc}%</span>
               </div>`;
-          }).join("")}
+            })
+            .join("")}
         </div>
       </div>
       
@@ -66,11 +94,15 @@ function renderKPI(kpi) {
         <div class="rank-flex">
           <div class="rank-col">
             <small>TOP 5</small>
-            <ul>${(kpi.prodotti_top || []).map(p => `<li>${clean(p.titolo)} (⭐${p.media})</li>`).join("")}</ul>
+            <ul>${(kpi.prodotti_top || [])
+              .map((p) => `<li>${clean(p.titolo)} (⭐${p.media})</li>`)
+              .join("")}</ul>
           </div>
           <div class="rank-col">
             <small>FLOP 5</small>
-            <ul>${(kpi.prodotti_flop || []).map(p => `<li>${clean(p.titolo)} (⭐${p.media})</li>`).join("")}</ul>
+            <ul>${(kpi.prodotti_flop || [])
+              .map((p) => `<li>${clean(p.titolo)} (⭐${p.media})</li>`)
+              .join("")}</ul>
           </div>
         </div>
       </div>
@@ -79,7 +111,7 @@ function renderKPI(kpi) {
 }
 
 /* =========================================================
-   CARICA FEEDBACK
+   CARICA FEEDBACK (con token)
 ========================================================= */
 async function caricaFeedback() {
   const tbody = document.querySelector("#tabella-feedback tbody");
@@ -88,7 +120,10 @@ async function caricaFeedback() {
   tbody.innerHTML = "<tr><td colspan='5'>Interrogazione database SQL...</td></tr>";
 
   try {
-    const data = await adminGet("/admin/feedback/lista");
+    const res = await adminGet("/api/admin/feedback/lista");
+    if (!res) return;
+
+    const data = await res.json();
     console.log("🟢 [ADMIN] Feedback caricati:", data);
 
     if (data.kpi) renderKPI(data.kpi);
@@ -97,30 +132,32 @@ async function caricaFeedback() {
     tbody.innerHTML = "";
 
     if (feedbackLista.length === 0) {
-      tbody.innerHTML = "<tr><td colspan='5'>Nessuna recensione presente nel database.</td></tr>";
+      tbody.innerHTML =
+        "<tr><td colspan='5'>Nessuna recensione presente nel database.</td></tr>";
       return;
     }
 
     feedbackLista.forEach((f) => {
       const tr = document.createElement("tr");
-      
-      // I nomi delle colonne ora matchano la query SELECT del backend
+
       const prodotto = f.prodotto_titolo || "Prodotto rimosso";
       const utente = f.utente_email || "Anonimo";
 
       tr.innerHTML = `
         <td><b>${clean(prodotto)}</b></td>
-        <td><span class="stars-visual">${"⭐".repeat(f.rating)}</span> <small>(${f.rating}/5)</small></td>
+        <td><span class="stars-visual">${"⭐".repeat(
+          f.rating
+        )}</span> <small>(${f.rating}/5)</small></td>
         <td class="cell-comment"><em>"${clean(f.commento)}"</em></td>
         <td><small>${clean(utente)}</small></td>
         <td><small>${fDate(f.data)}</small></td>
       `;
       tbody.appendChild(tr);
     });
-
   } catch (err) {
     console.error("❌ [ADMIN] Errore caricamento feedback:", err);
-    tbody.innerHTML = "<tr><td colspan='5'>Errore tecnico nel recupero dei feedback.</td></tr>";
+    tbody.innerHTML =
+      "<tr><td colspan='5'>Errore tecnico nel recupero dei feedback.</td></tr>";
   }
 }
 
