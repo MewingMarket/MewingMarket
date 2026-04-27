@@ -1,7 +1,8 @@
 /* =========================================================
-   DISISCRIZIONE NEWSLETTER — PATCH 2027.400
+   DISISCRIZIONE NEWSLETTER — PATCH 2027.900
    - critical-ready
-   - fetchUniversale (fallback chain)
+   - fetch nativo
+   - API universale Java‑mode
    - Nessuna regressione
 ========================================================= */
 
@@ -70,16 +71,12 @@ document.addEventListener("critical-ready", () => {
     safeTrack("newsletter_unsubscribe_attempt", { email });
 
     try {
-      // ⭐ PATCH — usa fetchUniversale
-      const res = await window.fetchUniversale(
-        "/newsletter/unsubscribe",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email })
-        },
-        { retries: 2, backoffMs: 300 }
-      );
+      // ⭐ PATCH 2027 — fetch nativo + endpoint Java‑mode
+      const res = await fetch("/api/newsletter/unsubscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email })
+      });
 
       let data = {};
       try {
