@@ -1,13 +1,16 @@
-console.log("🚀 mm-api.js: Modalità Compatibilità Attiva");
+console.log("🚀 mm-api.js: Modalità API-FORCED Attiva");
 
 /**
- * fetchUniversale — versione compatibile con backend SENZA /api
+ * fetchUniversale — forza tutte le chiamate sotto /api
  */
 window.fetchUniversale = async function(path, options = {}, cfg = {}) {
     const token = localStorage.getItem("token") || localStorage.getItem("mewing_token");
 
-    // 1. NON aggiungiamo /api
+    // 1. Forza /api davanti a tutto
     let fullPath = path;
+    if (!path.startsWith("/api") && !path.startsWith("http")) {
+        fullPath = `/api${path.startsWith("/") ? "" : "/"}${path}`;
+    }
 
     // 2. Header
     const defaultHeaders = {
@@ -19,7 +22,7 @@ window.fetchUniversale = async function(path, options = {}, cfg = {}) {
 
     const retries = cfg.retries || 1;
 
-    console.log(`📡 Chiamata: ${fullPath}`);
+    console.log(`📡 Chiamata API: ${fullPath}`);
 
     for (let i = 0; i <= retries; i++) {
         try {
