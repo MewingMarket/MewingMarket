@@ -1,6 +1,6 @@
 // ===============================
 // CRITICAL LOADER — MewingMarket
-// Versione 2027.701 — COMPLETA + PATCH DEFINITIVA
+// Versione 2027.900 — SENZA mm-api.js
 // ===============================
 
 (function () {
@@ -8,22 +8,10 @@
   const VERSION = "20260412";
 
   // ============================================================
-  // 0) CARICAMENTO mm-api.js — OBBLIGATORIO E BLOCCANTE
+  // 0) RIMOSSO mm-api.js — NON SERVE PIÙ
   // ============================================================
-  const apiPromise = new Promise((resolve) => {
-    const s = document.createElement("script");
-    s.id = "critical-api";
-    s.src = `/mm-api.js?v=${VERSION}`;
-    s.onload = () => {
-      console.log("[CRITICAL] mm-api.js caricato");
-      resolve();
-    };
-    s.onerror = () => {
-      console.error("[CRITICAL] ERRORE: mm-api.js non caricato");
-      resolve();
-    };
-    document.head.appendChild(s);
-  });
+  const apiPromise = Promise.resolve(); 
+  console.log("[CRITICAL] mm-api.js rimosso (Java-mode)");
 
   // ============================================================
   // 1) SEO / STRUCTURED-DATA / TRACKING (ASINCRONI)
@@ -57,7 +45,9 @@
   const segments = pathLower.split("/").filter(Boolean);
   const firstSegment = segments[0] || "";
 
-  let pageName = pathLower.endsWith(".html") ? normalize(pathLower.split("/").pop()) : normalize(firstSegment);
+  let pageName = pathLower.endsWith(".html")
+    ? normalize(pathLower.split("/").pop())
+    : normalize(firstSegment);
 
   const isHome = pathLower === "/" || pathLower === "/index" || pathLower.endsWith("/index.html");
   const isAdminPage = pathLower.includes("/admin/") || firstSegment === "admin";
@@ -65,23 +55,21 @@
   console.log("[CRITICAL] Routing:", { pageName, isHome, isAdminPage });
 
   // ============================================================
-  // 3) AUTH — PARTE DOPO API
+  // 3) AUTH — CARICAMENTO DIRETTO (NON DIPENDE PIÙ DA mm-api)
   // ============================================================
-  const authPromise = apiPromise.then(() => {
-    return new Promise((resolve) => {
-      const s = document.createElement("script");
-      s.id = "critical-auth";
-      s.src = `/auth.js?v=${VERSION}`;
-      s.onload = () => {
-        console.log("[CRITICAL] auth.js caricato");
-        resolve();
-      };
-      s.onerror = () => {
-        console.error("[CRITICAL] ERRORE: auth.js non caricato");
-        resolve();
-      };
-      document.head.appendChild(s);
-    });
+  const authPromise = new Promise((resolve) => {
+    const s = document.createElement("script");
+    s.id = "critical-auth";
+    s.src = `/auth.js?v=${VERSION}`;
+    s.onload = () => {
+      console.log("[CRITICAL] auth.js caricato");
+      resolve();
+    };
+    s.onerror = () => {
+      console.error("[CRITICAL] ERRORE: auth.js non caricato");
+      resolve();
+    };
+    document.head.appendChild(s);
   });
 
   // ============================================================
@@ -94,13 +82,13 @@
         const temp = document.createElement("div");
         temp.innerHTML = html;
         [...temp.children].forEach((node) => {
-            if (node.tagName === "SCRIPT") {
-                const s = document.createElement("script");
-                s.text = node.text;
-                document.head.appendChild(s);
-            } else {
-                document.head.appendChild(node);
-            }
+          if (node.tagName === "SCRIPT") {
+            const s = document.createElement("script");
+            s.text = node.text;
+            document.head.appendChild(s);
+          } else {
+            document.head.appendChild(node);
+          }
         });
         document.dispatchEvent(new Event("head-loaded"));
         return true;
@@ -140,7 +128,7 @@
   );
 
   // ============================================================
-  // 6) HEADER.JS (LOGICA MENU/UI)
+  // 6) HEADER.JS
   // ============================================================
   const headerLogicPromise = headerPromise.then(() => {
     return new Promise((resolve) => {
@@ -153,7 +141,7 @@
   });
 
   // ============================================================
-  // 7) FOOTER — PATCH DEFINITIVA
+  // 7) FOOTER
   // ============================================================
   function safeFetchFooter(url) {
     return fetch(url)
@@ -164,11 +152,11 @@
         const year = document.getElementById("anno");
         if (year) year.textContent = new Date().getFullYear();
         document.dispatchEvent(new Event("footer-loaded"));
-        return true; 
+        return true;
       })
       .catch(err => {
         console.error("[CRITICAL] footer non caricato:", err);
-        return true; 
+        return true;
       });
   }
 
@@ -176,7 +164,7 @@
     .catch(() => safeFetchFooter(`/footer.html?v=${VERSION}`));
 
   // ============================================================
-  // 8) CARRELLO — CARICAMENTO AUTOMATICO GLOBALE
+  // 8) CARRELLO
   // ============================================================
   const carrelloPromise = headerLogicPromise.then(() => {
     return new Promise((resolve) => {
@@ -196,7 +184,7 @@
   });
 
   // ============================================================
-  // 9) ADMIN LOADER (SOLO SE NECESSARIO)
+  // 9) ADMIN LOADER
   // ============================================================
   const adminPromise = authPromise.then(() => {
     return new Promise((resolve) => {
@@ -213,17 +201,16 @@
       };
 
       if (window.isAdmin !== undefined) {
-          checkAdmin();
+        checkAdmin();
       } else {
-          document.addEventListener("auth-ready", checkAdmin, { once: true });
-          // Timeout di sicurezza per non bloccare il critical-ready
-          setTimeout(resolve, 2000);
+        document.addEventListener("auth-ready", checkAdmin, { once: true });
+        setTimeout(resolve, 2000);
       }
     });
   });
 
   // ============================================================
-  // 10) CRITICAL READY — EMISSIONE FINALE
+  // 10) CRITICAL READY
   // ============================================================
   Promise.all([
     apiPromise,
@@ -237,7 +224,7 @@
   ]).then(() => {
     window.__criticalReady = true;
     document.dispatchEvent(new Event("critical-ready"));
-    console.log("[CRITICAL] critical-ready emesso (2027.701)");
+    console.log("[CRITICAL] critical-ready emesso (2027.900)");
   });
 
 })();
