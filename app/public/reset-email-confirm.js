@@ -1,8 +1,8 @@
 /* =========================================================
-   RESET EMAIL CONFIRM — Versione ZERO-INPUT (PATCH 2027.400)
+   RESET EMAIL CONFIRM — Versione ZERO-INPUT (PATCH 2027.900)
    - critical-ready
-   - fetchUniversale (fallback chain)
-   - Nessuna regressione
+   - fetch nativo
+   - Endpoint Java‑mode
 ========================================================= */
 
 console.log("[RESET-EMAIL-CONFIRM] Versione ZERO-INPUT caricata");
@@ -42,15 +42,12 @@ document.addEventListener("critical-ready", () => {
     try {
       console.log("[RESET-EMAIL-CONFIRM] Invio conferma ZERO-INPUT…");
 
-      const res = await window.fetchUniversale(
-        "/utenti/reset-email-confirm",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ nuova_email, codice_fiscale })
-        },
-        { retries: 2, backoffMs: 300 }
-      );
+      // ⭐ PATCH — fetch nativo + endpoint Java‑mode
+      const res = await fetch("/api/utenti/resetEmailConfirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nuova_email, codice_fiscale })
+      });
 
       const data = await res.json().catch(() => ({}));
       console.log("[RESET-EMAIL-CONFIRM] Risposta:", data);
