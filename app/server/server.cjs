@@ -1,7 +1,7 @@
 /* FILE: app/server/server.cjs */
 /**
  * =========================================================
- * Entry point del server — versione DEFINITIVA + PATCH ROOT-FINDER
+ * Entry point del server — versione DEFINITIVA (2027)
  * =========================================================
  */
 
@@ -25,7 +25,6 @@ log(">> SERVER STARTING…");
 const express = require("express");
 const path = require("path");
 const cookieParser = require("cookie-parser");
-const crypto = require("crypto");
 const fs = require("fs");
 
 const app = express();
@@ -33,7 +32,7 @@ app.disable("x-powered-by");
 
 /**
  * =========================================================
- * 🟩 PATCH AGGRESSIVA — JS ROOT-FINDER (Fix 404 de coccio)
+ * JS ROOT-FINDER (Fix 404)
  * =========================================================
  */
 app.use((req, res, next) => {
@@ -69,7 +68,7 @@ let BOOTSTRAP_OK = false;
 
 /**
  * =========================================================
- * HEALTH BASE
+ * HEALTH BASE (rimane, NON è api-health)
  * =========================================================
  */
 app.get("/health", (req, res) => {
@@ -82,7 +81,7 @@ app.get("/health", (req, res) => {
 
 /**
  * =========================================================
- * 🔵 DEBUG REQUEST/RESPONSE — logger globale
+ * DEBUG REQUEST/RESPONSE
  * =========================================================
  */
 app.use((req, res, next) => {
@@ -99,33 +98,35 @@ app.use((req, res, next) => {
 
 /**
  * =========================================================
- * 🔍 HOOK DIAGNOSTICA (server-level)
+ * HOOK DIAGNOSTICA
  * =========================================================
  */
 try {
   const diagnostica = require("./diagnostica.cjs");
   if (typeof diagnostica?.hookServer === "function") {
     diagnostica.hookServer(app, { log, logErr });
-    log("🟩 diagnostica.cjs agganciata a livello server");
-  } else {
-    log("🟨 diagnostica.cjs presente ma senza hookServer()");
+    log("🟩 diagnostica.cjs agganciata");
   }
 } catch (err) {
-  log("🟧 diagnostica.cjs non presente (ok per ora):", err.message);
+  log("🟧 diagnostica.cjs non presente:", err.message);
 }
 
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+/**
+ * =========================================================
+ * BOOT SEQUENZA
+ * =========================================================
+ */
 (async () => {
   log(">> LOADING logging.cjs");
   await wait(200);
   require("./services/logging.cjs");
 
-  log(">> RESTORE DB & FILES (if needed)");
+  log(">> RESTORE DB & FILES");
   await wait(200);
   const { restore } = require("./modules/restore.cjs");
   await restore();
-
   global.__restore_completed = true;
 
   log(">> APPLYING PARSER MIDDLEWARE");
@@ -141,12 +142,12 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
   }
 
   if (!db) {
-    logErr("❌ ERRORE FATALE: DB ancora null dopo restore");
+    logErr("❌ ERRORE FATALE: DB null dopo restore");
     process.exit(1);
   }
 
   app.set("db", db);
-  log(">> DB REGISTRATO SU app.set('db')");
+  log(">> DB REGISTRATO");
 
   log(">> LOADING cache.cjs");
   await wait(200);
@@ -160,17 +161,26 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
   await wait(200);
   require("./middleware/context.cjs")(app);
 
+  /**
+   * =========================================================
+   * ROUTER API (Java‑mode)
+   * =========================================================
+   */
   log(">> LOADING router.cjs");
   await wait(200);
   try {
     const router = require("./router.cjs");
-    // 🔑 Tutte le API sono sotto /api
     app.use("/api", router);
     log(">> ROUTER API CARICATO");
   } catch (err) {
-    console.error("❌ ROUTER LOAD ERROR FULL:", err);
+    console.error("❌ ROUTER LOAD ERROR:", err);
   }
 
+  /**
+   * =========================================================
+   * COLD START
+   * =========================================================
+   */
   try {
     const coldStart = require("./startup/cold-start.cjs");
     coldStart(app);
@@ -179,6 +189,11 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     logErr("❌ Errore cold-start:", err.message);
   }
 
+  /**
+   * =========================================================
+   * MIDDLEWARE DIAGNOSTICO
+   * =========================================================
+   */
   try {
     require("./middleware/middleware-diagnostico.cjs")(app);
     console.log("🟩 Middleware diagnostico attivato");
@@ -186,8 +201,14 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     console.error("❌ ERRORE middleware diagnostico:", err);
   }
 
+  /**
+   * =========================================================
+   * STATIC ROUTES
+   * =========================================================
+   */
   log(">> REGISTER STATIC ROUTES");
   await wait(200);
+
   const PUBLIC_DIR = path.resolve("app/public");
 
   app.get("/", (req, res, next) => {
@@ -203,13 +224,11 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
   app.use(express.static(PUBLIC_DIR));
 
-  try {
-    require("./alias-engine.cjs")(app, { log, logErr });
-    log("🟩 Alias Engine attivato");
-  } catch (err) {
-    logErr("❌ Errore Alias Engine:", err.message);
-  }
-
+  /**
+   * =========================================================
+   * REWRITE SCRIPTS (rimane)
+   * =========================================================
+   */
   try {
     const rewriteScripts = require("./utils/rewrites.cjs");
     app.use((req, res, next) => {
@@ -234,6 +253,11 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
   app.use("/*.css", express.static(PUBLIC_DIR));
   app.use("/css", express.static(PUBLIC_DIR));
 
+  /**
+   * =========================================================
+   * /data (persistente)
+   * =========================================================
+   */
   const DATA_BACKUP = path.join(process.cwd(), "app/data");
   const DATA_PERSIST = "/var/data/json";
 
@@ -264,10 +288,11 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     res.status(404).json({ error: "File non trovato" });
   });
 
-  try {
-    require("./routes/var-data.cjs")(app);
-  } catch(e) {}
-
+  /**
+   * =========================================================
+   * ROUTES EXPRESS CHE DEVONO RESTARE
+   * =========================================================
+   */
   app.get("/admin/login", (req, res) => {
     res.sendFile(path.resolve("app/public/admin/admin-login.html"));
   });
@@ -279,20 +304,29 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     require("./routes/newsletter.cjs")(app);
     require("./routes/meta-feed.cjs")(app);
     require("./routes/product-page.cjs")(app);
-    require("./routes/system-status.cjs")(app);
-    require("./routes/versione.cjs")(app);
+    require("./routes/sitemap.cjs")(app);
     log("✅ FRONTEND ROUTES CARICATE");
   } catch (err) {
     logErr("❌ ERRORE FRONTEND ROUTES:", err.message || err);
   }
 
+  /**
+   * =========================================================
+   * CRON
+   * =========================================================
+   */
   try {
     require("./startup/cron-sync.cjs")(app, { log, logErr });
-    log("🔁 Cron-sync avviato (10 minuti)");
+    log("🔁 Cron-sync avviato");
   } catch (err) {
     logErr("❌ Errore cron-sync:", err.message);
   }
 
+  /**
+   * =========================================================
+   * START SERVER
+   * =========================================================
+   */
   async function startServer() {
     try {
       await require("./startup/bootstrap.cjs")();
@@ -302,6 +336,7 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     }
 
     const PORT = process.env.PORT || 3000;
+
     try {
       require("./startup/cron-youtube.cjs")();
     } catch(e) {
