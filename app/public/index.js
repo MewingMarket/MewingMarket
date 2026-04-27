@@ -1,8 +1,9 @@
 /* =========================================================
-   HOME PREMIUM — MewingMarket (PATCH 2027.750)
+   HOME PREMIUM — MewingMarket (PATCH 2027.900)
    - Mapping SQL: youtube_video_id + immagine_url
    - UI: Rimosso tasto "+" (Solo tasto Scopri)
-   ========================================================= */
+   - Endpoint aggiornati a Java‑mode
+========================================================= */
 
 document.addEventListener("critical-ready", () => {
   console.log("[HOME] Inizializzazione homepage con Mapping SQL...");
@@ -15,8 +16,8 @@ document.addEventListener("critical-ready", () => {
     if (!grid) return;
 
     try {
-      // ⭐ PATCH: Usiamo fetch standard per bypassare i blocchi di fetchUniversale
-      const res = await fetch("/api/products");
+      // ⭐ PATCH 2027 — nuovo endpoint Java‑mode
+      const res = await fetch("/api/prodotti/getProdotti");
       const data = await res.json();
 
       // Normalizzazione dati SQL
@@ -75,7 +76,8 @@ document.addEventListener("critical-ready", () => {
   // ------------------------------
   (async () => {
     try {
-      const resHero = await fetch("/api/products");
+      // ⭐ PATCH 2027 — nuovo endpoint Java‑mode
+      const resHero = await fetch("/api/prodotti/getProdotti");
       const dataHero = await resHero.json();
       const productsHero = Array.isArray(dataHero) ? dataHero : (dataHero.prodotti || []);
       
