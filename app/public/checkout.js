@@ -1,7 +1,8 @@
 // =========================================================
-// CHECKOUT.JS — Versione DEFINITIVA (PATCH 2027.400)
+// CHECKOUT.JS — Versione DEFINITIVA (PATCH 2027.900)
 // - Usa fetch standard (Massima Stabilità)
 // - Sincronizzazione Totale Centesimi per PayPal
+// - Compatibile con API universali Java‑mode
 // =========================================================
 
 console.log("[CHECKOUT] Caricato");
@@ -45,8 +46,8 @@ async function initCheckout() {
   let utenteEmail = null;
 
   try {
-    // ⭐ PATCH — Sostituito window.fetchUniversale con fetch nativo
-    const res = await fetch("/utenti/me", {
+    // ⭐ PATCH 2027 — nuovo endpoint Java‑mode
+    const res = await fetch("/api/utenti/me", {
       headers: { "Authorization": "Bearer " + token }
     });
 
@@ -135,14 +136,14 @@ async function initCheckout() {
 
       const payload = Cart.getForCheckout();
 
-      // ⭐ PATCH — Sostituito window.fetchUniversale con fetch nativo
-      const res = await fetch("/paypal/create-order", {
+      // ⭐ PATCH 2027 — nuovo endpoint Java‑mode
+      const res = await fetch("/api/paypal/paypalCreateOrder", {
         method: "POST",
         headers: authHeaders,
         body: JSON.stringify({
           email: utenteEmail,
           prodotti: payload,
-          totale: totaleEuro // Inviamo il totale come stringa "XX.XX" per PayPal
+          totale: totaleEuro // stringa "XX.XX"
         })
       });
 
