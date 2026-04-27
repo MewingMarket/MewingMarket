@@ -1,8 +1,8 @@
 /* =========================================================
-   TOP RECENSIONI — Versione 2027.400
+   TOP RECENSIONI — Versione 2027.900
    - critical-ready
-   - fetchUniversale (fallback chain)
-   - Nessuna regressione
+   - fetch standard
+   - Endpoint Java‑mode
 ========================================================= */
 
 document.addEventListener("critical-ready", caricaTopRecensioni);
@@ -11,10 +11,10 @@ async function caricaTopRecensioni() {
   const box = document.getElementById("topRecensioni");
 
   try {
-    const res = await window.fetchUniversale(
-      "/recensioni/top",
-      { method: "GET" }
-    );
+    // ⭐ PATCH — fetch nativo + endpoint aggiornato
+    const res = await fetch("/api/recensioni/getTopRecensioni", {
+      method: "GET"
+    });
 
     const data = await res.json();
 
