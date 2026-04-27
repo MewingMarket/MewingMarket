@@ -1,9 +1,6 @@
 /* =========================================================
-   ROUTER PRINCIPALE — Versione PERFETTA 2027.2
-   - API pubbliche
-   - API private con auth-user
-   - Admin con auth-admin
-   - Namespace /api corretto
+   ROUTER PRINCIPALE — Versione PERFETTA 2027.4
+   SENZA /api — tutto diretto
 ========================================================= */
 
 const express = require("express");
@@ -13,48 +10,48 @@ const router = express.Router();
 const R = (p) => require(path.join(process.cwd(), "app/server", p));
 
 /* =========================================================
-   1) API PUBBLICHE
+   1) API PUBBLICHE (NON protette)
 ========================================================= */
 
 // Prodotti pubblici
-router.use("/api", R("routes/api-prodotti-new.cjs"));
-router.use("/api", R("routes/product-page.cjs"));
+router.use(R("routes/api-prodotti-new.cjs"));     // /prodotti, /products
+router.use(R("routes/product-page.cjs"));         // /product-page/:id
 
-// Health
-router.use("/api", R("routes/api-health.cjs"));
-router.use("/api", R("routes/system-status.cjs"));
+// Health & System Status
+router.use(R("routes/api-health.cjs"));           // /health
+router.use(R("routes/system-status.cjs"));        // /system-status
 
 // Assistenza pubblica
-router.use("/api", R("routes/api-assistenza.cjs"));
+router.use(R("routes/api-assistenza.cjs"));       // /assistenza/invia
 
 /* =========================================================
    2) ADMIN (protetto da auth-admin)
 ========================================================= */
-router.use("/api/admin", R("routes/api-admin.cjs"));
-router.use("/api/admin", R("routes/admin-dashboard.cjs"));
-router.use("/api/admin", R("routes/admin-feedback.cjs"));
-router.use("/api/admin", R("routes/admin-utenti.cjs"));
+router.use("/admin", R("routes/api-admin.cjs"));
+router.use("/admin", R("routes/admin-dashboard.cjs"));
+router.use("/admin", R("routes/admin-feedback.cjs"));
+router.use("/admin", R("routes/admin-utenti.cjs"));
 
 /* =========================================================
-   3) API PRIVATE (auth-user)
+   3) API PRIVATE UTENTE (protette da auth-user)
 ========================================================= */
 
 const authUser = R("middleware/auth-user.cjs");
 
 // Utente
-router.use("/api/utente", authUser, R("routes/api-utente.cjs"));
+router.use("/utente", authUser, R("routes/api-utente.cjs"));
 
 // Ordini
-router.use("/api/ordini", authUser, R("routes/ordini-utente.cjs"));
+router.use("/ordini", authUser, R("routes/ordini-utente.cjs"));
 
 // Download
-router.use("/api/vendite", authUser, R("routes/api-vendite-download.cjs"));
+router.use("/vendite", authUser, R("routes/api-vendite-download.cjs"));
 
 // Recensioni
-router.use("/api/recensioni", authUser, R("routes/api-feedback.cjs"));
+router.use("/recensioni", authUser, R("routes/api-feedback.cjs"));
 
 // Rimborso
-router.use("/api/rimborso", authUser, R("routes/rimborso.cjs"));
+router.use("/rimborso", authUser, R("routes/rimborso.cjs"));
 
 /* =========================================================
    4) FAILSAFE
