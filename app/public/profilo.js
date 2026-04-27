@@ -1,5 +1,5 @@
 /* =========================================================
-   PROFILO.JS — Gestione Dati Utente + Moduli
+   PROFILO.JS — Gestione Dati Utente + Moduli (PATCH 2027.900)
 ========================================================= */
 console.log("[PROFILO] Inizializzazione...");
 
@@ -12,10 +12,12 @@ document.addEventListener("critical-ready", async () => {
 
   // 1. Caricamento dati utente (Popola sidebarEmail, sidebarUsername, sidebarCF)
   try {
-    const res = await window.fetchUniversale("/api/utenti/me", {
+    // ⭐ PATCH — fetch nativo
+    const res = await fetch("/api/utenti/me", {
       method: "GET",
       headers: { "Authorization": "Bearer " + token }
     });
+
     const data = await res.json();
 
     if (data.success && data.utente) {
@@ -23,7 +25,8 @@ document.addEventListener("critical-ready", async () => {
       if (document.getElementById("sidebarEmail")) 
           document.getElementById("sidebarEmail").textContent = u.email;
       if (document.getElementById("sidebarUsername")) 
-          document.getElementById("sidebarUsername").textContent = u.username || u.email.split('@')[0];
+          document.getElementById("sidebarUsername").textContent =
+            u.username || u.email.split('@')[0];
       if (document.getElementById("sidebarCF")) 
           document.getElementById("sidebarCF").textContent = u.codice_fiscale || "";
     }
@@ -38,15 +41,24 @@ document.addEventListener("critical-ready", async () => {
     const msg = document.getElementById("msgEmail");
 
     try {
-      const res = await window.fetchUniversale("/api/utenti/cambia-email", {
+      // ⭐ PATCH — endpoint Java‑mode + fetch nativo
+      const res = await fetch("/api/utenti/cambiaEmail", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token 
+        },
         body: JSON.stringify({ nuova_email, password })
       });
+
       const resData = await res.json();
       msg.textContent = resData.success ? "Email aggiornata!" : (resData.error || "Errore.");
+
       if (resData.success) setTimeout(() => location.reload(), 1000);
-    } catch (e) { msg.textContent = "Errore di connessione."; }
+
+    } catch (e) {
+      msg.textContent = "Errore di connessione.";
+    }
   });
 
   // 3. Logica Cambio Password
@@ -56,17 +68,26 @@ document.addEventListener("critical-ready", async () => {
     const msg = document.getElementById("msgPassword");
 
     try {
-      const res = await window.fetchUniversale("/api/utenti/cambia-password", {
+      // ⭐ PATCH — endpoint Java‑mode + fetch nativo
+      const res = await fetch("/api/utenti/cambiaPassword", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token 
+        },
         body: JSON.stringify({ vecchia_password, nuova_password })
       });
+
       const resData = await res.json();
       msg.textContent = resData.success ? "Password aggiornata!" : (resData.error || "Errore.");
+
       if (resData.success) {
         document.getElementById("oldPassword").value = "";
         document.getElementById("newPassword").value = "";
       }
-    } catch (e) { msg.textContent = "Errore di connessione."; }
+
+    } catch (e) {
+      msg.textContent = "Errore di connessione.";
+    }
   });
 });
