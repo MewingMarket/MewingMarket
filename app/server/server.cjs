@@ -34,7 +34,6 @@ app.disable("x-powered-by");
 /**
  * =========================================================
  * 🟩 PATCH AGGRESSIVA — JS ROOT-FINDER (Fix 404 de coccio)
- * Questa versione trova i file JS ovunque siano in public
  * =========================================================
  */
 app.use((req, res, next) => {
@@ -165,6 +164,7 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
   await wait(200);
   try {
     const router = require("./router.cjs");
+    // 🔑 Tutte le API sono sotto /api
     app.use("/api", router);
     log(">> ROUTER API CARICATO");
   } catch (err) {
@@ -303,9 +303,9 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
     const PORT = process.env.PORT || 3000;
     try {
-        require("./startup/cron-youtube.cjs")();
+      require("./startup/cron-youtube.cjs")();
     } catch(e) {
-        logErr("⚠️ cron-youtube non avviato");
+      logErr("⚠️ cron-youtube non avviato");
     }
 
     app.listen(PORT, () => {
