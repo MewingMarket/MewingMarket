@@ -1,61 +1,52 @@
 /* =========================================================
-   ROUTER PRINCIPALE — Versione PERFETTA 2027.8
-   SENZA /api — server.cjs lo aggiunge già
+   ROUTER UNIVERSALE — Versione 2027.9
 ========================================================= */
 
 const express = require("express");
-const path = require("path");
 const router = express.Router();
 
-const R = (p) => require(path.join(process.cwd(), "app/server", p));
+const funzioni = require("./index.cjs");
 
-/* =========================================================
-   1) API PUBBLICHE
-========================================================= */
-
-// Prodotti pubblici
-router.use(R("routes/api-prodotti-new.cjs"));     // /products, /prodotti
-router.use(R("routes/product-page.cjs"));         // /product-page/:id
-
-// Health & System Status
-router.use(R("routes/api-health.cjs"));
-router.use(R("routes/system-status.cjs"));
-
-// Assistenza pubblica
-router.use(R("routes/api-assistenza.cjs"));
-
-/* =========================================================
-   2) ADMIN (protetto da auth-admin)
-========================================================= */
-router.use("/admin", R("routes/api-admin.cjs"));
-router.use("/admin", R("routes/admin-dashboard.cjs"));
-router.use("/admin", R("routes/admin-feedback.cjs"));
-router.use("/admin", R("routes/admin-utenti.cjs"));
-
-/* =========================================================
-   3) API PRIVATE UTENTE (protette da auth-user)
-========================================================= */
-
+const R = (p) => require(require("path").join(process.cwd(), "app/server", p));
 const authUser = R("middleware/auth-user.cjs");
-
-// Utente (FILE REALE: api-utenti.cjs)
-router.use("/utente", authUser, R("routes/api-utenti.cjs"));
+const authAdmin = R("middleware/auth-admin.cjs");
 
 /* =========================================================
-   4) ORDINI, DOWNLOAD, RECENSIONI, RIMBORSO
+   /api/<modulo>/<funzione>
 ========================================================= */
 
-router.use("/ordini", authUser, R("routes/ordini-utente.cjs"));
-router.use("/vendite", authUser, R("routes/api-vendite-download.cjs"));
-router.use("/recensioni", authUser, R("routes/api-feedback.cjs"));
-router.use("/rimborso", authUser, R("routes/rimborso.cjs"));
+router.all("/:modulo/:funzione", async (req, res) => {
+  try {
+    const { modulo, funzione } = req.params;
 
-/* =========================================================
-   5) FAILSAFE
-========================================================= */
-router.use((err, req, res, next) => {
-  console.error("❌ [ROUTER ERROR]:", req.path, err.message);
-  res.status(500).json({ success: false, error: "Errore interno del server" });
+    const mod = funzioni[modulo];
+    if (!mod) {
+      return res.status(404).json({ success: false, error: "Modulo non trovato" });
+    }
+
+    const handler = mod[funzione];
+    if (typeof handler !== "function") {
+      return res.status(404).json({ success: false, error: "Funzione non trovata" });
+    }
+
+    // Autenticazione automatica
+    if (modulo === "admin") {
+      const ok = await authAdmin(req, res);
+      if (ok === false) return;
+    }
+
+    if (["ordini", "paypal", "vendite", "recensioni", "rimborso", "utenti"].includes(modulo)) {
+      const ok = await authUser(req, res);
+      if (ok === false) return;
+    }
+
+    const result = await handler(req, res);
+    return res.json(result);
+
+  } catch (err) {
+    console.error("❌ ROUTER ERROR:", err);
+    return res.status(500).json({ success: false, error: "Errore interno" });
+  }
 });
 
 module.exports = router;
