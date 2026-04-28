@@ -1,5 +1,5 @@
 /* =========================================================
-   INTROSPECT ENDPOINTS — Versione 2027.1
+   INTROSPECT ENDPOINTS — Versione 2027.2
    Scanner unico: backend + frontend + differenze + HTML
 ========================================================= */
 
@@ -24,12 +24,30 @@ function getBackend() {
 }
 
 /* =========================================================
-   2) SCANNER FRONTEND
+   2) SCANNER FRONTEND (con normalizzazione)
 ========================================================= */
 function getFrontend() {
   const root = path.join(process.cwd(), "app/public");
 
   const calls = [];
+
+  function normalizeUrl(url) {
+    // togli querystring
+    url = url.split("?")[0];
+
+    // togli template literal tipo ${id}, ${tipo}, ecc.
+    url = url.replace(/\$\{[^}]+\}/g, "");
+
+    // normalizza slash multipli
+    url = url.replace(/\/+/g, "/");
+
+    // togli slash finale se non è solo "/"
+    if (url.length > 1 && url.endsWith("/")) {
+      url = url.slice(0, -1);
+    }
+
+    return url;
+  }
 
   function scanFile(filePath) {
     const code = fs.readFileSync(filePath, "utf8");
@@ -37,9 +55,10 @@ function getFrontend() {
     const regex = /fetch\s*\(\s*["'`](.*?)["'`]/g;
     let m;
     while ((m = regex.exec(code))) {
-      const url = m[1];
+      let url = m[1];
       if (url.startsWith("/api/")) {
-        calls.push(url.split("?")[0]);
+        url = normalizeUrl(url);
+        calls.push(url);
       }
     }
   }
@@ -60,7 +79,7 @@ function getFrontend() {
 }
 
 /* =========================================================
-   3) DIFFERENZE
+   3) DIFFERENZE (match tollerante parametri)
 ========================================================= */
 function getDifferenze() {
   const backend = getBackend();
@@ -70,15 +89,37 @@ function getDifferenze() {
 
   for (const modulo of Object.keys(backend)) {
     for (const fn of backend[modulo]) {
-      backendFull.push(`/api/${modulo}/${fn}`);
+      const base = `/api/${modulo}/${fn}`;
+
+      // base “puro”
+      backendFull.push(base);
+
+      // versioni tolleranti con parametri generici
+      backendFull.push(`${base}/:id`);
+      backendFull.push(`${base}/:tipo`);
     }
   }
 
-  const ok = frontend.filter(f => backendFull.includes(f));
-  const mancanti = frontend.filter(f => !backendFull.includes(f));
-  const inutilizzati = backendFull.filter(b => !frontend.includes(b));
+  const normalize = (url) => {
+    url = url.split("?")[0];
+    url = url.replace(/\$\{[^}]+\}/g, "");
+    url = url.replace(/\/+/g, "/");
+    if (url.length > 1 && url.endsWith("/")) url = url.slice(0, -1);
+    return url;
+  };
 
-  return { ok, mancanti, inutilizzati };
+  const backendNorm = backendFull.map(normalize);
+  const frontendNorm = frontend.map(normalize);
+
+  const ok = frontendNorm.filter(f => backendNorm.includes(f));
+  const mancanti = frontendNorm.filter(f => !backendNorm.includes(f));
+  const inutilizzati = backendNorm.filter(b => !frontendNorm.includes(b));
+
+  return {
+    ok: [...new Set(ok)],
+    mancanti: [...new Set(mancanti)],
+    inutilizzati: [...new Set(inutilizzati)]
+  };
 }
 
 /* =========================================================
