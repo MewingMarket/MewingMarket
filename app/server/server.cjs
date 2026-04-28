@@ -239,6 +239,16 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
   /**
    * =========================================================
+   * 🔵 PATCH DIAGNOSTICA ENDPOINTS
+   * =========================================================
+   */
+  app.get("/diagnostica-endpoints", (req, res) => {
+    const diag = require("./introspect-endpoints.cjs");
+    res.send(diag.diagnosticaHtmlToString());
+  });
+
+  /**
+   * =========================================================
    * REWRITE SCRIPTS
    * =========================================================
    */
