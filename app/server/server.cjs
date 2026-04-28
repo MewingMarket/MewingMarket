@@ -162,6 +162,18 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
   /**
    * =========================================================
+   * 🔵 PATCH INTROSPECT (Java‑mode)
+   * =========================================================
+   */
+  try {
+    require("./introspect.cjs")(app);
+    log("🟩 introspect.cjs caricato");
+  } catch (err) {
+    logErr("❌ Errore introspect.cjs:", err.message);
+  }
+
+  /**
+   * =========================================================
    * ROUTER API (Java‑mode)
    * =========================================================
    */
