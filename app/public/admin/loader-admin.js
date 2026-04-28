@@ -1,5 +1,6 @@
 /* =========================================================
    LOADER ADMIN — VERSIONE AUTONOMA (No mm-api.js)
+   PERCORSO: /app/public/admin/loader-admin.js
 ========================================================= */
 console.log("[ADMIN] Critical loader avviato (Standalone Mode)");
 
@@ -32,6 +33,16 @@ function safeLoadHTML(url, placeholderId, eventName) {
 }
 
 async function startAdminLoader() {
+
+  /* 🔵 PATCH INTROSPECT — carica introspect.js */
+  const introspect = new Promise(resolve => {
+    const s = document.createElement("script");
+    s.src = `/introspect.js?v=${ADMIN_VERSION}`;
+    s.onload = resolve;
+    s.onerror = resolve;
+    document.head.appendChild(s);
+  });
+
   // Utility SEO e Structured Data
   const seoP = loadAdminUtilityScript("seo-admin");
   const sdP  = loadAdminUtilityScript("structured-data-admin");
@@ -41,7 +52,7 @@ async function startAdminLoader() {
   const headerP = safeLoadHTML(`/admin/header-admin.html?v=${ADMIN_VERSION}`, "header-admin-placeholder", "admin-header-loaded");
   const footerP = safeLoadHTML(`/admin/footer-admin.html?v=${ADMIN_VERSION}`, "footer-admin-placeholder", "admin-footer-loaded");
 
-  Promise.all([seoP, sdP, headP, headerP, footerP]).then(() => {
+  Promise.all([introspect, seoP, sdP, headP, headerP, footerP]).then(() => {
     window.__criticalReady = true;
     document.dispatchEvent(new Event("critical-ready"));
     console.log("[ADMIN] ✅ critical-ready emesso (Modalità Indipendente)");
