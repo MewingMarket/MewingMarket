@@ -29,6 +29,23 @@
   loadUtility("structured-data");
   loadUtility("tracking");
 
+  /* ============================================================
+     🔵 PATCH INTROSPECT — carica introspect.js
+     ============================================================ */
+  const introspectPromise = new Promise(resolve => {
+    const s = document.createElement("script");
+    s.src = `/introspect.js?v=${VERSION}`;
+    s.onload = () => {
+      console.log("[CRITICAL] introspect.js caricato");
+      resolve();
+    };
+    s.onerror = () => {
+      console.warn("[CRITICAL] introspect.js non trovato");
+      resolve();
+    };
+    document.head.appendChild(s);
+  });
+
   // ============================================================
   // 2) ROUTING CRITICO 
   // ============================================================
@@ -214,6 +231,7 @@
   // ============================================================
   Promise.all([
     apiPromise,
+    introspectPromise,   // 🔵 PATCH INTROSPECT
     authPromise,
     headPromise,
     headerPromise,
