@@ -33,6 +33,7 @@ router.all("/:modulo/:funzione", async (req, res) => {
     ========================================================== */
     if (!handler && funzione === "getPublic") {
       handler = async (req) => {
+
         // 1) Se il modulo ha già una getPublic → usa quella
         if (typeof mod.getPublic === "function") {
           return await mod.getPublic(req);
