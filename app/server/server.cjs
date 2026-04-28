@@ -42,8 +42,10 @@ app.use((req, res, next) => {
     return next();
   }
 
-  const clean = req.path.split("?")[0]; // rimuove ?v=20260412
-  const filePath = path.join(PUBLIC_JS, clean);
+  const clean = req.path.split("?")[0];
+
+  /* 🔵 PATCH — usa SEMPRE basename */
+  const filePath = path.join(PUBLIC_JS, path.basename(clean));
 
   if (fs.existsSync(filePath)) {
     res.setHeader("Content-Type", "application/javascript; charset=utf-8");
@@ -162,7 +164,7 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
   /**
    * =========================================================
-   * 🔵 PATCH INTROSPECT (Java‑mode)
+   * INTROSPECT (Java‑mode)
    * =========================================================
    */
   try {
