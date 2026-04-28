@@ -1,5 +1,5 @@
 /* =========================================================
-   INDEX DELLE FUNZIONI — Versione 2027.9
+   INDEX DELLE FUNZIONI — Versione 2027.10 (patch completa)
    Tutte le API interne sono qui.
 ========================================================= */
 
@@ -10,13 +10,26 @@ module.exports = {
 
   /* =========================================================
      PRODOTTI
+     - API principali prodotti
+     - Estensioni AI prodotti
+     - Top recensioni prodotto (per vetrine / homepage)
   ========================================================= */
   prodotti: {
-    ...R("routes/api-prodotti-new.cjs")
+    // API prodotti “nuove”
+    ...R("routes/api-prodotti-new.cjs"),
+
+    // Estensioni AI sui prodotti (es: generaDescrizioneAI)
+    ...R("routes/prodotti-ai.cjs"),
+
+    // Endpoint di vetrina/top prodotti legati alle recensioni
+    // (es: getTopRecensioni / prodottiAcquistati, se esposti qui)
+    ...R("routes/api-recensioni-top.cjs")
   },
 
   /* =========================================================
      UTENTI
+     - login / registrazione / profilo
+     - reset password / email
   ========================================================= */
   utenti: {
     ...R("routes/api-utenti.cjs")
@@ -24,6 +37,8 @@ module.exports = {
 
   /* =========================================================
      ORDINI
+     - ordini utente
+     - annulla ordine, ecc.
   ========================================================= */
   ordini: {
     ...R("routes/ordini-utente.cjs")
@@ -31,6 +46,7 @@ module.exports = {
 
   /* =========================================================
      PAYPAL
+     - create / complete / cancel / ricrea
   ========================================================= */
   paypal: {
     ...R("routes/paypal-create.cjs"),
@@ -41,6 +57,7 @@ module.exports = {
 
   /* =========================================================
      VENDITE / DOWNLOAD
+     - download autenticato / diretto / per ID
   ========================================================= */
   vendite: {
     ...R("routes/api-vendite-download.cjs")
@@ -48,13 +65,19 @@ module.exports = {
 
   /* =========================================================
      RECENSIONI / FEEDBACK
+     - crea / modifica / elimina recensione
+     - liste recensioni / prodotti acquistati
+     - top recensioni (se non già mappate in prodotti)
   ========================================================= */
   recensioni: {
-    ...R("routes/api-feedback.cjs")
+    ...R("routes/api-feedback.cjs"),
+    ...R("routes/api-recensioni-top.cjs")
   },
 
   /* =========================================================
      RIMBORSO
+     - crea / approva / rifiuta rimborso
+     - richieste rimborso
   ========================================================= */
   rimborso: {
     ...R("routes/rimborso.cjs")
@@ -62,6 +85,10 @@ module.exports = {
 
   /* =========================================================
      ADMIN
+     - API admin
+     - dashboard
+     - gestione utenti
+     - feedback admin
   ========================================================= */
   admin: {
     ...R("routes/api-admin.cjs"),
@@ -72,23 +99,26 @@ module.exports = {
 
   /* =========================================================
      UPLOAD
+     - upload file prodotto
   ========================================================= */
   upload: {
     ...R("routes/api-upload.cjs")
   },
 
   /* =========================================================
-     AI  (PATCH CORRETTA)
-  ========================================================= */
-  ai: {
-    ...R("routes/prodotti-ai.cjs")
-  },
-
-  /* =========================================================
      ASSISTENZA
+     - invio richieste assistenza
   ========================================================= */
   assistenza: {
     ...R("routes/api-assistenza.cjs")
+  },
+
+  /* =========================================================
+     EVENTI / UTENTI-EVENTO
+     - tracciamento eventi utente
+  ========================================================= */
+  eventi: {
+    ...R("routes/utenti-evento.cjs")
   }
 
 };
