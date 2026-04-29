@@ -1,43 +1,44 @@
-/**
- * =========================================================
- * File: app/server/routes/sitemap.cjs
- * Sitemap dinamica basata sui prodotti (SQL)
- * Versione 2026.200 — require assoluti
- * =========================================================
- */
+/* =========================================================
+   FILE: app/server/routes/sitemap.cjs
+   MODALITÀ: Java‑mode (funzione singola, no Express)
+   DESCRIZIONE: Sitemap dinamica basata sui prodotti (SQL)
+========================================================= */
 
 const path = require("path");
 
-// PATCH: require assoluto
+// require assoluto
 const R = (p) => require(path.join(process.cwd(), "app/server", p));
 
 const db = R("db/database.cjs");
 
-module.exports = function (app) {
-  app.get("/sitemap.xml", (req, res) => {
-    try {
-      // Recupera tutti i prodotti dal DB
-      const stmt = db.prepare(`
-        SELECT id
-        FROM prodotti
-        ORDER ORDER BY id DESC
-      `);
+/* =========================================================
+   FUNZIONE PRINCIPALE — sitemap()
+========================================================= */
+async function sitemap() {
+  console.log("[DEBUG sitemap] sitemap() chiamato");
 
-      const prodotti = stmt.all();
+  try {
+    const stmt = db.prepare(`
+      SELECT id
+      FROM prodotti
+      ORDER BY id DESC
+    `);
 
-      const urls = prodotti
-        .map((p) => {
-          const id = p.id;
-          return `
-    <url>
-      <loc>https://mewingmarket.com/prodotto/${id}</loc>
-      <changefreq>weekly</changefreq>
-      <priority>0.8</priority>
-    </url>`;
-        })
-        .join("");
+    const prodotti = stmt.all();
 
-      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+    const urls = prodotti
+      .map((p) => {
+        const id = p.id;
+        return `
+  <url>
+    <loc>https://mewingmarket.com/prodotto/${id}</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>`;
+      })
+      .join("");
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://mewingmarket.com/</loc>
@@ -47,17 +48,44 @@ module.exports = function (app) {
   ${urls}
 </urlset>`;
 
-      res.header("Content-Type", "application/xml");
-      return res.send(xml);
-
-    } catch (err) {
-      console.error("❌ Errore sitemap:", err);
-
-      if (typeof global.logEvent === "function") {
-        global.logEvent("sitemap_error", { error: err?.message || "unknown" });
-      }
-
-      return res.status(500).send("Errore generazione sitemap");
+    if (typeof global.logEvent === "function") {
+      global.logEvent("sitemap_generated", { count: prodotti.length });
     }
-  });
+
+    return {
+      success: true,
+      contentType: "application/xml",
+      body: xml
+    };
+
+  } catch (err) {
+    console.error("❌ Errore sitemap:", err);
+
+    if (typeof global.logEvent === "function") {
+      global.logEvent("sitemap_error", { error: err?.message || "unknown" });
+    }
+
+    return {
+      success: false,
+      contentType: "text/plain",
+      body: "Errore generazione sitemap"
+    };
+  }
+}
+
+/* =========================================================
+   ALIAS COMPATIBILITÀ FRONTEND
+   (ex GET /sitemap.xml)
+========================================================= */
+async function sitemapXml(req) {
+  console.log("[DEBUG sitemap] alias sitemapXml() → sitemap()");
+  return sitemap(req);
+}
+
+/* =========================================================
+   EXPORT — stile Java
+========================================================= */
+module.exports = {
+  sitemap,
+  sitemapXml
 };
