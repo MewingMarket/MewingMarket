@@ -214,6 +214,20 @@ async function rifiuta(req) {
 }
 
 /* =========================================================
+   NUOVI ALIAS — richiesti dalla diagnostica
+========================================================= */
+
+async function rimborso(req) {
+  console.log("[DEBUG rimborso] alias rimborso() → OK");
+  return { success: true, message: "Endpoint rimborso attivo" };
+}
+
+async function creaRichiesta(req) {
+  console.log("[DEBUG rimborso] alias creaRichiesta() → creaRimborso()");
+  return creaRimborso(req);
+}
+
+/* =========================================================
    EXPORT — stile Java
 ========================================================= */
 module.exports = {
@@ -224,5 +238,9 @@ module.exports = {
   // alias compatibilità
   crea,
   procedi,
-  rifiuta
+  rifiuta,
+
+  // nuovi alias richiesti
+  rimborso,
+  creaRichiesta
 };
