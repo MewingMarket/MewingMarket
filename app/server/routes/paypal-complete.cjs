@@ -33,10 +33,11 @@ function safeParse(str) {
 }
 
 /* =========================================================
-   FUNZIONE: paypalCompleteOrder
-   (ex GET /api/paypal/complete-order?orderId=xxxx)
+   FUNZIONE PRINCIPALE — paypalCompleteOrder
 ========================================================= */
 async function paypalCompleteOrder(req) {
+  console.log("[DEBUG paypal] paypalCompleteOrder()");
+
   try {
     const orderId = req.query.orderId;
     const userId = req.user.id;
@@ -45,9 +46,6 @@ async function paypalCompleteOrder(req) {
       return { success: false, error: "Parametri mancanti" };
     }
 
-    // =========================================================
-    // 1) Recupera ordine dal DB
-    // =========================================================
     const ordine = db.prepare(`
       SELECT *
       FROM ordini
@@ -65,9 +63,6 @@ async function paypalCompleteOrder(req) {
       return { success: false, error: "Transazione PayPal mancante" };
     }
 
-    // =========================================================
-    // 2) Recupera email utente
-    // =========================================================
     const utente = db.prepare(`
       SELECT email, codice_fiscale
       FROM utenti
@@ -78,9 +73,6 @@ async function paypalCompleteOrder(req) {
     const emailUtente = utente?.email || "";
     const codiceFiscale = utente?.codice_fiscale || "";
 
-    // =========================================================
-    // 3) Se già completato → ritorna ordine
-    // =========================================================
     if (ordine.stato === "completato") {
       return {
         success: true,
@@ -92,9 +84,6 @@ async function paypalCompleteOrder(req) {
       };
     }
 
-    // =========================================================
-    // 4) Cattura pagamento PayPal
-    // =========================================================
     const MODE = process.env.PAYPAL_MODE || "sandbox";
 
     const PAYPAL_API = MODE === "sandbox"
@@ -142,9 +131,6 @@ async function paypalCompleteOrder(req) {
       return { success: false, error: "Capture PayPal non valida" };
     }
 
-    // =========================================================
-    // 5) Genera token download monouso
-    // =========================================================
     const downloadToken = crypto.randomUUID();
 
     db.prepare(`
@@ -153,9 +139,6 @@ async function paypalCompleteOrder(req) {
       WHERE id = ?
     `).run(downloadToken, orderId);
 
-    // =========================================================
-    // 6) Aggiorna ordine → completato
-    // =========================================================
     db.prepare(`
       UPDATE ordini
       SET stato = 'completato',
@@ -170,9 +153,6 @@ async function paypalCompleteOrder(req) {
       console.error("⚠️ Errore exportOrders:", err);
     }
 
-    // =========================================================
-    // 7) Prepara ordine finale
-    // =========================================================
     const prodotti = safeParse(ordine.prodotti_json);
 
     const ordineFinale = {
@@ -191,9 +171,6 @@ async function paypalCompleteOrder(req) {
       download_token: downloadToken
     };
 
-    // =========================================================
-    // 8) Salva vendite
-    // =========================================================
     const stmtVendita = db.prepare(`
       INSERT INTO vendite (
         uid,
@@ -226,17 +203,11 @@ async function paypalCompleteOrder(req) {
       console.error("⚠️ Errore exportSales:", err);
     }
 
-    // =========================================================
-    // 9) Tracking GA4
-    // =========================================================
     trackGA4("ordine_completato", {
       ordine_id: ordine.id,
       totale: ordineFinale.totale
     });
 
-    // =========================================================
-    // 10) Email acquisto
-    // =========================================================
     try {
       await inviaEmailAcquisto({
         email: emailUtente,
@@ -246,9 +217,6 @@ async function paypalCompleteOrder(req) {
       console.error("❌ Errore invio email ordine:", err);
     }
 
-    // =========================================================
-    // 11) Risposta
-    // =========================================================
     return {
       success: true,
       order: ordineFinale
@@ -261,8 +229,18 @@ async function paypalCompleteOrder(req) {
 }
 
 /* =========================================================
+   ALIAS COMPATIBILITÀ FRONTEND
+   (ex GET /api/paypal/complete-order)
+========================================================= */
+async function completeOrder(req) {
+  console.log("[DEBUG paypal] alias completeOrder() → paypalCompleteOrder()");
+  return paypalCompleteOrder(req);
+}
+
+/* =========================================================
    EXPORT — stile Java
 ========================================================= */
 module.exports = {
-  paypalCompleteOrder
+  paypalCompleteOrder,
+  completeOrder
 };
