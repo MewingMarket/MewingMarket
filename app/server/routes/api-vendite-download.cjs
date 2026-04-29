@@ -183,6 +183,15 @@ async function downloadDirectAlias(req) {
 }
 
 /* =========================================================
+   NUOVO ALIAS — richiesto dalla diagnostica
+   /api/vendite/downloadFile
+========================================================= */
+async function downloadFile(req) {
+  console.log("[DEBUG download] alias downloadFile() → downloadAutenticato()");
+  return downloadAutenticato(req);
+}
+
+/* =========================================================
    EXPORT — stile Java
 ========================================================= */
 module.exports = {
@@ -191,5 +200,8 @@ module.exports = {
 
   // alias compatibilità
   download,
-  downloadDirectAlias
+  downloadDirectAlias,
+
+  // nuovo alias richiesto
+  downloadFile
 };
