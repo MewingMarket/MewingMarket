@@ -28,9 +28,10 @@ function safeParse(str) {
 
 /* =========================================================
    FUNZIONE 1 — getOrdiniUtente
-   (ex GET /ordini/utente)
 ========================================================= */
 async function getOrdiniUtente(req) {
+  console.log("[DEBUG ordini] getOrdiniUtente()");
+
   try {
     const userId = req.user.id;
 
@@ -104,9 +105,10 @@ async function getOrdiniUtente(req) {
 
 /* =========================================================
    FUNZIONE 2 — annullaOrdine
-   (ex POST /ordini/annulla/:id)
 ========================================================= */
 async function annullaOrdine(req) {
+  console.log("[DEBUG ordini] annullaOrdine()");
+
   try {
     const ordineId = req.params.id;
     const userId = req.user.id;
@@ -136,7 +138,6 @@ async function annullaOrdine(req) {
       };
     }
 
-    // Aggiorna stato
     db.prepare(`
       UPDATE ordini
       SET stato = 'annullato',
@@ -144,14 +145,12 @@ async function annullaOrdine(req) {
       WHERE id = ?
     `).run(ordineId);
 
-    // Aggiorna JSON mirror
     try {
       await jsonGen.exportOrders();
     } catch (err) {
       console.error("⚠️ Errore exportOrders JSON:", err);
     }
 
-    // Recupera email utente
     const utente = db.prepare(`
       SELECT email
       FROM utenti
@@ -161,7 +160,6 @@ async function annullaOrdine(req) {
 
     const emailUtente = utente?.email || "";
 
-    // Email annullamento
     try {
       await inviaEmailOrdineAnnullato({
         email: emailUtente,
@@ -190,9 +188,27 @@ async function annullaOrdine(req) {
 }
 
 /* =========================================================
+   ALIAS COMPATIBILITÀ FRONTEND
+========================================================= */
+
+async function ordiniUtente(req) {
+  console.log("[DEBUG ordini] alias ordiniUtente() → getOrdiniUtente()");
+  return getOrdiniUtente(req);
+}
+
+async function annulla(req) {
+  console.log("[DEBUG ordini] alias annulla() → annullaOrdine()");
+  return annullaOrdine(req);
+}
+
+/* =========================================================
    EXPORT — stile Java
 ========================================================= */
 module.exports = {
   getOrdiniUtente,
-  annullaOrdine
+  annullaOrdine,
+
+  // alias compatibilità
+  ordiniUtente,
+  annulla
 };
