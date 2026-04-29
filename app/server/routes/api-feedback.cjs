@@ -240,7 +240,6 @@ async function eliminaRecensione(req) {
 
 /* =========================================================
    ALIAS COMPATIBILITÀ FRONTEND
-   (il frontend chiama ancora endpoint vecchi)
 ========================================================= */
 
 async function getProdottiAcquistati(req) {
@@ -250,11 +249,6 @@ async function getProdottiAcquistati(req) {
 
 async function getRecensioniUtente(req) {
   console.log("[DEBUG feedback] alias getRecensioniUtente() → recensioniUtente()");
-  return recensioniUtente(req);
-}
-
-async function getTopRecensioni(req) {
-  console.log("[DEBUG feedback] alias getTopRecensioni() → recensioniUtente()");
   return recensioniUtente(req);
 }
 
@@ -270,6 +264,5 @@ module.exports = {
 
   // alias compatibilità
   getProdottiAcquistati,
-  getRecensioniUtente,
-  getTopRecensioni
+  getRecensioniUtente
 };
