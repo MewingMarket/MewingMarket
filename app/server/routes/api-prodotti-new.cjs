@@ -2,7 +2,6 @@
    FILE: app/server/routes/api-prodotti-new.cjs
    MODALITÀ: Java‑mode (funzioni, no Express)
    DESCRIZIONE: Catalogo prodotti — SQL definitivo (ID-based)
-   ORIGINALE: ex /prodotti, /products, /genera-descrizione-ai, /delete
 ========================================================= */
 
 const path = require("path");
@@ -13,9 +12,10 @@ const jsonGen = R("server/modules/generatore-json.cjs");
 
 /* =========================================================
    FUNZIONE 1 — getProdotti
-   (ex GET /prodotti)
 ========================================================= */
 async function getProdotti(req) {
+  console.log("[DEBUG prodotti] getProdotti()");
+
   try {
     const prodotti = await catalogo.getAllProducts();
     return { success: true, prodotti };
@@ -27,9 +27,10 @@ async function getProdotti(req) {
 
 /* =========================================================
    FUNZIONE 2 — getProdottoById
-   (ex GET /prodotti/:id)
 ========================================================= */
 async function getProdottoById(req) {
+  console.log("[DEBUG prodotti] getProdottoById()", req.params);
+
   try {
     const prodotto = await catalogo.getProductById(req.params.id);
     if (!prodotto) {
@@ -44,9 +45,10 @@ async function getProdottoById(req) {
 
 /* =========================================================
    FUNZIONE 3 — salvaProdotto
-   (ex POST /prodotti)
 ========================================================= */
 async function salvaProdotto(req) {
+  console.log("[DEBUG prodotti] salvaProdotto()");
+
   try {
     const data = req.body || {};
 
@@ -76,9 +78,10 @@ async function salvaProdotto(req) {
 
 /* =========================================================
    FUNZIONE 4 — generaDescrizioneAI
-   (ex POST /prodotti/genera-descrizione-ai)
 ========================================================= */
 async function generaDescrizioneAI(req) {
+  console.log("[DEBUG prodotti] generaDescrizioneAI()");
+
   try {
     const { titolo } = req.body;
     if (!titolo) {
@@ -101,9 +104,10 @@ async function generaDescrizioneAI(req) {
 
 /* =========================================================
    FUNZIONE 5 — eliminaProdotto
-   (ex DELETE /prodotti/:id)
 ========================================================= */
 async function eliminaProdotto(req) {
+  console.log("[DEBUG prodotti] eliminaProdotto()", req.params);
+
   try {
     const ok = await catalogo.deleteProduct(req.params.id);
     if (!ok) {
@@ -124,9 +128,10 @@ async function eliminaProdotto(req) {
 
 /* =========================================================
    FUNZIONE 6 — getProductsPublic
-   (ex GET /products)
 ========================================================= */
 async function getProductsPublic(req) {
+  console.log("[DEBUG prodotti] getProductsPublic()");
+
   try {
     const prodotti = await catalogo.getAllProducts();
     return { success: true, prodotti };
@@ -138,9 +143,10 @@ async function getProductsPublic(req) {
 
 /* =========================================================
    FUNZIONE 7 — getProductPublicById
-   (ex GET /products/:id)
 ========================================================= */
 async function getProductPublicById(req) {
+  console.log("[DEBUG prodotti] getProductPublicById()", req.params);
+
   try {
     const prodotto = await catalogo.getProductById(req.params.id);
     if (!prodotto) {
@@ -154,6 +160,26 @@ async function getProductPublicById(req) {
 }
 
 /* =========================================================
+   ALIAS COMPATIBILITÀ FRONTEND
+   (vecchi endpoint ancora usati)
+========================================================= */
+
+async function getProducts(req) {
+  console.log("[DEBUG prodotti] alias getProducts() → getProductsPublic()");
+  return getProductsPublic(req);
+}
+
+async function getProduct(req) {
+  console.log("[DEBUG prodotti] alias getProduct() → getProductPublicById()");
+  return getProductPublicById(req);
+}
+
+async function deleteProdotto(req) {
+  console.log("[DEBUG prodotti] alias deleteProdotto() → eliminaProdotto()");
+  return eliminaProdotto(req);
+}
+
+/* =========================================================
    EXPORT — stile Java
 ========================================================= */
 module.exports = {
@@ -163,5 +189,10 @@ module.exports = {
   generaDescrizioneAI,
   eliminaProdotto,
   getProductsPublic,
-  getProductPublicById
+  getProductPublicById,
+
+  // alias compatibilità
+  getProducts,
+  getProduct,
+  deleteProdotto
 };
