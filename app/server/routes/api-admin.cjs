@@ -2,7 +2,6 @@
    FILE: app/server/routes/api-admin.cjs
    MODALITÀ: Java‑mode (funzioni, no Express)
    DESCRIZIONE: Gestione credenziali Admin
-   ORIGINALE: ex router Express /admin/cambia-email, /cambia-password, /me
 ========================================================= */
 
 const path = require("path");
@@ -35,9 +34,10 @@ function getAdmin() {
 
 /* =========================================================
    FUNZIONE 1 — cambiaEmail
-   (ex POST /admin/cambia-email)
 ========================================================= */
 async function cambiaEmail(req) {
+  console.log("[DEBUG api-admin] cambiaEmail()");
+
   try {
     let { nuova, pass } = req.body || {};
     nuova = normalize(nuova).toLowerCase();
@@ -72,9 +72,10 @@ async function cambiaEmail(req) {
 
 /* =========================================================
    FUNZIONE 2 — cambiaPassword
-   (ex POST /admin/cambia-password)
 ========================================================= */
 async function cambiaPassword(req) {
+  console.log("[DEBUG api-admin] cambiaPassword()");
+
   try {
     let { oldP, newP } = req.body || {};
     oldP = normalize(oldP);
@@ -105,9 +106,10 @@ async function cambiaPassword(req) {
 
 /* =========================================================
    FUNZIONE 3 — adminMe
-   (ex GET /admin/me)
 ========================================================= */
 async function adminMe(req) {
+  console.log("[DEBUG api-admin] adminMe()");
+
   try {
     const admin = getAdmin();
     if (!admin) {
@@ -130,10 +132,35 @@ async function adminMe(req) {
 }
 
 /* =========================================================
-   EXPORT — stile Java (metodi della classe Admin)
+   ALIAS COMPATIBILITÀ FRONTEND
+   (vecchi endpoint Express)
+========================================================= */
+
+async function cambia_email(req) {
+  console.log("[DEBUG api-admin] alias cambia_email() → cambiaEmail()");
+  return cambiaEmail(req);
+}
+
+async function cambia_password(req) {
+  console.log("[DEBUG api-admin] alias cambia_password() → cambiaPassword()");
+  return cambiaPassword(req);
+}
+
+async function me(req) {
+  console.log("[DEBUG api-admin] alias me() → adminMe()");
+  return adminMe(req);
+}
+
+/* =========================================================
+   EXPORT — stile Java
 ========================================================= */
 module.exports = {
   cambiaEmail,
   cambiaPassword,
-  adminMe
+  adminMe,
+
+  // alias compatibilità
+  cambia_email,
+  cambia_password,
+  me
 };
