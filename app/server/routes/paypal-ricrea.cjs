@@ -30,10 +30,11 @@ function safeParse(str) {
 }
 
 /* =========================================================
-   FUNZIONE: paypalRicrea
-   (ex POST /api/paypal/ricrea/:id)
+   FUNZIONE PRINCIPALE — paypalRicrea
 ========================================================= */
 async function paypalRicrea(req) {
+  console.log("[DEBUG paypal] paypalRicrea()");
+
   const userId = req.user?.id;
   const orderId = req.params.id;
 
@@ -42,7 +43,6 @@ async function paypalRicrea(req) {
   }
 
   try {
-    // 1) Recupera ordine dal DB
     const ordine = db.prepare(`
       SELECT 
         o.id,
@@ -62,7 +62,6 @@ async function paypalRicrea(req) {
       return { success: false, error: "Ordine non trovato." };
     }
 
-    // Solo ordini non completati possono essere rigenerati
     if (ordine.stato === "completato") {
       return {
         success: false,
@@ -70,7 +69,6 @@ async function paypalRicrea(req) {
       };
     }
 
-    // 2) Prepara dati per PayPal
     const prodotti = safeParse(ordine.prodotti_json);
 
     const paypalOrder = await paypal.createOrder({
@@ -82,7 +80,6 @@ async function paypalRicrea(req) {
       return { success: false, error: "Errore PayPal." };
     }
 
-    // 3) Aggiorna ordine → in_attesa_pagamento
     db.prepare(`
       UPDATE ordini
       SET stato = 'in_attesa_pagamento',
@@ -91,7 +88,6 @@ async function paypalRicrea(req) {
       WHERE id = ? AND utente_id = ?
     `).run(paypalOrder.id, orderId, userId);
 
-    // Aggiorna JSON mirror
     try {
       await jsonGen.exportOrders();
     } catch (err) {
@@ -100,7 +96,6 @@ async function paypalRicrea(req) {
 
     const emailUtente = ordine.utente_email || "";
 
-    // 4) Aggiungi utente alla lista 12 (clienti in attesa)
     try {
       if (emailUtente) {
         await addToList(12, emailUtente);
@@ -109,7 +104,6 @@ async function paypalRicrea(req) {
       console.error("⚠️ Errore addToList (lista 12):", err);
     }
 
-    // 5) Email premium (logo + social)
     try {
       if (emailUtente) {
         await inviaEmailAttesa({
@@ -121,7 +115,6 @@ async function paypalRicrea(req) {
       console.error("⚠️ Errore inviaEmailAttesa:", err);
     }
 
-    // 6) Risposta
     return {
       success: true,
       url: paypalOrder.url
@@ -134,8 +127,18 @@ async function paypalRicrea(req) {
 }
 
 /* =========================================================
+   ALIAS COMPATIBILITÀ FRONTEND
+   (ex POST /api/paypal/ricrea/:id)
+========================================================= */
+async function ricrea(req) {
+  console.log("[DEBUG paypal] alias ricrea() → paypalRicrea()");
+  return paypalRicrea(req);
+}
+
+/* =========================================================
    EXPORT — stile Java
 ========================================================= */
 module.exports = {
-  paypalRicrea
+  paypalRicrea,
+  ricrea
 };
