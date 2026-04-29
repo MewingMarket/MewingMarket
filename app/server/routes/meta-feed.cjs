@@ -32,7 +32,7 @@ module.exports = function (app) {
         id: p.id,
         title: p.titolo_breve || p.titolo || "",
         description: p.descrizione || "",
-        url: `https://mewingmarket.com/prodotto/${p.id}`,
+        url: `https://mewingmarket.it/prodotto/${p.id}`,
         image_url: p.immagine || "",
         price: (p.prezzo_cent / 100).toFixed(2),
         currency: "EUR",
