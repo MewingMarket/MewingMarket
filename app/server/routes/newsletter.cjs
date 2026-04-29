@@ -1,19 +1,18 @@
-/**
- * app/server/routes/newsletter.cjs
- * Gestione iscrizione e disiscrizione newsletter (lista 8)
- * Versione 2026.200 — require assoluti
- */
+/* =========================================================
+   FILE: app/server/routes/newsletter.cjs
+   MODALITÀ: Java‑mode (funzioni, no Express)
+   DESCRIZIONE: Gestione iscrizione e disiscrizione newsletter
+========================================================= */
 
 const axios = require("axios");
 const path = require("path");
 
-// PATCH: require assoluti
+// require assoluti
 const R = (p) => require(path.join(process.cwd(), "app/server", p));
 
 const db = R("db/database.cjs");
 const { trackGA4 } = R("services/ga4.cjs");
 
-// ⭐ PATCH: importiamo syncBrevoUtenteStatoReale
 const {
   syncBrevoUtenteStatoReale,
   LISTA_NEWSLETTER
@@ -22,132 +21,167 @@ const {
 const { inviaEmailNewsletterBenvenuto } = R("modules/email-newsletter.cjs");
 const { inviaEmailNewsletterUnsubscribe } = R("modules/email-newsletter-unsubscribe.cjs");
 
-module.exports = function (app) {
+/* =========================================================
+   Helper: scrivi log newsletter
+========================================================= */
+function logNewsletter({ email, azione, origine = null, note = null }) {
+  try {
+    db.prepare(`
+      INSERT INTO newsletter_log (email, azione, origine, note)
+      VALUES (?, ?, ?, ?)
+    `).run(email, azione, origine, note);
+  } catch (err) {
+    console.error("❌ Errore salvataggio newsletter_log:", err);
+  }
+}
 
-  /* =========================================================
-     Helper: scrivi log newsletter
-  ========================================================== */
-  function logNewsletter({ email, azione, origine = null, note = null }) {
-    try {
-      db.prepare(`
-        INSERT INTO newsletter_log (email, azione, origine, note)
-        VALUES (?, ?, ?, ?)
-      `).run(email, azione, origine, note);
-    } catch (err) {
-      console.error("❌ Errore salvataggio newsletter_log:", err);
-    }
+/* =========================================================
+   FUNZIONE 1 — ISCRIZIONE NEWSLETTER
+========================================================= */
+async function newsletterSubscribe(req) {
+  console.log("[DEBUG newsletter] newsletterSubscribe()");
+
+  const uid = req.uid;
+  const rawEmail = req.body?.email || "";
+  const email = String(rawEmail).trim().toLowerCase();
+
+  if (!email) {
+    return { success: false, error: "Email mancante" };
   }
 
-  /* =========================================================
-     ISCRIZIONE NEWSLETTER
-  ========================================================== */
-  app.post("/newsletter/subscribe", async (req, res) => {
-    const uid = req.uid;
-    const rawEmail = req.body?.email || "";
-    const email = String(rawEmail).trim().toLowerCase();
-
-    if (!email) {
-      return res.json({ success: false, error: "Email mancante" });
+  try {
+    if (typeof global.logEvent === "function") {
+      global.logEvent("newsletter_subscribe_attempt", { uid, email });
     }
 
-    try {
-      if (typeof global.logEvent === "function") {
-        global.logEvent("newsletter_subscribe_attempt", { uid, email });
-      }
+    await syncBrevoUtenteStatoReale({
+      email,
+      newsletter: true
+    });
 
-      // ⭐ PATCH BREVO — sync centrale
-      await syncBrevoUtenteStatoReale({
-        email,
-        newsletter: true
-      });
+    trackGA4("newsletter_subscribe", { uid, email });
 
-      trackGA4("newsletter_subscribe", { uid, email });
+    logNewsletter({
+      email,
+      azione: "subscribe",
+      origine: req.body?.origine || "form",
+      note: null
+    });
 
-      logNewsletter({
-        email,
-        azione: "subscribe",
-        origine: req.body?.origine || "form",
-        note: null
-      });
+    await inviaEmailNewsletterBenvenuto({ email });
 
-      await inviaEmailNewsletterBenvenuto({ email });
+    return { success: true };
 
-      return res.json({ success: true });
+  } catch (err) {
+    console.error("❌ Errore newsletterSubscribe:", err?.response?.data || err);
+    return { success: false, error: "Errore durante l'iscrizione" };
+  }
+}
 
-    } catch (err) {
-      console.error("❌ Errore /newsletter/subscribe:", err?.response?.data || err);
-      return res.json({ success: false, error: "Errore durante l'iscrizione" });
-    }
-  });
+/* =========================================================
+   FUNZIONE 2 — DISISCRIZIONE NEWSLETTER
+========================================================= */
+async function newsletterUnsubscribe(req) {
+  console.log("[DEBUG newsletter] newsletterUnsubscribe()");
 
-  /* =========================================================
-     DISISCRIZIONE NEWSLETTER
-  ========================================================== */
-  app.post("/newsletter/unsubscribe", async (req, res) => {
-    const uid = req.uid;
-    const rawEmail = req.body?.email || "";
-    const email = String(rawEmail).trim().toLowerCase();
+  const uid = req.uid;
+  const rawEmail = req.body?.email || "";
+  const email = String(rawEmail).trim().toLowerCase();
 
-    if (!email) {
-      return res.json({ success: false, error: "Email mancante" });
-    }
+  if (!email) {
+    return { success: false, error: "Email mancante" };
+  }
 
-    try {
-      // ⭐ PATCH BREVO — sync centrale
-      await syncBrevoUtenteStatoReale({
-        email,
-        newsletter: false
-      });
+  try {
+    await syncBrevoUtenteStatoReale({
+      email,
+      newsletter: false
+    });
 
-      trackGA4("newsletter_unsubscribe", { uid, email });
+    trackGA4("newsletter_unsubscribe", { uid, email });
 
-      logNewsletter({
-        email,
-        azione: "unsubscribe",
-        origine: req.body?.origine || "form",
-        note: null
-      });
+    logNewsletter({
+      email,
+      azione: "unsubscribe",
+      origine: req.body?.origine || "form",
+      note: null
+    });
 
-      await inviaEmailNewsletterUnsubscribe({ email });
+    await inviaEmailNewsletterUnsubscribe({ email });
 
-      return res.json({ success: true });
+    return { success: true };
 
-    } catch (err) {
-      console.error("❌ Errore /newsletter/unsubscribe:", err?.response?.data || err);
-      return res.json({ success: false, error: "Errore durante la disiscrizione" });
-    }
-  });
+  } catch (err) {
+    console.error("❌ Errore newsletterUnsubscribe:", err?.response?.data || err);
+    return { success: false, error: "Errore durante la disiscrizione" };
+  }
+}
 
-  /* =========================================================
-     STATO NEWSLETTER
-  ========================================================== */
-  app.get("/newsletter/status", async (req, res) => {
-    const rawEmail = req.query?.email || "";
-    const email = String(rawEmail).trim().toLowerCase();
+/* =========================================================
+   FUNZIONE 3 — STATO NEWSLETTER
+========================================================= */
+async function newsletterStatus(req) {
+  console.log("[DEBUG newsletter] newsletterStatus()");
 
-    if (!email) {
-      return res.json({ success: false, error: "Email mancante" });
-    }
+  const rawEmail = req.query?.email || "";
+  const email = String(rawEmail).trim().toLowerCase();
 
-    try {
-      const result = await axios.get(
-        `https://api.brevo.com/v3/contacts/${encodeURIComponent(email)}`,
-        {
-          headers: {
-            "api-key": process.env.BREVO_API_KEY
-          }
+  if (!email) {
+    return { success: false, error: "Email mancante" };
+  }
+
+  try {
+    const result = await axios.get(
+      `https://api.brevo.com/v3/contacts/${encodeURIComponent(email)}`,
+      {
+        headers: {
+          "api-key": process.env.BREVO_API_KEY
         }
-      );
+      }
+    );
 
-      return res.json({
-        success: true,
-        subscribed: result.data?.listIds?.includes(LISTA_NEWSLETTER) || false,
-        data: result.data
-      });
+    return {
+      success: true,
+      subscribed: result.data?.listIds?.includes(LISTA_NEWSLETTER) || false,
+      data: result.data
+    };
 
-    } catch (err) {
-      console.error("❌ Errore /newsletter/status:", err?.response?.data || err);
-      return res.json({ success: false, error: "Errore nel recupero dello stato" });
-    }
-  });
+  } catch (err) {
+    console.error("❌ Errore newsletterStatus:", err?.response?.data || err);
+    return { success: false, error: "Errore nel recupero dello stato" };
+  }
+}
+
+/* =========================================================
+   ALIAS COMPATIBILITÀ FRONTEND
+   (ex Express: /newsletter/subscribe, /newsletter/unsubscribe, /newsletter/status)
+========================================================= */
+
+async function subscribe(req) {
+  console.log("[DEBUG newsletter] alias subscribe() → newsletterSubscribe()");
+  return newsletterSubscribe(req);
+}
+
+async function unsubscribe(req) {
+  console.log("[DEBUG newsletter] alias unsubscribe() → newsletterUnsubscribe()");
+  return newsletterUnsubscribe(req);
+}
+
+async function status(req) {
+  console.log("[DEBUG newsletter] alias status() → newsletterStatus()");
+  return newsletterStatus(req);
+}
+
+/* =========================================================
+   EXPORT — stile Java
+========================================================= */
+module.exports = {
+  newsletterSubscribe,
+  newsletterUnsubscribe,
+  newsletterStatus,
+
+  // alias compatibilità
+  subscribe,
+  unsubscribe,
+  status
 };
