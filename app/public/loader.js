@@ -7,15 +7,9 @@
 
   const VERSION = "20260412";
 
-  // ============================================================
-  // 0) RIMOSSO mm-api.js — NON SERVE PIÙ
-  // ============================================================
   const apiPromise = Promise.resolve(); 
   console.log("[CRITICAL] mm-api.js rimosso (Java-mode)");
 
-  // ============================================================
-  // 1) SEO / STRUCTURED-DATA / TRACKING (ASINCRONI)
-  // ============================================================
   function loadUtility(name) {
     const s = document.createElement("script");
     s.src = `/${name}.js?v=${VERSION}`;
@@ -46,9 +40,23 @@
     document.head.appendChild(s);
   });
 
-  // ============================================================
-  // 2) ROUTING CRITICO 
-  // ============================================================
+  /* ============================================================
+     🔵 PATCH DIAGNOSTICA — intercetta tutte le fetch
+     ============================================================ */
+  const diagnosticaPromise = new Promise(resolve => {
+    const s = document.createElement("script");
+    s.src = `/js/diagnostica-loader.js?v=${VERSION}`;
+    s.onload = () => {
+      console.log("[CRITICAL] diagnostica-loader.js caricato");
+      resolve();
+    };
+    s.onerror = () => {
+      console.warn("[CRITICAL] diagnostica-loader.js non trovato");
+      resolve();
+    };
+    document.head.appendChild(s);
+  });
+
   function normalize(str) {
     if (!str) return "";
     return str.toLowerCase()
@@ -71,9 +79,6 @@
 
   console.log("[CRITICAL] Routing:", { pageName, isHome, isAdminPage });
 
-  // ============================================================
-  // 3) AUTH — CARICAMENTO DIRETTO (NON DIPENDE PIÙ DA mm-api)
-  // ============================================================
   const authPromise = new Promise((resolve) => {
     const s = document.createElement("script");
     s.id = "critical-auth";
@@ -89,9 +94,6 @@
     document.head.appendChild(s);
   });
 
-  // ============================================================
-  // 4) HEAD (META, CSS DINAMICI)
-  // ============================================================
   function safeFetchAppendHead(url) {
     return fetch(url)
       .then(r => r.text())
@@ -121,9 +123,6 @@
       .catch(() => safeFetchAppendHead(`/head.html?v=${VERSION}`))
   );
 
-  // ============================================================
-  // 5) HEADER HTML
-  // ============================================================
   function safeFetchHeader(url) {
     return fetch(url)
       .then(r => r.text())
@@ -144,9 +143,6 @@
       .catch(() => safeFetchHeader(`/header.html?v=${VERSION}`))
   );
 
-  // ============================================================
-  // 6) HEADER.JS
-  // ============================================================
   const headerLogicPromise = headerPromise.then(() => {
     return new Promise((resolve) => {
       const s = document.createElement("script");
@@ -157,9 +153,6 @@
     });
   });
 
-  // ============================================================
-  // 7) FOOTER
-  // ============================================================
   function safeFetchFooter(url) {
     return fetch(url)
       .then(r => r.text())
@@ -180,9 +173,6 @@
   const footerPromise = safeFetchFooter(`footer.html?v=${VERSION}`)
     .catch(() => safeFetchFooter(`/footer.html?v=${VERSION}`));
 
-  // ============================================================
-  // 8) CARRELLO
-  // ============================================================
   const carrelloPromise = headerLogicPromise.then(() => {
     return new Promise((resolve) => {
       const s = document.createElement("script");
@@ -200,9 +190,6 @@
     });
   });
 
-  // ============================================================
-  // 9) ADMIN LOADER
-  // ============================================================
   const adminPromise = authPromise.then(() => {
     return new Promise((resolve) => {
       const checkAdmin = () => {
@@ -226,12 +213,10 @@
     });
   });
 
-  // ============================================================
-  // 10) CRITICAL READY
-  // ============================================================
   Promise.all([
     apiPromise,
-    introspectPromise,   // 🔵 PATCH INTROSPECT
+    introspectPromise,
+    diagnosticaPromise,   // 🔵 PATCH DIAGNOSTICA
     authPromise,
     headPromise,
     headerPromise,
