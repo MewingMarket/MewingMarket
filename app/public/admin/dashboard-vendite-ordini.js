@@ -13,6 +13,12 @@ document.addEventListener("critical-ready", async () => {
   }
 
   try {
+    // ⭐ PATCH — attiva endpoint base rimborso (richiesto dalla diagnostica)
+    await fetch("/api/rimborso", {
+      method: "GET",
+      headers: { "Authorization": "Bearer " + token }
+    });
+
     // ⭐ PATCH — nuovo endpoint Java‑mode + protezione token
     const response = await fetch("/api/admin/dashboard/getDashboard", {
       method: "GET",
