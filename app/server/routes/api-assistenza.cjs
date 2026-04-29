@@ -2,7 +2,6 @@
    FILE: app/server/routes/api-assistenza.cjs
    MODALITÀ: Java‑mode (funzioni, no Express)
    DESCRIZIONE: Invio richiesta assistenza + AI + FAQ + Email
-   ORIGINALE: ex POST /assistenza/invia
 ========================================================= */
 
 const path = require("path");
@@ -15,14 +14,16 @@ const { addToList } = R("modules/liste-brevo.cjs");
 const { templateEmailRisposta } = R("modules/email-risposta.cjs");
 
 /* =========================================================
-   FUNZIONE: assistenzaInvia
-   (ex POST /assistenza/invia)
+   FUNZIONE PRINCIPALE: assistenzaInvia
 ========================================================= */
 async function assistenzaInvia(req) {
+  console.log("[DEBUG assistenza] assistenzaInvia() chiamato");
+
   try {
     const { email, domanda } = req.body || {};
 
     if (!email || !domanda) {
+      console.log("[DEBUG assistenza] campi mancanti");
       return { success: false, error: "Campi mancanti." };
     }
 
@@ -83,6 +84,7 @@ async function assistenzaInvia(req) {
     });
 
     if (!rispostaAI || typeof rispostaAI !== "string") {
+      console.log("[DEBUG assistenza] risposta AI non valida");
       return { success: false, error: "Risposta AI non valida" };
     }
 
@@ -93,6 +95,7 @@ async function assistenzaInvia(req) {
     const htmlEmail = templateEmailRisposta({ rispostaAI });
 
     if (!htmlEmail || typeof htmlEmail !== "string") {
+      console.log("[DEBUG assistenza] template email non valido");
       return { success: false, error: "Template email non valido" };
     }
 
@@ -106,6 +109,7 @@ async function assistenzaInvia(req) {
       modalita: "normale"
     });
 
+    console.log("[DEBUG assistenza] ticket generato:", ticket);
     return { success: true, ticket };
 
   } catch (err) {
@@ -119,8 +123,18 @@ async function assistenzaInvia(req) {
 }
 
 /* =========================================================
+   ALIAS COMPATIBILITÀ FRONTEND
+   (il frontend chiama /api/assistenza/inviaAssistenza)
+========================================================= */
+async function inviaAssistenza(req) {
+  console.log("[DEBUG assistenza] alias inviaAssistenza() → assistenzaInvia()");
+  return assistenzaInvia(req);
+}
+
+/* =========================================================
    EXPORT — stile Java
 ========================================================= */
 module.exports = {
-  assistenzaInvia
+  assistenzaInvia,
+  inviaAssistenza
 };
