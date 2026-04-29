@@ -2,7 +2,6 @@
    FILE: app/server/routes/rimborso.cjs
    MODALITÀ: Java‑mode (funzioni, no Express)
    DESCRIZIONE: Rimborsi — Utente + Admin (intelligente)
-   ORIGINALE: ex /rimborso/crea, /procedi/:id, /rifiuta/:id
 ========================================================= */
 
 const path = require("path");
@@ -17,9 +16,10 @@ const { generaRispostaRimborso } = R("modules/genera-risposta-rimborso.cjs");
 
 /* =========================================================
    FUNZIONE 1 — creaRimborso (UTENTE)
-   (ex POST /rimborso/crea)
 ========================================================= */
 async function creaRimborso(req) {
+  console.log("[DEBUG rimborso] creaRimborso()");
+
   try {
     const userId = req.user.id;
     const { ordine_id, motivo } = req.body;
@@ -95,9 +95,10 @@ async function creaRimborso(req) {
 
 /* =========================================================
    FUNZIONE 2 — approvaRimborso (ADMIN)
-   (ex POST /rimborso/procedi/:id)
 ========================================================= */
 async function approvaRimborso(req) {
+  console.log("[DEBUG rimborso] approvaRimborso()");
+
   try {
     const rimborsoId = req.params.id;
 
@@ -106,6 +107,10 @@ async function approvaRimborso(req) {
 
     const ordine = db.prepare(`SELECT * FROM ordini WHERE id = ?`).get(r.ordine_id);
     if (!ordine) return { success: false, error: "Ordine non trovato." };
+
+    // Recupera email utente
+    const utente = db.prepare(`SELECT email FROM utenti WHERE id = ?`).get(r.utente_id);
+    const emailUtente = utente?.email || null;
 
     // Aggiorna ordine
     db.prepare(`
@@ -125,7 +130,7 @@ async function approvaRimborso(req) {
 
     // Email approvazione
     await inviaEmailRimborso({
-      email: ordine.email,
+      email: emailUtente,
       tipo: "approvato",
       motivo: r.motivo,
       categoriaRecord: null
@@ -143,14 +148,19 @@ async function approvaRimborso(req) {
 
 /* =========================================================
    FUNZIONE 3 — rifiutaRimborso (ADMIN)
-   (ex POST /rimborso/rifiuta/:id)
 ========================================================= */
 async function rifiutaRimborso(req) {
+  console.log("[DEBUG rimborso] rifiutaRimborso()");
+
   try {
     const rimborsoId = req.params.id;
 
     const r = db.prepare(`SELECT * FROM rimborsi WHERE id = ?`).get(rimborsoId);
     if (!r) return { success: false, error: "Richiesta non trovata." };
+
+    // Recupera email utente
+    const utente = db.prepare(`SELECT email FROM utenti WHERE id = ?`).get(r.utente_id);
+    const emailUtente = utente?.email || null;
 
     // Riconoscimento categoria per email rifiuto
     const motivoLower = r.motivo.toLowerCase();
@@ -170,7 +180,7 @@ async function rifiutaRimborso(req) {
 
     // Email rifiuto
     await inviaEmailRimborso({
-      email: r.email,
+      email: emailUtente,
       tipo: "rifiutato",
       motivo: r.motivo,
       categoriaRecord
@@ -185,10 +195,34 @@ async function rifiutaRimborso(req) {
 }
 
 /* =========================================================
+   ALIAS COMPATIBILITÀ FRONTEND
+========================================================= */
+
+async function crea(req) {
+  console.log("[DEBUG rimborso] alias crea() → creaRimborso()");
+  return creaRimborso(req);
+}
+
+async function procedi(req) {
+  console.log("[DEBUG rimborso] alias procedi() → approvaRimborso()");
+  return approvaRimborso(req);
+}
+
+async function rifiuta(req) {
+  console.log("[DEBUG rimborso] alias rifiuta() → rifiutaRimborso()");
+  return rifiutaRimborso(req);
+}
+
+/* =========================================================
    EXPORT — stile Java
 ========================================================= */
 module.exports = {
   creaRimborso,
   approvaRimborso,
-  rifiutaRimborso
+  rifiutaRimborso,
+
+  // alias compatibilità
+  crea,
+  procedi,
+  rifiuta
 };
