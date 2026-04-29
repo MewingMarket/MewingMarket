@@ -2,7 +2,6 @@
    FILE: app/server/routes/api-feedback.cjs
    MODALITÀ: Java‑mode (funzioni, no Express)
    DESCRIZIONE: Sistema recensioni utenti — SQL definitivo
-   ORIGINALE: ex /recensioni/prodotti-acquistati, /utente, /crea, /modifica, /elimina
 ========================================================= */
 
 const path = require("path");
@@ -21,9 +20,10 @@ function safeParse(str) {
 
 /* =========================================================
    FUNZIONE 1 — prodottiAcquistati
-   (ex GET /recensioni/prodotti-acquistati)
 ========================================================= */
 async function prodottiAcquistati(req) {
+  console.log("[DEBUG feedback] prodottiAcquistati()");
+
   try {
     const userId = req.user.id;
 
@@ -48,9 +48,10 @@ async function prodottiAcquistati(req) {
 
 /* =========================================================
    FUNZIONE 2 — recensioniUtente
-   (ex GET /recensioni/utente)
 ========================================================= */
 async function recensioniUtente(req) {
+  console.log("[DEBUG feedback] recensioniUtente()");
+
   try {
     const userId = req.user.id;
 
@@ -80,9 +81,10 @@ async function recensioniUtente(req) {
 
 /* =========================================================
    FUNZIONE 3 — creaRecensione
-   (ex POST /recensioni/crea)
 ========================================================= */
 async function creaRecensione(req) {
+  console.log("[DEBUG feedback] creaRecensione()");
+
   try {
     const userId = req.user.id;
     const userEmail = req.user.email;
@@ -166,9 +168,10 @@ async function creaRecensione(req) {
 
 /* =========================================================
    FUNZIONE 4 — modificaRecensione
-   (ex POST /recensioni/modifica)
 ========================================================= */
 async function modificaRecensione(req) {
+  console.log("[DEBUG feedback] modificaRecensione()");
+
   try {
     const userId = req.user.id;
     const { id, rating, commento } = req.body;
@@ -203,9 +206,10 @@ async function modificaRecensione(req) {
 
 /* =========================================================
    FUNZIONE 5 — eliminaRecensione
-   (ex POST /recensioni/elimina)
 ========================================================= */
 async function eliminaRecensione(req) {
+  console.log("[DEBUG feedback] eliminaRecensione()");
+
   try {
     const userId = req.user.id;
     const { id } = req.body;
@@ -235,6 +239,26 @@ async function eliminaRecensione(req) {
 }
 
 /* =========================================================
+   ALIAS COMPATIBILITÀ FRONTEND
+   (il frontend chiama ancora endpoint vecchi)
+========================================================= */
+
+async function getProdottiAcquistati(req) {
+  console.log("[DEBUG feedback] alias getProdottiAcquistati() → prodottiAcquistati()");
+  return prodottiAcquistati(req);
+}
+
+async function getRecensioniUtente(req) {
+  console.log("[DEBUG feedback] alias getRecensioniUtente() → recensioniUtente()");
+  return recensioniUtente(req);
+}
+
+async function getTopRecensioni(req) {
+  console.log("[DEBUG feedback] alias getTopRecensioni() → recensioniUtente()");
+  return recensioniUtente(req);
+}
+
+/* =========================================================
    EXPORT — stile Java
 ========================================================= */
 module.exports = {
@@ -242,5 +266,10 @@ module.exports = {
   recensioniUtente,
   creaRecensione,
   modificaRecensione,
-  eliminaRecensione
+  eliminaRecensione,
+
+  // alias compatibilità
+  getProdottiAcquistati,
+  getRecensioniUtente,
+  getTopRecensioni
 };
