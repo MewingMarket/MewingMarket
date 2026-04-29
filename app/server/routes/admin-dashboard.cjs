@@ -15,8 +15,11 @@ const categorieRimborso = R("modules/rimborso-categorie.cjs");
    (ex GET /admin/dashboard)
 ========================================================= */
 async function adminDashboard(req) {
+  console.log("[DEBUG adminDashboard] chiamato adminDashboard()");
+
   try {
     if (req.user?.ruolo !== "admin") {
+      console.log("[DEBUG adminDashboard] accesso negato");
       return { success: false, error: "Accesso negato" };
     }
 
@@ -173,8 +176,18 @@ async function adminDashboard(req) {
 }
 
 /* =========================================================
+   ALIAS INTELLIGENTE — compatibilità frontend
+   (il frontend chiama getDashboard)
+========================================================= */
+async function getDashboard(req) {
+  console.log("[DEBUG adminDashboard] alias getDashboard() → adminDashboard()");
+  return adminDashboard(req);
+}
+
+/* =========================================================
    EXPORT — stile Java
 ========================================================= */
 module.exports = {
-  adminDashboard
+  adminDashboard,
+  getDashboard
 };
