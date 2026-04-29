@@ -17,10 +17,11 @@ const db = R("db/database.cjs");
 const jsonGen = R("modules/generatore-json.cjs");
 
 /* =========================================================
-   FUNZIONE: paypalCreateOrder
-   (ex POST /api/paypal/create-order)
+   FUNZIONE PRINCIPALE — paypalCreateOrder
 ========================================================= */
 async function paypalCreateOrder(req) {
+  console.log("[DEBUG paypal] paypalCreateOrder()");
+
   try {
     const { email, prodotti, totale } = req.body || {};
 
@@ -28,13 +29,9 @@ async function paypalCreateOrder(req) {
       return { success: false, error: "Dati ordine mancanti" };
     }
 
-    // totale arriva in EURO → convertiamo in centesimi
     const totaleCent = Math.round(Number(totale) * 100);
     const totaleEuro = (totaleCent / 100).toFixed(2);
 
-    // =========================================================
-    // 1) CREA ORDINE NEL DB
-    // =========================================================
     const result = db.prepare(`
       INSERT INTO ordini (
         utente_id,
@@ -52,16 +49,12 @@ async function paypalCreateOrder(req) {
 
     const ordineId = result.lastInsertRowid;
 
-    // Aggiorna JSON mirror
     try {
       await jsonGen.exportOrders();
     } catch (err) {
       console.error("⚠️ Errore exportOrders JSON:", err);
     }
 
-    // =========================================================
-    // 2) CREA ORDINE PAYPAL (SANDBOX + LIVE)
-    // =========================================================
     const MODE = process.env.PAYPAL_MODE || "sandbox";
 
     const PAYPAL_API = MODE === "sandbox"
@@ -106,13 +99,13 @@ async function paypalCreateOrder(req) {
     );
 
     const raw = await paypalRes.text();
-    console.log("PAYPAL RAW RESPONSE:", raw);
+    console.log("[DEBUG paypal] RAW RESPONSE:", raw);
 
     let paypalData = null;
     try {
       paypalData = JSON.parse(raw);
     } catch (err) {
-      console.log("PAYPAL JSON PARSE ERROR:", err);
+      console.log("[DEBUG paypal] JSON PARSE ERROR:", err);
     }
 
     if (!paypalData || !paypalData.id) {
@@ -121,34 +114,24 @@ async function paypalCreateOrder(req) {
 
     const paypalTransactionId = paypalData.id;
 
-    // =========================================================
-    // 3) SALVA TRANSACTION ID PAYPAL NEL DB
-    // =========================================================
     db.prepare(`
       UPDATE ordini
       SET paypal_transaction_id = ?
       WHERE id = ?
     `).run(paypalTransactionId, ordineId);
 
-    // Aggiorna JSON mirror
     try {
       await jsonGen.exportOrders();
     } catch (err) {
       console.error("⚠️ Errore exportOrders JSON:", err);
     }
 
-    // =========================================================
-    // 4) TROVA LINK APPROVAL PAYPAL
-    // =========================================================
     const approveLink = paypalData.links?.find(l => l.rel === "approve");
 
     if (!approveLink) {
       return { success: false, error: "Nessun link PayPal trovato" };
     }
 
-    // =========================================================
-    // 5) RISPOSTA
-    // =========================================================
     return {
       success: true,
       paypalUrl: approveLink.href,
@@ -162,8 +145,18 @@ async function paypalCreateOrder(req) {
 }
 
 /* =========================================================
+   ALIAS COMPATIBILITÀ FRONTEND
+   (ex POST /api/paypal/create-order)
+========================================================= */
+async function createOrder(req) {
+  console.log("[DEBUG paypal] alias createOrder() → paypalCreateOrder()");
+  return paypalCreateOrder(req);
+}
+
+/* =========================================================
    EXPORT — stile Java
 ========================================================= */
 module.exports = {
-  paypalCreateOrder
+  paypalCreateOrder,
+  createOrder
 };
