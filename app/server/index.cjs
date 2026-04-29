@@ -69,6 +69,8 @@ module.exports = {
 
   newsletter: {
     ...R("routes/newsletter.cjs")      // <-- aggiunto
-  }
-
+  },
+diagnostica: {
+  ...R("routes/diagnostica-fetch.cjs")
+},
 };
