@@ -28,10 +28,11 @@ function safeParse(str) {
 }
 
 /* =========================================================
-   FUNZIONE: paypalCancelOrder
-   (ex GET /api/paypal/cancel-order?orderId=xxxx)
+   FUNZIONE PRINCIPALE — paypalCancelOrder
 ========================================================= */
 async function paypalCancelOrder(req) {
+  console.log("[DEBUG paypal] paypalCancelOrder()");
+
   try {
     const orderId = req.query.orderId;
     const userId = req.user.id;
@@ -40,9 +41,6 @@ async function paypalCancelOrder(req) {
       return { success: false, error: "Parametri mancanti" };
     }
 
-    // =========================================================
-    // 1) Recupera ordine dal DB
-    // =========================================================
     const ordine = db.prepare(`
       SELECT 
         o.id,
@@ -61,7 +59,6 @@ async function paypalCancelOrder(req) {
       return { success: false, error: "Ordine non trovato" };
     }
 
-    // Se già completato → non annullabile
     if (ordine.stato === "completato") {
       return {
         success: false,
@@ -69,7 +66,6 @@ async function paypalCancelOrder(req) {
       };
     }
 
-    // Se già annullato → ritorna ordine
     if (ordine.stato === "annullato") {
       return {
         success: true,
@@ -83,9 +79,6 @@ async function paypalCancelOrder(req) {
       };
     }
 
-    // =========================================================
-    // 2) Aggiorna stato → annullato
-    // =========================================================
     db.prepare(`
       UPDATE ordini
       SET stato = 'annullato',
@@ -93,7 +86,6 @@ async function paypalCancelOrder(req) {
       WHERE id = ?
     `).run(orderId);
 
-    // Aggiorna JSON mirror
     try {
       await jsonGen.exportOrders();
     } catch (err) {
@@ -102,9 +94,6 @@ async function paypalCancelOrder(req) {
 
     const emailUtente = ordine.utente_email || "";
 
-    // =========================================================
-    // 3) Email annullamento
-    // =========================================================
     try {
       if (emailUtente) {
         await inviaEmailOrdineAnnullato({
@@ -121,9 +110,6 @@ async function paypalCancelOrder(req) {
       console.error("⚠️ Errore invio email annullamento:", err);
     }
 
-    // =========================================================
-    // 4) Risposta
-    // =========================================================
     return {
       success: true,
       message: "Ordine annullato correttamente",
@@ -145,8 +131,18 @@ async function paypalCancelOrder(req) {
 }
 
 /* =========================================================
+   ALIAS COMPATIBILITÀ FRONTEND
+   (ex GET /api/paypal/cancel-order)
+========================================================= */
+async function cancelOrder(req) {
+  console.log("[DEBUG paypal] alias cancelOrder() → paypalCancelOrder()");
+  return paypalCancelOrder(req);
+}
+
+/* =========================================================
    EXPORT — stile Java
 ========================================================= */
 module.exports = {
-  paypalCancelOrder
+  paypalCancelOrder,
+  cancelOrder
 };
