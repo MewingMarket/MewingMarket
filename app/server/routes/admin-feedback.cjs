@@ -14,6 +14,8 @@ const db = R("db/database.cjs");
    (ex GET /admin/feedback/lista)
 ========================================================= */
 async function adminFeedbackLista(req) {
+  console.log("[DEBUG adminFeedback] chiamato adminFeedbackLista()");
+
   try {
     const lista = db.prepare(`
       SELECT f.id, f.rating, f.commento, f.data,
@@ -104,6 +106,8 @@ async function adminFeedbackLista(req) {
    (ex GET /admin/feedback/debug-db)
 ========================================================= */
 async function adminFeedbackDebugDB(req) {
+  console.log("[DEBUG adminFeedback] chiamato adminFeedbackDebugDB()");
+
   try {
     return {
       success: true,
@@ -119,9 +123,28 @@ async function adminFeedbackDebugDB(req) {
 }
 
 /* =========================================================
+   ALIAS INTELLIGENTI — compatibilità frontend
+   (il frontend chiama ancora i vecchi path)
+========================================================= */
+
+async function lista(req) {
+  console.log("[DEBUG adminFeedback] alias lista() → adminFeedbackLista()");
+  return adminFeedbackLista(req);
+}
+
+async function debugDB(req) {
+  console.log("[DEBUG adminFeedback] alias debugDB() → adminFeedbackDebugDB()");
+  return adminFeedbackDebugDB(req);
+}
+
+/* =========================================================
    EXPORT — stile Java
 ========================================================= */
 module.exports = {
   adminFeedbackLista,
-  adminFeedbackDebugDB
+  adminFeedbackDebugDB,
+
+  // alias compatibilità
+  lista,
+  debugDB
 };
