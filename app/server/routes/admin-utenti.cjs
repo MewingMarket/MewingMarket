@@ -1,20 +1,17 @@
 /* =========================================================
-   File: app/server/routes/admin-utenti.cjs
+   FILE: app/server/routes/admin-utenti.cjs
+   MODALITÀ: Java‑mode (NO Express)
    Admin — Gestione Utenti
-   Versione 2026.200 — require assoluti
+   Versione 2027.100 — compatibile router universale
 ========================================================= */
 
-const express = require("express");
 const path = require("path");
-
 const R = (p) => require(path.join(process.cwd(), "app/server", p));
 
-const router = express.Router();
 const db = R("db/database.cjs");
 const authAdmin = R("middleware/auth-admin.cjs");
 const fetch = require("node-fetch");
 
-// ⭐ PATCH: importiamo router Brevo centralizzato
 const {
   syncBrevoUtenteStatoReale,
   LISTA_NEWSLETTER,
@@ -22,14 +19,12 @@ const {
   LISTA_CLIENTI
 } = R("modules/liste-brevo.cjs");
 
-// ⭐ PATCH: email disiscrizione newsletter
 const { inviaEmailNewsletterUnsubscribe } = R("modules/email-newsletter-unsubscribe.cjs");
 
-// Codice fiscale admin
 const CF_ADMIN = "GRSSMN92H25I138W";
 
 /* =========================================================
-   Helper: ultimo evento per tipo
+   HELPERS
 ========================================================= */
 function getLastEvent(email, evento) {
   const row = db.prepare(`
@@ -43,9 +38,6 @@ function getLastEvent(email, evento) {
   return row ? row.data : "";
 }
 
-/* =========================================================
-   Helper: newsletter (subscribe / unsubscribe)
-========================================================= */
 function getNewsletterEvent(email, tipo) {
   const row = db.prepare(`
     SELECT data
@@ -58,9 +50,6 @@ function getNewsletterEvent(email, tipo) {
   return row ? row.data : "";
 }
 
-/* =========================================================
-   Helper: verifica se utente è cliente DB
-========================================================= */
 function isClienteDB(email) {
   const user = db.prepare(`SELECT id FROM utenti WHERE email = ?`).get(email);
   if (!user) return "no";
@@ -75,9 +64,11 @@ function isClienteDB(email) {
 }
 
 /* =========================================================
-   ⭐ PATCH: SYNC BREVO COMPLETO
+   SYNC BREVO COMPLETO
 ========================================================= */
 async function syncBrevo() {
+  console.log("[DEBUG admin-utenti] syncBrevo()");
+
   try {
     const apiKey = process.env.BREVO_API_KEY;
 
@@ -109,22 +100,19 @@ async function syncBrevo() {
 }
 
 /* =========================================================
-   ENDPOINT: SYNC BREVO (manuale)
+   ENDPOINT: syncBrevoManuale
 ========================================================= */
-router.get("/utenti/sync-brevo", authAdmin, async (req, res) => {
-  try {
-    const data = await syncBrevo();
-    res.json({ success: true, ...data });
-  } catch (err) {
-    console.error("Errore sync Brevo:", err);
-    res.json({ success: false, error: "Errore sync Brevo" });
-  }
-});
+async function syncBrevoManuale(req) {
+  console.log("[DEBUG admin-utenti] syncBrevoManuale()");
+  return { success: true, ...(await syncBrevo()) };
+}
 
 /* =========================================================
-   ⭐ PATCH 2026.900 — SYNC UTENTI STORICI
+   ENDPOINT: syncBrevoFull
 ========================================================= */
-router.get("/utenti/sync-brevo-full", authAdmin, async (req, res) => {
+async function syncBrevoFull(req) {
+  console.log("[DEBUG admin-utenti] syncBrevoFull()");
+
   try {
     const utenti = db.prepare(`
       SELECT email FROM utenti
@@ -148,25 +136,27 @@ router.get("/utenti/sync-brevo-full", authAdmin, async (req, res) => {
       }
     }
 
-    res.json({ success: true, message: "Sync utenti storici completata" });
+    return { success: true, message: "Sync utenti storici completata" };
 
   } catch (err) {
     console.error("❌ Errore sync utenti storici:", err);
-    res.json({ success: false, error: "Errore sync utenti storici" });
+    return { success: false, error: "Errore sync utenti storici" };
   }
-});
+}
 
 /* =========================================================
-   LISTA UTENTI COMPLETA
+   LISTA UTENTI
 ========================================================= */
-router.get("/utenti/lista", authAdmin, async (req, res) => {
+async function listaUtenti(req) {
+  console.log("[DEBUG admin-utenti] listaUtenti()");
+
   try {
     let brevoLists = { newsletter: [], registrati: [], clienti: [] };
 
     try {
       brevoLists = await syncBrevo();
     } catch (err) {
-      console.error("Errore syncBrevo in /utenti/lista:", err);
+      console.error("Errore syncBrevo in listaUtenti:", err);
     }
 
     const utenti = db.prepare(`
@@ -199,53 +189,59 @@ router.get("/utenti/lista", authAdmin, async (req, res) => {
       };
     });
 
-    res.json({ success: true, utenti: output });
+    return { success: true, utenti: output };
 
   } catch (err) {
     console.error("Errore lista utenti:", err);
-    res.json({ success: false, error: "Errore server." });
+    return { success: false, error: "Errore server." };
   }
-});
+}
 
 /* =========================================================
    BLOCCA UTENTE
 ========================================================= */
-router.post("/utenti/blocca", authAdmin, (req, res) => {
+async function bloccaUtente(req) {
+  console.log("[DEBUG admin-utenti] bloccaUtente()");
+
   const { email } = req.body;
   if (!email || email === "amministratore")
-    return res.json({ success: false });
+    return { success: false };
 
   db.prepare(`
     INSERT INTO utenti_eventi (email, evento, data)
     VALUES (?, 'bloccato', datetime('now'))
   `).run(email);
 
-  res.json({ success: true });
-});
+  return { success: true };
+}
 
 /* =========================================================
    SBLOCCA UTENTE
 ========================================================= */
-router.post("/utenti/sblocca", authAdmin, (req, res) => {
+async function sbloccaUtente(req) {
+  console.log("[DEBUG admin-utenti] sbloccaUtente()");
+
   const { email } = req.body;
   if (!email || email === "amministratore")
-    return res.json({ success: false });
+    return { success: false };
 
   db.prepare(`
     INSERT INTO utenti_eventi (email, evento, data)
     VALUES (?, 'sbloccato', datetime('now'))
   `).run(email);
 
-  res.json({ success: true });
-});
+  return { success: true };
+}
 
 /* =========================================================
-   ELIMINA UTENTE (DB + eventi + newsletter + Brevo)
+   ELIMINA UTENTE
 ========================================================= */
-router.post("/utenti/elimina", authAdmin, async (req, res) => {
+async function eliminaUtente(req) {
+  console.log("[DEBUG admin-utenti] eliminaUtente()");
+
   const { email } = req.body;
   if (!email || email === "amministratore")
-    return res.json({ success: false });
+    return { success: false };
 
   try {
     const user = db.prepare(`
@@ -253,19 +249,9 @@ router.post("/utenti/elimina", authAdmin, async (req, res) => {
     `).get(email);
 
     if (!user) {
-      try {
-        await syncBrevoUtenteStatoReale({ email, elimina: true });
-      } catch (err) {
-        console.error("❌ Errore sync Brevo (utente inesistente):", err);
-      }
-
-      try {
-        await inviaEmailNewsletterUnsubscribe({ email });
-      } catch (err) {
-        console.error("❌ Errore invio email disiscrizione:", err);
-      }
-
-      return res.json({ success: true });
+      try { await syncBrevoUtenteStatoReale({ email, elimina: true }); } catch {}
+      try { await inviaEmailNewsletterUnsubscribe({ email }); } catch {}
+      return { success: true };
     }
 
     db.prepare(`DELETE FROM ordini WHERE utente_id = ?`).run(user.id);
@@ -273,24 +259,37 @@ router.post("/utenti/elimina", authAdmin, async (req, res) => {
     db.prepare(`DELETE FROM newsletter_log WHERE email = ?`).run(email);
     db.prepare(`DELETE FROM utenti WHERE id = ?`).run(user.id);
 
-    try {
-      await syncBrevoUtenteStatoReale({ email, elimina: true });
-    } catch (err) {
-      console.error("❌ Errore sync Brevo:", err);
-    }
+    try { await syncBrevoUtenteStatoReale({ email, elimina: true }); } catch {}
+    try { await inviaEmailNewsletterUnsubscribe({ email }); } catch {}
 
-    try {
-      await inviaEmailNewsletterUnsubscribe({ email });
-    } catch (err) {
-      console.error("❌ Errore invio email disiscrizione:", err);
-    }
-
-    res.json({ success: true });
+    return { success: true };
 
   } catch (err) {
     console.error("Errore elimina utente:", err);
-    res.json({ success: false, error: "Errore eliminazione utente" });
+    return { success: false, error: "Errore eliminazione utente" };
   }
-});
+}
 
-module.exports = router;
+/* =========================================================
+   ALIAS COMPATIBILITÀ FRONTEND
+========================================================= */
+async function syncBrevoUtenti(req) { return syncBrevoManuale(req); }
+async function syncBrevoUtentiFull(req) { return syncBrevoFull(req); }
+async function utentiLista(req) { return listaUtenti(req); }
+
+/* =========================================================
+   EXPORT — Java‑mode
+========================================================= */
+module.exports = {
+  syncBrevoManuale,
+  syncBrevoFull,
+  listaUtenti,
+  bloccaUtente,
+  sbloccaUtente,
+  eliminaUtente,
+
+  // alias compatibilità
+  syncBrevoUtenti,
+  syncBrevoUtentiFull,
+  utentiLista
+};
