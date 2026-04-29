@@ -13,10 +13,11 @@ const { handleConversation } = require(path.join(process.cwd(), "app/modules/bot
 const { trackGA4 } = require(path.join(process.cwd(), "app/server/services/ga4.cjs"));
 
 /* =========================================================
-   FUNZIONE: chat
-   (ex POST /chat)
+   FUNZIONE: chat (Java‑mode)
 ========================================================= */
-async function chat(req, res) {
+async function chat(req) {
+  console.log("[DEBUG chat] chat() chiamato");
+
   const uid = req.uid;
   const message = req.body?.message || "";
 
@@ -27,14 +28,15 @@ async function chat(req, res) {
 
     // PATCH: protezione catalogo
     if (!global.catalogReady) {
-      return res.json({
+      return {
+        success: true,
         reply: "Sto pensando… un attimo 😄",
         delay: true
-      });
+      };
     }
 
-    // Conversazione bot (gestisce già la risposta)
-    await handleConversation(req, res);
+    // Conversazione bot (Java‑mode)
+    const finalReply = await handleConversation(req);
 
     // GA4 tracking
     trackGA4("chat_message", {
@@ -47,7 +49,10 @@ async function chat(req, res) {
       global.logBot("chat_response", { uid });
     }
 
-    return;
+    return {
+      success: true,
+      ...finalReply
+    };
 
   } catch (err) {
     console.error("❌ Errore chat:", err);
@@ -56,15 +61,32 @@ async function chat(req, res) {
       global.logEvent("chat_error", { uid, error: err?.message || "unknown" });
     }
 
-    return res.json({
+    return {
+      success: false,
       reply: "Si è verificato un errore. Riprova tra qualche secondo."
-    });
+    };
   }
+}
+
+/* =========================================================
+   ALIAS COMPATIBILITÀ FRONTEND
+========================================================= */
+
+async function message(req) {
+  console.log("[DEBUG chat] alias message() → chat()");
+  return chat(req);
+}
+
+async function chatAlias(req) {
+  console.log("[DEBUG chat] alias chatAlias() → chat()");
+  return chat(req);
 }
 
 /* =========================================================
    EXPORT — stile Java
 ========================================================= */
 module.exports = {
-  chat
+  chat,
+  message,
+  chatAlias
 };
