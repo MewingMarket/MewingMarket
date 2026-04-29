@@ -2,7 +2,6 @@
    FILE: app/server/routes/api-recensioni-top.cjs
    MODALITÀ: Java‑mode (funzioni, no Express)
    DESCRIZIONE: Top recensioni globali — Versione definitiva
-   ORIGINALE: ex GET /recensioni/top
 ========================================================= */
 
 const path = require("path");
@@ -11,10 +10,12 @@ const R = (p) => require(path.join(process.cwd(), "app/server", p));
 const db = R("db/database.cjs");
 
 /* =========================================================
-   FUNZIONE: recensioniTop
+   FUNZIONE PRINCIPALE: recensioniTop
    (ex GET /recensioni/top)
 ========================================================= */
 async function recensioniTop(req) {
+  console.log("[DEBUG recensioni-top] recensioniTop() chiamato");
+
   try {
     const stmt = db.prepare(`
       SELECT 
@@ -43,8 +44,27 @@ async function recensioniTop(req) {
 }
 
 /* =========================================================
+   ALIAS COMPATIBILITÀ FRONTEND
+   (vecchi endpoint ancora usati)
+========================================================= */
+
+async function getTopRecensioni(req) {
+  console.log("[DEBUG recensioni-top] alias getTopRecensioni() → recensioniTop()");
+  return recensioniTop(req);
+}
+
+async function recensioniTopAlias(req) {
+  console.log("[DEBUG recensioni-top] alias recensioniTopAlias() → recensioniTop()");
+  return recensioniTop(req);
+}
+
+/* =========================================================
    EXPORT — stile Java
 ========================================================= */
 module.exports = {
-  recensioniTop
+  recensioniTop,
+
+  // alias compatibilità
+  getTopRecensioni,
+  recensioniTopAlias
 };
