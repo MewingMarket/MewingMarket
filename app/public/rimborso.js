@@ -15,6 +15,12 @@ document.addEventListener("critical-ready", async () => {
     return;
   }
 
+  // ⭐ PATCH diagnostica — attiva endpoint base rimborso
+  await fetch("/api/rimborso", {
+    method: "GET",
+    headers: { Authorization: "Bearer " + token }
+  });
+
   async function handleAuth(res) {
     if (res.status === 401 || res.status === 403) {
       localStorage.removeItem("token");
@@ -28,7 +34,6 @@ document.addEventListener("critical-ready", async () => {
   // 1) CARICA EMAIL UTENTE + ORDINI COMPLETATI
   // =========================================================
   try {
-    // ⭐ PATCH — nuovo endpoint Java‑mode
     const resOrdRaw = await fetch("/api/ordini/getOrdiniUtente", {
       headers: { Authorization: "Bearer " + token }
     });
@@ -41,7 +46,6 @@ document.addEventListener("critical-ready", async () => {
       return;
     }
 
-    // ⭐ PATCH — nuovo endpoint Java‑mode
     const resUserRaw = await fetch("/api/utenti/me", {
       headers: { Authorization: "Bearer " + token }
     });
@@ -54,7 +58,6 @@ document.addEventListener("critical-ready", async () => {
       emailInput.disabled = true;
     }
 
-    // ORDINI COMPLETATI
     const ordini = data.ordini.filter(o => o.stato === "completato");
 
     ordineSelect.innerHTML = "";
@@ -71,9 +74,6 @@ document.addEventListener("critical-ready", async () => {
       });
     }
 
-    // =========================================================
-    // 2) PRESELEZIONA ORDINE SE ARRIVA ?id=123
-    // =========================================================
     const params = new URLSearchParams(window.location.search);
     const preselectId = params.get("id");
 
@@ -102,7 +102,6 @@ document.addEventListener("critical-ready", async () => {
     }
 
     try {
-      // ⭐ PATCH — nuovo endpoint Java‑mode
       const resRaw = await fetch("/api/rimborso/creaRichiesta", {
         method: "POST",
         headers: {
@@ -122,7 +121,6 @@ document.addEventListener("critical-ready", async () => {
         return;
       }
 
-      // 🔥 RISOLVIBILE
       if (data.message && data.message.includes("risolvibile")) {
         alert(
           "Il problema sembra risolvibile.\n" +
@@ -132,7 +130,6 @@ document.addEventListener("critical-ready", async () => {
         return;
       }
 
-      // 🔥 NON RISOLVIBILE
       alert("Richiesta inviata. Riceverai una risposta entro poche ore.");
       form.reset();
 
