@@ -1,7 +1,5 @@
-/* FILE: app/server/server.cjs */
-/**
- * =========================================================
- * Entry point del server — versione DEFINITIVA (2027.950)
+/* =========================================================
+ * Entry point del server — versione DEFINITIVA (2027.951)
  * =========================================================
  */
 
@@ -30,8 +28,7 @@ const fs = require("fs");
 const app = express();
 app.disable("x-powered-by");
 
-/**
- * =========================================================
+/* =========================================================
  * JS STATIC FIX — VERSIONE COMPATIBILE RENDER
  * =========================================================
  */
@@ -43,8 +40,6 @@ app.use((req, res, next) => {
   }
 
   const clean = req.path.split("?")[0];
-
-  /* 🔵 PATCH — usa SEMPRE basename */
   const filePath = path.join(PUBLIC_JS, path.basename(clean));
 
   if (fs.existsSync(filePath)) {
@@ -67,9 +62,8 @@ global.__server_started = true;
 
 let BOOTSTRAP_OK = false;
 
-/**
- * =========================================================
- * HEALTH BASE
+/* =========================================================
+ * HEALTH
  * =========================================================
  */
 app.get("/health", (req, res) => {
@@ -80,8 +74,7 @@ app.get("/health", (req, res) => {
   });
 });
 
-/**
- * =========================================================
+/* =========================================================
  * DEBUG REQUEST/RESPONSE
  * =========================================================
  */
@@ -97,8 +90,7 @@ app.use((req, res, next) => {
   next();
 });
 
-/**
- * =========================================================
+/* =========================================================
  * HOOK DIAGNOSTICA
  * =========================================================
  */
@@ -114,8 +106,7 @@ try {
 
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-/**
- * =========================================================
+/* =========================================================
  * BOOT SEQUENZA
  * =========================================================
  */
@@ -162,8 +153,7 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
   await wait(200);
   require("./middleware/context.cjs")(app);
 
-  /**
-   * =========================================================
+  /* =========================================================
    * INTROSPECT (Java‑mode)
    * =========================================================
    */
@@ -174,8 +164,7 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     logErr("❌ Errore introspect.cjs:", err.message);
   }
 
-  /**
-   * =========================================================
+  /* =========================================================
    * ROUTER API (Java‑mode)
    * =========================================================
    */
@@ -189,8 +178,7 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     console.error("❌ ROUTER LOAD ERROR:", err);
   }
 
-  /**
-   * =========================================================
+  /* =========================================================
    * COLD START
    * =========================================================
    */
@@ -202,8 +190,7 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     logErr("❌ Errore cold-start:", err.message);
   }
 
-  /**
-   * =========================================================
+  /* =========================================================
    * MIDDLEWARE DIAGNOSTICO
    * =========================================================
    */
@@ -214,8 +201,7 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     console.error("❌ ERRORE middleware diagnostico:", err);
   }
 
-  /**
-   * =========================================================
+  /* =========================================================
    * STATIC ROUTES
    * =========================================================
    */
@@ -237,8 +223,7 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
   app.use(express.static(PUBLIC_DIR));
 
-  /**
-   * =========================================================
+  /* =========================================================
    * 🔵 PATCH DIAGNOSTICA ENDPOINTS
    * =========================================================
    */
@@ -247,8 +232,7 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     res.send(diag.diagnosticaHtmlToString());
   });
 
-  /**
-   * =========================================================
+  /* =========================================================
    * REWRITE SCRIPTS
    * =========================================================
    */
@@ -276,8 +260,7 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
   app.use("/*.css", express.static(PUBLIC_DIR));
   app.use("/css", express.static(PUBLIC_DIR));
 
-  /**
-   * =========================================================
+  /* =========================================================
    * /data (persistente)
    * =========================================================
    */
@@ -311,9 +294,8 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     res.status(404).json({ error: "File non trovato" });
   });
 
-  /**
-   * =========================================================
-   * ROUTES EXPRESS CHE DEVONO RESTARE
+  /* =========================================================
+   * ROUTES EXPRESS CHE DEVONO RESTARE (solo admin)
    * =========================================================
    */
   app.get("/admin/login", (req, res) => {
@@ -321,32 +303,7 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
   });
   app.use("/admin", express.static(path.resolve("app/public/admin")));
 
-  try {
-    require("./routes/chat.cjs")(app);
-    require("./routes/chat-voice.cjs")(app);
-    require("./routes/newsletter.cjs")(app);
-    require("./routes/meta-feed.cjs")(app);
-    require("./routes/product-page.cjs")(app);
-    require("./routes/sitemap.cjs")(app);
-    log("✅ FRONTEND ROUTES CARICATE");
-  } catch (err) {
-    logErr("❌ ERRORE FRONTEND ROUTES:", err.message || err);
-  }
-
-  /**
-   * =========================================================
-   * CRON
-   * =========================================================
-   */
-  try {
-    require("./startup/cron-sync.cjs")(app, { log, logErr });
-    log("🔁 Cron-sync avviato");
-  } catch (err) {
-    logErr("❌ Errore cron-sync:", err.message);
-  }
-
-  /**
-   * =========================================================
+  /* =========================================================
    * START SERVER
    * =========================================================
    */
