@@ -2,7 +2,6 @@
    FILE: app/server/routes/api-upload.cjs
    MODALITÀ: Java‑mode (funzioni, no Express)
    DESCRIZIONE: Upload file prodotto (pdf, zip, mp4, immagini)
-   ORIGINALE: ex POST /upload/file
 ========================================================= */
 
 const path = require("path");
@@ -13,17 +12,20 @@ const R = (p) => require(path.join(process.cwd(), "app/server", p));
 // Middleware originale (ora funzione da chiamare manualmente)
 const setUploadType = R("middleware/upload-type.cjs");
 
-// PATCH 2026 — CARTELLA UPLOAD DEFINITIVA
+// PATCH — CARTELLA UPLOAD DEFINITIVA
 const uploadFiles = "/var/data/uploads/files";
 
 /* =========================================================
-   FUNZIONE: uploadFileProdotto
-   (ex POST /upload/file)
+   FUNZIONE PRINCIPALE: uploadFileProdotto
 ========================================================= */
-async function uploadFileProdotto(req, res) {
+async function uploadFileProdotto(req) {
+  console.log("[DEBUG upload] uploadFileProdotto() chiamato");
+
   try {
     // Applica il middleware originale (Java‑mode)
-    await setUploadType("file")(req, res, () => {});
+    await new Promise((resolve) => {
+      setUploadType("file")(req, {}, resolve);
+    });
 
     // Nome file unico
     const filename = Date.now() + "-" + Math.round(Math.random() * 1e9);
@@ -53,31 +55,39 @@ async function uploadFileProdotto(req, res) {
       console.error("❌ Errore creazione cartella upload:", err);
     }
 
-    // Stream su disco
-    const writeStream = fs.createWriteStream(filePath);
-    req.pipe(writeStream);
+    // STREAM SU DISCO (Java‑mode)
+    await new Promise((resolve, reject) => {
+      const writeStream = fs.createWriteStream(filePath);
+      req.pipe(writeStream);
 
-    writeStream.on("finish", () => {
-      res.json({
-        success: true,
-        filename: finalName
-      });
+      writeStream.on("finish", resolve);
+      writeStream.on("error", reject);
     });
 
-    writeStream.on("error", (err) => {
-      console.error("❌ Errore stream upload:", err);
-      res.json({ success: false, error: "Errore scrittura file" });
-    });
+    return {
+      success: true,
+      filename: finalName
+    };
 
   } catch (err) {
     console.error("❌ Errore uploadFileProdotto:", err);
-    res.json({ success: false, error: "Errore upload" });
+    return { success: false, error: "Errore upload" };
   }
+}
+
+/* =========================================================
+   ALIAS COMPATIBILITÀ FRONTEND
+   (il frontend chiama /api/upload/uploadFileProdotto)
+========================================================= */
+async function upload(req) {
+  console.log("[DEBUG upload] alias upload() → uploadFileProdotto()");
+  return uploadFileProdotto(req);
 }
 
 /* =========================================================
    EXPORT — stile Java
 ========================================================= */
 module.exports = {
-  uploadFileProdotto
+  uploadFileProdotto,
+  upload
 };
