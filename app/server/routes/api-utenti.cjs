@@ -59,6 +59,8 @@ function logUserEvent(email, evento, note = null) {
    1) REGISTRAZIONE
 ========================================================= */
 async function registrazione(req) {
+  console.log("[DEBUG utenti] registrazione()");
+
   try {
     let { email, password, codice_fiscale } = req.body || {};
 
@@ -117,6 +119,8 @@ async function registrazione(req) {
    2) LOGIN
 ========================================================= */
 async function login(req) {
+  console.log("[DEBUG utenti] login()");
+
   try {
     let { email, password } = req.body || {};
 
@@ -160,6 +164,8 @@ async function login(req) {
    3) CAMBIO EMAIL
 ========================================================= */
 async function cambiaEmail(req) {
+  console.log("[DEBUG utenti] cambiaEmail()");
+
   try {
     const sessione = getSessionToken(req);
     let { nuova_email, password } = req.body || {};
@@ -208,6 +214,8 @@ async function cambiaEmail(req) {
    4) CAMBIO PASSWORD
 ========================================================= */
 async function cambiaPassword(req) {
+  console.log("[DEBUG utenti] cambiaPassword()");
+
   try {
     const sessione = getSessionToken(req);
     let { vecchia_password, nuova_password } = req.body || {};
@@ -251,6 +259,8 @@ async function cambiaPassword(req) {
    5) ELIMINA ACCOUNT
 ========================================================= */
 async function eliminaAccount(req) {
+  console.log("[DEBUG utenti] eliminaAccount()");
+
   try {
     const sessione = getSessionToken(req);
     let { password } = req.body || {};
@@ -297,6 +307,8 @@ async function eliminaAccount(req) {
    6) RESET PASSWORD REQUEST
 ========================================================= */
 async function resetPasswordRequest(req) {
+  console.log("[DEBUG utenti] resetPasswordRequest()");
+
   try {
     let { codice_fiscale } = req.body || {};
     codice_fiscale = (codice_fiscale || "").trim().toUpperCase();
@@ -325,6 +337,8 @@ async function resetPasswordRequest(req) {
    7) RESET PASSWORD CONFIRM
 ========================================================= */
 async function resetPasswordConfirm(req) {
+  console.log("[DEBUG utenti] resetPasswordConfirm()");
+
   try {
     let { nuova_password, codice_fiscale } = req.body || {};
 
@@ -368,6 +382,8 @@ async function resetPasswordConfirm(req) {
    8) RESET EMAIL REQUEST
 ========================================================= */
 async function resetEmailRequest(req) {
+  console.log("[DEBUG utenti] resetEmailRequest()");
+
   try {
     let { codice_fiscale } = req.body || {};
     codice_fiscale = (codice_fiscale || "").trim().toUpperCase();
@@ -396,6 +412,8 @@ async function resetEmailRequest(req) {
    9) RESET EMAIL CONFIRM
 ========================================================= */
 async function resetEmailConfirm(req) {
+  console.log("[DEBUG utenti] resetEmailConfirm()");
+
   try {
     let { nuova_email, codice_fiscale } = req.body || {};
 
@@ -442,6 +460,8 @@ async function resetEmailConfirm(req) {
    10) /me
 ========================================================= */
 async function me(req) {
+  console.log("[DEBUG utenti] me()");
+
   try {
     const sessione = getSessionToken(req);
     if (!sessione) {
@@ -466,11 +486,66 @@ async function me(req) {
     return { success: false, error: "Errore server" };
   }
 }
+/* =========================================================
+   ALIAS COMPATIBILITÀ FRONTEND
+========================================================= */
+
+async function registrazioneUtente(req) {
+  console.log("[DEBUG utenti] alias registrazioneUtente() → registrazione()");
+  return registrazione(req);
+}
+
+async function loginUtente(req) {
+  console.log("[DEBUG utenti] alias loginUtente() → login()");
+  return login(req);
+}
+
+async function cambiaEmailUtente(req) {
+  console.log("[DEBUG utenti] alias cambiaEmailUtente() → cambiaEmail()");
+  return cambiaEmail(req);
+}
+
+async function cambiaPasswordUtente(req) {
+  console.log("[DEBUG utenti] alias cambiaPasswordUtente() → cambiaPassword()");
+  return cambiaPassword(req);
+}
+
+async function eliminaAccountUtente(req) {
+  console.log("[DEBUG utenti] alias eliminaAccountUtente() → eliminaAccount()");
+  return eliminaAccount(req);
+}
+
+async function resetPasswordRequestUtente(req) {
+  console.log("[DEBUG utenti] alias resetPasswordRequestUtente() → resetPasswordRequest()");
+  return resetPasswordRequest(req);
+}
+
+async function resetPasswordConfirmUtente(req) {
+  console.log("[DEBUG utenti] alias resetPasswordConfirmUtente() → resetPasswordConfirm()");
+  return resetPasswordConfirm(req);
+}
+
+async function resetEmailRequestUtente(req) {
+  console.log("[DEBUG utenti] alias resetEmailRequestUtente() → resetEmailRequest()");
+  return resetEmailRequest(req);
+}
+
+async function resetEmailConfirmUtente(req) {
+  console.log("[DEBUG utenti] alias resetEmailConfirmUtente() → resetEmailConfirm()");
+  return resetEmailConfirm(req);
+}
+
+async function meUtente(req) {
+  console.log("[DEBUG utenti] alias meUtente() → me()");
+  return me(req);
+}
 
 /* =========================================================
-   EXPORT — stile Java
+   EXPORT — stile Java (funzioni + alias)
 ========================================================= */
+
 module.exports = {
+  // funzioni principali
   registrazione,
   login,
   cambiaEmail,
@@ -480,5 +555,17 @@ module.exports = {
   resetPasswordConfirm,
   resetEmailRequest,
   resetEmailConfirm,
-  me
+  me,
+
+  // alias compatibilità frontend
+  registrazioneUtente,
+  loginUtente,
+  cambiaEmailUtente,
+  cambiaPasswordUtente,
+  eliminaAccountUtente,
+  resetPasswordRequestUtente,
+  resetPasswordConfirmUtente,
+  resetEmailRequestUtente,
+  resetEmailConfirmUtente,
+  meUtente
 };
