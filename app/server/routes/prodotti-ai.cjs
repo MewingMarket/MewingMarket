@@ -15,10 +15,11 @@ const {
 } = R("modules/catalogo-ai.cjs");
 
 /* ============================================================
-   FUNZIONE: generaDescrizioneAI
-   (ex POST /api/prodotti/genera-descrizione-ai)
+   FUNZIONE PRINCIPALE — generaDescrizioneAI
 ============================================================ */
 async function generaDescrizioneAI(req) {
+  console.log("[DEBUG prodotti-ai] generaDescrizioneAI()");
+
   try {
     const { titolo, contenuto } = req.body || {};
 
@@ -34,10 +35,7 @@ async function generaDescrizioneAI(req) {
       contenuto: contenuto || ""
     };
 
-    // 1) Descrizione lunga (PDF + YouTube → testo di vendita)
     const descrizione_lunga = await generaDescrizioneLunga(prodotto);
-
-    // 2) Descrizione breve (riassunto automatico)
     const descrizione_breve = await generaDescrizioneBreve(descrizione_lunga);
 
     return {
@@ -56,8 +54,18 @@ async function generaDescrizioneAI(req) {
 }
 
 /* =========================================================
+   ALIAS COMPATIBILITÀ FRONTEND
+   (ex POST /api/prodotti/genera-descrizione-ai)
+========================================================= */
+async function genera(req) {
+  console.log("[DEBUG prodotti-ai] alias genera() → generaDescrizioneAI()");
+  return generaDescrizioneAI(req);
+}
+
+/* =========================================================
    EXPORT — stile Java
 ========================================================= */
 module.exports = {
-  generaDescrizioneAI
+  generaDescrizioneAI,
+  genera
 };
