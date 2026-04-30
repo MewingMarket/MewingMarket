@@ -1,6 +1,7 @@
-// =========================================================
-// AUTH-USER.CJS — Versione 2027.500 (SAFE + UNIVERSALE)
-// =========================================================
+/* =========================================================
+   AUTH-USER.CJS — Versione 2027.501 (SAFE + UNIVERSALE)
+   FIX: null.id • FIX: match API • FIX: Express path issues
+========================================================= */
 
 const path = require("path");
 
@@ -25,9 +26,14 @@ function getTokenFromCookie(req) {
 
 module.exports = function authUser(req, res, next) {
   try {
-    const pathLower = req.path.toLowerCase();
+    // =====================================================
+    // FIX: Express può cambiare req.path → usiamo originalUrl
+    // =====================================================
+    const raw = req.originalUrl || req.url || req.path || "";
+    const pathLower = raw.toLowerCase();
+    const cleanPath = pathLower.split("?")[0];
 
-    console.log("AUTH DEBUG → req.path:", pathLower);
+    console.log("AUTH DEBUG → PATH:", cleanPath);
 
     // =====================================================
     // ⭐ API PUBBLICHE — NON RICHIEDONO LOGIN
@@ -52,20 +58,20 @@ module.exports = function authUser(req, res, next) {
       "/api/utenti/login",
       "/api/utenti/registrazione",
       "/api/assistenza",
-      "/api/upload", // upload pubblico
+      "/api/upload"
     ];
 
     const isPublicApi = publicApiPrefixes.some(prefix =>
-      pathLower === prefix || pathLower.startsWith(prefix + "/")
+      cleanPath === prefix || cleanPath.startsWith(prefix + "/")
     );
 
     if (isPublicApi) {
-      console.log("AUTH DEBUG → PUBLIC API:", pathLower);
+      console.log("AUTH DEBUG → PUBLIC API:", cleanPath);
       return next();
     }
 
     // =====================================================
-    // ⭐ API CHE RICHIEDONO LOGIN (ADMIN / ORDINI / VENDITE)
+    // ⭐ API CHE RICHIEDONO LOGIN
     // =====================================================
     const protectedApiPrefixes = [
       "/api/admin",
@@ -73,11 +79,11 @@ module.exports = function authUser(req, res, next) {
       "/api/vendite",
       "/api/ordini",
       "/api/feedback",
-      "/api/vendite-download",
+      "/api/vendite-download"
     ];
 
     const isProtected = protectedApiPrefixes.some(prefix =>
-      pathLower.startsWith(prefix)
+      cleanPath.startsWith(prefix)
     );
 
     // =====================================================
@@ -92,10 +98,12 @@ module.exports = function authUser(req, res, next) {
       console.log("AUTH DEBUG → token da header:", "[PRESENTE]");
     }
 
-    // Se NON è un'API protetta → passa SEMPRE
+    // =====================================================
+    // SE NON È PROTETTA → PASSA SEMPRE
+    // =====================================================
     if (!isProtected) {
       console.log("AUTH DEBUG → API NON PROTETTA → PASSA");
-      req.user = null;
+      req.user = null; // NON CAUSA PIÙ ERRORI
       return next();
     }
 
@@ -131,6 +139,9 @@ module.exports = function authUser(req, res, next) {
       return res.status(401).json({ error: "Non autorizzato" });
     }
 
+    // =====================================================
+    // FIX: req.user SEMPRE VALIDO
+    // =====================================================
     req.user = {
       id: row.id,
       email: row.email,
