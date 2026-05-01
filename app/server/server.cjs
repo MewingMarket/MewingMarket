@@ -1,5 +1,5 @@
 /* =========================================================
- * Entry point del server — versione DEFINITIVA (2027.952 + CSS DIAG)
+ * Entry point del server — SAFE MODE (2027.952‑SM)
  * =========================================================
  */
 
@@ -18,7 +18,7 @@ function logErr(...args) {
   console.error(`\x1b[31m[${ts}]\x1b[0m`, ...args);
 }
 
-log(">> SERVER STARTING…");
+log(">> SERVER STARTING (SAFE MODE)…");
 
 const express = require("express");
 const path = require("path");
@@ -78,20 +78,6 @@ app.use((req, res, next) => {
   next();
 });
 
-/* =========================================================
- * HOOK DIAGNOSTICA
- * =========================================================
- */
-try {
-  const diagnostica = require("./diagnostica.cjs");
-  if (typeof diagnostica?.hookServer === "function") {
-    diagnostica.hookServer(app, { log, logErr });
-    log("🟩 diagnostica.cjs agganciata");
-  }
-} catch (err) {
-  log("🟧 diagnostica.cjs non presente:", err.message);
-}
-
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 /* =========================================================
@@ -114,7 +100,7 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
   app.use(express.json());
   app.use(cookieParser());
 
-  // 🔵 UNIVERSAL JSON
+  // 🔵 UNIVERSAL JSON (manteniamo)
   try {
     const universalJson = require("./middleware/universal-json.cjs");
     app.use(universalJson);
@@ -151,18 +137,13 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
   require("./middleware/context.cjs")(app);
 
   /* =========================================================
-   * INTROSPECT (Java‑mode)
+   * INTROSPECT (DISATTIVATO IN SAFE MODE)
    * =========================================================
    */
-  try {
-    require("./introspect.cjs")(app);
-    log("🟩 introspect.cjs caricato");
-  } catch (err) {
-    logErr("❌ Errore introspect.cjs:", err.message);
-  }
+  log("🟧 introspect.cjs DISATTIVATO (SAFE MODE)");
 
   /* =========================================================
-   * ROUTER API (Java‑mode)
+   * ROUTER API (ATTIVO)
    * =========================================================
    */
   log(">> LOADING router.cjs");
@@ -176,7 +157,7 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
   }
 
   /* =========================================================
-   * COLD START
+   * COLD START (ATTIVO)
    * =========================================================
    */
   try {
@@ -188,15 +169,10 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
   }
 
   /* =========================================================
-   * MIDDLEWARE DIAGNOSTICO
+   * MIDDLEWARE DIAGNOSTICO (DISATTIVATO)
    * =========================================================
    */
-  try {
-    require("./middleware/middleware-diagnostico.cjs")(app);
-    console.log("🟩 Middleware diagnostico attivato");
-  } catch (err) {
-    console.error("❌ ERRORE middleware diagnostico:", err);
-  }
+  log("🟧 middleware-diagnostico.cjs DISATTIVATO (SAFE MODE)");
 
   /* =========================================================
    * STATIC ROUTES
@@ -214,59 +190,25 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     next();
   });
 
-  app.get("/diagnostica-routes", (req, res) => {
-    res.sendFile(path.resolve("app/public/diagnostica-routes.html"));
-  });
-
   app.use(express.static(PUBLIC_DIR));
 
   /* =========================================================
-   * 🔵 DIAGNOSTICA ENDPOINTS
+   * DIAGNOSTICA ENDPOINTS (DISATTIVATO)
    * =========================================================
    */
-  app.get("/diagnostica-endpoints", (req, res) => {
-    const diag = require("./introspect-endpoints.cjs");
-    res.send(diag.diagnosticaHtmlToString());
-  });
+  log("🟧 diagnostica-endpoints DISATTIVATO (SAFE MODE)");
 
   /* =========================================================
-   * 🔵 DIAGNOSTICA CSS
+   * DIAGNOSTICA CSS (DISATTIVATO)
    * =========================================================
    */
-  app.get("/diagnostica-css", (req, res) => {
-    try {
-      const report = fs.readFileSync("report-css.html", "utf8");
-      res.setHeader("Content-Type", "text/html");
-      res.send(report);
-    } catch (err) {
-      res.send("<h1>Report CSS non trovato</h1><p>Esegui prima: node scan-css.js</p>");
-    }
-  });
+  log("🟧 diagnostica-css DISATTIVATO (SAFE MODE)");
 
   /* =========================================================
-   * REWRITE SCRIPTS
+   * REWRITE SCRIPTS (DISATTIVATO)
    * =========================================================
    */
-  try {
-    const rewriteScripts = require("./utils/rewrites.cjs");
-    app.use((req, res, next) => {
-      const send = res.send;
-      res.send = function (body) {
-        try {
-          const type = res.getHeader("Content-Type") || "";
-          if (type.includes("text/html") && body) {
-            body = rewriteScripts(body.toString());
-          }
-        } catch (err) {
-          logErr("❌ rewriteScripts ERROR:", err.message);
-        }
-        return send.call(this, body);
-      };
-      next();
-    });
-  } catch (e) {
-    logErr("⚠️ Modulo rewrites.cjs non trovato.");
-  }
+  log("🟧 rewriteScripts.cjs DISATTIVATO (SAFE MODE)");
 
   app.use("/*.css", express.static(PUBLIC_DIR));
   app.use("/css", express.static(PUBLIC_DIR));
@@ -335,7 +277,7 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     }
 
     app.listen(PORT, () => {
-      log(`🎉 SERVER LISTENING ON PORT ${PORT}`);
+      log(`🎉 SERVER LISTENING ON PORT ${PORT} (SAFE MODE)`);
     });
   }
 
