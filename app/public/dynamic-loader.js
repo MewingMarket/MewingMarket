@@ -1,10 +1,10 @@
-// ==========================================
-// DYNAMIC LOADER — MewingMarket (Frontend)
-// Carica tutto ciò che NON è critico:
+// =========================================================
+// DYNAMIC LOADER — SAFE MODE
+// Carica SOLO:
 // - anti-cache
 // - anti-service-worker
-// - diagnostica frontend
-// ==========================================
+// NIENTE diagnostica, NIENTE introspect, NIENTE test API
+// =========================================================
 
 (function () {
 
@@ -40,7 +40,7 @@
   // -------------------------------
   (function removeServiceWorkers() {
     try {
-      if ('serviceWorker' in navigator) {
+      if ("serviceWorker" in navigator) {
         navigator.serviceWorker.getRegistrations().then(regs => {
           regs.forEach(r => r.unregister());
         });
@@ -52,12 +52,9 @@
   })();
 
   // -------------------------------
-  // 3) DIAGNOSTICA FRONTEND (DYNAMIC)
+  // 3) DIAGNOSTICA FRONTEND (DISATTIVATA)
   // -------------------------------
-  try {
-    const s = document.createElement("script");
-    s.src = `/frontend-diagnostica.js?v=${VERSION}`;
-    document.head.appendChild(s);
-  } catch (e) {}
+  console.log("🟧 SAFE MODE: diagnostica frontend DISATTIVATA");
+  // (Nessun caricamento di frontend-diagnostica.js)
 
 })();
