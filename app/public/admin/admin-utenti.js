@@ -1,11 +1,12 @@
 /* =========================================================
-   ADMIN UTENTI — Versione SQL Definitiva 2027.900
-   PATCH TOKEN + Coerenza con admin-utenti.cjs + fetch nativo
+   ADMIN UTENTI — UNIVERSAL JSON PATCH 2027.970
+   - Token Fix
+   - Universal JSON
+   - Router Universale
 ========================================================= */
 
 document.addEventListener("critical-ready", async () => {
-  console.log("[ADMIN] Init admin-utenti.js (Sincronizzazione Backend)");
-
+  console.log("[ADMIN] Init admin-utenti.js (UNIVERSAL JSON)");
   syncBrevoAuto();
   caricaUtenti();
 });
@@ -28,12 +29,13 @@ function fDate(d) {
 }
 
 /* =========================================================
-   FETCH ADMIN — Token + fallback login
+   WRAPPER UNIVERSALE ADMIN (token + universal-json)
 ========================================================= */
-async function adminGet(path, options = {}) {
+async function adminApi(path, options = {}) {
   const token = localStorage.getItem("token");
 
   const headers = {
+    "Content-Type": "application/json",
     ...(options.headers || {}),
     Authorization: token ? `Bearer ${token}` : ""
   };
@@ -42,25 +44,37 @@ async function adminGet(path, options = {}) {
 
   const res = await fetch(fullPath, { ...options, headers });
 
+  // Token scaduto
   if (res.status === 401 || res.status === 403) {
     localStorage.removeItem("token");
     window.location.href = "/admin/login";
     return null;
   }
 
-  return res;
+  // universal-json
+  let json;
+  try {
+    json = await res.json();
+  } catch (e) {
+    console.error("❌ Risposta NON JSON da", fullPath);
+    return null;
+  }
+
+  if (!json.success) {
+    console.warn("⚠️ Errore API:", json.error || json.raw);
+    return null;
+  }
+
+  return json.data;
 }
 
 /* =========================================================
    SYNC BREVO AUTOMATICO
 ========================================================= */
 async function syncBrevoAuto() {
-  try {
-    const res = await adminGet("/api/admin/utenti/syncBrevo");
-    if (res) console.log("🟢 [BREVO] Sync OK");
-  } catch (err) {
-    console.warn("🟡 [BREVO] Sync fallito o non necessario");
-  }
+  const ok = await adminApi("/api/admin/utenti/syncBrevo", { method: "GET" });
+  if (ok) console.log("🟢 [BREVO] Sync OK");
+  else console.warn("🟡 [BREVO] Sync fallito o non necessario");
 }
 
 /* =========================================================
@@ -73,64 +87,62 @@ async function caricaUtenti() {
   tbody.innerHTML =
     "<tr><td colspan='15'>Interrogazione SQL in corso...</td></tr>";
 
-  try {
-    const res = await adminGet("/api/admin/utenti/getListaUtenti");
-    if (!res) return;
+  const data = await adminApi("/api/admin/utenti/getListaUtenti", {
+    method: "GET"
+  });
 
-    const data = await res.json();
-    if (!data.success) throw new Error(data.error || "Errore API");
-
-    const lista = data.utenti || [];
-
-    const kpi = calcolaKPI(lista);
-    stampaKPI(kpi);
-
-    tbody.innerHTML = "";
-
-    lista.forEach((u) => {
-      const isBannato =
-        u.bloccato &&
-        (!u.sbloccato || new Date(u.bloccato) > new Date(u.sbloccato));
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${u.email}</td>
-        <td><small>${u.codice_fiscale || "-"}</small></td>
-        <td>${fDate(u.registrato)}</td>
-        <td>${fDate(u.login)}</td>
-        <td>${fDate(u.logout)}</td>
-        <td>${fDate(u.eliminato)}</td>
-        <td>${fDate(u.bloccato)}</td>
-        <td>${fDate(u.sbloccato)}</td>
-        <td style="color: ${isBannato ? "#ff4d4d" : "#2ecc71"}">
-          <b>${isBannato ? "SÌ" : "no"}</b>
-        </td>
-        <td>${u.iscritto ? "✅" : "—"}</td>
-        <td>${u.disiscritto ? "❌" : "—"}</td>
-        <td>${u.registrato_brevo === "presente" ? "✅" : "—"}</td>
-        <td>${u.cliente_brevo === "presente" ? "💰" : "—"}</td>
-        <td>${u.cliente_db === "sì" ? "📦" : "—"}</td>
-        <td>
-          ${
-            u.email !== "amministratore"
-              ? `
-            <div class="admin-actions-flex">
-              <button class="btn-blocca" data-email="${u.email}">Blocca</button>
-              <button class="btn-sblocca" data-email="${u.email}">Sblocca</button>
-              <button class="btn-elimina" data-email="${u.email}">Elimina</button>
-            </div>
-          `
-              : "<em>SuperAdmin</em>"
-          }
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-  } catch (err) {
-    console.error("❌ [ADMIN] Errore:", err);
+  if (!data) {
     tbody.innerHTML =
       "<tr><td colspan='15'>Errore caricamento. Verifica Token o Backend.</td></tr>";
+    return;
   }
+
+  const lista = data.utenti || [];
+
+  const kpi = calcolaKPI(lista);
+  stampaKPI(kpi);
+
+  tbody.innerHTML = "";
+
+  lista.forEach((u) => {
+    const isBannato =
+      u.bloccato &&
+      (!u.sbloccato || new Date(u.bloccato) > new Date(u.sbloccato));
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${u.email}</td>
+      <td><small>${u.codice_fiscale || "-"}</small></td>
+      <td>${fDate(u.registrato)}</td>
+      <td>${fDate(u.login)}</td>
+      <td>${fDate(u.logout)}</td>
+      <td>${fDate(u.eliminato)}</td>
+      <td>${fDate(u.bloccato)}</td>
+      <td>${fDate(u.sbloccato)}</td>
+      <td style="color: ${isBannato ? "#ff4d4d" : "#2ecc71"}">
+        <b>${isBannato ? "SÌ" : "no"}</b>
+      </td>
+      <td>${u.iscritto ? "✅" : "—"}</td>
+      <td>${u.disiscritto ? "❌" : "—"}</td>
+      <td>${u.registrato_brevo === "presente" ? "✅" : "—"}</td>
+      <td>${u.cliente_brevo === "presente" ? "💰" : "—"}</td>
+      <td>${u.cliente_db === "sì" ? "📦" : "—"}</td>
+      <td>
+        ${
+          u.email !== "amministratore"
+            ? `
+          <div class="admin-actions-flex">
+            <button class="btn-blocca" data-email="${u.email}">Blocca</button>
+            <button class="btn-sblocca" data-email="${u.email}">Sblocca</button>
+            <button class="btn-elimina" data-email="${u.email}">Elimina</button>
+          </div>
+        `
+            : "<em>SuperAdmin</em>"
+        }
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
 }
 
 /* =========================================================
@@ -150,20 +162,13 @@ document.addEventListener("click", async (e) => {
     azione = "eliminaUtente";
   }
 
-  if (azione) {
-    try {
-      const res = await adminGet(`/api/admin/utenti/${azione}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email })
-      });
+  if (!azione) return;
 
-      if (!res) return;
+  const ok = await adminApi(`/api/admin/utenti/${azione}`, {
+    method: "POST",
+    body: JSON.stringify({ email })
+  });
 
-      const data = await res.json();
-      if (data.success) caricaUtenti();
-    } catch (err) {
-      alert("Errore durante l'operazione.");
-    }
-  }
+  if (ok) caricaUtenti();
+  else alert("Errore durante l'operazione.");
 });
