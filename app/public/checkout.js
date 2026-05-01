@@ -1,9 +1,6 @@
-// =========================================================
-// CHECKOUT.JS — Versione DEFINITIVA (PATCH 2027.900)
-// - Usa fetch standard (Massima Stabilità)
-// - Sincronizzazione Totale Centesimi per PayPal
-// - Compatibile con API universali Java‑mode
-// =========================================================
+/* =========================================================
+   CHECKOUT — UNIVERSAL JSON PATCH 2027.970
+========================================================= */
 
 console.log("[CHECKOUT] Caricato");
 
@@ -24,10 +21,49 @@ document.addEventListener("cart-ready", () => {
 });
 
 function tryStartCheckout() {
-  if (authOk && cartOk) {
-    console.log("[CHECKOUT] auth-ready + cart-ready → initCheckout()");
-    initCheckout();
+  if (authOk && cartOk) initCheckout();
+}
+
+/* =========================================================
+   WRAPPER UNIVERSALE (token + universal-json)
+========================================================= */
+async function apiCheckout(path, options = {}) {
+  const token = localStorage.getItem("token");
+
+  const headers = {
+    "Content-Type": "application/json",
+    ...(options.headers || {}),
+    Authorization: token ? `Bearer ${token}` : ""
+  };
+
+  let res;
+  try {
+    res = await fetch(path, { ...options, headers });
+  } catch (err) {
+    console.error("❌ Errore rete:", err);
+    return null;
   }
+
+  if (res.status === 401 || res.status === 403) {
+    localStorage.removeItem("token");
+    window.location.href = "login.html";
+    return null;
+  }
+
+  let json;
+  try {
+    json = await res.json();
+  } catch (e) {
+    console.error("❌ Risposta NON JSON da", path);
+    return null;
+  }
+
+  if (!json.success) {
+    console.warn("⚠️ Errore API:", json.error || json.raw);
+    return null;
+  }
+
+  return json.data;
 }
 
 /* =========================================================
@@ -38,47 +74,27 @@ async function initCheckout() {
 
   const token = localStorage.getItem("token");
   if (!token) {
-    console.warn("[CHECKOUT] Nessun token → redirect login");
     window.location.href = "login.html";
     return;
   }
 
-  let utenteEmail = null;
-
-  try {
-    // ⭐ PATCH 2027 — nuovo endpoint Java‑mode
-    const res = await fetch("/api/utenti/me", {
-      headers: { "Authorization": "Bearer " + token }
-    });
-
-    const data = await res.json();
-
-    if (!data.success) {
-      console.warn("[CHECKOUT] Sessione non valida → redirect login");
-      window.location.href = "login.html";
-      return;
-    }
-
-    utenteEmail = data.utente.email;
-    console.log("[CHECKOUT] Utente verificato:", utenteEmail);
-
-  } catch (err) {
-    console.error("[CHECKOUT] Errore verifica sessione:", err);
+  // -------------------------------------------------------
+  // 1) Verifica utente
+  // -------------------------------------------------------
+  const me = await apiCheckout("/api/utenti/me", { method: "GET" });
+  if (!me || !me.utente) {
     window.location.href = "login.html";
     return;
   }
 
-  const authHeaders = {
-    "Content-Type": "application/json",
-    "Authorization": "Bearer " + token
-  };
+  const utenteEmail = me.utente.email;
+  console.log("[CHECKOUT] Utente verificato:", utenteEmail);
 
   // -------------------------------------------------------
   // 2) Carica carrello
   // -------------------------------------------------------
   const cart = Cart.get();
   if (!Array.isArray(cart) || cart.length === 0) {
-    console.warn("[CHECKOUT] Carrello vuoto → redirect catalogo");
     window.location.href = "catalogo.html";
     return;
   }
@@ -90,26 +106,28 @@ async function initCheckout() {
   let totaleCent = 0;
 
   if (container) {
-    container.innerHTML = cart.map(item => {
-      const pc = Number(item.prezzo_cent) || 0;
-      const q = Number(item.qty) || 1;
-      totaleCent += (pc * q);
+    container.innerHTML = cart
+      .map((item) => {
+        const pc = Number(item.prezzo_cent) || 0;
+        const q = Number(item.qty) || 1;
+        totaleCent += pc * q;
 
-      const prezzo = (pc / 100).toFixed(2);
-      const subtotal = ((pc * q) / 100).toFixed(2);
+        const prezzo = (pc / 100).toFixed(2);
+        const subtotal = ((pc * q) / 100).toFixed(2);
 
-      return `
-        <div class="checkout-item">
-          <img src="${item.immagine || '/placeholder.webp'}" alt="${item.titolo}">
-          <div class="info">
-            <h3>${item.titolo}</h3>
-            <p>Prezzo: €${prezzo}</p>
-            <p>Quantità: ${q}</p>
-            <p>Subtotale: <strong>€${subtotal}</strong></p>
+        return `
+          <div class="checkout-item">
+            <img src="${item.immagine || '/placeholder.webp'}" alt="${item.titolo}">
+            <div class="info">
+              <h3>${item.titolo}</h3>
+              <p>Prezzo: €${prezzo}</p>
+              <p>Quantità: ${q}</p>
+              <p>Subtotale: <strong>€${subtotal}</strong></p>
+            </div>
           </div>
-        </div>
-      `;
-    }).join("");
+        `;
+      })
+      .join("");
   }
 
   const totaleEuro = (totaleCent / 100).toFixed(2);
@@ -128,40 +146,27 @@ async function initCheckout() {
   if (!btn) return;
 
   btn.onclick = async () => {
-    try {
-      btn.disabled = true;
-      btn.textContent = "Reindirizzamento...";
-      
-      console.log("[CHECKOUT] Creazione ordine PayPal per:", utenteEmail);
+    btn.disabled = true;
+    btn.textContent = "Reindirizzamento...";
 
-      const payload = Cart.getForCheckout();
+    const payload = Cart.getForCheckout();
 
-      // ⭐ PATCH 2027 — nuovo endpoint Java‑mode
-      const res = await fetch("/api/paypal/paypalCreateOrder", {
-        method: "POST",
-        headers: authHeaders,
-        body: JSON.stringify({
-          email: utenteEmail,
-          prodotti: payload,
-          totale: totaleEuro // stringa "XX.XX"
-        })
-      });
+    const data = await apiCheckout("/api/paypal/paypalCreateOrder", {
+      method: "POST",
+      body: JSON.stringify({
+        email: utenteEmail,
+        prodotti: payload,
+        totale: totaleEuro
+      })
+    });
 
-      const data = await res.json().catch(() => ({}));
-
-      if (data.success && data.paypalUrl) {
-        window.location.href = data.paypalUrl;
-      } else {
-        btn.disabled = false;
-        btn.textContent = "Acquista ora";
-        alert("Errore PayPal: " + (data.error || "Impossibile creare l'ordine."));
-      }
-
-    } catch (err) {
-      console.error("[CHECKOUT] Errore critico:", err);
-      btn.disabled = false;
-      btn.textContent = "Acquista ora";
-      alert("Errore di connessione. Riprova tra poco.");
+    if (data && data.paypalUrl) {
+      window.location.href = data.paypalUrl;
+      return;
     }
+
+    btn.disabled = false;
+    btn.textContent = "Acquista ora";
+    alert("Errore PayPal. Impossibile creare l'ordine.");
   };
 }
