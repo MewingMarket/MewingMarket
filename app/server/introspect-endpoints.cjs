@@ -1,5 +1,5 @@
 /* =========================================================
-   INTROSPECT ENDPOINTS — Versione 2027.2
+   INTROSPECT ENDPOINTS — Versione 2027.50 (compatibile router universale)
    Scanner unico: backend + frontend + differenze + HTML
 ========================================================= */
 
@@ -7,58 +7,49 @@ const fs = require("fs");
 const path = require("path");
 
 /* =========================================================
-   1) SCANNER BACKEND
+   1) SCANNER BACKEND (index.cjs → endpoint reali)
 ========================================================= */
 function getBackend() {
   const indexPath = path.join(process.cwd(), "app/server/index.cjs");
   const index = require(indexPath);
 
-  const out = {};
+  const out = [];
 
   for (const modulo of Object.keys(index)) {
     const funzioni = index[modulo];
-    out[modulo] = Object.keys(funzioni);
+
+    for (const fn of Object.keys(funzioni)) {
+      out.push(`/api/${modulo.toLowerCase()}/${fn.toLowerCase()}`);
+    }
   }
 
   return out;
 }
 
 /* =========================================================
-   2) SCANNER FRONTEND (con normalizzazione)
+   2) SCANNER FRONTEND (fetch → endpoint reali)
 ========================================================= */
 function getFrontend() {
   const root = path.join(process.cwd(), "app/public");
-
   const calls = [];
 
-  function normalizeUrl(url) {
-    // togli querystring
+  function normalize(url) {
     url = url.split("?")[0];
-
-    // togli template literal tipo ${id}, ${tipo}, ecc.
     url = url.replace(/\$\{[^}]+\}/g, "");
-
-    // normalizza slash multipli
     url = url.replace(/\/+/g, "/");
-
-    // togli slash finale se non è solo "/"
-    if (url.length > 1 && url.endsWith("/")) {
-      url = url.slice(0, -1);
-    }
-
-    return url;
+    if (url.length > 1 && url.endsWith("/")) url = url.slice(0, -1);
+    return url.toLowerCase();
   }
 
   function scanFile(filePath) {
     const code = fs.readFileSync(filePath, "utf8");
-
     const regex = /fetch\s*\(\s*["'`](.*?)["'`]/g;
+
     let m;
     while ((m = regex.exec(code))) {
       let url = m[1];
       if (url.startsWith("/api/")) {
-        url = normalizeUrl(url);
-        calls.push(url);
+        calls.push(normalize(url));
       }
     }
   }
@@ -75,45 +66,19 @@ function getFrontend() {
 
   walk(root);
 
-  return { frontendCalls: [...new Set(calls)] };
+  return [...new Set(calls)];
 }
 
 /* =========================================================
-   3) DIFFERENZE (match tollerante parametri)
+   3) DIFFERENZE (match reale, no parametri finti)
 ========================================================= */
 function getDifferenze() {
   const backend = getBackend();
-  const frontend = getFrontend().frontendCalls;
+  const frontend = getFrontend();
 
-  const backendFull = [];
-
-  for (const modulo of Object.keys(backend)) {
-    for (const fn of backend[modulo]) {
-      const base = `/api/${modulo}/${fn}`;
-
-      // base “puro”
-      backendFull.push(base);
-
-      // versioni tolleranti con parametri generici
-      backendFull.push(`${base}/:id`);
-      backendFull.push(`${base}/:tipo`);
-    }
-  }
-
-  const normalize = (url) => {
-    url = url.split("?")[0];
-    url = url.replace(/\$\{[^}]+\}/g, "");
-    url = url.replace(/\/+/g, "/");
-    if (url.length > 1 && url.endsWith("/")) url = url.slice(0, -1);
-    return url;
-  };
-
-  const backendNorm = backendFull.map(normalize);
-  const frontendNorm = frontend.map(normalize);
-
-  const ok = frontendNorm.filter(f => backendNorm.includes(f));
-  const mancanti = frontendNorm.filter(f => !backendNorm.includes(f));
-  const inutilizzati = backendNorm.filter(b => !frontendNorm.includes(b));
+  const ok = frontend.filter(f => backend.includes(f));
+  const mancanti = frontend.filter(f => !backend.includes(f));
+  const inutilizzati = backend.filter(b => !frontend.includes(b));
 
   return {
     ok: [...new Set(ok)],
@@ -150,8 +115,8 @@ function diagnosticaHtmlToString() {
       <h1>Diagnostica Endpoint — MewingMarket</h1>
 
       ${table("OK", diff.ok, "green")}
-      ${table("MANCANTI", diff.mancanti, "red")}
-      ${table("INUTILIZZATI", diff.inutilizzati, "orange")}
+      ${table("MANCANTI (frontend → backend)", diff.mancanti, "red")}
+      ${table("INUTILIZZATI (backend → frontend)", diff.inutilizzati, "orange")}
 
     </body>
     </html>
