@@ -1,5 +1,5 @@
 /* =========================================================
-   ASSISTENZA — Frontend (Versione Patchata 2027)
+   ASSISTENZA — UNIVERSAL JSON PATCH 2027.970
 ========================================================= */
 
 document.addEventListener("critical-ready", () => {
@@ -21,34 +21,60 @@ document.addEventListener("critical-ready", () => {
 
     mostraMessaggio("Invio in corso…", "info");
 
-    try {
-      // PATCH 2027 — nuovo endpoint Java‑mode
-      const res = await fetch("/api/assistenza/inviaAssistenza", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, domanda })
-      });
+    const data = await apiAssistenza("/api/assistenza/inviaAssistenza", {
+      method: "POST",
+      body: JSON.stringify({ email, domanda })
+    });
 
-      const data = await res.json();
-
-      if (!data.success) {
-        mostraMessaggio(data.error || "Errore durante l'invio.", "errore");
-        return;
-      }
-
-      const testoRisposta = data.risposta 
-        ? `Risposta: ${data.risposta}` 
-        : "Richiesta inviata. Riceverai una risposta via email entro 24–48 ore.";
-
-      mostraMessaggio(testoRisposta, "successo");
-      form.reset();
-
-    } catch (err) {
-      console.error("Errore assistenza:", err);
-      mostraMessaggio("Errore di connessione. Riprova più tardi.", "errore");
+    if (!data) {
+      mostraMessaggio("Errore durante l'invio.", "errore");
+      return;
     }
+
+    const testoRisposta = data.risposta
+      ? `Risposta: ${data.risposta}`
+      : "Richiesta inviata. Riceverai una risposta via email entro 24–48 ore.";
+
+    mostraMessaggio(testoRisposta, "successo");
+    form.reset();
   });
 
+  /* =========================================================
+     WRAPPER UNIVERSALE (universal-json)
+  ========================================================== */
+  async function apiAssistenza(path, options = {}) {
+    const headers = {
+      "Content-Type": "application/json",
+      ...(options.headers || {})
+    };
+
+    let res;
+    try {
+      res = await fetch(path, { ...options, headers });
+    } catch (err) {
+      console.error("❌ Errore rete:", err);
+      return null;
+    }
+
+    let json;
+    try {
+      json = await res.json();
+    } catch (e) {
+      console.error("❌ Risposta NON JSON da", path);
+      return null;
+    }
+
+    if (!json.success) {
+      console.warn("⚠️ Errore API:", json.error || json.raw);
+      return null;
+    }
+
+    return json.data;
+  }
+
+  /* =========================================================
+     MESSAGGI UI
+  ========================================================== */
   function mostraMessaggio(testo, tipo) {
     if (!msgBox) return;
     msgBox.textContent = testo;
