@@ -1,6 +1,8 @@
 /* =========================================================
-   DASHBOARD ADMIN — GESTIONE PROFILO (Versione Coerente 2027)
-   PATCH 2027.900 — fetch nativo + endpoint Java‑mode
+   DASHBOARD ADMIN — UNIVERSAL JSON PATCH 2027.970
+   - Token Fix
+   - Universal JSON
+   - Router Universale
 ========================================================= */
 
 const clean = (t) =>
@@ -9,25 +11,41 @@ const clean = (t) =>
     : t ?? "";
 
 /* =========================================================
-   WRAPPER ADMIN — aggiunge token + fallback 401/403
+   WRAPPER UNIVERSALE ADMIN (token + universal-json)
 ========================================================= */
-async function adminGet(path, options = {}) {
+async function adminApi(path, options = {}) {
   const token = localStorage.getItem("token");
 
   const headers = {
+    "Content-Type": "application/json",
     ...(options.headers || {}),
     Authorization: token ? `Bearer ${token}` : ""
   };
 
   const res = await fetch(path, { ...options, headers });
 
+  // Token scaduto
   if (res.status === 401 || res.status === 403) {
     localStorage.removeItem("token");
     window.location.href = "/admin/login";
     return null;
   }
 
-  return res;
+  // universal-json
+  let json;
+  try {
+    json = await res.json();
+  } catch (e) {
+    console.error("❌ Risposta NON JSON da", path);
+    return null;
+  }
+
+  if (!json.success) {
+    console.warn("⚠️ Errore API:", json.error || json.raw);
+    return null;
+  }
+
+  return json.data;
 }
 
 /* =========================================================
@@ -44,24 +62,20 @@ document.addEventListener("critical-ready", () => {
    /api/admin/me
 ========================================================= */
 async function popolaDatiAdmin() {
-  const res = await adminGet("/api/admin/me");
-  if (!res) return;
+  const data = await adminApi("/api/admin/me", { method: "GET" });
+  if (!data || !data.admin) return;
 
-  const data = await res.json();
+  const a = data.admin;
 
-  if (data.success && data.admin) {
-    const a = data.admin;
+  const emailEl = document.getElementById("adminEmailMain");
+  const userEl = document.getElementById("adminUsernameMain");
+  const cfEl = document.getElementById("adminCFMain");
+  const roleEl = document.getElementById("adminRoleMain");
 
-    const emailEl = document.getElementById("adminEmailMain");
-    const userEl = document.getElementById("adminUsernameMain");
-    const cfEl = document.getElementById("adminCFMain");
-    const roleEl = document.getElementById("adminRoleMain");
-
-    if (emailEl) emailEl.textContent = a.email;
-    if (userEl) userEl.textContent = a.email.split("@")[0];
-    if (cfEl) cfEl.textContent = a.codice_fiscale;
-    if (roleEl) roleEl.textContent = a.ruolo;
-  }
+  if (emailEl) emailEl.textContent = a.email;
+  if (userEl) userEl.textContent = a.email.split("@")[0];
+  if (cfEl) cfEl.textContent = a.codice_fiscale;
+  if (roleEl) roleEl.textContent = a.ruolo;
 }
 
 /* =========================================================
@@ -77,20 +91,19 @@ function setupCambioEmail() {
     const pass = clean(document.getElementById("passwordAdminEmail").value);
     const msg = document.getElementById("msgAdminEmail");
 
-    const res = await adminGet("/api/admin/cambiaEmail", {
+    const data = await adminApi("/api/admin/cambiaEmail", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ nuova, pass })
     });
 
-    if (!res) return;
-
-    const data = await res.json();
-    msg.textContent = data.message || data.error;
-
-    if (data.success) {
-      setTimeout(() => location.reload(), 1000);
+    if (!data) {
+      msg.textContent = "Errore aggiornamento email.";
+      return;
     }
+
+    msg.textContent = data.message || "Email aggiornata.";
+
+    setTimeout(() => location.reload(), 1000);
   });
 }
 
@@ -107,15 +120,16 @@ function setupCambioPassword() {
     const newP = clean(document.getElementById("newAdminPassword").value);
     const msg = document.getElementById("msgAdminPassword");
 
-    const res = await adminGet("/api/admin/cambiaPassword", {
+    const data = await adminApi("/api/admin/cambiaPassword", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ oldP, newP })
     });
 
-    if (!res) return;
+    if (!data) {
+      msg.textContent = "Errore cambio password.";
+      return;
+    }
 
-    const data = await res.json();
-    msg.textContent = data.message || data.error;
+    msg.textContent = data.message || "Password aggiornata.";
   });
 }
