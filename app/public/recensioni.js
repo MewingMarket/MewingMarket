@@ -1,7 +1,5 @@
 /* =========================================================
-   RECENSIONI UTENTE — Versione SQL Definitiva 2027.900
-   Mapping: feedback.prodotto_id -> prodotti.id
-   PATCH: Endpoint Java‑mode + Token + Gestione 401/403
+   RECENSIONI UTENTE — UNIVERSAL JSON PATCH 2027.970
 ========================================================= */
 
 document.addEventListener("critical-ready", async () => {
@@ -18,64 +16,88 @@ document.addEventListener("critical-ready", async () => {
   let ratingSelezionato = 0;
 
   if (!token) {
-    if (selectProdotto) {
+    if (selectProdotto)
       selectProdotto.innerHTML = `<option value="">Effettua il login per recensire</option>`;
-    }
     if (btnInvia) btnInvia.disabled = true;
-    if (listaRecensioni) {
+    if (listaRecensioni)
       listaRecensioni.innerHTML = `<p class='info-vuoto'>Effettua il login per vedere le tue recensioni.</p>`;
-    }
     return;
   }
 
-  async function handleAuthResponse(res) {
+  /* =========================================================
+     WRAPPER UNIVERSALE (token + universal-json)
+  ========================================================== */
+  async function apiRecensioni(path, options = {}) {
+    const headers = {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+      Authorization: `Bearer ${token}`
+    };
+
+    let res;
+    try {
+      res = await fetch(path, { ...options, headers });
+    } catch (err) {
+      console.error("❌ Errore rete:", err);
+      return null;
+    }
+
     if (res.status === 401 || res.status === 403) {
       localStorage.removeItem("token");
       window.location.href = "/login";
       return null;
     }
-    return res;
-  }
 
-  // 1) CARICA PRODOTTI ACQUISTATI
-  async function caricaProdottiAcquistati() {
+    let json;
     try {
-      const resRaw = await fetch("/api/recensioni/getProdottiAcquistati", {
-        headers: { Authorization: "Bearer " + token }
-      });
-      const res = await handleAuthResponse(resRaw);
-      if (!res) return;
-
-      const data = await res.json();
-
-      if (!data.success || !data.prodotti || data.prodotti.length === 0) {
-        selectProdotto.innerHTML = `<option value="">Nessun prodotto da recensire</option>`;
-        btnInvia.disabled = true;
-        return;
-      }
-
-      selectProdotto.innerHTML = data.prodotti
-        .map(p => `<option value="${p.id}">${p.titolo_breve || p.titolo}</option>`)
-        .join("");
-
-      btnInvia.disabled = false;
-    } catch (err) {
-      console.error("🔴 [RECENSIONI] Errore prodotti acquistati:", err);
-      selectProdotto.innerHTML = `<option value="">Errore caricamento prodotti</option>`;
+      json = await res.json();
+    } catch (e) {
+      console.error("❌ Risposta NON JSON da", path);
+      return null;
     }
+
+    if (!json.success) {
+      console.warn("⚠️ Errore API:", json.error || json.raw);
+      return null;
+    }
+
+    return json.data;
   }
 
-  // 2) GESTIONE STELLE
+  /* =========================================================
+     1) CARICA PRODOTTI ACQUISTATI
+  ========================================================== */
+  async function caricaProdottiAcquistati() {
+    const data = await apiRecensioni("/api/recensioni/getProdottiAcquistati", {
+      method: "GET"
+    });
+
+    if (!data || !data.prodotti || data.prodotti.length === 0) {
+      selectProdotto.innerHTML = `<option value="">Nessun prodotto da recensire</option>`;
+      btnInvia.disabled = true;
+      return;
+    }
+
+    selectProdotto.innerHTML = data.prodotti
+      .map(p => `<option value="${p.id}">${p.titolo_breve || p.titolo}</option>`)
+      .join("");
+
+    btnInvia.disabled = false;
+  }
+
+  /* =========================================================
+     2) GESTIONE STELLE
+  ========================================================== */
   stars.forEach((star, index) => {
     star.addEventListener("click", () => {
       ratingSelezionato = index + 1;
-      stars.forEach((s, i) => {
-        s.classList.toggle("active", i < ratingSelezionato);
-      });
+      stars.forEach((s, i) => s.classList.toggle("active", i < ratingSelezionato));
     });
   });
 
-  // 3) INVIO RECENSIONE
+  /* =========================================================
+     3) INVIO RECENSIONE
+  ========================================================== */
   btnInvia.addEventListener("click", async () => {
     const prodotto_id = Number(selectProdotto.value);
     const testo = commentoArea.value.trim();
@@ -86,60 +108,48 @@ document.addEventListener("critical-ready", async () => {
       return;
     }
 
-    try {
-      const resRaw = await fetch("/api/recensioni/creaRecensione", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + token
-        },
-        body: JSON.stringify({
-          prodotto_id,
-          rating: ratingSelezionato,
-          commento: testo
-        })
-      });
-      const res = await handleAuthResponse(resRaw);
-      if (!res) return;
+    const data = await apiRecensioni("/api/recensioni/creaRecensione", {
+      method: "POST",
+      body: JSON.stringify({
+        prodotto_id,
+        rating: ratingSelezionato,
+        commento: testo
+      })
+    });
 
-      const data = await res.json();
-
-      if (data.success) {
-        status.textContent = "Recensione pubblicata con successo!";
-        status.className = "status-msg ok";
-        commentoArea.value = "";
-        ratingSelezionato = 0;
-        stars.forEach(s => s.classList.remove("active"));
-        caricaRecensioni();
-      } else {
-        status.textContent = data.error || "Errore durante l'invio.";
-        status.className = "status-msg err";
-      }
-    } catch (err) {
-      status.textContent = "Errore di connessione al database.";
+    if (!data) {
+      status.textContent = "Errore durante l'invio.";
       status.className = "status-msg err";
+      return;
     }
+
+    status.textContent = "Recensione pubblicata con successo!";
+    status.className = "status-msg ok";
+
+    commentoArea.value = "";
+    ratingSelezionato = 0;
+    stars.forEach(s => s.classList.remove("active"));
+
+    caricaRecensioni();
   });
 
-  // 4) CARICA LISTA RECENSIONI
+  /* =========================================================
+     4) CARICA LISTA RECENSIONI
+  ========================================================== */
   async function caricaRecensioni() {
     listaRecensioni.innerHTML = "<div class='loader'>Caricamento i tuoi feedback...</div>";
 
-    try {
-      const resRaw = await fetch("/api/recensioni/getRecensioniUtente", {
-        headers: { Authorization: "Bearer " + token }
-      });
-      const res = await handleAuthResponse(resRaw);
-      if (!res) return;
+    const data = await apiRecensioni("/api/recensioni/getRecensioniUtente", {
+      method: "GET"
+    });
 
-      const data = await res.json();
+    if (!data || !data.recensioni || data.recensioni.length === 0) {
+      listaRecensioni.innerHTML = "<p class='info-vuoto'>Non hai ancora scritto recensioni.</p>";
+      return;
+    }
 
-      if (!data.success || !data.recensioni || data.recensioni.length === 0) {
-        listaRecensioni.innerHTML = "<p class='info-vuoto'>Non hai ancora scritto recensioni.</p>";
-        return;
-      }
-
-      listaRecensioni.innerHTML = data.recensioni.map(r => `
+    listaRecensioni.innerHTML = data.recensioni
+      .map(r => `
         <div class="review-card">
           <div class="review-header">
             <strong>${r.prodotto_titolo || "Prodotto"}</strong>
@@ -154,59 +164,39 @@ document.addEventListener("critical-ready", async () => {
             </div>
           </div>
         </div>
-      `).join("");
-
-    } catch (err) {
-      listaRecensioni.innerHTML = "<p>Errore nel recupero delle recensioni.</p>";
-    }
+      `)
+      .join("");
   }
 
-  // 5) FUNZIONI GLOBALI
+  /* =========================================================
+     5) FUNZIONI GLOBALI (modifica + elimina)
+  ========================================================== */
   window.eliminaRecensione = async (id) => {
     if (!confirm("Vuoi eliminare questa recensione?")) return;
-    try {
-      const resRaw = await fetch("/api/recensioni/eliminaRecensione", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + token
-        },
-        body: JSON.stringify({ id })
-      });
-      const res = await handleAuthResponse(resRaw);
-      if (!res) return;
 
-      const data = await res.json();
-      if (data.success) caricaRecensioni();
-    } catch (e) {
-      alert("Errore eliminazione.");
-    }
+    const data = await apiRecensioni("/api/recensioni/eliminaRecensione", {
+      method: "POST",
+      body: JSON.stringify({ id })
+    });
+
+    if (data) caricaRecensioni();
   };
 
   window.modificaRecensione = async (id) => {
     const nuovoTesto = prompt("Inserisci il nuovo commento:");
     if (!nuovoTesto || nuovoTesto.length < 5) return;
 
-    try {
-      const resRaw = await fetch("/api/recensioni/modificaRecensione", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + token
-        },
-        body: JSON.stringify({ id, commento: nuovoTesto })
-      });
-      const res = await handleAuthResponse(resRaw);
-      if (!res) return;
+    const data = await apiRecensioni("/api/recensioni/modificaRecensione", {
+      method: "POST",
+      body: JSON.stringify({ id, commento: nuovoTesto })
+    });
 
-      const data = await res.json();
-      if (data.success) caricaRecensioni();
-    } catch (e) {
-      alert("Errore modifica.");
-    }
+    if (data) caricaRecensioni();
   };
 
-  // Avvio
+  /* =========================================================
+     AVVIO
+  ========================================================== */
   caricaProdottiAcquistati();
   caricaRecensioni();
 });
