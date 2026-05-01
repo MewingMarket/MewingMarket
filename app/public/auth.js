@@ -1,37 +1,61 @@
 /* =========================================================
- * AUTH.JS — Persistenza SQL-SYNC (PATCH 2027.930)
- * FIX: Sincronizzazione chiavi Token e Sessione per SQL
+ * AUTH.JS — Persistenza SQL-SYNC (PATCH 2027.970)
+ * FIX: Universal JSON + Robustezza totale
  * ========================================================= */
 
 console.log("🔐 [AUTH] Sistema di autenticazione avviato");
 
-const APP_VERSION = "2026.10"; // Cambia questo per forzare il logout di tutti in caso di bug
+const APP_VERSION = "2026.10";
 
-// ---------------------------------------------------------
-// Helper: registra evento utente (Sincronizzato con nuovo backend)
-// ---------------------------------------------------------
-async function logUserEvent(evento) {
+/* =========================================================
+   WRAPPER UNIVERSALE PER EVENTI UTENTE
+========================================================= */
+async function apiAuth(path, payload = {}) {
+  let res;
   try {
-    const email = localStorage.getItem("email") || "";
-    if (!email) return;
-
-    await fetch("/api/utenti/evento", {
+    res = await fetch(path, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email,
-        evento,
-        timestamp: new Date().toISOString()
-      })
+      body: JSON.stringify(payload)
     });
   } catch (err) {
-    console.warn("[AUTH] Log evento fallito:", err);
+    console.warn("⚠️ [AUTH] Errore rete:", err);
+    return null;
   }
+
+  let json;
+  try {
+    json = await res.json();
+  } catch (e) {
+    console.warn("⚠️ [AUTH] Risposta NON JSON da", path);
+    return null;
+  }
+
+  if (!json.success) {
+    console.warn("⚠️ [AUTH] Evento non registrato:", json.error || json.raw);
+    return null;
+  }
+
+  return json.data;
 }
 
-// ---------------------------------------------------------
-// 0) Gestione versione deploy (Reset se la versione cambia)
-// ---------------------------------------------------------
+/* =========================================================
+   LOG EVENTO UTENTE (versione sicura)
+========================================================= */
+async function logUserEvent(evento) {
+  const email = localStorage.getItem("email") || "";
+  if (!email) return;
+
+  await apiAuth("/api/utenti/evento", {
+    email,
+    evento,
+    timestamp: new Date().toISOString()
+  });
+}
+
+/* =========================================================
+   RESET VERSIONE DEPLOY
+========================================================= */
 (function () {
   const storedVersion = localStorage.getItem("appVersion");
 
@@ -50,18 +74,18 @@ async function logUserEvent(evento) {
   }
 })();
 
-// ---------------------------------------------------------
-// 2) Stato globale utente (Variabili in RAM)
-// ---------------------------------------------------------
+/* =========================================================
+   STATO GLOBALE
+========================================================= */
 window.isLogged = false;
 window.isAdmin = false;
 window.userEmail = "";
 window.userData = null;
 window.sessionState = 0;
 
-// ---------------------------------------------------------
-// 3) Carica sessione da localStorage
-// ---------------------------------------------------------
+/* =========================================================
+   CARICA SESSIONE
+========================================================= */
 function loadSession() {
   const token = localStorage.getItem("mewing_token") || localStorage.getItem("token") || "";
   const email = localStorage.getItem("email") || "";
@@ -91,9 +115,9 @@ function loadSession() {
   });
 }
 
-// ---------------------------------------------------------
-// 4) Inizializzazione
-// ---------------------------------------------------------
+/* =========================================================
+   INIT AUTH
+========================================================= */
 function initAuth() {
   loadSession();
 
