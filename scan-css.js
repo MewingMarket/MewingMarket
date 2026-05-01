@@ -1,10 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 
-// =========================================================
-// Utility: Legge ricorsivamente tutti i file
-// =========================================================
-function getAllFiles(dir, extFilter = null) {
+function getAllFiles(dir, ext = null) {
   let results = [];
   const list = fs.readdirSync(dir);
 
@@ -12,100 +9,107 @@ function getAllFiles(dir, extFilter = null) {
     const filePath = path.join(dir, file);
     const stat = fs.statSync(filePath);
 
-    if (stat && stat.isDirectory()) {
-      results = results.concat(getAllFiles(filePath, extFilter));
+    if (stat.isDirectory()) {
+      results = results.concat(getAllFiles(filePath, ext));
     } else {
-      if (!extFilter || filePath.endsWith(extFilter)) {
-        results.push(filePath);
-      }
+      if (!ext || filePath.endsWith(ext)) results.push(filePath);
     }
   });
 
   return results;
 }
 
-// =========================================================
-// 1) Trova tutti i CSS
-// =========================================================
-const cssFiles = getAllFiles(".", ".css");
-console.log("\n=== CSS TROVATI ===");
-cssFiles.forEach(f => console.log("•", f));
-
-// =========================================================
-// 2) Trova tutti gli HTML/JS
-// =========================================================
-const htmlFiles = getAllFiles(".", ".html");
-const jsFiles = getAllFiles(".", ".js");
-
-// =========================================================
-// 3) Mappa: quali CSS sono inclusi in quali HTML
-// =========================================================
-console.log("\n=== CSS INCLUSI NELLE PAGINE ===");
-
-cssFiles.forEach(css => {
-  const name = path.basename(css);
-  let usedIn = [];
-
-  htmlFiles.forEach(html => {
-    const content = fs.readFileSync(html, "utf8");
-    if (content.includes(name)) usedIn.push(html);
-  });
-
-  if (usedIn.length === 0) {
-    console.log(`⚠️  ${name} NON USATO da nessuna pagina`);
-  } else {
-    console.log(`\n${name} usato in:`);
-    usedIn.forEach(u => console.log("   →", u));
-  }
-});
-
-// =========================================================
-// 4) Estrae tutte le classi CSS
-// =========================================================
 function extractClasses(file) {
   const content = fs.readFileSync(file, "utf8");
   const matches = content.match(/\.[a-zA-Z0-9_-]+/g) || [];
   return [...new Set(matches.map(c => c.substring(1)))];
 }
 
-let classMap = {}; // { className: [file1, file2] }
+function generateReport() {
+  const cssFiles = getAllFiles(".", ".css");
+  const htmlFiles = getAllFiles(".", ".html");
+  const jsFiles = getAllFiles(".", ".js");
 
-cssFiles.forEach(css => {
-  const classes = extractClasses(css);
-  classes.forEach(cls => {
-    if (!classMap[cls]) classMap[cls] = [];
-    classMap[cls].push(css);
+  let html = `
+  <html>
+  <head>
+    <title>CSS Report</title>
+    <style>
+      body { font-family: Arial; padding: 20px; }
+      h2 { margin-top: 40px; }
+      .warn { color: #c00; font-weight: bold; }
+      .ok { color: #090; }
+      pre { background: #f4f4f4; padding: 10px; }
+    </style>
+  </head>
+  <body>
+  <h1>CSS Report 2027</h1>
+  `;
+
+  // CSS trovati
+  html += `<h2>CSS trovati</h2><ul>`;
+  cssFiles.forEach(f => html += `<li>${f}</li>`);
+  html += `</ul>`;
+
+  // CSS inclusi
+  html += `<h2>CSS inclusi nelle pagine</h2>`;
+  cssFiles.forEach(css => {
+    const name = path.basename(css);
+    let usedIn = [];
+
+    htmlFiles.forEach(htmlFile => {
+      const content = fs.readFileSync(htmlFile, "utf8");
+      if (content.includes(name)) usedIn.push(htmlFile);
+    });
+
+    if (usedIn.length === 0) {
+      html += `<p class="warn">${name} NON usato da nessuna pagina</p>`;
+    } else {
+      html += `<p><b>${name}</b> usato in:</p><ul>`;
+      usedIn.forEach(u => html += `<li>${u}</li>`);
+      html += `</ul>`;
+    }
   });
-});
 
-// =========================================================
-// 5) Classi duplicate tra CSS
-// =========================================================
-console.log("\n=== CLASSI DUPLICATE TRA CSS ===");
+  // Classi duplicate
+  html += `<h2>Classi duplicate tra CSS</h2>`;
+  let classMap = {};
 
-Object.entries(classMap)
-  .filter(([cls, files]) => files.length > 1)
-  .forEach(([cls, files]) => {
-    console.log(`• .${cls} duplicata in:`);
-    files.forEach(f => console.log("   →", f));
+  cssFiles.forEach(css => {
+    const classes = extractClasses(css);
+    classes.forEach(cls => {
+      if (!classMap[cls]) classMap[cls] = [];
+      classMap[cls].push(css);
+    });
   });
 
-// =========================================================
-// 6) Classi non usate in nessun HTML/JS
-// =========================================================
-console.log("\n=== CLASSI NON USATE ===");
+  Object.entries(classMap)
+    .filter(([cls, files]) => files.length > 1)
+    .forEach(([cls, files]) => {
+      html += `<p class="warn">.${cls} duplicata in:</p><ul>`;
+      files.forEach(f => html += `<li>${f}</li>`);
+      html += `</ul>`;
+    });
 
-Object.entries(classMap).forEach(([cls, files]) => {
-  let used = false;
+  // Classi non usate
+  html += `<h2>Classi NON usate</h2>`;
+  Object.entries(classMap).forEach(([cls, files]) => {
+    let used = false;
 
-  [...htmlFiles, ...jsFiles].forEach(file => {
-    const content = fs.readFileSync(file, "utf8");
-    if (content.includes(cls)) used = true;
+    [...htmlFiles, ...jsFiles].forEach(file => {
+      const content = fs.readFileSync(file, "utf8");
+      if (content.includes(cls)) used = true;
+    });
+
+    if (!used) {
+      html += `<p class="warn">.${cls} non usata (in ${files.join(", ")})</p>`;
+    }
   });
 
-  if (!used) {
-    console.log(`⚠️  .${cls} NON USATA (definita in ${files.join(", ")})`);
-  }
-});
+  html += `</body></html>`;
 
-console.log("\n=== SCAN COMPLETATO ===\n");
+  fs.writeFileSync("report-css.html", html);
+  console.log("✔ report-css.html generato");
+}
+
+generateReport();
