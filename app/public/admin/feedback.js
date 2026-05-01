@@ -1,6 +1,8 @@
 /* =========================================================
-   ADMIN FEEDBACK — Versione SQL 2027.900 (PATCH TOKEN)
-   Sincronizzata con admin-feedback.cjs + auth-user.cjs
+   ADMIN FEEDBACK — UNIVERSAL JSON PATCH 2027.970
+   - Token Fix
+   - Universal JSON
+   - Router Universale
 ========================================================= */
 
 const clean = (t) =>
@@ -8,7 +10,6 @@ const clean = (t) =>
     ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
     : t ?? "";
 
-// Formattazione data italiana
 const fDate = (d) => {
   if (!d) return "—";
   try {
@@ -24,12 +25,13 @@ const fDate = (d) => {
 };
 
 /* =========================================================
-   FETCH ADMIN — Token + fallback login
+   WRAPPER UNIVERSALE ADMIN (token + universal-json)
 ========================================================= */
-async function adminGet(path, options = {}) {
+async function adminApi(path, options = {}) {
   const token = localStorage.getItem("token");
 
   const headers = {
+    "Content-Type": "application/json",
     ...(options.headers || {}),
     Authorization: token ? `Bearer ${token}` : ""
   };
@@ -44,11 +46,24 @@ async function adminGet(path, options = {}) {
     return null;
   }
 
-  return res;
+  let json;
+  try {
+    json = await res.json();
+  } catch (e) {
+    console.error("❌ Risposta NON JSON da", fullPath);
+    return null;
+  }
+
+  if (!json.success) {
+    console.warn("⚠️ Errore API:", json.error || json.raw);
+    return null;
+  }
+
+  return json.data;
 }
 
 /* =========================================================
-   RENDER KPI (Barre percentuali + Top/Flop)
+   RENDER KPI
 ========================================================= */
 function renderKPI(kpi) {
   const box = document.querySelector("#kpi-feedback");
@@ -106,7 +121,7 @@ function renderKPI(kpi) {
 }
 
 /* =========================================================
-   CARICA FEEDBACK (con token)
+   CARICA FEEDBACK
 ========================================================= */
 async function caricaFeedback() {
   const tbody = document.querySelector("#tabella-feedback tbody");
@@ -114,47 +129,46 @@ async function caricaFeedback() {
 
   tbody.innerHTML = "<tr><td colspan='5'>Interrogazione database SQL...</td></tr>";
 
-  try {
-    // ⭐ PATCH — endpoint Java‑mode
-    const res = await adminGet("/api/admin/feedback/getListaFeedback");
-    if (!res) return;
+  const data = await adminApi("/api/admin/feedback/getListaFeedback", {
+    method: "GET"
+  });
 
-    const data = await res.json();
-    console.log("🟢 [ADMIN] Feedback caricati:", data);
-
-    if (data.kpi) renderKPI(data.kpi);
-
-    const feedbackLista = data.feedback || [];
-    tbody.innerHTML = "";
-
-    if (feedbackLista.length === 0) {
-      tbody.innerHTML =
-        "<tr><td colspan='5'>Nessuna recensione presente nel database.</td></tr>";
-      return;
-    }
-
-    feedbackLista.forEach((f) => {
-      const tr = document.createElement("tr");
-
-      const prodotto = f.prodotto_titolo || "Prodotto rimosso";
-      const utente = f.utente_email || "Anonimo";
-
-      tr.innerHTML = `
-        <td><b>${clean(prodotto)}</b></td>
-        <td><span class="stars-visual">${"⭐".repeat(
-          f.rating
-        )}</span> <small>(${f.rating}/5)</small></td>
-        <td class="cell-comment"><em>"${clean(f.commento)}"</em></td>
-        <td><small>${clean(utente)}</small></td>
-        <td><small>${fDate(f.data)}</small></td>
-      `;
-      tbody.appendChild(tr);
-    });
-  } catch (err) {
-    console.error("❌ [ADMIN] Errore caricamento feedback:", err);
+  if (!data) {
     tbody.innerHTML =
       "<tr><td colspan='5'>Errore tecnico nel recupero dei feedback.</td></tr>";
+    return;
   }
+
+  console.log("🟢 [ADMIN] Feedback caricati:", data);
+
+  if (data.kpi) renderKPI(data.kpi);
+
+  const feedbackLista = data.feedback || [];
+  tbody.innerHTML = "";
+
+  if (feedbackLista.length === 0) {
+    tbody.innerHTML =
+      "<tr><td colspan='5'>Nessuna recensione presente nel database.</td></tr>";
+    return;
+  }
+
+  feedbackLista.forEach((f) => {
+    const tr = document.createElement("tr");
+
+    const prodotto = f.prodotto_titolo || "Prodotto rimosso";
+    const utente = f.utente_email || "Anonimo";
+
+    tr.innerHTML = `
+      <td><b>${clean(prodotto)}</b></td>
+      <td><span class="stars-visual">${"⭐".repeat(
+        f.rating
+      )}</span> <small>(${f.rating}/5)</small></td>
+      <td class="cell-comment"><em>"${clean(f.commento)}"</em></td>
+      <td><small>${clean(utente)}</small></td>
+      <td><small>${fDate(f.data)}</small></td>
+    `;
+    tbody.appendChild(tr);
+  });
 }
 
 document.addEventListener("critical-ready", () => {
