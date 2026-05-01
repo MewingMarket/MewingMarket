@@ -1,29 +1,28 @@
 /**
  * =========================================================
- * Middleware Diagnostico — stampa tutte le route registrate
- * Versione 2026.300 — Simone Debug Mode
+ * Middleware Diagnostico — Versione 2027.60
+ * Compatibile con router universale + universal-json
+ * Stampa SOLO endpoint reali da index.cjs
  * =========================================================
  */
 
+const path = require("path");
+
 module.exports = function diagnosticoRoutes(app) {
-  console.log("🟦 [DIAGNOSTICO] ROUTE SCANNER ATTIVATO");
+  console.log("🟦 [DIAGNOSTICA] ROUTE SCANNER ATTIVATO (2027.60)");
 
-  const printRoute = (method, path) => {
-    console.log(`🔹 ROUTE: ${method.toUpperCase()} ${path}`);
-  };
+  const indexFunzioni = require(path.join(process.cwd(), "app/server/index.cjs"));
 
-  const scanLayer = (layer, prefix = "") => {
-    if (layer.route) {
-      const routePath = prefix + layer.route.path;
-      const methods = Object.keys(layer.route.methods);
-      methods.forEach(m => printRoute(m, routePath));
-    } else if (layer.name === "router" && layer.handle.stack) {
-      layer.handle.stack.forEach(sub => {
-        scanLayer(sub, prefix + (layer.regexp?.source || ""));
-      });
+  console.log("🟦 [DIAGNOSTICA] SCANSIONE ENDPOINT REALI…");
+
+  for (const modulo of Object.keys(indexFunzioni)) {
+    const funzioni = indexFunzioni[modulo];
+
+    for (const fn of Object.keys(funzioni)) {
+      const endpoint = `/api/${modulo}/${fn}`;
+      console.log(`🔹 ROUTE: GET/POST ${endpoint}`);
     }
-  };
+  }
 
-  console.log("🟦 [DIAGNOSTICO] SCANSIONE ROUTER PRINCIPALE…");
-  app._router.stack.forEach(layer => scanLayer(layer));
+  console.log("🟩 [DIAGNOSTICA] SCANSIONE COMPLETATA");
 };
