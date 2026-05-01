@@ -1,12 +1,8 @@
 /* =========================================================
-   THANK YOU PAGE — Versione 2027.900
-   - critical-ready
-   - FETCH STANDARD
-   - Endpoint Java‑mode
+   THANK YOU PAGE — UNIVERSAL JSON PATCH 2027.970
 ========================================================= */
 
 document.addEventListener("critical-ready", async () => {
-
   const url = new URL(window.location.href);
   const orderId = url.searchParams.get("orderId");
 
@@ -15,39 +11,56 @@ document.addEventListener("critical-ready", async () => {
     return;
   }
 
-  let ordine;
-
   /* =========================================================
-     1) VERIFICA ORDINE (complete-order)
+     WRAPPER UNIVERSALE
   ========================================================== */
-  try {
-    // ⭐ PATCH — nuovo endpoint Java‑mode
-    const res = await fetch(`/api/paypal/paypalCompleteOrder?orderId=${orderId}`, { 
-      method: "GET" 
-    });
+  async function apiThankyou(path, options = {}) {
+    const headers = {
+      "Content-Type": "application/json",
+      ...(options.headers || {})
+    };
 
-    const data = await res.json();
-
-    if (!data.success) {
-      document.querySelector(".box").innerHTML = `
-        <h1>Ordine non valido</h1>
-        <p>${data.error || "Impossibile verificare l'ordine."}</p>
-        <a href="catalogo.html" class="btn btn-home">Torna al catalogo</a>
-      `;
-      return;
+    let res;
+    try {
+      res = await fetch(path, { ...options, headers });
+    } catch (err) {
+      console.error("❌ Errore rete:", err);
+      return null;
     }
 
-    ordine = data.order;
+    let json;
+    try {
+      json = await res.json();
+    } catch (e) {
+      console.error("❌ Risposta NON JSON da", path);
+      return null;
+    }
 
-  } catch (err) {
-    console.error(err);
+    if (!json.success) {
+      console.warn("⚠️ Errore API:", json.error || json.raw);
+      return null;
+    }
+
+    return json.data;
+  }
+
+  /* =========================================================
+     1) VERIFICA ORDINE
+  ========================================================== */
+  const data = await apiThankyou(`/api/paypal/paypalCompleteOrder?orderId=${orderId}`, {
+    method: "GET"
+  });
+
+  if (!data || !data.order) {
     document.querySelector(".box").innerHTML = `
-      <h1>Errore</h1>
+      <h1>Ordine non valido</h1>
       <p>Impossibile verificare l'ordine.</p>
       <a href="catalogo.html" class="btn btn-home">Torna al catalogo</a>
     `;
     return;
   }
+
+  const ordine = data.order;
 
   /* =========================================================
      2) RENDER RIEPILOGO
@@ -79,19 +92,15 @@ document.addEventListener("critical-ready", async () => {
   /* =========================================================
      3) SVUOTA CARRELLO
   ========================================================== */
-  if (window.Cart && typeof Cart.clear === "function") {
-    Cart.clear();
-  }
+  if (window.Cart?.clear) Cart.clear();
   if (typeof aggiornaBadgeCarrello === "function") aggiornaBadgeCarrello();
 
   /* =========================================================
      4) TRACKING EVENTO
   ========================================================== */
-  if (window.trackEvent) {
-    window.trackEvent("order_completed", {
-      orderId,
-      totale: ordine.totale_cent / 100,
-      prodotti: ordine.prodotti.length
-    });
-  }
+  window.trackEvent?.("order_completed", {
+    orderId,
+    totale: ordine.totale_cent / 100,
+    prodotti: ordine.prodotti.length
+  });
 });
