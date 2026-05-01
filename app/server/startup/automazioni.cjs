@@ -1,11 +1,11 @@
 /* FILE: app/server/startup/automazioni.cjs */
 // =====================================================
-// AVVIO AUTOMAZIONI (SCHEDULER + TRIGGER) — SAFE MODE
+// AVVIO AUTOMAZIONI — SAFE MODE HARD
+// Tutte le automazioni sono disattivate temporaneamente
+// per evitare loop, scheduler, trigger e OOM.
 // =====================================================
 
-const path = require("path");
-
-console.log("⚙️  Avvio automazioni…");
+console.log("⚙️  Avvio automazioni (SAFE MODE HARD)…");
 
 // 🔥 FIREWALL AUTOMAZIONI — evita doppi avvii nello stesso processo
 if (global.__automazioni_started) {
@@ -13,12 +13,10 @@ if (global.__automazioni_started) {
 } else {
   global.__automazioni_started = true;
 
-  try {
-    // Require assoluto blindato
-    require(path.join(process.cwd(), "app/modules/automazioni/orchestratore.cjs"));
+  // 🚫 AUTOMAZIONI DISATTIVATE
+  console.log("🟧 Automazioni DISATTIVATE in SAFE MODE HARD");
+  console.log("🟧 orchestratore.cjs NON caricato");
+  console.log("🟧 scheduler e trigger NON avviati");
 
-    console.log("✅ Automazioni avviate");
-  } catch (err) {
-    console.error("❌ Errore avvio automazioni:", err);
-  }
+  // (Nessun require, nessun loop, nessun watcher)
 }
