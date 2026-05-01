@@ -126,7 +126,7 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
   app.use(express.json());
   app.use(cookieParser());
 
-  // 🔵 UNIVERSAL JSON (deve stare PRIMA di router e prima dei moduli che rispondono)
+  // 🔵 UNIVERSAL JSON
   try {
     const universalJson = require("./middleware/universal-json.cjs");
     app.use(universalJson);
@@ -233,12 +233,26 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
   app.use(express.static(PUBLIC_DIR));
 
   /* =========================================================
-   * 🔵 PATCH DIAGNOSTICA ENDPOINTS
+   * 🔵 DIAGNOSTICA ENDPOINTS
    * =========================================================
    */
   app.get("/diagnostica-endpoints", (req, res) => {
     const diag = require("./introspect-endpoints.cjs");
     res.send(diag.diagnosticaHtmlToString());
+  });
+
+  /* =========================================================
+   * 🔵 DIAGNOSTICA CSS (AGGIUNTO)
+   * =========================================================
+   */
+  app.get("/diagnostica-css", (req, res) => {
+    try {
+      const report = fs.readFileSync("report-css.html", "utf8");
+      res.setHeader("Content-Type", "text/html");
+      res.send(report);
+    } catch (err) {
+      res.send("<h1>Report CSS non trovato</h1><p>Esegui prima: node scan-css.js</p>");
+    }
   });
 
   /* =========================================================
