@@ -1,38 +1,70 @@
 /* =========================================================
-   Eliminazione Account – MewingMarket (VERSIONE 2027.900)
-   - critical-ready
-   - fetch nativo
-   - API Java‑mode
+   Eliminazione Account — UNIVERSAL JSON PATCH 2027.970
 ========================================================= */
 
 document.addEventListener("critical-ready", () => {
   const msg = document.getElementById("status");
   const btnElimina = document.getElementById("reset-btn");
 
-  /* =========================================================
-     PATCH — Helper per registrare evento utente
-     (fetch nativo + endpoint Java‑mode)
-  ========================================================== */
-  async function logUserEvent(evento) {
-    try {
-      const email = localStorage.getItem("email") || "";
-      if (!email) return;
-
-      await fetch("/api/utenti/evento", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, evento })
-      });
-
-    } catch (err) {
-      console.warn("Log evento fallito:", err);
-    }
-  }
-
   function setMsg(text, ok = false) {
     if (!msg) return;
     msg.textContent = text;
     msg.style.color = ok ? "#4ade80" : "#f97373";
+  }
+
+  /* =========================================================
+     WRAPPER UNIVERSALE (token + universal-json)
+  ========================================================== */
+  async function apiDelete(path, options = {}) {
+    const token = localStorage.getItem("token");
+
+    const headers = {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+      Authorization: token ? `Bearer ${token}` : ""
+    };
+
+    let res;
+    try {
+      res = await fetch(path, { ...options, headers });
+    } catch (err) {
+      console.error("❌ Errore rete:", err);
+      return null;
+    }
+
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem("token");
+      window.location.href = "/login";
+      return null;
+    }
+
+    let json;
+    try {
+      json = await res.json();
+    } catch (e) {
+      console.error("❌ Risposta NON JSON da", path);
+      return null;
+    }
+
+    if (!json.success) {
+      console.warn("⚠️ Errore API:", json.error || json.raw);
+      return null;
+    }
+
+    return json.data;
+  }
+
+  /* =========================================================
+     LOG EVENTO (versione sicura)
+  ========================================================== */
+  async function logUserEvent(evento) {
+    const email = localStorage.getItem("email") || "";
+    if (!email) return;
+
+    await apiDelete("/api/utenti/evento", {
+      method: "POST",
+      body: JSON.stringify({ email, evento })
+    });
   }
 
   if (!btnElimina) {
@@ -60,67 +92,35 @@ document.addEventListener("critical-ready", () => {
       return;
     }
 
-    // Flusso sensibile
     localStorage.setItem("sessionState", "2");
 
     if (btnElimina.disabled) return;
     btnElimina.disabled = true;
 
-    try {
-      // ⭐ PATCH — nuovo endpoint Java‑mode + fetch nativo
-      const res = await fetch("/api/utenti/eliminaAccount", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer " + token
-        },
-        body: JSON.stringify({ password })
-      });
+    const data = await apiDelete("/api/utenti/eliminaAccount", {
+      method: "POST",
+      body: JSON.stringify({ password })
+    });
 
-      const data = await res.json().catch(() => null);
-
-      console.log("Risposta elimina-account:", data);
-
-      if (res.status === 401) {
-        setMsg("Sessione scaduta o non valida. Effettua di nuovo il login.");
-        return;
-      }
-
-      if (!data) {
-        setMsg("Errore del server");
-        return;
-      }
-
-      if (data.error) {
-        setMsg(data.error);
-        return;
-      }
-
-      if (data.success) {
-        setMsg("Account eliminato. Reindirizzamento...", true);
-
-        // ⭐ PATCH — registra evento
-        await logUserEvent("eliminato");
-
-        // Logout pulito
-        localStorage.removeItem("token");
-        localStorage.removeItem("email");
-        localStorage.removeItem("ruolo");
-        localStorage.setItem("sessionState", "0");
-
-        setTimeout(() => {
-          window.location.href = "registrazione.html";
-        }, 1000);
-
-      } else {
-        setMsg(data.error || "Errore durante l'eliminazione dell'account");
-      }
-
-    } catch (err) {
-      console.error(err);
-      setMsg("Errore di connessione");
-    } finally {
+    if (!data) {
+      setMsg("Errore durante l'eliminazione dell'account");
       btnElimina.disabled = false;
+      return;
     }
+
+    setMsg("Account eliminato. Reindirizzamento...", true);
+
+    await logUserEvent("eliminato");
+
+    localStorage.removeItem("token");
+    localStorage.removeItem("email");
+    localStorage.removeItem("ruolo");
+    localStorage.setItem("sessionState", "0");
+
+    setTimeout(() => {
+      window.location.href = "registrazione.html";
+    }, 1000);
+
+    btnElimina.disabled = false;
   });
 });
