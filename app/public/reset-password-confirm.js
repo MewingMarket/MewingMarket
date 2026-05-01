@@ -1,21 +1,53 @@
 /* =========================================================
-   RESET PASSWORD CONFIRM — Versione ZERO-INPUT (PATCH 2027.900)
-   - critical-ready
-   - fetch nativo
-   - Endpoint Java‑mode
+   RESET PASSWORD CONFIRM — UNIVERSAL JSON PATCH 2027.970
+   Versione ZERO-INPUT
 ========================================================= */
 
 console.log("[RESET-PASS-CONFIRM] Versione ZERO-INPUT caricata");
 
 document.addEventListener("critical-ready", () => {
   const btnConfirmReset = document.getElementById("btnConfirmReset");
-  const msgConfirmReset = document.getElementById("msgConfirmReset");
+  const msg = document.getElementById("msgConfirmReset");
 
+  /* =========================================================
+     WRAPPER UNIVERSALE (universal-json)
+  ========================================================== */
+  async function apiResetPassword(payload) {
+    let res;
+    try {
+      res = await fetch("/api/utenti/resetPasswordConfirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+    } catch (err) {
+      console.error("❌ Errore rete:", err);
+      return null;
+    }
+
+    let json;
+    try {
+      json = await res.json();
+    } catch (e) {
+      console.error("❌ Risposta NON JSON da /api/utenti/resetPasswordConfirm");
+      return null;
+    }
+
+    if (!json.success) {
+      console.warn("⚠️ Errore API:", json.error || json.raw);
+      return null;
+    }
+
+    return json.data;
+  }
+
+  /* =========================================================
+     CLICK CONFERMA RESET PASSWORD
+  ========================================================== */
   btnConfirmReset?.addEventListener("click", async () => {
     const nuova_password = document.getElementById("newPassword")?.value.trim();
     const conferma = document.getElementById("confirmPassword")?.value.trim();
-    const codice_fiscale = localStorage.getItem("cf_reset"); // ZERO-INPUT
-    const msg = msgConfirmReset;
+    const codice_fiscale = localStorage.getItem("cf_reset");
 
     if (!msg) return;
 
@@ -46,46 +78,28 @@ document.addEventListener("critical-ready", () => {
     if (btnConfirmReset.disabled) return;
     btnConfirmReset.disabled = true;
 
-    try {
-      console.log("[RESET-PASS-CONFIRM] Invio conferma ZERO-INPUT…");
+    console.log("[RESET-PASS-CONFIRM] Invio conferma ZERO-INPUT…");
 
-      // ⭐ PATCH — fetch nativo + endpoint Java‑mode
-      const res = await fetch("/api/utenti/resetPasswordConfirm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nuova_password, codice_fiscale })
-      });
+    const data = await apiResetPassword({ nuova_password, codice_fiscale });
 
-      const data = await res.json().catch(() => ({}));
-      console.log("[RESET-PASS-CONFIRM] Risposta:", data);
-
-      if (data.success) {
-
-        // 🔥 PULIZIA CF
-        localStorage.removeItem("cf_reset");
-
-        // 🔥 FIX CHECKOUT — salviamo token + email + sessionState
-        if (data.token && data.email) {
-          localStorage.setItem("token", data.token);
-          localStorage.setItem("email", data.email);
-          localStorage.setItem("sessionState", "1");
-        } else {
-          localStorage.setItem("sessionState", "1");
-        }
-
-        window.location.href = "login.html";
-        return;
-      }
-
-      msg.textContent = data.error || "Errore durante la conferma del reset password.";
+    if (!data) {
+      msg.textContent = "Errore durante la conferma del reset password.";
       msg.className = "err";
-
-    } catch (err) {
-      console.error("[RESET-PASS-CONFIRM] Errore:", err);
-      msg.textContent = "Errore di connessione.";
-      msg.className = "err";
-    } finally {
       btnConfirmReset.disabled = false;
+      return;
     }
+
+    /* =========================================================
+       SUCCESSO — SALVATAGGIO SESSIONE
+    ========================================================== */
+    localStorage.removeItem("cf_reset");
+
+    if (data.token && data.email) {
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("email", data.email);
+    }
+
+    localStorage.setItem("sessionState", "1");
+    window.location.href = "login.html";
   });
 });
