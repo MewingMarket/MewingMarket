@@ -1,6 +1,5 @@
 /* =========================================================
-   CANCEL ORDER — Frontend
-   Versione 2027.900 — API UNIVERSALE + CRITICAL READY
+   CANCEL ORDER — UNIVERSAL JSON PATCH 2027.970
 ========================================================= */
 
 document.addEventListener("critical-ready", async () => {
@@ -14,24 +13,42 @@ document.addEventListener("critical-ready", async () => {
     return;
   }
 
-  try {
-    // ⭐ PATCH 2027 — Nuovo endpoint Java‑mode
-    const res = await fetch(`/api/paypal/paypalCancelOrder?orderId=${orderId}`, {
-      method: "GET"
-    });
+  const data = await apiCancelOrder(`/api/paypal/paypalCancelOrder?orderId=${orderId}`);
 
-    const data = await res.json();
+  if (!box) return;
 
-    if (box) {
-      if (data.success) {
-        box.textContent = data.message || "Ordine annullato correttamente.";
-      } else {
-        box.textContent = data.error || "Errore durante l'annullamento.";
-      }
-    }
-
-  } catch (err) {
-    console.error("Errore annullo ordine:", err);
-    if (box) box.textContent = "Errore di connessione.";
+  if (!data) {
+    box.textContent = "Errore durante l'annullamento.";
+    return;
   }
+
+  box.textContent = data.message || "Ordine annullato correttamente.";
 });
+
+/* =========================================================
+   WRAPPER UNIVERSALE (universal-json)
+========================================================= */
+async function apiCancelOrder(path) {
+  let res;
+  try {
+    res = await fetch(path, { method: "GET" });
+  } catch (err) {
+    console.error("❌ Errore rete:", err);
+    return null;
+  }
+
+  let json;
+  try {
+    json = await res.json();
+  } catch (e) {
+    console.error("❌ Risposta NON JSON da", path);
+    return null;
+  }
+
+  if (!json.success) {
+    console.warn("⚠️ Errore API:", json.error || json.raw);
+    return null;
+  }
+
+  return json.data;
+}
