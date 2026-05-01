@@ -1,6 +1,6 @@
 // =========================================================
 // CRITICAL LOADER — MewingMarket
-// Versione 2027.970 — SENZA mm-api.js (Java-mode)
+// Versione 2027.970-SAFE — SENZA mm-api.js, introspect, diagnostica-loader
 // Compatibile universal-json + router universale
 // =========================================================
 
@@ -8,7 +8,7 @@
 
   const VERSION = "20270412";
 
-  console.log("[CRITICAL] Loader avviato (Java-mode, no mm-api.js)");
+  console.log("[CRITICAL] Loader avviato (Java-mode SAFE)");
 
   /* ============================================================
      1) Caricamento utility (SEO, Structured Data, Tracking)
@@ -27,37 +27,17 @@
   loadUtility("tracking");
 
   /* ============================================================
-     2) INTROSPECT (frontend → backend)
+     2) INTROSPECT (DISATTIVATO IN SAFE MODE)
   ============================================================ */
-  const introspectPromise = new Promise(resolve => {
-    const s = document.createElement("script");
-    s.src = `/introspect.js?v=${VERSION}`;
-    s.onload = () => {
-      console.log("[CRITICAL] introspect.js caricato");
-      resolve();
-    };
-    s.onerror = () => {
-      console.warn("[CRITICAL] introspect.js non trovato");
-      resolve();
-    };
-    document.head.appendChild(s);
+  const introspectPromise = Promise.resolve().then(() => {
+    console.log("🟧 SAFE MODE: introspect.js DISATTIVATO");
   });
 
   /* ============================================================
-     3) DIAGNOSTICA FETCH (solo /api/, compatibile universal-json)
+     3) DIAGNOSTICA FETCH (DISATTIVATA IN SAFE MODE)
   ============================================================ */
-  const diagnosticaPromise = new Promise(resolve => {
-    const s = document.createElement("script");
-    s.src = `/js/diagnostica-loader.js?v=${VERSION}`;
-    s.onload = () => {
-      console.log("[CRITICAL] diagnostica-loader.js caricato");
-      resolve();
-    };
-    s.onerror = () => {
-      console.warn("[CRITICAL] diagnostica-loader.js non trovato");
-      resolve();
-    };
-    document.head.appendChild(s);
+  const diagnosticaPromise = Promise.resolve().then(() => {
+    console.log("🟧 SAFE MODE: diagnostica-loader.js DISATTIVATO");
   });
 
   /* ============================================================
@@ -85,7 +65,7 @@
     return fetch(url)
       .then(r => r.text())
       .then(html => {
-        if (!html || html.trim().startsWith("<!DOCTYPE html") && !html.includes("<head"))
+        if (!html || (html.trim().startsWith("<!DOCTYPE html") && !html.includes("<head")))
           console.warn("[CRITICAL] head.html sembra HTML fallback");
 
         const temp = document.createElement("div");
@@ -238,7 +218,7 @@
   ]).then(() => {
     window.__criticalReady = true;
     document.dispatchEvent(new Event("critical-ready"));
-    console.log("[CRITICAL] critical-ready emesso (2027.970)");
+    console.log("[CRITICAL] critical-ready emesso (2027.970-SAFE)");
   });
 
 })();
