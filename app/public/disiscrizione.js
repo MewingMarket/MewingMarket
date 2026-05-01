@@ -1,9 +1,5 @@
 /* =========================================================
-   DISISCRIZIONE NEWSLETTER — PATCH 2027.900
-   - critical-ready
-   - fetch nativo
-   - API universale Java‑mode
-   - Nessuna regressione
+   DISISCRIZIONE NEWSLETTER — UNIVERSAL JSON PATCH 2027.970
 ========================================================= */
 
 document.addEventListener("critical-ready", () => {
@@ -17,45 +13,29 @@ document.addEventListener("critical-ready", () => {
     return;
   }
 
-  /* =========================================================
-     SANITIZZAZIONE
-  ========================================================== */
   const clean = (t) =>
     typeof t === "string"
       ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
       : "";
 
-  /* =========================================================
-     VALIDAZIONE EMAIL (blindata)
-  ========================================================== */
   function isValidEmail(email) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   }
 
-  /* =========================================================
-     TRACKING SICURO
-  ========================================================== */
   function safeTrack(event, data = {}) {
     try {
-      if (window.trackEvent) {
-        window.trackEvent(event, data);
-      }
+      if (window.trackEvent) window.trackEvent(event, data);
     } catch (err) {
       console.warn("Tracking error:", err);
     }
   }
 
-  // Tracking page view
   safeTrack("newsletter_unsubscribe_page_view");
 
-  /* =========================================================
-     SUBMIT (blindato)
-  ========================================================== */
   let sending = false;
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-
     if (sending) return;
     sending = true;
 
@@ -70,45 +50,53 @@ document.addEventListener("critical-ready", () => {
 
     safeTrack("newsletter_unsubscribe_attempt", { email });
 
-    try {
-      // ⭐ PATCH 2027 — fetch nativo + endpoint Java‑mode
-      const res = await fetch("/api/newsletter/unsubscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email })
-      });
+    const data = await apiUnsubscribe("/api/newsletter/unsubscribe", {
+      method: "POST",
+      body: JSON.stringify({ email })
+    });
 
-      let data = {};
-      try {
-        data = await res.json();
-      } catch {
-        data = { success: false, error: "Invalid JSON" };
-      }
-
-      console.log("📬 Risposta server:", data);
-
-      if (data.success === true) {
-        safeTrack("newsletter_unsubscribe_success", { email });
-        alert("Disiscrizione completata.");
-      } else {
-        safeTrack("newsletter_unsubscribe_error", {
-          email,
-          reason: data.error || "generic"
-        });
-        alert(data.error || "Errore durante la disiscrizione.");
-      }
-
-    } catch (err) {
-      console.error("❌ Errore fetch:", err);
-
-      safeTrack("newsletter_unsubscribe_error", {
-        email,
-        error: err.message
-      });
-
-      alert("Errore di connessione.");
+    if (!data) {
+      safeTrack("newsletter_unsubscribe_error", { email, reason: "generic" });
+      alert("Errore durante la disiscrizione.");
+      sending = false;
+      return;
     }
 
+    safeTrack("newsletter_unsubscribe_success", { email });
+    alert("Disiscrizione completata.");
     sending = false;
   });
 });
+
+/* =========================================================
+   WRAPPER UNIVERSALE (universal-json)
+========================================================= */
+async function apiUnsubscribe(path, options = {}) {
+  const headers = {
+    "Content-Type": "application/json",
+    ...(options.headers || {})
+  };
+
+  let res;
+  try {
+    res = await fetch(path, { ...options, headers });
+  } catch (err) {
+    console.error("❌ Errore rete:", err);
+    return null;
+  }
+
+  let json;
+  try {
+    json = await res.json();
+  } catch (e) {
+    console.error("❌ Risposta NON JSON da", path);
+    return null;
+  }
+
+  if (!json.success) {
+    console.warn("⚠️ Errore API:", json.error || json.raw);
+    return null;
+  }
+
+  return json.data;
+}
