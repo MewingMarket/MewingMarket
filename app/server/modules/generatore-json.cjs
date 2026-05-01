@@ -1,12 +1,13 @@
 /* =========================================================
- * GENERATORE JSON — Mirror automatico del database SQL
- * Versione FIX 2027.901 — NIENTE /var (compatibile ovunque)
- * + PATCH MIRROR → copia TUTTI i JSON in app/data
+ * GENERATORE JSON — SAFE MODE HARD
+ * Mirror automatico del database SQL
+ * Protezioni anti-OOM, anti-loop, anti-file enormi
  * =========================================================
  */
 
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 
 // DB + Catalogo
 const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
@@ -18,29 +19,31 @@ const { inviaEmailNovita } = require(path.join(process.cwd(), "app/server/module
 const { LISTA_NEWSLETTER } = require(path.join(process.cwd(), "app/server/modules/liste-brevo.cjs"));
 
 /* =========================================================
-   ⭐ PATCH PERCORSI — niente /var/data/json
-   Tutto dentro il progetto → nessun EACCES
+   LIMITI DI SICUREZZA
 ========================================================= */
+const MAX_JSON_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_ROWS = 5000;                 // limite righe per tabella
+const MAX_NEWSLETTER = 200;            // limite invii newsletter
+const TIMEOUT_MS = 8000;               // timeout 8 secondi
 
+/* =========================================================
+   PERCORSI
+========================================================= */
 const DISK_DIR = path.join(process.cwd(), "data/json");
 const PUBLIC_DIR = path.join(process.cwd(), "app/public/data");
-const APPDATA_DIR = path.join(process.cwd(), "app/data"); // ⭐ PATCH NUOVA DESTINAZIONE
+const APPDATA_DIR = path.join(process.cwd(), "app/data");
 const LAST_NOVITA_FILE = path.join(DISK_DIR, "last-novita.json");
 
-// Crea cartelle interne al progetto
 [DISK_DIR, PUBLIC_DIR, APPDATA_DIR].forEach(dir => {
   try {
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-      console.log("📁 Creata cartella:", dir);
-    }
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   } catch (err) {
     console.error("❌ ERRORE CREAZIONE CARTELLA:", dir, err.message);
   }
 });
 
 /* =========================================================
-   ⭐ PATCH — MIRROR AUTOMATICO → app/data
+   MIRROR SICURO
 ========================================================= */
 function mirrorToAppData(filename) {
   try {
@@ -48,6 +51,12 @@ function mirrorToAppData(filename) {
     const dest = path.join(APPDATA_DIR, filename);
 
     if (fs.existsSync(src)) {
+      const stat = fs.statSync(src);
+      if (stat.size > MAX_JSON_SIZE) {
+        console.error(`❌ [MIRROR] ${filename} troppo grande (${stat.size} bytes). Skip.`);
+        return;
+      }
+
       fs.copyFileSync(src, dest);
       console.log(`🟩 [MIRROR] Copiato in app/data → ${filename}`);
     }
@@ -57,16 +66,20 @@ function mirrorToAppData(filename) {
 }
 
 /* =========================================================
-   Helper: salva JSON in persistente + copia nel public + mirror
+   SALVATAGGIO JSON SICURO
 ========================================================= */
 function saveJSON(filename, data) {
   try {
     const json = JSON.stringify(data, null, 2);
 
+    if (json.length > MAX_JSON_SIZE) {
+      console.error(`❌ JSON ${filename} troppo grande (${json.length} bytes). Skip.`);
+      return;
+    }
+
     fs.writeFileSync(path.join(DISK_DIR, filename), json, "utf8");
     fs.writeFileSync(path.join(PUBLIC_DIR, filename), json, "utf8");
 
-    // ⭐ PATCH: mirror automatico
     mirrorToAppData(filename);
 
     console.log(`💾 JSON aggiornato: ${filename}`);
@@ -77,7 +90,7 @@ function saveJSON(filename, data) {
 }
 
 /* =========================================================
-   1) AUTO-DETECT TABELLE DAL DATABASE
+   AUTO-DETECT TABELLE
 ========================================================= */
 function getAllTables() {
   try {
@@ -97,17 +110,20 @@ function getAllTables() {
 }
 
 /* =========================================================
-   2) ESPORTA OGNI TABELLA IN JSON + LOG PREMIUM
+   EXPORT TABELLA (SAFE)
 ========================================================= */
 async function exportTable(table) {
   try {
-    const rows = db.prepare(`SELECT * FROM ${table} ORDER BY 1 DESC`).all();
-    const filename = `${table}.json`;
+    let rows = db.prepare(`SELECT * FROM ${table} ORDER BY 1 DESC`).all();
 
-    saveJSON(filename, rows);
+    if (rows.length > MAX_ROWS) {
+      console.error(`❌ [JSON] ${table} ha troppe righe (${rows.length}). Limitato a ${MAX_ROWS}.`);
+      rows = rows.slice(0, MAX_ROWS);
+    }
 
-    // ⭐ LOG PREMIUM RICHIESTO
-    console.log(`🟩 [JSON] Lo schema SQL "${table}" corrisponde a "${filename}" ed è stato creato con successo`);
+    saveJSON(`${table}.json`, rows);
+
+    console.log(`🟩 [JSON] Tabella "${table}" esportata (${rows.length} righe)`);
 
   } catch (err) {
     console.error(`❌ Errore exportTable (${table}):`, err.message);
@@ -115,7 +131,7 @@ async function exportTable(table) {
 }
 
 /* =========================================================
-   3) PATCH — Invio automatico newsletter “Novità”
+   NEWSLETTER NOVITÀ (SAFE)
 ========================================================= */
 async function checkAndSendNovita() {
   try {
@@ -141,11 +157,13 @@ async function checkAndSendNovita() {
     const result = await axios.get(
       `https://api.brevo.com/v3/contacts/lists/${LISTA_NEWSLETTER}/contacts`,
       {
-        headers: { "api-key": process.env.BREVO_API_KEY }
+        headers: { "api-key": process.env.BREVO_API_KEY },
+        timeout: TIMEOUT_MS
       }
     );
 
-    const contacts = result.data?.contacts || [];
+    const contacts = (result.data?.contacts || []).slice(0, MAX_NEWSLETTER);
+
     let count = 0;
 
     for (const c of contacts) {
@@ -165,17 +183,17 @@ async function checkAndSendNovita() {
     );
 
   } catch (err) {
-    console.error("❌ Errore invio automatico Novità:", err);
+    console.error("❌ Errore invio automatico Novità:", err.message);
   }
 }
 
 /* =========================================================
-   4) EXPORT SPECIALI
+   EXPORT SPECIALI (SAFE)
 ========================================================= */
 async function exportProducts() {
   try {
     const prodotti = await catalogo.getAllProducts();
-    saveJSON("products.json", prodotti);
+    saveJSON("products.json", prodotti.slice(0, MAX_ROWS));
     await checkAndSendNovita();
   } catch (err) {
     console.error("❌ Errore exportProducts:", err.message);
@@ -185,7 +203,7 @@ async function exportProducts() {
 async function exportCategories() {
   try {
     const categorie = await catalogo.getAllCategories();
-    saveJSON("categories.json", categorie);
+    saveJSON("categories.json", categorie.slice(0, MAX_ROWS));
   } catch (err) {
     console.error("❌ Errore exportCategories:", err.message);
   }
@@ -197,6 +215,7 @@ async function exportYouTube() {
 
     const youtube = prodotti
       .filter(p => p.youtube_video_id)
+      .slice(0, MAX_ROWS)
       .map(p => ({
         id: p.id,
         video_id: p.youtube_video_id,
@@ -214,8 +233,8 @@ async function exportYouTube() {
 
 async function exportCatalog() {
   try {
-    const prodotti = await catalogo.getAllProducts();
-    const categorie = await catalogo.getAllCategories();
+    const prodotti = (await catalogo.getAllProducts()).slice(0, MAX_ROWS);
+    const categorie = (await catalogo.getAllCategories()).slice(0, MAX_ROWS);
 
     const youtube = prodotti
       .filter(p => p.youtube_video_id)
@@ -235,144 +254,10 @@ async function exportCatalog() {
 }
 
 /* =========================================================
-   5–14) EXPORT LEGACY + KPI + BACKUP + SCHEMA
-========================================================= */
-
-async function exportUsers() {
-  try {
-    const rows = db.prepare(`
-      SELECT id, email, created_at 
-      FROM utenti 
-      ORDER BY id DESC
-    `).all();
-
-    saveJSON("users.json", rows);
-    console.log("👤 Users esportati");
-  } catch (err) {
-    console.error("❌ Errore exportUsers:", err.message);
-  }
-}
-
-async function exportOrders() {
-  try {
-    const rows = db.prepare(`SELECT * FROM ordini ORDER BY id DESC`).all();
-    saveJSON("orders.json", rows);
-  } catch (err) {
-    console.error("❌ Errore exportOrders:", err.message);
-  }
-}
-
-async function exportSales() {
-  try {
-    const rows = db.prepare(`SELECT * FROM vendite ORDER BY id DESC`).all();
-    saveJSON("sales.json", rows);
-  } catch (err) {
-    console.error("❌ Errore exportSales:", err.message);
-  }
-}
-
-async function exportFeedback() {
-  try {
-    const rows = db.prepare(`SELECT * FROM feedback ORDER ORDER BY id DESC`).all();
-    saveJSON("feedback.json", rows);
-  } catch (err) {
-    console.error("❌ Errore exportFeedback:", err.message);
-  }
-}
-
-async function exportNewsletterLog() {
-  try {
-    const rows = db.prepare(`SELECT * FROM newsletter_log ORDER BY id DESC`).all();
-    saveJSON("newsletter.json", rows);
-  } catch (err) {
-    console.error("❌ Errore exportNewsletterLog:", err.message);
-  }
-}
-
-async function exportUserEvents() {
-  try {
-    const rows = db.prepare(`SELECT * FROM utenti_eventi ORDER BY id DESC`).all();
-    saveJSON("user-events.json", rows);
-  } catch (err) {
-    console.error("❌ Errore exportUserEvents:", err.message);
-  }
-}
-
-async function exportKpiGiornalieri() {
-  try {
-    const rows = db.prepare(`SELECT * FROM kpi_giornalieri ORDER BY data DESC`).all();
-    saveJSON("kpi-daily.json", rows);
-  } catch (err) {
-    console.error("❌ Errore exportKpiGiornalieri:", err.message);
-  }
-}
-
-async function exportKpiSettimanali() {
-  try {
-    const rows = db.prepare(`SELECT * FROM kpi_settimanali ORDER BY settimana DESC`).all();
-    saveJSON("kpi-weekly.json", rows);
-  } catch (err) {
-    console.error("❌ Errore exportKpiSettimanali:", err.message);
-  }
-}
-
-async function exportKpiMensili() {
-  try {
-    const rows = db.prepare(`SELECT * FROM kpi_mensili ORDER BY mese DESC`).all();
-    saveJSON("kpi-monthly.json", rows);
-  } catch (err) {
-    console.error("❌ Errore exportKpiMensili:", err.message);
-  }
-}
-
-async function exportBackupLog() {
-  try {
-    const rows = db.prepare(`
-      SELECT id, created_at, source, hash, size_bytes, filename
-      FROM backups_log
-      ORDER BY id DESC
-    `).all();
-
-    saveJSON("backups.json", rows);
-  } catch (err) {
-    console.error("❌ Errore exportBackupLog:", err.message);
-  }
-}
-
-async function exportSchema() {
-  try {
-    const tables = getAllTables();
-    const schema = {};
-
-    for (const table of tables) {
-      const columns = db.prepare(`PRAGMA table_info(${table});`).all();
-      const foreignKeys = db.prepare(`PRAGMA foreign_key_list(${table});`).all();
-      const indexes = db.prepare(`PRAGMA index_list(${table});`).all();
-
-      schema[table] = {
-        columns: columns.map(c => ({
-          name: c.name,
-          type: c.type,
-          notNull: Boolean(c.notnull),
-          default: c.dflt_value,
-          primaryKey: Boolean(c.pk)
-        })),
-        foreignKeys,
-        indexes
-      };
-    }
-
-    saveJSON("schema.json", schema);
-  } catch (err) {
-    console.error("❌ Errore exportSchema:", err.message);
-  }
-}
-
-/* =========================================================
-   EXPORT COMPLETO
+   EXPORT COMPLETO (SAFE)
 ========================================================= */
 async function exportAll() {
-  console.log("⏳ Rigenerazione JSON…");
+  console.log("⏳ Rigenerazione JSON (SAFE)…");
 
   const tables = getAllTables();
 
@@ -385,21 +270,7 @@ async function exportAll() {
   await exportYouTube();
   await exportCatalog();
 
-  await exportUsers();
-  await exportOrders();
-  await exportSales();
-  await exportFeedback();
-  await exportNewsletterLog();
-  await exportUserEvents();
-
-  await exportKpiGiornalieri();
-  await exportKpiSettimanali();
-  await exportKpiMensili();
-
-  await exportBackupLog();
-  await exportSchema();
-
-  console.log("✅ Tutti i JSON rigenerati (persistente + public + app/data)");
+  console.log("✅ Tutti i JSON rigenerati (SAFE)");
 }
 
 /* =========================================================
@@ -410,16 +281,5 @@ module.exports = {
   exportProducts,
   exportCategories,
   exportYouTube,
-  exportCatalog,
-  exportUsers,
-  exportOrders,
-  exportSales,
-  exportFeedback,
-  exportNewsletterLog,
-  exportUserEvents,
-  exportKpiGiornalieri,
-  exportKpiSettimanali,
-  exportKpiMensili,
-  exportBackupLog,
-  exportSchema
+  exportCatalog
 };
