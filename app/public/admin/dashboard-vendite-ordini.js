@@ -1,5 +1,5 @@
 // =========================================================
-// Dashboard Admin — Versione 2027.900 (Java‑mode + Token Fix)
+// Dashboard Admin — UNIVERSAL JSON PATCH 2027.970
 // =========================================================
 
 document.addEventListener("critical-ready", async () => {
@@ -7,43 +7,23 @@ document.addEventListener("critical-ready", async () => {
 
   const token = localStorage.getItem("token");
   if (!token) {
-    console.error("❌ Token mancante");
     location.href = "/admin/login";
     return;
   }
 
   try {
-    // ⭐ PATCH — attiva endpoint base rimborso (richiesto dalla diagnostica)
-    await fetch("/api/rimborso", {
-      method: "GET",
-      headers: { "Authorization": "Bearer " + token }
+    // Attiva endpoint base rimborso (diagnostica)
+    await adminApi("/api/rimborso", { method: "GET" });
+
+    // Dashboard principale
+    const data = await adminApi("/api/admin/dashboard/getDashboard", {
+      method: "GET"
     });
 
-    // ⭐ PATCH — nuovo endpoint Java‑mode + protezione token
-    const response = await fetch("/api/admin/dashboard/getDashboard", {
-      method: "GET",
-      headers: {
-        "Authorization": "Bearer " + token,
-        "Content-Type": "application/json"
-      }
-    });
-
-    console.log("📡 Status:", response.status);
-
-    if (response.status === 401 || response.status === 403) {
-      localStorage.removeItem("token");
-      location.href = "/admin/login";
-      return;
-    }
-
-    const data = await response.json();
-
-    if (!data.success) {
-      throw new Error(data.error || "Errore accesso");
-    }
+    if (!data) throw new Error("Errore accesso");
 
     console.log("📦 Dati ricevuti:", data);
-    
+
     renderKPI(data);
     renderTopProdotti(data?.vendite?.topProdotti || []);
     renderOrdini(data?.ordini?.lista || []);
@@ -51,17 +31,58 @@ document.addEventListener("critical-ready", async () => {
   } catch (err) {
     console.error("❌ ERRORE DASHBOARD:", err);
     const body = document.getElementById("ordini-body");
-    if(body) body.innerHTML = `<tr><td colspan="11" style="color:red; text-align:center;">Errore: ${err.message}</td></tr>`;
+    if (body) {
+      body.innerHTML = `<tr><td colspan="11" style="color:red; text-align:center;">Errore: ${err.message}</td></tr>`;
+    }
   }
 });
 
+/* =========================================================
+   WRAPPER UNIVERSALE ADMIN (token + universal-json)
+========================================================= */
+async function adminApi(path, options = {}) {
+  const token = localStorage.getItem("token");
+
+  const headers = {
+    "Content-Type": "application/json",
+    ...(options.headers || {}),
+    Authorization: token ? `Bearer ${token}` : ""
+  };
+
+  const res = await fetch(path, { ...options, headers });
+
+  if (res.status === 401 || res.status === 403) {
+    localStorage.removeItem("token");
+    location.href = "/admin/login";
+    return null;
+  }
+
+  let json;
+  try {
+    json = await res.json();
+  } catch (e) {
+    console.error("❌ Risposta NON JSON da", path);
+    return null;
+  }
+
+  if (!json.success) {
+    console.warn("⚠️ Errore API:", json.error || json.raw);
+    return null;
+  }
+
+  return json.data;
+}
+
+/* =========================================================
+   KPI
+========================================================= */
 function renderKPI(data) {
   const v = data?.vendite?.kpi || {};
   const o = data?.ordini?.kpi || {};
-  
+
   const safeSet = (id, val) => {
     const el = document.getElementById(id);
-    if(el) el.textContent = val;
+    if (el) el.textContent = val;
   };
 
   safeSet("kpi-vendite", v.venditeTotali ?? "0");
@@ -72,9 +93,13 @@ function renderKPI(data) {
   safeSet("kpi-ordini-annullati", o.annullati ?? "0");
 }
 
+/* =========================================================
+   ORDINI
+========================================================= */
 function renderOrdini(lista) {
   const body = document.getElementById("ordini-body");
   if (!body) return;
+
   body.innerHTML = "";
 
   if (lista.length === 0) {
@@ -84,8 +109,10 @@ function renderOrdini(lista) {
 
   lista.forEach(ord => {
     const tr = document.createElement("tr");
-    const prodotti = (ord.prodotti || []).map(p => `${p.titolo || 'Prodotto'} x${p.qty || 1}`).join(", ");
-    
+    const prodotti = (ord.prodotti || [])
+      .map(p => `${p.titolo || 'Prodotto'} x${p.qty || 1}`)
+      .join(", ");
+
     tr.innerHTML = `
       <td>${ord.id}</td>
       <td>${new Date(ord.data_ordine).toLocaleDateString()}</td>
@@ -98,33 +125,25 @@ function renderOrdini(lista) {
       <td>${ord.rimborso?.categoria || '—'}</td>
       <td>${ord.rimborso?.stato || '—'}</td>
       <td>
-        ${ord.rimborso?.stato === 'in_attesa' ? 
-          `<button onclick="azioneRimborso(${ord.id}, 'procediRichiesta')">OK</button>` : '—'}
+        ${ord.rimborso?.stato === 'in_attesa'
+          ? `<button onclick="azioneRimborso(${ord.id}, 'procediRichiesta')">OK</button>`
+          : '—'}
       </td>
     `;
     body.appendChild(tr);
   });
 }
 
-// Global per i bottoni
+/* =========================================================
+   RIMBORSO
+========================================================= */
 async function azioneRimborso(id, tipo) {
-  if(!confirm("Sei sicuro?")) return;
+  if (!confirm("Sei sicuro?")) return;
 
-  const token = localStorage.getItem("token");
-
-  // ⭐ PATCH — endpoint Java‑mode
-  const res = await fetch(`/api/rimborso/${tipo}/${id}`, { 
-    method: 'POST', 
-    headers: { "Authorization": "Bearer " + token } 
+  const data = await adminApi(`/api/rimborso/${tipo}/${id}`, {
+    method: "POST"
   });
 
-  if (res.status === 401 || res.status === 403) {
-    localStorage.removeItem("token");
-    location.href = "/admin/login";
-    return;
-  }
-
-  const d = await res.json();
-  if(d.success) location.reload();
-  else alert(d.error);
+  if (data) location.reload();
+  else alert("Errore rimborso.");
 }
