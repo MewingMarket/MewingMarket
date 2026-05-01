@@ -1,5 +1,5 @@
 /* =========================================================
- * Entry point del server — versione DEFINITIVA (2027.952)
+ * Entry point del server — versione DEFINITIVA (2027.952 + CSS DIAG)
  * =========================================================
  */
 
@@ -61,18 +61,6 @@ if (global.__server_started) {
 global.__server_started = true;
 
 let BOOTSTRAP_OK = false;
-
-/* =========================================================
- * HEALTH
- * =========================================================
- */
-app.get("/health", (req, res) => {
-  res.json({
-    status: "ok",
-    bootstrap: BOOTSTRAP_OK,
-    time: new Date().toISOString()
-  });
-});
 
 /* =========================================================
  * DEBUG REQUEST/RESPONSE
@@ -242,7 +230,7 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
   });
 
   /* =========================================================
-   * 🔵 DIAGNOSTICA CSS (AGGIUNTO)
+   * 🔵 DIAGNOSTICA CSS
    * =========================================================
    */
   app.get("/diagnostica-css", (req, res) => {
@@ -342,7 +330,7 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
     try {
       require("./startup/cron-youtube.cjs")();
-    } catch(e) {
+    } catch (e) {
       logErr("⚠️ cron-youtube non avviato");
     }
 
