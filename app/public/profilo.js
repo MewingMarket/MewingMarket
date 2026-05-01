@@ -1,8 +1,55 @@
 /* =========================================================
-   PROFILO.JS — Gestione Dati Utente + Moduli (PATCH 2027.900)
+   PROFILO.JS — UNIVERSAL JSON PATCH 2027.970
+   Gestione Dati Utente + Moduli
 ========================================================= */
+
 console.log("[PROFILO] Inizializzazione...");
 
+/* =========================================================
+   WRAPPER UNIVERSALE (token + universal-json)
+========================================================= */
+async function apiProfilo(path, options = {}) {
+  const token = localStorage.getItem("token");
+
+  const headers = {
+    "Content-Type": "application/json",
+    ...(options.headers || {}),
+    Authorization: token ? `Bearer ${token}` : ""
+  };
+
+  let res;
+  try {
+    res = await fetch(path, { ...options, headers });
+  } catch (err) {
+    console.error("❌ Errore rete:", err);
+    return null;
+  }
+
+  if (res.status === 401 || res.status === 403) {
+    localStorage.removeItem("token");
+    window.location.href = "login.html";
+    return null;
+  }
+
+  let json;
+  try {
+    json = await res.json();
+  } catch (e) {
+    console.error("❌ Risposta NON JSON da", path);
+    return null;
+  }
+
+  if (!json.success) {
+    console.warn("⚠️ Errore API:", json.error || json.raw);
+    return null;
+  }
+
+  return json.data;
+}
+
+/* =========================================================
+   AVVIO PROFILO
+========================================================= */
 document.addEventListener("critical-ready", async () => {
   const token = localStorage.getItem("token");
   if (!token) {
@@ -10,84 +57,65 @@ document.addEventListener("critical-ready", async () => {
     return;
   }
 
-  // 1. Caricamento dati utente (Popola sidebarEmail, sidebarUsername, sidebarCF)
-  try {
-    // ⭐ PATCH — fetch nativo
-    const res = await fetch("/api/utenti/me", {
-      method: "GET",
-      headers: { "Authorization": "Bearer " + token }
-    });
+  /* =========================================================
+     1. Caricamento dati utente
+  ========================================================== */
+  const data = await apiProfilo("/api/utenti/me", { method: "GET" });
 
-    const data = await res.json();
+  if (data && data.utente) {
+    const u = data.utente;
 
-    if (data.success && data.utente) {
-      const u = data.utente;
-      if (document.getElementById("sidebarEmail")) 
-          document.getElementById("sidebarEmail").textContent = u.email;
-      if (document.getElementById("sidebarUsername")) 
-          document.getElementById("sidebarUsername").textContent =
-            u.username || u.email.split('@')[0];
-      if (document.getElementById("sidebarCF")) 
-          document.getElementById("sidebarCF").textContent = u.codice_fiscale || "";
-    }
-  } catch (err) {
-    console.error("[PROFILO] Errore caricamento dati:", err);
+    const elEmail = document.getElementById("sidebarEmail");
+    const elUser = document.getElementById("sidebarUsername");
+    const elCF = document.getElementById("sidebarCF");
+
+    if (elEmail) elEmail.textContent = u.email;
+    if (elUser) elUser.textContent = u.username || u.email.split("@")[0];
+    if (elCF) elCF.textContent = u.codice_fiscale || "";
   }
 
-  // 2. Logica Cambio Email
+  /* =========================================================
+     2. Cambio Email
+  ========================================================== */
   document.getElementById("btnCambiaEmail")?.addEventListener("click", async () => {
     const nuova_email = document.getElementById("newEmail").value.trim();
     const password = document.getElementById("passwordEmail").value.trim();
     const msg = document.getElementById("msgEmail");
 
-    try {
-      // ⭐ PATCH — endpoint Java‑mode + fetch nativo
-      const res = await fetch("/api/utenti/cambiaEmail", {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": "Bearer " + token 
-        },
-        body: JSON.stringify({ nuova_email, password })
-      });
+    const res = await apiProfilo("/api/utenti/cambiaEmail", {
+      method: "POST",
+      body: JSON.stringify({ nuova_email, password })
+    });
 
-      const resData = await res.json();
-      msg.textContent = resData.success ? "Email aggiornata!" : (resData.error || "Errore.");
-
-      if (resData.success) setTimeout(() => location.reload(), 1000);
-
-    } catch (e) {
-      msg.textContent = "Errore di connessione.";
+    if (!res) {
+      msg.textContent = "Errore.";
+      return;
     }
+
+    msg.textContent = "Email aggiornata!";
+    setTimeout(() => location.reload(), 1000);
   });
 
-  // 3. Logica Cambio Password
+  /* =========================================================
+     3. Cambio Password
+  ========================================================== */
   document.getElementById("btnCambiaPassword")?.addEventListener("click", async () => {
     const vecchia_password = document.getElementById("oldPassword").value.trim();
     const nuova_password = document.getElementById("newPassword").value.trim();
     const msg = document.getElementById("msgPassword");
 
-    try {
-      // ⭐ PATCH — endpoint Java‑mode + fetch nativo
-      const res = await fetch("/api/utenti/cambiaPassword", {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": "Bearer " + token 
-        },
-        body: JSON.stringify({ vecchia_password, nuova_password })
-      });
+    const res = await apiProfilo("/api/utenti/cambiaPassword", {
+      method: "POST",
+      body: JSON.stringify({ vecchia_password, nuova_password })
+    });
 
-      const resData = await res.json();
-      msg.textContent = resData.success ? "Password aggiornata!" : (resData.error || "Errore.");
-
-      if (resData.success) {
-        document.getElementById("oldPassword").value = "";
-        document.getElementById("newPassword").value = "";
-      }
-
-    } catch (e) {
-      msg.textContent = "Errore di connessione.";
+    if (!res) {
+      msg.textContent = "Errore.";
+      return;
     }
+
+    msg.textContent = "Password aggiornata!";
+    document.getElementById("oldPassword").value = "";
+    document.getElementById("newPassword").value = "";
   });
 });
