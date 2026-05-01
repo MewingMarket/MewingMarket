@@ -1,5 +1,5 @@
 /* =========================================================
- * Entry point del server — versione DEFINITIVA (2027.951)
+ * Entry point del server — versione DEFINITIVA (2027.952)
  * =========================================================
  */
 
@@ -125,6 +125,15 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
   await wait(200);
   app.use(express.json());
   app.use(cookieParser());
+
+  // 🔵 UNIVERSAL JSON (deve stare PRIMA di router e prima dei moduli che rispondono)
+  try {
+    const universalJson = require("./middleware/universal-json.cjs");
+    app.use(universalJson);
+    log("🟩 universal-json.cjs attivato");
+  } catch (err) {
+    logErr("⚠️ universal-json.cjs non trovato:", err.message);
+  }
 
   let db;
   try {
