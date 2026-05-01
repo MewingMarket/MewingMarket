@@ -1,8 +1,5 @@
 /* =========================================================
-   CHATBOX — VERSIONE COMPLETA + PATCH 2027.900
-   - critical-ready
-   - fetch nativo
-   - API universali Java‑mode
+   CHATBOX — UNIVERSAL JSON PATCH 2027.970
 ========================================================= */
 
 document.addEventListener("critical-ready", () => {
@@ -35,6 +32,34 @@ document.addEventListener("critical-ready", () => {
   }
 
   /* =========================================================
+     WRAPPER UNIVERSALE CHAT (universal-json)
+  ========================================================== */
+  async function apiChat(path, options = {}) {
+    let res;
+    try {
+      res = await fetch(path, options);
+    } catch (err) {
+      console.error("❌ Errore rete:", err);
+      return null;
+    }
+
+    let json;
+    try {
+      json = await res.json();
+    } catch (e) {
+      console.error("❌ Risposta NON JSON da", path);
+      return null;
+    }
+
+    if (!json.success) {
+      console.warn("⚠️ Errore API:", json.error || json.raw);
+      return null;
+    }
+
+    return json.data;
+  }
+
+  /* =========================================================
      INVIO TESTO
   ========================================================== */
   let sending = false;
@@ -48,20 +73,13 @@ document.addEventListener("critical-ready", () => {
     addMessage(message, "user");
     chatInput.value = "";
 
-    try {
-      // ⭐ PATCH 2027 — nuovo endpoint Java‑mode
-      const res = await fetch("/api/chat/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message })
-      });
+    const data = await apiChat("/api/chat/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message })
+    });
 
-      const data = await res.json();
-      addMessage(data.reply || "Errore temporaneo.");
-
-    } catch (err) {
-      addMessage("Errore di connessione.", "bot");
-    }
+    addMessage(data?.reply || "Errore temporaneo.");
 
     sending = false;
   }
@@ -135,19 +153,12 @@ document.addEventListener("critical-ready", () => {
     const formData = new FormData();
     formData.append("audio", blob, "audio.webm");
 
-    try {
-      // ⭐ PATCH 2027 — nuovo endpoint Java‑mode
-      const res = await fetch("/api/chat/chatVoice", {
-        method: "POST",
-        body: formData
-      });
+    const data = await apiChat("/api/chat/chatVoice", {
+      method: "POST",
+      body: formData
+    });
 
-      const data = await res.json();
-      addMessage(data.reply || "Errore durante la trascrizione.");
-
-    } catch (err) {
-      addMessage("Errore di connessione durante il vocale.", "bot");
-    }
+    addMessage(data?.reply || "Errore durante la trascrizione.");
   }
 
   /* =========================================================
@@ -167,19 +178,12 @@ document.addEventListener("critical-ready", () => {
       const formData = new FormData();
       formData.append("file", file);
 
-      try {
-        // ⭐ PATCH 2027 — nuovo endpoint Java‑mode
-        const res = await fetch("/api/chat/chatAttachment", {
-          method: "POST",
-          body: formData
-        });
+      const data = await apiChat("/api/chat/chatAttachment", {
+        method: "POST",
+        body: formData
+      });
 
-        const data = await res.json();
-        addMessage(data.reply || "Allegato ricevuto.");
-
-      } catch (err) {
-        addMessage("Errore durante l'invio dell'allegato.", "bot");
-      }
+      addMessage(data?.reply || "Allegato ricevuto.");
     });
   }
 
