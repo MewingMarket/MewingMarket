@@ -1,5 +1,5 @@
 /* =========================================================
- * Entry point del server — SAFE MODE (2027.952‑SM)
+ * Entry point del server — SAFE MODE (2027.952‑SM-FINAL)
  * =========================================================
  */
 
@@ -157,7 +157,7 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
   }
 
   /* =========================================================
-   * COLD START (ATTIVO)
+   * COLD START (ATTIVO — VERSIONE SAFE)
    * =========================================================
    */
   try {
@@ -270,14 +270,11 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
     const PORT = process.env.PORT || 3000;
 
-    try {
-      require("./startup/cron-youtube.cjs")();
-    } catch (e) {
-      logErr("⚠️ cron-youtube non avviato");
-    }
+    // 🟧 CRON YOUTUBE DISATTIVATO IN SAFE MODE
+    log("🟧 cron-youtube DISATTIVATO (SAFE MODE)");
 
     app.listen(PORT, () => {
-      log(`🎉 SERVER LISTENING ON PORT ${PORT} (SAFE MODE)`);
+      log(`🎉 SERVER LISTENING ON PORT ${PORT} (SAFE MODE FINAL)`);
     });
   }
 
