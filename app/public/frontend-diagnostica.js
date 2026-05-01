@@ -1,11 +1,10 @@
 /* =========================================================
-   FRONTEND DIAGNOSTICA — Versione 2027.900 (UNIFICATA)
-   - Non blocca nulla
-   - Non modifica nulla
-   - Logga tutto in modo elegante
-   - Compatibile con fetch nativo
-   - Scanner sintassi JS
-   - Test API reali (PATCHATI)
+   FRONTEND DIAGNOSTICA — Versione 2027.950 (UNIFICATA)
+   Compatibile con:
+   - universal-json
+   - router universale 2027.901
+   - fetchCritico 2027
+   - diagnostica-loader.js 2027.70
 ========================================================= */
 
 console.log("🟦 Diagnostica frontend attiva");
@@ -14,7 +13,7 @@ console.log("🟦 Diagnostica frontend attiva");
    1) LOG EVENTI GLOBALI
 --------------------------------------------------------- */
 document.addEventListener("auth-ready", () => {
-  console.log("🟩 [DIAG] Evento: auth-ready", {
+  console.log("🟩 [DIAG] auth-ready", {
     isLogged: window.isLogged,
     isAdmin: window.isAdmin,
     email: window.userEmail,
@@ -23,23 +22,13 @@ document.addEventListener("auth-ready", () => {
 });
 
 document.addEventListener("auto-logout", () => {
-  console.log("🟥 [DIAG] Evento: auto-logout");
+  console.log("🟥 [DIAG] auto-logout");
 });
 
-document.addEventListener("header-loaded", () => {
-  console.log("🟩 [DIAG] header-loaded");
-});
-
-document.addEventListener("footer-loaded", () => {
-  console.log("🟩 [DIAG] footer-loaded");
-});
-
-document.addEventListener("head-loaded", () => {
-  console.log("🟩 [DIAG] head-loaded");
-});
-
-document.addEventListener("header-reset", () => {
-  console.log("🟧 [DIAG] header-reset");
+["header-loaded","footer-loaded","head-loaded","header-reset"].forEach(ev => {
+  document.addEventListener(ev, () => {
+    console.log(`🟩 [DIAG] ${ev}`);
+  });
 });
 
 /* ---------------------------------------------------------
@@ -47,17 +36,17 @@ document.addEventListener("header-reset", () => {
 --------------------------------------------------------- */
 (function patchLocation() {
   const original = window.location;
-  const originalAssign = original.assign;
-  const originalReplace = original.replace;
+  const assign = original.assign;
+  const replace = original.replace;
 
   window.location.assign = function(url) {
     console.log("🟦 [DIAG] Redirect (assign):", url);
-    return originalAssign.call(original, url);
+    return assign.call(original, url);
   };
 
   window.location.replace = function(url) {
     console.log("🟦 [DIAG] Redirect (replace):", url);
-    return originalReplace.call(original, url);
+    return replace.call(original, url);
   };
 })();
 
@@ -65,11 +54,11 @@ document.addEventListener("header-reset", () => {
    3) LOG apiFetch (se esiste)
 --------------------------------------------------------- */
 if (typeof window.apiFetch === "function") {
-  const originalApiFetch = window.apiFetch;
+  const original = window.apiFetch;
 
   window.apiFetch = async function(path, options) {
     console.log("🟦 [DIAG] apiFetch →", path, options);
-    const res = await originalApiFetch(path, options);
+    const res = await original(path, options);
     console.log("🟩 [DIAG] apiFetch OK →", path, res.status);
     return res;
   };
@@ -79,12 +68,12 @@ if (typeof window.apiFetch === "function") {
    4) LOG fetchCritico (se esiste)
 --------------------------------------------------------- */
 if (typeof window.fetchCritico === "function") {
-  const originalFetchCritico = window.fetchCritico;
+  const original = window.fetchCritico;
 
   window.fetchCritico = async function(path, options, cfg) {
     console.log("🟦 [DIAG] fetchCritico →", path, { options, cfg });
     try {
-      const res = await originalFetchCritico(path, options, cfg);
+      const res = await original(path, options, cfg);
       console.log("🟩 [DIAG] fetchCritico OK →", path, res.status);
       return res;
     } catch (err) {
@@ -98,21 +87,21 @@ if (typeof window.fetchCritico === "function") {
    5) LOG CARICAMENTO SCRIPT
 --------------------------------------------------------- */
 (function patchScriptAppend() {
-  const originalAppend = Element.prototype.appendChild;
+  const original = Element.prototype.appendChild;
 
   Element.prototype.appendChild = function(node) {
     if (node.tagName === "SCRIPT") {
       console.log("🟦 [DIAG] Script caricato:", node.src || "(inline)");
     }
-    return originalAppend.call(this, node);
+    return original.call(this, node);
   };
 })();
 
 /* =========================================================
-   6) SCANNER SINTASSI JS
+   6) SCANNER SINTASSI JS (compatibile universal-json)
 ========================================================= */
 (function () {
-  console.log("🟦 [FRONTEND DIAGNOSTICA] Scanner JS avviato");
+  console.log("🟦 [DIAG] Scanner JS avviato");
 
   const scripts = [...document.scripts].map(s => s.src).filter(Boolean);
 
@@ -120,6 +109,7 @@ if (typeof window.fetchCritico === "function") {
     fetch(src)
       .then(r => r.text())
       .then(code => {
+        if (!code || code.trim().startsWith("<")) return; // HTML → ignora
         try {
           new Function(code);
         } catch (err) {
@@ -131,7 +121,7 @@ if (typeof window.fetchCritico === "function") {
 })();
 
 /* =========================================================
-   7) TEST API REALI (PATCHATI 2027)
+   7) TEST API REALI (compatibili universal-json)
 ========================================================= */
 
 function testAPI(label, path) {
@@ -140,7 +130,6 @@ function testAPI(label, path) {
       console.log(`🟦 [DIAG] Test API via fetchCritico → ${path}`);
       return window.fetchCritico(path, {}, { retries: 1, backoffMs: 200 });
     }
-
     console.log(`🟦 [DIAG] Test API via fetch → ${path}`);
     return fetch(path);
   };
@@ -148,10 +137,14 @@ function testAPI(label, path) {
   doFetch()
     .then(r => {
       console.log(`🟩 Test API ${label} →`, r.status);
-      return r.json().catch(() => null);
+      return r.json().catch(() => ({ raw: "NON_JSON" }));
     })
     .then(data => {
-      console.log(`🟩 Risposta ${label}:`, data);
+      if (data && typeof data === "object") {
+        console.log(`🟩 Risposta ${label}:`, data);
+      } else {
+        console.warn(`🟥 Risposta NON JSON (${label})`, data);
+      }
     })
     .catch(err => console.error(`🔥 ERRORE ${label}:`, err));
 }
