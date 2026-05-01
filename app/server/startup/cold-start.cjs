@@ -1,12 +1,12 @@
 /**
  * =========================================================
- * COLD-START — Versione 2027.1
- * Warmup ottimizzato per Render:
- * - Precarica DB
- * - Precarica router universale
- * - Precarica index.cjs (tutte le funzioni)
- * - Precarica moduli critici (YouTube, logging)
- * - Evita cold start senza caricare router Express
+ * COLD-START — Versione 2027.1 SAFE MODE
+ * Warmup ottimizzato e sicuro per Render:
+ * - Precarica solo DB
+ * - Precarica router universale UNA sola volta
+ * - Evita moduli lenti (YouTube)
+ * - Evita fetch interni
+ * - Evita loop e OOM
  * =========================================================
  */
 
@@ -14,12 +14,12 @@ const path = require("path");
 
 module.exports = async function coldStart(app) {
   console.log("\n====================================");
-  console.log("❄️  COLD START — Warmup Render");
+  console.log("❄️  COLD START — SAFE MODE");
   console.log("====================================");
 
   try {
     /* =========================================================
-       1) WARMUP DB
+       1) WARMUP DB (sicuro)
     ========================================================== */
     console.log("🗄️  Warmup DB…");
     try {
@@ -31,8 +31,7 @@ module.exports = async function coldStart(app) {
     }
 
     /* =========================================================
-       2) WARMUP ROUTER UNIVERSALE
-       (carica index.cjs + router.cjs)
+       2) WARMUP ROUTER UNIVERSALE (UNA sola volta)
     ========================================================== */
     console.log("🛣️  Warmup router universale…");
     try {
@@ -44,43 +43,22 @@ module.exports = async function coldStart(app) {
     }
 
     /* =========================================================
-       3) WARMUP MODULI LENTI REALI
-       (solo moduli che fanno I/O o API esterne)
+       3) MODULI LENTI DISATTIVATI
+       (YouTube, logging esterno, ecc.)
     ========================================================== */
-    console.log("📦 Warmup moduli critici…");
-
-    const modulesToWarm = [
-      "services/youtube.cjs",
-      "services/logging.cjs"
-    ];
-
-    for (const m of modulesToWarm) {
-      try {
-        require(path.join(process.cwd(), "app/server", m));
-        console.log("   📌 Precaricato:", m);
-      } catch (err) {
-        console.log("   ⚠️  Skip modulo:", m, "-", err.message);
-      }
-    }
+    console.log("🟧 Moduli lenti disattivati in SAFE MODE");
 
     /* =========================================================
-       4) WARMUP HTTP (ping interno)
+       4) NESSUN FETCH INTERNO
+       (evita loop e OOM)
     ========================================================== */
-    console.log("🌐 Warmup HTTP interno…");
-
-    try {
-      const fetch = (await import("node-fetch")).default;
-      await fetch("http://localhost:" + process.env.PORT + "/health");
-      console.log("   ✅ Ping interno OK");
-    } catch (err) {
-      console.log("   ⚠️  Ping interno fallito (non blocca):", err.message);
-    }
+    console.log("🟧 Ping interno disattivato (SAFE MODE)");
 
     /* =========================================================
        COMPLETATO
     ========================================================== */
     console.log("====================================");
-    console.log("❄️  COLD START COMPLETATO");
+    console.log("❄️  COLD START COMPLETATO (SAFE MODE)");
     console.log("====================================\n");
 
   } catch (err) {
