@@ -1,9 +1,9 @@
 // ==========================================
-// DYNAMIC ADMIN LOADER — MewingMarket
-// Carica tutto ciò che NON è critico:
+// DYNAMIC ADMIN LOADER — SAFE MODE
+// Carica SOLO:
 // - anti-cache
 // - anti-service-worker
-// - diagnostica admin
+// NIENTE diagnostica admin
 // ==========================================
 
 (function () {
@@ -52,12 +52,9 @@
   })();
 
   // -------------------------------
-  // 3) DIAGNOSTICA ADMIN (DYNAMIC)
+  // 3) DIAGNOSTICA ADMIN (DISATTIVATA)
   // -------------------------------
-  try {
-    const s = document.createElement("script");
-    s.src = `/admin/admin-diagnostica.js?v=${VERSION}`;
-    document.head.appendChild(s);
-  } catch (e) {}
+  console.log("🟧 SAFE MODE: diagnostica admin DISATTIVATA");
+  // (Nessun caricamento di admin-diagnostica.js)
 
 })();
