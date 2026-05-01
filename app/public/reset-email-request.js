@@ -1,8 +1,6 @@
 /* =========================================================
-   RESET EMAIL REQUEST — Versione CF (PATCH 2027.900)
-   - critical-ready
-   - fetch nativo
-   - Endpoint Java‑mode
+   RESET EMAIL REQUEST — UNIVERSAL JSON PATCH 2027.970
+   Versione CF (ZERO-INPUT)
 ========================================================= */
 
 console.log("[RESET-EMAIL-REQ] Versione CF caricata");
@@ -11,6 +9,41 @@ document.addEventListener("critical-ready", () => {
   const btnResetEmail = document.getElementById("btnResetEmail");
   const msgResetEmail = document.getElementById("msgResetEmail");
 
+  /* =========================================================
+     WRAPPER UNIVERSALE (universal-json)
+  ========================================================== */
+  async function apiResetEmailRequest(payload) {
+    let res;
+    try {
+      res = await fetch("/api/utenti/resetEmailRequest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+    } catch (err) {
+      console.error("❌ Errore rete:", err);
+      return null;
+    }
+
+    let json;
+    try {
+      json = await res.json();
+    } catch (e) {
+      console.error("❌ Risposta NON JSON da /api/utenti/resetEmailRequest");
+      return null;
+    }
+
+    if (!json.success) {
+      console.warn("⚠️ Errore API:", json.error || json.raw);
+      return null;
+    }
+
+    return json.data;
+  }
+
+  /* =========================================================
+     CLICK RESET EMAIL REQUEST
+  ========================================================== */
   btnResetEmail?.addEventListener("click", async () => {
     const msg = msgResetEmail;
     if (!msg) return;
@@ -29,37 +62,21 @@ document.addEventListener("critical-ready", () => {
     msg.textContent = "Invio richiesta in corso...";
     msg.className = "msg";
 
-    try {
-      console.log("[RESET-EMAIL-REQ] Invio richiesta con CF:", codice_fiscale);
+    console.log("[RESET-EMAIL-REQ] Invio richiesta con CF:", codice_fiscale);
 
-      // ⭐ PATCH — fetch nativo + endpoint Java‑mode
-      const res = await fetch("/api/utenti/resetEmailRequest", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ codice_fiscale })
-      });
+    const data = await apiResetEmailRequest({ codice_fiscale });
 
-      const data = await res.json().catch(() => ({}));
-      console.log("[RESET-EMAIL-REQ] Risposta:", data);
-
-      if (data.success) {
-
-        // 🔥 ZERO-INPUT: salvo il CF per la pagina di conferma
-        localStorage.setItem("cf_reset", codice_fiscale);
-
-        window.location.href = "reset-email-confirm.html";
-        return;
-      }
-
-      msg.textContent = data.error || "Errore durante la richiesta di reset email.";
+    if (!data) {
+      msg.textContent = "Errore durante la richiesta di reset email.";
       msg.className = "err";
-
-    } catch (err) {
-      console.error("[RESET-EMAIL-REQ] Errore:", err);
-      msg.textContent = "Errore di connessione.";
-      msg.className = "err";
-    } finally {
       btnResetEmail.disabled = false;
+      return;
     }
+
+    /* =========================================================
+       SUCCESSO — ZERO-INPUT
+    ========================================================== */
+    localStorage.setItem("cf_reset", codice_fiscale);
+    window.location.href = "reset-email-confirm.html";
   });
 });
