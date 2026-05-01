@@ -72,5 +72,7 @@ module.exports = {
   },
 diagnostica: {
   ...R("routes/diagnostica-fetch.cjs")
+}, generico: {
+  ...R("routes/generico.cjs")
 },
 };
