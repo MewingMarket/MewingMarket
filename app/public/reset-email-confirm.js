@@ -1,20 +1,52 @@
 /* =========================================================
-   RESET EMAIL CONFIRM — Versione ZERO-INPUT (PATCH 2027.900)
-   - critical-ready
-   - fetch nativo
-   - Endpoint Java‑mode
+   RESET EMAIL CONFIRM — UNIVERSAL JSON PATCH 2027.970
+   Versione ZERO-INPUT
 ========================================================= */
 
 console.log("[RESET-EMAIL-CONFIRM] Versione ZERO-INPUT caricata");
 
 document.addEventListener("critical-ready", () => {
   const btnConfirmEmail = document.getElementById("btnConfirmEmail");
-  const msgConfirmEmail = document.getElementById("msgConfirmEmail");
+  const msg = document.getElementById("msgConfirmEmail");
 
+  /* =========================================================
+     WRAPPER UNIVERSALE (universal-json)
+  ========================================================== */
+  async function apiResetEmail(payload) {
+    let res;
+    try {
+      res = await fetch("/api/utenti/resetEmailConfirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+    } catch (err) {
+      console.error("❌ Errore rete:", err);
+      return null;
+    }
+
+    let json;
+    try {
+      json = await res.json();
+    } catch (e) {
+      console.error("❌ Risposta NON JSON da /api/utenti/resetEmailConfirm");
+      return null;
+    }
+
+    if (!json.success) {
+      console.warn("⚠️ Errore API:", json.error || json.raw);
+      return null;
+    }
+
+    return json.data;
+  }
+
+  /* =========================================================
+     CLICK CONFERMA EMAIL
+  ========================================================== */
   btnConfirmEmail?.addEventListener("click", async () => {
     const nuova_email = document.getElementById("newEmail")?.value.trim().toLowerCase();
-    const codice_fiscale = localStorage.getItem("cf_reset"); // ZERO-INPUT
-    const msg = msgConfirmEmail;
+    const codice_fiscale = localStorage.getItem("cf_reset");
 
     if (!msg) return;
 
@@ -39,46 +71,28 @@ document.addEventListener("critical-ready", () => {
     if (btnConfirmEmail.disabled) return;
     btnConfirmEmail.disabled = true;
 
-    try {
-      console.log("[RESET-EMAIL-CONFIRM] Invio conferma ZERO-INPUT…");
+    console.log("[RESET-EMAIL-CONFIRM] Invio conferma ZERO-INPUT…");
 
-      // ⭐ PATCH — fetch nativo + endpoint Java‑mode
-      const res = await fetch("/api/utenti/resetEmailConfirm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nuova_email, codice_fiscale })
-      });
+    const data = await apiResetEmail({ nuova_email, codice_fiscale });
 
-      const data = await res.json().catch(() => ({}));
-      console.log("[RESET-EMAIL-CONFIRM] Risposta:", data);
-
-      if (data.success) {
-
-        // 🔥 PULIZIA CF
-        localStorage.removeItem("cf_reset");
-
-        // 🔥 FIX CHECKOUT — salviamo token + email + sessionState
-        if (data.token && data.email) {
-          localStorage.setItem("token", data.token);
-          localStorage.setItem("email", data.email);
-          localStorage.setItem("sessionState", "1");
-        } else {
-          localStorage.setItem("sessionState", "1");
-        }
-
-        window.location.href = "login.html";
-        return;
-      }
-
-      msg.textContent = data.error || "Errore durante la conferma del cambio email.";
+    if (!data) {
+      msg.textContent = "Errore durante la conferma del cambio email.";
       msg.className = "err";
-
-    } catch (err) {
-      console.error("[RESET-EMAIL-CONFIRM] Errore:", err);
-      msg.textContent = "Errore di connessione.";
-      msg.className = "err";
-    } finally {
       btnConfirmEmail.disabled = false;
+      return;
     }
+
+    /* =========================================================
+       SUCCESSO — SALVATAGGIO SESSIONE
+    ========================================================== */
+    localStorage.removeItem("cf_reset");
+
+    if (data.token && data.email) {
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("email", data.email);
+    }
+
+    localStorage.setItem("sessionState", "1");
+    window.location.href = "login.html";
   });
 });
