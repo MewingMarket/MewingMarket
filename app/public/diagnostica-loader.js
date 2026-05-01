@@ -1,16 +1,25 @@
 // =========================================================
-// DIAGNOSTICA FETCH — intercetta tutte le fetch del frontend
+// DIAGNOSTICA FETCH — Versione 2027.970
+// Compatibile con universal-json + router universale
+// Intercetta SOLO /api/, non tocca file statici
+// Non modifica il comportamento di fetch()
 // =========================================================
 
 (function() {
   const originalFetch = window.fetch;
 
   window.fetch = async function(url, options = {}) {
+    const isApi = typeof url === "string" && url.startsWith("/api/");
     const start = performance.now();
 
     try {
       const res = await originalFetch(url, options);
-      const text = await res.text();
+
+      // Se NON è un'API → non toccare nulla
+      if (!isApi) return res;
+
+      const clone = res.clone();
+      const text = await clone.text();
 
       let json = null;
       let valid = true;
@@ -22,41 +31,21 @@
       }
 
       if (!valid) {
-        console.error("❌ FETCH NON JSON:", {
+        console.error("❌ [DIAG] API NON JSON:", {
           url,
           status: res.status,
           contentType: res.headers.get("Content-Type"),
           body: text.slice(0, 300)
         });
-
-        return {
-          ok: false,
-          status: res.status,
-          json: async () => ({
-            success: false,
-            error: "Formato non valido dal server",
-            raw: text.slice(0, 500)
-          })
-        };
+      } else {
+        console.log("🟩 [DIAG] API JSON OK:", url, json);
       }
 
-      return {
-        ok: res.ok,
-        status: res.status,
-        json: async () => json
-      };
+      return res;
 
     } catch (err) {
-      console.error("❌ FETCH ERROR:", url, err);
-      return {
-        ok: false,
-        status: 500,
-        json: async () => ({
-          success: false,
-          error: "Errore di rete",
-          details: err.message
-        })
-      };
+      console.error("🔥 [DIAG] FETCH ERROR:", url, err);
+      throw err;
     }
   };
 })();
