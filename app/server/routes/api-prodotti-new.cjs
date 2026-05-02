@@ -17,7 +17,8 @@ async function getProdotti(req) {
   console.log("[DEBUG prodotti] getProdotti()");
 
   try {
-    const prodotti = await catalogo.getAllProducts();
+    // ❗ catalogo.getAllProducts è SINCRONA → niente await
+    const prodotti = catalogo.getAllProducts();
     return { success: true, prodotti };
   } catch (err) {
     console.error("❌ getProdotti ERROR:", err);
@@ -32,7 +33,8 @@ async function getProdottoById(req) {
   console.log("[DEBUG prodotti] getProdottoById()", req.params);
 
   try {
-    const prodotto = await catalogo.getProductById(req.params.id);
+    // ❗ SINCRONO → niente await
+    const prodotto = catalogo.getProductById(req.params.id);
     if (!prodotto) {
       return { success: false, error: "Prodotto non trovato" };
     }
@@ -56,9 +58,10 @@ async function salvaProdotto(req) {
       return { success: false, error: "Titolo e prezzo obbligatori" };
     }
 
-    const prodotto = await catalogo.saveProduct(data);
+    // ❗ SINCRONO → niente await
+    const prodotto = catalogo.saveProduct(data);
 
-    // MIRROR JSON
+    // MIRROR JSON (questo è async → ok)
     try {
       await jsonGen.exportProducts();
       await jsonGen.exportCategories();
@@ -109,7 +112,8 @@ async function eliminaProdotto(req) {
   console.log("[DEBUG prodotti] eliminaProdotto()", req.params);
 
   try {
-    const ok = await catalogo.deleteProduct(req.params.id);
+    // ❗ SINCRONO → niente await
+    const ok = catalogo.deleteProduct(req.params.id);
     if (!ok) {
       return { success: false, error: "Prodotto non trovato" };
     }
@@ -133,7 +137,8 @@ async function getProductsPublic(req) {
   console.log("[DEBUG prodotti] getProductsPublic()");
 
   try {
-    const prodotti = await catalogo.getAllProducts();
+    // ❗ SINCRONO → niente await
+    const prodotti = catalogo.getAllProducts();
     return { success: true, prodotti };
   } catch (err) {
     console.error("❌ getProductsPublic ERROR:", err);
@@ -148,7 +153,8 @@ async function getProductPublicById(req) {
   console.log("[DEBUG prodotti] getProductPublicById()", req.params);
 
   try {
-    const prodotto = await catalogo.getProductById(req.params.id);
+    // ❗ SINCRONO → niente await
+    const prodotto = catalogo.getProductById(req.params.id);
     if (!prodotto) {
       return { success: false, error: "Non trovato" };
     }
@@ -161,7 +167,6 @@ async function getProductPublicById(req) {
 
 /* =========================================================
    ALIAS COMPATIBILITÀ FRONTEND
-   (vecchi endpoint ancora usati)
 ========================================================= */
 
 async function getProducts(req) {
