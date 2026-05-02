@@ -1,51 +1,64 @@
 // =========================================================
-// LOADER PAGINE ADMIN — Versione 2028.A
-// JS caricati solo se l'utente è admin
+// LOADER PAGINE ADMIN — Versione 2028.A + DEBUG
 // =========================================================
 
 (function () {
 
   const VERSION = "20280412";
 
+  function debug(msg, data = null) {
+    console.log(`🟥 [ADMIN-DEBUG] ${msg}`, data || "");
+  }
+
   function load(src) {
+    debug("Caricamento script richiesto", src);
     return new Promise(r => {
       const s = document.createElement("script");
       s.src = `${src}?v=${VERSION}`;
       s.defer = true;
-      s.onload = r;
-      s.onerror = r;
+      s.onload = () => { debug("Script caricato", src); r(); };
+      s.onerror = () => { debug("ERRORE script", src); r(); };
       document.body.appendChild(s);
     });
   }
 
   function pageIsOpen(sel) {
-    return document.querySelector(sel) !== null;
+    const exists = document.querySelector(sel) !== null;
+    debug(`Controllo HTML selector="${sel}" → ${exists}`);
+    return exists;
   }
 
   async function run() {
-    if (!window.isAdmin) return;
+    debug("isAdmin", window.isAdmin);
+
+    if (!window.isAdmin) {
+      debug("ADMIN loader ignorato", "utente NON admin");
+      return;
+    }
 
     const p = window.location.pathname;
+    debug("Pagina rilevata", p);
 
-    if (p.endsWith("/admin/dashboard-admin-profilo.html") && pageIsOpen("main"))
-      await load("/admin/dashboard-admin.js");
+    const adminPages = [
+      ["/admin/dashboard-admin-profilo.html", "/admin/dashboard-admin.js"],
+      ["/admin/dashboard-admin-vendite-ordini.html", "/admin/dashboard-vendite-ordini.js"],
+      ["/admin/admin-prodotti.html", "/admin/admin-prodotti.js"],
+      ["/admin/feedback.html", "/admin/feedback.js"],
+      ["/admin/utenti.html", "/admin/utenti.js"]
+    ];
 
-    if (p.endsWith("/admin/dashboard-admin-vendite-ordini.html") && pageIsOpen("main"))
-      await load("/admin/dashboard-vendite-ordini.js");
+    for (const [page, script] of adminPages) {
+      if (p.endsWith(page)) {
+        if (pageIsOpen("main")) await load(script);
+        else debug("JS NON caricato", { motivo: "HTML mancante", script });
+      }
+    }
 
-    if (p.endsWith("/admin/admin-prodotti.html") && pageIsOpen("main"))
-      await load("/admin/admin-prodotti.js");
-
-    if (p.endsWith("/admin/feedback.html") && pageIsOpen("main"))
-      await load("/admin/feedback.js");
-
-    if (p.endsWith("/admin/utenti.html") && pageIsOpen("main"))
-      await load("/admin/utenti.js");
-
-    console.log("[PAGE-LOADER] Admin JS loaded");
+    debug("ADMIN loader completato");
   }
 
   document.addEventListener("critical-ready", () => {
+    debug("critical-ready ricevuto");
     setTimeout(() => requestAnimationFrame(run), 50);
   });
 
