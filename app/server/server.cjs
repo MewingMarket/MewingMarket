@@ -1,5 +1,5 @@
 /* =========================================================
- * SERVER — SAFE MODE FINAL (2027.980)
+ * SERVER — SAFE MODE FINAL (2027.980) — PATCH 2027.981
  * =========================================================
  */
 
@@ -18,52 +18,26 @@ function log(...a){ console.log("[LOG]", ...a); }
 function logErr(...a){ console.error("[ERR]", ...a); }
 
 /* =========================================================
- * 0) STATICHE + /api/ping PRIMA DI TUTTO
+ * 0) /api/ping SEMPRE PRIMA
  * =========================================================
  */
-
 app.get("/api/ping", (req,res)=>res.json({ok:true,ts:Date.now()}));
 
-const PUBLIC_DIR = path.resolve("app/public");
-app.use(express.static(PUBLIC_DIR));
-app.use("/admin", express.static(path.resolve("app/public/admin")));
-app.get("/admin/login",(req,res)=>res.sendFile(path.resolve("app/public/admin/admin-login.html")));
-
 /* =========================================================
- * 1) FIX JS STATIC (Render)
- * =========================================================
- */
-const PUBLIC_JS = path.join(__dirname, "../public");
-app.use((req,res,next)=>{
-  if(!req.path.endsWith(".js") && !req.url.includes(".js?")) return next();
-  const clean = req.path.split("?")[0];
-  const file = path.join(PUBLIC_JS, path.basename(clean));
-  if(fs.existsSync(file)){
-    res.setHeader("Content-Type","application/javascript; charset=utf-8");
-    res.setHeader("X-Content-Type-Options","nosniff");
-    return res.sendFile(file);
-  }
-  next();
-});
-
-/* =========================================================
- * 2) LISTEN SUBITO (Render vuole la porta aperta)
+ * 1) LISTEN SUBITO (Render richiede porta aperta)
  * =========================================================
  */
 const PORT = process.env.PORT || 10000;
 
 app.listen(PORT, () => {
   log(`🎉 SERVER LISTENING on ${PORT} (SAFE MODE)`);
-
-  // Avvio boot in background
   bootInBackground();
 });
 
 /* =========================================================
- * 3) BOOT COMPLETO IN BACKGROUND (NON BLOCCA MAI)
+ * 2) BOOT COMPLETO IN BACKGROUND
  * =========================================================
  */
-
 async function bootInBackground(){
 
   try {
@@ -91,7 +65,7 @@ async function bootInBackground(){
 
     if(!db){
       logErr("DB non disponibile — SAFE MODE statico");
-      return; // NON chiudere il server
+      return;
     }
 
     app.set("db", db);
@@ -109,12 +83,47 @@ async function bootInBackground(){
     log("🟧 diagnostica DISATTIVATA");
     log("🟧 rewriteScripts DISATTIVATO");
 
+    /* =========================================================
+     * 🔥 PATCH CRITICA 2027.981
+     * Router API PRIMA delle statiche
+     * =========================================================
+     */
     log(">> BOOT: router API");
     try {
       const router = require("./router.cjs");
       app.use("/api", router);
     } catch(e){ logErr("router:", e); }
 
+    /* =========================================================
+     * STATICHE DOPO IL ROUTER (PATCH)
+     * =========================================================
+     */
+    const PUBLIC_DIR = path.resolve("app/public");
+    app.use(express.static(PUBLIC_DIR));
+    app.use("/admin", express.static(path.resolve("app/public/admin")));
+    app.get("/admin/login",(req,res)=>res.sendFile(path.resolve("app/public/admin/admin-login.html")));
+
+    /* =========================================================
+     * FIX JS STATIC (Render)
+     * =========================================================
+     */
+    const PUBLIC_JS = path.join(__dirname, "../public");
+    app.use((req,res,next)=>{
+      if(!req.path.endsWith(".js") && !req.url.includes(".js?")) return next();
+      const clean = req.path.split("?")[0];
+      const file = path.join(PUBLIC_JS, path.basename(clean));
+      if(fs.existsSync(file)){
+        res.setHeader("Content-Type","application/javascript; charset=utf-8");
+        res.setHeader("X-Content-Type-Options","nosniff");
+        return res.sendFile(file);
+      }
+      next();
+    });
+
+    /* =========================================================
+     * COLD START + BOOTSTRAP
+     * =========================================================
+     */
     log(">> BOOT: cold-start");
     try {
       const cold = require("./startup/cold-start.cjs");
@@ -135,7 +144,7 @@ async function bootInBackground(){
 }
 
 /* =========================================================
- * 4) /data persistente
+ * 3) /data persistente
  * =========================================================
  */
 const DATA_BACKUP = path.join(process.cwd(), "app/data");
