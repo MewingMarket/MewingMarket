@@ -18,19 +18,23 @@
     });
   }
 
+  function pageIsOpen(sel) {
+    return document.querySelector(sel) !== null;
+  }
+
   async function run() {
     if (!window.isLogged) return;
 
     const p = window.location.pathname;
 
-    if (p.endsWith("/dashboard.html")) await load("/dashboard.js");
-    if (p.endsWith("/profilo.html")) await load("/profilo.js");
-    if (p.endsWith("/ordini.html")) await load("/ordini.js");
-    if (p.endsWith("/download.html")) await load("/download.js");
-    if (p.endsWith("/recensioni.html")) await load("/recensioni.js");
-    if (p.endsWith("/rimborso.html")) await load("/rimborso.js");
-    if (p.endsWith("/checkout.html")) await load("/checkout.js");
-    if (p.endsWith("/elimina-account.html")) await load("/elimina-account.js");
+    if (p.endsWith("/dashboard.html") && pageIsOpen("main")) await load("/dashboard.js");
+    if (p.endsWith("/profilo.html") && pageIsOpen("main")) await load("/profilo.js");
+    if (p.endsWith("/ordini.html") && pageIsOpen("main")) await load("/ordini.js");
+    if (p.endsWith("/download.html") && pageIsOpen("main")) await load("/download.js");
+    if (p.endsWith("/recensioni.html") && pageIsOpen("main")) await load("/recensioni.js");
+    if (p.endsWith("/rimborso.html") && pageIsOpen("main")) await load("/rimborso.js");
+    if (p.endsWith("/checkout.html") && pageIsOpen("main")) await load("/checkout.js");
+    if (p.endsWith("/elimina-account.html") && pageIsOpen("main")) await load("/elimina-account.js");
 
     console.log("[PAGE-LOADER] User JS loaded");
   }
