@@ -1,5 +1,5 @@
 // =========================================================
-// LOADER PAGINE ADMIN — Versione 2028.B UNIVERSALE
+// LOADER PAGINE ADMIN — Versione 2028.B UNIVERSALE (PATCH GET)
 // Nessuna lista, nessuna mappatura, nessuna convenzione obbligatoria
 // =========================================================
 
@@ -45,16 +45,18 @@
       `/admin/${base}-controller.js`
     ];
 
-    // 3) Prova a caricare il primo JS che esiste
+    // 3) Prova a caricare il primo JS che esiste (PATCH: GET invece di HEAD)
     for (const js of candidates) {
       try {
-        const res = await fetch(js, { method: "HEAD" });
+        const res = await fetch(js, { method: "GET", cache: "no-store" });
         if (res.ok) {
           await load(js);
           debug("JS associato caricato", js);
           return;
         }
-      } catch {}
+      } catch (e) {
+        debug("Errore fetch GET", { js, e });
+      }
     }
 
     debug("Nessun JS trovato per questa pagina");
