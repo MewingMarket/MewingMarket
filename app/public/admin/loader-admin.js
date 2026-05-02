@@ -92,17 +92,18 @@ async function startAdminLoader() {
   console.log("[ADMIN] critical-ready (2028.A SAFE)");
 
   // 7) CARICAMENTO DEI 3 LOADER PAGINE
+
   // GLOBAL — sempre
   setTimeout(() => {
     loadScriptSerial(`/loader-pagine-global.js`, "body")
       .then(() => console.log("[ADMIN] loader-pagine-global.js caricato"));
   }, 30);
 
-  // USER — solo se loggato
+  // USER — usa il tuo nome reale: loader-pagine.user.js
   if (window.isLogged === true) {
     setTimeout(() => {
-      loadScriptSerial(`/loader-pagine-user.js`, "body")
-        .then(() => console.log("[ADMIN] loader-pagine-user.js caricato"));
+      loadScriptSerial(`/loader-pagine.user.js`, "body")
+        .then(() => console.log("[ADMIN] loader-pagine.user.js caricato"));
     }, 60);
   }
 
