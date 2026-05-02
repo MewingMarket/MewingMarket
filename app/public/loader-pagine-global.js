@@ -1,5 +1,6 @@
 // =========================================================
-// LOADER PAGINE GLOBAL — Versione 2028.A + DEBUG
+// LOADER PAGINE GLOBAL — Versione 2028.B UNIVERSALE
+// Nessuna lista, nessuna mappatura, nessuna convenzione
 // =========================================================
 
 (function () {
@@ -11,7 +12,7 @@
   }
 
   function load(src) {
-    debug("Caricamento script richiesto", src);
+    debug("Caricamento script", src);
     return new Promise(r => {
       const s = document.createElement("script");
       s.src = `${src}?v=${VERSION}`;
@@ -22,93 +23,37 @@
     });
   }
 
-  function pageIsOpen(sel) {
-    const exists = document.querySelector(sel) !== null;
-    debug(`Controllo HTML selector="${sel}" → ${exists}`);
-    return exists;
-  }
-
   async function run() {
-    const p = window.location.pathname;
-    debug("Pagina rilevata", p);
 
-    // INDEX
-    if (p === "/" || p.endsWith("/index.html")) {
-      if (pageIsOpen("main")) await load("/index.js");
-      else debug("JS NON caricato", { motivo: "HTML mancante", script: "/index.js" });
-    }
+    const path = window.location.pathname;
+    debug("Pagina rilevata", path);
 
-    // CATALOGO
-    if (p.endsWith("/catalogo.html")) {
-      if (pageIsOpen("main")) await load("/catalogo.js");
-      else debug("JS NON caricato", { motivo: "HTML mancante", script: "/catalogo.js" });
-    }
+    // 1) Estrai nome base della pagina
+    let base = path.split("/").pop() || "index.html";
+    base = base.replace(".html", "");
+    debug("Nome base HTML", base);
 
-    // PRODOTTO
-    if (p.endsWith("/prodotto.html")) {
-      if (pageIsOpen("main")) await load("/prodotto.js");
-      else debug("JS NON caricato", { motivo: "HTML mancante", script: "/prodotto.js" });
-    }
-
-    // LOGIN / REGISTRAZIONE / RESET
-    const formPages = [
-      ["/login.html", "/login.js"],
-      ["/registrazione.html", "/registrazione.js"],
-      ["/reset-password.html", "/reset-password-request.js"],
-      ["/reset-password-confirm.html", "/reset-password-confirm.js"],
-      ["/reset-email.html", "/reset-email-request.js"],
-      ["/reset-email-confirm.html", "/reset-email-confirm.js"]
+    // 2) Costruisci possibili JS compatibili
+    const candidates = [
+      `/${base}.js`,
+      `/${base}-page.js`,
+      `/${base}-controller.js`,
+      `/${base}-global.js`
     ];
 
-    for (const [page, script] of formPages) {
-      if (p.endsWith(page)) {
-        if (pageIsOpen("form")) await load(script);
-        else debug("JS NON caricato", { motivo: "HTML mancante", script });
-      }
+    // 3) Prova a caricare il primo JS che esiste
+    for (const js of candidates) {
+      try {
+        const res = await fetch(js, { method: "HEAD" });
+        if (res.ok) {
+          await load(js);
+          debug("JS associato caricato", js);
+          return;
+        }
+      } catch {}
     }
 
-    // REGOLAMENTO / FAQ / GUIDE
-    const infoPages = [
-      ["/regolamento.html", "/regole.js"],
-      ["/FAQ.html", "/FAQ.js"],
-      ["/guide.html", "/guide.js"]
-    ];
-
-    for (const [page, script] of infoPages) {
-      if (p.endsWith(page)) {
-        if (pageIsOpen("main")) await load(script);
-        else debug("JS NON caricato", { motivo: "HTML mancante", script });
-      }
-    }
-
-    // ASSISTENZA
-    if (p.endsWith("/assistenza.html")) {
-      if (pageIsOpen("#assistenzaForm")) {
-        await load("/assistenza.js");
-        await load("/chat.js");
-        await load("/premium.js");
-      } else {
-        debug("JS NON caricato", { motivo: "HTML mancante", script: "assistenza.js" });
-      }
-    }
-
-    // FLUSSI GLOBALI
-    const globalFlows = [
-      ["/iscrizione.html", "/iscrizione.js"],
-      ["/disiscriviti.html", "/disiscrizione.js"],
-      ["/cancel.html", "/cancel.js"],
-      ["/thankyou.html", "/thankyou.js"],
-      ["/top-recensioni.html", "/top-recensioni.js"]
-    ];
-
-    for (const [page, script] of globalFlows) {
-      if (p.endsWith(page)) {
-        if (pageIsOpen("main") || pageIsOpen("form")) await load(script);
-        else debug("JS NON caricato", { motivo: "HTML mancante", script });
-      }
-    }
-
-    debug("GLOBAL loader completato");
+    debug("Nessun JS trovato per questa pagina");
   }
 
   document.addEventListener("critical-ready", () => {
