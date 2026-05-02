@@ -1,5 +1,6 @@
 // =========================================================
-// LOADER PAGINE ADMIN — Versione 2028.A + DEBUG
+// LOADER PAGINE ADMIN — Versione 2028.B UNIVERSALE
+// Nessuna lista, nessuna mappatura, nessuna convenzione obbligatoria
 // =========================================================
 
 (function () {
@@ -11,7 +12,7 @@
   }
 
   function load(src) {
-    debug("Caricamento script richiesto", src);
+    debug("Caricamento script", src);
     return new Promise(r => {
       const s = document.createElement("script");
       s.src = `${src}?v=${VERSION}`;
@@ -22,39 +23,41 @@
     });
   }
 
-  function pageIsOpen(sel) {
-    const exists = document.querySelector(sel) !== null;
-    debug(`Controllo HTML selector="${sel}" → ${exists}`);
-    return exists;
-  }
-
   async function run() {
-    debug("isAdmin", window.isAdmin);
 
     if (!window.isAdmin) {
-      debug("ADMIN loader ignorato", "utente NON admin");
+      debug("Ignorato: utente NON admin");
       return;
     }
 
-    const p = window.location.pathname;
-    debug("Pagina rilevata", p);
+    const path = window.location.pathname;  
+    debug("Pagina rilevata", path);
 
-    const adminPages = [
-      ["/admin/dashboard-admin-profilo.html", "/admin/dashboard-admin.js"],
-      ["/admin/dashboard-admin-vendite-ordini.html", "/admin/dashboard-vendite-ordini.js"],
-      ["/admin/admin-prodotti.html", "/admin/admin-prodotti.js"],
-      ["/admin/feedback.html", "/admin/feedback.js"],
-      ["/admin/utenti.html", "/admin/utenti.js"]
+    // 1) Estrai nome base della pagina
+    const base = path.split("/").pop().replace(".html", "");
+    debug("Nome base HTML", base);
+
+    // 2) Costruisci possibili JS compatibili
+    const candidates = [
+      `/admin/${base}.js`,
+      `/admin/${base}-admin.js`,
+      `/admin/${base}-page.js`,
+      `/admin/${base}-controller.js`
     ];
 
-    for (const [page, script] of adminPages) {
-      if (p.endsWith(page)) {
-        if (pageIsOpen("main")) await load(script);
-        else debug("JS NON caricato", { motivo: "HTML mancante", script });
-      }
+    // 3) Prova a caricare il primo JS che esiste
+    for (const js of candidates) {
+      try {
+        const res = await fetch(js, { method: "HEAD" });
+        if (res.ok) {
+          await load(js);
+          debug("JS associato caricato", js);
+          return;
+        }
+      } catch {}
     }
 
-    debug("ADMIN loader completato");
+    debug("Nessun JS trovato per questa pagina");
   }
 
   document.addEventListener("critical-ready", () => {
