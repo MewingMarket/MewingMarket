@@ -181,12 +181,12 @@
           .then(() => console.log("[CRITICAL] loader-pagine-global.js caricato"));
       }, 30);
 
-      // 2) USER — solo se loggato
+      // 2) USER — usa il tuo nome reale: loader-pagine.user.js
       document.addEventListener("auth-ready", () => {
         if (window.isLogged === true) {
           setTimeout(() => {
-            loadScriptSerial("/loader-pagine-user.js", "body")
-              .then(() => console.log("[CRITICAL] loader-pagine-user.js caricato"));
+            loadScriptSerial("/loader-pagine.user.js", "body")
+              .then(() => console.log("[CRITICAL] loader-pagine.user.js caricato"));
           }, 60);
         }
       });
