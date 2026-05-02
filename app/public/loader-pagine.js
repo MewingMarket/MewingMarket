@@ -1,6 +1,7 @@
 // =========================================================
-// LOADER PAGINE — Versione 2028.A
-// Carica i JS specifici della pagina in modo seriale
+// LOADER PAGINE — Versione 2028.A (SAFE ORDERED)
+// Carica i JS specifici della pagina SOLO dopo critical-ready
+// con debounce anti-race per Android
 // =========================================================
 
 (function () {
@@ -41,11 +42,13 @@
     if (path.endsWith("/guide.html")) await loadScript("/guide.js");
     if (path.endsWith("/recensioni.html")) await loadScript("/recensioni.js");
     if (path.endsWith("/dashboard.html")) await loadScript("/dashboard.js");
+
     if (path.endsWith("/assistenza.html")) {
       await loadScript("/assistenza.js");
       await loadScript("/chat.js");
       await loadScript("/premium.js");
     }
+
     if (path.endsWith("/iscrizione.html")) await loadScript("/iscrizione.js");
     if (path.endsWith("/reset-password.html")) await loadScript("/reset-password-request.js");
     if (path.endsWith("/ordini.html")) await loadScript("/ordini.js");
@@ -63,8 +66,16 @@
     console.log("[PAGE-LOADER] JS pagina caricati");
   }
 
+  // =========================================================
+  // SAFE MODE: aspetta critical-ready + debounce
+  // =========================================================
   document.addEventListener("critical-ready", () => {
-    loadPageScripts();
+    // Android fix: evita race condition
+    setTimeout(() => {
+      requestAnimationFrame(() => {
+        loadPageScripts();
+      });
+    }, 50);
   });
 
 })();
