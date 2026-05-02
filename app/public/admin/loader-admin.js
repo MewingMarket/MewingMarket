@@ -1,7 +1,7 @@
 // =========================================================
-// ADMIN LOADER — Versione 2028.A (SAFE MODE)
+// ADMIN LOADER — Versione 2028.A (SAFE MODE, PAGINE)
 // Anti 499/502 — Nessun introspect, nessuna diagnostica
-// Caricamento seriale e attesa server-ready
+// Caricamento seriale, attesa server-ready + loader-pagine
 // =========================================================
 
 console.log("[ADMIN] Loader 2028.A avviato (SAFE MODE)");
@@ -15,14 +15,14 @@ function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function loadScriptSerial(src) {
+function loadScriptSerial(src, where = "head") {
   return new Promise(resolve => {
     const s = document.createElement("script");
     s.src = `${src}?v=${ADMIN_VERSION}`;
     s.defer = true;
     s.onload = resolve;
     s.onerror = resolve;
-    document.head.appendChild(s);
+    (where === "body" ? document.body : document.head).appendChild(s);
   });
 }
 
@@ -85,10 +85,13 @@ async function startAdminLoader() {
                         "footer-admin-placeholder",
                         "admin-footer-loaded");
 
-  // 6) SAFE READY
+  // 6) LOADER PAGINE (JS specifici admin/public)
+  await loadScriptSerial(`/loader-pagine.js`, "body");
+
+  // 7) SAFE READY
   window.__criticalReady = true;
   document.dispatchEvent(new Event("critical-ready"));
-  console.log("[ADMIN] critical-ready (2028.A SAFE)");
+  console.log("[ADMIN] critical-ready (2028.A SAFE + PAGINE)");
 }
 
 /* =========================================================
