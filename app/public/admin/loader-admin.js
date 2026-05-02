@@ -1,91 +1,102 @@
+// =========================================================
+// ADMIN LOADER — Versione 2028.A (SAFE MODE)
+// Anti 499/502 — Nessun introspect, nessuna diagnostica
+// Caricamento seriale e attesa server-ready
+// =========================================================
+
+console.log("[ADMIN] Loader 2028.A avviato (SAFE MODE)");
+
+const ADMIN_VERSION = "20280412";
+
 /* =========================================================
-   LOADER ADMIN — Versione 2027.70 (Compatibile universal-json)
-   Modalità Standalone — Nessun mm-api.js
+   UTILITY BASE
 ========================================================= */
+function wait(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
-console.log("[ADMIN] Critical loader avviato (Standalone Mode)");
-
-const ADMIN_VERSION = "20270412";
-
-/* =========================================================
-   Caricatore JS sicuro (no blocchi, no duplicati)
-========================================================= */
-function loadAdminUtilityScript(name) {
+function loadScriptSerial(src) {
   return new Promise(resolve => {
-    const id = `admin-util-${name}`;
-    if (document.getElementById(id)) return resolve();
-
     const s = document.createElement("script");
-    s.id = id;
-    s.src = `/admin/${name}.js?v=${ADMIN_VERSION}`;
+    s.src = `${src}?v=${ADMIN_VERSION}`;
+    s.defer = true;
     s.onload = resolve;
     s.onerror = resolve;
     document.head.appendChild(s);
   });
 }
 
-/* =========================================================
-   Caricatore HTML sicuro (compatibile universal-json)
-========================================================= */
-function safeLoadHTML(url, placeholderId, eventName) {
+function fetchHTMLSerial(url, placeholderId, eventName) {
   return fetch(url)
     .then(r => r.ok ? r.text() : Promise.reject())
     .then(html => {
       const ph = document.getElementById(placeholderId);
-      if (ph) {
-        ph.innerHTML = html;
-        document.dispatchEvent(new Event(eventName));
-      }
+      if (ph) ph.innerHTML = html;
+      if (eventName) document.dispatchEvent(new Event(eventName));
     })
-    .catch(() => console.warn(`[ADMIN] Componente ${url} non caricato`));
+    .catch(() => console.warn(`[ADMIN] ${url} non caricato`));
 }
 
 /* =========================================================
-   LOADER PRINCIPALE
+   /api/ping — ANTI‑502
+========================================================= */
+function pingOnce() {
+  return fetch("/api/ping")
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(() => true)
+    .catch(() => false);
+}
+
+async function waitUntilServerReady() {
+  for (let i = 0; i < 10; i++) {
+    const ok = await pingOnce();
+    if (ok) return;
+    await wait(150);
+  }
+  console.warn("[ADMIN] /api/ping non risponde — SAFE FALLBACK");
+}
+
+/* =========================================================
+   LOADER PRINCIPALE (SERIALE)
 ========================================================= */
 async function startAdminLoader() {
 
-  /* 🔵 INTROSPECT (backend/frontend match) */
-  const introspect = new Promise(resolve => {
-    const s = document.createElement("script");
-    s.src = `/introspect.js?v=${ADMIN_VERSION}`;
-    s.onload = resolve;
-    s.onerror = resolve;
-    document.head.appendChild(s);
-  });
+  console.log("[ADMIN] Avvio sequenza seriale 2028.A");
 
-  /* 🔵 DIAGNOSTICA (fetch filtrata, compatibile universal-json) */
-  const diagnostica = new Promise(resolve => {
-    const s = document.createElement("script");
-    s.src = `/js/diagnostica-loader.js?v=${ADMIN_VERSION}`;
-    s.onload = resolve;
-    s.onerror = resolve;
-    document.head.appendChild(s);
-  });
+  // 1) Aspetta che il server sia vivo
+  await waitUntilServerReady();
 
-  /* Utility SEO e Structured Data */
-  const seoP = loadAdminUtilityScript("seo-admin");
-  const sdP  = loadAdminUtilityScript("structured-data-admin");
+  // 2) SEO + Structured Data (seriale)
+  await loadScriptSerial(`/admin/seo-admin.js`);
+  await loadScriptSerial(`/admin/structured-data-admin.js`);
 
-  /* Componenti HTML */
-  const headP = safeLoadHTML(`/admin/head-admin.html?v=${ADMIN_VERSION}`, "head-admin-placeholder", "admin-head-loaded");
-  const headerP = safeLoadHTML(`/admin/header-admin.html?v=${ADMIN_VERSION}`, "header-admin-placeholder", "admin-header-loaded");
-  const footerP = safeLoadHTML(`/admin/footer-admin.html?v=${ADMIN_VERSION}`, "footer-admin-placeholder", "admin-footer-loaded");
+  // 3) HEAD ADMIN
+  await fetchHTMLSerial(`/admin/head-admin.html?v=${ADMIN_VERSION}`,
+                        "head-admin-placeholder",
+                        "admin-head-loaded");
 
-  /* Attesa caricamento completo */
-  Promise.all([introspect, diagnostica, seoP, sdP, headP, headerP, footerP]).then(() => {
-    window.__criticalReady = true;
-    document.dispatchEvent(new Event("critical-ready"));
-    console.log("[ADMIN] ✅ critical-ready emesso (Modalità Indipendente)");
-  });
+  // 4) HEADER ADMIN
+  await fetchHTMLSerial(`/admin/header-admin.html?v=${ADMIN_VERSION}`,
+                        "header-admin-placeholder",
+                        "admin-header-loaded");
+
+  // 5) FOOTER ADMIN
+  await fetchHTMLSerial(`/admin/footer-admin.html?v=${ADMIN_VERSION}`,
+                        "footer-admin-placeholder",
+                        "admin-footer-loaded");
+
+  // 6) SAFE READY
+  window.__criticalReady = true;
+  document.dispatchEvent(new Event("critical-ready"));
+  console.log("[ADMIN] critical-ready (2028.A SAFE)");
 }
 
 /* =========================================================
-   AUTH CHECK & BOOTSTRAP
+   AUTH CHECK & BOOTSTRAP (SAFE)
 ========================================================= */
 (function () {
 
-  // Nessun mm-api.js, nessun loader esterno
+  // Se già admin → parti subito
   if (window.isAdmin) {
     startAdminLoader();
     return;
@@ -94,6 +105,7 @@ async function startAdminLoader() {
   // Carica auth.js solo se necessario
   const s = document.createElement("script");
   s.src = `/auth.js?v=${ADMIN_VERSION}`;
+  s.defer = true;
   s.onload = () => {
     if (window.isAdmin) startAdminLoader();
     else console.warn("🟥 [ADMIN] Accesso negato — isAdmin = false");
