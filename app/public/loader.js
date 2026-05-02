@@ -1,6 +1,6 @@
 // =========================================================
 // CRITICAL LOADER — MewingMarket
-// Versione 2028.A-SAFE — Ordinato + 3 Loader Pagine
+// Versione 2028.A-SAFE — Integrato con loader-universale-2030.js
 // =========================================================
 
 (function () {
@@ -172,34 +172,13 @@
       console.log("[CRITICAL] critical-ready emesso");
 
       /* ============================================================
-         CARICAMENTO DEI 3 LOADER PAGINE
+         CARICAMENTO DEL LOADER UNIVERSALE 2030
+         (sostituisce global + user + admin)
       ============================================================ */
-
-      // 1) GLOBAL — sempre
       setTimeout(() => {
-        loadScriptSerial("/loader-pagine-global.js", "body")
-          .then(() => console.log("[CRITICAL] loader-pagine-global.js caricato"));
-      }, 30);
-
-      // 2) USER — usa il tuo nome reale: loader-pagine.user.js
-      document.addEventListener("auth-ready", () => {
-        if (window.isLogged === true) {
-          setTimeout(() => {
-            loadScriptSerial("/loader-pagine.user.js", "body")
-              .then(() => console.log("[CRITICAL] loader-pagine.user.js caricato"));
-          }, 60);
-        }
-      });
-
-      // 3) ADMIN — solo se admin
-      document.addEventListener("auth-ready", () => {
-        if (window.isAdmin === true) {
-          setTimeout(() => {
-            loadScriptSerial("/admin/loader-pagine-admin.js", "body")
-              .then(() => console.log("[CRITICAL] loader-pagine-admin.js caricato"));
-          }, 90);
-        }
-      });
+        loadScriptSerial("/loader-universale-2030.js", "body")
+          .then(() => console.log("[CRITICAL] loader-universale-2030.js caricato"));
+      }, 50);
 
     } catch (err) {
       console.error("[CRITICAL] ERRORE NEL LOADER:", err);
