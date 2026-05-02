@@ -1,5 +1,5 @@
 /* =========================================================
- * SERVER — SAFE MODE FINAL (2027.980) — PATCH 2027.981
+ * SERVER — SAFE MODE FINAL (2027.982)
  * =========================================================
  */
 
@@ -121,20 +121,16 @@ async function bootInBackground(){
     });
 
     /* =========================================================
-     * COLD START + BOOTSTRAP
+     * ❄️ COLD START DISATTIVATO (SAFE MODE)
      * =========================================================
      */
-    log(">> BOOT: cold-start");
-    try {
-      const cold = require("./startup/cold-start.cjs");
-      cold(app);
-    } catch(e){ logErr("cold-start:", e.message); }
+    log(">> BOOT: cold-start DISATTIVATO (SAFE MODE)");
 
-    log(">> BOOT: bootstrap");
-    try {
-      await require("./startup/bootstrap.cjs")();
-      log("BOOTSTRAP OK");
-    } catch(e){ logErr("bootstrap:", e); }
+    /* =========================================================
+     * 🚀 BOOTSTRAP DISATTIVATO (SAFE MODE)
+     * =========================================================
+     */
+    log(">> BOOT: bootstrap DISATTIVATO (SAFE MODE)");
 
     log("🟧 cron-youtube DISATTIVATO");
 
