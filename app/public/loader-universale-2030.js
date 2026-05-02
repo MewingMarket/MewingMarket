@@ -32,7 +32,6 @@
     base = base.replace(".html", "");
     debug(tag, "Nome base", base);
 
-    // Lista di pattern possibili (1..N file)
     const candidates = [
       `${prefix}${base}.js`,
       `${prefix}${base}-page.js`,
