@@ -239,16 +239,21 @@
         }
       });
 
-      // 6) LOADER PAGINE (JS specifici per pagina)
-      await loadScriptSerial("/loader-pagine.js", "body");
-
-      // 7) SAFE READY
+      // 6) SAFE READY PRIMA
       await introspectPromise;
       await diagnosticaPromise;
 
       window.__criticalReady = true;
       document.dispatchEvent(new Event("critical-ready"));
       console.log("[CRITICAL] critical-ready emesso (2028.A-SAFE + PAGINE)");
+
+      // 7) SOLO DOPO carichiamo i JS di pagina
+      // (non blocca, non è critico per la stabilità)
+      setTimeout(() => {
+        loadScriptSerial("/loader-pagine.js", "body")
+          .then(() => console.log("[CRITICAL] loader-pagine.js caricato"))
+          .catch(() => console.warn("[CRITICAL] loader-pagine.js NON caricato"));
+      }, 30);
 
     } catch (err) {
       console.error("[CRITICAL] ERRORE NEL LOADER 2028.A:", err);
