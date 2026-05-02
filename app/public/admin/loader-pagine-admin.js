@@ -18,16 +18,29 @@
     });
   }
 
+  function pageIsOpen(sel) {
+    return document.querySelector(sel) !== null;
+  }
+
   async function run() {
     if (!window.isAdmin) return;
 
     const p = window.location.pathname;
 
-    if (p.endsWith("/admin/dashboard-admin-profilo.html")) await load("/admin/dashboard-admin.js");
-    if (p.endsWith("/admin/dashboard-admin-vendite-ordini.html")) await load("/admin/dashboard-vendite-ordini.js");
-    if (p.endsWith("/admin/admin-prodotti.html")) await load("/admin/admin-prodotti.js");
-    if (p.endsWith("/admin/feedback.html")) await load("/admin/feedback.js");
-    if (p.endsWith("/admin/utenti.html")) await load("/admin/utenti.js");
+    if (p.endsWith("/admin/dashboard-admin-profilo.html") && pageIsOpen("main"))
+      await load("/admin/dashboard-admin.js");
+
+    if (p.endsWith("/admin/dashboard-admin-vendite-ordini.html") && pageIsOpen("main"))
+      await load("/admin/dashboard-vendite-ordini.js");
+
+    if (p.endsWith("/admin/admin-prodotti.html") && pageIsOpen("main"))
+      await load("/admin/admin-prodotti.js");
+
+    if (p.endsWith("/admin/feedback.html") && pageIsOpen("main"))
+      await load("/admin/feedback.js");
+
+    if (p.endsWith("/admin/utenti.html") && pageIsOpen("main"))
+      await load("/admin/utenti.js");
 
     console.log("[PAGE-LOADER] Admin JS loaded");
   }
