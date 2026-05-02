@@ -1,12 +1,11 @@
 /**
  * =========================================================
- * COLD-START — Versione 2027.1 SAFE MODE
- * Warmup ottimizzato e sicuro per Render:
+ * COLD-START — Versione 2027.2 SAFE MODE (NO OOM)
  * - Precarica solo DB
- * - Precarica router universale UNA sola volta
- * - Evita moduli lenti (YouTube)
- * - Evita fetch interni
- * - Evita loop e OOM
+ * - NON carica router
+ * - NON carica index
+ * - NON carica moduli pesanti
+ * - Nessun fetch interno
  * =========================================================
  */
 
@@ -14,7 +13,7 @@ const path = require("path");
 
 module.exports = async function coldStart(app) {
   console.log("\n====================================");
-  console.log("❄️  COLD START — SAFE MODE");
+  console.log("❄️  COLD START — SAFE MODE 2027.2");
   console.log("====================================");
 
   try {
@@ -31,26 +30,17 @@ module.exports = async function coldStart(app) {
     }
 
     /* =========================================================
-       2) WARMUP ROUTER UNIVERSALE (UNA sola volta)
+       2) ROUTER / INDEX DISATTIVATI (evita OOM)
     ========================================================== */
-    console.log("🛣️  Warmup router universale…");
-    try {
-      require(path.join(process.cwd(), "app/server/index.cjs"));
-      require(path.join(process.cwd(), "app/server/router.cjs"));
-      console.log("   ✅ Router universale precaricato");
-    } catch (err) {
-      console.error("   ❌ Errore warmup router:", err.message);
-    }
+    console.log("🟧 Router e index NON precaricati (SAFE MODE)");
 
     /* =========================================================
        3) MODULI LENTI DISATTIVATI
-       (YouTube, logging esterno, ecc.)
     ========================================================== */
-    console.log("🟧 Moduli lenti disattivati in SAFE MODE");
+    console.log("🟧 Moduli lenti disattivati (YouTube, logging esterno)");
 
     /* =========================================================
        4) NESSUN FETCH INTERNO
-       (evita loop e OOM)
     ========================================================== */
     console.log("🟧 Ping interno disattivato (SAFE MODE)");
 
@@ -58,7 +48,7 @@ module.exports = async function coldStart(app) {
        COMPLETATO
     ========================================================== */
     console.log("====================================");
-    console.log("❄️  COLD START COMPLETATO (SAFE MODE)");
+    console.log("❄️  COLD START COMPLETATO (SAFE MODE 2027.2)");
     console.log("====================================\n");
 
   } catch (err) {
