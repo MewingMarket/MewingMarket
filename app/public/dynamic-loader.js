@@ -1,19 +1,17 @@
 // =========================================================
-// DYNAMIC LOADER — SAFE MODE
-// Carica SOLO:
-// - anti-cache
-// - anti-service-worker
-// NIENTE diagnostica, NIENTE introspect, NIENTE test API
+// DYNAMIC LOADER — SAFE MODE (2028.A)
+// Anti 499/502 — stabile su Android/Chrome
 // =========================================================
 
 (function () {
 
   const VERSION = "20260412";
 
-  // -------------------------------
-  // 1) ANTI-CACHE (DYNAMIC)
-  // -------------------------------
-  (function ensureNoCacheMeta() {
+  function start() {
+
+    // -------------------------------
+    // 1) ANTI-CACHE (DYNAMIC)
+    // -------------------------------
     try {
       const hasCacheMeta = !!document.querySelector('meta[http-equiv="Cache-Control"]');
       if (!hasCacheMeta) {
@@ -33,12 +31,10 @@
         document.head.appendChild(m3);
       }
     } catch (e) {}
-  })();
 
-  // -------------------------------
-  // 2) ANTI SERVICE WORKER (DYNAMIC)
-  // -------------------------------
-  (function removeServiceWorkers() {
+    // -------------------------------
+    // 2) ANTI SERVICE WORKER (DYNAMIC)
+    // -------------------------------
     try {
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker.getRegistrations().then(regs => {
@@ -49,12 +45,22 @@
         caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
       }
     } catch (e) {}
-  })();
 
-  // -------------------------------
-  // 3) DIAGNOSTICA FRONTEND (DISATTIVATA)
-  // -------------------------------
-  console.log("🟧 SAFE MODE: diagnostica frontend DISATTIVATA");
-  // (Nessun caricamento di frontend-diagnostica.js)
+    // -------------------------------
+    // 3) DIAGNOSTICA FRONTEND (DISATTIVATA)
+    // -------------------------------
+    console.log("🟧 SAFE MODE: diagnostica frontend DISATTIVATA");
+  }
+
+  // ============================================================
+  // ESECUZIONE STABILE (ANTI‑499)
+  // ============================================================
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => {
+      setTimeout(start, 50);   // micro‑delay anti race‑condition Android
+    });
+  } else {
+    setTimeout(start, 50);
+  }
 
 })();
