@@ -1,72 +1,95 @@
 // =========================================================
 // CRITICAL LOADER — MewingMarket
-// Versione 2027.970-SAFE — SENZA mm-api.js, introspect, diagnostica-loader
+// Versione 2028.A-SAFE — Anti 499/502, SENZA mm-api.js, introspect, diagnostica-loader
 // Compatibile universal-json + router universale
 // =========================================================
 
 (function () {
 
-  const VERSION = "20270412";
+  const VERSION = "20280412";
 
-  console.log("[CRITICAL] Loader avviato (Java-mode SAFE)");
+  console.log("[CRITICAL] Loader 2028.A avviato (SAFE)");
 
   /* ============================================================
-     1) Caricamento utility (SEO, Structured Data, Tracking)
+     0) UTILITY BASE
   ============================================================ */
-  function loadUtility(name) {
-    const s = document.createElement("script");
-    s.src = `/${name}.js?v=${VERSION}`;
-    s.async = true;
-    s.onload = () => console.log(`[CRITICAL] ${name}.js caricato`);
-    s.onerror = () => console.warn(`[CRITICAL] ${name}.js non trovato`);
-    document.head.appendChild(s);
+  function wait(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  loadUtility("seo");
-  loadUtility("structured-data");
-  loadUtility("tracking");
+  function loadScriptSerial(src, where = "head") {
+    return new Promise(resolve => {
+      const s = document.createElement("script");
+      s.src = `${src}?v=${VERSION}`;
+      s.defer = true;
+      s.onload = resolve;
+      s.onerror = resolve;
+      (where === "body" ? document.body : document.head).appendChild(s);
+    });
+  }
+
+  function fetchText(url) {
+    return fetch(url).then(r => r.text());
+  }
 
   /* ============================================================
-     2) INTROSPECT (DISATTIVATO IN SAFE MODE)
+     1) TEST SERVER /api/ping — ANTI 502
   ============================================================ */
-  const introspectPromise = Promise.resolve().then(() => {
-    console.log("🟧 SAFE MODE: introspect.js DISATTIVATO");
-  });
+  function pingOnce() {
+    return fetch("/api/ping")
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(() => true)
+      .catch(() => false);
+  }
+
+  async function waitUntilServerReady() {
+    for (let i = 0; i < 10; i++) {
+      const ok = await pingOnce();
+      if (ok) {
+        console.log("[CRITICAL] /api/ping OK, procedo con il loader");
+        return;
+      }
+      await wait(150);
+    }
+    console.warn("[CRITICAL] /api/ping non risponde, procedo comunque (SAFE FALLBACK)");
+  }
 
   /* ============================================================
-     3) DIAGNOSTICA FETCH (DISATTIVATA IN SAFE MODE)
+     2) AUTH (caricata sempre, no mm-api)
   ============================================================ */
-  const diagnosticaPromise = Promise.resolve().then(() => {
-    console.log("🟧 SAFE MODE: diagnostica-loader.js DISATTIVATO");
-  });
+  function loadAuth() {
+    return new Promise(resolve => {
+      const s = document.createElement("script");
+      s.id = "critical-auth";
+      s.src = `/auth.js?v=${VERSION}`;
+      s.defer = true;
+      s.onload = () => {
+        console.log("[CRITICAL] auth.js caricato");
+        resolve();
+      };
+      s.onerror = () => {
+        console.error("[CRITICAL] ERRORE: auth.js non caricato");
+        resolve();
+      };
+      document.head.appendChild(s);
+    });
+  }
 
   /* ============================================================
-     4) AUTH (caricata sempre, no mm-api)
+     3) HEAD HTML (seriale, no burst)
   ============================================================ */
-  const authPromise = new Promise(resolve => {
-    const s = document.createElement("script");
-    s.id = "critical-auth";
-    s.src = `/auth.js?v=${VERSION}`;
-    s.onload = () => {
-      console.log("[CRITICAL] auth.js caricato");
-      resolve();
-    };
-    s.onerror = () => {
-      console.error("[CRITICAL] ERRORE: auth.js non caricato");
-      resolve();
-    };
-    document.head.appendChild(s);
-  });
+  async function safeFetchAppendHeadSerial() {
+    const urls = [
+      `head.html?v=${VERSION}`,
+      `/head.html?v=${VERSION}`
+    ];
 
-  /* ============================================================
-     5) HEAD HTML (compatibile universal-json)
-  ============================================================ */
-  function safeFetchAppendHead(url) {
-    return fetch(url)
-      .then(r => r.text())
-      .then(html => {
-        if (!html || (html.trim().startsWith("<!DOCTYPE html") && !html.includes("<head")))
+    for (const url of urls) {
+      try {
+        const html = await fetchText(url);
+        if (!html || (html.trim().startsWith("<!DOCTYPE html") && !html.includes("<head"))) {
           console.warn("[CRITICAL] head.html sembra HTML fallback");
+        }
 
         const temp = document.createElement("div");
         temp.innerHTML = html;
@@ -82,62 +105,55 @@
         });
 
         document.dispatchEvent(new Event("head-loaded"));
+        console.log("[CRITICAL] head.html caricato");
         return true;
-      })
-      .catch(err => {
-        console.error("[CRITICAL] head non caricato:", err);
-        throw err;
-      });
+      } catch (err) {
+        console.error("[CRITICAL] head non caricato da", url, err);
+      }
+    }
+
+    console.error("[CRITICAL] head.html non caricato da nessun percorso");
+    return false;
   }
 
-  const headPromise = authPromise.then(() =>
-    safeFetchAppendHead(`head.html?v=${VERSION}`)
-      .catch(() => safeFetchAppendHead(`/head.html?v=${VERSION}`))
-  );
-
   /* ============================================================
-     6) HEADER HTML
+     4) HEADER HTML (seriale)
   ============================================================ */
-  function safeFetchHeader(url) {
-    return fetch(url)
-      .then(r => r.text())
-      .then(html => {
+  async function safeFetchHeaderSerial() {
+    const urls = [
+      `header.html?v=${VERSION}`,
+      `/header.html?v=${VERSION}`
+    ];
+
+    for (const url of urls) {
+      try {
+        const html = await fetchText(url);
         const ph = document.getElementById("header-placeholder");
         if (ph) ph.innerHTML = html;
         document.dispatchEvent(new Event("header-loaded"));
+        console.log("[CRITICAL] header.html caricato");
         return true;
-      })
-      .catch(err => {
-        console.error("[CRITICAL] header non caricato:", err);
-        throw err;
-      });
+      } catch (err) {
+        console.error("[CRITICAL] header non caricato da", url, err);
+      }
+    }
+
+    console.error("[CRITICAL] header.html non caricato da nessun percorso");
+    return false;
   }
 
-  const headerPromise = headPromise.then(() =>
-    safeFetchHeader(`header.html?v=${VERSION}`)
-      .catch(() => safeFetchHeader(`/header.html?v=${VERSION}`))
-  );
-
   /* ============================================================
-     7) HEADER LOGIC (header.js)
+     5) FOOTER HTML (seriale)
   ============================================================ */
-  const headerLogicPromise = headerPromise.then(() => {
-    return new Promise(resolve => {
-      const s = document.createElement("script");
-      s.src = `/header.js?v=${VERSION}`;
-      s.onload = resolve;
-      s.onerror = resolve;
-      document.body.appendChild(s);
-    });
-  });
+  async function safeFetchFooterSerial() {
+    const urls = [
+      `footer.html?v=${VERSION}`,
+      `/footer.html?v=${VERSION}`
+    ];
 
-  /* ============================================================
-     8) FOOTER HTML
-  ============================================================ */
-  function safeFetchFooter(url) {
-    return fetch(url)
-      .then(r => r.text())
-      .then(html => {
+    for (const url of urls) {
+      try {
+        const html = await fetchText(url);
         const ph = document.getElementById("footer-placeholder");
         if (ph) ph.innerHTML = html;
 
@@ -145,80 +161,97 @@
         if (year) year.textContent = new Date().getFullYear();
 
         document.dispatchEvent(new Event("footer-loaded"));
+        console.log("[CRITICAL] footer.html caricato");
         return true;
-      })
-      .catch(err => {
-        console.error("[CRITICAL] footer non caricato:", err);
-        return true;
-      });
+      } catch (err) {
+        console.error("[CRITICAL] footer non caricato da", url, err);
+      }
+    }
+
+    console.error("[CRITICAL] footer.html non caricato da nessun percorso");
+    return false;
   }
 
-  const footerPromise = safeFetchFooter(`footer.html?v=${VERSION}`)
-    .catch(() => safeFetchFooter(`/footer.html?v=${VERSION}`));
-
   /* ============================================================
-     9) CARRELLO
+     6) INTROSPECT / DIAGNOSTICA (DISATTIVATI)
   ============================================================ */
-  const carrelloPromise = headerLogicPromise.then(() => {
-    return new Promise(resolve => {
-      const s = document.createElement("script");
-      s.id = "critical-carrello";
-      s.src = `/carrello.js?v=${VERSION}`;
-      s.onload = () => {
-        console.log("[CRITICAL] carrello.js caricato");
-        resolve();
-      };
-      s.onerror = () => {
-        console.error("[CRITICAL] carrello.js non caricato");
-        resolve();
-      };
-      document.body.appendChild(s);
-    });
+  const introspectPromise = Promise.resolve().then(() => {
+    console.log("🟧 SAFE MODE: introspect.js DISATTIVATO");
+  });
+
+  const diagnosticaPromise = Promise.resolve().then(() => {
+    console.log("🟧 SAFE MODE: diagnostica-loader.js DISATTIVATO");
   });
 
   /* ============================================================
-     10) ADMIN LOADER (solo se admin)
+     7) SEQUENZA CRITICA ANTI‑499 / ANTI‑502
   ============================================================ */
-  const adminPromise = authPromise.then(() => {
-    return new Promise(resolve => {
-      const checkAdmin = () => {
-        if (window.isAdmin === true) {
-          const s = document.createElement("script");
-          s.src = `/admin/loader-admin.js?v=${VERSION}`;
-          s.onload = resolve;
-          s.onerror = resolve;
-          document.body.appendChild(s);
+  (async () => {
+    try {
+      // 1) Aspetta che il server sia vivo
+      await waitUntilServerReady();
+
+      // 2) Utility (SEO, structured, tracking) in sequenza
+      await loadScriptSerial("/seo.js");
+      console.log("[CRITICAL] seo.js caricato");
+
+      await loadScriptSerial("/structured-data.js");
+      console.log("[CRITICAL] structured-data.js caricato");
+
+      await loadScriptSerial("/tracking.js");
+      console.log("[CRITICAL] tracking.js caricato");
+
+      // 3) Auth
+      await loadAuth();
+
+      // 4) Head → Header → header.js → Footer → Carrello
+      await safeFetchAppendHeadSerial();
+      await safeFetchHeaderSerial();
+
+      await loadScriptSerial("/header.js", "body");
+      console.log("[CRITICAL] header.js caricato");
+
+      await safeFetchFooterSerial();
+
+      await loadScriptSerial("/carrello.js", "body");
+      console.log("[CRITICAL] carrello.js caricato");
+
+      // 5) Admin loader (solo se admin, dopo auth)
+      await new Promise(resolve => {
+        const checkAdmin = () => {
+          if (window.isAdmin === true) {
+            const s = document.createElement("script");
+            s.src = `/admin/loader-admin.js?v=${VERSION}`;
+            s.defer = true;
+            s.onload = resolve;
+            s.onerror = resolve;
+            document.body.appendChild(s);
+          } else {
+            resolve();
+          }
+        };
+
+        if (window.isAdmin !== undefined) {
+          checkAdmin();
         } else {
-          resolve();
+          document.addEventListener("auth-ready", checkAdmin, { once: true });
+          setTimeout(resolve, 2000);
         }
-      };
+      });
 
-      if (window.isAdmin !== undefined) {
-        checkAdmin();
-      } else {
-        document.addEventListener("auth-ready", checkAdmin, { once: true });
-        setTimeout(resolve, 2000);
-      }
-    });
-  });
+      // 6) SAFE READY
+      await introspectPromise;
+      await diagnosticaPromise;
 
-  /* ============================================================
-     11) CRITICAL READY
-  ============================================================ */
-  Promise.all([
-    introspectPromise,
-    diagnosticaPromise,
-    authPromise,
-    headPromise,
-    headerPromise,
-    headerLogicPromise,
-    footerPromise,
-    carrelloPromise,
-    adminPromise
-  ]).then(() => {
-    window.__criticalReady = true;
-    document.dispatchEvent(new Event("critical-ready"));
-    console.log("[CRITICAL] critical-ready emesso (2027.970-SAFE)");
-  });
+      window.__criticalReady = true;
+      document.dispatchEvent(new Event("critical-ready"));
+      console.log("[CRITICAL] critical-ready emesso (2028.A-SAFE)");
+
+    } catch (err) {
+      console.error("[CRITICAL] ERRORE NEL LOADER 2028.A:", err);
+      window.__criticalReady = true;
+      document.dispatchEvent(new Event("critical-ready"));
+    }
+  })();
 
 })();
