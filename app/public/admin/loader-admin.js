@@ -1,7 +1,8 @@
 // =========================================================
-// ADMIN LOADER — Versione 2028.A (SAFE MODE, PAGINE)
+// ADMIN LOADER — Versione 2028.A (SAFE MODE, ORDINATO)
 // Anti 499/502 — Nessun introspect, nessuna diagnostica
-// Caricamento seriale, attesa server-ready + loader-pagine
+// Caricamento seriale, attesa server-ready
+// critical-ready PRIMA dei JS di pagina
 // =========================================================
 
 console.log("[ADMIN] Loader 2028.A avviato (SAFE MODE)");
@@ -85,13 +86,17 @@ async function startAdminLoader() {
                         "footer-admin-placeholder",
                         "admin-footer-loaded");
 
-  // 6) LOADER PAGINE (JS specifici admin/public)
-  await loadScriptSerial(`/loader-pagine.js`, "body");
-
-  // 7) SAFE READY
+  // 6) SAFE READY PRIMA
   window.__criticalReady = true;
   document.dispatchEvent(new Event("critical-ready"));
-  console.log("[ADMIN] critical-ready (2028.A SAFE + PAGINE)");
+  console.log("[ADMIN] critical-ready (2028.A SAFE)");
+
+  // 7) SOLO DOPO carichiamo i JS di pagina
+  setTimeout(() => {
+    loadScriptSerial(`/loader-pagine.js`, "body")
+      .then(() => console.log("[ADMIN] loader-pagine.js caricato"))
+      .catch(() => console.warn("[ADMIN] loader-pagine.js NON caricato"));
+  }, 30);
 }
 
 /* =========================================================
