@@ -1,7 +1,7 @@
 // =========================================================
 // CRITICAL LOADER — MewingMarket
 // Versione 2028.A-SAFE — Anti 499/502, SENZA mm-api.js, introspect, diagnostica-loader
-// Compatibile universal-json + router universale
+// Compatibile universal-json + router universale + loader-pagine
 // =========================================================
 
 (function () {
@@ -239,13 +239,16 @@
         }
       });
 
-      // 6) SAFE READY
+      // 6) LOADER PAGINE (JS specifici per pagina)
+      await loadScriptSerial("/loader-pagine.js", "body");
+
+      // 7) SAFE READY
       await introspectPromise;
       await diagnosticaPromise;
 
       window.__criticalReady = true;
       document.dispatchEvent(new Event("critical-ready"));
-      console.log("[CRITICAL] critical-ready emesso (2028.A-SAFE)");
+      console.log("[CRITICAL] critical-ready emesso (2028.A-SAFE + PAGINE)");
 
     } catch (err) {
       console.error("[CRITICAL] ERRORE NEL LOADER 2028.A:", err);
