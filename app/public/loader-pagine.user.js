@@ -1,45 +1,67 @@
 // =========================================================
-// LOADER PAGINE USER — Versione 2028.A
-// JS caricati solo se l'utente è loggato
+// LOADER PAGINE USER — Versione 2028.A + DEBUG
 // =========================================================
 
 (function () {
 
   const VERSION = "20280412";
 
+  function debug(msg, data = null) {
+    console.log(`🟩 [USER-DEBUG] ${msg}`, data || "");
+  }
+
   function load(src) {
+    debug("Caricamento script richiesto", src);
     return new Promise(r => {
       const s = document.createElement("script");
       s.src = `${src}?v=${VERSION}`;
       s.defer = true;
-      s.onload = r;
-      s.onerror = r;
+      s.onload = () => { debug("Script caricato", src); r(); };
+      s.onerror = () => { debug("ERRORE script", src); r(); };
       document.body.appendChild(s);
     });
   }
 
   function pageIsOpen(sel) {
-    return document.querySelector(sel) !== null;
+    const exists = document.querySelector(sel) !== null;
+    debug(`Controllo HTML selector="${sel}" → ${exists}`);
+    return exists;
   }
 
   async function run() {
-    if (!window.isLogged) return;
+    debug("isLogged", window.isLogged);
+
+    if (!window.isLogged) {
+      debug("USER loader ignorato", "utente NON loggato");
+      return;
+    }
 
     const p = window.location.pathname;
+    debug("Pagina rilevata", p);
 
-    if (p.endsWith("/dashboard.html") && pageIsOpen("main")) await load("/dashboard.js");
-    if (p.endsWith("/profilo.html") && pageIsOpen("main")) await load("/profilo.js");
-    if (p.endsWith("/ordini.html") && pageIsOpen("main")) await load("/ordini.js");
-    if (p.endsWith("/download.html") && pageIsOpen("main")) await load("/download.js");
-    if (p.endsWith("/recensioni.html") && pageIsOpen("main")) await load("/recensioni.js");
-    if (p.endsWith("/rimborso.html") && pageIsOpen("main")) await load("/rimborso.js");
-    if (p.endsWith("/checkout.html") && pageIsOpen("main")) await load("/checkout.js");
-    if (p.endsWith("/elimina-account.html") && pageIsOpen("main")) await load("/elimina-account.js");
+    const userPages = [
+      ["/dashboard.html", "/dashboard.js"],
+      ["/profilo.html", "/profilo.js"],
+      ["/ordini.html", "/ordini.js"],
+      ["/download.html", "/download.js"],
+      ["/recensioni.html", "/recensioni.js"],
+      ["/rimborso.html", "/rimborso.js"],
+      ["/checkout.html", "/checkout.js"],
+      ["/elimina-account.html", "/elimina-account.js"]
+    ];
 
-    console.log("[PAGE-LOADER] User JS loaded");
+    for (const [page, script] of userPages) {
+      if (p.endsWith(page)) {
+        if (pageIsOpen("main")) await load(script);
+        else debug("JS NON caricato", { motivo: "HTML mancante", script });
+      }
+    }
+
+    debug("USER loader completato");
   }
 
   document.addEventListener("critical-ready", () => {
+    debug("critical-ready ricevuto");
     setTimeout(() => requestAnimationFrame(run), 50);
   });
 
