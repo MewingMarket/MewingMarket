@@ -1,8 +1,8 @@
 /* =========================================================
-   UNIVERSAL JSON — Versione 2027.900
+   UNIVERSAL JSON — Versione 2027.902 SAFE MODE
    - Intercetta TUTTE le risposte
-   - Converte SEMPRE in JSON valido
-   - Estrae dati anche da HTML / testo / errori
+   - Converte in JSON SOLO quando sicuro
+   - NON tocca Buffer (evita loop e OOM)
    - Salva tutto in generico.json
 ========================================================= */
 
@@ -13,7 +13,6 @@ module.exports = function universalJson(req, res, next) {
   const originalJson = res.json.bind(res);
   const originalSend = res.send.bind(res);
 
-  // Percorso file generico
   const filePath = path.join(process.cwd(), "app/server/db/generico.json");
 
   function salva(payload) {
@@ -24,7 +23,9 @@ module.exports = function universalJson(req, res, next) {
     }
   }
 
-  // PATCH JSON
+  /* =========================================================
+     PATCH JSON
+  ========================================================== */
   res.json = function (data) {
     const payload = {
       success: true,
@@ -39,8 +40,19 @@ module.exports = function universalJson(req, res, next) {
     return originalJson(payload);
   };
 
-  // PATCH SEND (HTML, testo, errori)
+  /* =========================================================
+     PATCH SEND — versione SAFE MODE
+     - NON tenta più JSON.parse su Buffer
+     - NON crea loop
+     - NON richiama res.json ricorsivamente
+  ========================================================== */
   res.send = function (body) {
+
+    // 🔥 Caso critico: Buffer → NON toccare
+    if (Buffer.isBuffer(body)) {
+      return originalSend(body);
+    }
+
     let payload = {
       success: false,
       endpoint: req.originalUrl,
@@ -50,16 +62,20 @@ module.exports = function universalJson(req, res, next) {
       timestamp: Date.now()
     };
 
-    // Se è JSON valido
-    try {
-      const parsed = JSON.parse(body);
-      payload.success = true;
-      payload.data = parsed;
-      salva(payload);
-      return originalJson(payload);
-    } catch (e) {}
+    // 🔥 Se è JSON valido (solo stringhe)
+    if (typeof body === "string") {
+      try {
+        const parsed = JSON.parse(body);
+        payload.success = true;
+        payload.data = parsed;
+        salva(payload);
+        return originalJson(payload);
+      } catch (e) {
+        // Non è JSON → continua sotto
+      }
+    }
 
-    // Se è HTML
+    // 🔥 Se è HTML
     if (typeof body === "string" && body.trim().startsWith("<")) {
       payload.raw = body.slice(0, 2000);
       payload.error = "HTML ricevuto";
@@ -67,7 +83,7 @@ module.exports = function universalJson(req, res, next) {
       return originalJson(payload);
     }
 
-    // Se è testo
+    // 🔥 Qualsiasi altro tipo → testo
     payload.raw = String(body).slice(0, 2000);
     payload.error = "Risposta non JSON";
     salva(payload);
