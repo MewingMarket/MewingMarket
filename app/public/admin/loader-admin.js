@@ -1,8 +1,6 @@
 // =========================================================
 // ADMIN CRITICAL LOADER — Versione 2028.A (SAFE MODE, ORDINATO)
-// Anti 499/502 — Nessun introspect, nessuna diagnostica
-// Caricamento seriale, attesa server-ready
-// critical-ready PRIMA dei JS di pagina
+// Integrato con loader-universale-2030.js
 // =========================================================
 
 console.log("[ADMIN] Loader 2028.A avviato (SAFE MODE)");
@@ -91,29 +89,11 @@ async function startAdminLoader() {
   document.dispatchEvent(new Event("critical-ready"));
   console.log("[ADMIN] critical-ready (2028.A SAFE)");
 
-  // 7) CARICAMENTO DEI 3 LOADER PAGINE
-
-  // GLOBAL — sempre
+  // 7) CARICA IL LOADER UNIVERSALE 2030 (sostituisce global/user/admin)
   setTimeout(() => {
-    loadScriptSerial(`/loader-pagine-global.js`, "body")
-      .then(() => console.log("[ADMIN] loader-pagine-global.js caricato"));
-  }, 30);
-
-  // USER — usa il tuo nome reale: loader-pagine.user.js
-  if (window.isLogged === true) {
-    setTimeout(() => {
-      loadScriptSerial(`/loader-pagine.user.js`, "body")
-        .then(() => console.log("[ADMIN] loader-pagine.user.js caricato"));
-    }, 60);
-  }
-
-  // ADMIN — solo se admin
-  if (window.isAdmin === true) {
-    setTimeout(() => {
-      loadScriptSerial(`/admin/loader-pagine-admin.js`, "body")
-        .then(() => console.log("[ADMIN] loader-pagine-admin.js caricato"));
-    }, 90);
-  }
+    loadScriptSerial(`/loader-universale-2030.js`, "body")
+      .then(() => console.log("[ADMIN] loader-universale-2030.js caricato"));
+  }, 50);
 }
 
 /* =========================================================
