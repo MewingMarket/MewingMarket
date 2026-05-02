@@ -1,5 +1,5 @@
 // =========================================================
-// ADMIN LOADER — Versione 2028.A (SAFE MODE, ORDINATO)
+// ADMIN CRITICAL LOADER — Versione 2028.A (SAFE MODE, ORDINATO)
 // Anti 499/502 — Nessun introspect, nessuna diagnostica
 // Caricamento seriale, attesa server-ready
 // critical-ready PRIMA dei JS di pagina
@@ -86,17 +86,33 @@ async function startAdminLoader() {
                         "footer-admin-placeholder",
                         "admin-footer-loaded");
 
-  // 6) SAFE READY PRIMA
+  // 6) CRITICAL READY PRIMA
   window.__criticalReady = true;
   document.dispatchEvent(new Event("critical-ready"));
   console.log("[ADMIN] critical-ready (2028.A SAFE)");
 
-  // 7) SOLO DOPO carichiamo i JS di pagina
+  // 7) CARICAMENTO DEI 3 LOADER PAGINE
+  // GLOBAL — sempre
   setTimeout(() => {
-    loadScriptSerial(`/loader-pagine.js`, "body")
-      .then(() => console.log("[ADMIN] loader-pagine.js caricato"))
-      .catch(() => console.warn("[ADMIN] loader-pagine.js NON caricato"));
+    loadScriptSerial(`/loader-pagine-global.js`, "body")
+      .then(() => console.log("[ADMIN] loader-pagine-global.js caricato"));
   }, 30);
+
+  // USER — solo se loggato
+  if (window.isLogged === true) {
+    setTimeout(() => {
+      loadScriptSerial(`/loader-pagine-user.js`, "body")
+        .then(() => console.log("[ADMIN] loader-pagine-user.js caricato"));
+    }, 60);
+  }
+
+  // ADMIN — solo se admin
+  if (window.isAdmin === true) {
+    setTimeout(() => {
+      loadScriptSerial(`/admin/loader-pagine-admin.js`, "body")
+        .then(() => console.log("[ADMIN] loader-pagine-admin.js caricato"));
+    }, 90);
+  }
 }
 
 /* =========================================================
