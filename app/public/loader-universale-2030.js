@@ -30,6 +30,10 @@
 
     let base = path.split("/").pop() || "";
     base = base.replace(".html", "");
+
+    // PATCH: homepage → usa index.js
+    if (!base) base = "index";
+
     debug(tag, "Nome base", base);
 
     const candidates = [
