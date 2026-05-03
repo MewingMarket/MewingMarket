@@ -15,6 +15,11 @@ const store = new Map();
  * Aggiorna il contesto dell’utente
  */
 function update(uid, page) {
+  // ESCLUSIONE STATICI — NON aggiornare contesto per file statici
+  if (/\.(js|css|html|png|jpg|jpeg|svg|webp|ico|woff|woff2)(\?|$)/.test(page || "")) {
+    return;
+  }
+
   // PATCH DEBUG — log ogni update
   console.log("### CONTEXT_UPDATE ###", { uid, page });
 
