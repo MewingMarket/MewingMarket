@@ -1,10 +1,8 @@
 /* =========================================================
-   INDEX DELLE FUNZIONI — Versione 2027.30 (patch completa)
+   INDEX DELLE FUNZIONI — Versione 2028.200 (NO CONFLITTI)
    Compatibile con:
-   - router universale 2027.901
+   - router universale 2028.100
    - universal-json
-   - diagnostica
-   - generico-json
 ========================================================= */
 
 const path = require("path");
@@ -13,11 +11,20 @@ const R = (p) => require(path.join(process.cwd(), "app/server", p));
 module.exports = {
 
   /* =========================================================
-     PRODOTTI / CATALOGO / RECENSIONI PUBBLICHE
+     PRODOTTI / CATALOGO
+     (NESSUNA SOVRASCRITTURA)
   ========================================================== */
   prodotti: {
     ...R("routes/api-prodotti-new.cjs"),
-    ...R("routes/prodotti-ai.cjs"),
+    ...R("routes/prodotti-ai.cjs")
+  },
+
+  /* =========================================================
+     RECENSIONI / FEEDBACK PUBBLICI
+     (SEPARATI DAI PRODOTTI)
+  ========================================================== */
+  recensioni: {
+    ...R("routes/api-feedback.cjs"),
     ...R("routes/api-recensioni-top.cjs")
   },
 
@@ -51,14 +58,6 @@ module.exports = {
   ========================================================== */
   vendite: {
     ...R("routes/api-vendite-download.cjs")
-  },
-
-  /* =========================================================
-     RECENSIONI / FEEDBACK
-  ========================================================== */
-  recensioni: {
-    ...R("routes/api-feedback.cjs"),
-    ...R("routes/api-recensioni-top.cjs")
   },
 
   /* =========================================================
