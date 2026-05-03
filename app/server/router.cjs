@@ -1,8 +1,8 @@
 /* =========================================================
-   ROUTER UNIVERSALE — Versione 2027.901 (SAFE + UNIVERSALE)
+   ROUTER UNIVERSALE — Versione 2028.100 (FULL NORMALIZATION)
+   - Case-insensitive per modulo e funzione
    - Compatibile con universal-json
    - Nessun ERR_HTTP_HEADERS_SENT
-   - Nessun next() senza return
    - Autenticazione robusta
    - Fallback getPublic migliorato
 ========================================================= */
@@ -28,24 +28,58 @@ router.all("/:modulo/:funzione", async (req, res) => {
     console.log("🔵 ROUTER UNIVERSALE →", cleanPath);
 
     /* =====================================================
-       1) CARICAMENTO MODULO
+       1) NORMALIZZAZIONE MODULO (case-insensitive)
     ===================================================== */
-    const mod = funzioni[modulo];
+    const m = modulo;
+    const modCandidates = [
+      m,
+      m.toLowerCase(),
+      m.toUpperCase(),
+      m.charAt(0).toLowerCase() + m.slice(1),
+      m.charAt(0).toUpperCase() + m.slice(1)
+    ];
+
+    let mod = null;
+    for (const c of modCandidates) {
+      if (funzioni[c]) {
+        mod = funzioni[c];
+        break;
+      }
+    }
+
     if (!mod) {
       return res.json({ success: false, error: "Modulo non trovato" });
     }
 
-    let handler = mod[funzione];
+    /* =====================================================
+       2) NORMALIZZAZIONE FUNZIONE (case-insensitive)
+    ===================================================== */
+    const f = funzione;
+
+    const fnCandidates = [
+      f,
+      f.toLowerCase(),
+      f.toUpperCase(),
+      f.charAt(0).toLowerCase() + f.slice(1),
+      f.charAt(0).toUpperCase() + f.slice(1)
+    ];
+
+    let handler = null;
+    for (const c of fnCandidates) {
+      if (typeof mod[c] === "function") {
+        handler = mod[c];
+        break;
+      }
+    }
 
     /* =====================================================
-       2) PATCH getPublic UNIVERSALE
+       3) PATCH getPublic UNIVERSALE
     ===================================================== */
-    if (!handler && funzione === "getpublic") {
+    if (!handler && f.toLowerCase() === "getpublic") {
       handler = async (req) => {
         if (typeof mod.getPublic === "function") return await mod.getPublic(req);
         if (typeof mod.getProductsPublic === "function") return await mod.getProductsPublic(req);
         if (typeof mod.getProdotti === "function") return await mod.getProdotti(req);
-
         return { success: false, error: "Funzione getPublic non disponibile" };
       };
     }
@@ -55,23 +89,24 @@ router.all("/:modulo/:funzione", async (req, res) => {
     }
 
     /* =====================================================
-       3) AUTENTICAZIONE AUTOMATICA
+       4) AUTENTICAZIONE AUTOMATICA
     ===================================================== */
 
     // ADMIN
-    if (modulo === "admin") {
+    if (modulo.toLowerCase() === "admin") {
       const ok = await authAdmin(req, res);
-      if (ok === false) return; // STOP
+      if (ok === false) return;
     }
 
     // UTENTE
-    if (["ordini", "paypal", "vendite", "recensioni", "rimborso", "utenti"].includes(modulo)) {
+    if (["ordini", "paypal", "vendite", "recensioni", "rimborso", "utenti"]
+      .includes(modulo.toLowerCase())) {
       const ok = await authUser(req, res);
-      if (ok === false) return; // STOP
+      if (ok === false) return;
     }
 
     /* =====================================================
-       4) ESECUZIONE FUNZIONE
+       5) ESECUZIONE FUNZIONE
     ===================================================== */
     let result;
     try {
@@ -82,8 +117,7 @@ router.all("/:modulo/:funzione", async (req, res) => {
     }
 
     /* =====================================================
-       5) RISPOSTA UNIVERSALE
-       (universal-json intercetterà e normalizzerà)
+       6) RISPOSTA UNIVERSALE
     ===================================================== */
     return res.json(result || { success: false, error: "Risposta vuota" });
 
