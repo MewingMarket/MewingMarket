@@ -1,5 +1,5 @@
 /* =========================================================
- * SERVER — SAFE MODE FINAL (2027.982)
+ * SERVER — SAFE MODE FINAL (2027.982 + PATCH HEAD 2028.001)
  * =========================================================
  */
 
@@ -16,6 +16,12 @@ app.disable("x-powered-by");
 
 function log(...a){ console.log("[LOG]", ...a); }
 function logErr(...a){ console.error("[ERR]", ...a); }
+
+/* =========================================================
+ * 🔥 PATCH HEALTH CHECK (Render richiede HEAD immediata)
+ * =========================================================
+ */
+app.head("*", (req, res) => res.status(200).end());
 
 /* =========================================================
  * 0) /api/ping SEMPRE PRIMA
