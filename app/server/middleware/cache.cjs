@@ -8,6 +8,13 @@ module.exports = function (app) {
 
   app.use((req, res, next) => {
     try {
+      // =====================================================
+      // 🛑 ESCLUSIONE JS — NON TOCCARE I FILE .JS
+      // =====================================================
+      if (req.path.endsWith(".js") || req.url.includes(".js?")) {
+        return next();
+      }
+
       // DEBUG
       console.log("🟦 [CACHE+CORS] Middleware attivo →", req.method, req.url);
 
@@ -24,7 +31,7 @@ module.exports = function (app) {
       // =====================================================
       if (req.method === "OPTIONS") {
         console.log("🟧 Preflight OPTIONS → Risposta 204 (OK)");
-        return res.sendStatus(204); // Deve rispondere, non può solo fare next()
+        return res.sendStatus(204);
       }
 
       // =====================================================
