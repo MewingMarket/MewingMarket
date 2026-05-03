@@ -58,7 +58,7 @@ async function bootInBackground(){
     require("./services/logging.cjs");
 
     /* =====================================================
-     * DIAGNOSTICA LITE (patch)
+     * DIAGNOSTICA LITE
      * =====================================================
      */
     const diag = require("./services/diagnostica-lite.cjs");
@@ -71,63 +71,8 @@ async function bootInBackground(){
     app.use(express.json());
     app.use(cookieParser());
 
-    log(">> BOOT: universal-json");
-    try {
-      const uj = require("./middleware/universal-json.cjs");
-      app.use(uj);
-    } catch(e){ logErr("universal-json:", e.message); }
-
-    log(">> BOOT: database");
-    let db = null;
-    try { db = require("./db/database.cjs"); }
-    catch(e){ logErr("DB load:", e.message); }
-
-    if(!db){
-      logErr("DB non disponibile — SAFE MODE statico");
-      return;
-    }
-
-    app.set("db", db);
-
-    log(">> BOOT: cache");
-    try { require("./middleware/cache.cjs")(app); } catch(e){}
-
-    log(">> BOOT: uploads");
-    try { require("./middleware/uploads.cjs")(app); } catch(e){}
-
-    log(">> BOOT: context");
-    try { require("./middleware/context.cjs")(app); } catch(e){}
-
-    log("🟧 introspect DISATTIVATO");
-    log("🟧 diagnostica DISATTIVATA");
-    log("🟧 rewriteScripts DISATTIVATO");
-
     /* =========================================================
-     * 🔥 PATCH CRITICA 2027.981
-     * Router API PRIMA delle statiche
-     * =========================================================
-     */
-    log(">> BOOT: router API");
-    try {
-      const router = require("./router.cjs");
-      app.use("/api", router);
-    } catch(e){ logErr("router:", e); }
-
-    /* =========================================================
-     * STATICHE DOPO IL ROUTER (PATCH)
-     * =========================================================
-     */
-    const PUBLIC_DIR = path.resolve("app/public");
-    app.use(express.static(PUBLIC_DIR));
-    app.use("/admin", express.static(path.resolve("app/public/admin")));
-
-    // PATCH: admin usa la stessa login.html degli utenti
-    app.get("/admin/login", (req, res) => {
-      res.sendFile(path.resolve("app/public/login.html"));
-    });
-
-    /* =========================================================
-     * FIX JS STATIC (Render)
+     * 🔥 FIX JS STATIC — SPOSTATO QUI (PRIMA DI CACHE/UPLOADS/CONTEXT)
      * =========================================================
      */
     const PUBLIC_JS = path.join(__dirname, "../public");
@@ -144,17 +89,77 @@ async function bootInBackground(){
     });
 
     /* =========================================================
-     * ❄️ COLD START DISATTIVATO (SAFE MODE)
+     * UNIVERSAL JSON
+     * =========================================================
+     */
+    log(">> BOOT: universal-json");
+    try {
+      const uj = require("./middleware/universal-json.cjs");
+      app.use(uj);
+    } catch(e){ logErr("universal-json:", e.message); }
+
+    /* =========================================================
+     * DATABASE
+     * =========================================================
+     */
+    log(">> BOOT: database");
+    let db = null;
+    try { db = require("./db/database.cjs"); }
+    catch(e){ logErr("DB load:", e.message); }
+
+    if(!db){
+      logErr("DB non disponibile — SAFE MODE statico");
+      return;
+    }
+
+    app.set("db", db);
+
+    /* =========================================================
+     * CACHE / UPLOADS / CONTEXT
+     * =========================================================
+     */
+    log(">> BOOT: cache");
+    try { require("./middleware/cache.cjs")(app); } catch(e){}
+
+    log(">> BOOT: uploads");
+    try { require("./middleware/uploads.cjs")(app); } catch(e){}
+
+    log(">> BOOT: context");
+    try { require("./middleware/context.cjs")(app); } catch(e){}
+
+    log("🟧 introspect DISATTIVATO");
+    log("🟧 diagnostica DISATTIVATA");
+    log("🟧 rewriteScripts DISATTIVATO");
+
+    /* =========================================================
+     * 🔥 ROUTER API PRIMA DELLE STATICHE
+     * =========================================================
+     */
+    log(">> BOOT: router API");
+    try {
+      const router = require("./router.cjs");
+      app.use("/api", router);
+    } catch(e){ logErr("router:", e); }
+
+    /* =========================================================
+     * STATICHE DOPO IL ROUTER
+     * =========================================================
+     */
+    const PUBLIC_DIR = path.resolve("app/public");
+    app.use(express.static(PUBLIC_DIR));
+    app.use("/admin", express.static(path.resolve("app/public/admin")));
+
+    // PATCH: admin usa la stessa login.html degli utenti
+    app.get("/admin/login", (req, res) => {
+      res.sendFile(path.resolve("app/public/login.html"));
+    });
+
+    /* =========================================================
+     * SAFE MODE DISATTIVAZIONI
      * =========================================================
      */
     log(">> BOOT: cold-start DISATTIVATO (SAFE MODE)");
-
-    /* =========================================================
-     * 🚀 BOOTSTRAP DISATTIVATO (SAFE MODE)
-     * =========================================================
-     */
     log(">> BOOT: bootstrap DISATTIVATO (SAFE MODE)");
-
     log("🟧 cron-youtube DISATTIVATO");
 
   } catch(err){
