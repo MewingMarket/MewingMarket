@@ -72,19 +72,28 @@ async function bootInBackground(){
     app.use(cookieParser());
 
     /* =========================================================
-     * 🔥 FIX JS STATIC — SPOSTATO QUI (PRIMA DI CACHE/UPLOADS/CONTEXT)
+     * 🔥 FIX JS STATIC — CON LOG DIAGNOSTICO
      * =========================================================
      */
     const PUBLIC_JS = path.join(__dirname, "../public");
+
     app.use((req,res,next)=>{
-      if(!req.path.endsWith(".js") && !req.url.includes(".js?")) return next();
+      if(!req.path.endsWith(".js") && !req.url.includes(".js?")) {
+        console.log("🟨 FIX-JS-STATIC SKIPPED:", req.path);
+        return next();
+      }
+
       const clean = req.path.split("?")[0];
       const file = path.join(PUBLIC_JS, path.basename(clean));
+
+      console.log("🟩 FIX-JS-STATIC CHECK:", file);
+
       if(fs.existsSync(file)){
         res.setHeader("Content-Type","application/javascript; charset=utf-8");
         res.setHeader("X-Content-Type-Options","nosniff");
         return res.sendFile(file);
       }
+
       next();
     });
 
