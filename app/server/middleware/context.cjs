@@ -31,6 +31,14 @@ module.exports = function (app) {
 
   app.use((req, res, next) => {
     try {
+
+      // =========================================================
+      // 🛑 ESCLUSIONE FILE STATICI (JS, CSS, HTML, IMG, FONT)
+      // =========================================================
+      if (/\.(js|css|html|png|jpg|jpeg|svg|webp|ico|woff|woff2)(\?|$)/.test(req.url)) {
+        return next();
+      }
+
       const uid = req.uid || "guest"; // Fallback per evitare crash se uid è assente
       req.body = req.body || {};
       req.query = req.query || {};
@@ -89,7 +97,6 @@ module.exports = function (app) {
       }
 
       // CRITICO: Anche in caso di errore totale, dobbiamo chiamare next()
-      // altrimenti la richiesta rimane in "loading" infinito
       next();
     }
   });
