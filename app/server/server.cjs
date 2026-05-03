@@ -107,7 +107,11 @@ async function bootInBackground(){
     const PUBLIC_DIR = path.resolve("app/public");
     app.use(express.static(PUBLIC_DIR));
     app.use("/admin", express.static(path.resolve("app/public/admin")));
-    app.get("/admin/login",(req,res)=>res.sendFile(path.resolve("app/public/admin/admin-login.html")));
+
+    // PATCH: admin usa la stessa login.html degli utenti
+    app.get("/admin/login", (req, res) => {
+      res.sendFile(path.resolve("app/public/login.html"));
+    });
 
     /* =========================================================
      * FIX JS STATIC (Render)
