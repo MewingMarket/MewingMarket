@@ -24,10 +24,17 @@ function logErr(...a){ console.error("[ERR]", ...a); }
 app.head("*", (req, res) => res.status(200).end());
 
 /* =========================================================
- * 0) /api/ping SEMPRE PRIMA
+ * 0) /api/ping SEMPRE PRIMA  + DIAGNOSTICA LITE
  * =========================================================
  */
-app.get("/api/ping", (req,res)=>res.json({ok:true,ts:Date.now()}));
+app.get("/api/ping", (req,res)=>{
+  try {
+    const diag = require("./services/diagnostica-lite.cjs");
+    diag.logPing();
+  } catch(e){}
+
+  res.json({ok:true,ts:Date.now()});
+});
 
 /* =========================================================
  * 1) LISTEN SUBITO (Render richiede porta aperta)
@@ -49,6 +56,12 @@ async function bootInBackground(){
   try {
     log(">> BOOT: logging.cjs");
     require("./services/logging.cjs");
+
+    /* =====================================================
+     * DIAGNOSTICA LITE (patch)
+     * =====================================================
+     */
+    const diag = require("./services/diagnostica-lite.cjs");
 
     log(">> BOOT: restore");
     const { restore } = require("./modules/restore.cjs");
