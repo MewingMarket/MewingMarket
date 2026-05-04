@@ -3,6 +3,16 @@
 // Patch SUPREMA — NON carica più il loader universale
 // =========================================================
 
+// Protezione anti-doppio-caricamento
+(function(name){
+  window.__LOADER_GUARD__ = window.__LOADER_GUARD__ || {};
+  if (window.__LOADER_GUARD__[name]) {
+    console.warn(name + " già caricato, skip.");
+    return;
+  }
+  window.__LOADER_GUARD__[name] = true;
+})("admin-critical-loader-2028A.js");
+
 console.log("[ADMIN] Loader 2028.A avviato (SAFE MODE)");
 
 const ADMIN_VERSION = "20280412";
