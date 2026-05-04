@@ -4,6 +4,16 @@
 // NON carica più il loader universale
 // =========================================================
 
+// Protezione anti-doppio-caricamento
+(function(name){
+  window.__LOADER_GUARD__ = window.__LOADER_GUARD__ || {};
+  if (window.__LOADER_GUARD__[name]) {
+    console.warn(name + " già caricato, skip.");
+    return;
+  }
+  window.__LOADER_GUARD__[name] = true;
+})("critical-loader-2028A.js");
+
 (function () {
 
   const VERSION = "20280412";
@@ -171,11 +181,6 @@
       window.__criticalReady = true;
       document.dispatchEvent(new Event("critical-ready"));
       console.log("[CRITICAL] critical-ready emesso");
-
-      /* ============================================================
-         ❌ RIMOSSO: caricamento loader universale
-         Ora lo carica loadersupremo.js
-      ============================================================ */
 
     } catch (err) {
       console.error("[CRITICAL] ERRORE NEL LOADER:", err);
