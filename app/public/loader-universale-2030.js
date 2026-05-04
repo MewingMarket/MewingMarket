@@ -1,7 +1,6 @@
 // =========================================================
 // LOADER UNIVERSALE 2038 — MewingMarket
-// Legge js-list.json + mirror, carica solo JS pagina
-// Esclude globali + speciali + admin-critical + loader
+// Compatibile con router /api/js-list (DB → JSON → loader)
 // =========================================================
 
 (function () {
@@ -41,16 +40,30 @@
     ...UNIVERSAL_EXCLUDE
   ];
 
+  /* ============================================================
+     CARICA LISTA JS (API → JSON → MIRROR)
+  ============================================================ */
   async function loadJSON() {
+    // 1) API (DB → JSON statici)
     try {
-      const r = await fetch("/data/js-list.json?v=" + VERSION);
+      const r = await fetch("/api/js-list?v=" + VERSION, { cache: "no-store" });
       if (r.ok) return r.json();
     } catch {}
 
-    const r2 = await fetch("/data/js-list-mirror.json?v=" + VERSION);
-    return r2.json();
+    // 2) JSON statico
+    try {
+      const r2 = await fetch("/data/js-list.json?v=" + VERSION, { cache: "no-store" });
+      if (r2.ok) return r2.json();
+    } catch {}
+
+    // 3) Mirror
+    const r3 = await fetch("/data/js-list-mirror.json?v=" + VERSION, { cache: "no-store" });
+    return r3.json();
   }
 
+  /* ============================================================
+     CARICA SCRIPT
+  ============================================================ */
   function loadScript(src) {
     return new Promise(resolve => {
       const s = document.createElement("script");
@@ -62,6 +75,9 @@
     });
   }
 
+  /* ============================================================
+     NOME BASE PAGINA
+  ============================================================ */
   function getPageBase() {
     const path = window.location.pathname;
 
@@ -71,6 +87,9 @@
     return base.replace(".html", "");
   }
 
+  /* ============================================================
+     AVVIO
+  ============================================================ */
   async function run() {
     const list = await loadJSON();
 
