@@ -3,6 +3,16 @@
 // Compatibile con router /api/js-list (DB → JSON → loader)
 // =========================================================
 
+// Protezione anti-doppio-caricamento
+(function(name){
+  window.__LOADER_GUARD__ = window.__LOADER_GUARD__ || {};
+  if (window.__LOADER_GUARD__[name]) {
+    console.warn(name + " già caricato, skip.");
+    return;
+  }
+  window.__LOADER_GUARD__[name] = true;
+})("loader-universale-2038.js");
+
 (function () {
 
   const VERSION = "2038";
@@ -40,30 +50,27 @@
     ...UNIVERSAL_EXCLUDE
   ];
 
-  /* ============================================================
-     CARICA LISTA JS (API → JSON → MIRROR)
-  ============================================================ */
+  // ============================================================
+  // CARICA LISTA JS (API → JSON → MIRROR)
+  // ============================================================
   async function loadJSON() {
-    // 1) API (DB → JSON statici)
     try {
       const r = await fetch("/api/js-list?v=" + VERSION, { cache: "no-store" });
       if (r.ok) return r.json();
     } catch {}
 
-    // 2) JSON statico
     try {
       const r2 = await fetch("/data/js-list.json?v=" + VERSION, { cache: "no-store" });
       if (r2.ok) return r2.json();
     } catch {}
 
-    // 3) Mirror
     const r3 = await fetch("/data/js-list-mirror.json?v=" + VERSION, { cache: "no-store" });
     return r3.json();
   }
 
-  /* ============================================================
-     CARICA SCRIPT
-  ============================================================ */
+  // ============================================================
+  // CARICA SCRIPT
+  // ============================================================
   function loadScript(src) {
     return new Promise(resolve => {
       const s = document.createElement("script");
@@ -75,9 +82,9 @@
     });
   }
 
-  /* ============================================================
-     NOME BASE PAGINA
-  ============================================================ */
+  // ============================================================
+  // NOME BASE PAGINA
+  // ============================================================
   function getPageBase() {
     const path = window.location.pathname;
 
@@ -87,9 +94,9 @@
     return base.replace(".html", "");
   }
 
-  /* ============================================================
-     AVVIO
-  ============================================================ */
+  // ============================================================
+  // AVVIO
+  // ============================================================
   async function run() {
     const list = await loadJSON();
 
