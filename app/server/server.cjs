@@ -1,5 +1,5 @@
 /* =========================================================
- * SERVER — SAFE MODE FINAL (2038.001 + JS DEBUG)
+ * SERVER — SAFE MODE FINAL (2038.002)
  * =========================================================
  */
 
@@ -18,28 +18,24 @@ function log(...a){ console.log("[LOG]", ...a); }
 function logErr(...a){ console.error("[ERR]", ...a); }
 
 /* =========================================================
- * 🔥 PATCH HEALTH CHECK (Render richiede HEAD immediata)
- * =========================================================
- */
+ * HEAD immediato richiesto da Render
+ * ========================================================= */
 app.head("*", (req, res) => res.status(200).end());
 
 /* =========================================================
- * 0) /api/ping SEMPRE PRIMA  + DIAGNOSTICA LITE
- * =========================================================
- */
+ * /api/ping + diagnostica lite (ridotta)
+ * ========================================================= */
 app.get("/api/ping", (req,res)=>{
   try {
     const diag = require("./services/diagnostica-lite.cjs");
     diag.logPing();
   } catch(e){}
-
   res.json({ok:true,ts:Date.now()});
 });
 
 /* =========================================================
- * 1) LISTEN SUBITO (Render richiede porta aperta)
- * =========================================================
- */
+ * LISTEN SUBITO (Render richiede porta aperta)
+ * ========================================================= */
 const PORT = process.env.PORT || 10000;
 
 app.listen(PORT, () => {
@@ -48,19 +44,15 @@ app.listen(PORT, () => {
 });
 
 /* =========================================================
- * 2) BOOT COMPLETO IN BACKGROUND
- * =========================================================
- */
+ * BOOT COMPLETO IN BACKGROUND
+ * ========================================================= */
 async function bootInBackground(){
 
   try {
     log(">> BOOT: logging.cjs");
     require("./services/logging.cjs");
 
-    /* =====================================================
-     * DIAGNOSTICA LITE
-     * =====================================================
-     */
+    /* diagnostica lite */
     const diag = require("./services/diagnostica-lite.cjs");
 
     log(">> BOOT: restore");
@@ -72,18 +64,13 @@ async function bootInBackground(){
     app.use(cookieParser());
 
     /* =========================================================
-     * 🔥 DEBUG JS LOADER — Intercetta TUTTI i JS
-     * =========================================================
-     */
+     * JS DEBUG — intercetta TUTTI i .js
+     * ========================================================= */
     const JS_DEBUG_LOADED = [];
     const JS_DEBUG_ERRORS = [];
 
     app.use((req, res, next) => {
-
-      // intercetta QUALSIASI percorso che termina con .js
-      if (!req.path.match(/\.js($|\?)/)) {
-        return next();
-      }
+      if (!req.path.match(/\.js($|\?)/)) return next();
 
       const clean = req.path.split("?")[0];
       const filename = clean.split("/").pop();
@@ -96,10 +83,8 @@ async function bootInBackground(){
         try {
           res.setHeader("Content-Type","application/javascript; charset=utf-8");
           res.setHeader("X-Content-Type-Options","nosniff");
-
           console.log(`🟩 [JS-DEBUG] Caricato: ${filename}`);
           return res.sendFile(fullPath);
-
         } catch (err) {
           console.error(`❌ [JS-DEBUG] ERRORE in ${filename}:`, err.message);
           JS_DEBUG_ERRORS.push({ file: filename, error: err.message });
@@ -109,22 +94,16 @@ async function bootInBackground(){
 
       console.warn(`🟨 [JS-DEBUG] NON TROVATO: ${filename}`);
       JS_DEBUG_ERRORS.push({ file: filename, error: "File non trovato" });
-
       next();
     });
 
-    // Endpoint diagnostico
     app.get("/api/js-debug-report", (req, res) => {
-      res.json({
-        loaded: JS_DEBUG_LOADED,
-        errors: JS_DEBUG_ERRORS
-      });
+      res.json({ loaded: JS_DEBUG_LOADED, errors: JS_DEBUG_ERRORS });
     });
 
     /* =========================================================
      * UNIVERSAL JSON
-     * =========================================================
-     */
+     * ========================================================= */
     log(">> BOOT: universal-json");
     try {
       const uj = require("./middleware/universal-json.cjs");
@@ -133,8 +112,7 @@ async function bootInBackground(){
 
     /* =========================================================
      * DATABASE
-     * =========================================================
-     */
+     * ========================================================= */
     log(">> BOOT: database");
     let db = null;
     try { db = require("./db/database.cjs"); }
@@ -149,8 +127,7 @@ async function bootInBackground(){
 
     /* =========================================================
      * CACHE / UPLOADS / CONTEXT
-     * =========================================================
-     */
+     * ========================================================= */
     log(">> BOOT: cache");
     try { require("./middleware/cache.cjs")(app); } catch(e){}
 
@@ -165,9 +142,8 @@ async function bootInBackground(){
     log("🟧 rewriteScripts DISATTIVATO");
 
     /* =========================================================
-     * 🔥 ROUTER UNIVERSALE 2038 (API + FUNZIONI + JS-LIST)
-     * =========================================================
-     */
+     * ROUTER UNIVERSALE 2038
+     * ========================================================= */
     log(">> BOOT: router API (universale)");
     try {
       const router = require("./router.cjs");
@@ -175,9 +151,8 @@ async function bootInBackground(){
     } catch(e){ logErr("router:", e); }
 
     /* =========================================================
-     * STATICHE DOPO IL ROUTER
-     * =========================================================
-     */
+     * STATICHE
+     * ========================================================= */
     const PUBLIC_DIR = path.resolve("app/public");
     app.use(express.static(PUBLIC_DIR));
     app.use("/admin", express.static(path.resolve("app/public/admin")));
@@ -186,10 +161,6 @@ async function bootInBackground(){
       res.sendFile(path.resolve("app/public/login.html"));
     });
 
-    /* =========================================================
-     * SAFE MODE DISATTIVAZIONI
-     * =========================================================
-     */
     log(">> BOOT: cold-start DISATTIVATO (SAFE MODE)");
     log(">> BOOT: bootstrap DISATTIVATO (SAFE MODE)");
     log("🟧 cron-youtube DISATTIVATO");
@@ -200,9 +171,8 @@ async function bootInBackground(){
 }
 
 /* =========================================================
- * 3) /data persistente
- * =========================================================
- */
+ * /data persistente
+ * ========================================================= */
 const DATA_BACKUP = path.join(process.cwd(), "app/data");
 const DATA_PERSIST = "/var/data/json";
 
