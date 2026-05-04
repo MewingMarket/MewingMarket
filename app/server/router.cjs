@@ -1,10 +1,5 @@
 /* =========================================================
    ROUTER UNIVERSALE — Versione 2038 (FULL MERGE)
-   Gestisce:
-   - /api/js-list (filesystem → DB → JSON)
-   - /api/<modulo>/<funzione>
-   - /api/ping
-   - universal-json compatibile
 ========================================================= */
 
 const express = require("express");
@@ -17,14 +12,14 @@ const R = (p) => require(path.join(process.cwd(), "app/server", p));
 const authUser = R("middleware/auth-user.cjs");
 const authAdmin = R("middleware/auth-admin.cjs");
 
-// Router speciali
+// Router js-list (handler diretto)
 const jslist = require("./routes/jslist.cjs");
 
 /* =========================================================
    ENDPOINT SPECIALI
 ========================================================= */
 
-// /api/js-list → lista JS per loader universale
+// /api/js-list → handler diretto
 router.get("/js-list", jslist);
 
 // /api/ping → diagnostica base
@@ -44,7 +39,6 @@ router.all("/:modulo/:funzione", async (req, res) => {
 
     let handler = mod[f];
 
-    // fallback getPublic
     if (!handler && f === "getpublic") {
       handler = mod.getPublic || mod.getProductsPublic || mod.getProdotti;
     }
@@ -53,7 +47,6 @@ router.all("/:modulo/:funzione", async (req, res) => {
       return res.json({ success: false, error: "Funzione non trovata" });
     }
 
-    // Autenticazione automatica
     if (m === "admin") {
       const ok = await authAdmin(req, res);
       if (ok === false) return;
@@ -64,7 +57,6 @@ router.all("/:modulo/:funzione", async (req, res) => {
       if (ok === false) return;
     }
 
-    // Esecuzione
     const result = await handler(req, res);
     return res.json(result || { success: false, error: "Risposta vuota" });
 
