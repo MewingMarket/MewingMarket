@@ -3,6 +3,12 @@
 // Carica critical loader + loader universale + dynamic loader
 // =========================================================
 
+if (window.__SUPREMO_LOADED__) {
+  console.warn("SUPREMO già caricato, skip.");
+  return;
+}
+window.__SUPREMO_LOADED__ = true;
+
 (function() {
 
   const V = "2038";
