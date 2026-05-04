@@ -1,5 +1,5 @@
 /* =========================================================
- * SERVER — SAFE MODE FINAL (2038.000)
+ * SERVER — SAFE MODE FINAL (2038.001 + JS DEBUG)
  * =========================================================
  */
 
@@ -72,29 +72,55 @@ async function bootInBackground(){
     app.use(cookieParser());
 
     /* =========================================================
-     * 🔥 FIX JS STATIC — CON LOG DIAGNOSTICO
+     * 🔥 DEBUG JS LOADER — Intercetta TUTTI i JS
      * =========================================================
      */
     const PUBLIC_JS = path.join(__dirname, "../public");
 
-    app.use((req,res,next)=>{
-      if(!req.path.endsWith(".js") && !req.url.includes(".js?")) {
-        console.log("🟨 FIX-JS-STATIC SKIPPED:", req.path);
+    const JS_DEBUG_LOADED = [];
+    const JS_DEBUG_ERRORS = [];
+
+    app.use((req, res, next) => {
+
+      // Non è un JS → ignora
+      if (!req.path.endsWith(".js") && !req.url.includes(".js?")) {
         return next();
       }
 
       const clean = req.path.split("?")[0];
-      const file = path.join(PUBLIC_JS, path.basename(clean));
+      const filename = path.basename(clean);
+      const file = path.join(PUBLIC_JS, filename);
 
-      console.log("🟩 FIX-JS-STATIC CHECK:", file);
+      console.log(`🟦 [JS-DEBUG] Richiesto: ${filename}`);
+      JS_DEBUG_LOADED.push(filename);
 
-      if(fs.existsSync(file)){
-        res.setHeader("Content-Type","application/javascript; charset=utf-8");
-        res.setHeader("X-Content-Type-Options","nosniff");
-        return res.sendFile(file);
+      if (fs.existsSync(file)) {
+        try {
+          res.setHeader("Content-Type","application/javascript; charset=utf-8");
+          res.setHeader("X-Content-Type-Options","nosniff");
+
+          console.log(`🟩 [JS-DEBUG] Caricato: ${filename}`);
+          return res.sendFile(file);
+
+        } catch (err) {
+          console.error(`❌ [JS-DEBUG] ERRORE in ${filename}:`, err.message);
+          JS_DEBUG_ERRORS.push({ file: filename, error: err.message });
+          return next();
+        }
       }
 
+      console.warn(`🟨 [JS-DEBUG] NON TROVATO: ${filename}`);
+      JS_DEBUG_ERRORS.push({ file: filename, error: "File non trovato" });
+
       next();
+    });
+
+    // Endpoint diagnostico
+    app.get("/api/js-debug-report", (req, res) => {
+      res.json({
+        loaded: JS_DEBUG_LOADED,
+        errors: JS_DEBUG_ERRORS
+      });
     });
 
     /* =========================================================
@@ -146,8 +172,8 @@ async function bootInBackground(){
      */
     log(">> BOOT: router API (universale)");
     try {
-      const router = require("./router.cjs");   // router unico
-      app.use("/api", router);                  // gestisce tutto
+      const router = require("./router.cjs");
+      app.use("/api", router);
     } catch(e){ logErr("router:", e); }
 
     /* =========================================================
@@ -158,7 +184,6 @@ async function bootInBackground(){
     app.use(express.static(PUBLIC_DIR));
     app.use("/admin", express.static(path.resolve("app/public/admin")));
 
-    // PATCH: admin usa la stessa login.html degli utenti
     app.get("/admin/login", (req, res) => {
       res.sendFile(path.resolve("app/public/login.html"));
     });
