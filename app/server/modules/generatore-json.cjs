@@ -2,6 +2,7 @@
  * GENERATORE JSON — SAFE MODE HARD
  * Mirror automatico del database SQL
  * Protezioni anti-OOM, anti-loop, anti-file enormi
+ * Compatibile con router jslist.cjs
  * =========================================================
  */
 
@@ -22,9 +23,9 @@ const { LISTA_NEWSLETTER } = require(path.join(process.cwd(), "app/server/module
    LIMITI DI SICUREZZA
 ========================================================= */
 const MAX_JSON_SIZE = 5 * 1024 * 1024; // 5MB
-const MAX_ROWS = 5000;                 // limite righe per tabella
-const MAX_NEWSLETTER = 200;            // limite invii newsletter
-const TIMEOUT_MS = 8000;               // timeout 8 secondi
+const MAX_ROWS = 5000;
+const MAX_NEWSLETTER = 200;
+const TIMEOUT_MS = 8000;
 
 /* =========================================================
    PERCORSI
@@ -252,75 +253,32 @@ async function exportCatalog() {
     console.error("❌ Errore exportCatalog:", err.message);
   }
 }
+
 /* =========================================================
-   EXPORT LISTA JS (SAFE) — per loader universale
+   EXPORT LISTA JS (SAFE) — compatibile con router jslist.cjs
 ========================================================= */
 async function exportJSList() {
   try {
-    const PUBLIC_ROOT = path.join(process.cwd(), "app/public");
-    const ADMIN_ROOT = path.join(process.cwd(), "app/public/admin");
+    const rows = db.prepare(`
+      SELECT filename, section
+      FROM js_files
+      ORDER BY filename ASC
+    `).all();
 
-    const GLOBAL_JS = [
-      "seo.js",
-      "structured-data.js",
-      "tracking.js",
-      "auth.js",
-      "header.js",
-      "carrello.js"
-    ];
+    const publicJS = rows.filter(r => r.section === "public").map(r => r.filename);
+    const adminJS  = rows.filter(r => r.section === "admin").map(r => r.filename);
 
-    const SPECIAL_EXCLUDE = [
-      "chat.js",
-      "premium.js"
-    ];
-
-    const ADMIN_CRITICAL_EXCLUDE = [
-      "loader-admin.js",
-      "dynamic-admin-loader.js",
-      "seo-admin.js",
-      "structured-data-admin.js"
-    ];
-
-    const UNIVERSAL_EXCLUDE = [
-      "loader-universale-2030.js",
-      "loader-universale-2038.js"
-    ];
-
-    const EXCLUDE = [
-      ...GLOBAL_JS,
-      ...SPECIAL_EXCLUDE,
-      ...ADMIN_CRITICAL_EXCLUDE,
-      ...UNIVERSAL_EXCLUDE
-    ];
-
-    function scanJS(dir) {
-      try {
-        if (!fs.existsSync(dir)) return [];
-        return fs.readdirSync(dir)
-          .filter(f => f.endsWith(".js"))
-          .filter(f => !EXCLUDE.includes(f))
-          .sort();
-      } catch {
-        return [];
-      }
-    }
-
-    const publicJS = scanJS(PUBLIC_ROOT);
-    const adminJS = scanJS(ADMIN_ROOT);
-
-    const data = {
-      public: publicJS,
-      admin: adminJS
-    };
+    const data = { public: publicJS, admin: adminJS };
 
     saveJSON("js-list.json", data);
 
-    console.log(`🟦 [JSON] js-list.json generato (${publicJS.length} public, ${adminJS.length} admin)`);
+    console.log(`🟦 [JSON] js-list.json generato da database (${publicJS.length} public, ${adminJS.length} admin)`);
 
   } catch (err) {
     console.error("❌ Errore exportJSList:", err.message);
   }
 }
+
 /* =========================================================
    EXPORT COMPLETO (SAFE)
 ========================================================= */
@@ -337,7 +295,8 @@ async function exportAll() {
   await exportCategories();
   await exportYouTube();
   await exportCatalog();
-await exportJSList();
+  await exportJSList();
+
   console.log("✅ Tutti i JSON rigenerati (SAFE)");
 }
 
