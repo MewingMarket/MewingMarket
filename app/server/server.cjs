@@ -75,32 +75,30 @@ async function bootInBackground(){
      * 🔥 DEBUG JS LOADER — Intercetta TUTTI i JS
      * =========================================================
      */
-    const PUBLIC_JS = path.join(__dirname, "../public");
-
     const JS_DEBUG_LOADED = [];
     const JS_DEBUG_ERRORS = [];
 
     app.use((req, res, next) => {
 
-      // Non è un JS → ignora
-      if (!req.path.endsWith(".js") && !req.url.includes(".js?")) {
+      // intercetta QUALSIASI percorso che termina con .js
+      if (!req.path.match(/\.js($|\?)/)) {
         return next();
       }
 
       const clean = req.path.split("?")[0];
-      const filename = path.basename(clean);
-      const file = path.join(PUBLIC_JS, filename);
+      const filename = clean.split("/").pop();
+      const fullPath = path.join(process.cwd(), "app/public", clean.replace(/^\//, ""));
 
       console.log(`🟦 [JS-DEBUG] Richiesto: ${filename}`);
       JS_DEBUG_LOADED.push(filename);
 
-      if (fs.existsSync(file)) {
+      if (fs.existsSync(fullPath)) {
         try {
           res.setHeader("Content-Type","application/javascript; charset=utf-8");
           res.setHeader("X-Content-Type-Options","nosniff");
 
           console.log(`🟩 [JS-DEBUG] Caricato: ${filename}`);
-          return res.sendFile(file);
+          return res.sendFile(fullPath);
 
         } catch (err) {
           console.error(`❌ [JS-DEBUG] ERRORE in ${filename}:`, err.message);
