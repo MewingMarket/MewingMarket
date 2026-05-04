@@ -1,7 +1,7 @@
 // =========================================================
 // LOADER UNIVERSALE 2038 — MewingMarket
 // Legge js-list.json + mirror, carica solo JS pagina
-// Esclude globali + speciali
+// Esclude globali + speciali + admin-critical + loader
 // =========================================================
 
 (function () {
@@ -20,6 +20,25 @@
   const SPECIAL_EXCLUDE = [
     "chat.js",
     "premium.js"
+  ];
+
+  const ADMIN_CRITICAL_EXCLUDE = [
+    "loader-admin.js",
+    "dynamic-admin-loader.js",
+    "seo-admin.js",
+    "structured-data-admin.js"
+  ];
+
+  const UNIVERSAL_EXCLUDE = [
+    "loader-universale-2030.js",
+    "loader-universale-2038.js"
+  ];
+
+  const EXCLUDE = [
+    ...GLOBAL_JS,
+    ...SPECIAL_EXCLUDE,
+    ...ADMIN_CRITICAL_EXCLUDE,
+    ...UNIVERSAL_EXCLUDE
   ];
 
   async function loadJSON() {
@@ -46,7 +65,6 @@
   function getPageBase() {
     const path = window.location.pathname;
 
-    // Homepage
     if (path === "/" || path === "") return "index";
 
     let base = path.split("/").pop();
@@ -69,8 +87,7 @@
 
     const found = candidates.filter(js =>
       pool.includes(js) &&
-      !GLOBAL_JS.includes(js) &&
-      !SPECIAL_EXCLUDE.includes(js)
+      !EXCLUDE.includes(js)
     );
 
     if (found.length === 0) {
