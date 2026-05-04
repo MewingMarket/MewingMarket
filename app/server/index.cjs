@@ -12,7 +12,6 @@ module.exports = {
 
   /* =========================================================
      PRODOTTI / CATALOGO
-     (NESSUNA SOVRASCRITTURA)
   ========================================================== */
   prodotti: {
     ...R("routes/api-prodotti-new.cjs"),
@@ -21,7 +20,6 @@ module.exports = {
 
   /* =========================================================
      RECENSIONI / FEEDBACK PUBBLICI
-     (SEPARATI DAI PRODOTTI)
   ========================================================== */
   recensioni: {
     ...R("routes/api-feedback.cjs"),
@@ -29,7 +27,7 @@ module.exports = {
   },
 
   /* =========================================================
-     UTENTI (login, registrazione, profilo, eventi)
+     UTENTI
   ========================================================== */
   utenti: {
     ...R("routes/api-utenti.cjs"),
@@ -126,5 +124,14 @@ module.exports = {
   ========================================================== */
   generico: {
     ...R("routes/generico.cjs")
+  },
+
+  /* =========================================================
+     JS-LIST (filesystem → DB → JSON)
+     Compatibile con loader universale 2038
+  ========================================================== */
+  jslist: {
+    ...R("routes/jslist.cjs")
   }
+
 };
