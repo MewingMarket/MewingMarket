@@ -1,69 +1,111 @@
 /* =========================================================
-   ROUTER UNIVERSALE — Versione 2038 (FULL MERGE)
+ * JS-LIST — Versione SAFE 2038 (cache + TTL + lock)
 ========================================================= */
 
-const express = require("express");
-const router = express.Router();
+const fs = require("fs");
 const path = require("path");
-const funzioni = require("./index.cjs");
+const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
 
-// Middleware auth
-const R = (p) => require(path.join(process.cwd(), "app/server", p));
-const authUser = R("middleware/auth-user.cjs");
-const authAdmin = R("middleware/auth-admin.cjs");
+const ROOT = path.join(process.cwd(), "app/public");
+const PUBLIC_ROOT = ROOT;
+const ADMIN_ROOT = path.join(ROOT, "admin");
 
-// Router js-list (handler diretto)
-const jslist = require("./routes/jslist.cjs");
+const PUBLIC_JSON = path.join(process.cwd(), "app/public/data/js-list.json");
+const MIRROR_JSON = path.join(process.cwd(), "app/data/js-list-mirror.json");
 
-/* =========================================================
-   ENDPOINT SPECIALI
-========================================================= */
-
-// /api/js-list → handler diretto
-router.get("/js-list", jslist);
-
-// /api/ping → diagnostica base
-router.get("/ping", (req, res) => res.json({ ok: true, ts: Date.now() }));
+const EXCLUDE = [
+  "seo.js","structured-data.js","tracking.js","auth.js","header.js","carrello.js",
+  "chat.js","premium.js",
+  "loader-admin.js","dynamic-admin-loader.js","seo-admin.js","structured-data-admin.js",
+  "loader-universale-2030.js","loader-universale-2038.js"
+];
 
 /* =========================================================
-   ROUTER MODULO/FUNZIONE
+ * CACHE
 ========================================================= */
-router.all("/:modulo/:funzione", async (req, res) => {
+let cachedList = null;
+let lastUpdate = 0;
+let refreshing = false;
+const TTL_MS = 60_000;
+
+/* =========================================================
+ * SCANSIONE
+========================================================= */
+function scanJS(dir) {
   try {
-    const { modulo, funzione } = req.params;
-    const m = modulo.toLowerCase();
-    const f = funzione.toLowerCase();
-
-    const mod = funzioni[m];
-    if (!mod) return res.json({ success: false, error: "Modulo non trovato" });
-
-    let handler = mod[f];
-
-    if (!handler && f === "getpublic") {
-      handler = mod.getPublic || mod.getProductsPublic || mod.getProdotti;
-    }
-
-    if (typeof handler !== "function") {
-      return res.json({ success: false, error: "Funzione non trovata" });
-    }
-
-    if (m === "admin") {
-      const ok = await authAdmin(req, res);
-      if (ok === false) return;
-    }
-
-    if (["ordini", "paypal", "vendite", "recensioni", "rimborso", "utenti"].includes(m)) {
-      const ok = await authUser(req, res);
-      if (ok === false) return;
-    }
-
-    const result = await handler(req, res);
-    return res.json(result || { success: false, error: "Risposta vuota" });
-
-  } catch (err) {
-    console.error("❌ ROUTER UNIVERSALE ERROR:", err);
-    return res.json({ success: false, error: "Errore interno router" });
+    if (!fs.existsSync(dir)) return [];
+    const files = fs.readdirSync(dir);
+    return files
+      .filter(f => f.endsWith(".js"))
+      .filter(f => !EXCLUDE.includes(f))
+      .sort();
+  } catch {
+    return [];
   }
-});
+}
 
-module.exports = router;
+/* =========================================================
+ * SALVATAGGI
+========================================================= */
+function saveToDatabase(list) {
+  try {
+    db.prepare("DELETE FROM js_files").run();
+    const insert = db.prepare("INSERT INTO js_files (filename, section) VALUES (?, ?)");
+    list.public.forEach(js => insert.run(js, "public"));
+    list.admin.forEach(js => insert.run(js, "admin"));
+  } catch {}
+}
+
+function saveJSON(list) {
+  try {
+    fs.writeFileSync(PUBLIC_JSON, JSON.stringify(list, null, 2));
+    fs.writeFileSync(MIRROR_JSON, JSON.stringify(list, null, 2));
+  } catch {}
+}
+
+/* =========================================================
+ * RIGENERAZIONE
+========================================================= */
+function regenerateList() {
+  if (refreshing) return;
+
+  refreshing = true;
+
+  try {
+    let publicJS = scanJS(PUBLIC_ROOT);
+    let adminJS = scanJS(ADMIN_ROOT);
+
+    const list = { public: publicJS, admin: adminJS };
+
+    cachedList = list;
+    lastUpdate = Date.now();
+
+    saveToDatabase(list);
+    saveJSON(list);
+
+    console.log("🟩 [JS-LIST] Rigenerata e cache aggiornata");
+  } catch (err) {
+    console.error("❌ [JS-LIST] Errore rigenerazione:", err.message);
+  } finally {
+    refreshing = false;
+  }
+}
+
+/* =========================================================
+ * HANDLER DIRETTO
+========================================================= */
+module.exports = (req, res) => {
+  const now = Date.now();
+
+  if (cachedList && now - lastUpdate < TTL_MS) {
+    return res.json(cachedList);
+  }
+
+  regenerateList();
+
+  if (!cachedList) {
+    return res.json({ public: [], admin: [] });
+  }
+
+  res.json(cachedList);
+};
