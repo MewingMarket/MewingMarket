@@ -1,6 +1,6 @@
 // =========================================================
 // ADMIN CRITICAL LOADER — Versione 2028.A (SAFE MODE, ORDINATO)
-// Integrato con loader-universale-2030.js
+// Patch SUPREMA — NON carica più il loader universale
 // =========================================================
 
 console.log("[ADMIN] Loader 2028.A avviato (SAFE MODE)");
@@ -84,16 +84,13 @@ async function startAdminLoader() {
                         "footer-admin-placeholder",
                         "admin-footer-loaded");
 
-  // 6) CRITICAL READY PRIMA
+  // 6) CRITICAL READY
   window.__criticalReady = true;
   document.dispatchEvent(new Event("critical-ready"));
   console.log("[ADMIN] critical-ready (2028.A SAFE)");
 
-  // 7) CARICA IL LOADER UNIVERSALE 2030 (sostituisce global/user/admin)
-  setTimeout(() => {
-    loadScriptSerial(`/loader-universale-2030.js`, "body")
-      .then(() => console.log("[ADMIN] loader-universale-2030.js caricato"));
-  }, 50);
+  // 7) ❌ RIMOSSO — NON carichiamo più il loader universale
+  // Ora lo carica loadersupremo-admin.js
 }
 
 /* =========================================================
