@@ -43,11 +43,11 @@
 
   async function loadJSON() {
     try {
-      const r = await fetch("/js-list.json?v=" + VERSION);
+      const r = await fetch("/data/js-list.json?v=" + VERSION);
       if (r.ok) return r.json();
     } catch {}
 
-    const r2 = await fetch("/js-list-mirror.json?v=" + VERSION);
+    const r2 = await fetch("/data/js-list-mirror.json?v=" + VERSION);
     return r2.json();
   }
 
