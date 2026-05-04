@@ -3,6 +3,16 @@
 // Anti 499/502 — stabile su Android/Chrome
 // =========================================================
 
+// Protezione anti-doppio-caricamento
+(function(name){
+  window.__LOADER_GUARD__ = window.__LOADER_GUARD__ || {};
+  if (window.__LOADER_GUARD__[name]) {
+    console.warn(name + " già caricato, skip.");
+    return;
+  }
+  window.__LOADER_GUARD__[name] = true;
+})("dynamic-loader.js");
+
 (function () {
 
   const VERSION = "20260412";
