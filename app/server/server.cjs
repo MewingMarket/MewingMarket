@@ -1,5 +1,5 @@
 /* =========================================================
- * SERVER — SAFE MODE FINAL (2027.982 + PATCH HEAD 2028.001)
+ * SERVER — SAFE MODE FINAL (2038.000)
  * =========================================================
  */
 
@@ -141,13 +141,13 @@ async function bootInBackground(){
     log("🟧 rewriteScripts DISATTIVATO");
 
     /* =========================================================
-     * 🔥 ROUTER API PRIMA DELLE STATICHE
+     * 🔥 ROUTER UNIVERSALE 2038 (API + FUNZIONI + JS-LIST)
      * =========================================================
      */
-    log(">> BOOT: router API");
+    log(">> BOOT: router API (universale)");
     try {
-      const router = require("./router.cjs");
-      app.use("/api", router);
+      const router = require("./router.cjs");   // router unico
+      app.use("/api", router);                  // gestisce tutto
     } catch(e){ logErr("router:", e); }
 
     /* =========================================================
