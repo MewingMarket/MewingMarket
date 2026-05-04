@@ -252,7 +252,75 @@ async function exportCatalog() {
     console.error("❌ Errore exportCatalog:", err.message);
   }
 }
+/* =========================================================
+   EXPORT LISTA JS (SAFE) — per loader universale
+========================================================= */
+async function exportJSList() {
+  try {
+    const PUBLIC_ROOT = path.join(process.cwd(), "app/public");
+    const ADMIN_ROOT = path.join(process.cwd(), "app/public/admin");
 
+    const GLOBAL_JS = [
+      "seo.js",
+      "structured-data.js",
+      "tracking.js",
+      "auth.js",
+      "header.js",
+      "carrello.js"
+    ];
+
+    const SPECIAL_EXCLUDE = [
+      "chat.js",
+      "premium.js"
+    ];
+
+    const ADMIN_CRITICAL_EXCLUDE = [
+      "loader-admin.js",
+      "dynamic-admin-loader.js",
+      "seo-admin.js",
+      "structured-data-admin.js"
+    ];
+
+    const UNIVERSAL_EXCLUDE = [
+      "loader-universale-2030.js",
+      "loader-universale-2038.js"
+    ];
+
+    const EXCLUDE = [
+      ...GLOBAL_JS,
+      ...SPECIAL_EXCLUDE,
+      ...ADMIN_CRITICAL_EXCLUDE,
+      ...UNIVERSAL_EXCLUDE
+    ];
+
+    function scanJS(dir) {
+      try {
+        if (!fs.existsSync(dir)) return [];
+        return fs.readdirSync(dir)
+          .filter(f => f.endsWith(".js"))
+          .filter(f => !EXCLUDE.includes(f))
+          .sort();
+      } catch {
+        return [];
+      }
+    }
+
+    const publicJS = scanJS(PUBLIC_ROOT);
+    const adminJS = scanJS(ADMIN_ROOT);
+
+    const data = {
+      public: publicJS,
+      admin: adminJS
+    };
+
+    saveJSON("js-list.json", data);
+
+    console.log(`🟦 [JSON] js-list.json generato (${publicJS.length} public, ${adminJS.length} admin)`);
+
+  } catch (err) {
+    console.error("❌ Errore exportJSList:", err.message);
+  }
+}
 /* =========================================================
    EXPORT COMPLETO (SAFE)
 ========================================================= */
@@ -269,7 +337,7 @@ async function exportAll() {
   await exportCategories();
   await exportYouTube();
   await exportCatalog();
-
+await exportJSList();
   console.log("✅ Tutti i JSON rigenerati (SAFE)");
 }
 
