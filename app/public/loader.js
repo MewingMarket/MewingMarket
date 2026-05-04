@@ -1,6 +1,7 @@
 // =========================================================
 // CRITICAL LOADER — MewingMarket
-// Versione 2028.A-SAFE — Integrato con loader-universale-2030.js
+// Versione 2028.A-SAFE — Patch SUPREMA
+// NON carica più il loader universale
 // =========================================================
 
 (function () {
@@ -165,20 +166,16 @@
       await loadScriptSerial("/carrello.js", "body");
 
       /* ============================================================
-         CRITICAL READY PRIMA
+         CRITICAL READY
       ============================================================ */
       window.__criticalReady = true;
       document.dispatchEvent(new Event("critical-ready"));
       console.log("[CRITICAL] critical-ready emesso");
 
       /* ============================================================
-         CARICAMENTO DEL LOADER UNIVERSALE 2030
-         (sostituisce global + user + admin)
+         ❌ RIMOSSO: caricamento loader universale
+         Ora lo carica loadersupremo.js
       ============================================================ */
-      setTimeout(() => {
-        loadScriptSerial("/loader-universale-2030.js", "body")
-          .then(() => console.log("[CRITICAL] loader-universale-2030.js caricato"));
-      }, 50);
 
     } catch (err) {
       console.error("[CRITICAL] ERRORE NEL LOADER:", err);
