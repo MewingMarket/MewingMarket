@@ -1,88 +1,90 @@
 // =========================================================
-// LOADER UNIVERSALE 2030 — Compatibile Render
-// Carica 1..N JS per pagina senza directory listing
+// LOADER UNIVERSALE 2038 — MewingMarket
+// Legge js-list.json + mirror, carica solo JS pagina
+// Esclude globali + speciali
 // =========================================================
 
 (function () {
 
-  const VERSION = "2030.002";
+  const VERSION = "2038";
 
-  function debug(tag, msg, data = null) {
-    console.log(`${tag} ${msg}`, data || "");
+  const GLOBAL_JS = [
+    "seo.js",
+    "structured-data.js",
+    "tracking.js",
+    "auth.js",
+    "header.js",
+    "carrello.js"
+  ];
+
+  const SPECIAL_EXCLUDE = [
+    "chat.js",
+    "premium.js"
+  ];
+
+  async function loadJSON() {
+    try {
+      const r = await fetch("/js-list.json?v=" + VERSION);
+      if (r.ok) return r.json();
+    } catch {}
+
+    const r2 = await fetch("/js-list-mirror.json?v=" + VERSION);
+    return r2.json();
   }
 
-  function load(src, tag) {
-    debug(tag, "Caricamento", src);
-    return new Promise(r => {
+  function loadScript(src) {
+    return new Promise(resolve => {
       const s = document.createElement("script");
       s.src = `${src}?v=${VERSION}`;
       s.defer = true;
-      s.onload = () => { debug(tag, "Caricato", src); r(); };
-      s.onerror = () => { debug(tag, "ERRORE", src); r(); };
+      s.onload = resolve;
+      s.onerror = resolve;
       document.body.appendChild(s);
     });
   }
 
-  async function run(prefix, tag) {
-
+  function getPageBase() {
     const path = window.location.pathname;
-    debug(tag, "Pagina rilevata", path);
 
-    let base = path.split("/").pop() || "";
-    base = base.replace(".html", "");
+    // Homepage
+    if (path === "/" || path === "") return "index";
 
-    // PATCH: homepage → usa index.js
-    if (!base) base = "index";
+    let base = path.split("/").pop();
+    return base.replace(".html", "");
+  }
 
-    debug(tag, "Nome base", base);
+  async function run() {
+    const list = await loadJSON();
+
+    const base = getPageBase();
+    const isAdmin = window.location.pathname.startsWith("/admin");
+
+    const pool = isAdmin ? list.admin : list.public;
 
     const candidates = [
-      `${prefix}${base}.js`,
-      `${prefix}${base}-page.js`,
-      `${prefix}${base}-controller.js`,
-      `${prefix}${base}-global.js`,
-      `${prefix}${base}-user.js`,
-      `${prefix}${base}-admin.js`,
-      `${prefix}${base}-1.js`,
-      `${prefix}${base}-2.js`,
-      `${prefix}${base}-3.js`,
-      `${prefix}${base}-extra.js`,
-      `${prefix}${base}-module.js`
+      `${base}.js`,
+      `${base}-page.js`,
+      `${base}-controller.js`
     ];
 
-    const found = [];
-
-    for (const js of candidates) {
-      try {
-        const res = await fetch(js, { method: "GET", cache: "no-store" });
-        if (res.ok) found.push(js);
-      } catch {}
-    }
+    const found = candidates.filter(js =>
+      pool.includes(js) &&
+      !GLOBAL_JS.includes(js) &&
+      !SPECIAL_EXCLUDE.includes(js)
+    );
 
     if (found.length === 0) {
-      debug(tag, "Nessun JS trovato");
+      console.warn("[UNIVERSALE 2038] Nessun JS per", base);
       return;
     }
 
-    debug(tag, "JS trovati", found);
+    console.log("[UNIVERSALE 2038] Carico:", found);
 
     for (const js of found) {
-      await load(js, tag);
+      await loadScript("/" + (isAdmin ? "admin/" : "") + js);
     }
   }
 
-  document.addEventListener("critical-ready", () => {
-
-    run("/", "🟦 [GLOBAL]");
-
-    if (window.isLogged) {
-      run("/", "🟩 [USER]");
-    }
-
-    if (window.isAdmin) {
-      run("/admin/", "🟥 [ADMIN]");
-    }
-
-  });
+  document.addEventListener("critical-ready", run);
 
 })();
