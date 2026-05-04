@@ -3,6 +3,16 @@
 // Carica critical loader admin + loader universale + dynamic admin
 // =========================================================
 
+// Protezione anti-doppio-caricamento
+(function(name){
+  window.__LOADER_GUARD__ = window.__LOADER_GUARD__ || {};
+  if (window.__LOADER_GUARD__[name]) {
+    console.warn(name + " già caricato, skip.");
+    return;
+  }
+  window.__LOADER_GUARD__[name] = true;
+})("loadersupremo-admin.js");
+
 (function() {
 
   const V = "2038";
