@@ -1,5 +1,6 @@
 // =========================================================
-// ROUTER JS-LIST — Genera lista JS, salva nel DB e nei JSON
+// ROUTER JS-LIST — Versione SAFE 2038
+// Filesystem → DB → JSON → Loader Universale
 // =========================================================
 
 const fs = require("fs");
@@ -10,9 +11,10 @@ const router = express.Router();
 // DB
 const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
 
-// Cartelle JS
-const PUBLIC_ROOT = path.join(process.cwd(), "app/public");
-const ADMIN_ROOT = path.join(process.cwd(), "app/public/admin");
+// Path sicuri (Render + locale)
+const ROOT = path.join(__dirname, "../../public");
+const PUBLIC_ROOT = ROOT;
+const ADMIN_ROOT = path.join(ROOT, "admin");
 
 // Percorsi JSON statici
 const PUBLIC_JSON = path.join(process.cwd(), "app/public/data/js-list.json");
@@ -53,18 +55,27 @@ const EXCLUDE = [
 ];
 
 // =========================================================
-// SCANSIONE CARTELLE
+// SCANSIONE CARTELLE (SAFE)
 // =========================================================
 function scanJS(dir) {
-  if (!fs.existsSync(dir)) return [];
-  return fs.readdirSync(dir)
-    .filter(f => f.endsWith(".js"))
-    .filter(f => !EXCLUDE.includes(f))
-    .sort();
+  try {
+    if (!fs.existsSync(dir)) return [];
+    const files = fs.readdirSync(dir);
+    if (!Array.isArray(files)) return [];
+
+    return files
+      .filter(f => f.endsWith(".js"))
+      .filter(f => !EXCLUDE.includes(f))
+      .sort();
+
+  } catch (err) {
+    console.error("❌ scanJS error:", err.message);
+    return [];
+  }
 }
 
 // =========================================================
-// SALVA NEL DATABASE
+// SALVA NEL DATABASE (SAFE)
 // =========================================================
 function saveToDatabase(list) {
   try {
@@ -79,13 +90,14 @@ function saveToDatabase(list) {
     list.admin.forEach(js => insert.run(js, "admin"));
 
     console.log("🟩 [JS-LIST] Salvato nel database");
+
   } catch (err) {
     console.error("❌ Errore salvataggio DB:", err.message);
   }
 }
 
 // =========================================================
-// SALVA JSON STATICI
+// SALVA JSON STATICI (SAFE)
 // =========================================================
 function saveJSON(list) {
   try {
@@ -98,12 +110,16 @@ function saveJSON(list) {
 }
 
 // =========================================================
-// ENDPOINT PRINCIPALE
+// ENDPOINT PRINCIPALE (SAFE)
 // =========================================================
 router.get("/js-list", (req, res) => {
 
-  const publicJS = scanJS(PUBLIC_ROOT);
-  const adminJS = scanJS(ADMIN_ROOT);
+  let publicJS = scanJS(PUBLIC_ROOT);
+  let adminJS = scanJS(ADMIN_ROOT);
+
+  // Fallback anti-crash
+  if (!Array.isArray(publicJS)) publicJS = [];
+  if (!Array.isArray(adminJS)) adminJS = [];
 
   const list = { public: publicJS, admin: adminJS };
 
