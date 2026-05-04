@@ -55,6 +55,14 @@ const EXCLUDE = [
 ];
 
 // =========================================================
+// CACHE IN RAM + RATE LIMIT
+// =========================================================
+let cachedList = null;
+let lastUpdate = 0;
+let refreshing = false;
+const TTL_MS = 60_000; // rigenera al massimo ogni 60s
+
+// =========================================================
 // SCANSIONE CARTELLE (SAFE)
 // =========================================================
 function scanJS(dir) {
@@ -110,23 +118,60 @@ function saveJSON(list) {
 }
 
 // =========================================================
+// RIGENERA LISTA (UNA SOLA VOLTA PER FINESTRA)
+// =========================================================
+function regenerateList() {
+  if (refreshing) {
+    console.log("🔁 [JS-LIST] Rigenerazione già in corso, skip.");
+    return;
+  }
+
+  refreshing = true;
+
+  try {
+    let publicJS = scanJS(PUBLIC_ROOT);
+    let adminJS = scanJS(ADMIN_ROOT);
+
+    if (!Array.isArray(publicJS)) publicJS = [];
+    if (!Array.isArray(adminJS)) adminJS = [];
+
+    const list = { public: publicJS, admin: adminJS };
+
+    cachedList = list;
+    lastUpdate = Date.now();
+
+    saveToDatabase(list);
+    saveJSON(list);
+
+    console.log("🟩 [JS-LIST] Rigenerata e cache aggiornata");
+  } catch (err) {
+    console.error("❌ [JS-LIST] Errore rigenerazione:", err.message);
+  } finally {
+    refreshing = false;
+  }
+}
+
+// =========================================================
 // ENDPOINT PRINCIPALE (SAFE)
 // =========================================================
 router.get("/js-list", (req, res) => {
+  // Se abbiamo una cache recente → rispondiamo subito
+  const now = Date.now();
+  if (cachedList && now - lastUpdate < TTL_MS) {
+    return res.json(cachedList);
+  }
 
-  let publicJS = scanJS(PUBLIC_ROOT);
-  let adminJS = scanJS(ADMIN_ROOT);
+  // Se non abbiamo cache o è vecchia → rigenera (una sola volta)
+  regenerateList();
 
-  // Fallback anti-crash
-  if (!Array.isArray(publicJS)) publicJS = [];
-  if (!Array.isArray(adminJS)) adminJS = [];
+  // Se non c'è ancora cache (prima chiamata assoluta) → risposta minimale
+  if (!cachedList) {
+    console.warn("⚠ [JS-LIST] Nessuna cache disponibile, ritorno lista vuota temporanea");
+    return res.json({ public: [], admin: [] });
+  }
 
-  const list = { public: publicJS, admin: adminJS };
-
-  saveToDatabase(list);
-  saveJSON(list);
-
-  res.json(list);
+  // Altrimenti ritorniamo l'ultima versione buona
+  res.json(cachedList);
 });
 
 module.exports = router;
