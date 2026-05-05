@@ -1,10 +1,4 @@
-/* =========================================================
-   INDEX DELLE FUNZIONI — Versione 2038.300 (NO CONFLITTI)
-   Compatibile con:
-   - router universale 2038
-   - universal-json
-   - pipeline AI 2026.300
-========================================================= */
+// FILE: app/server/index.cjs
 
 const path = require("path");
 const R = (p) => require(path.join(process.cwd(), "app/server", p));
@@ -16,12 +10,11 @@ module.exports = {
   ========================================================== */
   prodotti: {
     ...R("routes/api-prodotti-new.cjs"),
-    ...R("routes/prodotti-ai.cjs") // legacy AI (se lo usi ancora)
+    ...R("routes/prodotti-ai.cjs") // se ancora usato
   },
 
   /* =========================================================
      AI — NUOVO MOTORE PRODOTTI
-     (searchproduct, generateproduct)
   ========================================================== */
   ai: {
     ...R("routes/api-prodotti-ai.cjs")
@@ -76,14 +69,13 @@ module.exports = {
 
   /* =========================================================
      ADMIN
-     (dashboard, utenti, feedback, prodotti AI)
   ========================================================== */
   admin: {
     ...R("routes/api-admin.cjs"),
     ...R("routes/admin-dashboard.cjs"),
     ...R("routes/admin-feedback.cjs"),
     ...R("routes/admin-utenti.cjs"),
-    ...R("routes/admin-prodotti-ai.cjs")   // 👈 AGGIUNTO
+    ...R("routes/admin-prodotti-ai.cjs")
   },
 
   /* =========================================================
@@ -139,7 +131,6 @@ module.exports = {
 
   /* =========================================================
      JS-LIST (filesystem → DB → JSON)
-     Compatibile con loader universale 2038
   ========================================================== */
   jslist: {
     ...R("routes/jslist.cjs")
