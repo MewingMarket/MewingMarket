@@ -1,13 +1,19 @@
 // FILE: app/server/routes/api-prodotti-ai.cjs
+// PATH ASSOLUTO: app/server/routes/api-prodotti-ai.cjs
 
 const express = require("express");
 const path = require("path");
 const fs = require("fs");
 const router = express.Router();
 
-const db = require("../db.cjs");          // adatta se il tuo db è altrove
-const ai = require("../services/ai.cjs"); // wrapper tuo modello AI
-const pdfGenerator = require("../services/pdf-generator.cjs"); // generatore PDF custom
+/* =========================================================
+   REQUIRE ASSOLUTI
+========================================================= */
+const ROOT = process.cwd();
+
+const db = require(path.join(ROOT, "app/server/db/database.cjs"));
+const ai = require(path.join(ROOT, "app/server/services/ai.cjs"));
+const pdfGenerator = require(path.join(ROOT, "app/server/services/pdf-generator.cjs"));
 
 /* =========================================================
    HELPER UNIVERSAL-JSON
@@ -21,7 +27,6 @@ function fail(error) {
 
 /* =========================================================
    POST /api/ai/searchproduct
-   - crea una validazione in tabella `validazioni`
 ========================================================= */
 router.post("/searchproduct", async (req, res) => {
   try {
@@ -55,17 +60,11 @@ Idea: ${query}
       result.note_ricerca || ""
     );
 
-    const id = info.lastID;
-
     return res.json(ok({
-      id,
-      titolo: result.titolo,
-      categoria: result.categoria || "",
-      trend_score: result.trend_score || 0,
-      colore: result.colore || "giallo",
-      motivazione: result.motivazione || "",
-      note_ricerca: result.note_ricerca || ""
+      id: info.lastID,
+      ...result
     }));
+
   } catch (err) {
     console.error("❌ searchproduct:", err);
     return res.json(fail(err.message));
@@ -74,7 +73,6 @@ Idea: ${query}
 
 /* =========================================================
    POST /api/ai/generaImmagine
-   - genera immagine di copertina coerente
 ========================================================= */
 router.post("/generaImmagine", async (req, res) => {
   try {
@@ -99,15 +97,16 @@ Stile:
     const imgBase64 = await ai.generateImage(prompt);
 
     const filename = `cover_${id}.webp`;
-    const dir = path.join(process.cwd(), "app/public/uploads/prodotti");
+    const dir = path.join(ROOT, "app/public/uploads/prodotti");
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    const filepath = path.join(dir, filename);
 
+    const filepath = path.join(dir, filename);
     fs.writeFileSync(filepath, Buffer.from(imgBase64, "base64"));
 
     return res.json(ok({
       url: `/uploads/prodotti/${filename}`
     }));
+
   } catch (err) {
     console.error("❌ generaImmagine:", err);
     return res.json(fail(err.message));
@@ -116,7 +115,6 @@ Stile:
 
 /* =========================================================
    POST /api/ai/generaFileProdotto
-   - genera file di consegna (PDF) rispettando config
 ========================================================= */
 router.post("/generaFileProdotto", async (req, res) => {
   try {
@@ -146,8 +144,9 @@ Il contenuto deve essere:
     const contenuto = await ai.generateText(prompt);
 
     const filename = `prodotto_${id}.pdf`;
-    const dir = path.join(process.cwd(), "app/public/uploads/fileProdotti");
+    const dir = path.join(ROOT, "app/public/uploads/fileProdotti");
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
     const filepath = path.join(dir, filename);
 
     await pdfGenerator(contenuto, filepath);
@@ -155,6 +154,7 @@ Il contenuto deve essere:
     return res.json(ok({
       url: `/uploads/fileProdotti/${filename}`
     }));
+
   } catch (err) {
     console.error("❌ generaFileProdotto:", err);
     return res.json(fail(err.message));
@@ -163,8 +163,6 @@ Il contenuto deve essere:
 
 /* =========================================================
    POST /api/ai/generateproduct
-   - usa validazione + config per creare prodotti_da_creare
-   - genera descrizione tecnica, immagine, file consegna
 ========================================================= */
 router.post("/generateproduct", async (req, res) => {
   try {
@@ -175,10 +173,11 @@ router.post("/generateproduct", async (req, res) => {
       validazione_id
     );
 
-    if (!val) {
-      return res.json(fail("Validazione non trovata"));
-    }
+    if (!val) return res.json(fail("Validazione non trovata"));
 
+    /* ---------------------------------------------------------
+       DESCRIZIONE TECNICA
+    --------------------------------------------------------- */
     const promptDescrizione = `
 Genera una descrizione tecnica dettagliata per un prodotto digitale.
 
@@ -199,6 +198,9 @@ La descrizione deve essere:
 
     const prezzo_cent = Math.round((config.price || 49) * 100);
 
+    /* ---------------------------------------------------------
+       CREA RECORD IN prodotti_da_creare
+    --------------------------------------------------------- */
     const stmt = await db.prepare(`
       INSERT INTO prodotti_da_creare
       (titolo, categoria, descrizione_tecnica, prezzo_cent, config_json, stato, created_at)
@@ -215,7 +217,9 @@ La descrizione deve essere:
 
     const id = info.lastID;
 
-    // IMMAGINE
+    /* ---------------------------------------------------------
+       GENERA IMMAGINE
+    --------------------------------------------------------- */
     const imgRes = await fetch("http://localhost:3000/api/ai/generaImmagine", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -229,7 +233,9 @@ La descrizione deve essere:
 
     const imgUrl = imgRes?.success ? imgRes.data.url : null;
 
-    // FILE
+    /* ---------------------------------------------------------
+       GENERA FILE PDF
+    --------------------------------------------------------- */
     const fileRes = await fetch("http://localhost:3000/api/ai/generaFileProdotto", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -243,6 +249,9 @@ La descrizione deve essere:
 
     const fileUrl = fileRes?.success ? fileRes.data.url : null;
 
+    /* ---------------------------------------------------------
+       UPDATE RECORD
+    --------------------------------------------------------- */
     await db.prepare(`
       UPDATE prodotti_da_creare
       SET immagine_url = ?, file_consegna_url = ?, stato = 'generato'
@@ -259,6 +268,7 @@ La descrizione deve essere:
       file_consegna_url: fileUrl,
       config
     }));
+
   } catch (err) {
     console.error("❌ generateproduct:", err);
     return res.json(fail(err.message));
