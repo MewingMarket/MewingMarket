@@ -2,23 +2,31 @@
    FILE: app/server/routes/api-prodotti-new.cjs
    MODALITÀ: Java‑mode (funzioni, no Express)
    DESCRIZIONE: Catalogo prodotti — SQL definitivo (ID-based)
+   COMPATIBILE CON:
+   - immagine_url
+   - file_consegna_url
+   - config_json
+   - categorie automatiche
 ========================================================= */
 
 const path = require("path");
-const R = (p) => require(path.join(process.cwd(), "app", p));
+const ROOT = process.cwd();
+const R = (p) => require(path.join(ROOT, "app", p));
 
+/* =========================================================
+   REQUIRE ASSOLUTI
+========================================================= */
 const catalogo = R("modules/catalogo-sql.cjs");
 const jsonGen = R("server/modules/generatore-json.cjs");
 
 /* =========================================================
-   FUNZIONE 1 — getProdotti
+   FUNZIONE 1 — getProdotti (ADMIN)
 ========================================================= */
 async function getProdotti(req) {
   console.log("[DEBUG prodotti] getProdotti()");
 
   try {
-    // ❗ catalogo.getAllProducts è SINCRONA → niente await
-    const prodotti = catalogo.getAllProducts();
+    const prodotti = catalogo.getAllProducts(); // SINCRONO
     return { success: true, prodotti };
   } catch (err) {
     console.error("❌ getProdotti ERROR:", err);
@@ -27,14 +35,13 @@ async function getProdotti(req) {
 }
 
 /* =========================================================
-   FUNZIONE 2 — getProdottoById
+   FUNZIONE 2 — getProdottoById (ADMIN)
 ========================================================= */
 async function getProdottoById(req) {
   console.log("[DEBUG prodotti] getProdottoById()", req.params);
 
   try {
-    // ❗ SINCRONO → niente await
-    const prodotto = catalogo.getProductById(req.params.id);
+    const prodotto = catalogo.getProductById(req.params.id); // SINCRONO
     if (!prodotto) {
       return { success: false, error: "Prodotto non trovato" };
     }
@@ -46,7 +53,7 @@ async function getProdottoById(req) {
 }
 
 /* =========================================================
-   FUNZIONE 3 — salvaProdotto
+   FUNZIONE 3 — salvaProdotto (ADMIN)
 ========================================================= */
 async function salvaProdotto(req) {
   console.log("[DEBUG prodotti] salvaProdotto()");
@@ -58,10 +65,13 @@ async function salvaProdotto(req) {
       return { success: false, error: "Titolo e prezzo obbligatori" };
     }
 
-    // ❗ SINCRONO → niente await
-    const prodotto = catalogo.saveProduct(data);
+    // SUPPORTO COMPLETO:
+    // - immagine_url
+    // - file_consegna_url
+    // - config_json
+    // - categorie automatiche
+    const prodotto = catalogo.saveProduct(data); // SINCRONO
 
-    // MIRROR JSON (questo è async → ok)
     try {
       await jsonGen.exportProducts();
       await jsonGen.exportCategories();
@@ -80,7 +90,7 @@ async function salvaProdotto(req) {
 }
 
 /* =========================================================
-   FUNZIONE 4 — generaDescrizioneAI
+   FUNZIONE 4 — generaDescrizioneAI (placeholder)
 ========================================================= */
 async function generaDescrizioneAI(req) {
   console.log("[DEBUG prodotti] generaDescrizioneAI()");
@@ -91,13 +101,12 @@ async function generaDescrizioneAI(req) {
       return { success: false, error: "Titolo mancante" };
     }
 
-    const AI_RESULT = {
+    // Placeholder — la tua AI reale è in api-prodotti-ai.cjs
+    return {
       success: true,
       descrizione_lunga: `<h3>Analisi di ${titolo}</h3><p>Descrizione ottimizzata generata dall'AI basata sul contenuto fornito...</p>`,
       descrizione_breve: `Tutto quello che devi sapere su ${titolo}.`
     };
-
-    return AI_RESULT;
 
   } catch (err) {
     console.error("❌ generaDescrizioneAI ERROR:", err);
@@ -106,14 +115,13 @@ async function generaDescrizioneAI(req) {
 }
 
 /* =========================================================
-   FUNZIONE 5 — eliminaProdotto
+   FUNZIONE 5 — eliminaProdotto (ADMIN)
 ========================================================= */
 async function eliminaProdotto(req) {
   console.log("[DEBUG prodotti] eliminaProdotto()", req.params);
 
   try {
-    // ❗ SINCRONO → niente await
-    const ok = catalogo.deleteProduct(req.params.id);
+    const ok = catalogo.deleteProduct(req.params.id); // SINCRONO
     if (!ok) {
       return { success: false, error: "Prodotto non trovato" };
     }
@@ -131,14 +139,13 @@ async function eliminaProdotto(req) {
 }
 
 /* =========================================================
-   FUNZIONE 6 — getProductsPublic
+   FUNZIONE 6 — getProductsPublic (FRONTEND)
 ========================================================= */
 async function getProductsPublic(req) {
   console.log("[DEBUG prodotti] getProductsPublic()");
 
   try {
-    // ❗ SINCRONO → niente await
-    const prodotti = catalogo.getAllProducts();
+    const prodotti = catalogo.getAllProducts(); // SINCRONO
     return { success: true, prodotti };
   } catch (err) {
     console.error("❌ getProductsPublic ERROR:", err);
@@ -147,14 +154,13 @@ async function getProductsPublic(req) {
 }
 
 /* =========================================================
-   FUNZIONE 7 — getProductPublicById
+   FUNZIONE 7 — getProductPublicById (FRONTEND)
 ========================================================= */
 async function getProductPublicById(req) {
   console.log("[DEBUG prodotti] getProductPublicById()", req.params);
 
   try {
-    // ❗ SINCRONO → niente await
-    const prodotto = catalogo.getProductById(req.params.id);
+    const prodotto = catalogo.getProductById(req.params.id); // SINCRONO
     if (!prodotto) {
       return { success: false, error: "Non trovato" };
     }
@@ -168,7 +174,6 @@ async function getProductPublicById(req) {
 /* =========================================================
    ALIAS COMPATIBILITÀ FRONTEND
 ========================================================= */
-
 async function getProducts(req) {
   console.log("[DEBUG prodotti] alias getProducts() → getProductsPublic()");
   return getProductsPublic(req);
