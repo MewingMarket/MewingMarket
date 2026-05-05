@@ -23,11 +23,7 @@ async function adminApi(path, options = {}) {
   }
 
   let json;
-  try {
-    json = await res.json();
-  } catch {
-    return null;
-  }
+  try { json = await res.json(); } catch { return null; }
 
   return json.success ? json.data : null;
 }
@@ -41,15 +37,17 @@ document.addEventListener("critical-ready", () => {
 
   const boxRisultati = document.getElementById("risultati-validazione");
 
-  const valTitolo = document.getElementById("val-titolo");
-  const valCategoria = document.getElementById("val-categoria");
-  const valTrend = document.getElementById("val-trend");
-  const valColore = document.getElementById("val-colore");
   const valMotivazione = document.getElementById("val-motivazione");
   const valNote = document.getElementById("val-note");
 
   const btnGenera = document.getElementById("btn-genera-prodotto");
   const statusGenerazione = document.getElementById("status-generazione");
+
+  /* KPI */
+  const kpiTrend = document.getElementById("kpi-trend");
+  const kpiColore = document.getElementById("kpi-colore");
+  const kpiCategoria = document.getElementById("kpi-categoria");
+  const kpiId = document.getElementById("kpi-id");
 
   let validazioneCorrente = null;
 
@@ -75,10 +73,12 @@ document.addEventListener("critical-ready", () => {
 
     validazioneCorrente = data;
 
-    valTitolo.textContent = data.titolo;
-    valCategoria.textContent = data.categoria || "—";
-    valTrend.textContent = data.trend_score;
-    valColore.textContent = data.colore;
+    /* KPI */
+    kpiTrend.textContent = data.trend_score;
+    kpiColore.textContent = data.colore;
+    kpiCategoria.textContent = data.categoria || "—";
+    kpiId.textContent = data.id;
+
     valMotivazione.textContent = data.motivazione || "—";
     valNote.textContent = data.note_ricerca || "—";
 
