@@ -1,13 +1,21 @@
+// FILE: app/server/routes/admin-prodotti-ai.cjs
+// PATH ASSOLUTO: app/server/routes/admin-prodotti-ai.cjs
+
 /* =========================================================
-   ADMIN PRODOTTI AI — Versione 2026.300
+   ADMIN PRODOTTI AI — Versione 2027.1
    - getprodottidacreare
-   - approvaprodotto
+   - approvaprodotto (con immagine + file)
    - eliminaprodottodacreare
+   - require assoluti
 ========================================================= */
 
 const path = require("path");
-const R = (p) => require(path.join(process.cwd(), "app/server", p));
+const ROOT = process.cwd();
+const R = (p) => require(path.join(ROOT, "app/server", p));
 
+/* =========================================================
+   REQUIRE ASSOLUTI
+========================================================= */
 const db = R("db/database.cjs");
 const jsonGen = R("modules/generatore-json.cjs");
 const catalogo = R("modules/catalogo-sql.cjs");
@@ -36,6 +44,10 @@ async function getprodottidacreare(req) {
 
 /* =========================================================
    2) APPROVA E PUBBLICA PRODOTTO
+   - copia immagine_url
+   - copia file_consegna_url
+   - copia descrizione_tecnica
+   - genera descrizione_breve
 ========================================================= */
 async function approvaprodotto(req) {
   console.log("[ADMIN AI] approvaprodotto()");
@@ -53,18 +65,36 @@ async function approvaprodotto(req) {
 
     if (!p) return { success: false, error: "Prodotto da creare non trovato" };
 
-    // Conversione in prodotto catalogo
+    /* ---------------------------------------------------------
+       GENERA DESCRIZIONE BREVE AUTOMATICA
+    --------------------------------------------------------- */
+    const descrizioneBreve = p.descrizione_tecnica
+      ? p.descrizione_tecnica.split(".")[0].slice(0, 180) + "..."
+      : "";
+
+    /* ---------------------------------------------------------
+       COSTRUZIONE PRODOTTO FINALE
+       (catalogo.saveProduct richiede questi campi)
+    --------------------------------------------------------- */
     const dataProd = {
       titolo: p.titolo,
-      descrizione_lunga: p.descrizione_tecnica,   // generiamo breve/lunga dopo
-      descrizione_breve: "",
+      descrizione_lunga: p.descrizione_tecnica,
+      descrizione_breve: descrizioneBreve,
       prezzo_cent: p.prezzo_cent,
       immagine: p.immagine_url || null,
-      categoria: p.categoria || null
+      file_consegna_url: p.file_consegna_url || null,   // 🔥 AGGIUNTO
+      categoria: p.categoria || null,
+      config_json: p.config_json || null                // 🔥 AGGIUNTO
     };
 
+    /* ---------------------------------------------------------
+       SALVATAGGIO NEL CATALOGO
+    --------------------------------------------------------- */
     const prodottoFinale = catalogo.saveProduct(dataProd);
 
+    /* ---------------------------------------------------------
+       MARCA COME PUBBLICATO
+    --------------------------------------------------------- */
     db.prepare(`
       UPDATE prodotti_da_creare
       SET stato = 'pubblicato',
@@ -72,6 +102,9 @@ async function approvaprodotto(req) {
       WHERE id = ?
     `).run(id);
 
+    /* ---------------------------------------------------------
+       RIGENERA JSON MIRROR
+    --------------------------------------------------------- */
     await jsonGen.exportProducts();
     await jsonGen.exportCategories();
     await jsonGen.exportCatalog();
