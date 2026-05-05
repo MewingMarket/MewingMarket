@@ -1,7 +1,11 @@
+// FILE: public/admin/validazione-prodotti.js
+
+
 /* =========================================================
    VALIDAZIONE PRODOTTI — Versione 2026.300
    - AI searchproduct
-   - AI generateproduct
+   - AI generateproduct (con config)
+   - KPI integrate
    - universal-json
 ========================================================= */
 
@@ -31,6 +35,9 @@ async function adminApi(path, options = {}) {
 document.addEventListener("critical-ready", () => {
   console.log("🔥 validazione-prodotti.js READY");
 
+  /* ---------------------------------------------------------
+     ELEMENTI DOM
+  --------------------------------------------------------- */
   const input = document.getElementById("input-ricerca");
   const btnCerca = document.getElementById("btn-cerca");
   const statusRicerca = document.getElementById("status-ricerca");
@@ -79,6 +86,7 @@ document.addEventListener("critical-ready", () => {
     kpiCategoria.textContent = data.categoria || "—";
     kpiId.textContent = data.id;
 
+    /* Testi */
     valMotivazione.textContent = data.motivazione || "—";
     valNote.textContent = data.note_ricerca || "—";
 
@@ -88,15 +96,38 @@ document.addEventListener("critical-ready", () => {
 
   /* =========================================================
      GENERA PRODOTTO (AI)
+     - genera descrizione tecnica
+     - genera immagine
+     - genera file di consegna
+     - salva in prodotti_da_creare
   ========================================================== */
   btnGenera.onclick = async () => {
     if (!validazioneCorrente) return;
 
     statusGenerazione.textContent = "Generazione prodotto AI...";
 
+    /* ---------------------------------------------------------
+       CONFIGURAZIONE PRODOTTO
+       (questa parte verrà poi collegata ai campi UI)
+    --------------------------------------------------------- */
+    const config = {
+      type: "ebook",          // tipo prodotto
+      pages: 120,             // numero pagine
+      level: "intermedio",    // livello
+      language: "IT",         // lingua
+      target: "principianti", // target
+      price: 49               // prezzo base
+    };
+
+    /* ---------------------------------------------------------
+       CHIAMATA generateproduct
+    --------------------------------------------------------- */
     const data = await adminApi("/api/ai/generateproduct", {
       method: "POST",
-      body: JSON.stringify({ validazione_id: validazioneCorrente.id })
+      body: JSON.stringify({
+        validazione_id: validazioneCorrente.id,
+        config
+      })
     });
 
     statusGenerazione.textContent = data
