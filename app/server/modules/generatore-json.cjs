@@ -1,8 +1,8 @@
 /* =========================================================
- * GENERATORE JSON — SAFE MODE HARD
+ * GENERATORE JSON — SAFE MODE HARD (2038.300)
  * Mirror automatico del database SQL
  * Protezioni anti-OOM, anti-loop, anti-file enormi
- * Compatibile con router jslist.cjs
+ * Compatibile con router jslist.cjs + pipeline AI
  * =========================================================
  */
 
@@ -255,7 +255,43 @@ async function exportCatalog() {
 }
 
 /* =========================================================
-   EXPORT LISTA JS (SAFE) — compatibile con router jslist.cjs
+   EXPORT VALIDAZIONI (SAFE)
+========================================================= */
+async function exportValidazioni() {
+  try {
+    const rows = db.prepare(`
+      SELECT *
+      FROM validazioni
+      ORDER BY id DESC
+      LIMIT ?
+    `).all(MAX_ROWS);
+
+    saveJSON("validazioni.json", rows);
+  } catch (err) {
+    console.error("❌ Errore exportValidazioni:", err.message);
+  }
+}
+
+/* =========================================================
+   EXPORT PRODOTTI_DA_CREARE (SAFE)
+========================================================= */
+async function exportProdottiDaCreare() {
+  try {
+    const rows = db.prepare(`
+      SELECT *
+      FROM prodotti_da_creare
+      ORDER BY id DESC
+      LIMIT ?
+    `).all(MAX_ROWS);
+
+    saveJSON("prodotti-da-creare.json", rows);
+  } catch (err) {
+    console.error("❌ Errore exportProdottiDaCreare:", err.message);
+  }
+}
+
+/* =========================================================
+   EXPORT LISTA JS (SAFE)
 ========================================================= */
 async function exportJSList() {
   try {
@@ -297,6 +333,10 @@ async function exportAll() {
   await exportCatalog();
   await exportJSList();
 
+  // opzionali
+  await exportValidazioni();
+  await exportProdottiDaCreare();
+
   console.log("✅ Tutti i JSON rigenerati (SAFE)");
 }
 
@@ -308,5 +348,7 @@ module.exports = {
   exportProducts,
   exportCategories,
   exportYouTube,
-  exportCatalog
+  exportCatalog,
+  exportValidazioni,
+  exportProdottiDaCreare
 };
