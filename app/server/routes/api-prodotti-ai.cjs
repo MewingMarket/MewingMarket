@@ -12,11 +12,11 @@ const router = express.Router();
 const ROOT = process.cwd();
 
 const db = require(path.join(ROOT, "app/server/db/database.cjs"));
-const ai = require(path.join(ROOT, "app/server/services/ai.cjs"));
+const ai = require(path.join(ROOT, "app/server/modules/ai.cjs")); // ✅ CORRETTO
 const pdfGenerator = require(path.join(ROOT, "app/server/services/pdf-generator.cjs"));
 
 /* =========================================================
-   HELPER UNIVERSAL-JSON
+   UNIVERSAL JSON HELPERS
 ========================================================= */
 function ok(data) {
   return { success: true, data };
