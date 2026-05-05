@@ -1,8 +1,9 @@
 /* =========================================================
-   INDEX DELLE FUNZIONI — Versione 2028.200 (NO CONFLITTI)
+   INDEX DELLE FUNZIONI — Versione 2038.300 (NO CONFLITTI)
    Compatibile con:
-   - router universale 2028.100
+   - router universale 2038
    - universal-json
+   - pipeline AI 2026.300
 ========================================================= */
 
 const path = require("path");
@@ -15,7 +16,15 @@ module.exports = {
   ========================================================== */
   prodotti: {
     ...R("routes/api-prodotti-new.cjs"),
-    ...R("routes/prodotti-ai.cjs")
+    ...R("routes/prodotti-ai.cjs") // legacy AI (se lo usi ancora)
+  },
+
+  /* =========================================================
+     AI — NUOVO MOTORE PRODOTTI
+     (searchproduct, generateproduct)
+  ========================================================== */
+  ai: {
+    ...R("routes/api-prodotti-ai.cjs")
   },
 
   /* =========================================================
@@ -67,12 +76,14 @@ module.exports = {
 
   /* =========================================================
      ADMIN
+     (dashboard, utenti, feedback, prodotti AI)
   ========================================================== */
   admin: {
     ...R("routes/api-admin.cjs"),
     ...R("routes/admin-dashboard.cjs"),
     ...R("routes/admin-feedback.cjs"),
-    ...R("routes/admin-utenti.cjs")
+    ...R("routes/admin-utenti.cjs"),
+    ...R("routes/admin-prodotti-ai.cjs")   // 👈 AGGIUNTO
   },
 
   /* =========================================================
