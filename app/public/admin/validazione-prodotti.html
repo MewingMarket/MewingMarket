@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Validazione Prodotti | Admin</title>
+</head>
+
+<body>
+
+  <div id="head-admin-placeholder"></div>
+  <div id="header-admin-placeholder"></div>
+
+  <main class="dashboard-container">
+
+    <h1 class="page-title">Validazione Prodotti (AI)</h1>
+
+    <!-- ========================================================= -->
+    <!-- SEZIONE RICERCA -->
+    <!-- ========================================================= -->
+    <section class="box-standard" style="margin-bottom:30px;">
+      <h2>Cerca un prodotto</h2>
+
+      <div class="form-standard">
+
+        <label for="input-ricerca">Nome prodotto o idea</label>
+        <input type="text" id="input-ricerca" placeholder="Esempio: Corso Mewing Avanzato">
+
+        <button id="btn-cerca" class="btn-primario" style="margin-top:15px;">
+          🔍 Cerca con AI
+        </button>
+
+        <p id="status-ricerca" style="margin-top:10px;font-size:0.9rem;color:#666;"></p>
+
+      </div>
+    </section>
+
+    <!-- ========================================================= -->
+    <!-- RISULTATI VALIDAZIONE -->
+    <!-- ========================================================= -->
+    <section id="risultati-validazione" class="box-standard" style="display:none;">
+
+      <h2>Risultato Validazione</h2>
+
+      <div class="kpi-grid">
+
+        <div class="kpi-card">
+          <h3>Titolo</h3>
+          <p id="val-titolo">—</p>
+        </div>
+
+        <div class="kpi-card">
+          <h3>Categoria</h3>
+          <p id="val-categoria">—</p>
+        </div>
+
+        <div class="kpi-card">
+          <h3>Trend Score</h3>
+          <p id="val-trend">—</p>
+        </div>
+
+        <div class="kpi-card">
+          <h3>Colore</h3>
+          <p id="val-colore">—</p>
+        </div>
+
+      </div>
+
+      <div class="box-standard" style="margin-top:20px;">
+        <h3>Motivazione</h3>
+        <p id="val-motivazione" style="white-space:pre-line;"></p>
+      </div>
+
+      <div class="box-standard" style="margin-top:20px;">
+        <h3>Note Ricerca</h3>
+        <p id="val-note" style="white-space:pre-line;"></p>
+      </div>
+
+      <button id="btn-genera-prodotto" class="btn-primario" style="margin-top:25px;width:100%;padding:15px;font-weight:bold;">
+        ✨ Genera Prodotto con AI
+      </button>
+
+      <p id="status-generazione" style="margin-top:15px;text-align:center;font-weight:500;"></p>
+
+    </section>
+
+  </main>
+
+  <div id="footer-admin-placeholder"></div>
+
+  <!-- 🔥 UNICO SCRIPT CONSENTITO -->
+  <script src="/admin/loadersupremo-admin.js"></script>
+
+</body>
+</html>
