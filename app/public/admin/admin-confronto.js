@@ -22,11 +22,7 @@ async function adminApi(path, options = {}) {
   }
 
   let json;
-  try {
-    json = await res.json();
-  } catch {
-    return null;
-  }
+  try { json = await res.json(); } catch { return null; }
 
   return json.success ? json.data : null;
 }
@@ -42,11 +38,13 @@ document.addEventListener("critical-ready", () => {
 
   const detBox = document.getElementById("dettaglio-box");
   const detTitolo = document.getElementById("dettaglio-titolo");
-  const detTipo = document.getElementById("det-tipo");
-  const detCategoria = document.getElementById("det-categoria");
-  const detPrezzo = document.getElementById("det-prezzo");
-  const detTrend = document.getElementById("det-trend");
   const detDescrizione = document.getElementById("det-descrizione");
+
+  /* KPI */
+  const kpiTipo = document.getElementById("kpi-det-tipo");
+  const kpiCategoria = document.getElementById("kpi-det-categoria");
+  const kpiPrezzo = document.getElementById("kpi-det-prezzo");
+  const kpiTrend = document.getElementById("kpi-det-trend");
 
   let validazioni = [];
   let daCreare = [];
@@ -81,7 +79,6 @@ document.addEventListener("critical-ready", () => {
         titolo: v.titolo,
         categoria: v.categoria,
         trend: v.trend_score,
-        colore: v.colore,
         descrizione: v.motivazione,
         raw: v
       })));
@@ -155,21 +152,19 @@ document.addEventListener("critical-ready", () => {
     detBox.style.display = "block";
 
     detTitolo.textContent = item.titolo;
-    detTipo.textContent = tipo;
-    detCategoria.textContent = item.categoria || "—";
-
-    detPrezzo.textContent = item.prezzo_cent
-      ? (item.prezzo_cent / 100).toFixed(2)
-      : item.prezzo || "—";
-
-    detTrend.textContent = item.trend_score || item.trend || "—";
-
     detDescrizione.textContent =
       item.descrizione_tecnica ||
       item.motivazione ||
       item.descrizione_lunga ||
       item.descrizione ||
       "—";
+
+    /* KPI */
+    kpiTipo.textContent = tipo;
+    kpiCategoria.textContent = item.categoria || "—";
+    kpiPrezzo.textContent =
+      item.prezzo_cent ? (item.prezzo_cent / 100).toFixed(2) : item.prezzo || "—";
+    kpiTrend.textContent = item.trend_score || item.trend || "—";
 
     window.scrollTo({ top: detBox.offsetTop - 50, behavior: "smooth" });
   }
