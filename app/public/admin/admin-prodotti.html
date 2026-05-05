@@ -4,89 +4,121 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Admin - Gestione Prodotti | MewingMarket</title>
-  </head>
+</head>
 
 <body>
 
   <div id="head-admin-placeholder"></div>
-
   <div id="header-admin-placeholder"></div>
 
   <main class="pagina-standard">
 
     <h1>Gestione Prodotti</h1>
 
-    <section class="box-standard" id="sezione-lista">
-      <h2>Prodotti esistenti</h2>
+    <!-- ========================================================= -->
+    <!-- SEZIONE 1 — PRODOTTI PUBBLICATI -->
+    <!-- ========================================================= -->
+    <section class="box-standard">
+      <h2>Prodotti Pubblicati</h2>
 
-      <div id="lista-prodotti" class="catalogo-grid">
+      <div id="lista-pubblicati" class="catalogo-grid">
         <p>Caricamento prodotti...</p>
       </div>
     </section>
 
-    <section class="box-standard" id="sezione-edit">
+    <!-- ========================================================= -->
+    <!-- SEZIONE 2 — PRODOTTI DA GENERARE (AI) -->
+    <!-- ========================================================= -->
+    <section class="box-standard">
+      <h2>Prodotti da Generare (AI)</h2>
 
-      <h2 id="titolo-form">Crea / Modifica Prodotto</h2>
+      <div id="lista-da-creare" class="catalogo-grid">
+        <p>Caricamento prodotti da creare...</p>
+      </div>
+    </section>
+
+    <!-- ========================================================= -->
+    <!-- SEZIONE 3 — EDITOR PRODOTTO PUBBLICATO -->
+    <!-- ========================================================= -->
+    <section class="box-standard" id="sezione-edit-pubblicato" style="display:none;">
+      <h2 id="titolo-edit-pubblicato">Modifica Prodotto</h2>
 
       <div class="form-standard">
 
-        <label for="titolo">Titolo Prodotto</label>
-        <input type="text" id="titolo" placeholder="Esempio: Corso Mewing Avanzato">
+        <label for="edit-titolo">Titolo</label>
+        <input type="text" id="edit-titolo">
 
-        <label for="descrizione">Descrizione Completa</label>
-        <textarea id="descrizione" rows="6" placeholder="Descrivi il prodotto nei dettagli..."></textarea>
+        <label for="edit-descrizione">Descrizione Lunga</label>
+        <textarea id="edit-descrizione" rows="6"></textarea>
 
-        <div style="margin-bottom: 15px;">
-          <button type="button" id="btn-ai-descrizione" class="btn-secondario">
-            ✨ Genera descrizione con AI
-          </button>
-          <p id="ai-status" style="margin-top:8px; font-size:0.9rem; color:#666;"></p>
+        <label for="edit-prezzo">Prezzo (€)</label>
+        <input type="number" id="edit-prezzo" step="0.01">
+
+        <label for="edit-immagine-url">URL Immagine</label>
+        <input type="url" id="edit-immagine-url">
+
+        <div style="text-align:center;margin:10px 0;">
+          <img id="edit-preview-img" style="max-width:200px;display:none;border-radius:8px;border:1px solid #ccc;">
         </div>
 
-        <div id="ai-preview-box" style="margin-bottom:20px; display:none;">
-          <label>Anteprima Rendering AI</label>
-          <div id="ai-preview" style="border:1px solid #ddd; padding:15px; border-radius:8px; font-size:0.95rem; background:#fafafa; min-height: 50px;"></div>
-        </div>
-
-        <input type="hidden" id="descrizione-breve">
-        <input type="hidden" id="descrizione-email">
-
-        <label for="prezzo" style="margin-top:15px;">Prezzo (€)</label>
-        <input type="number" id="prezzo" step="0.01" placeholder="0.00">
-
-        <label for="immagine">Immagine prodotto</label>
-        <input type="file" id="immagine" accept="image/*">
-
-        <label for="immagine-url" style="font-size: 0.8rem; color: #777;">Oppure incolla URL immagine:</label>
-        <input type="url" id="immagine-url" placeholder="https://link-immagine.com/foto.jpg">
-
-        <div style="text-align: center; margin: 10px 0;">
-          <img id="preview-img" class="preview-img" style="max-width: 200px; display:none; border-radius: 8px; border: 1px solid #ccc;">
-        </div>
-
-        <label for="fileProdotto">File per l'utente (PDF / ZIP / Corso)</label>
-        <input type="file" id="fileProdotto">
-
-        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
-
-        <button id="btn-salva" class="btn-primario" style="width: 100%; padding: 15px; font-weight: bold;">
-          SALVA PRODOTTO
+        <button id="btn-salva-pubblicato" class="btn-primario" style="width:100%;padding:15px;font-weight:bold;">
+          SALVA MODIFICHE
         </button>
 
-        <p id="status" style="margin-top:15px; text-align: center; font-weight: 500;"></p>
+        <p id="status-pubblicato" style="margin-top:15px;text-align:center;font-weight:500;"></p>
 
       </div>
+    </section>
 
+    <!-- ========================================================= -->
+    <!-- SEZIONE 4 — EDITOR PRODOTTO DA CREARE (AI) -->
+    <!-- ========================================================= -->
+    <section class="box-standard" id="sezione-edit-da-creare" style="display:none;">
+      <h2 id="titolo-edit-da-creare">Prodotto AI</h2>
+
+      <div class="form-standard">
+
+        <label>Titolo</label>
+        <input type="text" id="ai-titolo" disabled>
+
+        <label>Categoria</label>
+        <input type="text" id="ai-categoria" disabled>
+
+        <label>Prezzo (€)</label>
+        <input type="number" id="ai-prezzo" step="0.01">
+
+        <label>Descrizione Tecnica (AI)</label>
+        <textarea id="ai-descrizione-tecnica" rows="6"></textarea>
+
+        <label>URL Immagine</label>
+        <input type="url" id="ai-immagine-url">
+
+        <div style="text-align:center;margin:10px 0;">
+          <img id="ai-preview-img" style="max-width:200px;display:none;border-radius:8px;border:1px solid #ccc;">
+        </div>
+
+        <label>File PDF / ZIP</label>
+        <input type="file" id="ai-file">
+
+        <button id="btn-approva-prodotto" class="btn-primario" style="width:100%;padding:15px;font-weight:bold;">
+          APPROVA E PUBBLICA
+        </button>
+
+        <button id="btn-elimina-da-creare" class="btn-secondario" style="width:100%;padding:15px;margin-top:10px;">
+          ELIMINA
+        </button>
+
+        <p id="status-da-creare" style="margin-top:15px;text-align:center;font-weight:500;"></p>
+
+      </div>
     </section>
 
   </main>
 
   <div id="footer-admin-placeholder"></div>
 
-  
-  
-  
+  <!-- 🔥 UNICO SCRIPT CONSENTITO -->
+  <script src="/admin/loadersupremo-admin.js"></script>
 
-<script src="/admin/loadersupremo-admin.js"></script>
 </body>
 </html>
