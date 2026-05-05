@@ -1,7 +1,8 @@
 // FILE: public/admin/admin-prodotti.js
+// PATH: public/admin/admin-prodotti.js
 
 /* =========================================================
-   ADMIN PRODOTTI — Versione 2026.300 (AI + FILE + IMG)
+   ADMIN PRODOTTI — Versione 2027.1 (AI + FILE + IMG + CONFIG)
 ========================================================= */
 
 async function adminApi(path, options = {}) {
@@ -28,14 +29,18 @@ async function adminApi(path, options = {}) {
 }
 
 document.addEventListener("critical-ready", () => {
-  console.log("🔥 admin-prodotti.js 2026.300 READY");
+  console.log("🔥 admin-prodotti.js 2027.1 READY");
 
+  /* ---------------------------------------------------------
+     ELEMENTI DOM
+  --------------------------------------------------------- */
   const boxPubblicati = document.getElementById("lista-pubblicati");
   const boxDaCreare = document.getElementById("lista-da-creare");
 
   const editPub = document.getElementById("sezione-edit-pubblicato");
   const editAI = document.getElementById("sezione-edit-da-creare");
 
+  /* PUBBLICATI */
   const epTitolo = document.getElementById("edit-titolo");
   const epDescrizione = document.getElementById("edit-descrizione");
   const epPrezzo = document.getElementById("edit-prezzo");
@@ -43,6 +48,7 @@ document.addEventListener("critical-ready", () => {
   const epPreview = document.getElementById("edit-preview-img");
   const epStatus = document.getElementById("status-pubblicato");
 
+  /* AI */
   const aiTitolo = document.getElementById("ai-titolo");
   const aiCategoria = document.getElementById("ai-categoria");
   const aiPrezzo = document.getElementById("ai-prezzo");
@@ -56,7 +62,7 @@ document.addEventListener("critical-ready", () => {
   let prodottoAICorrente = null;
 
   /* =========================================================
-     PUBBLICATI
+     1) CARICA PRODOTTI PUBBLICATI
   ========================================================== */
   async function caricaPubblicati() {
     boxPubblicati.innerHTML = "<p>Caricamento...</p>";
@@ -100,6 +106,8 @@ document.addEventListener("critical-ready", () => {
     if (p.immagine || p.immagine_url) {
       epPreview.src = p.immagine || p.immagine_url;
       epPreview.style.display = "block";
+    } else {
+      epPreview.style.display = "none";
     }
   }
 
@@ -126,7 +134,7 @@ document.addEventListener("critical-ready", () => {
   };
 
   /* =========================================================
-     DA CREARE (AI)
+     2) CARICA PRODOTTI DA CREARE (AI)
   ========================================================== */
   async function caricaDaCreare() {
     boxDaCreare.innerHTML = "<p>Caricamento...</p>";
@@ -172,17 +180,27 @@ document.addEventListener("critical-ready", () => {
     if (p.immagine_url) {
       aiPreview.src = p.immagine_url;
       aiPreview.style.display = "block";
+    } else {
+      aiPreview.style.display = "none";
     }
 
-    // se esiste file_consegna_url lo mostriamo come info
+    /* FILE DI CONSEGNA */
     if (p.file_consegna_url) {
-      aiStatus.textContent = `File generato: ${p.file_consegna_url}`;
+      aiFile.innerHTML = `
+        <a href="${p.file_consegna_url}" target="_blank" class="btn-primario">
+          📄 Scarica file di consegna
+        </a>
+      `;
+      aiStatus.textContent = "File generato correttamente.";
     } else {
-      aiStatus.textContent = "File non ancora generato o in errore.";
+      aiFile.innerHTML = "";
+      aiStatus.textContent = "File non generato o in errore.";
     }
   }
 
-  /* APPROVA PRODOTTO AI */
+  /* =========================================================
+     3) APPROVA PRODOTTO AI
+  ========================================================== */
   document.getElementById("btn-approva-prodotto").onclick = async () => {
     if (!prodottoAICorrente) return;
 
@@ -198,7 +216,9 @@ document.addEventListener("critical-ready", () => {
     caricaDaCreare();
   };
 
-  /* ELIMINA PRODOTTO AI */
+  /* =========================================================
+     4) ELIMINA PRODOTTO AI
+  ========================================================== */
   document.getElementById("btn-elimina-da-creare").onclick = async () => {
     if (!prodottoAICorrente) return;
     if (!confirm("Eliminare questo prodotto AI?")) return;
@@ -212,7 +232,9 @@ document.addEventListener("critical-ready", () => {
     editAI.style.display = "none";
   };
 
-  /* AVVIO */
+  /* =========================================================
+     AVVIO
+  ========================================================== */
   caricaPubblicati();
   caricaDaCreare();
 });
