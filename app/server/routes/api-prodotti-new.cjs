@@ -7,6 +7,7 @@
    - file_consegna_url
    - config_json
    - categorie automatiche
+   - pipeline social automatica
 ========================================================= */
 
 const path = require("path");
@@ -18,6 +19,11 @@ const R = (p) => require(path.join(ROOT, "app", p));
 ========================================================= */
 const catalogo = R("modules/catalogo-sql.cjs");
 const jsonGen = R("server/modules/generatore-json.cjs");
+
+/* =========================================================
+   PIPELINE SOCIAL (Java‑mode)
+========================================================= */
+const pipeline = R("server/services/pipeline-prodotto.cjs");
 
 /* =========================================================
    FUNZIONE 1 — getProdotti (ADMIN)
@@ -54,6 +60,7 @@ async function getProdottoById(req) {
 
 /* =========================================================
    FUNZIONE 3 — salvaProdotto (ADMIN)
+   🔥 QUI PARTE LA PIPELINE SOCIAL
 ========================================================= */
 async function salvaProdotto(req) {
   console.log("[DEBUG prodotti] salvaProdotto()");
@@ -79,6 +86,18 @@ async function salvaProdotto(req) {
       console.log("✅ Mirror JSON aggiornato");
     } catch (errJson) {
       console.warn("⚠️ Mirror JSON fallito, ma SQL ok:", errJson.message);
+    }
+
+    /* =========================================================
+       🔥 AGGANCIO PIPELINE SOCIAL
+       Il prodotto è ora nel catalogo SQL → pipeline parte.
+       NON BLOCCA la risposta al frontend.
+    ========================================================== */
+    try {
+      pipeline.pipelineProdotto(prodotto.id);
+      console.log("🚀 Pipeline social avviata per prodotto:", prodotto.id);
+    } catch (errPipe) {
+      console.error("⚠️ Errore avvio pipeline:", errPipe.message);
     }
 
     return { success: true, prodotto };
