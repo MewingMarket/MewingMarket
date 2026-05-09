@@ -1,10 +1,11 @@
 /* =========================================================
    FILE: app/server/services/social-post-product.cjs
    DESCRIZIONE:
-   Genera caption + pubblica immagine prodotto via Publer
+   Genera il post + pubblica immagine prodotto via Publer
 ========================================================= */
 
 const { publerPost } = R("server/services/publer-api.cjs");
+const { generatePostTemplate } = R("server/services/post-template-generator.cjs");
 
 async function publishProductToSocial(product) {
   const profiles = [
@@ -14,10 +15,12 @@ async function publishProductToSocial(product) {
     process.env.PUBLER_YT_COMMUNITY
   ];
 
-  const caption = `🔥 ${product.nome}\n\n${product.descrizione}\n\n#${product.categoria}`;
+  // 1️⃣ Genera il post (AI o fallback)
+  const post = await generatePostTemplate(product);
 
+  // 2️⃣ Pubblica su Publer
   return await publerPost({
-    text: caption,
+    text: post.fullPost,
     imageUrl: product.immagine,
     profiles
   });
