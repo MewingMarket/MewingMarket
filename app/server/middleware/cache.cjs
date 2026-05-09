@@ -9,9 +9,10 @@ module.exports = function (app) {
   app.use((req, res, next) => {
     try {
       // =====================================================
-      // 🛑 ESCLUSIONE JS — NON TOCCARE I FILE .JS
+      // 🟩 FIX 2050 — IMPOSTA SEMPRE IL CONTENT-TYPE PER I .JS
       // =====================================================
       if (req.path.endsWith(".js") || req.url.includes(".js?")) {
+        res.setHeader("Content-Type", "application/javascript; charset=utf-8");
         return next();
       }
 
