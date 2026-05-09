@@ -137,3 +137,75 @@ if (window.__LOADER_UNIVERSALE_PUBLIC__) {
 
   })();
 }
+/* =========================================================
+ * DEBUG UNIVERSALE 2050 — LOG JS TEORICO + MOTIVO DEL FAIL
+ * ========================================================= */
+
+(function () {
+
+  function getPageBase() {
+    const p = window.location.pathname;
+    if (p === "/" || p === "") return "index";
+    return p.split("/").pop().replace(".html", "");
+  }
+
+  async function testJS(pageBase) {
+    const jsName = pageBase + ".js";
+    const full = "/" + jsName;
+
+    console.log("🔍 [DEBUG-UNIVERSALE] JS teorico della pagina:", jsName);
+
+    // 1) HEAD → MIME TYPE
+    try {
+      const head = await fetch(full, { method: "HEAD" });
+      const mime = head.headers.get("content-type");
+      console.log("📌 [DEBUG-UNIVERSALE] MIME:", mime);
+
+      if (!mime || !mime.includes("javascript")) {
+        console.warn("🟥 [DEBUG-UNIVERSALE] MIME NON VALIDO → il browser NON esegue il file");
+      }
+    } catch (e) {
+      console.warn("🟥 [DEBUG-UNIVERSALE] HEAD fallito:", e.message);
+    }
+
+    // 2) GET → esiste?
+    let code = null;
+    try {
+      const r = await fetch(full);
+      if (!r.ok) {
+        console.warn("🟥 [DEBUG-UNIVERSALE] GET fallito → HTTP", r.status);
+        return;
+      }
+      code = await r.text();
+      console.log("📦 [DEBUG-UNIVERSALE] File scaricato, lunghezza:", code.length);
+    } catch (e) {
+      console.warn("🟥 [DEBUG-UNIVERSALE] GET errore:", e.message);
+      return;
+    }
+
+    // 3) Sintassi JS
+    try {
+      new Function(code);
+      console.log("⚡ [DEBUG-UNIVERSALE] Sintassi OK");
+    } catch (e) {
+      console.warn("🟥 [DEBUG-UNIVERSALE] ERRORE DI SINTASSI:", e.message);
+      return;
+    }
+
+    // 4) Esecuzione isolata
+    try {
+      await import(full + "?debug=" + Date.now());
+      console.log("🟩 [DEBUG-UNIVERSALE] Esecuzione OK");
+    } catch (e) {
+      console.warn("🟥 [DEBUG-UNIVERSALE] ERRORE IN ESECUZIONE:", e.message);
+    }
+  }
+
+  // Trigger automatico al cambio pagina
+  document.addEventListener("DOMContentLoaded", () => {
+    const base = getPageBase();
+    console.log("🟦 [DEBUG-UNIVERSALE] Pagina:", base);
+    testJS(base);
+  });
+
+})();
