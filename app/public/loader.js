@@ -1,20 +1,21 @@
 // =========================================================
-// CRITICAL LOADER — MewingMarket
+// CRITICAL LOADER — PUBLIC
+// Percorso reale: /app/public/loader.js
 // Versione 2050 MINIMAL (SAFE + ULTRA FAST)
 // Carica SOLO head.html / header.html / footer.html / header.js
 // Emette SEMPRE critical-core-ready
 // =========================================================
 
-if (window.__CRITICAL_LOADER_2050__) {
-  console.warn("critical-loader-2050.js già caricato, skip.");
+if (window.__CRITICAL_LOADER_PUBLIC_2050__) {
+  console.warn("loader.js (critical public) già caricato, skip.");
 } else {
-  window.__CRITICAL_LOADER_2050__ = true;
+  window.__CRITICAL_LOADER_PUBLIC_2050__ = true;
 
   (function () {
 
     const VERSION = "2050";
 
-    console.log("[CRITICAL] Loader 2050 MINIMAL MODE");
+    console.log("⚡ [CRITICAL PUBLIC 2050] Avvio critical loader PUBLIC (MINIMAL MODE)");
 
     /* ============================================================
        PRELOAD MINIMALE
@@ -40,20 +41,20 @@ if (window.__CRITICAL_LOADER_2050__) {
 
     function loadScriptSerial(src, where = "head") {
       return new Promise(resolve => {
-        console.log("➡️ [CRITICAL-LOAD-REQUEST]", src);
+        console.log("➡️ [CRITICAL LOAD-REQUEST]", src);
 
         const s = document.createElement("script");
         s.src = `${src}?v=${VERSION}`;
-        s.defer = true; // niente async
+        s.defer = true; // FIX: niente async
         s.fetchPriority = "high";
 
         s.onload = () => {
-          console.log("✅ [CRITICAL-LOAD-OK]", src);
+          console.log("✅ [CRITICAL LOAD-OK]", src);
           resolve(true);
         };
 
         s.onerror = () => {
-          console.warn("❌ [CRITICAL-LOAD-FAIL]", src);
+          console.warn("❌ [CRITICAL LOAD-FAIL]", src);
           resolve(false);
         };
 
@@ -88,19 +89,19 @@ if (window.__CRITICAL_LOADER_2050__) {
             }
 
             if (eventName) document.dispatchEvent(new Event(eventName));
-            console.log(`[CRITICAL] ${label} OK da ${url} (tentativo ${attempt})`);
+            console.log(`[CRITICAL PUBLIC] ${label} OK da ${url} (tentativo ${attempt})`);
             return true;
 
           } catch (e) {
             console.warn(
-              `[CRITICAL] ${label} FAIL da ${url} (tentativo ${attempt})`,
+              `[CRITICAL PUBLIC] ${label} FAIL da ${url} (tentativo ${attempt})`,
               e.message
             );
           }
         }
         await wait(200 * attempt);
       }
-      console.error(`[CRITICAL] ${label} FALLITO dopo ${maxAttempts} tentativi`);
+      console.error(`[CRITICAL PUBLIC] ${label} FALLITO dopo ${maxAttempts} tentativi`);
       return false;
     }
 
@@ -112,13 +113,13 @@ if (window.__CRITICAL_LOADER_2050__) {
         try {
           const r = await fetch("/api/ping", { cache: "no-store" });
           if (r.ok) {
-            console.log("[CRITICAL] /api/ping OK");
+            console.log("[CRITICAL PUBLIC] /api/ping OK");
             return true;
           }
         } catch {}
         await wait(120);
       }
-      console.warn("[CRITICAL] /api/ping non risponde — fallback");
+      console.warn("[CRITICAL PUBLIC] /api/ping non risponde — fallback");
       return false;
     }
 
@@ -170,8 +171,8 @@ if (window.__CRITICAL_LOADER_2050__) {
       ============================================================ */
       console.log(
         ok
-          ? "🟩 [CRITICAL] critical-core-ready (FULL OK)"
-          : "🟧 [CRITICAL] critical-core-ready (DEGRADED)"
+          ? "🟩 [CRITICAL PUBLIC] critical-core-ready (FULL OK)"
+          : "🟧 [CRITICAL PUBLIC] critical-core-ready (DEGRADED)"
       );
 
       window.__criticalCoreReady = true;
