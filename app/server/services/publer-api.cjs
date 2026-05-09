@@ -2,7 +2,6 @@
    FILE: app/server/services/publer-api.cjs
    DESCRIZIONE:
    Wrapper Publer API — pubblicazione post e immagini
-   Modalità: Java‑mode (funzioni pure)
 ========================================================= */
 
 async function publerPost({ text, imageUrl, profiles }) {
