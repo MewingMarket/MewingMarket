@@ -1,10 +1,9 @@
 // =========================================================
 // CRITICAL LOADER — MewingMarket
-// Versione 2028.A-SAFE — Patch SUPREMA
+// Versione 2028.A-SAFE ULTRA FAST — Patch SUPREMA
 // NON carica più il loader universale
 // =========================================================
 
-// Guardia anti-doppio-caricamento SEMPLICE
 if (window.__CRITICAL_LOADER_2028A__) {
   console.warn("critical-loader-2028A.js già caricato, skip.");
 } else {
@@ -14,7 +13,29 @@ if (window.__CRITICAL_LOADER_2028A__) {
 
     const VERSION = "20280412";
 
-    console.log("[CRITICAL] Loader 2028.A avviato (SAFE)");
+    console.log("[CRITICAL] Loader 2028.A ULTRA FAST (SAFE)");
+
+    /* ============================================================
+       PRELOAD AGGRESSIVO
+    ============================================================ */
+    [
+      "/seo.js",
+      "/structured-data.js",
+      "/tracking.js",
+      "/auth.js",
+      "/head.html",
+      "/header.html",
+      "/footer.html",
+      "/header.js",
+      "/carrello.js"
+    ].forEach(src => {
+      const link = document.createElement("link");
+      link.rel = src.endsWith(".html") ? "preload" : "preload";
+      link.as = src.endsWith(".html") ? "fetch" : "script";
+      link.href = `${src}?v=${VERSION}`;
+      link.fetchPriority = "high";
+      document.head.appendChild(link);
+    });
 
     /* ============================================================
        UTILITY
@@ -27,7 +48,8 @@ if (window.__CRITICAL_LOADER_2028A__) {
       return new Promise(resolve => {
         const s = document.createElement("script");
         s.src = `${src}?v=${VERSION}`;
-        s.defer = true;
+        s.async = true;              // ⚡ più rapido di defer
+        s.fetchPriority = "high";
         s.onload = resolve;
         s.onerror = resolve;
         (where === "body" ? document.body : document.head).appendChild(s);
@@ -70,30 +92,30 @@ if (window.__CRITICAL_LOADER_2028A__) {
             console.warn(`[CRITICAL] ${label} FAIL da ${url} (tentativo ${attempt})`, e.message);
           }
         }
-        await wait(200 * attempt); // backoff 200 / 400 / 600
+        await wait(150 * attempt); // backoff 150 / 300 / 450 (più rapido)
       }
       console.error(`[CRITICAL] ${label} FALLITO dopo ${maxAttempts} tentativi`);
       return false;
     }
 
     /* ============================================================
-       /api/ping — ANTI 502
+       /api/ping — ANTI 502 (ULTRA FAST)
     ============================================================ */
     function pingOnce() {
-      return fetch("/api/ping")
+      return fetch("/api/ping", { cache: "no-store" })
         .then(r => r.ok ? r.json() : Promise.reject())
         .then(() => true)
         .catch(() => false);
     }
 
     async function waitUntilServerReady() {
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < 8; i++) { // meno tentativi, più rapidi
         const ok = await pingOnce();
         if (ok) {
           console.log("[CRITICAL] /api/ping OK, procedo");
           return;
         }
-        await wait(150);
+        await wait(100);
       }
       console.warn("[CRITICAL] /api/ping non risponde — SAFE FALLBACK");
     }
@@ -105,7 +127,7 @@ if (window.__CRITICAL_LOADER_2028A__) {
       return new Promise(resolve => {
         const s = document.createElement("script");
         s.src = `/auth.js?v=${VERSION}`;
-        s.defer = true;
+        s.async = true;
         s.onload = () => {
           console.log("[CRITICAL] auth.js caricato");
           resolve();
@@ -153,7 +175,7 @@ if (window.__CRITICAL_LOADER_2028A__) {
     }
 
     /* ============================================================
-       SEQUENZA CRITICA
+       SEQUENZA CRITICA (SERIALE, MA ULTRA FAST)
     ============================================================ */
     (async () => {
       try {
@@ -176,7 +198,7 @@ if (window.__CRITICAL_LOADER_2028A__) {
 
         window.__criticalReady = true;
         document.dispatchEvent(new Event("critical-ready"));
-        console.log("[CRITICAL] critical-ready emesso");
+        console.log("[CRITICAL] critical-ready emesso (ULTRA FAST)");
 
       } catch (err) {
         console.error("[CRITICAL] ERRORE NEL LOADER:", err);
