@@ -49,7 +49,7 @@ function getPublicList() {
 function getAdminList() {
   return [
     "admin-prodotti.js",
-    "admin-prodotti-ai.js",
+    
     "admin-confronto.js",
     "admin-utenti.js",
 
