@@ -1,17 +1,33 @@
 // =========================================================
-// ADMIN CRITICAL LOADER — Versione 2028.A (SAFE MODE, ORDINATO)
-// Patch SUPREMA — NON carica più il loader universale
+// ADMIN CRITICAL LOADER — Versione 2028.A ULTRA FAST (SAFE)
 // =========================================================
 
-// Guardia anti-doppio-caricamento SEMPLICE (senza return illegale)
 if (window.__ADMIN_CRITICAL_LOADER_2028A__) {
   console.warn("admin-critical-loader-2028A.js già caricato, skip.");
 } else {
   window.__ADMIN_CRITICAL_LOADER_2028A__ = true;
 
-  console.log("[ADMIN] Loader 2028.A avviato (SAFE MODE)");
+  console.log("[ADMIN] Loader 2028.A ULTRA FAST (SAFE)");
 
   const ADMIN_VERSION = "20280412";
+
+  /* =========================================================
+     PRELOAD AGGRESSIVO (SAFE)
+  ========================================================= */
+  [
+    "/admin/seo-admin.js",
+    "/admin/structured-data-admin.js",
+    "/admin/head-admin.html",
+    "/admin/header-admin.html",
+    "/admin/footer-admin.html"
+  ].forEach(src => {
+    const link = document.createElement("link");
+    link.rel = "preload";
+    link.as = src.endsWith(".html") ? "fetch" : "script";
+    link.href = `${src}?v=${ADMIN_VERSION}`;
+    link.fetchPriority = "high";
+    document.head.appendChild(link);
+  });
 
   /* =========================================================
      UTILITY BASE
@@ -20,14 +36,15 @@ if (window.__ADMIN_CRITICAL_LOADER_2028A__) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  function loadScriptSerial(src, where = "head") {
+  function loadScriptSerial(src) {
     return new Promise(resolve => {
       const s = document.createElement("script");
       s.src = `${src}?v=${ADMIN_VERSION}`;
-      s.defer = true;
+      s.async = true;                 // ⚡ più veloce di defer
+      s.fetchPriority = "high";       // ⚡ priorità massima
       s.onload = resolve;
       s.onerror = resolve;
-      (where === "body" ? document.body : document.head).appendChild(s);
+      document.head.appendChild(s);
     });
   }
 
@@ -43,35 +60,30 @@ if (window.__ADMIN_CRITICAL_LOADER_2028A__) {
   }
 
   /* =========================================================
-     /api/ping — ANTI‑502
+     /api/ping — ANTI‑502 (ULTRA FAST)
   ========================================================= */
-  function pingOnce() {
-    return fetch("/api/ping")
-      .then(r => r.ok ? r.json() : Promise.reject())
-      .then(() => true)
-      .catch(() => false);
-  }
-
   async function waitUntilServerReady() {
-    for (let i = 0; i < 10; i++) {
-      const ok = await pingOnce();
-      if (ok) return;
-      await wait(150);
+    for (let i = 0; i < 8; i++) {     // ⚡ meno tentativi, più rapidi
+      try {
+        const r = await fetch("/api/ping", { cache: "no-store" });
+        if (r.ok) return;
+      } catch {}
+      await wait(100);               // ⚡ più veloce di 150ms
     }
     console.warn("[ADMIN] /api/ping non risponde — SAFE FALLBACK");
   }
 
   /* =========================================================
-     LOADER PRINCIPALE (SERIALE)
+     LOADER PRINCIPALE (SERIALE, MA OTTIMIZZATO)
   ========================================================= */
   async function startAdminLoader() {
 
-    console.log("[ADMIN] Avvio sequenza seriale 2028.A");
+    console.log("[ADMIN] Avvio sequenza ULTRA FAST 2028.A");
 
     // 1) Aspetta che il server sia vivo
     await waitUntilServerReady();
 
-    // 2) SEO + Structured Data (seriale)
+    // 2) SEO + Structured Data (seriale ma async)
     await loadScriptSerial(`/admin/seo-admin.js`);
     await loadScriptSerial(`/admin/structured-data-admin.js`);
 
@@ -93,7 +105,7 @@ if (window.__ADMIN_CRITICAL_LOADER_2028A__) {
     // 6) CRITICAL READY
     window.__criticalReady = true;
     document.dispatchEvent(new Event("critical-ready"));
-    console.log("[ADMIN] critical-ready (2028.A SAFE)");
+    console.log("[ADMIN] critical-ready (ULTRA FAST SAFE)");
   }
 
   /* =========================================================
@@ -101,16 +113,14 @@ if (window.__ADMIN_CRITICAL_LOADER_2028A__) {
   ========================================================= */
   (function () {
 
-    // Se già admin → parti subito
     if (window.isAdmin) {
       startAdminLoader();
       return;
     }
 
-    // Carica auth.js solo se necessario
     const s = document.createElement("script");
     s.src = `/auth.js?v=${ADMIN_VERSION}`;
-    s.defer = true;
+    s.async = true;
     s.onload = () => {
       if (window.isAdmin) startAdminLoader();
       else console.warn("🟥 [ADMIN] Accesso negato — isAdmin = false");
