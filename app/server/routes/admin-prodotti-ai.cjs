@@ -6,18 +6,20 @@
    - getprodottidacreare
    - approvaprodotto (con immagine + file)
    - eliminaprodottodacreare
-   - require assoluti
+   - require assoluti (R → app/)
 ========================================================= */
 
 const path = require("path");
 const ROOT = process.cwd();
-const R = (p) => require(path.join(ROOT, "app/server", p));
+
+// Loader assoluto corretto → punta a app/
+const R = (p) => require(path.join(ROOT, "app", p));
 
 /* =========================================================
    REQUIRE ASSOLUTI
 ========================================================= */
-const db = R("db/database.cjs");
-const jsonGen = R("modules/generatore-json.cjs");
+const db = R("server/db/database.cjs");
+const jsonGen = R("server/modules/generatore-json.cjs");
 const catalogo = R("modules/catalogo-sql.cjs");
 
 /* =========================================================
@@ -44,10 +46,6 @@ async function getprodottidacreare(req) {
 
 /* =========================================================
    2) APPROVA E PUBBLICA PRODOTTO
-   - copia immagine_url
-   - copia file_consegna_url
-   - copia descrizione_tecnica
-   - genera descrizione_breve
 ========================================================= */
 async function approvaprodotto(req) {
   console.log("[ADMIN AI] approvaprodotto()");
@@ -74,7 +72,6 @@ async function approvaprodotto(req) {
 
     /* ---------------------------------------------------------
        COSTRUZIONE PRODOTTO FINALE
-       (catalogo.saveProduct richiede questi campi)
     --------------------------------------------------------- */
     const dataProd = {
       titolo: p.titolo,
@@ -82,9 +79,9 @@ async function approvaprodotto(req) {
       descrizione_breve: descrizioneBreve,
       prezzo_cent: p.prezzo_cent,
       immagine: p.immagine_url || null,
-      file_consegna_url: p.file_consegna_url || null,   // 🔥 AGGIUNTO
+      file_consegna_url: p.file_consegna_url || null,
       categoria: p.categoria || null,
-      config_json: p.config_json || null                // 🔥 AGGIUNTO
+      config_json: p.config_json || null
     };
 
     /* ---------------------------------------------------------
