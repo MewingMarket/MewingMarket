@@ -4,10 +4,10 @@
 // Usa solo la lista admin da /api/js-list
 // =========================================================
 
-if (window.__LOADER_UNIVERSALE_ADMIN_2050__) {
+if (window.__LOADER_UNIVERSALE_ADMIN__) {
   console.warn("loader-universale-admin.js già caricato, skip.");
 } else {
-  window.__LOADER_UNIVERSALE_ADMIN_2050__ = true;
+  window.__LOADER_UNIVERSALE_ADMIN__ = true;
 
   (function () {
 
@@ -125,8 +125,7 @@ if (window.__LOADER_UNIVERSALE_ADMIN_2050__) {
       console.log("[UNIVERSALE ADMIN 2050] Carico JS pagina:", found);
 
       for (const js of found) {
-        // PATCH: percorso reale corretto
-        const full = "/" + js;
+        const full = "/" + js; // percorso reale
         await loadScript(full);
         await debugImport(full);
       }
