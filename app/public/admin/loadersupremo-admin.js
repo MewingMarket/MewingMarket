@@ -1,6 +1,5 @@
 // =========================================================
-// LOADER SUPREMO — ADMIN ULTRA FAST
-// Caricamento immediato, parallelo, priorità massima
+// LOADER SUPREMO — ADMIN MODELLO 2040 (ORDINE PERFETTO)
 // =========================================================
 
 if (!window.__SUPREMO_ADMIN_LOADER__) {
@@ -10,37 +9,63 @@ if (!window.__SUPREMO_ADMIN_LOADER__) {
 
     const V = "2038";
 
-    const scripts = [
-      `/admin/loader-admin.js?v=${V}`,
-      `/loader-universale-2030.js?v=${V}`,
-      `/admin/dynamic-admin-loader.js?v=${V}`
-    ];
+    console.log("⚡ [SUPREMO ADMIN 2040] In attesa di critical-core-ready...");
 
-    // 1) Preload aggressivo + priorità massima
-    scripts.forEach(src => {
-      const link = document.createElement("link");
-      link.rel = "preload";
-      link.as = "script";
-      link.href = src;
-      link.fetchPriority = "high";
-      document.head.appendChild(link);
-    });
+    // ============================================================
+    // Utility caricamento script
+    // ============================================================
+    function loadScript(src, where = "head") {
+      return new Promise(resolve => {
+        const s = document.createElement("script");
+        s.src = `${src}?v=${V}`;
+        s.async = true;
+        s.fetchPriority = "high";
+        s.onload = () => resolve(true);
+        s.onerror = () => resolve(false);
+        (where === "body" ? document.body : document.head).appendChild(s);
+      });
+    }
 
-    // 2) Caricamento parallelo immediato (async)
-    Promise.all(
-      scripts.map(src => {
-        return new Promise(resolve => {
-          const s = document.createElement("script");
-          s.src = src;
-          s.async = true;              // ⚡ massimo parallelismo
-          s.fetchPriority = "high";    // ⚡ priorità massima
-          s.onload = resolve;
-          s.onerror = resolve;
-          document.head.appendChild(s);
-        });
-      })
-    ).then(() => {
-      console.log("⚡ [SUPREMO ADMIN ULTRA FAST] Tutti i loader caricati");
+    // ============================================================
+    // Quando critical-core-ready è emesso → parte la sequenza
+    // ============================================================
+    document.addEventListener("critical-core-ready", async () => {
+
+      console.log("🟦 [SUPREMO ADMIN 2040] critical-core-ready ricevuto");
+
+      // 1) AUTH (se non già caricato)
+      if (!window.__AUTH_LOADED__) {
+        console.log("🔐 [SUPREMO ADMIN] Carico auth.js");
+        await loadScript("/auth.js");
+      }
+
+      // 2) JS GLOBALI ADMIN
+      console.log("🌐 [SUPREMO ADMIN] Carico JS globali admin");
+      await loadScript("/admin/seo-admin.js");
+      await loadScript("/admin/structured-data-admin.js");
+
+      // 3) HEADER ADMIN JS (se esiste)
+      console.log("📌 [SUPREMO ADMIN] Carico header-admin.js (se presente)");
+      await loadScript("/admin/header-admin.js", "body");
+
+      // 4) LOADER UNIVERSALE 2038
+      console.log("📦 [SUPREMO ADMIN] Carico loader-universale-2038");
+      await loadScript("/loader-universale-2038.js");
+
+      // 5) Aspetta che loader universale carichi JS pagina admin
+      console.log("📄 [SUPREMO ADMIN] In attesa che il loader universale carichi JS pagina...");
+      await new Promise(resolve => {
+        document.addEventListener("page-js-loaded", resolve, { once: true });
+      });
+
+      // 6) DYNAMIC ADMIN LOADER
+      console.log("🔄 [SUPREMO ADMIN] Carico dynamic-admin-loader.js");
+      await loadScript("/admin/dynamic-admin-loader.js");
+
+      // 7) CRITICAL READY FINALE
+      console.log("🟩 [SUPREMO ADMIN] critical-ready (ORDINE PERFETTO)");
+      window.__criticalReady = true;
+      document.dispatchEvent(new Event("critical-ready"));
     });
 
   })();
