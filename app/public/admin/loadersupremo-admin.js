@@ -48,12 +48,12 @@ if (!window.__SUPREMO_ADMIN_LOADER__) {
       console.log("📌 [SUPREMO ADMIN] Carico header-admin.js (se presente)");
       await loadScript("/admin/header-admin.js", "body");
 
-      // 4) LOADER UNIVERSALE 2038
-      console.log("📦 [SUPREMO ADMIN] Carico loader-universale-2038");
-      await loadScript("/loader-universale-2038.js");
+      // 4) LOADER UNIVERSALE ADMIN 2038
+      console.log("📦 [SUPREMO ADMIN] Carico loader-universale-admin.js");
+      await loadScript("/admin/loader-universale-admin.js");
 
-      // 5) Aspetta che loader universale carichi JS pagina admin
-      console.log("📄 [SUPREMO ADMIN] In attesa che il loader universale carichi JS pagina...");
+      // 5) Aspetta che loader universale admin carichi JS pagina admin
+      console.log("📄 [SUPREMO ADMIN] In attesa che il loader universale admin carichi JS pagina...");
       await new Promise(resolve => {
         document.addEventListener("page-js-loaded", resolve, { once: true });
       });
