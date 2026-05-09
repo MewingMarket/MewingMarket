@@ -67,8 +67,8 @@ if (!window.__SUPREMO_LOADED__) {
         console.log("🛒 [SUPREMO] Carrello NON necessario in questa pagina");
       }
 
-      // 4) LOADER UNIVERSALE 2038
-      console.log("📦 [SUPREMO] Carico loader-universale-2038");
+      // 4) LOADER UNIVERSALE PUBLIC 2038
+      console.log("📦 [SUPREMO] Carico loader-universale-2038 (PUBLIC)");
       await loadScript("/loader-universale-2038.js");
 
       // 5) Aspetta che loader universale carichi JS pagina
