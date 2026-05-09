@@ -1,6 +1,7 @@
 // =========================================================
 // CRITICAL LOADER — MewingMarket
 // Versione 2028.A HYBRID MODE (SAFE + HARD + ULTRA FAST)
+// PATCH SUPREMA: niente critical-ready, solo critical-core-ready
 // =========================================================
 
 if (window.__CRITICAL_LOADER_2028A__) {
@@ -12,7 +13,7 @@ if (window.__CRITICAL_LOADER_2028A__) {
 
     const VERSION = "20280412";
 
-    console.log("[CRITICAL] Loader 2028.A HYBRID MODE");
+    console.log("[CRITICAL] Loader 2028.A HYBRID MODE — PATCH SUPREMA");
 
     /* ============================================================
        PRELOAD AGGRESSIVO
@@ -151,16 +152,17 @@ if (window.__CRITICAL_LOADER_2028A__) {
       ok &= await loadScriptSerial("/carrello.js", "body");
 
       /* ============================================================
-         EMISSIONE CRITICAL-READY — HYBRID MODE
+         PATCH SUPREMA:
+         NON emettiamo critical-ready.
+         Emettiamo solo critical-core-ready.
       ============================================================ */
-      if (ok) {
-        console.log("🟩 [CRITICAL] critical-ready (HYBRID, FULL OK)");
-      } else {
-        console.warn("🟧 [CRITICAL] critical-ready (HYBRID, DEGRADED MODE)");
-      }
+      console.log(ok
+        ? "🟩 [CRITICAL] critical-core-ready (FULL OK)"
+        : "🟧 [CRITICAL] critical-core-ready (DEGRADED)"
+      );
 
-      window.__criticalReady = true;
-      document.dispatchEvent(new Event("critical-ready"));
+      window.__criticalCoreReady = true;
+      document.dispatchEvent(new Event("critical-core-ready"));
     })();
 
   })();
