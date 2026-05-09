@@ -1,15 +1,16 @@
 // =========================================================
 // LOADER SUPREMO — PUBLIC MODELLO 2050 (ORDINE PERFETTO)
+// Percorso reale: /app/public/loadersupremo.js
 // =========================================================
 
-if (!window.__SUPREMO_LOADED__) {
-  window.__SUPREMO_LOADED__ = true;
+if (!window.__SUPREMO_PUBLIC_2050__) {
+  window.__SUPREMO_PUBLIC_2050__ = true;
 
   (function() {
 
     const V = "2050";
 
-    console.log("⚡ [SUPREMO PUBLIC 2050] In attesa di critical-core-ready...");
+    console.log("⚡ [SUPREMO PUBLIC 2050] Bootstrap avviato");
 
     // ============================================================
     // Utility caricamento script (SAFE, con debug)
@@ -20,7 +21,7 @@ if (!window.__SUPREMO_LOADED__) {
 
         const s = document.createElement("script");
         s.src = `${src}?v=${V}`;
-        s.defer = true; // FIX: niente async
+        s.defer = true;
         s.fetchPriority = "high";
 
         s.onload = () => {
@@ -89,6 +90,17 @@ if (!window.__SUPREMO_LOADED__) {
     }
 
     // ============================================================
+    // 0) CARICO IL CRITICAL LOADER PUBLIC (loader.js)
+    // ============================================================
+    (async () => {
+      console.log("📌 [SUPREMO] Carico critical loader PUBLIC: /loader.js");
+      await loadScript("/loader.js");
+      await debugImport("/loader.js");
+
+      console.log("⏳ [SUPREMO] In attesa di critical-core-ready...");
+    })();
+
+    // ============================================================
     // Quando critical-core-ready è emesso → parte la sequenza
     // ============================================================
     document.addEventListener("critical-core-ready", async () => {
@@ -141,11 +153,11 @@ if (!window.__SUPREMO_LOADED__) {
       }
 
       // ============================================================
-      // 4) LOADER UNIVERSALE PUBLIC 2038
+      // 4) LOADER UNIVERSALE PUBLIC 2030 (nome reale)
       // ============================================================
-      console.log("📦 [SUPREMO] Carico loader-universale-2038");
-      await loadScript("/loader-universale-2038.js");
-      await debugImport("/loader-universale-2038.js");
+      console.log("📦 [SUPREMO] Carico loader-universale-2030.js");
+      await loadScript("/loader-universale-2030.js");
+      await debugImport("/loader-universale-2030.js");
 
       // ============================================================
       // 5) Attesa caricamento JS pagina
@@ -173,5 +185,5 @@ if (!window.__SUPREMO_LOADED__) {
 
   })();
 } else {
-  console.warn("SUPREMO già caricato, skip.");
+  console.warn("SUPREMO PUBLIC 2050 già caricato, skip.");
 }
