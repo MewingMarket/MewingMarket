@@ -1,33 +1,29 @@
 // =========================================================
 // CRITICAL LOADER — MewingMarket
-// Versione 2028.A HYBRID MODE (SAFE + HARD + ULTRA FAST)
-// PATCH SUPREMA: niente critical-ready, solo critical-core-ready
+// Versione 2050 MINIMAL (SAFE + ULTRA FAST)
+// Carica SOLO head.html / header.html / footer.html / header.js
+// Emette SEMPRE critical-core-ready
 // =========================================================
 
-if (window.__CRITICAL_LOADER_2028A__) {
-  console.warn("critical-loader-2028A.js già caricato, skip.");
+if (window.__CRITICAL_LOADER_2050__) {
+  console.warn("critical-loader-2050.js già caricato, skip.");
 } else {
-  window.__CRITICAL_LOADER_2028A__ = true;
+  window.__CRITICAL_LOADER_2050__ = true;
 
   (function () {
 
-    const VERSION = "20280412";
+    const VERSION = "2050";
 
-    console.log("[CRITICAL] Loader 2028.A HYBRID MODE — PATCH SUPREMA");
+    console.log("[CRITICAL] Loader 2050 MINIMAL MODE");
 
     /* ============================================================
-       PRELOAD AGGRESSIVO
+       PRELOAD MINIMALE
     ============================================================ */
     [
-      "/seo.js",
-      "/structured-data.js",
-      "/tracking.js",
-      "/auth.js",
       "/head.html",
       "/header.html",
       "/footer.html",
-      "/header.js",
-      "/carrello.js"
+      "/header.js"
     ].forEach(src => {
       const link = document.createElement("link");
       link.rel = "preload";
@@ -44,12 +40,23 @@ if (window.__CRITICAL_LOADER_2028A__) {
 
     function loadScriptSerial(src, where = "head") {
       return new Promise(resolve => {
+        console.log("➡️ [CRITICAL-LOAD-REQUEST]", src);
+
         const s = document.createElement("script");
         s.src = `${src}?v=${VERSION}`;
-        s.async = true;
+        s.defer = true; // niente async
         s.fetchPriority = "high";
-        s.onload = () => resolve(true);
-        s.onerror = () => resolve(false);
+
+        s.onload = () => {
+          console.log("✅ [CRITICAL-LOAD-OK]", src);
+          resolve(true);
+        };
+
+        s.onerror = () => {
+          console.warn("❌ [CRITICAL-LOAD-FAIL]", src);
+          resolve(false);
+        };
+
         (where === "body" ? document.body : document.head).appendChild(s);
       });
     }
@@ -85,7 +92,10 @@ if (window.__CRITICAL_LOADER_2028A__) {
             return true;
 
           } catch (e) {
-            console.warn(`[CRITICAL] ${label} FAIL da ${url} (tentativo ${attempt})`, e.message);
+            console.warn(
+              `[CRITICAL] ${label} FAIL da ${url} (tentativo ${attempt})`,
+              e.message
+            );
           }
         }
         await wait(200 * attempt);
@@ -95,7 +105,7 @@ if (window.__CRITICAL_LOADER_2028A__) {
     }
 
     /* ============================================================
-       /api/ping — ANTI 502 (HYBRID)
+       /api/ping — ANTI 502
     ============================================================ */
     async function waitUntilServerReady() {
       for (let i = 0; i < 10; i++) {
@@ -113,19 +123,14 @@ if (window.__CRITICAL_LOADER_2028A__) {
     }
 
     /* ============================================================
-       SEQUENZA CRITICA — HYBRID MODE
+       SEQUENZA CRITICA — MINIMAL MODE
     ============================================================ */
     (async () => {
       let ok = true;
 
       await waitUntilServerReady();
 
-      ok &= await loadScriptSerial("/seo.js");
-      ok &= await loadScriptSerial("/structured-data.js");
-      ok &= await loadScriptSerial("/tracking.js");
-
-      ok &= await loadScriptSerial("/auth.js");
-
+      // 1) HEAD
       ok &= await fetchHTMLWithRetry(
         [`/head.html?v=${VERSION}`, `head.html?v=${VERSION}`],
         null,
@@ -133,6 +138,7 @@ if (window.__CRITICAL_LOADER_2028A__) {
         "head.html"
       );
 
+      // 2) HEADER
       ok &= await fetchHTMLWithRetry(
         [`/header.html?v=${VERSION}`, `header.html?v=${VERSION}`],
         "header-placeholder",
@@ -140,8 +146,7 @@ if (window.__CRITICAL_LOADER_2028A__) {
         "header.html"
       );
 
-      ok &= await loadScriptSerial("/header.js", "body");
-
+      // 3) FOOTER
       ok &= await fetchHTMLWithRetry(
         [`/footer.html?v=${VERSION}`, `footer.html?v=${VERSION}`],
         "footer-placeholder",
@@ -149,16 +154,24 @@ if (window.__CRITICAL_LOADER_2028A__) {
         "footer.html"
       );
 
-      ok &= await loadScriptSerial("/carrello.js", "body");
+      // 4) HEADER.JS
+      ok &= await loadScriptSerial("/header.js", "body");
+
+      // IMPORT DEBUG HEADER.JS
+      try {
+        await import("/header.js?v=" + VERSION);
+        console.log("📦 [IMPORT-OK] /header.js");
+      } catch (e) {
+        console.warn("📦❌ [IMPORT-FAIL] /header.js", e.message);
+      }
 
       /* ============================================================
-         PATCH SUPREMA:
-         NON emettiamo critical-ready.
-         Emettiamo solo critical-core-ready.
+         CRITICAL-CORE-READY SEMPRE EMESSO
       ============================================================ */
-      console.log(ok
-        ? "🟩 [CRITICAL] critical-core-ready (FULL OK)"
-        : "🟧 [CRITICAL] critical-core-ready (DEGRADED)"
+      console.log(
+        ok
+          ? "🟩 [CRITICAL] critical-core-ready (FULL OK)"
+          : "🟧 [CRITICAL] critical-core-ready (DEGRADED)"
       );
 
       window.__criticalCoreReady = true;
