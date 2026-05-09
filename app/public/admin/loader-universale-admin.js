@@ -60,7 +60,7 @@ if (window.__LOADER_UNIVERSALE_ADMIN_2050__) {
 
         const s = document.createElement("script");
         s.src = `${src}?v=${VERSION}`;
-        s.defer = true; // FIX: niente async
+        s.defer = true;
         s.fetchPriority = "high";
 
         s.onload = () => {
@@ -78,7 +78,7 @@ if (window.__LOADER_UNIVERSALE_ADMIN_2050__) {
     }
 
     // ============================================================
-    // IMPORT DEBUG (per capire se il JS è eseguibile)
+    // IMPORT DEBUG
     // ============================================================
     async function debugImport(src) {
       try {
@@ -114,7 +114,6 @@ if (window.__LOADER_UNIVERSALE_ADMIN_2050__) {
       const base = getPageBase();
       const pool = list.admin;
 
-      // STATIC MAP → nessuna detection
       const found = pool.filter(js => js.replace(".js", "") === base);
 
       if (found.length === 0) {
@@ -126,7 +125,8 @@ if (window.__LOADER_UNIVERSALE_ADMIN_2050__) {
       console.log("[UNIVERSALE ADMIN 2050] Carico JS pagina:", found);
 
       for (const js of found) {
-        const full = "/admin/" + js;
+        // PATCH: percorso reale corretto
+        const full = "/" + js;
         await loadScript(full);
         await debugImport(full);
       }
@@ -135,9 +135,6 @@ if (window.__LOADER_UNIVERSALE_ADMIN_2050__) {
       document.dispatchEvent(new Event("page-js-loaded"));
     }
 
-    // ============================================================
-    // Patch SUPREMA: ascolta critical-core-ready
-    // ============================================================
     document.addEventListener("critical-core-ready", run);
 
   })();
