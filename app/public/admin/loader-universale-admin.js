@@ -126,7 +126,7 @@ if (window.__LOADER_UNIVERSALE_ADMIN_2050__) {
       console.log("[UNIVERSALE ADMIN 2050] Carico JS pagina:", found);
 
       for (const js of found) {
-        const full = "/app/public/admin/" + js;
+        const full = "/admin/" + js;
         await loadScript(full);
         await debugImport(full);
       }
