@@ -39,7 +39,12 @@ function getPublicList() {
     "disiscrizione.js",
     "iscrizione.js",
     "regole.js",
-    "introspect.js"
+
+    // pagine reset / recovery reali
+    "reset-email-confirm.js",
+    "reset-email-request.js",
+    "reset-password-confirm.js",
+    "reset-password-request.js"
   ];
 }
 
@@ -49,12 +54,12 @@ function getPublicList() {
 function getAdminList() {
   return [
     "admin-prodotti.js",
-    
     "admin-confronto.js",
     "admin-utenti.js",
 
     "dashboard-admin-profilo.js",
     "dashboard-vendite-ordini.js",
+
     "validazione-prodotti.js",
     "feedback.js"
   ];
