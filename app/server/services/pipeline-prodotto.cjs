@@ -2,8 +2,6 @@
    FILE: app/server/services/pipeline-prodotto.cjs
    DESCRIZIONE:
    Pipeline prodotto — SOLO PUBLER
-   - Genera caption (OpenRouter opzionale)
-   - Pubblica immagine prodotto
 ========================================================= */
 
 const { publishProductToSocial } = R("server/services/social-post-product.cjs");
@@ -21,7 +19,6 @@ async function pipelineProdotto(product) {
 
   console.log("🚀 Pipeline prodotto avviata:", product.id);
 
-  // Pubblicazione immagine prodotto
   const res = await publishProductToSocial(product);
 
   console.log("📤 Risultato Publer:", res);
