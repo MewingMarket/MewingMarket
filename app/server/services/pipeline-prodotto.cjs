@@ -4,7 +4,7 @@
    Pipeline prodotto — SOLO PUBLER
 ========================================================= */
 
-const { publishProductToSocial } = R("server/services/social-post-product.cjs");
+const { publishProductToSocial } = require("./social-post-product.cjs");
 
 async function pipelineProdotto(product) {
   if (process.env.PIPELINE_SOCIAL_ENABLED !== "true") {
