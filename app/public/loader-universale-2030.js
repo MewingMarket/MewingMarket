@@ -1,6 +1,6 @@
 // =========================================================
-// LOADER UNIVERSALE 2038 — STATIC MAP MODE (ULTRA FAST SAFE)
-// Usa direttamente la lista statica da /api/js-list
+// LOADER UNIVERSALE 2038 — PUBLIC STATIC MAP MODE (ULTRA FAST SAFE)
+// Usa solo la lista PUBLIC da /api/js-list
 // =========================================================
 
 if (window.__LOADER_UNIVERSALE_2038__) {
@@ -94,26 +94,31 @@ if (window.__LOADER_UNIVERSALE_2038__) {
       if (!list) return;
 
       const base = getPageBase();
-      const isAdmin = window.location.pathname.startsWith("/admin");
 
-      const pool = isAdmin ? list.admin : list.public;
+      // SOLO LISTA PUBLIC
+      const pool = list.public;
 
       // STATIC MAP → nessuna detection
       const found = pool.filter(js => js.replace(".js", "") === base);
 
       if (found.length === 0) {
-        console.warn("[UNIVERSALE 2038] Nessun JS per", base);
+        console.warn("[UNIVERSALE 2038] Nessun JS public per", base);
+        document.dispatchEvent(new Event("page-js-loaded"));
         return;
       }
 
       console.log("[UNIVERSALE 2038] Carico:", found);
 
       for (const js of found) {
-        await loadScript("/" + (isAdmin ? "admin/" : "") + js);
+        await loadScript("/" + js);
       }
+
+      // Segnale al loader supremo globale
+      document.dispatchEvent(new Event("page-js-loaded"));
     }
 
-    document.addEventListener("critical-ready", run);
+    // Patch SUPREMA: ascolta critical-core-ready, NON critical-ready
+    document.addEventListener("critical-core-ready", run);
 
   })();
 }
