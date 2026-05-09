@@ -1,6 +1,6 @@
 // =========================================================
-// LOADER UNIVERSALE 2038 — ULTRA FAST SAFE MODE
-// Compatibile con router /api/js-list (DB → JSON → loader)
+// LOADER UNIVERSALE 2038 — STATIC MAP MODE (ULTRA FAST SAFE)
+// Usa direttamente la lista statica da /api/js-list
 // =========================================================
 
 if (window.__LOADER_UNIVERSALE_2038__) {
@@ -15,11 +15,13 @@ if (window.__LOADER_UNIVERSALE_2038__) {
     // ============================================================
     // PRELOAD AGGRESSIVO (SAFE)
     // ============================================================
-    [
+    const preloadTargets = [
       "/api/js-list",
       "/data/js-list.json",
       "/data/js-list-mirror.json"
-    ].forEach(src => {
+    ];
+
+    preloadTargets.forEach(src => {
       const link = document.createElement("link");
       link.rel = "preload";
       link.as = "fetch";
@@ -27,39 +29,6 @@ if (window.__LOADER_UNIVERSALE_2038__) {
       link.fetchPriority = "high";
       document.head.appendChild(link);
     });
-
-    const GLOBAL_JS = [
-      "seo.js",
-      "structured-data.js",
-      "tracking.js",
-      "auth.js",
-      "header.js",
-      "carrello.js"
-    ];
-
-    const SPECIAL_EXCLUDE = [
-      "chat.js",
-      "premium.js"
-    ];
-
-    const ADMIN_CRITICAL_EXCLUDE = [
-      "loader-admin.js",
-      "dynamic-admin-loader.js",
-      "seo-admin.js",
-      "structured-data-admin.js"
-    ];
-
-    const UNIVERSAL_EXCLUDE = [
-      "loader-universale-2030.js",
-      "loader-universale-2038.js"
-    ];
-
-    const EXCLUDE = [
-      ...GLOBAL_JS,
-      ...SPECIAL_EXCLUDE,
-      ...ADMIN_CRITICAL_EXCLUDE,
-      ...UNIVERSAL_EXCLUDE
-    ];
 
     // ============================================================
     // RETRY INTELLIGENTE — ULTRA FAST
@@ -69,19 +38,16 @@ if (window.__LOADER_UNIVERSALE_2038__) {
         try {
           const r = await fetch(url, { cache: "no-store" });
           if (!r.ok) throw new Error("HTTP " + r.status);
-          console.log(`[2038] js-list OK da ${url} (tentativo ${attempt})`);
           return r.json();
         } catch (e) {
-          console.warn(`[2038] js-list FAIL da ${url} (tentativo ${attempt})`, e.message);
-          await new Promise(r => setTimeout(r, attempt * 150)); // backoff 150/300/450ms
+          await new Promise(r => setTimeout(r, attempt * 150));
         }
       }
-      console.error("[2038] js-list FALLITO dopo 3 tentativi");
       return null;
     }
 
     // ============================================================
-    // CARICA LISTA JS (API → JSON → MIRROR)
+    // CARICA LISTA JS (STATIC MAP)
     // ============================================================
     async function loadJSON() {
       const api = await fetchWithRetry("/api/js-list?v=" + VERSION);
@@ -93,7 +59,6 @@ if (window.__LOADER_UNIVERSALE_2038__) {
       const static2 = await fetchWithRetry("/data/js-list-mirror.json?v=" + VERSION);
       if (static2) return static2;
 
-      console.error("[2038] IMPOSSIBILE CARICARE js-list");
       return { public: [], admin: [] };
     }
 
@@ -104,7 +69,7 @@ if (window.__LOADER_UNIVERSALE_2038__) {
       return new Promise(resolve => {
         const s = document.createElement("script");
         s.src = `${src}?v=${VERSION}`;
-        s.async = true;               // ⚡ più veloce di defer
+        s.async = true;
         s.fetchPriority = "high";
         s.onload = resolve;
         s.onerror = resolve;
@@ -118,35 +83,23 @@ if (window.__LOADER_UNIVERSALE_2038__) {
     function getPageBase() {
       const path = window.location.pathname;
       if (path === "/" || path === "") return "index";
-      let base = path.split("/").pop();
-      return base.replace(".html", "");
+      return path.split("/").pop().replace(".html", "");
     }
 
     // ============================================================
-    // AVVIO
+    // AVVIO (STATIC MAP MODE)
     // ============================================================
     async function run() {
       const list = await loadJSON();
-      if (!list) {
-        console.error("[2038] js-list non disponibile, skip.");
-        return;
-      }
+      if (!list) return;
 
       const base = getPageBase();
       const isAdmin = window.location.pathname.startsWith("/admin");
 
       const pool = isAdmin ? list.admin : list.public;
 
-      const candidates = [
-        `${base}.js`,
-        `${base}-page.js`,
-        `${base}-controller.js`
-      ];
-
-      const found = candidates.filter(js =>
-        pool.includes(js) &&
-        !EXCLUDE.includes(js)
-      );
+      // STATIC MAP → nessuna detection
+      const found = pool.filter(js => js.replace(".js", "") === base);
 
       if (found.length === 0) {
         console.warn("[UNIVERSALE 2038] Nessun JS per", base);
