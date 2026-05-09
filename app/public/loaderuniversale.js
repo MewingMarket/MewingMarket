@@ -1,18 +1,18 @@
 // =========================================================
-// LOADER UNIVERSALE 2030 — PUBLIC STATIC MAP MODE (ULTRA SAFE)
-// Percorso reale: /app/public/loader-universale-2030.js
+// LOADER UNIVERSALE PUBLIC — STATIC MAP MODE (ULTRA SAFE)
+// Percorso reale: /app/public/loaderuniversale.js
 // =========================================================
 
-if (window.__LOADER_UNIVERSALE_2030__) {
-  console.warn("loader-universale-2030.js già caricato, skip.");
+if (window.__LOADER_UNIVERSALE_PUBLIC__) {
+  console.warn("loaderuniversale.js già caricato, skip.");
 } else {
-  window.__LOADER_UNIVERSALE_2030__ = true;
+  window.__LOADER_UNIVERSALE_PUBLIC__ = true;
 
   (function () {
 
-    const VERSION = "2030";
+    const VERSION = "2050"; // versione pipeline
 
-    console.log("⚡ [UNIVERSALE 2030] Avvio loader universale PUBLIC (STATIC MAP)");
+    console.log("⚡ [UNIVERSALE PUBLIC] Avvio loader universale PUBLIC (STATIC MAP)");
 
     // ============================================================
     // RETRY INTELLIGENTE — ULTRA FAST
@@ -101,7 +101,7 @@ if (window.__LOADER_UNIVERSALE_2030__) {
     // AVVIO (STATIC MAP MODE)
     // ============================================================
     async function run() {
-      console.log("🟦 [UNIVERSALE 2030] critical-core-ready ricevuto → avvio run()");
+      console.log("🟦 [UNIVERSALE PUBLIC] critical-core-ready ricevuto → avvio run()");
 
       const list = await loadJSON();
       if (!list) {
@@ -116,12 +116,12 @@ if (window.__LOADER_UNIVERSALE_2030__) {
       const found = pool.filter(js => js.replace(".js", "") === base);
 
       if (found.length === 0) {
-        console.warn("[UNIVERSALE 2030] Nessun JS public per", base);
+        console.warn("[UNIVERSALE PUBLIC] Nessun JS public per", base);
         document.dispatchEvent(new Event("page-js-loaded"));
         return;
       }
 
-      console.log("[UNIVERSALE 2030] Carico JS pagina:", found);
+      console.log("[UNIVERSALE PUBLIC] Carico JS pagina:", found);
 
       for (const js of found) {
         const full = "/" + js;
@@ -129,7 +129,7 @@ if (window.__LOADER_UNIVERSALE_2030__) {
         await debugImport(full);
       }
 
-      console.log("🟩 [UNIVERSALE 2030] page-js-loaded");
+      console.log("🟩 [UNIVERSALE PUBLIC] page-js-loaded");
       document.dispatchEvent(new Event("page-js-loaded"));
     }
 
