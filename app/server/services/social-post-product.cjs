@@ -4,8 +4,8 @@
    Genera il post + pubblica immagine prodotto via Publer
 ========================================================= */
 
-const { publerPost } = R("server/services/publer-api.cjs");
-const { generatePostTemplate } = R("server/services/post-template-generator.cjs");
+const { publerPost } = require("./publer-api.cjs");
+const { generatePostTemplate } = require("./post-template-generator.cjs");
 
 async function publishProductToSocial(product) {
   const profiles = [
