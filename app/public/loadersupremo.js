@@ -1,44 +1,49 @@
 // =========================================================
-// LOADER SUPREMO — GLOBAL
-// Carica critical loader + loader universale + dynamic loader
+// LOADER SUPREMO — GLOBAL ULTRA FAST
+// Caricamento immediato, parallelo, priorità massima
 // =========================================================
 
-// Guardia anti-doppio-caricamento SEMPLICE (senza return illegale)
-if (window.__SUPREMO_LOADED__) {
-  console.warn("SUPREMO già caricato, skip.");
-} else {
+if (!window.__SUPREMO_LOADED__) {
   window.__SUPREMO_LOADED__ = true;
 
   (function() {
 
     const V = "2038";
 
-    function load(src) {
-      return new Promise(resolve => {
-        const s = document.createElement("script");
-        s.src = `${src}?v=${V}`;
-        s.defer = true;
-        s.onload = resolve;
-        s.onerror = resolve;
-        document.head.appendChild(s);
-      });
-    }
+    const scripts = [
+      `/loader.js?v=${V}`,
+      `/loader-universale-2030.js?v=${V}`,
+      `/dynamic-loader.js?v=${V}`
+    ];
 
-    async function start() {
+    // 1) Preload aggressivo + priorità massima
+    scripts.forEach(src => {
+      const link = document.createElement("link");
+      link.rel = "preload";
+      link.as = "script";
+      link.href = src;
+      link.fetchPriority = "high";
+      document.head.appendChild(link);
+    });
 
-      // 1) Critical loader pubblico
-      await load("/loader.js");
-
-      // 2) Loader universale (2038 dentro 2030)
-      await load("/loader-universale-2030.js");
-
-      // 3) Dynamic loader (se esiste)
-      await load("/dynamic-loader.js");
-
-      console.log("[SUPREMO] Tutti i loader caricati");
-    }
-
-    start();
+    // 2) Caricamento parallelo immediato (senza defer)
+    Promise.all(
+      scripts.map(src => {
+        return new Promise(resolve => {
+          const s = document.createElement("script");
+          s.src = src;
+          s.async = true;              // ⚡ massimo parallelismo
+          s.fetchPriority = "high";    // ⚡ priorità massima
+          s.onload = resolve;
+          s.onerror = resolve;
+          document.head.appendChild(s);
+        });
+      })
+    ).then(() => {
+      console.log("⚡ [SUPREMO ULTRA FAST] Tutti i loader caricati");
+    });
 
   })();
+} else {
+  console.warn("SUPREMO già caricato, skip.");
 }
