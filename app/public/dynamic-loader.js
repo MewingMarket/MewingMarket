@@ -1,33 +1,33 @@
 // =========================================================
-// DYNAMIC LOADER — ULTRA FAST SAFE MODE (2028.A+)
+// DYNAMIC LOADER — SAFE MODE 2050
 // Anti 499/502 — stabile su Android/Chrome
 // =========================================================
 
-if (window.__DYNAMIC_LOADER_2028A__) {
+if (window.__DYNAMIC_LOADER_2050__) {
   console.warn("dynamic-loader.js già caricato, skip.");
 } else {
-  window.__DYNAMIC_LOADER_2028A__ = true;
+  window.__DYNAMIC_LOADER_2050__ = true;
 
   (function () {
 
-    const VERSION = "20260412";
+    const VERSION = "2050";
 
-    // Preload aggressivo (SAFE)
-    ["Cache-Control", "Pragma", "Expires"].forEach(() => {
-      const link = document.createElement("link");
-      link.rel = "preload";
-      link.as = "script";
-      link.fetchPriority = "high";
-      document.head.appendChild(link);
-    });
+    console.log("⚡ [DYNAMIC 2050] Avvio dynamic-loader (SAFE MODE)");
 
+    // ============================================================
+    // FUNZIONE PRINCIPALE
+    // ============================================================
     function start() {
+
+      console.log("➡️ [DYNAMIC 2050] start() eseguito");
 
       // -------------------------------
       // 1) ANTI-CACHE (DYNAMIC)
       // -------------------------------
       try {
         if (!document.querySelector('meta[http-equiv="Cache-Control"]')) {
+
+          console.log("🟧 [DYNAMIC] Applico anti-cache");
 
           const m1 = document.createElement("meta");
           m1.httpEquiv = "Cache-Control";
@@ -44,35 +44,42 @@ if (window.__DYNAMIC_LOADER_2028A__) {
           m3.content = "0";
           document.head.appendChild(m3);
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn("❌ [DYNAMIC] Errore anti-cache:", e.message);
+      }
 
       // -------------------------------
       // 2) ANTI SERVICE WORKER (DYNAMIC)
       // -------------------------------
       try {
+        console.log("🟧 [DYNAMIC] Rimozione service worker e cache");
+
         if ("serviceWorker" in navigator) {
           navigator.serviceWorker.getRegistrations().then(regs => {
             regs.forEach(r => r.unregister());
           });
         }
+
         if (window.caches) {
           caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
         }
-      } catch (e) {}
+
+      } catch (e) {
+        console.warn("❌ [DYNAMIC] Errore anti-service-worker:", e.message);
+      }
 
       // -------------------------------
       // 3) DIAGNOSTICA FRONTEND (DISATTIVATA)
       // -------------------------------
-      console.log("🟧 SAFE MODE FAST: diagnostica frontend DISATTIVATA");
+      console.log("🟧 [DYNAMIC] diagnostica frontend DISATTIVATA");
     }
 
     // ============================================================
-    // ESECUZIONE STABILE (ANTI‑499) — ULTRA FAST
+    // ESECUZIONE STABILE (ANTI‑499)
     // ============================================================
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", () => {
-        // micro‑delay ridotto da 50ms → 10ms
-        setTimeout(start, 10);
+        setTimeout(start, 10); // micro‑delay anti race‑condition Android
       });
     } else {
       setTimeout(start, 10);
