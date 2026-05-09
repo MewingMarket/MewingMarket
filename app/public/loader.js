@@ -1,7 +1,6 @@
 // =========================================================
 // CRITICAL LOADER — MewingMarket
-// Versione 2028.A-SAFE ULTRA FAST — Patch SUPREMA
-// NON carica più il loader universale
+// Versione 2028.A HYBRID MODE (SAFE + HARD + ULTRA FAST)
 // =========================================================
 
 if (window.__CRITICAL_LOADER_2028A__) {
@@ -13,7 +12,7 @@ if (window.__CRITICAL_LOADER_2028A__) {
 
     const VERSION = "20280412";
 
-    console.log("[CRITICAL] Loader 2028.A ULTRA FAST (SAFE)");
+    console.log("[CRITICAL] Loader 2028.A HYBRID MODE");
 
     /* ============================================================
        PRELOAD AGGRESSIVO
@@ -30,7 +29,7 @@ if (window.__CRITICAL_LOADER_2028A__) {
       "/carrello.js"
     ].forEach(src => {
       const link = document.createElement("link");
-      link.rel = src.endsWith(".html") ? "preload" : "preload";
+      link.rel = "preload";
       link.as = src.endsWith(".html") ? "fetch" : "script";
       link.href = `${src}?v=${VERSION}`;
       link.fetchPriority = "high";
@@ -40,37 +39,32 @@ if (window.__CRITICAL_LOADER_2028A__) {
     /* ============================================================
        UTILITY
     ============================================================ */
-    function wait(ms) {
-      return new Promise(resolve => setTimeout(resolve, ms));
-    }
+    const wait = ms => new Promise(r => setTimeout(r, ms));
 
     function loadScriptSerial(src, where = "head") {
       return new Promise(resolve => {
         const s = document.createElement("script");
         s.src = `${src}?v=${VERSION}`;
-        s.async = true;              // ⚡ più rapido di defer
+        s.async = true;
         s.fetchPriority = "high";
-        s.onload = resolve;
-        s.onerror = resolve;
+        s.onload = () => resolve(true);
+        s.onerror = () => resolve(false);
         (where === "body" ? document.body : document.head).appendChild(s);
       });
     }
 
-    function fetchText(url) {
-      return fetch(url).then(r => r.text());
-    }
-
-    async function fetchWithRetryHTML(urls, placeholderId, eventName, label, maxAttempts = 3) {
+    async function fetchHTMLWithRetry(urls, placeholderId, eventName, label, maxAttempts = 4) {
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         for (const url of urls) {
           try {
             const r = await fetch(url, { cache: "no-store" });
             if (!r.ok) throw new Error("HTTP " + r.status);
-            const html = await r.text();
 
-            if (placeholderId) {
-              const ph = document.getElementById(placeholderId);
-              if (ph) ph.innerHTML = html;
+            const html = await r.text();
+            const ph = placeholderId ? document.getElementById(placeholderId) : null;
+
+            if (ph) {
+              ph.innerHTML = html;
             } else {
               const temp = document.createElement("div");
               temp.innerHTML = html;
@@ -88,123 +82,85 @@ if (window.__CRITICAL_LOADER_2028A__) {
             if (eventName) document.dispatchEvent(new Event(eventName));
             console.log(`[CRITICAL] ${label} OK da ${url} (tentativo ${attempt})`);
             return true;
+
           } catch (e) {
             console.warn(`[CRITICAL] ${label} FAIL da ${url} (tentativo ${attempt})`, e.message);
           }
         }
-        await wait(150 * attempt); // backoff 150 / 300 / 450 (più rapido)
+        await wait(200 * attempt);
       }
       console.error(`[CRITICAL] ${label} FALLITO dopo ${maxAttempts} tentativi`);
       return false;
     }
 
     /* ============================================================
-       /api/ping — ANTI 502 (ULTRA FAST)
+       /api/ping — ANTI 502 (HYBRID)
     ============================================================ */
-    function pingOnce() {
-      return fetch("/api/ping", { cache: "no-store" })
-        .then(r => r.ok ? r.json() : Promise.reject())
-        .then(() => true)
-        .catch(() => false);
-    }
-
     async function waitUntilServerReady() {
-      for (let i = 0; i < 8; i++) { // meno tentativi, più rapidi
-        const ok = await pingOnce();
-        if (ok) {
-          console.log("[CRITICAL] /api/ping OK, procedo");
-          return;
-        }
-        await wait(100);
+      for (let i = 0; i < 10; i++) {
+        try {
+          const r = await fetch("/api/ping", { cache: "no-store" });
+          if (r.ok) {
+            console.log("[CRITICAL] /api/ping OK");
+            return true;
+          }
+        } catch {}
+        await wait(120);
       }
-      console.warn("[CRITICAL] /api/ping non risponde — SAFE FALLBACK");
+      console.warn("[CRITICAL] /api/ping non risponde — fallback");
+      return false;
     }
 
     /* ============================================================
-       AUTH
+       SEQUENZA CRITICA — HYBRID MODE
     ============================================================ */
-    function loadAuth() {
-      return new Promise(resolve => {
-        const s = document.createElement("script");
-        s.src = `/auth.js?v=${VERSION}`;
-        s.async = true;
-        s.onload = () => {
-          console.log("[CRITICAL] auth.js caricato");
-          resolve();
-        };
-        s.onerror = resolve;
-        document.head.appendChild(s);
-      });
-    }
+    (async () => {
+      let ok = true;
 
-    /* ============================================================
-       HEAD / HEADER / FOOTER
-    ============================================================ */
-    function safeFetchAppendHeadSerial() {
-      return fetchWithRetryHTML(
-        [`head.html?v=${VERSION}`, `/head.html?v=${VERSION}`],
+      await waitUntilServerReady();
+
+      ok &= await loadScriptSerial("/seo.js");
+      ok &= await loadScriptSerial("/structured-data.js");
+      ok &= await loadScriptSerial("/tracking.js");
+
+      ok &= await loadScriptSerial("/auth.js");
+
+      ok &= await fetchHTMLWithRetry(
+        [`/head.html?v=${VERSION}`, `head.html?v=${VERSION}`],
         null,
         "head-loaded",
         "head.html"
       );
-    }
 
-    function safeFetchHeaderSerial() {
-      return fetchWithRetryHTML(
-        [`header.html?v=${VERSION}`, `/header.html?v=${VERSION}`],
+      ok &= await fetchHTMLWithRetry(
+        [`/header.html?v=${VERSION}`, `header.html?v=${VERSION}`],
         "header-placeholder",
         "header-loaded",
         "header.html"
       );
-    }
 
-    async function safeFetchFooterSerial() {
-      const ok = await fetchWithRetryHTML(
-        [`footer.html?v=${VERSION}`, `/footer.html?v=${VERSION}`],
+      ok &= await loadScriptSerial("/header.js", "body");
+
+      ok &= await fetchHTMLWithRetry(
+        [`/footer.html?v=${VERSION}`, `footer.html?v=${VERSION}`],
         "footer-placeholder",
         "footer-loaded",
         "footer.html"
       );
 
+      ok &= await loadScriptSerial("/carrello.js", "body");
+
+      /* ============================================================
+         EMISSIONE CRITICAL-READY — HYBRID MODE
+      ============================================================ */
       if (ok) {
-        const year = document.getElementById("anno");
-        if (year) year.textContent = new Date().getFullYear();
+        console.log("🟩 [CRITICAL] critical-ready (HYBRID, FULL OK)");
+      } else {
+        console.warn("🟧 [CRITICAL] critical-ready (HYBRID, DEGRADED MODE)");
       }
 
-      return ok;
-    }
-
-    /* ============================================================
-       SEQUENZA CRITICA (SERIALE, MA ULTRA FAST)
-    ============================================================ */
-    (async () => {
-      try {
-        await waitUntilServerReady();
-
-        await loadScriptSerial("/seo.js");
-        await loadScriptSerial("/structured-data.js");
-        await loadScriptSerial("/tracking.js");
-
-        await loadAuth();
-
-        await safeFetchAppendHeadSerial();
-        await safeFetchHeaderSerial();
-
-        await loadScriptSerial("/header.js", "body");
-
-        await safeFetchFooterSerial();
-
-        await loadScriptSerial("/carrello.js", "body");
-
-        window.__criticalReady = true;
-        document.dispatchEvent(new Event("critical-ready"));
-        console.log("[CRITICAL] critical-ready emesso (ULTRA FAST)");
-
-      } catch (err) {
-        console.error("[CRITICAL] ERRORE NEL LOADER:", err);
-        window.__criticalReady = true;
-        document.dispatchEvent(new Event("critical-ready"));
-      }
+      window.__criticalReady = true;
+      document.dispatchEvent(new Event("critical-ready"));
     })();
 
   })();
