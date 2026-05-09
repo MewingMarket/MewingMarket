@@ -1,5 +1,5 @@
 // =========================================================
-// ADMIN CRITICAL LOADER — Versione 2028.A ULTRA FAST (SAFE)
+// ADMIN CRITICAL LOADER — Versione 2028.A HYBRID (ULTRA FAST SAFE)
 // =========================================================
 
 if (window.__ADMIN_CRITICAL_LOADER_2028A__) {
@@ -7,7 +7,7 @@ if (window.__ADMIN_CRITICAL_LOADER_2028A__) {
 } else {
   window.__ADMIN_CRITICAL_LOADER_2028A__ = true;
 
-  console.log("[ADMIN] Loader 2028.A ULTRA FAST (SAFE)");
+  console.log("[ADMIN] Loader 2028.A HYBRID (ULTRA FAST SAFE)");
 
   const ADMIN_VERSION = "20280412";
 
@@ -40,72 +40,99 @@ if (window.__ADMIN_CRITICAL_LOADER_2028A__) {
     return new Promise(resolve => {
       const s = document.createElement("script");
       s.src = `${src}?v=${ADMIN_VERSION}`;
-      s.async = true;                 // ⚡ più veloce di defer
-      s.fetchPriority = "high";       // ⚡ priorità massima
-      s.onload = resolve;
-      s.onerror = resolve;
+      s.async = true;
+      s.fetchPriority = "high";
+      s.onload = () => resolve(true);
+      s.onerror = () => resolve(false);
       document.head.appendChild(s);
     });
   }
 
-  function fetchHTMLSerial(url, placeholderId, eventName) {
-    return fetch(url)
-      .then(r => r.ok ? r.text() : Promise.reject())
-      .then(html => {
-        const ph = document.getElementById(placeholderId);
-        if (ph) ph.innerHTML = html;
-        if (eventName) document.dispatchEvent(new Event(eventName));
-      })
-      .catch(() => console.warn(`[ADMIN] ${url} non caricato`));
+  async function fetchHTMLWithRetry(urls, placeholderId, eventName, label, maxAttempts = 4) {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      for (const url of urls) {
+        try {
+          const r = await fetch(url, { cache: "no-store" });
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          const html = await r.text();
+
+          const ph = document.getElementById(placeholderId);
+          if (ph) ph.innerHTML = html;
+
+          if (eventName) document.dispatchEvent(new Event(eventName));
+          console.log(`[ADMIN] ${label} OK da ${url} (tentativo ${attempt})`);
+          return true;
+        } catch (e) {
+          console.warn(`[ADMIN] ${label} FAIL da ${url} (tentativo ${attempt})`, e.message);
+        }
+      }
+      await wait(200 * attempt);
+    }
+    console.error(`[ADMIN] ${label} FALLITO dopo ${maxAttempts} tentativi`);
+    return false;
   }
 
   /* =========================================================
-     /api/ping — ANTI‑502 (ULTRA FAST)
+     /api/ping — ANTI‑502 (HYBRID)
   ========================================================= */
   async function waitUntilServerReady() {
-    for (let i = 0; i < 8; i++) {     // ⚡ meno tentativi, più rapidi
+    for (let i = 0; i < 10; i++) {
       try {
         const r = await fetch("/api/ping", { cache: "no-store" });
-        if (r.ok) return;
+        if (r.ok) {
+          console.log("[ADMIN] /api/ping OK");
+          return true;
+        }
       } catch {}
-      await wait(100);               // ⚡ più veloce di 150ms
+      await wait(120);
     }
     console.warn("[ADMIN] /api/ping non risponde — SAFE FALLBACK");
+    return false;
   }
 
   /* =========================================================
-     LOADER PRINCIPALE (SERIALE, MA OTTIMIZZATO)
+     LOADER PRINCIPALE (HYBRID)
   ========================================================= */
   async function startAdminLoader() {
 
-    console.log("[ADMIN] Avvio sequenza ULTRA FAST 2028.A");
+    console.log("[ADMIN] Avvio sequenza HYBRID 2028.A");
 
-    // 1) Aspetta che il server sia vivo
+    let ok = true;
+
     await waitUntilServerReady();
 
-    // 2) SEO + Structured Data (seriale ma async)
-    await loadScriptSerial(`/admin/seo-admin.js`);
-    await loadScriptSerial(`/admin/structured-data-admin.js`);
+    ok &= await loadScriptSerial(`/admin/seo-admin.js`);
+    ok &= await loadScriptSerial(`/admin/structured-data-admin.js`);
 
-    // 3) HEAD ADMIN
-    await fetchHTMLSerial(`/admin/head-admin.html?v=${ADMIN_VERSION}`,
-                          "head-admin-placeholder",
-                          "admin-head-loaded");
+    ok &= await fetchHTMLWithRetry(
+      [`/admin/head-admin.html?v=${ADMIN_VERSION}`, `admin/head-admin.html?v=${ADMIN_VERSION}`],
+      "head-admin-placeholder",
+      "admin-head-loaded",
+      "head-admin.html"
+    );
 
-    // 4) HEADER ADMIN
-    await fetchHTMLSerial(`/admin/header-admin.html?v=${ADMIN_VERSION}`,
-                          "header-admin-placeholder",
-                          "admin-header-loaded");
+    ok &= await fetchHTMLWithRetry(
+      [`/admin/header-admin.html?v=${ADMIN_VERSION}`, `admin/header-admin.html?v=${ADMIN_VERSION}`],
+      "header-admin-placeholder",
+      "admin-header-loaded",
+      "header-admin.html"
+    );
 
-    // 5) FOOTER ADMIN
-    await fetchHTMLSerial(`/admin/footer-admin.html?v=${ADMIN_VERSION}`,
-                          "footer-admin-placeholder",
-                          "admin-footer-loaded");
+    ok &= await fetchHTMLWithRetry(
+      [`/admin/footer-admin.html?v=${ADMIN_VERSION}`, `admin/footer-admin.html?v=${ADMIN_VERSION}`],
+      "footer-admin-placeholder",
+      "admin-footer-loaded",
+      "footer-admin.html"
+    );
 
-    // 6) CRITICAL READY
+    if (ok) {
+      console.log("🟩 [ADMIN] critical-ready (HYBRID, FULL OK)");
+    } else {
+      console.warn("🟧 [ADMIN] critical-ready (HYBRID, DEGRADED MODE)");
+    }
+
     window.__criticalReady = true;
     document.dispatchEvent(new Event("critical-ready"));
-    console.log("[ADMIN] critical-ready (ULTRA FAST SAFE)");
   }
 
   /* =========================================================
@@ -124,6 +151,9 @@ if (window.__ADMIN_CRITICAL_LOADER_2028A__) {
     s.onload = () => {
       if (window.isAdmin) startAdminLoader();
       else console.warn("🟥 [ADMIN] Accesso negato — isAdmin = false");
+    };
+    s.onerror = () => {
+      console.warn("🟥 [ADMIN] auth.js non caricato — accesso negato");
     };
     document.head.appendChild(s);
 
