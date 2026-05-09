@@ -13,7 +13,7 @@ module.exports = function (app) {
       // =====================================================
       if (req.path.endsWith(".js") || req.url.includes(".js?")) {
         res.setHeader("Content-Type", "application/javascript; charset=utf-8");
-        return next();
+        // ⚠️ NON uscire: lasciamo applicare anche CORS + no-cache
       }
 
       // DEBUG
