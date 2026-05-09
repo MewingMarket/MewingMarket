@@ -1,5 +1,5 @@
 /* =========================================================
- * DIAGNOSTICA LITE — NON INFLUISCE SUL SERVER
+ * DIAGNOSTICA LITE — LOG SOLO SE C'È UNA NOVITÀ
  * =========================================================
  */
 
@@ -15,17 +15,46 @@ function logMem(prefix = "") {
 }
 
 console.log("=========================================================");
-console.log("🟦 DIAGNOSTICA LITE ATTIVA");
+console.log("🟦 DIAGNOSTICA LITE ATTIVA (solo variazioni RAM)");
 console.log("=========================================================");
 
 logMem("BOOT");
 
-// Log RAM ogni 10 secondi
-setInterval(() => {
-  logMem("INTERVAL");
-}, 10000);
+// 🔥 Stato precedente per confronti
+let last = {
+  rss: process.memoryUsage().rss,
+  heap: process.memoryUsage().heapUsed,
+  ext: process.memoryUsage().external
+};
 
-// Hook su ping (senza modificare il tuo /api/ping)
+// 🔥 Soglia di variazione (in byte)
+const THRESHOLD = 5 * 1024 * 1024; // 5 MB
+
+setInterval(() => {
+  const m = process.memoryUsage();
+
+  const diffRSS = Math.abs(m.rss - last.rss);
+  const diffHeap = Math.abs(m.heapUsed - last.heap);
+  const diffExt = Math.abs(m.external - last.ext);
+
+  // Se nessuna variazione significativa → non loggare
+  if (diffRSS < THRESHOLD && diffHeap < THRESHOLD && diffExt < THRESHOLD) {
+    return;
+  }
+
+  // Altrimenti logga
+  logMem("VARIAZIONE");
+
+  // Aggiorna stato precedente
+  last = {
+    rss: m.rss,
+    heap: m.heapUsed,
+    ext: m.external
+  };
+
+}, 5000); // puoi anche aumentare a 10s se vuoi
+
+// Hook su ping
 module.exports = {
   logPing() {
     logMem("PING");
