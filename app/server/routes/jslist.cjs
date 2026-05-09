@@ -1,24 +1,69 @@
 /* =========================================================
  * JS-LIST — Versione SAFE 2038 (cache + TTL + lock)
+ * PATCH 2040: lista statica → niente più scansioni
 ========================================================= */
 
 const fs = require("fs");
 const path = require("path");
 const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
 
-const ROOT = path.join(process.cwd(), "app/public");
-const PUBLIC_ROOT = ROOT;
-const ADMIN_ROOT = path.join(ROOT, "admin");
-
 const PUBLIC_JSON = path.join(process.cwd(), "app/public/data/js-list.json");
 const MIRROR_JSON = path.join(process.cwd(), "app/data/js-list-mirror.json");
 
-const EXCLUDE = [
-  "seo.js","structured-data.js","tracking.js","auth.js","header.js","carrello.js",
-  "chat.js","premium.js",
-  "loader-admin.js","dynamic-admin-loader.js","seo-admin.js","structured-data-admin.js",
-  "loader-universale-2030.js","loader-universale-2038.js"
-];
+/* =========================================================
+ * LISTA STATICA (SOLO JS DI PAGINA REALI)
+========================================================= */
+function getStaticList() {
+  return {
+
+    /* =========================================================
+     * PUBLIC — SOLO JS DI PAGINA
+     * ========================================================= */
+    public: [
+      "index.js",
+      "catalogo.js",
+      "prodotto.js",
+
+      "login.js",
+      "registrazione.js",
+      "profilo.js",
+      "ordini.js",
+      "dashboard.js",
+      "download.js",
+      "recensioni.js",
+      "thankyou.js",
+      "cancel.js",
+
+      // pagine informative reali
+      "FAQ.js",
+      "assistenza.js",
+      "guide.js",
+      "top-recensioni.js",
+      "rimborso.js",
+      "elimina-account.js",
+      "disiscrizione.js",
+      "iscrizione.js",
+      "regole.js",
+      "introspect.js",
+      
+    ],
+
+    /* =========================================================
+     * ADMIN — SOLO JS DI PAGINA
+     * ========================================================= */
+    admin: [
+      "admin-prodotti.js",
+      "admin-prodotti-ai.js",
+      "admin-confronto.js",
+      "admin-utenti.js",
+
+      "dashboard-admin-profilo.js",
+      "dashboard-vendite-ordini.js",
+      "validazione-prodotti.js",
+      "feedback.js"
+    ]
+  };
+}
 
 /* =========================================================
  * CACHE
@@ -29,23 +74,31 @@ let refreshing = false;
 const TTL_MS = 60_000;
 
 /* =========================================================
- * SCANSIONE
+ * RIGENERAZIONE (USA LA LISTA STATICA)
 ========================================================= */
-function scanJS(dir) {
+function regenerateList() {
+  if (refreshing) return;
+  refreshing = true;
+
   try {
-    if (!fs.existsSync(dir)) return [];
-    const files = fs.readdirSync(dir);
-    return files
-      .filter(f => f.endsWith(".js"))
-      .filter(f => !EXCLUDE.includes(f))
-      .sort();
-  } catch {
-    return [];
+    const list = getStaticList();
+
+    cachedList = list;
+    lastUpdate = Date.now();
+
+    saveToDatabase(list);
+    saveJSON(list);
+
+    console.log("🟩 [JS-LIST] Rigenerata (STATIC MAP) + cache aggiornata");
+  } catch (err) {
+    console.error("❌ [JS-LIST] Errore rigenerazione:", err.message);
+  } finally {
+    refreshing = false;
   }
 }
 
 /* =========================================================
- * SALVATAGGI
+ * SALVATAGGI (INVARIATI)
 ========================================================= */
 function saveToDatabase(list) {
   try {
@@ -64,35 +117,7 @@ function saveJSON(list) {
 }
 
 /* =========================================================
- * RIGENERAZIONE
-========================================================= */
-function regenerateList() {
-  if (refreshing) return;
-
-  refreshing = true;
-
-  try {
-    let publicJS = scanJS(PUBLIC_ROOT);
-    let adminJS = scanJS(ADMIN_ROOT);
-
-    const list = { public: publicJS, admin: adminJS };
-
-    cachedList = list;
-    lastUpdate = Date.now();
-
-    saveToDatabase(list);
-    saveJSON(list);
-
-    console.log("🟩 [JS-LIST] Rigenerata e cache aggiornata");
-  } catch (err) {
-    console.error("❌ [JS-LIST] Errore rigenerazione:", err.message);
-  } finally {
-    refreshing = false;
-  }
-}
-
-/* =========================================================
- * HANDLER DIRETTO
+ * HANDLER DIRETTO (INVARIATO)
 ========================================================= */
 module.exports = (req, res) => {
   const now = Date.now();
