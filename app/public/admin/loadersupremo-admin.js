@@ -1,5 +1,6 @@
 // =========================================================
 // LOADER SUPREMO — ADMIN MODELLO 2050 (ORDINE PERFETTO)
+// Percorso reale: /app/public/admin/loadersupremo-admin.js
 // =========================================================
 
 if (!window.__SUPREMO_ADMIN_LOADER__) {
@@ -20,7 +21,7 @@ if (!window.__SUPREMO_ADMIN_LOADER__) {
 
         const s = document.createElement("script");
         s.src = `${src}?v=${V}`;
-        s.defer = true; // FIX: niente async
+        s.defer = true;
         s.fetchPriority = "high";
 
         s.onload = () => {
@@ -101,7 +102,7 @@ if (!window.__SUPREMO_ADMIN_LOADER__) {
       await debugImport("/admin/header-admin.js");
 
       // ============================================================
-      // 4) LOADER UNIVERSALE ADMIN 2038
+      // 4) LOADER UNIVERSALE ADMIN 2050 (nome reale)
       // ============================================================
       console.log("📦 [SUPREMO ADMIN] Carico loader-universale-admin.js");
       await loadScript("/admin/loader-universale-admin.js");
