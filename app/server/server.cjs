@@ -18,9 +18,9 @@ function log(...a){ console.log("[LOG]", ...a); }
 function logErr(...a){ console.error("[ERR]", ...a); }
 
 /* =========================================================
- * HEAD immediato richiesto da Render
+ * ❌ PATCH OPZIONE 1 — RIMOSSO app.head("*")
+ * (Render non lo richiede più e interferiva con i .js)
  * ========================================================= */
-app.head("*", (req, res) => res.status(200).end());
 
 /* =========================================================
  * /api/ping + diagnostica lite (ridotta)
