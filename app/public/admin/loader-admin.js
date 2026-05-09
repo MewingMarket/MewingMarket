@@ -1,26 +1,26 @@
 // =========================================================
-// ADMIN CRITICAL LOADER — Versione 2028.A HYBRID (ULTRA FAST SAFE)
-// PATCH SUPREMA: niente critical-ready, solo critical-core-ready
+// ADMIN CRITICAL LOADER — Versione 2050 (ULTRA MINIMAL SAFE)
+// Carica SOLO head/header/footer + header-admin.js
+// Emette SEMPRE critical-core-ready
 // =========================================================
 
-if (window.__ADMIN_CRITICAL_LOADER_2028A__) {
-  console.warn("admin-critical-loader-2028A.js già caricato, skip.");
+if (window.__ADMIN_CRITICAL_LOADER_2050__) {
+  console.warn("admin-critical-loader-2050.js già caricato, skip.");
 } else {
-  window.__ADMIN_CRITICAL_LOADER_2028A__ = true;
+  window.__ADMIN_CRITICAL_LOADER_2050__ = true;
 
-  console.log("[ADMIN] Loader 2028.A HYBRID (ULTRA FAST SAFE) — PATCH SUPREMA");
+  console.log("[ADMIN] Loader 2050 — ULTRA MINIMAL SAFE MODE");
 
-  const ADMIN_VERSION = "20280412";
+  const ADMIN_VERSION = "2050";
 
   /* =========================================================
-     PRELOAD AGGRESSIVO (SAFE)
+     PRELOAD (solo HTML + header-admin.js)
   ========================================================= */
   [
-    "/admin/seo-admin.js",
-    "/admin/structured-data-admin.js",
     "/admin/head-admin.html",
     "/admin/header-admin.html",
-    "/admin/footer-admin.html"
+    "/admin/footer-admin.html",
+    "/admin/header-admin.js"
   ].forEach(src => {
     const link = document.createElement("link");
     link.rel = "preload";
@@ -37,12 +37,23 @@ if (window.__ADMIN_CRITICAL_LOADER_2028A__) {
 
   function loadScriptSerial(src) {
     return new Promise(resolve => {
+      console.log("➡️ [CRITICAL-LOAD-REQUEST]", src);
+
       const s = document.createElement("script");
       s.src = `${src}?v=${ADMIN_VERSION}`;
-      s.async = true;
+      s.defer = true; // FIX: niente async
       s.fetchPriority = "high";
-      s.onload = () => resolve(true);
-      s.onerror = () => resolve(false);
+
+      s.onload = () => {
+        console.log("✅ [CRITICAL-LOAD-OK]", src);
+        resolve(true);
+      };
+
+      s.onerror = () => {
+        console.warn("❌ [CRITICAL-LOAD-FAIL]", src);
+        resolve(false);
+      };
+
       document.head.appendChild(s);
     });
   }
@@ -53,12 +64,13 @@ if (window.__ADMIN_CRITICAL_LOADER_2028A__) {
         try {
           const r = await fetch(url, { cache: "no-store" });
           if (!r.ok) throw new Error("HTTP " + r.status);
-          const html = await r.text();
 
+          const html = await r.text();
           const ph = document.getElementById(placeholderId);
           if (ph) ph.innerHTML = html;
 
           if (eventName) document.dispatchEvent(new Event(eventName));
+
           console.log(`[ADMIN] ${label} OK da ${url} (tentativo ${attempt})`);
           return true;
 
@@ -68,12 +80,13 @@ if (window.__ADMIN_CRITICAL_LOADER_2028A__) {
       }
       await wait(200 * attempt);
     }
+
     console.error(`[ADMIN] ${label} FALLITO dopo ${maxAttempts} tentativi`);
     return false;
   }
 
   /* =========================================================
-     /api/ping — ANTI‑502 (HYBRID)
+     /api/ping — ANTI‑502
   ========================================================= */
   async function waitUntilServerReady() {
     for (let i = 0; i < 10; i++) {
@@ -91,56 +104,60 @@ if (window.__ADMIN_CRITICAL_LOADER_2028A__) {
   }
 
   /* =========================================================
-     LOADER PRINCIPALE (HYBRID)
+     LOADER PRINCIPALE (ULTRA MINIMAL)
   ========================================================= */
   async function startAdminLoader() {
 
-    console.log("[ADMIN] Avvio sequenza HYBRID 2028.A");
-
-    let ok = true;
+    console.log("[ADMIN] Avvio sequenza CRITICAL 2050");
 
     await waitUntilServerReady();
 
-    ok &= await loadScriptSerial(`/admin/seo-admin.js`);
-    ok &= await loadScriptSerial(`/admin/structured-data-admin.js`);
-
-    ok &= await fetchHTMLWithRetry(
-      [`/admin/head-admin.html?v=${ADMIN_VERSION}`, `admin/head-admin.html?v=${ADMIN_VERSION}`],
+    // 1) HEAD
+    await fetchHTMLWithRetry(
+      [`/admin/head-admin.html?v=${ADMIN_VERSION}`],
       "head-admin-placeholder",
       "admin-head-loaded",
       "head-admin.html"
     );
 
-    ok &= await fetchHTMLWithRetry(
-      [`/admin/header-admin.html?v=${ADMIN_VERSION}`, `admin/header-admin.html?v=${ADMIN_VERSION}`],
+    // 2) HEADER
+    await fetchHTMLWithRetry(
+      [`/admin/header-admin.html?v=${ADMIN_VERSION}`],
       "header-admin-placeholder",
       "admin-header-loaded",
       "header-admin.html"
     );
 
-    ok &= await fetchHTMLWithRetry(
-      [`/admin/footer-admin.html?v=${ADMIN_VERSION}`, `admin/footer-admin.html?v=${ADMIN_VERSION}`],
+    // 3) FOOTER
+    await fetchHTMLWithRetry(
+      [`/admin/footer-admin.html?v=${ADMIN_VERSION}`],
       "footer-admin-placeholder",
       "admin-footer-loaded",
       "footer-admin.html"
     );
 
-    /* =========================================================
-       PATCH SUPREMA:
-       NON emettiamo critical-ready.
-       Emettiamo solo critical-core-ready.
-    ========================================================= */
-    console.log(ok
-      ? "🟩 [ADMIN] critical-core-ready (FULL OK)"
-      : "🟧 [ADMIN] critical-core-ready (DEGRADED)"
-    );
+    // 4) HEADER-ADMIN.JS
+    await loadScriptSerial("/admin/header-admin.js");
 
+    // 5) IMPORT DEBUG
+    try {
+      await import("/admin/header-admin.js?v=" + ADMIN_VERSION);
+      console.log("📦 [IMPORT-OK] /admin/header-admin.js");
+    } catch (e) {
+      console.warn("📦❌ [IMPORT-FAIL] /admin/header-admin.js", e.message);
+    }
+
+    /* =========================================================
+       CRITICAL-CORE-READY SEMPRE EMESSO
+    ========================================================= */
+    console.log("🟩 [ADMIN] critical-core-ready (MINIMAL MODE)");
     window.__criticalCoreReady = true;
     document.dispatchEvent(new Event("critical-core-ready"));
   }
 
   /* =========================================================
-     AUTH CHECK & BOOTSTRAP (SAFE)
+     AUTH CHECK (SOLO PER PERMETTERE L'ACCESSO)
+     MA NON CARICA PIÙ auth.js QUI
   ========================================================= */
   (function () {
 
@@ -149,9 +166,11 @@ if (window.__ADMIN_CRITICAL_LOADER_2028A__) {
       return;
     }
 
+    // Carichiamo auth.js SOLO per verificare accesso,
+    // ma NON fa parte del critical loader.
     const s = document.createElement("script");
     s.src = `/auth.js?v=${ADMIN_VERSION}`;
-    s.async = true;
+    s.defer = true;
 
     s.onload = () => {
       if (window.isAdmin) startAdminLoader();
