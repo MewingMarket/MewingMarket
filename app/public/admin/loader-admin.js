@@ -1,5 +1,6 @@
 // =========================================================
 // ADMIN CRITICAL LOADER — Versione 2028.A HYBRID (ULTRA FAST SAFE)
+// PATCH SUPREMA: niente critical-ready, solo critical-core-ready
 // =========================================================
 
 if (window.__ADMIN_CRITICAL_LOADER_2028A__) {
@@ -7,7 +8,7 @@ if (window.__ADMIN_CRITICAL_LOADER_2028A__) {
 } else {
   window.__ADMIN_CRITICAL_LOADER_2028A__ = true;
 
-  console.log("[ADMIN] Loader 2028.A HYBRID (ULTRA FAST SAFE)");
+  console.log("[ADMIN] Loader 2028.A HYBRID (ULTRA FAST SAFE) — PATCH SUPREMA");
 
   const ADMIN_VERSION = "20280412";
 
@@ -32,9 +33,7 @@ if (window.__ADMIN_CRITICAL_LOADER_2028A__) {
   /* =========================================================
      UTILITY BASE
   ========================================================= */
-  function wait(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
+  const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
   function loadScriptSerial(src) {
     return new Promise(resolve => {
@@ -62,6 +61,7 @@ if (window.__ADMIN_CRITICAL_LOADER_2028A__) {
           if (eventName) document.dispatchEvent(new Event(eventName));
           console.log(`[ADMIN] ${label} OK da ${url} (tentativo ${attempt})`);
           return true;
+
         } catch (e) {
           console.warn(`[ADMIN] ${label} FAIL da ${url} (tentativo ${attempt})`, e.message);
         }
@@ -125,14 +125,18 @@ if (window.__ADMIN_CRITICAL_LOADER_2028A__) {
       "footer-admin.html"
     );
 
-    if (ok) {
-      console.log("🟩 [ADMIN] critical-ready (HYBRID, FULL OK)");
-    } else {
-      console.warn("🟧 [ADMIN] critical-ready (HYBRID, DEGRADED MODE)");
-    }
+    /* =========================================================
+       PATCH SUPREMA:
+       NON emettiamo critical-ready.
+       Emettiamo solo critical-core-ready.
+    ========================================================= */
+    console.log(ok
+      ? "🟩 [ADMIN] critical-core-ready (FULL OK)"
+      : "🟧 [ADMIN] critical-core-ready (DEGRADED)"
+    );
 
-    window.__criticalReady = true;
-    document.dispatchEvent(new Event("critical-ready"));
+    window.__criticalCoreReady = true;
+    document.dispatchEvent(new Event("critical-core-ready"));
   }
 
   /* =========================================================
@@ -148,13 +152,16 @@ if (window.__ADMIN_CRITICAL_LOADER_2028A__) {
     const s = document.createElement("script");
     s.src = `/auth.js?v=${ADMIN_VERSION}`;
     s.async = true;
+
     s.onload = () => {
       if (window.isAdmin) startAdminLoader();
       else console.warn("🟥 [ADMIN] Accesso negato — isAdmin = false");
     };
+
     s.onerror = () => {
       console.warn("🟥 [ADMIN] auth.js non caricato — accesso negato");
     };
+
     document.head.appendChild(s);
 
   })();
