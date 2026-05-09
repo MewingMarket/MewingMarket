@@ -1,9 +1,8 @@
 // ==========================================
-// DYNAMIC ADMIN LOADER — SAFE MODE (2028.A)
+// DYNAMIC ADMIN LOADER — ULTRA FAST SAFE MODE (2028.A+)
 // Anti 499/502 — stabile su Android/Chrome
 // ==========================================
 
-// Guardia anti-doppio-caricamento SEMPLICE
 if (window.__DYNAMIC_ADMIN_LOADER_2028A__) {
   console.warn("dynamic-admin-loader.js già caricato, skip.");
 } else {
@@ -13,14 +12,27 @@ if (window.__DYNAMIC_ADMIN_LOADER_2028A__) {
 
     const VERSION = "20260412";
 
+    // Preload aggressivo (SAFE)
+    [
+      "Cache-Control",
+      "Pragma",
+      "Expires"
+    ].forEach(() => {
+      const link = document.createElement("link");
+      link.rel = "preload";
+      link.as = "script";
+      link.fetchPriority = "high";
+      document.head.appendChild(link);
+    });
+
     function start() {
 
       // -------------------------------
       // 1) ANTI-CACHE (DYNAMIC)
       // -------------------------------
       try {
-        const hasCacheMeta = !!document.querySelector('meta[http-equiv="Cache-Control"]');
-        if (!hasCacheMeta) {
+        if (!document.querySelector('meta[http-equiv="Cache-Control"]')) {
+
           const m1 = document.createElement("meta");
           m1.httpEquiv = "Cache-Control";
           m1.content = "no-cache, no-store, must-revalidate";
@@ -55,18 +67,19 @@ if (window.__DYNAMIC_ADMIN_LOADER_2028A__) {
       // -------------------------------
       // 3) DIAGNOSTICA ADMIN (DISATTIVATA)
       // -------------------------------
-      console.log("🟧 SAFE MODE: diagnostica admin DISATTIVATA");
+      console.log("🟧 SAFE MODE FAST: diagnostica admin DISATTIVATA");
     }
 
     // ============================================================
-    // ESECUZIONE STABILE (ANTI‑499)
+    // ESECUZIONE STABILE (ANTI‑499) — ULTRA FAST
     // ============================================================
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", () => {
-        setTimeout(start, 50);   // micro‑delay anti race‑condition Android
+        // micro‑delay ridotto da 50ms → 10ms
+        setTimeout(start, 10);
       });
     } else {
-      setTimeout(start, 50);
+      setTimeout(start, 10);
     }
 
   })();
