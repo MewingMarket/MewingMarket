@@ -153,11 +153,11 @@ if (!window.__SUPREMO_PUBLIC_2050__) {
       }
 
       // ============================================================
-      // 4) LOADER UNIVERSALE PUBLIC 2030 (nome reale)
+      // 4) LOADER UNIVERSALE PUBLIC (nome reale: loaderuniversale.js)
       // ============================================================
-      console.log("📦 [SUPREMO] Carico loader-universale-2030.js");
-      await loadScript("/loader-universale-2030.js");
-      await debugImport("/loader-universale-2030.js");
+      console.log("📦 [SUPREMO] Carico loaderuniversale.js");
+      await loadScript("/loaderuniversale.js");
+      await debugImport("/loaderuniversale.js");
 
       // ============================================================
       // 5) Attesa caricamento JS pagina
