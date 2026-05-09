@@ -1,18 +1,18 @@
 // =========================================================
-// LOADER UNIVERSALE 2050 — PUBLIC STATIC MAP MODE (ULTRA SAFE)
+// LOADER UNIVERSALE 2030 — PUBLIC STATIC MAP MODE (ULTRA SAFE)
 // Percorso reale: /app/public/loader-universale-2030.js
 // =========================================================
 
-if (window.__LOADER_UNIVERSALE_2050__) {
+if (window.__LOADER_UNIVERSALE_2030__) {
   console.warn("loader-universale-2030.js già caricato, skip.");
 } else {
-  window.__LOADER_UNIVERSALE_2050__ = true;
+  window.__LOADER_UNIVERSALE_2030__ = true;
 
   (function () {
 
-    const VERSION = "2050";
+    const VERSION = "2030";
 
-    console.log("⚡ [UNIVERSALE 2050] Avvio loader universale PUBLIC (STATIC MAP)");
+    console.log("⚡ [UNIVERSALE 2030] Avvio loader universale PUBLIC (STATIC MAP)");
 
     // ============================================================
     // RETRY INTELLIGENTE — ULTRA FAST
@@ -59,7 +59,7 @@ if (window.__LOADER_UNIVERSALE_2050__) {
 
         const s = document.createElement("script");
         s.src = `${src}?v=${VERSION}`;
-        s.defer = true; // FIX: niente async
+        s.defer = true;
         s.fetchPriority = "high";
 
         s.onload = () => {
@@ -77,7 +77,7 @@ if (window.__LOADER_UNIVERSALE_2050__) {
     }
 
     // ============================================================
-    // IMPORT DEBUG (per capire se il JS è eseguibile)
+    // IMPORT DEBUG
     // ============================================================
     async function debugImport(src) {
       try {
@@ -101,7 +101,7 @@ if (window.__LOADER_UNIVERSALE_2050__) {
     // AVVIO (STATIC MAP MODE)
     // ============================================================
     async function run() {
-      console.log("🟦 [UNIVERSALE 2050] critical-core-ready ricevuto → avvio run()");
+      console.log("🟦 [UNIVERSALE 2030] critical-core-ready ricevuto → avvio run()");
 
       const list = await loadJSON();
       if (!list) {
@@ -113,29 +113,26 @@ if (window.__LOADER_UNIVERSALE_2050__) {
       const base = getPageBase();
       const pool = list.public;
 
-      // STATIC MAP → nessuna detection
       const found = pool.filter(js => js.replace(".js", "") === base);
 
       if (found.length === 0) {
-        console.warn("[UNIVERSALE 2050] Nessun JS public per", base);
+        console.warn("[UNIVERSALE 2030] Nessun JS public per", base);
         document.dispatchEvent(new Event("page-js-loaded"));
         return;
       }
 
-      console.log("[UNIVERSALE 2050] Carico JS pagina:", found);
+      console.log("[UNIVERSALE 2030] Carico JS pagina:", found);
 
       for (const js of found) {
-        await loadScript("/" + js);
-        await debugImport("/" + js);
+        const full = "/" + js;
+        await loadScript(full);
+        await debugImport(full);
       }
 
-      console.log("🟩 [UNIVERSALE 2050] page-js-loaded");
+      console.log("🟩 [UNIVERSALE 2030] page-js-loaded");
       document.dispatchEvent(new Event("page-js-loaded"));
     }
 
-    // ============================================================
-    // Patch SUPREMA: ascolta critical-core-ready
-    // ============================================================
     document.addEventListener("critical-core-ready", run);
 
   })();
