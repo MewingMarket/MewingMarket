@@ -41,7 +41,7 @@ if (window.__ADMIN_CRITICAL_LOADER_2050__) {
 
       const s = document.createElement("script");
       s.src = `${src}?v=${ADMIN_VERSION}`;
-      s.defer = true; // FIX: niente async
+      s.async = false;                 // ← PATCH FONDAMENTALE
       s.fetchPriority = "high";
 
       s.onload = () => {
@@ -170,7 +170,7 @@ if (window.__ADMIN_CRITICAL_LOADER_2050__) {
     // ma NON fa parte del critical loader.
     const s = document.createElement("script");
     s.src = `/auth.js?v=${ADMIN_VERSION}`;
-    s.defer = true;
+    s.async = false;                 // ← PATCH FONDAMENTALE
 
     s.onload = () => {
       if (window.isAdmin) startAdminLoader();
