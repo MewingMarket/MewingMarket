@@ -1,55 +1,75 @@
-// =========================================================
-// PATCHER HTML — Rimuove tutti i JS e lascia solo loader supremo
-// Versione CommonJS (compatibile con Node del progetto)
-// =========================================================
+/* =========================================================
+   PATCHER HTML 2050 — Inserisce snippet JS di pagina
+   Autore: Simone + Copilot
+========================================================= */
 
 const fs = require("fs");
 const path = require("path");
 
-const ROOT_PUBLIC = "app/public";
-const ROOT_ADMIN = "app/public/admin";
+console.log("⚡ [PATCHER HTML] Avvio patcher...");
 
-function getAllHTML(dir) {
-  if (!fs.existsSync(dir)) return [];
-    return fs.readdirSync(dir)
-        .filter(f => f.endsWith(".html"))
-            .map(f => path.join(dir, f));
-            }
+const ROOT = "./app/public";
+const ADMIN = "./app/public/admin";
 
-            function patchFile(file, isAdmin = false) {
-              let html = fs.readFileSync(file, "utf8");
+const VERSION = "2050";
 
-                // Rimuove TUTTI gli script <script ...>...</script>
-                  html = html.replace(/<script[\s\S]*?<\/script>/gi, "");
+// Mappa pagine → script
+const PAGE_MAP = {
+  "index.html": "/index.js",
+  "catalogo.html": "/catalogo.js",
+  "prodotto.html": "/prodotto.js",
+  "checkout.html": "/checkout.js",
+  "assistenza.html": "/assistenza.js",
+  "premium.html": "/premium.js"
+};
 
-                    // Rimuove anche script self-closing <script ...>
-                      html = html.replace(/<script[^>]*>/gi, "");
+// ADMIN
+const ADMIN_MAP = {
+  "dashboard.html": "/admin/dashboard.js",
+  "admin-prodotti.html": "/admin/admin-prodotti.js",
+  "admin-confronto.html": "/admin/admin-confronto.js"
+};
 
-                        // Inserisce il loader supremo PRIMA della chiusura </body>
-                          const loaderTag = isAdmin
-                              ? `<script src="/admin/loadersupremo-admin.js"></script>`
-                                  : `<script src="/loadersupremo.js"></script>`;
+// Funzione patch singolo file
+function patchFile(filePath, scriptPath) {
+  let html = fs.readFileSync(filePath, "utf8");
 
-                                    if (html.includes("</body>")) {
-                                        html = html.replace("</body>", `${loaderTag}\n</body>`);
-                                          } else {
-                                              html += `\n${loaderTag}\n`;
-                                                }
+  // Se già presente → skip
+  if (html.includes(scriptPath)) {
+    console.log(`⏭️ [SKIP] ${filePath} ha già ${scriptPath}`);
+    return;
+  }
 
-                                                  fs.writeFileSync(file, html, "utf8");
-                                                    console.log("🟩 Patchato:", file);
-                                                    }
+  // Trova loadersupremo
+  const marker = '<script src="/loadersupremo.js"';
+  const idx = html.indexOf(marker);
 
-                                                    function run() {
-                                                      console.log("⏳ Patch HTML in corso…");
+  if (idx === -1) {
+    console.log(`⚠️ [NO LOADERSUPREMO] ${filePath} → skip`);
+    return;
+  }
 
-                                                        const publicFiles = getAllHTML(ROOT_PUBLIC);
-                                                          const adminFiles = getAllHTML(ROOT_ADMIN);
+  const insertPos = html.indexOf("</script>", idx) + "</script>".length;
 
-                                                            publicFiles.forEach(f => patchFile(f, false));
-                                                              adminFiles.forEach(f => patchFile(f, true));
+  const snippet = `\n<script src="${scriptPath}?v=${VERSION}"></script>\n`;
 
-                                                                console.log("✅ Patch HTML completata.");
-                                                                }
+  const patched = html.slice(0, insertPos) + snippet + html.slice(insertPos);
 
-                                                                run();
+  fs.writeFileSync(filePath, patched, "utf8");
+
+  console.log(`🟩 [PATCHED] ${filePath} → aggiunto ${scriptPath}`);
+}
+
+// Patch PUBLIC
+for (const [file, script] of Object.entries(PAGE_MAP)) {
+  const full = path.join(ROOT, file);
+  if (fs.existsSync(full)) patchFile(full, script);
+}
+
+// Patch ADMIN
+for (const [file, script] of Object.entries(ADMIN_MAP)) {
+  const full = path.join(ADMIN, file);
+  if (fs.existsSync(full)) patchFile(full, script);
+}
+
+console.log("🏁 [PATCHER HTML] Completato.");
