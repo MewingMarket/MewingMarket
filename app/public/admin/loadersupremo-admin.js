@@ -13,7 +13,7 @@ if (!window.__SUPREMO_ADMIN_LOADER__) {
     console.log("⚡ [SUPREMO ADMIN 2050] In attesa di critical-core-ready...");
 
     // ============================================================
-    // Utility caricamento script (SAFE, con debug)
+    // Utility caricamento script (SAFE, con debug) — PATCH: async=false
     // ============================================================
     function loadScript(src, where = "head") {
       return new Promise(resolve => {
@@ -21,7 +21,7 @@ if (!window.__SUPREMO_ADMIN_LOADER__) {
 
         const s = document.createElement("script");
         s.src = `${src}?v=${V}`;
-        s.defer = true;
+        s.async = false;        // ← PATCH FONDAMENTALE
         s.fetchPriority = "high";
 
         s.onload = () => {
@@ -102,7 +102,7 @@ if (!window.__SUPREMO_ADMIN_LOADER__) {
       await debugImport("/admin/header-admin.js");
 
       // ============================================================
-      // 4) LOADER UNIVERSALE ADMIN 2050 (nome reale)
+      // 4) LOADER UNIVERSALE ADMIN 2050
       // ============================================================
       console.log("📦 [SUPREMO ADMIN] Carico loader-universale-admin.js");
       await loadScript("/admin/loader-universale-admin.js");
