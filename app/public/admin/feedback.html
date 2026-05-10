@@ -1,12 +1,3 @@
-<script type="module" src="/loadersupremo.js?v=2050"></script>
-<script src="/admin/feedback.js?v=2050"></script>
-
-<!-- =========================================================
-     File: app/public/admin/feedback.html
-     Admin — Lista completa feedback clienti
-     Versione definitiva 2026 (PATCH KPI)
-========================================================= -->
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -15,6 +6,7 @@
 
   <!-- TITOLO DINAMICO -->
   <meta id="dynamic-title" content="Feedback Clienti – Admin MewingMarket">
+  <title>Feedback Clienti – Admin</title>
 </head>
 
 <body>
@@ -32,7 +24,7 @@
     <!-- =========================================================
          KPI FEEDBACK (NUOVA SEZIONE)
     ========================================================== -->
-    <section class="box-standard" id="kpi-feedback" style="margin-bottom: 25px;">
+    <section class="box-standard" id="kpi-feedback" style="margin-bottom:25px;">
       <!-- Il contenuto viene generato da feedback.js -->
     </section>
 
@@ -40,7 +32,6 @@
          TABELLA FEEDBACK
     ========================================================== -->
     <section class="box-standard">
-
       <table class="tabella-standard" id="tabella-feedback">
         <thead>
           <tr>
@@ -53,7 +44,6 @@
         </thead>
         <tbody></tbody>
       </table>
-
     </section>
 
   </main>
@@ -61,26 +51,11 @@
   <!-- FOOTER ADMIN DINAMICO -->
   <div id="footer-admin-placeholder"></div>
 
-  <!-- JS GLOBALI ADMIN (solo loader con versioning) -->
-
-
-  <!-- JS SPECIFICO PAGINA -->
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  <!-- ========================================================= -->
+  <!-- 🔥 SCRIPTS FINALI (UNICI E STANDARDIZZATI) -->
+  <!-- ========================================================= -->
+  <script type="module" src="/admin/loadersupremo-admin.js?v=2050"></script>
+  <script src="/admin/feedback.js?v=2050"></script>
 
 </body>
 </html>
