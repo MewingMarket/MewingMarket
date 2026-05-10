@@ -1,15 +1,10 @@
-<script type="module" src="/loadersupremo.js?v=2050"></script>
-<!-- =========================================================
-     File: app/public/thankyou.html
-     Pagina post-acquisto — Ordine completato
-     Versione 2026 — MINIMAL (senza download, senza recensioni)
-========================================================= -->
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Ordine completato | MewingMarket</title>
 
   <!-- CSS SPECIFICO -->
   <link rel="stylesheet" href="thankyou.css">
@@ -17,62 +12,48 @@
 
 <body>
 
-<!-- HEAD DINAMICO -->
-<div id="head-placeholder"></div>
+  <!-- HEAD DINAMICO -->
+  <div id="head-placeholder"></div>
 
-<!-- HEADER DINAMICO -->
-<div id="header-placeholder"></div>
+  <!-- HEADER DINAMICO -->
+  <div id="header-placeholder"></div>
 
-<main>
+  <main>
 
-  <div class="box">
-    <h1>Ordine completato 🎉</h1>
+    <div class="box">
+      <h1>Ordine completato 🎉</h1>
 
-    <p>Grazie per il tuo acquisto! Ecco il riepilogo:</p>
+      <p>Grazie per il tuo acquisto! Ecco il riepilogo:</p>
 
-    <div class="order-box">
-      <p><strong>Prodotto:</strong> <span id="prod"></span></p>
-      <p><strong>Prezzo:</strong> <span id="price"></span>€</p>
-      <p><strong>Data:</strong> <span id="date"></span></p>
+      <div class="order-box">
+        <p><strong>Prodotto:</strong> <span id="prod"></span></p>
+        <p><strong>Prezzo:</strong> <span id="price"></span>€</p>
+        <p><strong>Data:</strong> <span id="date"></span></p>
 
-      <div style="margin-top:15px;">
-        <strong>Dettaglio prodotti:</strong>
-        <ul id="prod-list"></ul>
+        <div style="margin-top:15px;">
+          <strong>Dettaglio prodotti:</strong>
+          <ul id="prod-list"></ul>
+        </div>
       </div>
+
+      <p style="margin-top:20px;">
+        Riceverai una email con il link per scaricare i prodotti acquistati.
+      </p>
+
+      <a href="index.html" class="btn btn-home">Torna al sito</a>
+
     </div>
 
-    <p style="margin-top:20px;">
-      Riceverai una email con il link per scaricare i prodotti acquistati.
-    </p>
+  </main>
 
-    <a href="index.html" class="btn btn-home">Torna al sito</a>
+  <!-- FOOTER DINAMICO -->
+  <div id="footer-placeholder"></div>
 
-  </div>
-
-</main>
-
-<!-- JS SPECIFICO -->
-
-
-<!-- JS GLOBALI (solo loader con versioning) -->
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<script src="/thankyou.js?v=2050"></script>
+  <!-- ========================================================= -->
+  <!-- 🔥 SCRIPTS FINALI (ORDINE CORRETTO) -->
+  <!-- ========================================================= -->
+  <script type="module" src="/loadersupremo.js?v=2050"></script>
+  <script src="/thankyou.js?v=2050"></script>
 
 </body>
 </html>
