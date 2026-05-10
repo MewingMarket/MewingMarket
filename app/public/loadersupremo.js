@@ -75,6 +75,27 @@ if (!window.__SUPREMO_PUBLIC_2050__) {
     }
 
     // ============================================================
+    // PATCH 2050 — Rileva se la pagina ha JS di pagina
+    // ============================================================
+    function paginaHaJsDiPagina() {
+      const scripts = document.querySelectorAll("script[src]");
+
+      for (const s of scripts) {
+        const src = s.getAttribute("src");
+        if (!src) continue;
+
+        if (src.includes("loadersupremo")) continue;
+        if (src.includes("loader.js")) continue;
+        if (src.includes("loadersupremo-admin")) continue;
+        if (src.includes("loaderuniversale")) continue;
+
+        return true; // JS di pagina trovato
+      }
+
+      return false;
+    }
+
+    // ============================================================
     // Carica carrello solo su index / catalogo / prodotto
     // ============================================================
     function shouldLoadCarrello() {
@@ -189,11 +210,15 @@ if (!window.__SUPREMO_PUBLIC_2050__) {
       }
 
       // ============================================================
-      // 4) LOADER UNIVERSALE PUBLIC (nome reale: loaderuniversale.js)
+      // 4) LOADER UNIVERSALE PUBLIC — PATCH 2050
       // ============================================================
-      console.log("📦 [SUPREMO] Carico loaderuniversale.js");
-      await loadScript("/loaderuniversale.js");
-      await debugImport("/loaderuniversale.js");
+      if (paginaHaJsDiPagina()) {
+        console.log("📦 [SUPREMO] Carico loaderuniversale.js (pagina con JS)");
+        await loadScript("/loaderuniversale.js");
+        await debugImport("/loaderuniversale.js");
+      } else {
+        console.log("📦 [SUPREMO] Pagina SENZA JS → loaderuniversale.js NON caricato");
+      }
 
       // ============================================================
       // 5) Attesa caricamento JS pagina
