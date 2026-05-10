@@ -1,7 +1,6 @@
 // =========================================================
-// LOADER UNIVERSALE ADMIN 2050 — STATIC MAP MODE (ULTRA SAFE)
+// LOADER UNIVERSALE ADMIN 2050 — AUTO DISCOVERY + STATIC MAP
 // Percorso reale: /app/public/admin/loader-universale-admin.js
-// Usa solo la lista admin da /api/js-list
 // =========================================================
 
 if (window.__LOADER_UNIVERSALE_ADMIN__) {
@@ -13,10 +12,10 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
 
     const VERSION = "2050";
 
-    console.log("⚡ [UNIVERSALE ADMIN 2050] Avvio loader universale ADMIN (STATIC MAP)");
+    console.log("⚡ [UNIVERSALE ADMIN 2050] Avvio loader universale ADMIN (AUTO DISCOVERY)");
 
     // ============================================================
-    // NORMALIZZAZIONE NOMI (pagina + JS)
+    // NORMALIZZAZIONE
     // ============================================================
     function normalizeName(name) {
       return name
@@ -29,12 +28,34 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
     }
 
     // ============================================================
-    // RETRY INTELLIGENTE — ULTRA FAST
+    // NOME BASE PAGINA (INTELLIGENTE)
+    // ============================================================
+    function getPageBase() {
+      const p = window.location.pathname.replace("/admin/", "");
+
+      if (p === "" || p === "/") return "admin-index";
+
+      const parts = p.split("/").filter(Boolean);
+
+      // /admin/diagnostica/123 → diagnostica
+      if (parts.length >= 2 && /^\d+$/.test(parts[parts.length - 1])) {
+        return normalizeName(parts[parts.length - 2]);
+      }
+
+      // /admin/reset/email/XYZ → reset-email
+      if (parts.length >= 2 && !parts[parts.length - 1].includes(".")) {
+        return normalizeName(parts.join("-"));
+      }
+
+      return normalizeName(parts.pop());
+    }
+
+    // ============================================================
+    // FETCH JSON CON RETRY
     // ============================================================
     async function fetchWithRetry(url, maxAttempts = 3) {
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         try {
-          console.log(`➡️ [UNIVERSALE ADMIN] Fetch ${url} (tentativo ${attempt})`);
           const r = await fetch(url, { cache: "no-store" });
           if (!r.ok) throw new Error("HTTP " + r.status);
           return r.json();
@@ -43,47 +64,45 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
           await new Promise(r => setTimeout(r, attempt * 150));
         }
       }
-      console.error("🟥 [UNIVERSALE ADMIN] FALLITO:", url);
       return null;
     }
 
     // ============================================================
-    // CARICA LISTA JS (STATIC MAP)
+    // STATIC MAP
     // ============================================================
-    async function loadJSON() {
+    async function loadStaticMap() {
       const api = await fetchWithRetry("/api/js-list?v=" + VERSION);
-      if (api) return api;
+      if (api) return api.admin || [];
 
       const static1 = await fetchWithRetry("/data/js-list.json?v=" + VERSION);
-      if (static1) return static1;
+      if (static1) return static1.admin || [];
 
       const static2 = await fetchWithRetry("/data/js-list-mirror.json?v=" + VERSION);
-      if (static2) return static2;
+      if (static2) return static2.admin || [];
 
-      console.warn("🟧 [UNIVERSALE ADMIN] Nessuna lista JS disponibile");
-      return { public: [], admin: [] };
+      console.warn("🟧 [UNIVERSALE ADMIN] Nessuna static map disponibile");
+      return [];
     }
 
     // ============================================================
-    // CARICA SCRIPT (SAFE, DEBUG) — PATCH: async=false
+    // CARICA SCRIPT
     // ============================================================
     function loadScript(src) {
       return new Promise(resolve => {
         console.log("➡️ [UNIVERSALE ADMIN LOAD-REQUEST]", src);
 
         const s = document.createElement("script");
-        s.src = `${src}?v=${VERSION}`;
-        s.async = false; // ← PATCH FONDAMENTALE
-        s.fetchPriority = "high";
+        s.src = src + "?v=" + VERSION;
+        s.async = false;
 
         s.onload = () => {
           console.log("✅ [UNIVERSALE ADMIN LOAD-OK]", src);
-          resolve(true);
+          resolve({ ok: true, src });
         };
 
         s.onerror = () => {
           console.warn("❌ [UNIVERSALE ADMIN LOAD-FAIL]", src);
-          resolve(false);
+          resolve({ ok: false, src });
         };
 
         document.body.appendChild(s);
@@ -91,61 +110,117 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
     }
 
     // ============================================================
-    // IMPORT DEBUG
+    // DEBUG IMPORT
     // ============================================================
     async function debugImport(src) {
       try {
         await import(src + "?v=" + VERSION);
         console.log("📦 [UNIVERSALE ADMIN IMPORT-OK]", src);
+        return true;
       } catch (e) {
         console.warn("📦❌ [UNIVERSALE ADMIN IMPORT-FAIL]", src, e.message);
+        return false;
       }
     }
 
     // ============================================================
-    // NOME BASE PAGINA (NORMALIZZATO)
+    // AUTO DISCOVERY (ROOT + SOTTOCARTELLE ADMIN)
     // ============================================================
-    function getPageBase() {
-      const raw = window.location.pathname.split("/").pop();
-      return normalizeName(raw);
+    function buildCandidatePaths(base) {
+      const names = [
+        `${base}.js`,
+        `${base}-page.js`,
+        `${base}-controller.js`,
+        `${base}-module.js`,
+        `${base}-extra.js`,
+        `${base}-1.js`,
+        `${base}-2.js`,
+        `${base}-3.js`
+      ];
+
+      const dirs = [
+        "/admin/",
+        "/admin/js/",
+        "/admin/scripts/",
+        "/admin/modules/",
+        "/admin/components/",
+        "/admin/assets/js/"
+      ];
+
+      const out = [];
+
+      dirs.forEach(dir => {
+        names.forEach(n => out.push(dir + n));
+      });
+
+      return out;
     }
 
     // ============================================================
-    // AVVIO (STATIC MAP MODE)
+    // AVVIO
     // ============================================================
     async function run() {
-      console.log("🟦 [UNIVERSALE ADMIN 2050] critical-core-ready ricevuto → avvio run()");
-
-      const list = await loadJSON();
-      if (!list) {
-        console.warn("🟧 [UNIVERSALE ADMIN] Lista JS non disponibile");
-        document.dispatchEvent(new Event("page-js-loaded"));
-        return;
-      }
+      console.log("🟦 [UNIVERSALE ADMIN] critical-core-ready ricevuto → avvio run()");
 
       const base = getPageBase();
-      const pool = list.admin.map(js => normalizeName(js));
-
       console.log("🔍 [UNIVERSALE ADMIN] Pagina normalizzata:", base);
-      console.log("🔍 [UNIVERSALE ADMIN] Lista normalizzata:", pool);
 
-      const found = list.admin.filter(js => normalizeName(js) === base);
+      const staticMap = await loadStaticMap();
+      const staticNormalized = staticMap.map(normalizeName);
 
-      if (found.length === 0) {
-        console.warn("[UNIVERSALE ADMIN 2050] Nessun JS admin per", base);
-        document.dispatchEvent(new Event("page-js-loaded"));
-        return;
+      const candidates = buildCandidatePaths(base);
+
+      console.log("🔍 [UNIVERSALE ADMIN] Candidati generati:", candidates);
+
+      const loaded = [];
+      const skipped = [];
+      const failed = [];
+
+      for (const full of candidates) {
+        const name = full.split("/").pop();
+
+        // Skip se non è nella static map
+        if (!staticNormalized.includes(normalizeName(name))) {
+          skipped.push({ file: full, reason: "Non presente in static map" });
+          continue;
+        }
+
+        // HEAD → esiste?
+        let exists = false;
+        try {
+          const head = await fetch(full, { method: "HEAD" });
+          exists = head.ok;
+        } catch {}
+
+        if (!exists) {
+          skipped.push({ file: full, reason: "File non trovato" });
+          continue;
+        }
+
+        // Carica
+        const res = await loadScript(full);
+        if (!res.ok) {
+          failed.push({ file: full, reason: "Errore di caricamento" });
+          continue;
+        }
+
+        // Import debug
+        const ok = await debugImport(full);
+        if (!ok) {
+          failed.push({ file: full, reason: "Errore in esecuzione" });
+          continue;
+        }
+
+        loaded.push(full);
       }
 
-      console.log("[UNIVERSALE ADMIN 2050] Carico JS pagina:", found);
+      // ============================================================
+      // DEBUG FINALE
+      // ============================================================
+      console.log("🟩 [UNIVERSALE ADMIN] JS CARICATI:", loaded);
+      console.log("🟧 [UNIVERSALE ADMIN] JS SKIPPATI:", skipped);
+      console.log("🟥 [UNIVERSALE ADMIN] JS FALLITI:", failed);
 
-      for (const js of found) {
-        const full = "/admin/" + js;
-        await loadScript(full);
-        await debugImport(full);
-      }
-
-      console.log("🟩 [UNIVERSALE ADMIN 2050] page-js-loaded");
       document.dispatchEvent(new Event("page-js-loaded"));
     }
 
