@@ -13,7 +13,7 @@ if (!window.__SUPREMO_PUBLIC_2050__) {
     console.log("⚡ [SUPREMO PUBLIC 2050] Bootstrap avviato");
 
     // ============================================================
-    // Utility caricamento script (SAFE, con debug)
+    // Utility caricamento script (SAFE, con debug) — PATCH: async=false
     // ============================================================
     function loadScript(src, where = "head") {
       return new Promise(resolve => {
@@ -21,7 +21,7 @@ if (!window.__SUPREMO_PUBLIC_2050__) {
 
         const s = document.createElement("script");
         s.src = `${src}?v=${V}`;
-        s.defer = true;
+        s.async = false;              // ← PATCH FONDAMENTALE
         s.fetchPriority = "high";
 
         s.onload = () => {
