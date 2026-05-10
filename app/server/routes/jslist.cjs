@@ -1,6 +1,6 @@
 /* =========================================================
  * JS-LIST — Versione SAFE 2040 (STATIC MAP DEFINITIVA)
- * Diviso in 2 liste: PUBLIC + ADMIN
+ * Con normalizzazione nomi pagina/JS
 ========================================================= */
 
 const fs = require("fs");
@@ -11,10 +11,30 @@ const PUBLIC_JSON = path.join(process.cwd(), "app/public/data/js-list.json");
 const MIRROR_JSON = path.join(process.cwd(), "app/data/js-list-mirror.json");
 
 /* =========================================================
+ * NORMALIZZAZIONE NOMI (pagina + JS)
+========================================================= */
+function normalizeName(name) {
+  return name
+    .toLowerCase()
+    .replace(/\.html?$/, "")     // rimuove .html / .htm
+    .replace(/\.js$/, "")        // rimuove .js
+    .replace(/[^a-z0-9\-]/g, "") // rimuove caratteri strani
+    .replace(/\-+/g, "-")        // normalizza doppie linee
+    .trim();
+}
+
+function normalizeJSList(list) {
+  return list.map(js => {
+    const base = normalizeName(js);
+    return base + ".js"; // ricostruisce il nome finale coerente
+  });
+}
+
+/* =========================================================
  * LISTA PUBLIC — SOLO JS DI PAGINA REALI (FRONTEND)
 ========================================================= */
 function getPublicList() {
-  return [
+  const raw = [
     "index.js",
     "catalogo.js",
     "prodotto.js",
@@ -46,13 +66,15 @@ function getPublicList() {
     "reset-password-confirm.js",
     "reset-password-request.js"
   ];
+
+  return normalizeJSList(raw);
 }
 
 /* =========================================================
  * LISTA ADMIN — SOLO JS DI PAGINA REALI (ADMIN)
 ========================================================= */
 function getAdminList() {
-  return [
+  const raw = [
     "admin-prodotti.js",
     "admin-confronto.js",
     "admin-utenti.js",
@@ -63,6 +85,8 @@ function getAdminList() {
     "validazione-prodotti.js",
     "feedback.js"
   ];
+
+  return normalizeJSList(raw);
 }
 
 /* =========================================================
@@ -99,7 +123,7 @@ function regenerateList() {
     saveToDatabase(list);
     saveJSON(list);
 
-    console.log("🟩 [JS-LIST] Rigenerata (STATIC MAP 2040) + cache aggiornata");
+    console.log("🟩 [JS-LIST] Rigenerata (STATIC MAP 2040 + NORMALIZED) + cache aggiornata");
   } catch (err) {
     console.error("❌ [JS-LIST] Errore rigenerazione:", err.message);
   } finally {
