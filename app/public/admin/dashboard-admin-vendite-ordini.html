@@ -1,11 +1,9 @@
-<script type="module" src="/loadersupremo.js?v=2050"></script>
-<script src="/admin/dashboard-vendite-ordini.js?v=2050"></script>
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Vendite & Ordini</title>
 </head>
 
 <body>
@@ -52,7 +50,6 @@
         <p id="kpi-ordini-annullati">—</p>
       </div>
 
-      <!-- ⭐ NUOVO KPI -->
       <div class="kpi-card">
         <h3>Ordini Rimborsati (%)</h3>
         <p id="kpi-ordini-rimborsati">—</p>
@@ -133,8 +130,6 @@
             <th>Prodotti</th>
             <th>Cliente</th>
             <th>Origine</th>
-
-            <!-- ⭐ NUOVE COLONNE -->
             <th>Codice Fiscale</th>
             <th>Motivo Rimborso</th>
             <th>Stato Rimborso</th>
@@ -150,26 +145,11 @@
   <!-- FOOTER ADMIN -->
   <div id="footer-admin-placeholder"></div>
 
-  <!-- JS GLOBALI ADMIN (solo loader con versioning) -->
-
-
-  <!-- Script specifico dashboard -->
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  <!-- ========================================================= -->
+  <!-- 🔥 SCRIPTS FINALI (UNICI E STANDARDIZZATI) -->
+  <!-- ========================================================= -->
+  <script type="module" src="/admin/loadersupremo-admin.js?v=2050"></script>
+  <script src="/admin/dashboard-vendite-ordini.js?v=2050"></script>
 
 </body>
 </html>
