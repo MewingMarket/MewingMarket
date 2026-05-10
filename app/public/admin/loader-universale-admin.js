@@ -16,6 +16,19 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
     console.log("⚡ [UNIVERSALE ADMIN 2050] Avvio loader universale ADMIN (STATIC MAP)");
 
     // ============================================================
+    // NORMALIZZAZIONE NOMI (pagina + JS)
+    // ============================================================
+    function normalizeName(name) {
+      return name
+        .toLowerCase()
+        .replace(/\.html?$/, "")
+        .replace(/\.js$/, "")
+        .replace(/[^a-z0-9\-]/g, "")
+        .replace(/\-+/g, "-")
+        .trim();
+    }
+
+    // ============================================================
     // RETRY INTELLIGENTE — ULTRA FAST
     // ============================================================
     async function fetchWithRetry(url, maxAttempts = 3) {
@@ -52,7 +65,7 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
     }
 
     // ============================================================
-    // CARICA SCRIPT (SAFE, DEBUG)
+    // CARICA SCRIPT (SAFE, DEBUG) — PATCH: async=false
     // ============================================================
     function loadScript(src) {
       return new Promise(resolve => {
@@ -60,7 +73,7 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
 
         const s = document.createElement("script");
         s.src = `${src}?v=${VERSION}`;
-        s.defer = true;
+        s.async = false; // ← PATCH FONDAMENTALE
         s.fetchPriority = "high";
 
         s.onload = () => {
@@ -90,12 +103,11 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
     }
 
     // ============================================================
-    // NOME BASE PAGINA
+    // NOME BASE PAGINA (NORMALIZZATO)
     // ============================================================
     function getPageBase() {
-      const path = window.location.pathname;
-      let base = path.split("/").pop();
-      return base.replace(".html", "");
+      const raw = window.location.pathname.split("/").pop();
+      return normalizeName(raw);
     }
 
     // ============================================================
@@ -112,9 +124,12 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
       }
 
       const base = getPageBase();
-      const pool = list.admin;
+      const pool = list.admin.map(js => normalizeName(js));
 
-      const found = pool.filter(js => js.replace(".js", "") === base);
+      console.log("🔍 [UNIVERSALE ADMIN] Pagina normalizzata:", base);
+      console.log("🔍 [UNIVERSALE ADMIN] Lista normalizzata:", pool);
+
+      const found = list.admin.filter(js => normalizeName(js) === base);
 
       if (found.length === 0) {
         console.warn("[UNIVERSALE ADMIN 2050] Nessun JS admin per", base);
@@ -125,7 +140,7 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
       console.log("[UNIVERSALE ADMIN 2050] Carico JS pagina:", found);
 
       for (const js of found) {
-        const full = "/" + js; // percorso reale
+        const full = "/admin/" + js;
         await loadScript(full);
         await debugImport(full);
       }
