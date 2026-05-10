@@ -1,5 +1,5 @@
 // =========================================================
-// LOADER UNIVERSALE ADMIN 2050 — AUTO DISCOVERY + STATIC MAP
+// LOADER UNIVERSALE ADMIN 2050 — FALLBACK DOM MODE
 // Percorso reale: /app/public/admin/loader-universale-admin.js
 // =========================================================
 
@@ -12,16 +12,15 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
 
     const VERSION = "2050";
 
-    // ============================================================
-    // CACHE GLOBALE JS + LOCK ESECUZIONE
-    // ============================================================
+    // Cache globale JS + lock esecuzione
     window.__SUPREMO_JS_CACHE__ = window.__SUPREMO_JS_CACHE__ || new Set();
-    window.__UNIVERSALE_ADMIN_RUN_STATE__ = window.__UNIVERSALE_ADMIN_RUN_STATE__ || {
-      running: false,
-      done: false
-    };
+    window.__UNIVERSALE_ADMIN_RUN_STATE__ =
+      window.__UNIVERSALE_ADMIN_RUN_STATE__ || {
+        running: false,
+        done: false
+      };
 
-    console.log("⚡ [UNIVERSALE ADMIN 2050] Avvio loader universale ADMIN (AUTO DISCOVERY)");
+    console.log("⚡ [UNIVERSALE ADMIN 2050] Avvio loader universale ADMIN (FALLBACK MODE)");
 
     // ============================================================
     // NORMALIZZAZIONE
@@ -37,7 +36,7 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
     }
 
     // ============================================================
-    // NOME BASE PAGINA (INTELLIGENTE)
+    // NOME BASE PAGINA
     // ============================================================
     function getPageBase() {
       const p = window.location.pathname.replace("/admin/", "");
@@ -58,40 +57,6 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
     }
 
     // ============================================================
-    // FETCH JSON CON RETRY
-    // ============================================================
-    async function fetchWithRetry(url, maxAttempts = 3) {
-      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-        try {
-          const r = await fetch(url, { cache: "no-store" });
-          if (!r.ok) throw new Error("HTTP " + r.status);
-          return r.json();
-        } catch (e) {
-          console.warn(`❌ [UNIVERSALE ADMIN] FAIL ${url} (tentativo ${attempt})`, e.message);
-          await new Promise(r => setTimeout(r, attempt * 150));
-        }
-      }
-      return null;
-    }
-
-    // ============================================================
-    // STATIC MAP
-    // ============================================================
-    async function loadStaticMap() {
-      const api = await fetchWithRetry("/api/js-list?v=" + VERSION);
-      if (api) return api.admin || [];
-
-      const static1 = await fetchWithRetry("/data/js-list.json?v=" + VERSION);
-      if (static1) return static1.admin || [];
-
-      const static2 = await fetchWithRetry("/data/js-list-mirror.json?v=" + VERSION);
-      if (static2) return static2.admin || [];
-
-      console.warn("🟧 [UNIVERSALE ADMIN] Nessuna static map disponibile");
-      return [];
-    }
-
-    // ============================================================
     // CARICA SCRIPT (SAFE + CACHE)
     // ============================================================
     function loadScript(src) {
@@ -99,7 +64,7 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
 
       if (window.__SUPREMO_JS_CACHE__.has(key)) {
         console.log("⏭️ [UNIVERSALE ADMIN LOAD-SKIP già caricato]", key);
-        return Promise.resolve({ ok: true, src: key, skipped: true });
+        return Promise.resolve(true);
       }
 
       return new Promise(resolve => {
@@ -112,12 +77,12 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
         s.onload = () => {
           console.log("✅ [UNIVERSALE ADMIN LOAD-OK]", key);
           window.__SUPREMO_JS_CACHE__.add(key);
-          resolve({ ok: true, src: key });
+          resolve(true);
         };
 
         s.onerror = () => {
           console.warn("❌ [UNIVERSALE ADMIN LOAD-FAIL]", key);
-          resolve({ ok: false, src: key });
+          resolve(false);
         };
 
         document.body.appendChild(s);
@@ -125,58 +90,23 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
     }
 
     // ============================================================
-    // DEBUG IMPORT (con cache)
+    // FALLBACK: CARICA JS DI PAGINA SOLO SE NON È GIÀ NEL DOM
     // ============================================================
-    async function debugImport(src) {
-      const key = src + "::import";
+    async function loadPageScriptIfNeeded(base) {
+      const pageScript = `/admin/${base}.js`;
 
-      if (window.__SUPREMO_JS_CACHE__.has(key)) {
-        console.log("⏭️ [UNIVERSALE ADMIN IMPORT-SKIP già importato]", src);
+      // 1) Controllo se è già nel DOM (inserito dal patcher HTML)
+      if (
+        document.querySelector(`script[src="${pageScript}?v=${VERSION}"]`) ||
+        document.querySelector(`script[src="${pageScript}"]`)
+      ) {
+        console.log(`⏭️ [UNIVERSALE ADMIN] Script già nel DOM → skip: ${pageScript}`);
         return true;
       }
 
-      try {
-        await import(src + "?v=" + VERSION);
-        console.log("📦 [UNIVERSALE ADMIN IMPORT-OK]", src);
-        window.__SUPREMO_JS_CACHE__.add(key);
-        return true;
-      } catch (e) {
-        console.warn("📦❌ [UNIVERSALE ADMIN IMPORT-FAIL]", src, e.message);
-        return false;
-      }
-    }
-
-    // ============================================================
-    // AUTO DISCOVERY (ROOT + SOTTOCARTELLE ADMIN)
-    // ============================================================
-    function buildCandidatePaths(base) {
-      const names = [
-        `${base}.js`,
-        `${base}-page.js`,
-        `${base}-controller.js`,
-        `${base}-module.js`,
-        `${base}-extra.js`,
-        `${base}-1.js`,
-        `${base}-2.js`,
-        `${base}-3.js`
-      ];
-
-      const dirs = [
-        "/admin/",
-        "/admin/js/",
-        "/admin/scripts/",
-        "/admin/modules/",
-        "/admin/components/",
-        "/admin/assets/js/"
-      ];
-
-      const out = [];
-
-      dirs.forEach(dir => {
-        names.forEach(n => out.push(dir + n));
-      });
-
-      return out;
+      // 2) Fallback loader
+      console.log(`📦 [UNIVERSALE ADMIN] Script NON presente → fallback loader: ${pageScript}`);
+      return await loadScript(pageScript);
     }
 
     // ============================================================
@@ -202,58 +132,13 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
       const base = getPageBase();
       console.log("🔍 [UNIVERSALE ADMIN] Pagina normalizzata:", base);
 
-      const staticMap = await loadStaticMap();
-      const staticNormalized = staticMap.map(normalizeName);
-
-      const candidates = buildCandidatePaths(base);
-
-      console.log("🔍 [UNIVERSALE ADMIN] Candidati generati:", candidates);
-
-      const loaded = [];
-      const skipped = [];
-      const failed = [];
-
-      for (const full of candidates) {
-        const name = full.split("/").pop();
-
-        if (!staticNormalized.includes(normalizeName(name))) {
-          skipped.push({ file: full, reason: "Non presente in static map" });
-          continue;
-        }
-
-        let exists = false;
-        try {
-          const head = await fetch(full, { method: "HEAD" });
-          exists = head.ok;
-        } catch {}
-
-        if (!exists) {
-          skipped.push({ file: full, reason: "File non trovato" });
-          continue;
-        }
-
-        const res = await loadScript(full);
-        if (!res.ok) {
-          failed.push({ file: full, reason: "Errore di caricamento" });
-          continue;
-        }
-
-        const ok = await debugImport(full);
-        if (!ok) {
-          failed.push({ file: full, reason: "Errore in esecuzione" });
-          continue;
-        }
-
-        loaded.push(full);
-      }
-
-      console.log("🟩 [UNIVERSALE ADMIN] JS CARICATI:", loaded);
-      console.log("🟧 [UNIVERSALE ADMIN] JS SKIPPATI:", skipped);
-      console.log("🟥 [UNIVERSALE ADMIN] JS FALLITI:", failed);
+      // FALLBACK DOM
+      await loadPageScriptIfNeeded(base);
 
       state.running = false;
       state.done = true;
 
+      console.log("🟩 [UNIVERSALE ADMIN] page-js-loaded");
       document.dispatchEvent(new Event("page-js-loaded"));
     }
 
