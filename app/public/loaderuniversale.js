@@ -1,6 +1,6 @@
 // =========================================================
-// LOADER UNIVERSALE PUBLIC — STATIC MAP MODE (ULTRA SAFE)
-// Percorso reale: /app/public/loaderuniversale.js
+// LOADER UNIVERSALE PUBLIC — VERSIONE 2050 DEFINITIVA
+// AUTO DISCOVERY + STATIC MAP + FALLBACK + DEBUG
 // =========================================================
 
 if (window.__LOADER_UNIVERSALE_PUBLIC__) {
@@ -10,12 +10,12 @@ if (window.__LOADER_UNIVERSALE_PUBLIC__) {
 
   (function () {
 
-    const VERSION = "2050"; // versione pipeline
+    const VERSION = "2050";
 
-    console.log("⚡ [UNIVERSALE PUBLIC] Avvio loader universale PUBLIC (STATIC MAP)");
+    console.log("⚡ [UNIVERSALE 2050] Avvio loader universale PUBLIC (AUTO DISCOVERY MODE)");
 
     // ============================================================
-    // NORMALIZZAZIONE NOMI (pagina + JS)
+    // NORMALIZZAZIONE
     // ============================================================
     function normalizeName(name) {
       return name
@@ -28,12 +28,36 @@ if (window.__LOADER_UNIVERSALE_PUBLIC__) {
     }
 
     // ============================================================
-    // RETRY INTELLIGENTE — ULTRA FAST
+    // NOME BASE PAGINA (INTELLIGENTE)
+    // ============================================================
+    function getPageBase() {
+      const p = window.location.pathname;
+
+      // Home
+      if (p === "/" || p === "") return "index";
+
+      const parts = p.split("/").filter(Boolean);
+
+      // /prodotto/123 → prodotto
+      if (parts.length >= 2 && /^\d+$/.test(parts[parts.length - 1])) {
+        return normalizeName(parts[parts.length - 2]);
+      }
+
+      // /reset-password/confirm/XYZ → reset-password-confirm
+      if (parts.length >= 2 && parts[parts.length - 1].length > 0 && !parts[parts.length - 1].includes(".")) {
+        return normalizeName(parts.join("-"));
+      }
+
+      // /catalogo → catalogo
+      return normalizeName(parts.pop());
+    }
+
+    // ============================================================
+    // FETCH JSON CON RETRY
     // ============================================================
     async function fetchWithRetry(url, maxAttempts = 3) {
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         try {
-          console.log(`➡️ [UNIVERSALE] Fetch ${url} (tentativo ${attempt})`);
           const r = await fetch(url, { cache: "no-store" });
           if (!r.ok) throw new Error("HTTP " + r.status);
           return r.json();
@@ -42,47 +66,45 @@ if (window.__LOADER_UNIVERSALE_PUBLIC__) {
           await new Promise(r => setTimeout(r, attempt * 150));
         }
       }
-      console.error("🟥 [UNIVERSALE] FALLITO:", url);
       return null;
     }
 
     // ============================================================
-    // CARICA LISTA JS (STATIC MAP)
+    // CARICA LISTA STATIC MAP (SE DISPONIBILE)
     // ============================================================
-    async function loadJSON() {
+    async function loadStaticMap() {
       const api = await fetchWithRetry("/api/js-list?v=" + VERSION);
-      if (api) return api;
+      if (api) return api.public || [];
 
       const static1 = await fetchWithRetry("/data/js-list.json?v=" + VERSION);
-      if (static1) return static1;
+      if (static1) return static1.public || [];
 
       const static2 = await fetchWithRetry("/data/js-list-mirror.json?v=" + VERSION);
-      if (static2) return static2;
+      if (static2) return static2.public || [];
 
-      console.warn("🟧 [UNIVERSALE] Nessuna lista JS disponibile");
-      return { public: [], admin: [] };
+      console.warn("🟧 [UNIVERSALE] Nessuna static map disponibile");
+      return [];
     }
 
     // ============================================================
-    // CARICA SCRIPT (SAFE, DEBUG) — PATCH: async=false
+    // CARICA SCRIPT (SAFE)
     // ============================================================
     function loadScript(src) {
       return new Promise(resolve => {
         console.log("➡️ [UNIVERSALE LOAD-REQUEST]", src);
 
         const s = document.createElement("script");
-        s.src = `${src}?v=${VERSION}`;
-        s.async = false; // ← PATCH FONDAMENTALE
-        s.fetchPriority = "high";
+        s.src = src + "?v=" + VERSION;
+        s.async = false;
 
         s.onload = () => {
           console.log("✅ [UNIVERSALE LOAD-OK]", src);
-          resolve(true);
+          resolve({ ok: true, src });
         };
 
         s.onerror = () => {
           console.warn("❌ [UNIVERSALE LOAD-FAIL]", src);
-          resolve(false);
+          resolve({ ok: false, src });
         };
 
         document.body.appendChild(s);
@@ -90,63 +112,119 @@ if (window.__LOADER_UNIVERSALE_PUBLIC__) {
     }
 
     // ============================================================
-    // IMPORT DEBUG
+    // DEBUG IMPORT
     // ============================================================
     async function debugImport(src) {
       try {
         await import(src + "?v=" + VERSION);
         console.log("📦 [UNIVERSALE IMPORT-OK]", src);
+        return true;
       } catch (e) {
         console.warn("📦❌ [UNIVERSALE IMPORT-FAIL]", src, e.message);
+        return false;
       }
     }
 
     // ============================================================
-    // NOME BASE PAGINA (NORMALIZZATO)
+    // AUTO DISCOVERY (ROOT + SOTTOCARTELLE)
     // ============================================================
-    function getPageBase() {
-      const path = window.location.pathname;
-      if (path === "/" || path === "") return "index";
-      const raw = path.split("/").pop();
-      return normalizeName(raw);
+    function buildCandidatePaths(base) {
+      const names = [
+        `${base}.js`,
+        `${base}-page.js`,
+        `${base}-controller.js`,
+        `${base}-module.js`,
+        `${base}-extra.js`,
+        `${base}-1.js`,
+        `${base}-2.js`,
+        `${base}-3.js`
+      ];
+
+      const dirs = [
+        "/",
+        "/js/",
+        "/scripts/",
+        "/modules/",
+        "/components/",
+        "/assets/js/"
+      ];
+
+      const out = [];
+
+      dirs.forEach(dir => {
+        names.forEach(n => {
+          out.push(dir + n);
+        });
+      });
+
+      return out;
     }
 
     // ============================================================
-    // AVVIO (STATIC MAP MODE)
+    // AVVIO
     // ============================================================
     async function run() {
-      console.log("🟦 [UNIVERSALE PUBLIC] critical-core-ready ricevuto → avvio run()");
-
-      const list = await loadJSON();
-      if (!list) {
-        console.warn("🟧 [UNIVERSALE] Lista JS non disponibile");
-        document.dispatchEvent(new Event("page-js-loaded"));
-        return;
-      }
+      console.log("🟦 [UNIVERSALE] critical-core-ready ricevuto → avvio run()");
 
       const base = getPageBase();
-      const pool = list.public.map(js => normalizeName(js));
-
       console.log("🔍 [UNIVERSALE] Pagina normalizzata:", base);
-      console.log("🔍 [UNIVERSALE] Lista normalizzata:", pool);
 
-      const found = list.public.filter(js => normalizeName(js) === base);
+      const staticMap = await loadStaticMap();
+      const staticNormalized = staticMap.map(normalizeName);
 
-      if (found.length === 0) {
-        console.warn("[UNIVERSALE PUBLIC] Nessun JS public per", base);
-        document.dispatchEvent(new Event("page-js-loaded"));
-        return;
+      const candidates = buildCandidatePaths(base);
+
+      console.log("🔍 [UNIVERSALE] Candidati generati:", candidates);
+
+      const loaded = [];
+      const skipped = [];
+      const failed = [];
+
+      for (const full of candidates) {
+        const name = full.split("/").pop();
+
+        // Skip se non è nella static map (fallback 1)
+        if (!staticNormalized.includes(normalizeName(name))) {
+          skipped.push({ file: full, reason: "Non presente in static map" });
+          continue;
+        }
+
+        // Test HEAD
+        let exists = false;
+        try {
+          const head = await fetch(full, { method: "HEAD" });
+          exists = head.ok;
+        } catch {}
+
+        if (!exists) {
+          skipped.push({ file: full, reason: "File non trovato" });
+          continue;
+        }
+
+        // Carica
+        const res = await loadScript(full);
+        if (!res.ok) {
+          failed.push({ file: full, reason: "Errore di caricamento" });
+          continue;
+        }
+
+        // Import debug
+        const ok = await debugImport(full);
+        if (!ok) {
+          failed.push({ file: full, reason: "Errore in esecuzione" });
+          continue;
+        }
+
+        loaded.push(full);
       }
 
-      console.log("[UNIVERSALE PUBLIC] Carico JS pagina:", found);
+      // ============================================================
+      // DEBUG FINALE
+      // ============================================================
+      console.log("🟩 [UNIVERSALE] JS CARICATI:", loaded);
+      console.log("🟧 [UNIVERSALE] JS SKIPPATI:", skipped);
+      console.log("🟥 [UNIVERSALE] JS FALLITI:", failed);
 
-      for (const js of found) {
-        const full = "/" + js;
-        await loadScript(full);
-        await debugImport(full);
-      }
-
-      console.log("🟩 [UNIVERSALE PUBLIC] page-js-loaded");
       document.dispatchEvent(new Event("page-js-loaded"));
     }
 
@@ -154,85 +232,3 @@ if (window.__LOADER_UNIVERSALE_PUBLIC__) {
 
   })();
 }
-
-/* =========================================================
- * DEBUG UNIVERSALE 2050 — LOG JS TEORICO + MOTIVO DEL FAIL
- * ========================================================= */
-
-(function () {
-
-  function normalizeName(name) {
-    return name
-      .toLowerCase()
-      .replace(/\.html?$/, "")
-      .replace(/\.js$/, "")
-      .replace(/[^a-z0-9\-]/g, "")
-      .replace(/\-+/g, "-")
-      .trim();
-  }
-
-  function getPageBase() {
-    const p = window.location.pathname;
-    if (p === "/" || p === "") return "index";
-    return normalizeName(p.split("/").pop());
-  }
-
-  async function testJS(pageBase) {
-    const jsName = pageBase + ".js";
-    const full = "/" + jsName;
-
-    console.log("🔍 [DEBUG-UNIVERSALE] JS teorico della pagina:", jsName);
-
-    // 1) HEAD → MIME TYPE
-    try {
-      const head = await fetch(full, { method: "HEAD" });
-      const mime = head.headers.get("content-type");
-      console.log("📌 [DEBUG-UNIVERSALE] MIME:", mime);
-
-      if (!mime || !mime.includes("javascript")) {
-        console.warn("🟥 [DEBUG-UNIVERSALE] MIME NON VALIDO → il browser NON esegue il file");
-      }
-    } catch (e) {
-      console.warn("🟥 [DEBUG-UNIVERSALE] HEAD fallito:", e.message);
-    }
-
-    // 2) GET → esiste?
-    let code = null;
-    try {
-      const r = await fetch(full);
-      if (!r.ok) {
-        console.warn("🟥 [DEBUG-UNIVERSALE] GET fallito → HTTP", r.status);
-        return;
-      }
-      code = await r.text();
-      console.log("📦 [DEBUG-UNIVERSALE] File scaricato, lunghezza:", code.length);
-    } catch (e) {
-      console.warn("🟥 [DEBUG-UNIVERSALE] GET errore:", e.message);
-      return;
-    }
-
-    // 3) Sintassi JS
-    try {
-      new Function(code);
-      console.log("⚡ [DEBUG-UNIVERSALE] Sintassi OK");
-    } catch (e) {
-      console.warn("🟥 [DEBUG-UNIVERSALE] ERRORE DI SINTASSI:", e.message);
-      return;
-    }
-
-    // 4) Esecuzione isolata
-    try {
-      await import(full + "?debug=" + Date.now());
-      console.log("🟩 [DEBUG-UNIVERSALE] Esecuzione OK");
-    } catch (e) {
-      console.warn("🟥 [DEBUG-UNIVERSALE] ERRORE IN ESECUZIONE:", e.message);
-    }
-  }
-
-  document.addEventListener("DOMContentLoaded", () => {
-    const base = getPageBase();
-    console.log("🟦 [DEBUG-UNIVERSALE] Pagina:", base);
-    testJS(base);
-  });
-
-})();
