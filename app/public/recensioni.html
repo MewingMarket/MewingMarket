@@ -1,90 +1,74 @@
-<script type="module" src="/loadersupremo.js?v=2050"></script>
 <!DOCTYPE html>
 <html lang="it">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <title>Le mie recensioni | MewingMarket</title>
+
   <link rel="stylesheet" href="recensioni.css">
 </head>
 
 <body>
 
-<!-- HEAD DINAMICO -->
-<div id="head-placeholder"></div>
+  <!-- HEAD DINAMICO -->
+  <div id="head-placeholder"></div>
 
-<!-- HEADER DINAMICO -->
-<div id="header-placeholder"></div>
+  <!-- HEADER DINAMICO -->
+  <div id="header-placeholder"></div>
 
-<main>
+  <main>
 
-  <div class="box">
-    <h1>Le mie recensioni ⭐</h1>
+    <div class="box">
+      <h1>Le mie recensioni ⭐</h1>
 
-    <div class="back-buttons" style="margin-bottom:20px; display:flex; gap:10px;">
-      <a href="dashboard.html" class="btn btn-secondary">← Torna alla Dashboard</a>
-      <a href="index.html" class="btn btn-secondary">← Torna al sito</a>
-    </div>
-
-    <h3>Le tue recensioni</h3>
-    <div id="listaRecensioni"></div>
-
-    <h3 style="margin-top:40px;">Aggiungi una recensione</h3>
-
-    <div id="formRecensione">
-
-      <label>Prodotto acquistato</label>
-      <select id="selectProdotto">
-        <option value="">Caricamento…</option>
-      </select>
-
-      <div id="stars" class="stars" style="margin-top:10px;">
-        <span data-v="1">★</span>
-        <span data-v="2">★</span>
-        <span data-v="3">★</span>
-        <span data-v="4">★</span>
-        <span data-v="5">★</span>
+      <div class="back-buttons" style="margin-bottom:20px; display:flex; gap:10px;">
+        <a href="dashboard.html" class="btn btn-secondary">← Torna alla Dashboard</a>
+        <a href="index.html" class="btn btn-secondary">← Torna al sito</a>
       </div>
 
-      <textarea id="commento" placeholder="Scrivi qui la tua opinione…" style="margin-top:10px;"></textarea>
+      <h3>Le tue recensioni</h3>
+      <div id="listaRecensioni"></div>
 
-      <button id="btnInvia" class="btn btn-primary" style="margin-top:10px;">
-        Invia recensione
-      </button>
+      <h3 style="margin-top:40px;">Aggiungi una recensione</h3>
 
-      <div id="status" class="status" style="margin-top:10px;"></div>
+      <div id="formRecensione">
+
+        <label>Prodotto acquistato</label>
+        <select id="selectProdotto">
+          <option value="">Caricamento…</option>
+        </select>
+
+        <div id="stars" class="stars" style="margin-top:10px;">
+          <span data-v="1">★</span>
+          <span data-v="2">★</span>
+          <span data-v="3">★</span>
+          <span data-v="4">★</span>
+          <span data-v="5">★</span>
+        </div>
+
+        <textarea id="commento" placeholder="Scrivi qui la tua opinione…" style="margin-top:10px;"></textarea>
+
+        <button id="btnInvia" class="btn btn-primary" style="margin-top:10px;">
+          Invia recensione
+        </button>
+
+        <div id="status" class="status" style="margin-top:10px;"></div>
+
+      </div>
 
     </div>
 
-  </div>
+  </main>
 
-</main>
+  <!-- FOOTER DINAMICO -->
+  <div id="footer-placeholder"></div>
 
-<!-- FOOTER DINAMICO -->
-<div id="footer-placeholder"></div>
-
-<!-- JS SPECIFICO PAGINA -->
-
-
-<!-- JS GLOBALI (solo loader con versioning) -->
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<script src="/recensioni.js?v=2050"></script>
+  <!-- ========================================================= -->
+  <!-- 🔥 SCRIPTS FINALI (UNICI E STANDARDIZZATI) -->
+  <!-- ========================================================= -->
+  <script type="module" src="/loadersupremo.js?v=2050"></script>
+  <script src="/recensioni.js?v=2050"></script>
 
 </body>
 </html>
