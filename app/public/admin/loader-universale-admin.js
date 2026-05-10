@@ -12,6 +12,15 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
 
     const VERSION = "2050";
 
+    // ============================================================
+    // CACHE GLOBALE JS + LOCK ESECUZIONE
+    // ============================================================
+    window.__SUPREMO_JS_CACHE__ = window.__SUPREMO_JS_CACHE__ || new Set();
+    window.__UNIVERSALE_ADMIN_RUN_STATE__ = window.__UNIVERSALE_ADMIN_RUN_STATE__ || {
+      running: false,
+      done: false
+    };
+
     console.log("⚡ [UNIVERSALE ADMIN 2050] Avvio loader universale ADMIN (AUTO DISCOVERY)");
 
     // ============================================================
@@ -37,12 +46,10 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
 
       const parts = p.split("/").filter(Boolean);
 
-      // /admin/diagnostica/123 → diagnostica
       if (parts.length >= 2 && /^\d+$/.test(parts[parts.length - 1])) {
         return normalizeName(parts[parts.length - 2]);
       }
 
-      // /admin/reset/email/XYZ → reset-email
       if (parts.length >= 2 && !parts[parts.length - 1].includes(".")) {
         return normalizeName(parts.join("-"));
       }
@@ -85,24 +92,32 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
     }
 
     // ============================================================
-    // CARICA SCRIPT
+    // CARICA SCRIPT (SAFE + CACHE)
     // ============================================================
     function loadScript(src) {
+      const key = src;
+
+      if (window.__SUPREMO_JS_CACHE__.has(key)) {
+        console.log("⏭️ [UNIVERSALE ADMIN LOAD-SKIP già caricato]", key);
+        return Promise.resolve({ ok: true, src: key, skipped: true });
+      }
+
       return new Promise(resolve => {
-        console.log("➡️ [UNIVERSALE ADMIN LOAD-REQUEST]", src);
+        console.log("➡️ [UNIVERSALE ADMIN LOAD-REQUEST]", key);
 
         const s = document.createElement("script");
-        s.src = src + "?v=" + VERSION;
+        s.src = key + "?v=" + VERSION;
         s.async = false;
 
         s.onload = () => {
-          console.log("✅ [UNIVERSALE ADMIN LOAD-OK]", src);
-          resolve({ ok: true, src });
+          console.log("✅ [UNIVERSALE ADMIN LOAD-OK]", key);
+          window.__SUPREMO_JS_CACHE__.add(key);
+          resolve({ ok: true, src: key });
         };
 
         s.onerror = () => {
-          console.warn("❌ [UNIVERSALE ADMIN LOAD-FAIL]", src);
-          resolve({ ok: false, src });
+          console.warn("❌ [UNIVERSALE ADMIN LOAD-FAIL]", key);
+          resolve({ ok: false, src: key });
         };
 
         document.body.appendChild(s);
@@ -110,12 +125,20 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
     }
 
     // ============================================================
-    // DEBUG IMPORT
+    // DEBUG IMPORT (con cache)
     // ============================================================
     async function debugImport(src) {
+      const key = src + "::import";
+
+      if (window.__SUPREMO_JS_CACHE__.has(key)) {
+        console.log("⏭️ [UNIVERSALE ADMIN IMPORT-SKIP già importato]", src);
+        return true;
+      }
+
       try {
         await import(src + "?v=" + VERSION);
         console.log("📦 [UNIVERSALE ADMIN IMPORT-OK]", src);
+        window.__SUPREMO_JS_CACHE__.add(key);
         return true;
       } catch (e) {
         console.warn("📦❌ [UNIVERSALE ADMIN IMPORT-FAIL]", src, e.message);
@@ -157,9 +180,23 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
     }
 
     // ============================================================
-    // AVVIO
+    // AVVIO (con LOCK)
     // ============================================================
     async function run() {
+
+      const state = window.__UNIVERSALE_ADMIN_RUN_STATE__;
+
+      if (state.done) {
+        console.log("⏭️ [UNIVERSALE ADMIN] run() già completato, skip.");
+        return;
+      }
+      if (state.running) {
+        console.log("⏭️ [UNIVERSALE ADMIN] run() già in esecuzione, skip.");
+        return;
+      }
+
+      state.running = true;
+
       console.log("🟦 [UNIVERSALE ADMIN] critical-core-ready ricevuto → avvio run()");
 
       const base = getPageBase();
@@ -179,13 +216,11 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
       for (const full of candidates) {
         const name = full.split("/").pop();
 
-        // Skip se non è nella static map
         if (!staticNormalized.includes(normalizeName(name))) {
           skipped.push({ file: full, reason: "Non presente in static map" });
           continue;
         }
 
-        // HEAD → esiste?
         let exists = false;
         try {
           const head = await fetch(full, { method: "HEAD" });
@@ -197,14 +232,12 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
           continue;
         }
 
-        // Carica
         const res = await loadScript(full);
         if (!res.ok) {
           failed.push({ file: full, reason: "Errore di caricamento" });
           continue;
         }
 
-        // Import debug
         const ok = await debugImport(full);
         if (!ok) {
           failed.push({ file: full, reason: "Errore in esecuzione" });
@@ -214,12 +247,12 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
         loaded.push(full);
       }
 
-      // ============================================================
-      // DEBUG FINALE
-      // ============================================================
       console.log("🟩 [UNIVERSALE ADMIN] JS CARICATI:", loaded);
       console.log("🟧 [UNIVERSALE ADMIN] JS SKIPPATI:", skipped);
       console.log("🟥 [UNIVERSALE ADMIN] JS FALLITI:", failed);
+
+      state.running = false;
+      state.done = true;
 
       document.dispatchEvent(new Event("page-js-loaded"));
     }
