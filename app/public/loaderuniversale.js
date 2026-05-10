@@ -1,6 +1,6 @@
 // =========================================================
 // LOADER UNIVERSALE PUBLIC — VERSIONE 2050 DEFINITIVA
-// AUTO DISCOVERY + STATIC MAP + FALLBACK + DEBUG
+// AUTO DISCOVERY + STATIC MAP + FALLBACK + DEBUG + CACHE
 // =========================================================
 
 if (window.__LOADER_UNIVERSALE_PUBLIC__) {
@@ -11,6 +11,14 @@ if (window.__LOADER_UNIVERSALE_PUBLIC__) {
   (function () {
 
     const VERSION = "2050";
+
+    // Cache globale JS già caricati (qualsiasi pagina)
+    window.__UNIVERSALE_JS_CACHE__ = window.__UNIVERSALE_JS_CACHE__ || new Set();
+    // Lock esecuzione run()
+    window.__UNIVERSALE_PUBLIC_RUN_STATE__ = window.__UNIVERSALE_PUBLIC_RUN_STATE__ || {
+      running: false,
+      done: false
+    };
 
     console.log("⚡ [UNIVERSALE 2050] Avvio loader universale PUBLIC (AUTO DISCOVERY MODE)");
 
@@ -33,22 +41,18 @@ if (window.__LOADER_UNIVERSALE_PUBLIC__) {
     function getPageBase() {
       const p = window.location.pathname;
 
-      // Home
       if (p === "/" || p === "") return "index";
 
       const parts = p.split("/").filter(Boolean);
 
-      // /prodotto/123 → prodotto
       if (parts.length >= 2 && /^\d+$/.test(parts[parts.length - 1])) {
         return normalizeName(parts[parts.length - 2]);
       }
 
-      // /reset-password/confirm/XYZ → reset-password-confirm
       if (parts.length >= 2 && parts[parts.length - 1].length > 0 && !parts[parts.length - 1].includes(".")) {
         return normalizeName(parts.join("-"));
       }
 
-      // /catalogo → catalogo
       return normalizeName(parts.pop());
     }
 
@@ -87,24 +91,32 @@ if (window.__LOADER_UNIVERSALE_PUBLIC__) {
     }
 
     // ============================================================
-    // CARICA SCRIPT (SAFE)
+    // CARICA SCRIPT (SAFE + CACHE GLOBALE)
     // ============================================================
     function loadScript(src) {
+      const key = src; // senza ?v, lo aggiungiamo dopo
+
+      if (window.__UNIVERSALE_JS_CACHE__.has(key)) {
+        console.log("⏭️ [UNIVERSALE LOAD-SKIP già caricato]", key);
+        return Promise.resolve({ ok: true, src: key, skipped: true });
+      }
+
       return new Promise(resolve => {
-        console.log("➡️ [UNIVERSALE LOAD-REQUEST]", src);
+        console.log("➡️ [UNIVERSALE LOAD-REQUEST]", key);
 
         const s = document.createElement("script");
-        s.src = src + "?v=" + VERSION;
+        s.src = key + "?v=" + VERSION;
         s.async = false;
 
         s.onload = () => {
-          console.log("✅ [UNIVERSALE LOAD-OK]", src);
-          resolve({ ok: true, src });
+          console.log("✅ [UNIVERSALE LOAD-OK]", key);
+          window.__UNIVERSALE_JS_CACHE__.add(key);
+          resolve({ ok: true, src: key });
         };
 
         s.onerror = () => {
-          console.warn("❌ [UNIVERSALE LOAD-FAIL]", src);
-          resolve({ ok: false, src });
+          console.warn("❌ [UNIVERSALE LOAD-FAIL]", key);
+          resolve({ ok: false, src: key });
         };
 
         document.body.appendChild(s);
@@ -112,15 +124,25 @@ if (window.__LOADER_UNIVERSALE_PUBLIC__) {
     }
 
     // ============================================================
-    // DEBUG IMPORT
+    // DEBUG IMPORT (NO DOPPIO IMPORT)
     // ============================================================
     async function debugImport(src) {
+      const key = src;
+
+      // Se è già stato caricato come script e funziona, l'import è solo debug:
+      // non serve rieseguire se già importato in questa sessione.
+      if (window.__UNIVERSALE_JS_CACHE__.has(key + "::import")) {
+        console.log("⏭️ [UNIVERSALE IMPORT-SKIP già importato]", key);
+        return true;
+      }
+
       try {
         await import(src + "?v=" + VERSION);
-        console.log("📦 [UNIVERSALE IMPORT-OK]", src);
+        console.log("📦 [UNIVERSALE IMPORT-OK]", key);
+        window.__UNIVERSALE_JS_CACHE__.add(key + "::import");
         return true;
       } catch (e) {
-        console.warn("📦❌ [UNIVERSALE IMPORT-FAIL]", src, e.message);
+        console.warn("📦❌ [UNIVERSALE IMPORT-FAIL]", key, e.message);
         return false;
       }
     }
@@ -161,9 +183,21 @@ if (window.__LOADER_UNIVERSALE_PUBLIC__) {
     }
 
     // ============================================================
-    // AVVIO
+    // AVVIO (CON LOCK)
     // ============================================================
     async function run() {
+      const state = window.__UNIVERSALE_PUBLIC_RUN_STATE__;
+
+      if (state.done) {
+        console.log("⏭️ [UNIVERSALE] run() già completato, skip.");
+        return;
+      }
+      if (state.running) {
+        console.log("⏭️ [UNIVERSALE] run() già in esecuzione, skip.");
+        return;
+      }
+
+      state.running = true;
       console.log("🟦 [UNIVERSALE] critical-core-ready ricevuto → avvio run()");
 
       const base = getPageBase();
@@ -183,13 +217,11 @@ if (window.__LOADER_UNIVERSALE_PUBLIC__) {
       for (const full of candidates) {
         const name = full.split("/").pop();
 
-        // Skip se non è nella static map (fallback 1)
         if (!staticNormalized.includes(normalizeName(name))) {
           skipped.push({ file: full, reason: "Non presente in static map" });
           continue;
         }
 
-        // Test HEAD
         let exists = false;
         try {
           const head = await fetch(full, { method: "HEAD" });
@@ -201,14 +233,12 @@ if (window.__LOADER_UNIVERSALE_PUBLIC__) {
           continue;
         }
 
-        // Carica
         const res = await loadScript(full);
         if (!res.ok) {
           failed.push({ file: full, reason: "Errore di caricamento" });
           continue;
         }
 
-        // Import debug
         const ok = await debugImport(full);
         if (!ok) {
           failed.push({ file: full, reason: "Errore in esecuzione" });
@@ -218,12 +248,12 @@ if (window.__LOADER_UNIVERSALE_PUBLIC__) {
         loaded.push(full);
       }
 
-      // ============================================================
-      // DEBUG FINALE
-      // ============================================================
       console.log("🟩 [UNIVERSALE] JS CARICATI:", loaded);
       console.log("🟧 [UNIVERSALE] JS SKIPPATI:", skipped);
       console.log("🟥 [UNIVERSALE] JS FALLITI:", failed);
+
+      state.running = false;
+      state.done = true;
 
       document.dispatchEvent(new Event("page-js-loaded"));
     }
