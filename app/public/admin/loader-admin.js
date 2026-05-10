@@ -157,7 +157,6 @@ if (window.__ADMIN_CRITICAL_LOADER_2050__) {
 
   /* =========================================================
      AUTH CHECK (SOLO PER PERMETTERE L'ACCESSO)
-     MA NON CARICA PIÙ auth.js QUI
   ========================================================= */
   (function () {
 
@@ -166,8 +165,6 @@ if (window.__ADMIN_CRITICAL_LOADER_2050__) {
       return;
     }
 
-    // Carichiamo auth.js SOLO per verificare accesso,
-    // ma NON fa parte del critical loader.
     const s = document.createElement("script");
     s.src = `/auth.js?v=${ADMIN_VERSION}`;
     s.async = false;                 // ← PATCH FONDAMENTALE
@@ -184,5 +181,16 @@ if (window.__ADMIN_CRITICAL_LOADER_2050__) {
     document.head.appendChild(s);
 
   })();
+
+  /* =========================================================
+     FALLBACK DI SICUREZZA — SE QUALCOSA BLOCCA IL CRITICAL
+  ========================================================= */
+  setTimeout(() => {
+    if (!window.__criticalCoreReady) {
+      console.warn("🟧 [ADMIN CRITICAL] Fallback: critical-core-ready non emesso, forzo avvio");
+      window.__criticalCoreReady = true;
+      document.dispatchEvent(new Event("critical-core-ready"));
+    }
+  }, 2000);
 
 }
