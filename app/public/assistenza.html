@@ -1,4 +1,3 @@
-<script type="module" src="/loadersupremo.js?v=2050"></script>
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -8,94 +7,68 @@
   <!-- CSS PAGINA STANDARD -->
   <link rel="stylesheet" href="pagina-standard.css">
   <link rel="stylesheet" href="assistenza.css">
+
+  <title>Assistenza</title>
 </head>
 
 <body class="pagina-standard-body">
 
-<!-- HEAD DINAMICO -->
-<div id="head-placeholder"></div>
+  <!-- HEAD DINAMICO -->
+  <div id="head-placeholder"></div>
 
-<!-- HEADER DINAMICO -->
-<div id="header-placeholder"></div>
+  <!-- HEADER DINAMICO -->
+  <div id="header-placeholder"></div>
 
-<main class="pagina-standard">
-  <h1>Assistenza</h1>
-  <p>Hai una domanda? Compila il modulo e ti risponderemo entro 24–48 ore.</p>
+  <main class="pagina-standard">
+    <h1>Assistenza</h1>
+    <p>Hai una domanda? Compila il modulo e ti risponderemo entro 24–48 ore.</p>
 
-  <!-- FORM ASSISTENZA -->
-  <form id="assistenzaForm" class="assist-form">
-    <label>Email</label>
-    <input type="email" id="email" required>
+    <!-- FORM ASSISTENZA -->
+    <form id="assistenzaForm" class="assist-form">
+      <label>Email</label>
+      <input type="email" id="email" required>
 
-    <label>La tua domanda</label>
-    <textarea id="domanda" rows="6" required></textarea>
+      <label>La tua domanda</label>
+      <textarea id="domanda" rows="6" required></textarea>
 
-    <button type="submit" class="assist-btn">Invia richiesta</button>
+      <button type="submit" class="assist-btn">Invia richiesta</button>
 
-    <!-- PATCH: Contenitore messaggi -->
-    <div id="msgAssistenza" class="status"></div>
-  </form>
+      <div id="msgAssistenza" class="status"></div>
+    </form>
 
+    <div id="chat-container">
+      <div id="chat-header">
+        <img src="chat-icon.svg" alt="Chatbox MewingMarket">
+      </div>
 
-  <div id="chat-container">
-    <div id="chat-header">
-      <img src="chat-icon.svg" alt="
-      Chatbox MewingMarket">
+      <div id="chat-box"></div>
+
+      <div id="chat-input-area">
+        <input id="chat-input" type="text" placeholder="Scrivi un messaggio...">
+        <button id="chat-send">➤</button>
+        <button id="chat-voice">🎤</button>
+        <button id="chat-attach">📎</button>
+        <input id="chat-file" type="file">
+      </div>
     </div>
 
-    <div id="chat-box"></div>
-
-    <div id="chat-input-area">
-      <input id="chat-input" type="text" placeholder="Scrivi un messaggio..." >
-      <button id="chat-send" >➤</button>
-      <button id="chat-voice" >🎤</button>
-      <button id="chat-attach" >📎</button>
-      <input id="chat-file" type="file" >
+    <!-- CONTATTI RAPIDI -->
+    <div class="assist-contatti">
+      <h2>Contatti rapidi</h2>
+      <p><strong>Email supporto:</strong> <a href="mailto:supporto@mewingmarket.it">supporto@mewingmarket.it</a></p>
+      <p><strong>WhatsApp Business:</strong> <a href="https://wa.me/393520266660">352 026 6660</a></p>
+      <p><a href="contatti.html">Vai alla pagina contatti →</a></p>
     </div>
-  </div>
+  </main>
 
-  <!-- CONTATTI RAPIDI -->
-  <div class="assist-contatti">
-    <h2>Contatti rapidi</h2>
-    <p><strong>Email supporto:</strong> <a href="mailto:supporto@mewingmarket.it">supporto@mewingmarket.it</a></p>
-    <p><strong>WhatsApp Business:</strong> <a href="https://wa.me/393520266660">352 026 6660</a></p>
-    <p><a href="contatti.html">Vai alla pagina contatti →</a></p>
-  </div>
-</main>
+  <!-- FOOTER DINAMICO -->
+  <div id="footer-placeholder"></div>
 
-<!-- FOOTER DINAMICO -->
-<div id="footer-placeholder"></div>
-
-<!-- JS SPECIFICI (patchati con versioning) -->
-
-
-
-
-<!-- JS GLOBALI (solo loader con versioning) -->
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<script src="/assistenza.js?v=2050"></script>
+  <!-- ========================================================= -->
+  <!-- 🔥 SCRIPTS FINALI (UNICI E STANDARDIZZATI) -->
+  <!-- ========================================================= -->
+  <script type="module" src="/loadersupremo.js?v=2050"></script>
+  <script src="/assistenza.js?v=2050"></script>
 
 </body>
 </html>
