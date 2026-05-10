@@ -45,7 +45,7 @@ if (window.__CRITICAL_LOADER_PUBLIC_2050__) {
 
         const s = document.createElement("script");
         s.src = `${src}?v=${VERSION}`;
-        s.defer = true; // FIX: niente async
+        s.async = false;              // ← PATCH FONDAMENTALE
         s.fetchPriority = "high";
 
         s.onload = () => {
