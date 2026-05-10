@@ -1,19 +1,10 @@
-<script type="module" src="/loadersupremo.js?v=2050"></script>
-<script src="/admin/admin-utenti.js?v=2050"></script>
-
-<!-- =========================================================
-     File: app/public/admin/utenti.html
-     Admin — Gestione Utenti
-     Versione definitiva 2026 — PATCH KPI + EVENTI COMPLETI + BREVO
-========================================================= -->
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
   <meta id="dynamic-title" content="Gestione Utenti – Admin MewingMarket">
+  <title>Gestione Utenti – Admin</title>
 
   <link rel="stylesheet" href="dashboard-admin.css">
 </head>
@@ -40,12 +31,10 @@
       <!-- ⭐ TOOLBAR UTENTI -->
       <div class="toolbar-utenti">
 
-        <!-- ⭐ PULSANTE SYNC BREVO -->
         <button id="btn-sync-brevo" class="btn-primario">
           Sincronizza Brevo
         </button>
 
-        <!-- ⭐ PULSANTE SYNC UTENTI STORICI (PATCH 2026.900) -->
         <button id="btn-sync-brevo-full" class="btn-secondario">
           Sync Utenti Storici
         </button>
@@ -69,11 +58,9 @@
             <th>Iscritto NL</th>
             <th>Disiscritto NL</th>
 
-            <!-- ⭐ NUOVE COLONNE BREVO -->
             <th>Registrato in Brevo</th>
             <th>Cliente Brevo</th>
 
-            <!-- ⭐ COLONNA AZIONI -->
             <th>Azioni</th>
           </tr>
         </thead>
@@ -86,26 +73,11 @@
 
   <div id="footer-admin-placeholder"></div>
 
-  <!-- JS GLOBALI ADMIN (solo loader con versioning) -->
-
-
-  <!-- JS SPECIFICO PAGINA -->
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  <!-- ========================================================= -->
+  <!-- 🔥 SCRIPTS FINALI (UNICI E STANDARDIZZATI) -->
+  <!-- ========================================================= -->
+  <script type="module" src="/admin/loadersupremo-admin.js?v=2050"></script>
+  <script src="/admin/admin-utenti.js?v=2050"></script>
 
 </body>
 </html>
