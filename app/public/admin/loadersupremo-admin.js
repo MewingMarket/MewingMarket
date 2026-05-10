@@ -10,27 +10,45 @@ if (!window.__SUPREMO_ADMIN_LOADER__) {
 
     const V = "2050";
 
+    // ============================================================
+    // CACHE GLOBALE JS + LOCK ESECUZIONE
+    // ============================================================
+    window.__SUPREMO_JS_CACHE__ = window.__SUPREMO_JS_CACHE__ || new Set();
+    window.__SUPREMO_ADMIN_RUN_STATE__ = window.__SUPREMO_ADMIN_RUN_STATE__ || {
+      running: false,
+      done: false
+    };
+
     console.log("⚡ [SUPREMO ADMIN 2050] In attesa di critical-core-ready...");
 
     // ============================================================
-    // Utility caricamento script (SAFE, con debug) — PATCH: async=false
+    // Utility caricamento script (SAFE, con debug) — CACHE + async=false
     // ============================================================
     function loadScript(src, where = "head") {
+      const key = src;
+
+      // Se già caricato → skip
+      if (window.__SUPREMO_JS_CACHE__.has(key)) {
+        console.log("⏭️ [LOAD-SKIP già caricato]", key);
+        return Promise.resolve(true);
+      }
+
       return new Promise(resolve => {
-        console.log("➡️ [LOAD-REQUEST]", src);
+        console.log("➡️ [LOAD-REQUEST]", key);
 
         const s = document.createElement("script");
-        s.src = `${src}?v=${V}`;
-        s.async = false;        // ← PATCH FONDAMENTALE
+        s.src = `${key}?v=${V}`;
+        s.async = false;
         s.fetchPriority = "high";
 
         s.onload = () => {
-          console.log("✅ [LOAD-OK]", src);
+          console.log("✅ [LOAD-OK]", key);
+          window.__SUPREMO_JS_CACHE__.add(key);
           resolve(true);
         };
 
         s.onerror = () => {
-          console.warn("❌ [LOAD-FAIL]", src);
+          console.warn("❌ [LOAD-FAIL]", key);
           resolve(false);
         };
 
@@ -39,21 +57,42 @@ if (!window.__SUPREMO_ADMIN_LOADER__) {
     }
 
     // ============================================================
-    // Import debug (per capire se il JS è eseguibile)
+    // Import debug (con cache)
     // ============================================================
     async function debugImport(src) {
+      const key = src + "::import";
+
+      if (window.__SUPREMO_JS_CACHE__.has(key)) {
+        console.log("⏭️ [IMPORT-SKIP già importato]", src);
+        return;
+      }
+
       try {
         await import(src + "?v=" + V);
         console.log("📦 [IMPORT-OK]", src);
+        window.__SUPREMO_JS_CACHE__.add(key);
       } catch (e) {
         console.warn("📦❌ [IMPORT-FAIL]", src, e.message);
       }
     }
 
     // ============================================================
-    // Quando critical-core-ready è emesso → parte la sequenza
+    // Quando critical-core-ready è emesso → parte la sequenza (con LOCK)
     // ============================================================
     document.addEventListener("critical-core-ready", async () => {
+
+      const state = window.__SUPREMO_ADMIN_RUN_STATE__;
+
+      if (state.done) {
+        console.log("⏭️ [SUPREMO ADMIN] Sequenza già completata, skip.");
+        return;
+      }
+      if (state.running) {
+        console.log("⏭️ [SUPREMO ADMIN] Sequenza già in esecuzione, skip.");
+        return;
+      }
+
+      state.running = true;
 
       console.log("🟦 [SUPREMO ADMIN 2050] critical-core-ready ricevuto");
 
@@ -130,6 +169,9 @@ if (!window.__SUPREMO_ADMIN_LOADER__) {
       console.log("🟩 [SUPREMO ADMIN] critical-ready (ORDINE PERFETTO)");
       window.__criticalReady = true;
       document.dispatchEvent(new Event("critical-ready"));
+
+      state.running = false;
+      state.done = true;
     });
 
   })();
