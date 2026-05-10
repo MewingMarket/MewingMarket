@@ -15,6 +15,19 @@ if (window.__LOADER_UNIVERSALE_PUBLIC__) {
     console.log("⚡ [UNIVERSALE PUBLIC] Avvio loader universale PUBLIC (STATIC MAP)");
 
     // ============================================================
+    // NORMALIZZAZIONE NOMI (pagina + JS)
+    // ============================================================
+    function normalizeName(name) {
+      return name
+        .toLowerCase()
+        .replace(/\.html?$/, "")
+        .replace(/\.js$/, "")
+        .replace(/[^a-z0-9\-]/g, "")
+        .replace(/\-+/g, "-")
+        .trim();
+    }
+
+    // ============================================================
     // RETRY INTELLIGENTE — ULTRA FAST
     // ============================================================
     async function fetchWithRetry(url, maxAttempts = 3) {
@@ -51,7 +64,7 @@ if (window.__LOADER_UNIVERSALE_PUBLIC__) {
     }
 
     // ============================================================
-    // CARICA SCRIPT (SAFE, DEBUG)
+    // CARICA SCRIPT (SAFE, DEBUG) — PATCH: async=false
     // ============================================================
     function loadScript(src) {
       return new Promise(resolve => {
@@ -59,7 +72,7 @@ if (window.__LOADER_UNIVERSALE_PUBLIC__) {
 
         const s = document.createElement("script");
         s.src = `${src}?v=${VERSION}`;
-        s.defer = true;
+        s.async = false; // ← PATCH FONDAMENTALE
         s.fetchPriority = "high";
 
         s.onload = () => {
@@ -89,12 +102,13 @@ if (window.__LOADER_UNIVERSALE_PUBLIC__) {
     }
 
     // ============================================================
-    // NOME BASE PAGINA
+    // NOME BASE PAGINA (NORMALIZZATO)
     // ============================================================
     function getPageBase() {
       const path = window.location.pathname;
       if (path === "/" || path === "") return "index";
-      return path.split("/").pop().replace(".html", "");
+      const raw = path.split("/").pop();
+      return normalizeName(raw);
     }
 
     // ============================================================
@@ -111,9 +125,12 @@ if (window.__LOADER_UNIVERSALE_PUBLIC__) {
       }
 
       const base = getPageBase();
-      const pool = list.public;
+      const pool = list.public.map(js => normalizeName(js));
 
-      const found = pool.filter(js => js.replace(".js", "") === base);
+      console.log("🔍 [UNIVERSALE] Pagina normalizzata:", base);
+      console.log("🔍 [UNIVERSALE] Lista normalizzata:", pool);
+
+      const found = list.public.filter(js => normalizeName(js) === base);
 
       if (found.length === 0) {
         console.warn("[UNIVERSALE PUBLIC] Nessun JS public per", base);
@@ -137,16 +154,27 @@ if (window.__LOADER_UNIVERSALE_PUBLIC__) {
 
   })();
 }
+
 /* =========================================================
  * DEBUG UNIVERSALE 2050 — LOG JS TEORICO + MOTIVO DEL FAIL
  * ========================================================= */
 
 (function () {
 
+  function normalizeName(name) {
+    return name
+      .toLowerCase()
+      .replace(/\.html?$/, "")
+      .replace(/\.js$/, "")
+      .replace(/[^a-z0-9\-]/g, "")
+      .replace(/\-+/g, "-")
+      .trim();
+  }
+
   function getPageBase() {
     const p = window.location.pathname;
     if (p === "/" || p === "") return "index";
-    return p.split("/").pop().replace(".html", "");
+    return normalizeName(p.split("/").pop());
   }
 
   async function testJS(pageBase) {
@@ -201,7 +229,6 @@ if (window.__LOADER_UNIVERSALE_PUBLIC__) {
     }
   }
 
-  // Trigger automatico al cambio pagina
   document.addEventListener("DOMContentLoaded", () => {
     const base = getPageBase();
     console.log("🟦 [DEBUG-UNIVERSALE] Pagina:", base);
