@@ -179,5 +179,16 @@ if (window.__CRITICAL_LOADER_PUBLIC_2050__) {
       document.dispatchEvent(new Event("critical-core-ready"));
     })();
 
+    /* ============================================================
+       FALLBACK DI SICUREZZA — SE QUALCOSA BLOCCA IL CRITICAL
+    ============================================================ */
+    setTimeout(() => {
+      if (!window.__criticalCoreReady) {
+        console.warn("🟧 [CRITICAL PUBLIC] Fallback: critical-core-ready non emesso, forzo avvio");
+        window.__criticalCoreReady = true;
+        document.dispatchEvent(new Event("critical-core-ready"));
+      }
+    }, 2000);
+
   })();
 }
