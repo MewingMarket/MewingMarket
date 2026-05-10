@@ -19,15 +19,17 @@ if (!window.__SUPREMO_ADMIN_LOADER__) {
       done: false
     };
 
+    // Anti doppio loader universale admin
+    window.__LOADER_UNIVERSALE_ADMIN_CARICATO__ = false;
+
     console.log("⚡ [SUPREMO ADMIN 2050] In attesa di critical-core-ready...");
 
     // ============================================================
-    // Utility caricamento script (SAFE, con debug) — CACHE + async=false
+    // Utility caricamento script (SAFE, con debug)
     // ============================================================
     function loadScript(src, where = "head") {
       const key = src;
 
-      // Se già caricato → skip
       if (window.__SUPREMO_JS_CACHE__.has(key)) {
         console.log("⏭️ [LOAD-SKIP già caricato]", key);
         return Promise.resolve(true);
@@ -77,7 +79,27 @@ if (!window.__SUPREMO_ADMIN_LOADER__) {
     }
 
     // ============================================================
-    // Quando critical-core-ready è emesso → parte la sequenza (con LOCK)
+    // PATCH 2050 — rileva JS di pagina (DOM-SAFE)
+    // ============================================================
+    function paginaAdminHaJsDiPagina() {
+      const scripts = document.querySelectorAll("script[src]");
+
+      for (const s of scripts) {
+        const src = s.getAttribute("src");
+        if (!src) continue;
+
+        if (src.includes("loadersupremo-admin")) continue;
+        if (src.includes("loader.js")) continue;
+        if (src.includes("loader-universale-admin")) continue;
+
+        return true; // trovato JS di pagina admin
+      }
+
+      return false;
+    }
+
+    // ============================================================
+    // Quando critical-core-ready è emesso → parte la sequenza
     // ============================================================
     document.addEventListener("critical-core-ready", async () => {
 
@@ -97,14 +119,14 @@ if (!window.__SUPREMO_ADMIN_LOADER__) {
       console.log("🟦 [SUPREMO ADMIN 2050] critical-core-ready ricevuto");
 
       // ============================================================
-      // 1) AUTH (sempre primo)
+      // 1) AUTH
       // ============================================================
       console.log("🔐 [SUPREMO ADMIN] Carico auth.js");
       await loadScript("/auth.js");
       await debugImport("/auth.js");
 
       // ============================================================
-      // 2) JS GLOBALI ADMIN (SEO/structured solo se servono)
+      // 2) JS GLOBALI ADMIN
       // ============================================================
       const path = window.location.pathname;
 
@@ -121,34 +143,41 @@ if (!window.__SUPREMO_ADMIN_LOADER__) {
         console.log("🌐 [SUPREMO ADMIN] Carico seo-admin.js");
         await loadScript("/admin/seo-admin.js");
         await debugImport("/admin/seo-admin.js");
-      } else {
-        console.log("🌐 [SUPREMO ADMIN] SEO admin NON necessario");
       }
 
       if (needStructured) {
         console.log("🌐 [SUPREMO ADMIN] Carico structured-data-admin.js");
         await loadScript("/admin/structured-data-admin.js");
         await debugImport("/admin/structured-data-admin.js");
-      } else {
-        console.log("🌐 [SUPREMO ADMIN] Structured-data admin NON necessario");
       }
 
       // ============================================================
-      // 3) HEADER ADMIN JS
+      // 3) HEADER ADMIN
       // ============================================================
       console.log("📌 [SUPREMO ADMIN] Carico header-admin.js");
       await loadScript("/admin/header-admin.js", "body");
       await debugImport("/admin/header-admin.js");
 
       // ============================================================
-      // 4) LOADER UNIVERSALE ADMIN 2050
+      // 4) LOADER UNIVERSALE ADMIN — PATCH DOM-SAFE
       // ============================================================
-      console.log("📦 [SUPREMO ADMIN] Carico loader-universale-admin.js");
-      await loadScript("/admin/loader-universale-admin.js");
-      await debugImport("/admin/loader-universale-admin.js");
+      await new Promise(r => setTimeout(r, 0)); // lascia finire parsing DOM
+
+      if (paginaAdminHaJsDiPagina()) {
+        if (!window.__LOADER_UNIVERSALE_ADMIN_CARICATO__) {
+          window.__LOADER_UNIVERSALE_ADMIN_CARICATO__ = true;
+          console.log("📦 [SUPREMO ADMIN] Carico loader-universale-admin.js (pagina con JS)");
+          await loadScript("/admin/loader-universale-admin.js");
+          await debugImport("/admin/loader-universale-admin.js");
+        } else {
+          console.log("⏭️ loader-universale-admin.js già caricato");
+        }
+      } else {
+        console.log("📦 [SUPREMO ADMIN] Pagina SENZA JS → loader-universale-admin.js NON caricato");
+      }
 
       // ============================================================
-      // 5) Attesa caricamento JS pagina admin
+      // 5) Attesa page-js-loaded
       // ============================================================
       console.log("📄 [SUPREMO ADMIN] In attesa di page-js-loaded...");
       await new Promise(resolve => {
