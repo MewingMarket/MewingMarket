@@ -195,18 +195,19 @@ if (!window.__SUPREMO_PUBLIC_2050__) {
       }
 
       // ============================================================
-      // 4) LOADER UNIVERSALE — PATCH DOM-SAFE
+      // 4) LOADER UNIVERSALE — PATCH DOM-SAFE + EVENTO DEDICATO
       // ============================================================
       await new Promise(r => setTimeout(r, 0)); // lascia finire parsing DOM
 
       if (paginaHaJsDiPagina()) {
         if (!window.__LOADER_UNIVERSALE_CARICATO__) {
           window.__LOADER_UNIVERSALE_CARICATO__ = true;
+
           console.log("📦 Carico loaderuniversale.js (pagina con JS)");
           await loadScript("/loaderuniversale.js");
-          await debugImport("/loaderuniversale.js");
-        } else {
-          console.log("⏭️ loaderuniversale.js già caricato");
+
+          // 🔥 Evento che FA PARTIRE l’universale PUBLIC
+          document.dispatchEvent(new Event("supremo-public-load-universale"));
         }
       } else {
         console.log("📦 Pagina SENZA JS → loaderuniversale.js NON caricato");
