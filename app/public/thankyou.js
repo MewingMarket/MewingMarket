@@ -1,12 +1,60 @@
 /* =========================================================
    THANK YOU PAGE — UNIVERSAL JSON PATCH 2027.970
+   PATCH 2050 — AUTORUN + DEBUG ESTESO
 ========================================================= */
 
-document.addEventListener("critical-ready", async () => {
+console.log("📌 [THANKYOU] File caricato nel DOM");
+
+/* =========================================================
+   AUTORUN 2050 — parte SEMPRE
+========================================================= */
+(function autorun() {
+  console.log("🚀 [THANKYOU] Autorun avviato. DOM state:", document.readyState);
+
+  if (document.readyState === "loading") {
+    console.log("⏳ [THANKYOU] DOM non pronto → attendo DOMContentLoaded");
+    document.addEventListener("DOMContentLoaded", autorun, { once: true });
+    return;
+  }
+
+  console.log("🟢 [THANKYOU] DOM pronto → avvio initPage()");
+
+  try {
+    if (typeof initPage === "function") initPage();
+    else console.warn("❌ [THANKYOU] initPage() NON trovata");
+  } catch (e) {
+    console.error("🔥 [THANKYOU] Errore in initPage():", e);
+  }
+})();
+
+/* =========================================================
+   FUNZIONE PRINCIPALE
+========================================================= */
+function initPage() {
+  console.log("🏁 [THANKYOU] initPage() eseguita");
+
+  if (!window.__criticalReady) {
+    console.log("⏳ [THANKYOU] critical-ready NON ancora emesso → attendo evento");
+    document.addEventListener("critical-ready", initPage, { once: true });
+    return;
+  }
+
+  console.log("🟩 [THANKYOU] critical-ready già presente → avvio pagina");
+
+  avviaThankyou();
+}
+
+/* =========================================================
+   CODICE ORIGINALE INCAPSULATO
+========================================================= */
+async function avviaThankyou() {
+  console.log("🔥 thankyou.js READY");
+
   const url = new URL(window.location.href);
   const orderId = url.searchParams.get("orderId");
 
   if (!orderId) {
+    console.warn("❌ [THANKYOU] orderId mancante → redirect catalogo");
     window.location.href = "catalogo.html";
     return;
   }
@@ -15,6 +63,8 @@ document.addEventListener("critical-ready", async () => {
      WRAPPER UNIVERSALE
   ========================================================== */
   async function apiThankyou(path, options = {}) {
+    console.log("🌐 [THANKYOU] API:", path);
+
     const headers = {
       "Content-Type": "application/json",
       ...(options.headers || {})
@@ -24,7 +74,7 @@ document.addEventListener("critical-ready", async () => {
     try {
       res = await fetch(path, { ...options, headers });
     } catch (err) {
-      console.error("❌ Errore rete:", err);
+      console.error("❌ [THANKYOU] Errore rete:", err);
       return null;
     }
 
@@ -32,12 +82,12 @@ document.addEventListener("critical-ready", async () => {
     try {
       json = await res.json();
     } catch (e) {
-      console.error("❌ Risposta NON JSON da", path);
+      console.error("❌ [THANKYOU] Risposta NON JSON da", path);
       return null;
     }
 
     if (!json.success) {
-      console.warn("⚠️ Errore API:", json.error || json.raw);
+      console.warn("⚠️ [THANKYOU] Errore API:", json.error || json.raw);
       return null;
     }
 
@@ -47,11 +97,17 @@ document.addEventListener("critical-ready", async () => {
   /* =========================================================
      1) VERIFICA ORDINE
   ========================================================== */
+  console.log("📥 [THANKYOU] Verifico ordine:", orderId);
+
   const data = await apiThankyou(`/api/paypal/paypalCompleteOrder?orderId=${orderId}`, {
     method: "GET"
   });
 
+  console.log("📦 [THANKYOU] Risposta ordine:", data);
+
   if (!data || !data.order) {
+    console.warn("❌ [THANKYOU] Ordine non valido");
+
     document.querySelector(".box").innerHTML = `
       <h1>Ordine non valido</h1>
       <p>Impossibile verificare l'ordine.</p>
@@ -65,6 +121,8 @@ document.addEventListener("critical-ready", async () => {
   /* =========================================================
      2) RENDER RIEPILOGO
   ========================================================== */
+  console.log("📝 [THANKYOU] Render riepilogo ordine");
+
   const prodEl = document.getElementById("prod");
   const priceEl = document.getElementById("price");
   const dateEl = document.getElementById("date");
@@ -92,15 +150,19 @@ document.addEventListener("critical-ready", async () => {
   /* =========================================================
      3) SVUOTA CARRELLO
   ========================================================== */
+  console.log("🛒 [THANKYOU] Svuoto carrello");
+
   if (window.Cart?.clear) Cart.clear();
   if (typeof aggiornaBadgeCarrello === "function") aggiornaBadgeCarrello();
 
   /* =========================================================
      4) TRACKING EVENTO
   ========================================================== */
+  console.log("📊 [THANKYOU] Tracking evento order_completed");
+
   window.trackEvent?.("order_completed", {
     orderId,
     totale: ordine.totale_cent / 100,
     prodotti: ordine.prodotti.length
   });
-});
+}
