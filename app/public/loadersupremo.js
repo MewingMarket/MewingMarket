@@ -3,6 +3,16 @@
 // Percorso reale: /app/public/loadersupremo.js
 // =========================================================
 
+// =========================================================
+// 🔒 MASTER LOCK 2052 — blocca re-run multipli dei loader
+// =========================================================
+if (window.__MASTER_LOADER_LOCK__) {
+  console.warn("🔒 [MASTER-LOCK] loadersupremo.js bloccato → skip");
+  return;
+}
+window.__MASTER_LOADER_LOCK__ = true;
+// =========================================================
+
 if (!window.__SUPREMO_PUBLIC_2050__) {
   window.__SUPREMO_PUBLIC_2050__ = true;
 
