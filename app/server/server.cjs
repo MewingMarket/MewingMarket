@@ -1,5 +1,6 @@
 /* =========================================================
- * SERVER — SAFE MODE FINAL (2038.002)
+ * SERVER — HARDENED MODE (2050.900)
+ * Anti‑PHP, Anti‑Bot, Anti‑OOM, Anti‑Scanner
  * =========================================================
  */
 
@@ -18,13 +19,62 @@ function log(...a){ console.log("[LOG]", ...a); }
 function logErr(...a){ console.error("[ERR]", ...a); }
 
 /* =========================================================
- * ❌ PATCH OPZIONE 1 — RIMOSSO app.head("*")
- * (Render non lo richiede più e interferiva con i .js)
- * ========================================================= */
+ * 🛡️ 1) ANTI‑PHP + ANTI‑SCANNER + ANTI‑WORDPRESS
+ * =========================================================
+ */
+
+const BLOCK_PATTERNS = [
+  /\.php$/i,
+  /wp-/i,
+  /xmlrpc/i,
+  /joomla/i,
+  /drupal/i,
+  /cms/i,
+  /vendor/i,
+  /composer/i,
+  /autoload/i,
+  /eval/i,
+  /base64/i,
+  /shell/i,
+  /cmd/i,
+  /adminer/i,
+  /phpmyadmin/i,
+  /sql/i
+];
+
+app.use((req, res, next) => {
+  const url = req.url.toLowerCase();
+
+  if (BLOCK_PATTERNS.some(p => p.test(url))) {
+    console.warn("🛑 BLOCCATO (pattern):", url);
+    return res.status(404).send("Not found");
+  }
+
+  next();
+});
 
 /* =========================================================
- * /api/ping + diagnostica lite (ridotta)
- * ========================================================= */
+ * 🛡️ 2) ANTI‑HEAD / ANTI‑OPTIONS
+ * =========================================================
+ */
+app.use((req, res, next) => {
+  if (req.method === "HEAD" || req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+  next();
+});
+
+/* =========================================================
+ * 🛡️ 3) ANTI‑OOM — limite dimensione body
+ * =========================================================
+ */
+app.use(express.json({ limit: "200kb" }));
+app.use(express.urlencoded({ extended: false, limit: "200kb" }));
+
+/* =========================================================
+ * /api/ping + diagnostica lite
+ * =========================================================
+ */
 app.get("/api/ping", (req,res)=>{
   try {
     const diag = require("./services/diagnostica-lite.cjs");
@@ -35,24 +85,25 @@ app.get("/api/ping", (req,res)=>{
 
 /* =========================================================
  * LISTEN SUBITO (Render richiede porta aperta)
- * ========================================================= */
+ * =========================================================
+ */
 const PORT = process.env.PORT || 10000;
 
 app.listen(PORT, () => {
-  log(`🎉 SERVER LISTENING on ${PORT} (SAFE MODE)`);
+  log(`🎉 SERVER LISTENING on ${PORT} (HARDENED MODE)`);
   bootInBackground();
 });
 
 /* =========================================================
  * BOOT COMPLETO IN BACKGROUND
- * ========================================================= */
+ * =========================================================
+ */
 async function bootInBackground(){
 
   try {
     log(">> BOOT: logging.cjs");
     require("./services/logging.cjs");
 
-    /* diagnostica lite */
     const diag = require("./services/diagnostica-lite.cjs");
 
     log(">> BOOT: restore");
@@ -60,11 +111,10 @@ async function bootInBackground(){
     await restore();
 
     log(">> BOOT: parser middleware");
-    app.use(express.json());
     app.use(cookieParser());
 
     /* =========================================================
-     * JS DEBUG — intercetta TUTTI i .js
+     * 🟦 JS DEBUG — intercetta TUTTI i .js
      * ========================================================= */
     const JS_DEBUG_LOADED = [];
     const JS_DEBUG_ERRORS = [];
