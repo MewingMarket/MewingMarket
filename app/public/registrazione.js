@@ -1,15 +1,62 @@
 /* =========================================================
    REGISTER — MewingMarket (PATCH 2027.900)
-   - critical-ready
-   - fetch nativo
-   - Endpoint Java‑mode
+   PATCH 2050 — AUTORUN + DEBUG ESTESO
 ========================================================= */
 
-document.addEventListener("critical-ready", () => {
+console.log("📌 [REGISTER] File caricato nel DOM");
+
+/* =========================================================
+   AUTORUN 2050 — parte SEMPRE
+========================================================= */
+(function autorun() {
+  console.log("🚀 [REGISTER] Autorun avviato. DOM state:", document.readyState);
+
+  if (document.readyState === "loading") {
+    console.log("⏳ [REGISTER] DOM non pronto → attendo DOMContentLoaded");
+    document.addEventListener("DOMContentLoaded", autorun, { once: true });
+    return;
+  }
+
+  console.log("🟢 [REGISTER] DOM pronto → avvio initPage()");
+
+  try {
+    if (typeof initPage === "function") initPage();
+    else console.warn("❌ [REGISTER] initPage() NON trovata");
+  } catch (e) {
+    console.error("🔥 [REGISTER] Errore in initPage():", e);
+  }
+})();
+
+/* =========================================================
+   FUNZIONE PRINCIPALE
+========================================================= */
+function initPage() {
+  console.log("🏁 [REGISTER] initPage() eseguita");
+
+  if (!window.__criticalReady) {
+    console.log("⏳ [REGISTER] critical-ready NON ancora emesso → attendo evento");
+    document.addEventListener("critical-ready", initPage, { once: true });
+    return;
+  }
+
+  console.log("🟩 [REGISTER] critical-ready già presente → avvio pagina");
+
+  avviaRegistrazione();
+}
+
+/* =========================================================
+   CODICE ORIGINALE INCAPSULATO
+========================================================= */
+function avviaRegistrazione() {
+  console.log("🔥 register.js READY");
+
   const form = document.getElementById("register-form");
   const statusBox = document.getElementById("status");
 
-  if (!form) return;
+  if (!form) {
+    console.warn("❌ [REGISTER] register-form NON trovato");
+    return;
+  }
 
   const params = new URLSearchParams(window.location.search);
   const redirect = params.get("redirect") || "dashboard.html";
@@ -25,6 +72,8 @@ document.addEventListener("critical-ready", () => {
       const email = localStorage.getItem("email") || "";
       if (!email) return;
 
+      console.log("📝 [REGISTER] Log evento:", evento);
+
       await fetch("/api/utenti/evento", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -32,7 +81,7 @@ document.addEventListener("critical-ready", () => {
       });
 
     } catch (err) {
-      console.warn("Log evento fallito:", err);
+      console.warn("⚠️ [REGISTER] Log evento fallito:", err);
     }
   }
 
@@ -40,6 +89,7 @@ document.addEventListener("critical-ready", () => {
      SUBMIT REGISTRAZIONE
   ========================================================== */
   form.addEventListener("submit", async (e) => {
+    console.log("📨 [REGISTER] Submit registrazione");
     e.preventDefault();
 
     if (!statusBox) return;
@@ -79,11 +129,15 @@ document.addEventListener("critical-ready", () => {
     }
 
     // Protezione doppio click
-    if (form.dataset.lock === "1") return;
+    if (form.dataset.lock === "1") {
+      console.warn("⛔ [REGISTER] Form lock attivo");
+      return;
+    }
     form.dataset.lock = "1";
 
     try {
-      // ⭐ PATCH — fetch nativo + endpoint Java‑mode
+      console.log("🌐 [REGISTER] Invio registrazione…");
+
       const res = await fetch("/api/utenti/registrazione", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -91,7 +145,7 @@ document.addEventListener("critical-ready", () => {
       });
 
       const data = await res.json().catch(() => ({}));
-      console.log("[REGISTER]", data);
+      console.log("📦 [REGISTER] Risposta API:", data);
 
       if (data.error === "Email gia registrata") {
         statusBox.textContent = "Email già registrata. Effettua il login.";
@@ -110,6 +164,8 @@ document.addEventListener("critical-ready", () => {
          SALVATAGGIO CORRETTO token/email/ruolo
       ===================================================== */
       if (data.token) {
+        console.log("🔐 [REGISTER] Salvataggio token/email/ruolo");
+
         localStorage.setItem("token", data.token);
         localStorage.setItem("email", email);
         localStorage.setItem("ruolo", "user");
@@ -124,15 +180,17 @@ document.addEventListener("critical-ready", () => {
       statusBox.style.color = "green";
       statusBox.textContent = "Registrazione completata! Reindirizzamento...";
 
+      console.log("➡️ [REGISTER] Redirect:", redirect);
+
       setTimeout(() => {
         window.location.href = redirect;
       }, 800);
 
     } catch (err) {
-      console.error(err);
+      console.error("🔥 [REGISTER] Errore di connessione:", err);
       statusBox.textContent = "Errore di connessione.";
     } finally {
       form.dataset.lock = "0";
     }
   });
-});
+}
