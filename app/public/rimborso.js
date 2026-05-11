@@ -1,8 +1,55 @@
 /* =========================================================
    RIMBORSO — UNIVERSAL JSON PATCH 2027.970
+   PATCH 2050 — AUTORUN + DEBUG ESTESO
 ========================================================= */
 
-document.addEventListener("critical-ready", async () => {
+console.log("📌 [RIMBORSO] File caricato nel DOM");
+
+/* =========================================================
+   AUTORUN 2050 — parte SEMPRE
+========================================================= */
+(function autorun() {
+  console.log("🚀 [RIMBORSO] Autorun avviato. DOM state:", document.readyState);
+
+  if (document.readyState === "loading") {
+    console.log("⏳ [RIMBORSO] DOM non pronto → attendo DOMContentLoaded");
+    document.addEventListener("DOMContentLoaded", autorun, { once: true });
+    return;
+  }
+
+  console.log("🟢 [RIMBORSO] DOM pronto → avvio initPage()");
+
+  try {
+    if (typeof initPage === "function") initPage();
+    else console.warn("❌ [RIMBORSO] initPage() NON trovata");
+  } catch (e) {
+    console.error("🔥 [RIMBORSO] Errore in initPage():", e);
+  }
+})();
+
+/* =========================================================
+   FUNZIONE PRINCIPALE
+========================================================= */
+function initPage() {
+  console.log("🏁 [RIMBORSO] initPage() eseguita");
+
+  if (!window.__criticalReady) {
+    console.log("⏳ [RIMBORSO] critical-ready NON ancora emesso → attendo evento");
+    document.addEventListener("critical-ready", initPage, { once: true });
+    return;
+  }
+
+  console.log("🟩 [RIMBORSO] critical-ready già presente → avvio modulo");
+
+  avviaRimborso();
+}
+
+/* =========================================================
+   CODICE ORIGINALE INCAPSULATO
+========================================================= */
+async function avviaRimborso() {
+  console.log("🔥 rimborso.js READY");
+
   const form = document.getElementById("rimborsoForm");
   const emailInput = document.getElementById("email");
   const ordineSelect = document.getElementById("ordineSelect");
@@ -17,9 +64,11 @@ document.addEventListener("critical-ready", async () => {
   }
 
   /* =========================================================
-     WRAPPER UNIVERSALE (token + universal-json)
+     WRAPPER UNIVERSALE
   ========================================================== */
   async function apiRimborso(path, options = {}) {
+    console.log("🌐 [RIMBORSO] API:", path);
+
     const headers = {
       "Content-Type": "application/json",
       ...(options.headers || {}),
@@ -30,11 +79,12 @@ document.addEventListener("critical-ready", async () => {
     try {
       res = await fetch(path, { ...options, headers });
     } catch (err) {
-      console.error("❌ Errore rete:", err);
+      console.error("❌ [RIMBORSO] Errore rete:", err);
       return null;
     }
 
     if (res.status === 401 || res.status === 403) {
+      console.warn("🔒 [RIMBORSO] Token scaduto → redirect login");
       localStorage.removeItem("token");
       window.location.href = "/login";
       return null;
@@ -44,12 +94,12 @@ document.addEventListener("critical-ready", async () => {
     try {
       json = await res.json();
     } catch (e) {
-      console.error("❌ Risposta NON JSON da", path);
+      console.error("❌ [RIMBORSO] Risposta NON JSON da", path);
       return null;
     }
 
     if (!json.success) {
-      console.warn("⚠️ Errore API:", json.error || json.raw);
+      console.warn("⚠️ [RIMBORSO] Errore API:", json.error || json.raw);
       return null;
     }
 
@@ -59,9 +109,13 @@ document.addEventListener("critical-ready", async () => {
   /* =========================================================
      1) CARICA EMAIL UTENTE + ORDINI COMPLETATI
   ========================================================== */
+  console.log("📥 [RIMBORSO] Carico ordini utente…");
+
   const ordiniData = await apiRimborso("/api/ordini/getOrdiniUtente", {
     method: "GET"
   });
+
+  console.log("📦 [RIMBORSO] Risposta ordini:", ordiniData);
 
   if (!ordiniData || !ordiniData.ordini) {
     alert("Errore nel caricamento degli ordini.");
@@ -91,10 +145,14 @@ document.addEventListener("critical-ready", async () => {
     });
   }
 
+  /* =========================================================
+     Preselezione ordine da URL
+  ========================================================== */
   const params = new URLSearchParams(window.location.search);
   const preselectId = params.get("id");
 
   if (preselectId && ordini.some(o => String(o.id) === String(preselectId))) {
+    console.log("🎯 [RIMBORSO] Preseleziono ordine:", preselectId);
     ordineSelect.value = preselectId;
   }
 
@@ -102,6 +160,8 @@ document.addEventListener("critical-ready", async () => {
      2) INVIO RICHIESTA RIMBORSO
   ========================================================== */
   form.addEventListener("submit", async e => {
+    console.log("📨 [RIMBORSO] Invio richiesta rimborso…");
+
     e.preventDefault();
 
     const ordine_id = ordineSelect.value.trim();
@@ -116,6 +176,8 @@ document.addEventListener("critical-ready", async () => {
       method: "POST",
       body: JSON.stringify({ ordine_id, motivo })
     });
+
+    console.log("📦 [RIMBORSO] Risposta invio:", data);
 
     if (!data) {
       alert("Errore invio richiesta.");
@@ -134,4 +196,4 @@ document.addEventListener("critical-ready", async () => {
     alert("Richiesta inviata. Riceverai una risposta entro poche ore.");
     form.reset();
   });
-});
+}
