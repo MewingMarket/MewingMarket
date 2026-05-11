@@ -1,12 +1,15 @@
 /* =========================================================
    GUIDE — Database locale delle guide
    Versione 2026.995
-   - Tuo codice originale
-   - Patch rendering dinamico
+   PATCH 2050 — AUTORUN + DEBUG ESTESO
 ========================================================= */
 
-const guides = {
+console.log("📌 [GUIDE] File caricato nel DOM");
 
+/* =========================================================
+   DATABASE GUIDE (TUO CODICE ORIGINALE)
+========================================================= */
+const guides = {
   index: {
     title: "Centro Guide & Assistenza",
     html: `
@@ -160,29 +163,65 @@ const guides = {
 
 
 /* =========================================================
-   PATCH RENDERING — Versione 2026.995
-   Risolve pagina vuota su mobile e desktop
+   AUTORUN 2050 — parte SEMPRE
 ========================================================= */
+(function autorun() {
+  console.log("🚀 [GUIDE] Autorun avviato. DOM state:", document.readyState);
 
-document.addEventListener("DOMContentLoaded", () => {
+  if (document.readyState === "loading") {
+    console.log("⏳ [GUIDE] DOM non pronto → attendo DOMContentLoaded");
+    document.addEventListener("DOMContentLoaded", autorun, { once: true });
+    return;
+  }
 
-  // 1) Leggi il topic dalla URL
+  console.log("🟢 [GUIDE] DOM pronto → avvio initPage()");
+
+  try {
+    if (typeof initPage === "function") initPage();
+    else console.warn("❌ [GUIDE] initPage() NON trovata");
+  } catch (e) {
+    console.error("🔥 [GUIDE] Errore in initPage():", e);
+  }
+})();
+
+/* =========================================================
+   FUNZIONE PRINCIPALE
+========================================================= */
+function initPage() {
+  console.log("🏁 [GUIDE] initPage() eseguita");
+
+  if (!window.__criticalReady) {
+    console.log("⏳ [GUIDE] critical-ready NON ancora emesso → attendo evento");
+    document.addEventListener("critical-ready", initPage, { once: true });
+    return;
+  }
+
+  console.log("🟩 [GUIDE] critical-ready già presente → avvio rendering");
+
+  renderGuide();
+}
+
+/* =========================================================
+   RENDERING ORIGINALE INCAPSULATO
+========================================================= */
+function renderGuide() {
+  console.log("🔥 guide.js READY — rendering guida");
+
   const params = new URLSearchParams(window.location.search);
   const topic = params.get("topic") || "index";
 
-  // 2) Recupera la guida
+  console.log("📘 [GUIDE] Topic richiesto:", topic);
+
   const guida = guides[topic] || guides.default;
 
-  // 3) Aggiorna breadcrumb
   const breadcrumb = document.getElementById("breadcrumb-topic");
   if (breadcrumb) breadcrumb.textContent = guida.title;
 
-  // 4) Aggiorna titolo
   const titleEl = document.getElementById("guide-title");
   if (titleEl) titleEl.textContent = guida.title;
 
-  // 5) Aggiorna contenuto
   const contentEl = document.getElementById("guide-content");
   if (contentEl) contentEl.innerHTML = guida.html;
 
-});
+  console.log("🟢 [GUIDE] Guida renderizzata:", guida.title);
+}
