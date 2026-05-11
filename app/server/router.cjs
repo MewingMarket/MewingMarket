@@ -1,6 +1,7 @@
 /* =========================================================
    ROUTER UNIVERSALE — HARDENED MODE 2051 (AGGRESSIVE)
    Protezione totale per TUTTI i moduli e funzioni
+   Compatibile con index.cjs originale (nessuna sanitizzazione)
 ========================================================= */
 
 const express = require("express");
@@ -74,10 +75,11 @@ function checkRate(req, res, modulo, funzione) {
   return true;
 }
 
-// timeout handler
-function withTimeout(promise, ms) {
+// timeout handler (wrappa sempre in Promise)
+function withTimeout(fnPromise, ms) {
+  const p = fnPromise instanceof Promise ? fnPromise : Promise.resolve(fnPromise);
   return Promise.race([
-    promise,
+    p,
     new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout handler")), ms))
   ]);
 }
@@ -101,31 +103,23 @@ router.all("/:modulo/:funzione", async (req, res) => {
     const m = String(modulo || "").toLowerCase();
     const f = String(funzione || "").toLowerCase();
 
-    /* =========================================================
-       VALIDAZIONE NOME MODULO/FUNZIONE
-    ========================================================== */
+    // VALIDAZIONE NOME MODULO/FUNZIONE
     if (!NAME_REGEX.test(m) || !NAME_REGEX.test(f)) {
       console.warn("⚠️ ROUTER: nome modulo/funzione non valido:", m, f);
       return res.json({ success: false, error: "Endpoint non valido" });
     }
 
-    /* =========================================================
-       RATE LIMIT AGGRESSIVO
-    ========================================================== */
+    // RATE LIMIT AGGRESSIVO
     if (!checkRate(req, res, m, f)) return;
 
-    /* =========================================================
-       MODULO ESISTE?
-    ========================================================== */
+    // MODULO ESISTE?
     const mod = funzioni[m];
     if (!mod) {
       console.warn("⚠️ ROUTER: modulo non trovato:", m);
       return res.json({ success: false, error: "Modulo non trovato" });
     }
 
-    /* =========================================================
-       FUNZIONE ESISTE?
-    ========================================================== */
+    // FUNZIONE ESISTE?
     let handler = mod[f];
 
     if (!handler && f === "getpublic") {
@@ -137,9 +131,7 @@ router.all("/:modulo/:funzione", async (req, res) => {
       return res.json({ success: false, error: "Funzione non trovata" });
     }
 
-    /* =========================================================
-       AUTENTICAZIONE
-    ========================================================== */
+    // AUTENTICAZIONE
     if (m === "admin") {
       const ok = await authAdmin(req, res);
       if (ok === false) return;
@@ -150,9 +142,7 @@ router.all("/:modulo/:funzione", async (req, res) => {
       if (ok === false) return;
     }
 
-    /* =========================================================
-       ESECUZIONE HANDLER CON TIMEOUT 5s
-    ========================================================== */
+    // ESECUZIONE HANDLER CON TIMEOUT 5s
     let result;
     try {
       result = await withTimeout(handler(req, res), 5000);
@@ -161,9 +151,6 @@ router.all("/:modulo/:funzione", async (req, res) => {
       return res.json({ success: false, error: "Timeout o errore interno" });
     }
 
-    /* =========================================================
-       RISPOSTA
-    ========================================================== */
     const payload = result || { success: false, error: "Risposta vuota" };
     return res.json(payload);
 
