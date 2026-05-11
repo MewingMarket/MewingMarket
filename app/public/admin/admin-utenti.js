@@ -1,15 +1,57 @@
 /* =========================================================
    ADMIN UTENTI — UNIVERSAL JSON PATCH 2027.970
-   - Token Fix
-   - Universal JSON
-   - Router Universale
+   PATCH 2050 — AUTORUN + DEBUG ESTESO
 ========================================================= */
 
-document.addEventListener("critical-ready", async () => {
+console.log("📌 [ADMIN-UTENTI] File caricato nel DOM");
+
+// =========================================================
+// AUTORUN 2050 — parte SEMPRE, anche se il DOM è riscritto
+// =========================================================
+(function autorun() {
+  console.log("🚀 [ADMIN-UTENTI] Autorun avviato. DOM state:", document.readyState);
+
+  if (document.readyState === "loading") {
+    console.log("⏳ [ADMIN-UTENTI] DOM non pronto → attendo DOMContentLoaded");
+    document.addEventListener("DOMContentLoaded", autorun, { once: true });
+    return;
+  }
+
+  console.log("🟢 [ADMIN-UTENTI] DOM pronto → avvio initPage()");
+
+  try {
+    if (typeof initPage === "function") {
+      initPage();
+    } else {
+      console.warn("❌ [ADMIN-UTENTI] initPage() NON trovata → JS NON eseguito");
+    }
+  } catch (e) {
+    console.error("🔥 [ADMIN-UTENTI] Errore in initPage():", e);
+  }
+})();
+
+// =========================================================
+// FUNZIONE PRINCIPALE DELLA PAGINA
+// =========================================================
+function initPage() {
+  console.log("🏁 [ADMIN-UTENTI] initPage() eseguita");
+
+  // Se critical-ready non è ancora arrivato, aspettiamo
+  if (!window.__criticalReady) {
+    console.log("⏳ [ADMIN-UTENTI] critical-ready NON ancora emesso → attendo evento");
+    document.addEventListener("critical-ready", initPage, { once: true });
+    return;
+  }
+
+  console.log("🟩 [ADMIN-UTENTI] critical-ready già presente → avvio pagina");
+
+  /* =========================================================
+     EVENTO ORIGINALE
+  ========================================================== */
   console.log("[ADMIN] Init admin-utenti.js (UNIVERSAL JSON)");
   syncBrevoAuto();
   caricaUtenti();
-});
+}
 
 /* =========================================================
    Helper: Formattazione Data
@@ -46,6 +88,7 @@ async function adminApi(path, options = {}) {
 
   // Token scaduto
   if (res.status === 401 || res.status === 403) {
+    console.warn("🔒 [ADMIN-UTENTI] Token scaduto → redirect login");
     localStorage.removeItem("token");
     window.location.href = "/admin/login";
     return null;
@@ -72,6 +115,8 @@ async function adminApi(path, options = {}) {
    SYNC BREVO AUTOMATICO
 ========================================================= */
 async function syncBrevoAuto() {
+  console.log("🔄 [ADMIN-UTENTI] Sync Brevo automatico…");
+
   const ok = await adminApi("/api/admin/utenti/syncBrevo", { method: "GET" });
   if (ok) console.log("🟢 [BREVO] Sync OK");
   else console.warn("🟡 [BREVO] Sync fallito o non necessario");
@@ -81,8 +126,13 @@ async function syncBrevoAuto() {
    CARICA UTENTI + KPI
 ========================================================= */
 async function caricaUtenti() {
+  console.log("📥 [ADMIN-UTENTI] Carico lista utenti…");
+
   const tbody = document.querySelector("#tabella-utenti tbody");
-  if (!tbody) return;
+  if (!tbody) {
+    console.warn("❌ [ADMIN-UTENTI] tbody non trovato");
+    return;
+  }
 
   tbody.innerHTML =
     "<tr><td colspan='15'>Interrogazione SQL in corso...</td></tr>";
@@ -92,12 +142,15 @@ async function caricaUtenti() {
   });
 
   if (!data) {
+    console.warn("❌ [ADMIN-UTENTI] Errore caricamento utenti");
     tbody.innerHTML =
       "<tr><td colspan='15'>Errore caricamento. Verifica Token o Backend.</td></tr>";
     return;
   }
 
   const lista = data.utenti || [];
+
+  console.log("📊 [ADMIN-UTENTI] Utenti caricati:", lista.length);
 
   const kpi = calcolaKPI(lista);
   stampaKPI(kpi);
@@ -164,11 +217,18 @@ document.addEventListener("click", async (e) => {
 
   if (!azione) return;
 
+  console.log(`⚡ [ADMIN-UTENTI] Azione: ${azione} → ${email}`);
+
   const ok = await adminApi(`/api/admin/utenti/${azione}`, {
     method: "POST",
     body: JSON.stringify({ email })
   });
 
-  if (ok) caricaUtenti();
-  else alert("Errore durante l'operazione.");
+  if (ok) {
+    console.log("🟢 [ADMIN-UTENTI] Operazione OK → ricarico utenti");
+    caricaUtenti();
+  } else {
+    console.warn("❌ [ADMIN-UTENTI] Errore operazione");
+    alert("Errore durante l'operazione.");
+  }
 });
