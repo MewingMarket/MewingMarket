@@ -1,39 +1,87 @@
 // FILE: public/admin/validazione-prodotti.js
 
-
 /* =========================================================
    VALIDAZIONE PRODOTTI — Versione 2026.300
-   - AI searchproduct
-   - AI generateproduct (con config)
-   - KPI integrate
-   - universal-json
+   PATCH 2050 — AUTORUN + DEBUG ESTESO
 ========================================================= */
 
-async function adminApi(path, options = {}) {
-  const token = localStorage.getItem("token");
+console.log("📌 [VALIDAZIONE-PRODOTTI] File caricato nel DOM");
 
-  const headers = {
-    "Content-Type": "application/json",
-    ...(options.headers || {}),
-    Authorization: token ? `Bearer ${token}` : ""
-  };
+// =========================================================
+// AUTORUN 2050 — parte SEMPRE, anche se il DOM è riscritto
+// =========================================================
+(function autorun() {
+  console.log("🚀 [VALIDAZIONE-PRODOTTI] Autorun avviato. DOM state:", document.readyState);
 
-  const res = await fetch(path, { ...options, headers });
-
-  if (res.status === 401 || res.status === 403) {
-    localStorage.removeItem("token");
-    location.href = "/admin/login";
-    return null;
+  if (document.readyState === "loading") {
+    console.log("⏳ [VALIDAZIONE-PRODOTTI] DOM non pronto → attendo DOMContentLoaded");
+    document.addEventListener("DOMContentLoaded", autorun, { once: true });
+    return;
   }
 
-  let json;
-  try { json = await res.json(); } catch { return null; }
+  console.log("🟢 [VALIDAZIONE-PRODOTTI] DOM pronto → avvio initPage()");
 
-  return json.success ? json.data : null;
+  try {
+    if (typeof initPage === "function") {
+      initPage();
+    } else {
+      console.warn("❌ [VALIDAZIONE-PRODOTTI] initPage() NON trovata → JS NON eseguito");
+    }
+  } catch (e) {
+    console.error("🔥 [VALIDAZIONE-PRODOTTI] Errore in initPage():", e);
+  }
+})();
+
+// =========================================================
+// FUNZIONE PRINCIPALE DELLA PAGINA
+// =========================================================
+function initPage() {
+  console.log("🏁 [VALIDAZIONE-PRODOTTI] initPage() eseguita");
+
+  // Se critical-ready non è ancora arrivato, aspettiamo
+  if (!window.__criticalReady) {
+    console.log("⏳ [VALIDAZIONE-PRODOTTI] critical-ready NON ancora emesso → attendo evento");
+    document.addEventListener("critical-ready", initPage, { once: true });
+    return;
+  }
+
+  console.log("🟩 [VALIDAZIONE-PRODOTTI] critical-ready già presente → avvio pagina");
+
+  avviaValidazioneProdotti();
 }
 
-document.addEventListener("critical-ready", () => {
+// =========================================================
+// CODICE ORIGINALE INCAPSULATO
+// =========================================================
+function avviaValidazioneProdotti() {
   console.log("🔥 validazione-prodotti.js READY");
+
+  /* =========================================================
+     API ADMIN
+  ========================================================== */
+  async function adminApi(path, options = {}) {
+    const token = localStorage.getItem("token");
+
+    const headers = {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+      Authorization: token ? `Bearer ${token}` : ""
+    };
+
+    const res = await fetch(path, { ...options, headers });
+
+    if (res.status === 401 || res.status === 403) {
+      console.warn("🔒 [VALIDAZIONE-PRODOTTI] Token non valido → redirect login");
+      localStorage.removeItem("token");
+      location.href = "/admin/login";
+      return null;
+    }
+
+    let json;
+    try { json = await res.json(); } catch { return null; }
+
+    return json.success ? json.data : null;
+  }
 
   /* ---------------------------------------------------------
      ELEMENTI DOM
@@ -62,6 +110,8 @@ document.addEventListener("critical-ready", () => {
      CERCA PRODOTTO (AI)
   ========================================================== */
   btnCerca.onclick = async () => {
+    console.log("🔍 [VALIDAZIONE-PRODOTTI] Ricerca prodotto AI…");
+
     const query = input.value.trim();
     if (!query) return;
 
@@ -74,6 +124,7 @@ document.addEventListener("critical-ready", () => {
     });
 
     if (!data) {
+      console.warn("❌ [VALIDAZIONE-PRODOTTI] Errore ricerca AI");
       statusRicerca.textContent = "Errore durante la ricerca.";
       return;
     }
@@ -92,36 +143,32 @@ document.addEventListener("critical-ready", () => {
 
     boxRisultati.style.display = "block";
     statusRicerca.textContent = "";
+
+    console.log("🟢 [VALIDAZIONE-PRODOTTI] Risultati AI mostrati");
   };
 
   /* =========================================================
      GENERA PRODOTTO (AI)
-     - genera descrizione tecnica
-     - genera immagine
-     - genera file di consegna
-     - salva in prodotti_da_creare
   ========================================================== */
   btnGenera.onclick = async () => {
-    if (!validazioneCorrente) return;
+    console.log("⚙️ [VALIDAZIONE-PRODOTTI] Generazione prodotto AI…");
+
+    if (!validazioneCorrente) {
+      console.warn("⚠️ [VALIDAZIONE-PRODOTTI] Nessuna validazione corrente");
+      return;
+    }
 
     statusGenerazione.textContent = "Generazione prodotto AI...";
 
-    /* ---------------------------------------------------------
-       CONFIGURAZIONE PRODOTTO
-       (questa parte verrà poi collegata ai campi UI)
-    --------------------------------------------------------- */
     const config = {
-      type: "ebook",          // tipo prodotto
-      pages: 120,             // numero pagine
-      level: "intermedio",    // livello
-      language: "IT",         // lingua
-      target: "principianti", // target
-      price: 49               // prezzo base
+      type: "ebook",
+      pages: 120,
+      level: "intermedio",
+      language: "IT",
+      target: "principianti",
+      price: 49
     };
 
-    /* ---------------------------------------------------------
-       CHIAMATA generateproduct
-    --------------------------------------------------------- */
     const data = await adminApi("/api/ai/generateproduct", {
       method: "POST",
       body: JSON.stringify({
@@ -133,5 +180,7 @@ document.addEventListener("critical-ready", () => {
     statusGenerazione.textContent = data
       ? "Prodotto generato! Vai in 'Prodotti' → 'Da Generare'"
       : "Errore generazione prodotto.";
+
+    console.log("📦 [VALIDAZIONE-PRODOTTI] Risposta generateproduct:", data);
   };
-});
+}
