@@ -6,6 +6,16 @@
 // Emette SEMPRE critical-core-ready
 // =========================================================
 
+// =========================================================
+// 🔒 MASTER LOCK 2052 — blocca re-run multipli dei loader
+// =========================================================
+if (window.__MASTER_LOADER_LOCK__) {
+  console.warn("🔒 [MASTER-LOCK] critical-loader.js bloccato → skip");
+  return;
+}
+window.__MASTER_LOADER_LOCK__ = true;
+// =========================================================
+
 if (window.__CRITICAL_LOADER_PUBLIC_2050__) {
   console.warn("loader.js (critical public) già caricato, skip.");
 } else {
@@ -45,7 +55,7 @@ if (window.__CRITICAL_LOADER_PUBLIC_2050__) {
 
         const s = document.createElement("script");
         s.src = `${src}?v=${VERSION}`;
-        s.async = false;              // ← PATCH FONDAMENTALE
+        s.async = false;
         s.fetchPriority = "high";
 
         s.onload = () => {
