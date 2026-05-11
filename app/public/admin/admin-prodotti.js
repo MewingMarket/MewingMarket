@@ -3,32 +3,78 @@
 
 /* =========================================================
    ADMIN PRODOTTI — Versione 2027.1 (AI + FILE + IMG + CONFIG)
+   PATCH 2050 — AUTORUN + DEBUG ESTESO
 ========================================================= */
 
-async function adminApi(path, options = {}) {
-  const token = localStorage.getItem("token");
+console.log("📌 [ADMIN-PRODOTTI] File caricato nel DOM");
 
-  const headers = {
-    "Content-Type": "application/json",
-    ...(options.headers || {}),
-    Authorization: token ? `Bearer ${token}` : ""
-  };
+// =========================================================
+// AUTORUN 2050 — parte SEMPRE, anche se il DOM è riscritto
+// =========================================================
+(function autorun() {
+  console.log("🚀 [ADMIN-PRODOTTI] Autorun avviato. DOM state:", document.readyState);
 
-  const res = await fetch(path, { ...options, headers });
-
-  if (res.status === 401 || res.status === 403) {
-    localStorage.removeItem("token");
-    location.href = "/admin/login";
-    return null;
+  if (document.readyState === "loading") {
+    console.log("⏳ [ADMIN-PRODOTTI] DOM non pronto → attendo DOMContentLoaded");
+    document.addEventListener("DOMContentLoaded", autorun, { once: true });
+    return;
   }
 
-  let json;
-  try { json = await res.json(); } catch { return null; }
+  console.log("🟢 [ADMIN-PRODOTTI] DOM pronto → avvio initPage()");
 
-  return json.success ? json.data : null;
-}
+  try {
+    if (typeof initPage === "function") {
+      initPage();
+    } else {
+      console.warn("❌ [ADMIN-PRODOTTI] initPage() NON trovata → JS NON eseguito");
+    }
+  } catch (e) {
+    console.error("🔥 [ADMIN-PRODOTTI] Errore in initPage():", e);
+  }
+})();
 
-document.addEventListener("critical-ready", () => {
+// =========================================================
+// FUNZIONE PRINCIPALE DELLA PAGINA
+// =========================================================
+function initPage() {
+  console.log("🏁 [ADMIN-PRODOTTI] initPage() eseguita");
+
+  // Se critical-ready non è ancora arrivato, aspettiamo
+  if (!window.__criticalReady) {
+    console.log("⏳ [ADMIN-PRODOTTI] critical-ready NON ancora emesso → attendo evento");
+    document.addEventListener("critical-ready", initPage, { once: true });
+    return;
+  }
+
+  console.log("🟩 [ADMIN-PRODOTTI] critical-ready già presente → avvio pagina");
+
+  /* =========================================================
+     API ADMIN
+  ========================================================== */
+  async function adminApi(path, options = {}) {
+    const token = localStorage.getItem("token");
+
+    const headers = {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+      Authorization: token ? `Bearer ${token}` : ""
+    };
+
+    const res = await fetch(path, { ...options, headers });
+
+    if (res.status === 401 || res.status === 403) {
+      console.warn("🔒 [ADMIN-PRODOTTI] Token non valido → redirect login");
+      localStorage.removeItem("token");
+      location.href = "/admin/login";
+      return null;
+    }
+
+    let json;
+    try { json = await res.json(); } catch { return null; }
+
+    return json.success ? json.data : null;
+  }
+
   console.log("🔥 admin-prodotti.js 2027.1 READY");
 
   /* ---------------------------------------------------------
@@ -65,14 +111,19 @@ document.addEventListener("critical-ready", () => {
      1) CARICA PRODOTTI PUBBLICATI
   ========================================================== */
   async function caricaPubblicati() {
+    console.log("📥 [ADMIN-PRODOTTI] Carico prodotti pubblicati…");
+
     boxPubblicati.innerHTML = "<p>Caricamento...</p>";
 
     const prodotti = await adminApi("/api/prodotti/getProdottiAdmin", { method: "GET" });
 
     if (!prodotti || prodotti.length === 0) {
+      console.log("⚠️ [ADMIN-PRODOTTI] Nessun prodotto pubblicato");
       boxPubblicati.innerHTML = "<p>Nessun prodotto pubblicato.</p>";
       return;
     }
+
+    console.log("📊 [ADMIN-PRODOTTI] Prodotti pubblicati:", prodotti.length);
 
     boxPubblicati.innerHTML = prodotti.map(p => `
       <div class="admin-card">
@@ -90,11 +141,16 @@ document.addEventListener("critical-ready", () => {
   }
 
   async function apriEditorPub(id) {
+    console.log("📝 [ADMIN-PRODOTTI] Modifica pubblicato ID:", id);
+
     editAI.style.display = "none";
     editPub.style.display = "block";
 
     const p = await adminApi(`/api/prodotti/getProdottoAdminById/${id}`, { method: "GET" });
-    if (!p) return;
+    if (!p) {
+      console.warn("❌ [ADMIN-PRODOTTI] Prodotto non trovato");
+      return;
+    }
 
     prodottoPubCorrente = p;
 
@@ -113,6 +169,8 @@ document.addEventListener("critical-ready", () => {
 
   document.getElementById("btn-salva-pubblicato").onclick = async () => {
     if (!prodottoPubCorrente) return;
+
+    console.log("💾 [ADMIN-PRODOTTI] Salvataggio prodotto pubblicato…");
 
     epStatus.textContent = "Salvataggio...";
 
@@ -137,14 +195,19 @@ document.addEventListener("critical-ready", () => {
      2) CARICA PRODOTTI DA CREARE (AI)
   ========================================================== */
   async function caricaDaCreare() {
+    console.log("📥 [ADMIN-PRODOTTI] Carico prodotti da creare…");
+
     boxDaCreare.innerHTML = "<p>Caricamento...</p>";
 
     const prodotti = await adminApi("/api/admin/getprodottidacreare", { method: "GET" });
 
     if (!prodotti || prodotti.length === 0) {
+      console.log("⚠️ [ADMIN-PRODOTTI] Nessun prodotto AI da creare");
       boxDaCreare.innerHTML = "<p>Nessun prodotto da generare.</p>";
       return;
     }
+
+    console.log("📊 [ADMIN-PRODOTTI] Prodotti AI:", prodotti.length);
 
     boxDaCreare.innerHTML = prodotti.map(p => `
       <div class="admin-card">
@@ -162,12 +225,17 @@ document.addEventListener("critical-ready", () => {
   }
 
   async function apriEditorAI(id) {
+    console.log("🤖 [ADMIN-PRODOTTI] Modifica prodotto AI ID:", id);
+
     editPub.style.display = "none";
     editAI.style.display = "block";
 
     const lista = await adminApi("/api/admin/getprodottidacreare", { method: "GET" });
     const p = lista.find(x => x.id == id);
-    if (!p) return;
+    if (!p) {
+      console.warn("❌ [ADMIN-PRODOTTI] Prodotto AI non trovato");
+      return;
+    }
 
     prodottoAICorrente = p;
 
@@ -204,6 +272,8 @@ document.addEventListener("critical-ready", () => {
   document.getElementById("btn-approva-prodotto").onclick = async () => {
     if (!prodottoAICorrente) return;
 
+    console.log("👍 [ADMIN-PRODOTTI] Approvazione prodotto AI…");
+
     aiStatus.textContent = "Approvazione...";
 
     const ok = await adminApi("/api/admin/approvaprodotto", {
@@ -223,6 +293,8 @@ document.addEventListener("critical-ready", () => {
     if (!prodottoAICorrente) return;
     if (!confirm("Eliminare questo prodotto AI?")) return;
 
+    console.log("🗑️ [ADMIN-PRODOTTI] Eliminazione prodotto AI…");
+
     const ok = await adminApi(`/api/admin/eliminaprodottodacreare/${prodottoAICorrente.id}`, {
       method: "DELETE"
     });
@@ -235,6 +307,7 @@ document.addEventListener("critical-ready", () => {
   /* =========================================================
      AVVIO
   ========================================================== */
+  console.log("🚀 [ADMIN-PRODOTTI] Avvio caricamento iniziale");
   caricaPubblicati();
   caricaDaCreare();
-});
+}
