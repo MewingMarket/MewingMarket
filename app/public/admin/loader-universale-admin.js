@@ -3,6 +3,16 @@
 // Percorso reale: /app/public/admin/loader-universale-admin.js
 // =========================================================
 
+// =========================================================
+// 🔒 MASTER LOCK 2052 — blocca re-run multipli dei loader
+// =========================================================
+if (window.__MASTER_LOADER_LOCK__) {
+  console.warn("🔒 [MASTER-LOCK] loader-universale-admin.js bloccato → skip");
+  return;
+}
+window.__MASTER_LOADER_LOCK__ = true;
+// =========================================================
+
 if (window.__LOADER_UNIVERSALE_ADMIN__) {
   console.warn("loader-universale-admin.js già caricato, skip.");
 } else {
