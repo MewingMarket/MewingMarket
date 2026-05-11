@@ -12,7 +12,6 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
 
     const VERSION = "2050";
 
-    // Cache globale JS + lock esecuzione
     window.__SUPREMO_JS_CACHE__ = window.__SUPREMO_JS_CACHE__ || new Set();
     window.__UNIVERSALE_ADMIN_RUN_STATE__ =
       window.__UNIVERSALE_ADMIN_RUN_STATE__ || {
@@ -95,7 +94,6 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
     async function loadPageScriptIfNeeded(base) {
       const pageScript = `/admin/${base}.js`;
 
-      // 1) Controllo se è già nel DOM (inserito dal patcher HTML)
       if (
         document.querySelector(`script[src="${pageScript}?v=${VERSION}"]`) ||
         document.querySelector(`script[src="${pageScript}"]`)
@@ -104,7 +102,6 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
         return true;
       }
 
-      // 2) Fallback loader
       console.log(`📦 [UNIVERSALE ADMIN] Script NON presente → fallback loader: ${pageScript}`);
       return await loadScript(pageScript);
     }
@@ -127,12 +124,11 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
 
       state.running = true;
 
-      console.log("🟦 [UNIVERSALE ADMIN] critical-core-ready ricevuto → avvio run()");
+      console.log("🟦 [UNIVERSALE ADMIN] Evento supremo-admin-load-universale ricevuto → avvio run()");
 
       const base = getPageBase();
       console.log("🔍 [UNIVERSALE ADMIN] Pagina normalizzata:", base);
 
-      // FALLBACK DOM
       await loadPageScriptIfNeeded(base);
 
       state.running = false;
@@ -142,7 +138,10 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
       document.dispatchEvent(new Event("page-js-loaded"));
     }
 
-    document.addEventListener("critical-core-ready", run);
+    // ============================================================
+    // PATCH 2050: ascolta SOLO l’evento del SUPREMO ADMIN
+    // ============================================================
+    document.addEventListener("supremo-admin-load-universale", run);
 
   })();
 }
