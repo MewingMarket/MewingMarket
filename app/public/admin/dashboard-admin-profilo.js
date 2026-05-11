@@ -1,10 +1,62 @@
 /* =========================================================
    DASHBOARD ADMIN — UNIVERSAL JSON PATCH 2027.970
-   - Token Fix
-   - Universal JSON
-   - Router Universale
+   PATCH 2050 — AUTORUN + DEBUG ESTESO
 ========================================================= */
 
+console.log("📌 [DASHBOARD-ADMIN] File caricato nel DOM");
+
+// =========================================================
+// AUTORUN 2050 — parte SEMPRE, anche se il DOM è riscritto
+// =========================================================
+(function autorun() {
+  console.log("🚀 [DASHBOARD-ADMIN] Autorun avviato. DOM state:", document.readyState);
+
+  if (document.readyState === "loading") {
+    console.log("⏳ [DASHBOARD-ADMIN] DOM non pronto → attendo DOMContentLoaded");
+    document.addEventListener("DOMContentLoaded", autorun, { once: true });
+    return;
+  }
+
+  console.log("🟢 [DASHBOARD-ADMIN] DOM pronto → avvio initPage()");
+
+  try {
+    if (typeof initPage === "function") {
+      initPage();
+    } else {
+      console.warn("❌ [DASHBOARD-ADMIN] initPage() NON trovata → JS NON eseguito");
+    }
+  } catch (e) {
+    console.error("🔥 [DASHBOARD-ADMIN] Errore in initPage():", e);
+  }
+})();
+
+// =========================================================
+// FUNZIONE PRINCIPALE DELLA PAGINA
+// =========================================================
+function initPage() {
+  console.log("🏁 [DASHBOARD-ADMIN] initPage() eseguita");
+
+  // Se critical-ready non è ancora arrivato, aspettiamo
+  if (!window.__criticalReady) {
+    console.log("⏳ [DASHBOARD-ADMIN] critical-ready NON ancora emesso → attendo evento");
+    document.addEventListener("critical-ready", initPage, { once: true });
+    return;
+  }
+
+  console.log("🟩 [DASHBOARD-ADMIN] critical-ready già presente → avvio pagina");
+
+  /* =========================================================
+     EVENTO ORIGINALE
+  ========================================================== */
+  console.log("🔥 [DASHBOARD-ADMIN] Avvio dashboard admin");
+  popolaDatiAdmin();
+  setupCambioEmail();
+  setupCambioPassword();
+}
+
+/* =========================================================
+   SANITIZZAZIONE
+========================================================= */
 const clean = (t) =>
   typeof t === "string"
     ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
@@ -26,6 +78,7 @@ async function adminApi(path, options = {}) {
 
   // Token scaduto
   if (res.status === 401 || res.status === 403) {
+    console.warn("🔒 [DASHBOARD-ADMIN] Token scaduto → redirect login");
     localStorage.removeItem("token");
     window.location.href = "/admin/login";
     return null;
@@ -49,21 +102,16 @@ async function adminApi(path, options = {}) {
 }
 
 /* =========================================================
-   INIT
-========================================================= */
-document.addEventListener("critical-ready", () => {
-  popolaDatiAdmin();
-  setupCambioEmail();
-  setupCambioPassword();
-});
-
-/* =========================================================
    1) POPOLA DATI PROFILO ADMIN
-   /api/admin/me
 ========================================================= */
 async function popolaDatiAdmin() {
+  console.log("📥 [DASHBOARD-ADMIN] Carico dati admin…");
+
   const data = await adminApi("/api/admin/me", { method: "GET" });
-  if (!data || !data.admin) return;
+  if (!data || !data.admin) {
+    console.warn("❌ [DASHBOARD-ADMIN] Nessun admin trovato");
+    return;
+  }
 
   const a = data.admin;
 
@@ -76,17 +124,23 @@ async function popolaDatiAdmin() {
   if (userEl) userEl.textContent = a.email.split("@")[0];
   if (cfEl) cfEl.textContent = a.codice_fiscale;
   if (roleEl) roleEl.textContent = a.ruolo;
+
+  console.log("🟢 [DASHBOARD-ADMIN] Dati admin popolati");
 }
 
 /* =========================================================
    2) CAMBIO EMAIL
-   /api/admin/cambiaEmail
 ========================================================= */
 function setupCambioEmail() {
   const btn = document.getElementById("btnAdminCambiaEmail");
-  if (!btn) return;
+  if (!btn) {
+    console.warn("⚠️ [DASHBOARD-ADMIN] Bottone cambio email non trovato");
+    return;
+  }
 
   btn.addEventListener("click", async () => {
+    console.log("✉️ [DASHBOARD-ADMIN] Cambio email…");
+
     const nuova = clean(document.getElementById("newAdminEmail").value);
     const pass = clean(document.getElementById("passwordAdminEmail").value);
     const msg = document.getElementById("msgAdminEmail");
@@ -109,13 +163,17 @@ function setupCambioEmail() {
 
 /* =========================================================
    3) CAMBIO PASSWORD
-   /api/admin/cambiaPassword
 ========================================================= */
 function setupCambioPassword() {
   const btn = document.getElementById("btnAdminCambiaPassword");
-  if (!btn) return;
+  if (!btn) {
+    console.warn("⚠️ [DASHBOARD-ADMIN] Bottone cambio password non trovato");
+    return;
+  }
 
   btn.addEventListener("click", async () => {
+    console.log("🔐 [DASHBOARD-ADMIN] Cambio password…");
+
     const oldP = clean(document.getElementById("oldAdminPassword").value);
     const newP = clean(document.getElementById("newAdminPassword").value);
     const msg = document.getElementById("msgAdminPassword");
