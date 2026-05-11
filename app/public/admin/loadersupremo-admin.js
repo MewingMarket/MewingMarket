@@ -151,16 +151,19 @@ if (!window.__SUPREMO_ADMIN_LOADER__) {
       await debugImport("/admin/header-admin.js");
 
       // ============================================================
-      // 4) LOADER UNIVERSALE ADMIN — DOM-SAFE
+      // 4) LOADER UNIVERSALE ADMIN — DOM-SAFE + EVENTO DEDICATO
       // ============================================================
       await new Promise(r => setTimeout(r, 0));
 
       if (paginaAdminHaJsDiPagina()) {
         if (!window.__LOADER_UNIVERSALE_ADMIN_CARICATO__) {
           window.__LOADER_UNIVERSALE_ADMIN_CARICATO__ = true;
+
           console.log("📦 Carico loader-universale-admin.js");
           await loadScript("/admin/loader-universale-admin.js");
-          await debugImport("/admin/loader-universale-admin.js");
+
+          // 🔥 Evento che FA PARTIRE l’universale admin
+          document.dispatchEvent(new Event("supremo-admin-load-universale"));
         }
       } else {
         console.log("📦 Pagina admin SENZA JS → universale NON caricato");
