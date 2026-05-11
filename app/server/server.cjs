@@ -1,6 +1,6 @@
 /* =========================================================
- * SERVER — HARDENED MODE (2050.900)
- * Anti‑PHP, Anti‑Bot, Anti‑OOM, Anti‑Scanner
+ * SERVER — HARDENED MODE (2050.901)
+ * Anti‑PHP, Anti‑Bot, Anti‑OOM, Anti‑Scanner + API-GUARD
  * =========================================================
  */
 
@@ -153,7 +153,8 @@ async function bootInBackground(){
 
     /* =========================================================
      * UNIVERSAL JSON
-     * ========================================================= */
+     * =========================================================
+     */
     log(">> BOOT: universal-json");
     try {
       const uj = require("./middleware/universal-json.cjs");
@@ -161,8 +162,21 @@ async function bootInBackground(){
     } catch(e){ logErr("universal-json:", e.message); }
 
     /* =========================================================
+     * API GUARD — unico scudo per tutte le /api
+     * =========================================================
+     */
+    log(">> BOOT: api-guard");
+    try {
+      const apiGuard = require("./middleware/api-guard.cjs");
+      app.use("/api", apiGuard);
+    } catch (e) {
+      logErr("api-guard:", e.message);
+    }
+
+    /* =========================================================
      * DATABASE
-     * ========================================================= */
+     * =========================================================
+     */
     log(">> BOOT: database");
     let db = null;
     try { db = require("./db/database.cjs"); }
@@ -177,7 +191,8 @@ async function bootInBackground(){
 
     /* =========================================================
      * CACHE / UPLOADS / CONTEXT
-     * ========================================================= */
+     * =========================================================
+     */
     log(">> BOOT: cache");
     try { require("./middleware/cache.cjs")(app); } catch(e){}
 
@@ -192,8 +207,9 @@ async function bootInBackground(){
     log("🟧 rewriteScripts DISATTIVATO");
 
     /* =========================================================
-     * ROUTER UNIVERSALE 2038
-     * ========================================================= */
+     * ROUTER UNIVERSALE 2051 (AGGRESSIVE)
+     * =========================================================
+     */
     log(">> BOOT: router API (universale)");
     try {
       const router = require("./router.cjs");
@@ -202,7 +218,8 @@ async function bootInBackground(){
 
     /* =========================================================
      * STATICHE
-     * ========================================================= */
+     * =========================================================
+     */
     const PUBLIC_DIR = path.resolve("app/public");
     app.use(express.static(PUBLIC_DIR));
     app.use("/admin", express.static(path.resolve("app/public/admin")));
@@ -222,7 +239,8 @@ async function bootInBackground(){
 
 /* =========================================================
  * /data persistente
- * ========================================================= */
+ * =========================================================
+ */
 const DATA_BACKUP = path.join(process.cwd(), "app/data");
 const DATA_PERSIST = "/var/data/json";
 
