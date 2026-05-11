@@ -2,6 +2,16 @@
 // LOADER UNIVERSALE PUBLIC — VERSIONE 2050 FALLBACK DOM
 // =========================================================
 
+// =========================================================
+// 🔒 MASTER LOCK 2052 — blocca re-run multipli dei loader
+// =========================================================
+if (window.__MASTER_LOADER_LOCK__) {
+  console.warn("🔒 [MASTER-LOCK] loaderuniversale.js bloccato → skip");
+  return;
+}
+window.__MASTER_LOADER_LOCK__ = true;
+// =========================================================
+
 if (window.__LOADER_UNIVERSALE_PUBLIC__) {
   console.warn("loaderuniversale.js già caricato, skip.");
 } else {
