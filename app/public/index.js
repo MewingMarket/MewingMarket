@@ -1,9 +1,21 @@
 /* =========================================================
    HOME PREMIUM — UNIVERSAL JSON PATCH 2027.970
    PATCH 2050 — AUTORUN + DEBUG ESTESO
+   PATCH 2051 — ANTI-LOOP (LOCK ESECUZIONE)
 ========================================================= */
 
 console.log("📌 [HOME] File caricato nel DOM");
+
+/* =========================================================
+   🔒 PATCH ANTI-LOOP 2051
+   Impedisce che home-premium.js venga eseguito più volte
+   quando loaderuniversale/dynamic-loader ricaricano il DOM.
+========================================================= */
+if (window.__HOME_PREMIUM_RUNNING__) {
+  console.warn("🏁 [HOME] già in esecuzione → skip");
+  return;
+}
+window.__HOME_PREMIUM_RUNNING__ = true;
 
 /* =========================================================
    WRAPPER UNIVERSALE (universal-json)
