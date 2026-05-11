@@ -1,14 +1,16 @@
 /* =========================================================
    HOME PREMIUM — UNIVERSAL JSON PATCH 2027.970
-   Mapping SQL + Slider + Top 3 Prodotti
+   PATCH 2050 — AUTORUN + DEBUG ESTESO
 ========================================================= */
 
-console.log("[HOME] Inizializzazione homepage con Mapping SQL...");
+console.log("📌 [HOME] File caricato nel DOM");
 
 /* =========================================================
    WRAPPER UNIVERSALE (universal-json)
 ========================================================= */
 async function apiHome(path, options = {}) {
+  console.log("🌐 [HOME] API:", path);
+
   const token = localStorage.getItem("token");
 
   const headers = {
@@ -21,11 +23,12 @@ async function apiHome(path, options = {}) {
   try {
     res = await fetch(path, { ...options, headers });
   } catch (err) {
-    console.error("❌ Errore rete:", err);
+    console.error("❌ [HOME] Errore rete:", err);
     return null;
   }
 
   if (res.status === 401 || res.status === 403) {
+    console.warn("🔒 [HOME] Token scaduto → redirect login");
     localStorage.removeItem("token");
     window.location.href = "/login";
     return null;
@@ -35,12 +38,12 @@ async function apiHome(path, options = {}) {
   try {
     json = await res.json();
   } catch (e) {
-    console.error("❌ Risposta NON JSON da", path);
+    console.error("❌ [HOME] Risposta NON JSON da", path);
     return null;
   }
 
   if (!json.success) {
-    console.warn("⚠️ Errore API:", json.error || json.raw);
+    console.warn("⚠️ [HOME] Errore API:", json.error || json.raw);
     return null;
   }
 
@@ -48,24 +51,75 @@ async function apiHome(path, options = {}) {
 }
 
 /* =========================================================
-   AVVIO HOMEPAGE
+   AUTORUN 2050 — parte SEMPRE
 ========================================================= */
-document.addEventListener("critical-ready", () => {
+(function autorun() {
+  console.log("🚀 [HOME] Autorun avviato. DOM state:", document.readyState);
+
+  if (document.readyState === "loading") {
+    console.log("⏳ [HOME] DOM non pronto → attendo DOMContentLoaded");
+    document.addEventListener("DOMContentLoaded", autorun, { once: true });
+    return;
+  }
+
+  console.log("🟢 [HOME] DOM pronto → avvio initPage()");
+
+  try {
+    if (typeof initPage === "function") initPage();
+    else console.warn("❌ [HOME] initPage() NON trovata");
+  } catch (e) {
+    console.error("🔥 [HOME] Errore in initPage():", e);
+  }
+})();
+
+/* =========================================================
+   FUNZIONE PRINCIPALE
+========================================================= */
+function initPage() {
+  console.log("🏁 [HOME] initPage() eseguita");
+
+  if (!window.__criticalReady) {
+    console.log("⏳ [HOME] critical-ready NON ancora emesso → attendo evento");
+    document.addEventListener("critical-ready", initPage, { once: true });
+    return;
+  }
+
+  console.log("🟩 [HOME] critical-ready già presente → avvio homepage");
+
+  avviaHomepage();
+}
+
+/* =========================================================
+   CODICE ORIGINALE INCAPSULATO
+========================================================= */
+function avviaHomepage() {
+  console.log("🔥 home-premium.js READY — Avvio sezioni homepage");
 
   /* ------------------------------
      1) GRID HOMEPAGE (Top 3 Prodotti)
   ------------------------------ */
   (async () => {
+    console.log("📦 [HOME] Carico Top 3 prodotti…");
+
     const grid = document.getElementById("products-grid");
-    if (!grid) return;
+    if (!grid) {
+      console.warn("❌ [HOME] #products-grid NON trovato");
+      return;
+    }
 
     const data = await apiHome("/api/prodotti/getProdotti", { method: "GET" });
+
+    console.log("📥 [HOME] Risposta prodotti:", data);
+
     if (!data) {
       grid.innerHTML = `<p class="info-msg">Il catalogo prodotti è in fase di aggiornamento.</p>`;
       return;
     }
 
-    const products = Array.isArray(data) ? data : (data.prodotti || data.data || []);
+    const products = Array.isArray(data)
+      ? data
+      : (data.prodotti || data.data || []);
+
     if (products.length === 0) {
       grid.innerHTML = `<p class="info-msg">Il catalogo prodotti è in fase di aggiornamento.</p>`;
       return;
@@ -110,13 +164,24 @@ document.addEventListener("critical-ready", () => {
      2) SLIDER HERO (Immagini dinamiche da SQL)
   ------------------------------ */
   (async () => {
-    const dataHero = await apiHome("/api/prodotti/getProdotti", { method: "GET" });
-    if (!dataHero) return;
+    console.log("🖼️ [HOME] Carico slider hero…");
 
-    const productsHero = Array.isArray(dataHero) ? dataHero : (dataHero.prodotti || []);
+    const dataHero = await apiHome("/api/prodotti/getProdotti", { method: "GET" });
+
+    if (!dataHero) {
+      console.warn("⚠️ [HOME] Nessun dato per slider");
+      return;
+    }
+
+    const productsHero = Array.isArray(dataHero)
+      ? dataHero
+      : (dataHero.prodotti || []);
+
     const images = productsHero
       .map(p => p.immagine_url || p.immagine)
       .filter(img => img && img.length > 5);
+
+    console.log("🖼️ [HOME] Immagini slider:", images.length);
 
     const slider = document.getElementById("hero-slider");
     if (slider && images.length > 0) {
@@ -133,4 +198,4 @@ document.addEventListener("critical-ready", () => {
       setInterval(rotate, 6000);
     }
   })();
-});
+}
