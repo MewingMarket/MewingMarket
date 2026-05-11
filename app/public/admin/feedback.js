@@ -1,10 +1,57 @@
 /* =========================================================
    ADMIN FEEDBACK — UNIVERSAL JSON PATCH 2027.970
-   - Token Fix
-   - Universal JSON
-   - Router Universale
+   PATCH 2050 — AUTORUN + DEBUG ESTESO
 ========================================================= */
 
+console.log("📌 [ADMIN-FEEDBACK] File caricato nel DOM");
+
+// =========================================================
+// AUTORUN 2050 — parte SEMPRE, anche se il DOM è riscritto
+// =========================================================
+(function autorun() {
+  console.log("🚀 [ADMIN-FEEDBACK] Autorun avviato. DOM state:", document.readyState);
+
+  if (document.readyState === "loading") {
+    console.log("⏳ [ADMIN-FEEDBACK] DOM non pronto → attendo DOMContentLoaded");
+    document.addEventListener("DOMContentLoaded", autorun, { once: true });
+    return;
+  }
+
+  console.log("🟢 [ADMIN-FEEDBACK] DOM pronto → avvio initPage()");
+
+  try {
+    if (typeof initPage === "function") {
+      initPage();
+    } else {
+      console.warn("❌ [ADMIN-FEEDBACK] initPage() NON trovata → JS NON eseguito");
+    }
+  } catch (e) {
+    console.error("🔥 [ADMIN-FEEDBACK] Errore in initPage():", e);
+  }
+})();
+
+// =========================================================
+// FUNZIONE PRINCIPALE DELLA PAGINA
+// =========================================================
+function initPage() {
+  console.log("🏁 [ADMIN-FEEDBACK] initPage() eseguita");
+
+  // Se critical-ready non è ancora arrivato, aspettiamo
+  if (!window.__criticalReady) {
+    console.log("⏳ [ADMIN-FEEDBACK] critical-ready NON ancora emesso → attendo evento");
+    document.addEventListener("critical-ready", initPage, { once: true });
+    return;
+  }
+
+  console.log("🟩 [ADMIN-FEEDBACK] critical-ready già presente → avvio pagina");
+
+  // Avvio originale
+  caricaFeedback();
+}
+
+/* =========================================================
+   SANITIZZAZIONE
+========================================================= */
 const clean = (t) =>
   typeof t === "string"
     ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
@@ -41,6 +88,7 @@ async function adminApi(path, options = {}) {
   const res = await fetch(fullPath, { ...options, headers });
 
   if (res.status === 401 || res.status === 403) {
+    console.warn("🔒 [ADMIN-FEEDBACK] Token scaduto → redirect login");
     localStorage.removeItem("token");
     window.location.href = "/admin/login";
     return null;
@@ -66,8 +114,13 @@ async function adminApi(path, options = {}) {
    RENDER KPI
 ========================================================= */
 function renderKPI(kpi) {
+  console.log("📊 [ADMIN-FEEDBACK] Render KPI");
+
   const box = document.querySelector("#kpi-feedback");
-  if (!box || !kpi) return;
+  if (!box || !kpi) {
+    console.warn("⚠️ [ADMIN-FEEDBACK] KPI box non trovato o KPI null");
+    return;
+  }
 
   box.innerHTML = `
     <div class="kpi-header-grid">
@@ -124,8 +177,13 @@ function renderKPI(kpi) {
    CARICA FEEDBACK
 ========================================================= */
 async function caricaFeedback() {
+  console.log("📥 [ADMIN-FEEDBACK] Carico feedback…");
+
   const tbody = document.querySelector("#tabella-feedback tbody");
-  if (!tbody) return;
+  if (!tbody) {
+    console.warn("❌ [ADMIN-FEEDBACK] tbody non trovato");
+    return;
+  }
 
   tbody.innerHTML = "<tr><td colspan='5'>Interrogazione database SQL...</td></tr>";
 
@@ -134,12 +192,13 @@ async function caricaFeedback() {
   });
 
   if (!data) {
+    console.warn("❌ [ADMIN-FEEDBACK] Errore caricamento feedback");
     tbody.innerHTML =
       "<tr><td colspan='5'>Errore tecnico nel recupero dei feedback.</td></tr>";
     return;
   }
 
-  console.log("🟢 [ADMIN] Feedback caricati:", data);
+  console.log("🟢 [ADMIN-FEEDBACK] Feedback caricati:", data);
 
   if (data.kpi) renderKPI(data.kpi);
 
@@ -170,7 +229,3 @@ async function caricaFeedback() {
     tbody.appendChild(tr);
   });
 }
-
-document.addEventListener("critical-ready", () => {
-  caricaFeedback();
-});
