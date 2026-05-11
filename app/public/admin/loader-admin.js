@@ -4,16 +4,6 @@
 // Emette SEMPRE critical-core-ready
 // =========================================================
 
-// =========================================================
-// 🔒 MASTER LOCK 2052 — blocca re-run multipli dei loader
-// =========================================================
-if (window.__MASTER_LOADER_LOCK__) {
-  console.warn("🔒 [MASTER-LOCK] admin-critical-loader.js bloccato → skip");
-  return;
-}
-window.__MASTER_LOADER_LOCK__ = true;
-// =========================================================
-
 if (window.__ADMIN_CRITICAL_LOADER_2050__) {
   console.warn("admin-critical-loader-2050.js già caricato, skip.");
 } else {
