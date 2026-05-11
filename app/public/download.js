@@ -1,27 +1,85 @@
 /* =========================================================
    DOWNLOAD PREMIUM — UNIVERSAL JSON PATCH 2027.970
+   PATCH 2050 — AUTORUN + DEBUG ESTESO
 ========================================================= */
 
-document.addEventListener("critical-ready", async () => {
+console.log("📌 [DOWNLOAD] File caricato nel DOM");
+
+// =========================================================
+// AUTORUN 2050 — parte SEMPRE, anche se il DOM è riscritto
+// =========================================================
+(function autorun() {
+  console.log("🚀 [DOWNLOAD] Autorun avviato. DOM state:", document.readyState);
+
+  if (document.readyState === "loading") {
+    console.log("⏳ [DOWNLOAD] DOM non pronto → attendo DOMContentLoaded");
+    document.addEventListener("DOMContentLoaded", autorun, { once: true });
+    return;
+  }
+
+  console.log("🟢 [DOWNLOAD] DOM pronto → avvio initPage()");
+
+  try {
+    if (typeof initPage === "function") {
+      initPage();
+    } else {
+      console.warn("❌ [DOWNLOAD] initPage() NON trovata → JS NON eseguito");
+    }
+  } catch (e) {
+    console.error("🔥 [DOWNLOAD] Errore in initPage():", e);
+  }
+})();
+
+// =========================================================
+// FUNZIONE PRINCIPALE
+// =========================================================
+function initPage() {
+  console.log("🏁 [DOWNLOAD] initPage() eseguita");
+
+  if (!window.__criticalReady) {
+    console.log("⏳ [DOWNLOAD] critical-ready NON ancora emesso → attendo evento");
+    document.addEventListener("critical-ready", initPage, { once: true });
+    return;
+  }
+
+  console.log("🟩 [DOWNLOAD] critical-ready già presente → avvio pagina");
+
+  avviaDownloadPremium();
+}
+
+// =========================================================
+// CODICE ORIGINALE INCAPSULATO
+// =========================================================
+async function avviaDownloadPremium() {
+  console.log("🔥 download-premium.js READY");
+
   const token = localStorage.getItem("token");
   const body = document.getElementById("downloadBody");
 
-  if (!body) return;
+  if (!body) {
+    console.warn("❌ [DOWNLOAD] #downloadBody NON trovato");
+    return;
+  }
 
   /* =========================================================
      1) Protezione login
   ========================================================== */
   if (!token) {
+    console.warn("🔒 [DOWNLOAD] Nessun token → login richiesto");
     body.innerHTML = `<tr><td colspan="3">Devi effettuare il login per accedere ai tuoi file.</td></tr>`;
     return;
   }
 
   /* =========================================================
-     2) Recupera ordini utente (universal-json)
+     2) Recupera ordini utente
   ========================================================== */
+  console.log("🌐 [DOWNLOAD] Recupero ordini utente…");
+
   const data = await apiDownload("/api/ordini/getOrdiniUtente", {
     method: "GET"
   });
+
+  console.log("📦 [DOWNLOAD] Risposta API:", data);
 
   if (!data || !Array.isArray(data.ordini)) {
     body.innerHTML = `<tr><td colspan="3">Nessun ordine trovato nel tuo account.</td></tr>`;
@@ -34,6 +92,8 @@ document.addEventListener("critical-ready", async () => {
   const ordiniValidi = data.ordini.filter(
     (o) => o.stato === "pagato" || o.stato === "completato"
   );
+
+  console.log("🧾 [DOWNLOAD] Ordini validi:", ordiniValidi.length);
 
   if (ordiniValidi.length === 0) {
     body.innerHTML = `<tr><td colspan="3">I tuoi ordini sono in attesa di conferma o annullati.</td></tr>`;
@@ -62,9 +122,11 @@ document.addEventListener("critical-ready", async () => {
         });
       }
     } catch (e) {
-      console.error("❌ Errore parsing prodotti_json per ordine:", o.id);
+      console.error("❌ [DOWNLOAD] Errore parsing prodotti_json per ordine:", o.id);
     }
   });
+
+  console.log("📚 [DOWNLOAD] Prodotti estratti:", listaProdotti.length);
 
   /* =========================================================
      5) Deduplica
@@ -78,6 +140,8 @@ document.addEventListener("critical-ready", async () => {
       unici.push(p);
     }
   });
+
+  console.log("🔁 [DOWNLOAD] Prodotti unici:", unici.length);
 
   if (unici.length === 0) {
     body.innerHTML = `<tr><td colspan="3">Nessun file disponibile per il download.</td></tr>`;
@@ -108,11 +172,15 @@ document.addEventListener("critical-ready", async () => {
     const id = btn.dataset.id;
     const originalText = btn.textContent;
 
+    console.log("⬇️ [DOWNLOAD] Richiesta download prodotto:", id);
+
     try {
       btn.textContent = "Preparazione...";
       btn.disabled = true;
 
       const blob = await apiDownloadBlob(`/api/vendite/downloadFile/${id}`);
+
+      console.log("📄 [DOWNLOAD] Blob ricevuto:", blob);
 
       if (!blob) throw new Error("Download fallito");
 
@@ -127,7 +195,7 @@ document.addEventListener("critical-ready", async () => {
 
       btn.textContent = "Completato!";
     } catch (err) {
-      console.error("❌ Download fallito:", err);
+      console.error("❌ [DOWNLOAD] Download fallito:", err);
       alert("Non è stato possibile scaricare il file. Verifica di aver completato il pagamento.");
     } finally {
       setTimeout(() => {
@@ -136,12 +204,14 @@ document.addEventListener("critical-ready", async () => {
       }, 2000);
     }
   });
-});
+}
 
 /* =========================================================
    WRAPPER UNIVERSALE JSON
 ========================================================= */
 async function apiDownload(path, options = {}) {
+  console.log("🌐 [DOWNLOAD] API JSON:", path);
+
   const token = localStorage.getItem("token");
 
   const headers = {
@@ -154,11 +224,12 @@ async function apiDownload(path, options = {}) {
   try {
     res = await fetch(path, { ...options, headers });
   } catch (err) {
-    console.error("❌ Errore rete:", err);
+    console.error("❌ [DOWNLOAD] Errore rete:", err);
     return null;
   }
 
   if (res.status === 401 || res.status === 403) {
+    console.warn("🔒 [DOWNLOAD] Token scaduto → redirect login");
     localStorage.removeItem("token");
     window.location.href = "/login";
     return null;
@@ -168,12 +239,12 @@ async function apiDownload(path, options = {}) {
   try {
     json = await res.json();
   } catch (e) {
-    console.error("❌ Risposta NON JSON da", path);
+    console.error("❌ [DOWNLOAD] Risposta NON JSON da", path);
     return null;
   }
 
   if (!json.success) {
-    console.warn("⚠️ Errore API:", json.error || json.raw);
+    console.warn("⚠️ [DOWNLOAD] Errore API:", json.error || json.raw);
     return null;
   }
 
@@ -181,9 +252,11 @@ async function apiDownload(path, options = {}) {
 }
 
 /* =========================================================
-   WRAPPER UNIVERSALE BLOB (download file)
+   WRAPPER UNIVERSALE BLOB
 ========================================================= */
 async function apiDownloadBlob(path) {
+  console.log("🌐 [DOWNLOAD] API BLOB:", path);
+
   const token = localStorage.getItem("token");
 
   let res;
@@ -192,22 +265,26 @@ async function apiDownloadBlob(path) {
       headers: { Authorization: "Bearer " + token }
     });
   } catch (err) {
-    console.error("❌ Errore rete:", err);
+    console.error("❌ [DOWNLOAD] Errore rete:", err);
     return null;
   }
 
   if (res.status === 401 || res.status === 403) {
+    console.warn("🔒 [DOWNLOAD] Token scaduto → redirect login");
     localStorage.removeItem("token");
     window.location.href = "/login";
     return null;
   }
 
-  if (!res.ok) return null;
+  if (!res.ok) {
+    console.warn("⚠️ [DOWNLOAD] Risposta non OK:", res.status);
+    return null;
+  }
 
   try {
     return await res.blob();
   } catch (e) {
-    console.error("❌ Errore lettura blob:", e);
+    console.error("❌ [DOWNLOAD] Errore lettura blob:", e);
     return null;
   }
 }
