@@ -1,28 +1,77 @@
 // =========================================================
 // Dashboard Admin — UNIVERSAL JSON PATCH 2027.970
+// PATCH 2050 — AUTORUN + DEBUG ESTESO
 // =========================================================
 
-document.addEventListener("critical-ready", async () => {
+console.log("📌 [DASHBOARD-ADMIN] File caricato nel DOM");
+
+// =========================================================
+// AUTORUN 2050 — parte SEMPRE, anche se il DOM è riscritto
+// =========================================================
+(function autorun() {
+  console.log("🚀 [DASHBOARD-ADMIN] Autorun avviato. DOM state:", document.readyState);
+
+  if (document.readyState === "loading") {
+    console.log("⏳ [DASHBOARD-ADMIN] DOM non pronto → attendo DOMContentLoaded");
+    document.addEventListener("DOMContentLoaded", autorun, { once: true });
+    return;
+  }
+
+  console.log("🟢 [DASHBOARD-ADMIN] DOM pronto → avvio initPage()");
+
+  try {
+    if (typeof initPage === "function") {
+      initPage();
+    } else {
+      console.warn("❌ [DASHBOARD-ADMIN] initPage() NON trovata → JS NON eseguito");
+    }
+  } catch (e) {
+    console.error("🔥 [DASHBOARD-ADMIN] Errore in initPage():", e);
+  }
+})();
+
+// =========================================================
+// FUNZIONE PRINCIPALE DELLA PAGINA
+// =========================================================
+function initPage() {
+  console.log("🏁 [DASHBOARD-ADMIN] initPage() eseguita");
+
+  // Se critical-ready non è ancora arrivato, aspettiamo
+  if (!window.__criticalReady) {
+    console.log("⏳ [DASHBOARD-ADMIN] critical-ready NON ancora emesso → attendo evento");
+    document.addEventListener("critical-ready", initPage, { once: true });
+    return;
+  }
+
+  console.log("🟩 [DASHBOARD-ADMIN] critical-ready già presente → avvio pagina");
+  avviaDashboard();
+}
+
+// =========================================================
+// CODICE ORIGINALE INCAPSULATO
+// =========================================================
+async function avviaDashboard() {
   console.log("🔥 Dashboard INIT - Autonoma");
 
   const token = localStorage.getItem("token");
   if (!token) {
+    console.warn("🔒 [DASHBOARD-ADMIN] Token mancante → redirect login");
     location.href = "/admin/login";
     return;
   }
 
   try {
-    // Attiva endpoint base rimborso (diagnostica)
+    console.log("🔧 [DASHBOARD-ADMIN] Diagnostica rimborso…");
     await adminApi("/api/rimborso", { method: "GET" });
 
-    // Dashboard principale
+    console.log("📥 [DASHBOARD-ADMIN] Carico dati dashboard…");
     const data = await adminApi("/api/admin/dashboard/getDashboard", {
       method: "GET"
     });
 
     if (!data) throw new Error("Errore accesso");
 
-    console.log("📦 Dati ricevuti:", data);
+    console.log("📦 [DASHBOARD-ADMIN] Dati ricevuti:", data);
 
     renderKPI(data);
     renderTopProdotti(data?.vendite?.topProdotti || []);
@@ -35,7 +84,7 @@ document.addEventListener("critical-ready", async () => {
       body.innerHTML = `<tr><td colspan="11" style="color:red; text-align:center;">Errore: ${err.message}</td></tr>`;
     }
   }
-});
+}
 
 /* =========================================================
    WRAPPER UNIVERSALE ADMIN (token + universal-json)
@@ -52,6 +101,7 @@ async function adminApi(path, options = {}) {
   const res = await fetch(path, { ...options, headers });
 
   if (res.status === 401 || res.status === 403) {
+    console.warn("🔒 [DASHBOARD-ADMIN] Token scaduto → redirect login");
     localStorage.removeItem("token");
     location.href = "/admin/login";
     return null;
@@ -77,6 +127,8 @@ async function adminApi(path, options = {}) {
    KPI
 ========================================================= */
 function renderKPI(data) {
+  console.log("📊 [DASHBOARD-ADMIN] Render KPI");
+
   const v = data?.vendite?.kpi || {};
   const o = data?.ordini?.kpi || {};
 
@@ -97,6 +149,8 @@ function renderKPI(data) {
    ORDINI
 ========================================================= */
 function renderOrdini(lista) {
+  console.log("📦 [DASHBOARD-ADMIN] Render ordini:", lista.length);
+
   const body = document.getElementById("ordini-body");
   if (!body) return;
 
@@ -138,6 +192,8 @@ function renderOrdini(lista) {
    RIMBORSO
 ========================================================= */
 async function azioneRimborso(id, tipo) {
+  console.log("💸 [DASHBOARD-ADMIN] Azione rimborso:", id, tipo);
+
   if (!confirm("Sei sicuro?")) return;
 
   const data = await adminApi(`/api/rimborso/${tipo}/${id}`, {
