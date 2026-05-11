@@ -1,27 +1,82 @@
 /* =========================================================
    ORDINI UTENTE — UNIVERSAL JSON PATCH 2027.970
+   PATCH 2050 — AUTORUN + DEBUG ESTESO
 ========================================================= */
 
-document.addEventListener("critical-ready", async () => {
+console.log("📌 [ORDINI] File caricato nel DOM");
+
+/* =========================================================
+   AUTORUN 2050 — parte SEMPRE
+========================================================= */
+(function autorun() {
+  console.log("🚀 [ORDINI] Autorun avviato. DOM state:", document.readyState);
+
+  if (document.readyState === "loading") {
+    console.log("⏳ [ORDINI] DOM non pronto → attendo DOMContentLoaded");
+    document.addEventListener("DOMContentLoaded", autorun, { once: true });
+    return;
+  }
+
+  console.log("🟢 [ORDINI] DOM pronto → avvio initPage()");
+
+  try {
+    if (typeof initPage === "function") initPage();
+    else console.warn("❌ [ORDINI] initPage() NON trovata");
+  } catch (e) {
+    console.error("🔥 [ORDINI] Errore in initPage():", e);
+  }
+})();
+
+/* =========================================================
+   FUNZIONE PRINCIPALE
+========================================================= */
+function initPage() {
+  console.log("🏁 [ORDINI] initPage() eseguita");
+
+  if (!window.__criticalReady) {
+    console.log("⏳ [ORDINI] critical-ready NON ancora emesso → attendo evento");
+    document.addEventListener("critical-ready", initPage, { once: true });
+    return;
+  }
+
+  console.log("🟩 [ORDINI] critical-ready già presente → avvio pagina");
+
+  avviaOrdiniUtente();
+}
+
+/* =========================================================
+   CODICE ORIGINALE INCAPSULATO
+========================================================= */
+async function avviaOrdiniUtente() {
+  console.log("🔥 ordini-utente.js READY");
+
   const token = localStorage.getItem("token");
   const body = document.getElementById("ordersBody");
 
-  if (!body) return;
+  if (!body) {
+    console.warn("❌ [ORDINI] #ordersBody NON trovato");
+    return;
+  }
 
   /* =========================================================
      1) Protezione login
   ========================================================== */
   if (!token) {
+    console.warn("🔒 [ORDINI] Nessun token → login richiesto");
     body.innerHTML = `<tr><td colspan="5">Effettua il login per vedere i tuoi ordini.</td></tr>`;
     return;
   }
 
   /* =========================================================
-     2) Recupera ordini utente (universal-json)
+     2) Recupera ordini utente
   ========================================================== */
+  console.log("🌐 [ORDINI] Recupero ordini utente…");
+
   const data = await apiOrdini("/api/ordini/getOrdiniUtente", {
     method: "GET"
   });
+
+  console.log("📦 [ORDINI] Risposta API:", data);
 
   if (!data || !Array.isArray(data.ordini) || data.ordini.length === 0) {
     body.innerHTML = `<tr><td colspan="5">Nessun ordine trovato nel database.</td></tr>`;
@@ -51,7 +106,7 @@ document.addEventListener("critical-ready", async () => {
           .join("<hr style='margin:5px 0; border:0; border-top:1px solid #eee;'>");
       }
     } catch (e) {
-      console.error("Errore parse prodotti_json:", e);
+      console.error("❌ [ORDINI] Errore parse prodotti_json:", e);
     }
 
     const totaleEuro = (o.totale_cent / 100).toFixed(2);
@@ -100,6 +155,8 @@ document.addEventListener("critical-ready", async () => {
        ANNULLA ORDINE
     ------------------------------ */
     if (e.target.classList.contains("btn-annulla")) {
+      console.log("🗑️ [ORDINI] Annulla ordine:", id);
+
       if (!confirm("Vuoi annullare l'ordine?")) return;
 
       const res = await apiOrdini(`/api/ordini/annullaOrdine/${id}`, {
@@ -114,6 +171,8 @@ document.addEventListener("critical-ready", async () => {
        COMPLETA PAGAMENTO (PayPal)
     ------------------------------ */
     if (e.target.classList.contains("btn-paga")) {
+      console.log("💳 [ORDINI] Rigenera pagamento PayPal:", id);
+
       const res = await apiOrdini(`/api/paypal/paypalRicrea/${id}`, {
         method: "POST"
       });
@@ -122,12 +181,14 @@ document.addEventListener("critical-ready", async () => {
       else alert("Impossibile rigenerare il pagamento.");
     }
   });
-});
+}
 
 /* =========================================================
    WRAPPER UNIVERSALE JSON
 ========================================================= */
 async function apiOrdini(path, options = {}) {
+  console.log("🌐 [ORDINI] API:", path);
+
   const token = localStorage.getItem("token");
 
   const headers = {
@@ -140,11 +201,12 @@ async function apiOrdini(path, options = {}) {
   try {
     res = await fetch(path, { ...options, headers });
   } catch (err) {
-    console.error("❌ Errore rete:", err);
+    console.error("❌ [ORDINI] Errore rete:", err);
     return null;
   }
 
   if (res.status === 401 || res.status === 403) {
+    console.warn("🔒 [ORDINI] Token scaduto → redirect login");
     localStorage.removeItem("token");
     window.location.href = "/login";
     return null;
@@ -154,12 +216,12 @@ async function apiOrdini(path, options = {}) {
   try {
     json = await res.json();
   } catch (e) {
-    console.error("❌ Risposta NON JSON da", path);
+    console.error("❌ [ORDINI] Risposta NON JSON da", path);
     return null;
   }
 
   if (!json.success) {
-    console.warn("⚠️ Errore API:", json.error || json.raw);
+    console.warn("⚠️ [ORDINI] Errore API:", json.error || json.raw);
     return null;
   }
 
