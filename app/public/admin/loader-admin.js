@@ -4,6 +4,16 @@
 // Emette SEMPRE critical-core-ready
 // =========================================================
 
+// =========================================================
+// 🔒 MASTER LOCK 2052 — blocca re-run multipli dei loader
+// =========================================================
+if (window.__MASTER_LOADER_LOCK__) {
+  console.warn("🔒 [MASTER-LOCK] admin-critical-loader.js bloccato → skip");
+  return;
+}
+window.__MASTER_LOADER_LOCK__ = true;
+// =========================================================
+
 if (window.__ADMIN_CRITICAL_LOADER_2050__) {
   console.warn("admin-critical-loader-2050.js già caricato, skip.");
 } else {
@@ -41,7 +51,7 @@ if (window.__ADMIN_CRITICAL_LOADER_2050__) {
 
       const s = document.createElement("script");
       s.src = `${src}?v=${ADMIN_VERSION}`;
-      s.async = false;                 // ← PATCH FONDAMENTALE
+      s.async = false;
       s.fetchPriority = "high";
 
       s.onload = () => {
@@ -167,7 +177,7 @@ if (window.__ADMIN_CRITICAL_LOADER_2050__) {
 
     const s = document.createElement("script");
     s.src = `/auth.js?v=${ADMIN_VERSION}`;
-    s.async = false;                 // ← PATCH FONDAMENTALE
+    s.async = false;
 
     s.onload = () => {
       if (window.isAdmin) startAdminLoader();
