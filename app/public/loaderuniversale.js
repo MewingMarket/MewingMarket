@@ -96,7 +96,6 @@ if (window.__LOADER_UNIVERSALE_PUBLIC__) {
     async function loadPageScriptIfNeeded(base) {
       const pageScript = `/${base}.js`;
 
-      // 1) Controllo se è già nel DOM (inserito dal patcher HTML)
       if (
         document.querySelector(`script[src="${pageScript}?v=${VERSION}"]`) ||
         document.querySelector(`script[src="${pageScript}"]`)
@@ -105,7 +104,6 @@ if (window.__LOADER_UNIVERSALE_PUBLIC__) {
         return true;
       }
 
-      // 2) Fallback loader
       console.log(`📦 [UNIVERSALE] Script di pagina NON presente → fallback loader: ${pageScript}`);
       return await loadScript(pageScript);
     }
@@ -126,12 +124,11 @@ if (window.__LOADER_UNIVERSALE_PUBLIC__) {
       }
 
       state.running = true;
-      console.log("🟦 [UNIVERSALE] critical-core-ready ricevuto → avvio run()");
+      console.log("🟦 [UNIVERSALE] Evento supremo-public-load-universale ricevuto → avvio run()");
 
       const base = getPageBase();
       console.log("🔍 [UNIVERSALE] Pagina normalizzata:", base);
 
-      // FALLBACK DOM
       await loadPageScriptIfNeeded(base);
 
       state.running = false;
@@ -141,7 +138,10 @@ if (window.__LOADER_UNIVERSALE_PUBLIC__) {
       document.dispatchEvent(new Event("page-js-loaded"));
     }
 
-    document.addEventListener("critical-core-ready", run);
+    // ============================================================
+    // PATCH 2050: ascolta SOLO l’evento del SUPREMO PUBLIC
+    // ============================================================
+    document.addEventListener("supremo-public-load-universale", run);
 
   })();
 }
