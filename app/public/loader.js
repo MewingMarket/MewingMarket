@@ -1,8 +1,8 @@
 // =========================================================
-// CRITICAL LOADER — PUBLIC 2055 (ULTRA MINIMAL SAFE)
+// CRITICAL LOADER — PUBLIC 2055 (JAVA-MODE ULTRA MINIMAL)
 // Percorso reale: /app/public/loader.js
 // Carica SOLO head.html / header.html / footer.html / header.js
-// Emette SEMPRE critical-core-ready, senza retry, senza preload
+// NON emette più eventi. Nessun retry. Nessun fallback.
 // =========================================================
 
 if (window.__CRITICAL_LOADER_PUBLIC_2055__) {
@@ -14,7 +14,7 @@ if (window.__CRITICAL_LOADER_PUBLIC_2055__) {
 
     const VERSION = "2055";
 
-    console.log("⚡ [CRITICAL PUBLIC 2055] Avvio critical loader PUBLIC (ULTRA MINIMAL)");
+    console.log("⚡ [CRITICAL PUBLIC 2055] Avvio critical loader PUBLIC (JAVA-MODE)");
 
     // ============================================================
     // Utility: carica HTML in modo deterministico
@@ -81,36 +81,18 @@ if (window.__CRITICAL_LOADER_PUBLIC_2055__) {
     }
 
     // ============================================================
-    // SEQUENZA CRITICA — ULTRA MINIMAL
+    // SEQUENZA CRITICA — SOLO HTML + header.js
     // ============================================================
     (async () => {
-      let ok = true;
+      await loadHTML(`/head.html?v=${VERSION}`, null, "head.html");
+      await loadHTML(`/header.html?v=${VERSION}`, "header-placeholder", "header.html");
+      await loadHTML(`/footer.html?v=${VERSION}`, "footer-placeholder", "footer.html");
+      await loadScript("/header.js", "body");
 
-      ok &= await loadHTML(`/head.html?v=${VERSION}`, null, "head.html");
-      ok &= await loadHTML(`/header.html?v=${VERSION}`, "header-placeholder", "header.html");
-      ok &= await loadHTML(`/footer.html?v=${VERSION}`, "footer-placeholder", "footer.html");
-      ok &= await loadScript("/header.js", "body");
-
-      console.log(
-        ok
-          ? "🟩 [CRITICAL PUBLIC 2055] critical-core-ready (FULL OK)"
-          : "🟧 [CRITICAL PUBLIC 2055] critical-core-ready (DEGRADED)"
-      );
-
-      window.__criticalCoreReady = true;
-      document.dispatchEvent(new Event("critical-core-ready"));
+      console.log("🟩 [CRITICAL PUBLIC 2055] HTML base caricato (JAVA-MODE)");
+      // Nessun evento. Nessun critical-core-ready.
+      // Il SUPREMO gestisce tutto.
     })();
-
-    // ============================================================
-    // FALLBACK DI SICUREZZA — SEMPRE EMESSO ENTRO 2s
-    // ============================================================
-    setTimeout(() => {
-      if (!window.__criticalCoreReady) {
-        console.warn("🟧 [CRITICAL PUBLIC 2055] Fallback: critical-core-ready forzato");
-        window.__criticalCoreReady = true;
-        document.dispatchEvent(new Event("critical-core-ready"));
-      }
-    }, 2000);
 
   })();
 }
