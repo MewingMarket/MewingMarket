@@ -4,16 +4,6 @@
 // Anti 499/502 — stabile su Android/Chrome
 // =========================================================
 
-// =========================================================
-// 🔒 MASTER LOCK 2052 — blocca re-run multipli dei loader
-// =========================================================
-if (window.__MASTER_LOADER_LOCK__) {
-  console.warn("🔒 [MASTER-LOCK] dynamic-admin-loader.js bloccato → skip");
-  return;
-}
-window.__MASTER_LOADER_LOCK__ = true;
-// =========================================================
-
 if (window.__DYNAMIC_ADMIN_LOADER_2050__) {
   console.warn("dynamic-admin-loader.js già caricato, skip.");
 } else {
