@@ -1,81 +1,61 @@
 // =========================================================
-// LOADER SUPREMO — PUBLIC MODELLO 2050 (ORDINE PERFETTO)
+// LOADER SUPREMO — PUBLIC MODELLO 2055 (ORDINE PERFETTO)
 // Percorso reale: /app/public/loadersupremo.js
 // =========================================================
 
-if (!window.__SUPREMO_PUBLIC_2050__) {
-  window.__SUPREMO_PUBLIC_2050__ = true;
+if (!window.__SUPREMO_PUBLIC_2055__) {
+  window.__SUPREMO_PUBLIC_2055__ = true;
 
-  (function() {
+  (function () {
 
-    const V = "2050";
-
-    // Cache globale degli script già caricati
-    window.__SUPREMO_JS_CACHE__ = window.__SUPREMO_JS_CACHE__ || new Set();
-
-    // Stato esecuzione sequenza PUBLIC
-    window.__SUPREMO_PUBLIC_RUN_STATE__ = window.__SUPREMO_PUBLIC_RUN_STATE__ || {
-      running: false,
-      done: false
-    };
-
-    // Patch anti-doppio loader universale
-    window.__LOADER_UNIVERSALE_CARICATO__ = false;
-
-    console.log("⚡ [SUPREMO PUBLIC 2050] Bootstrap avviato");
+    const V = "2055";
 
     // ============================================================
-    // Utility caricamento script (SAFE, con debug)
+    // CACHE + LOCK
+    // ============================================================
+    window.__SUPREMO_JS_CACHE__ = window.__SUPREMO_JS_CACHE__ || new Set();
+    window.__SUPREMO_PUBLIC_RUN_STATE__ =
+      window.__SUPREMO_PUBLIC_RUN_STATE__ || {
+        running: false,
+        done: false
+      };
+
+    window.__LOADER_UNIVERSALE_CARICATO__ =
+      window.__LOADER_UNIVERSALE_CARICATO__ || false;
+
+    console.log("⚡ [SUPREMO PUBLIC 2055] In attesa di critical-core-ready...");
+
+    // ============================================================
+    // Utility caricamento script (deterministico)
     // ============================================================
     function loadScript(src, where = "head") {
       const key = src;
 
       if (window.__SUPREMO_JS_CACHE__.has(key)) {
-        console.log("⏭️ [LOAD-SKIP già caricato]", key);
+        console.log("⏭️ [SUPREMO PUBLIC] LOAD-SKIP:", key);
         return Promise.resolve(true);
       }
 
       return new Promise(resolve => {
-        console.log("➡️ [LOAD-REQUEST]", key);
+        console.log("➡️ [SUPREMO PUBLIC] LOAD-REQUEST:", key);
 
         const s = document.createElement("script");
         s.src = `${key}?v=${V}`;
         s.async = false;
-        s.fetchPriority = "high";
 
         s.onload = () => {
-          console.log("✅ [LOAD-OK]", key);
+          console.log("✅ [SUPREMO PUBLIC] LOAD-OK:", key);
           window.__SUPREMO_JS_CACHE__.add(key);
           resolve(true);
         };
 
         s.onerror = () => {
-          console.warn("❌ [LOAD-FAIL]", key);
+          console.warn("❌ [SUPREMO PUBLIC] LOAD-FAIL:", key);
           resolve(false);
         };
 
         (where === "body" ? document.body : document.head).appendChild(s);
       });
-    }
-
-    // ============================================================
-    // Import debug
-    // ============================================================
-    async function debugImport(src) {
-      const key = src + "::import";
-
-      if (window.__SUPREMO_JS_CACHE__.has(key)) {
-        console.log("⏭️ [IMPORT-SKIP già importato]", src);
-        return;
-      }
-
-      try {
-        await import(src + "?v=" + V);
-        console.log("📦 [IMPORT-OK]", src);
-        window.__SUPREMO_JS_CACHE__.add(key);
-      } catch (e) {
-        console.warn("📦❌ [IMPORT-FAIL]", src, e.message);
-      }
     }
 
     // ============================================================
@@ -118,7 +98,7 @@ if (!window.__SUPREMO_PUBLIC_2050__) {
     }
 
     // ============================================================
-    // PATCH 2050 — rileva JS di pagina (DOM-SAFE)
+    // Rileva se il JS pagina è già nel DOM
     // ============================================================
     function paginaHaJsDiPagina(expectedSrc) {
       const scripts = document.querySelectorAll("script[src]");
@@ -128,13 +108,12 @@ if (!window.__SUPREMO_PUBLIC_2050__) {
         if (!src) continue;
 
         if (src.includes("loadersupremo")) continue;
-        if (src.includes("loader.js")) continue;
-        if (src.includes("loadersupremo-admin")) continue;
         if (src.includes("loaderuniversale")) continue;
+        if (src.includes("dynamic-loader")) continue;
+        if (src.includes("loader.js")) continue;
 
-        // match diretto con lo script atteso
         if (src === expectedSrc || src.startsWith(expectedSrc + "?")) {
-          console.log("🔍 [SUPREMO PUBLIC] JS pagina già presente nel DOM:", src);
+          console.log("🔍 [SUPREMO PUBLIC] JS pagina già presente:", src);
           return true;
         }
       }
@@ -182,64 +161,59 @@ if (!window.__SUPREMO_PUBLIC_2050__) {
     }
 
     // ============================================================
-    // 0) Critical loader
-    // ============================================================
-    (async () => {
-      console.log("📌 [SUPREMO] Carico critical loader PUBLIC: /loader.js");
-      await loadScript("/loader.js");
-      await debugImport("/loader.js");
-
-      console.log("⏳ [SUPREMO] In attesa di critical-core-ready...");
-    })();
-
-    // ============================================================
-    // Sequenza PUBLIC
+    // Sequenza PUBLIC dopo critical-core-ready
     // ============================================================
     document.addEventListener("critical-core-ready", async () => {
       const state = window.__SUPREMO_PUBLIC_RUN_STATE__;
 
-      if (state.done) return console.log("⏭️ Sequenza già completata");
-      if (state.running) return console.log("⏭️ Sequenza già in esecuzione");
+      if (state.done) {
+        console.log("⏭️ [SUPREMO PUBLIC] Sequenza già completata");
+        return;
+      }
+      if (state.running) {
+        console.log("⏭️ [SUPREMO PUBLIC] Sequenza già in esecuzione");
+        return;
+      }
 
       state.running = true;
 
-      console.log("🟦 [SUPREMO PUBLIC 2050] critical-core-ready ricevuto");
+      console.log("🟦 [SUPREMO PUBLIC 2055] critical-core-ready ricevuto");
 
+      // ============================================================
       // 1) AUTH
-      console.log("🔐 [SUPREMO] Carico auth.js");
+      // ============================================================
+      console.log("🔐 [SUPREMO PUBLIC] Carico auth.js");
       await loadScript("/auth.js");
-      await debugImport("/auth.js");
 
+      // ============================================================
       // 2) SEO / Structured
+      // ============================================================
       if (needSEO()) {
-        console.log("🌐 Carico seo.js");
+        console.log("🌐 [SUPREMO PUBLIC] Carico seo.js");
         await loadScript("/seo.js");
-        await debugImport("/seo.js");
       }
 
       if (needStructured()) {
-        console.log("🌐 Carico structured-data.js");
+        console.log("🌐 [SUPREMO PUBLIC] Carico structured-data.js");
         await loadScript("/structured-data.js");
-        await debugImport("/structured-data.js");
       }
 
-      console.log("📊 Carico tracking.js");
+      console.log("📊 [SUPREMO PUBLIC] Carico tracking.js");
       await loadScript("/tracking.js");
-      await debugImport("/tracking.js");
 
-      console.log("📌 Carico header.js");
+      console.log("📌 [SUPREMO PUBLIC] Carico header.js");
       await loadScript("/header.js", "body");
-      await debugImport("/header.js");
 
+      // ============================================================
       // 3) Carrello
+      // ============================================================
       if (shouldLoadCarrello()) {
-        console.log("🛒 Carico carrello.js");
+        console.log("🛒 [SUPREMO PUBLIC] Carico carrello.js");
         await loadScript("/carrello.js", "body");
-        await debugImport("/carrello.js");
       }
 
       // ============================================================
-      // 4) LOADER UNIVERSALE — SOLO SE SERVE
+      // 4) PAGE-JS: diretto o universale fallback
       // ============================================================
       await new Promise(r => setTimeout(r, 0));
 
@@ -255,28 +229,33 @@ if (!window.__SUPREMO_PUBLIC_2050__) {
         if (!window.__LOADER_UNIVERSALE_CARICATO__) {
           window.__LOADER_UNIVERSALE_CARICATO__ = true;
 
-          console.log("📦 Carico loaderuniversale.js (fallback JS pagina)");
+          console.log("📦 [SUPREMO PUBLIC] Carico loaderuniversale.js (fallback)");
           await loadScript("/loaderuniversale.js");
 
           document.dispatchEvent(new Event("supremo-public-load-universale"));
         }
       }
 
+      // ============================================================
       // 5) Attesa page-js-loaded
-      console.log("📄 In attesa di page-js-loaded...");
+      // ============================================================
+      console.log("📄 [SUPREMO PUBLIC] In attesa di page-js-loaded...");
       await new Promise(resolve => {
         document.addEventListener("page-js-loaded", resolve, { once: true });
       });
 
-      console.log("📄 page-js-loaded ricevuto");
+      console.log("📄 [SUPREMO PUBLIC] page-js-loaded ricevuto");
 
-      // 6) Dynamic loader
-      console.log("🔄 Carico dynamic-loader.js");
+      // ============================================================
+      // 6) Dynamic loader (anti-cache / anti-SW)
+      // ============================================================
+      console.log("🔄 [SUPREMO PUBLIC] Carico dynamic-loader.js");
       await loadScript("/dynamic-loader.js");
-      await debugImport("/dynamic-loader.js");
 
+      // ============================================================
       // 7) Critical ready finale
-      console.log("🟩 critical-ready (ORDINE PERFETTO)");
+      // ============================================================
+      console.log("🟩 [SUPREMO PUBLIC 2055] critical-ready");
       window.__criticalReady = true;
       document.dispatchEvent(new Event("critical-ready"));
 
@@ -286,5 +265,5 @@ if (!window.__SUPREMO_PUBLIC_2050__) {
 
   })();
 } else {
-  console.warn("SUPREMO PUBLIC 2050 già caricato, skip.");
+  console.warn("SUPREMO PUBLIC 2055 già caricato, skip.");
 }
