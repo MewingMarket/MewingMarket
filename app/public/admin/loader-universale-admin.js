@@ -1,25 +1,30 @@
 // =========================================================
-// LOADER UNIVERSALE ADMIN 2050 — FALLBACK DOM MODE
+// LOADER UNIVERSALE ADMIN 2055 — FALLBACK DOM MODE
 // Percorso reale: /app/public/admin/loader-universale-admin.js
+// Ruolo: SOLO FALLBACK, chiamato dal SUPREMO ADMIN
 // =========================================================
 
-if (window.__LOADER_UNIVERSALE_ADMIN__) {
-  console.warn("loader-universale-admin.js già caricato, skip.");
+if (window.__LOADER_UNIVERSALE_ADMIN_2055__) {
+  console.warn("[UNIVERSALE ADMIN 2055] Già caricato → skip");
 } else {
-  window.__LOADER_UNIVERSALE_ADMIN__ = true;
+  window.__LOADER_UNIVERSALE_ADMIN_2055__ = true;
 
   (function () {
 
-    const VERSION = "2050";
+    const VERSION = "2055";
 
-    window.__SUPREMO_JS_CACHE__ = window.__SUPREMO_JS_CACHE__ || new Set();
+    // Cache locale per gli script caricati dall’universale (separata dal SUPREMO)
+    window.__UNIVERSALE_ADMIN_JS_CACHE__ =
+      window.__UNIVERSALE_ADMIN_JS_CACHE__ || new Set();
+
+    // Stato esecuzione universale (solo fallback)
     window.__UNIVERSALE_ADMIN_RUN_STATE__ =
       window.__UNIVERSALE_ADMIN_RUN_STATE__ || {
         running: false,
         done: false
       };
 
-    console.log("⚡ [UNIVERSALE ADMIN 2050] Avvio loader universale ADMIN (FALLBACK MODE)");
+    console.log("⚡ [UNIVERSALE ADMIN 2055] Avvio loader universale ADMIN (FALLBACK MODE)");
 
     // ============================================================
     // NORMALIZZAZIONE
@@ -56,31 +61,31 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
     }
 
     // ============================================================
-    // CARICA SCRIPT (SAFE + CACHE)
+    // CARICA SCRIPT (SAFE + CACHE LOCALE)
     // ============================================================
     function loadScript(src) {
       const key = src;
 
-      if (window.__SUPREMO_JS_CACHE__.has(key)) {
-        console.log("⏭️ [UNIVERSALE ADMIN LOAD-SKIP già caricato]", key);
+      if (window.__UNIVERSALE_ADMIN_JS_CACHE__.has(key)) {
+        console.log("⏭️ [UNIVERSALE ADMIN] LOAD-SKIP già caricato:", key);
         return Promise.resolve(true);
       }
 
       return new Promise(resolve => {
-        console.log("➡️ [UNIVERSALE ADMIN LOAD-REQUEST]", key);
+        console.log("➡️ [UNIVERSALE ADMIN] LOAD-REQUEST", key);
 
         const s = document.createElement("script");
-        s.src = key + "?v=" + VERSION;
+        s.src = `${key}?v=${VERSION}`;
         s.async = false;
 
         s.onload = () => {
-          console.log("✅ [UNIVERSALE ADMIN LOAD-OK]", key);
-          window.__SUPREMO_JS_CACHE__.add(key);
+          console.log("✅ [UNIVERSALE ADMIN] LOAD-OK", key);
+          window.__UNIVERSALE_ADMIN_JS_CACHE__.add(key);
           resolve(true);
         };
 
         s.onerror = () => {
-          console.warn("❌ [UNIVERSALE ADMIN LOAD-FAIL]", key);
+          console.warn("❌ [UNIVERSALE ADMIN] LOAD-FAIL", key);
           resolve(false);
         };
 
@@ -98,27 +103,26 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
         document.querySelector(`script[src="${pageScript}?v=${VERSION}"]`) ||
         document.querySelector(`script[src="${pageScript}"]`)
       ) {
-        console.log(`⏭️ [UNIVERSALE ADMIN] Script già nel DOM → skip: ${pageScript}`);
+        console.log(`⏭️ [UNIVERSALE ADMIN] Script pagina già nel DOM → skip: ${pageScript}`);
         return true;
       }
 
-      console.log(`📦 [UNIVERSALE ADMIN] Script NON presente → fallback loader: ${pageScript}`);
+      console.log(`📦 [UNIVERSALE ADMIN] Script pagina NON presente → fallback loader: ${pageScript}`);
       return await loadScript(pageScript);
     }
 
     // ============================================================
-    // AVVIO (con LOCK LOCALE)
+    // AVVIO (CON LOCK LOCALE, SOLO SU EVENTO SUPREMO)
     // ============================================================
     async function run() {
-
       const state = window.__UNIVERSALE_ADMIN_RUN_STATE__;
 
       if (state.done) {
-        console.log("⏭️ [UNIVERSALE ADMIN] run() già completato, skip.");
+        console.log("⏭️ [UNIVERSALE ADMIN] run() già completato → skip");
         return;
       }
       if (state.running) {
-        console.log("⏭️ [UNIVERSALE ADMIN] run() già in esecuzione, skip.");
+        console.log("⏭️ [UNIVERSALE ADMIN] run() già in esecuzione → skip");
         return;
       }
 
@@ -134,12 +138,12 @@ if (window.__LOADER_UNIVERSALE_ADMIN__) {
       state.running = false;
       state.done = true;
 
-      console.log("🟩 [UNIVERSALE ADMIN] page-js-loaded");
+      console.log("🟩 [UNIVERSALE ADMIN] page-js-loaded (fallback universale)");
       document.dispatchEvent(new Event("page-js-loaded"));
     }
 
     // ============================================================
-    // PATCH 2050: ascolta SOLO l’evento del SUPREMO ADMIN
+    // PATCH 2055: ascolta SOLO l’evento del SUPREMO ADMIN
     // ============================================================
     document.addEventListener("supremo-admin-load-universale", run);
 
