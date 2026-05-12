@@ -1,7 +1,7 @@
 /* =========================================================
    FILE: /public/carrello.js
-   CARRELLO SQL-READY — MODELLO DEFINITIVO (PATCH 2050)
-   Fix: doppia dichiarazione Cart se caricato 2 volte
+   CARRELLO SQL-READY — MODELLO DEFINITIVO (PATCH 2055)
+   Fix: ordine eventi + rimozione DOMContentLoaded
 ========================================================= */
 
 window.Cart = window.Cart || {
@@ -133,11 +133,7 @@ function aggiornaBadgeCarrello() {
   const count = window.Cart.count();
   badge.textContent = count;
 
-  if (count > 0) {
-    badge.style.display = "inline-block";
-  } else {
-    badge.style.display = "none";
-  }
+  badge.style.display = count > 0 ? "inline-block" : "none";
 }
 
 document.addEventListener("click", (e) => {
@@ -150,6 +146,8 @@ document.addEventListener("click", (e) => {
 document.addEventListener("cart-updated", aggiornaBadgeCarrello);
 document.addEventListener("header-loaded", aggiornaBadgeCarrello);
 document.addEventListener("auth-ready", aggiornaBadgeCarrello);
-document.addEventListener("DOMContentLoaded", aggiornaBadgeCarrello);
 
+// RIMOSSO: DOMContentLoaded (non affidabile con critical 2055)
+
+// Evento finale, emesso dopo aver registrato tutti gli handler
 document.dispatchEvent(new Event("cart-ready"));
