@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scuola Digitale AI</title>
+  <link rel="stylesheet" href="chat.css">
+</head>
+
+<body>
+
+  <div id="game-container">
+
+    <!-- Avatar dinamico -->
+    <div id="avatar-area">
+      <img id="avatar-img" src="avatars/default.png" alt="Avatar">
+    </div>
+
+    <!-- Chat -->
+    <div id="chat-container">
+      <div id="chat-box"></div>
+
+      <div id="chat-input-area">
+        <input id="chat-input" type="text" placeholder="Scrivi un messaggio...">
+        <button id="chat-send">➤</button>
+        <button id="chat-voice">🎤</button>
+        <button id="chat-attach">📎</button>
+        <input id="chat-file" type="file" hidden>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="chat.js"></script>
+</body>
+</html>
