@@ -3,16 +3,6 @@
 // Percorso reale: /app/public/admin/loadersupremo-admin.js
 // =========================================================
 
-// =========================================================
-// 🔒 MASTER LOCK 2052 — blocca re-run multipli dei loader
-// =========================================================
-if (window.__MASTER_LOADER_LOCK__) {
-  console.warn("🔒 [MASTER-LOCK] loadersupremo-admin.js bloccato → skip");
-  return;
-}
-window.__MASTER_LOADER_LOCK__ = true;
-// =========================================================
-
 if (!window.__SUPREMO_ADMIN_LOADER__) {
   window.__SUPREMO_ADMIN_LOADER__ = true;
 
@@ -21,7 +11,7 @@ if (!window.__SUPREMO_ADMIN_LOADER__) {
     const V = "2050";
 
     // ============================================================
-    // CACHE + LOCK
+    // CACHE + LOCK LOCALE
     // ============================================================
     window.__SUPREMO_JS_CACHE__ = window.__SUPREMO_JS_CACHE__ || new Set();
     window.__SUPREMO_ADMIN_RUN_STATE__ = window.__SUPREMO_ADMIN_RUN_STATE__ || {
@@ -87,9 +77,49 @@ if (!window.__SUPREMO_ADMIN_LOADER__) {
     }
 
     // ============================================================
-    // PATCH: rileva se la pagina admin ha JS di pagina (DOM-SAFE)
+    // NORMALIZZAZIONE NOME PAGINA
     // ============================================================
-    function paginaAdminHaJsDiPagina() {
+    function normalizeName(name) {
+      return name
+        .toLowerCase()
+        .replace(/\.html?$/, "")
+        .replace(/\.js$/, "")
+        .replace(/[^a-z0-9\-]/g, "")
+        .replace(/\-+/g, "-")
+        .trim();
+    }
+
+    function getPageBase() {
+      const p = window.location.pathname.replace("/admin/", "");
+
+      if (p === "" || p === "/") return "admin-index";
+
+      const parts = p.split("/").filter(Boolean);
+
+      if (parts.length >= 2 && /^\d+$/.test(parts[parts.length - 1])) {
+        return normalizeName(parts[parts.length - 2]);
+      }
+
+      if (parts.length >= 2 && !parts[parts.length - 1].includes(".")) {
+        return normalizeName(parts.join("-"));
+      }
+
+      return normalizeName(parts.pop());
+    }
+
+    function getExpectedPageScript() {
+      const base = getPageBase();
+      return {
+        base,
+        src: `/admin/${base}.js`
+      };
+    }
+
+    // ============================================================
+    // PATCH: rileva se la pagina admin ha JS di pagina (DOM-SAFE)
+    // con confronto sullo script atteso
+    // ============================================================
+    function paginaAdminHaJsDiPagina(expectedSrc) {
       const scripts = document.querySelectorAll("script[src]");
 
       for (const s of scripts) {
@@ -100,7 +130,11 @@ if (!window.__SUPREMO_ADMIN_LOADER__) {
         if (src.includes("loader-admin")) continue;
         if (src.includes("loader-universale-admin")) continue;
 
-        return true;
+        // match diretto con lo script atteso (con o senza ?v=)
+        if (src === expectedSrc || src.startsWith(expectedSrc + "?")) {
+          console.log("🔍 [SUPREMO ADMIN] JS pagina già presente nel DOM:", src);
+          return true;
+        }
       }
 
       return false;
@@ -128,7 +162,7 @@ if (!window.__SUPREMO_ADMIN_LOADER__) {
       await debugImport("/auth.js");
 
       // ============================================================
-      // 2) SEO / STRUCTURED admin
+      // 2) SEO / STRUCTURED admin (già condizionale)
       // ============================================================
       const p = window.location.pathname;
 
@@ -161,22 +195,32 @@ if (!window.__SUPREMO_ADMIN_LOADER__) {
       await debugImport("/admin/header-admin.js");
 
       // ============================================================
-      // 4) LOADER UNIVERSALE ADMIN — DOM-SAFE + EVENTO DEDICATO
+      // 4) LOADER UNIVERSALE ADMIN — SOLO SE SERVE
       // ============================================================
       await new Promise(r => setTimeout(r, 0));
 
-      if (paginaAdminHaJsDiPagina()) {
+      const { base, src: expectedPageScript } = getExpectedPageScript();
+      console.log("🔍 [SUPREMO ADMIN] Pagina normalizzata:", base);
+      console.log("🔍 [SUPREMO ADMIN] Script pagina atteso:", expectedPageScript);
+
+      if (paginaAdminHaJsDiPagina(expectedPageScript)) {
+        // JS di pagina già presente → NON carico l’universale
+        console.log("📄 [SUPREMO ADMIN] JS pagina già presente → skip loader-universale-admin.js");
+        console.log("🟩 [SUPREMO ADMIN] page-js-loaded (diretto, senza universale)");
+        document.dispatchEvent(new Event("page-js-loaded"));
+      } else {
+        // JS di pagina mancante → uso l’universale come fallback
         if (!window.__LOADER_UNIVERSALE_ADMIN_CARICATO__) {
           window.__LOADER_UNIVERSALE_ADMIN_CARICATO__ = true;
 
-          console.log("📦 Carico loader-universale-admin.js");
+          console.log("📦 Carico loader-universale-admin.js (fallback JS pagina)");
           await loadScript("/admin/loader-universale-admin.js");
 
           // 🔥 Evento che FA PARTIRE l’universale admin
           document.dispatchEvent(new Event("supremo-admin-load-universale"));
+        } else {
+          console.log("⏭️ [SUPREMO ADMIN] loader-universale-admin.js già caricato in precedenza");
         }
-      } else {
-        console.log("📦 Pagina admin SENZA JS → universale NON caricato");
       }
 
       // ============================================================
