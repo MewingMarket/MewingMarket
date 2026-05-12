@@ -3,16 +3,6 @@
 // Percorso reale: /app/public/loadersupremo.js
 // =========================================================
 
-// =========================================================
-// 🔒 MASTER LOCK 2052 — blocca re-run multipli dei loader
-// =========================================================
-if (window.__MASTER_LOADER_LOCK__) {
-  console.warn("🔒 [MASTER-LOCK] loadersupremo.js bloccato → skip");
-  return;
-}
-window.__MASTER_LOADER_LOCK__ = true;
-// =========================================================
-
 if (!window.__SUPREMO_PUBLIC_2050__) {
   window.__SUPREMO_PUBLIC_2050__ = true;
 
@@ -22,6 +12,7 @@ if (!window.__SUPREMO_PUBLIC_2050__) {
 
     // Cache globale degli script già caricati
     window.__SUPREMO_JS_CACHE__ = window.__SUPREMO_JS_CACHE__ || new Set();
+
     // Stato esecuzione sequenza PUBLIC
     window.__SUPREMO_PUBLIC_RUN_STATE__ = window.__SUPREMO_PUBLIC_RUN_STATE__ || {
       running: false,
@@ -88,9 +79,48 @@ if (!window.__SUPREMO_PUBLIC_2050__) {
     }
 
     // ============================================================
+    // NORMALIZZAZIONE NOME PAGINA
+    // ============================================================
+    function normalizeName(name) {
+      return name
+        .toLowerCase()
+        .replace(/\.html?$/, "")
+        .replace(/\.js$/, "")
+        .replace(/[^a-z0-9\-]/g, "")
+        .replace(/\-+/g, "-")
+        .trim();
+    }
+
+    function getPageBase() {
+      const p = window.location.pathname;
+
+      if (p === "/" || p === "") return "index";
+
+      const parts = p.split("/").filter(Boolean);
+
+      if (parts.length >= 2 && /^\d+$/.test(parts[parts.length - 1])) {
+        return normalizeName(parts[parts.length - 2]);
+      }
+
+      if (parts.length >= 2 && !parts[parts.length - 1].includes(".")) {
+        return normalizeName(parts.join("-"));
+      }
+
+      return normalizeName(parts.pop());
+    }
+
+    function getExpectedPageScript() {
+      const base = getPageBase();
+      return {
+        base,
+        src: `/${base}.js`
+      };
+    }
+
+    // ============================================================
     // PATCH 2050 — rileva JS di pagina (DOM-SAFE)
     // ============================================================
-    function paginaHaJsDiPagina() {
+    function paginaHaJsDiPagina(expectedSrc) {
       const scripts = document.querySelectorAll("script[src]");
 
       for (const s of scripts) {
@@ -102,7 +132,11 @@ if (!window.__SUPREMO_PUBLIC_2050__) {
         if (src.includes("loadersupremo-admin")) continue;
         if (src.includes("loaderuniversale")) continue;
 
-        return true;
+        // match diretto con lo script atteso
+        if (src === expectedSrc || src.startsWith(expectedSrc + "?")) {
+          console.log("🔍 [SUPREMO PUBLIC] JS pagina già presente nel DOM:", src);
+          return true;
+        }
       }
 
       return false;
@@ -205,22 +239,27 @@ if (!window.__SUPREMO_PUBLIC_2050__) {
       }
 
       // ============================================================
-      // 4) LOADER UNIVERSALE — PATCH DOM-SAFE + EVENTO DEDICATO
+      // 4) LOADER UNIVERSALE — SOLO SE SERVE
       // ============================================================
-      await new Promise(r => setTimeout(r, 0)); // lascia finire parsing DOM
+      await new Promise(r => setTimeout(r, 0));
 
-      if (paginaHaJsDiPagina()) {
+      const { base, src: expectedPageScript } = getExpectedPageScript();
+      console.log("🔍 [SUPREMO PUBLIC] Pagina normalizzata:", base);
+      console.log("🔍 [SUPREMO PUBLIC] Script pagina atteso:", expectedPageScript);
+
+      if (paginaHaJsDiPagina(expectedPageScript)) {
+        console.log("📄 [SUPREMO PUBLIC] JS pagina già presente → skip universale");
+        console.log("🟩 [SUPREMO PUBLIC] page-js-loaded (diretto)");
+        document.dispatchEvent(new Event("page-js-loaded"));
+      } else {
         if (!window.__LOADER_UNIVERSALE_CARICATO__) {
           window.__LOADER_UNIVERSALE_CARICATO__ = true;
 
-          console.log("📦 Carico loaderuniversale.js (pagina con JS)");
+          console.log("📦 Carico loaderuniversale.js (fallback JS pagina)");
           await loadScript("/loaderuniversale.js");
 
-          // 🔥 Evento che FA PARTIRE l’universale PUBLIC
           document.dispatchEvent(new Event("supremo-public-load-universale"));
         }
-      } else {
-        console.log("📦 Pagina SENZA JS → loaderuniversale.js NON caricato");
       }
 
       // 5) Attesa page-js-loaded
