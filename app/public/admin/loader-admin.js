@@ -1,8 +1,8 @@
 // =========================================================
-// ADMIN CRITICAL LOADER — Versione 2055 (ULTRA MINIMAL SAFE)
+// ADMIN CRITICAL LOADER — Versione 2055 (JAVA-MODE ULTRA MINIMAL)
 // Percorso reale: /app/public/admin/admin-critical-loader-2055.js
 // Carica SOLO head-admin.html / header-admin.html / footer-admin.html / header-admin.js
-// Emette SEMPRE critical-core-ready, senza retry, senza ping, senza import
+// NON emette più eventi. Nessun retry. Nessun fallback.
 // =========================================================
 
 if (window.__ADMIN_CRITICAL_LOADER_2055__) {
@@ -14,10 +14,10 @@ if (window.__ADMIN_CRITICAL_LOADER_2055__) {
 
     const ADMIN_VERSION = "2055";
 
-    console.log("⚡ [ADMIN CRITICAL 2055] Avvio critical loader ADMIN (ULTRA MINIMAL)");
+    console.log("⚡ [ADMIN CRITICAL 2055] Avvio critical loader ADMIN (JAVA-MODE)");
 
     // ============================================================
-    // Utility base
+    // Utility: carica HTML in modo deterministico
     // ============================================================
     function loadHTML(url, placeholderId, label) {
       return new Promise(resolve => {
@@ -28,14 +28,23 @@ if (window.__ADMIN_CRITICAL_LOADER_2055__) {
           })
           .then(html => {
             const ph = placeholderId ? document.getElementById(placeholderId) : null;
+
             if (ph) {
               ph.innerHTML = html;
             } else {
-              // fallback: append in head se non c'è placeholder
               const temp = document.createElement("div");
               temp.innerHTML = html;
-              [...temp.children].forEach(node => document.head.appendChild(node));
+              [...temp.children].forEach(node => {
+                if (node.tagName === "SCRIPT") {
+                  const s = document.createElement("script");
+                  s.text = node.text;
+                  document.head.appendChild(s);
+                } else {
+                  document.head.appendChild(node);
+                }
+              });
             }
+
             console.log(`✅ [ADMIN CRITICAL] ${label} OK da ${url}`);
             resolve(true);
           })
@@ -46,6 +55,9 @@ if (window.__ADMIN_CRITICAL_LOADER_2055__) {
       });
     }
 
+    // ============================================================
+    // Utility: carica script JS in modo deterministico
+    // ============================================================
     function loadScript(src, label) {
       return new Promise(resolve => {
         console.log("➡️ [ADMIN CRITICAL] LOAD-REQUEST", src);
@@ -53,7 +65,6 @@ if (window.__ADMIN_CRITICAL_LOADER_2055__) {
         const s = document.createElement("script");
         s.src = `${src}?v=${ADMIN_VERSION}`;
         s.async = false;
-        s.fetchPriority = "high";
 
         s.onload = () => {
           console.log("✅ [ADMIN CRITICAL] LOAD-OK", label || src);
@@ -70,38 +81,34 @@ if (window.__ADMIN_CRITICAL_LOADER_2055__) {
     }
 
     // ============================================================
-    // Sequenza critica minimal
+    // SEQUENZA CRITICA — SOLO HTML + header-admin.js
     // ============================================================
     (async () => {
       console.log("🟦 [ADMIN CRITICAL 2055] Sequenza minimal avviata");
 
-      const okHead = await loadHTML(
+      await loadHTML(
         `/admin/head-admin.html?v=${ADMIN_VERSION}`,
         "head-admin-placeholder",
         "head-admin.html"
       );
 
-      const okHeader = await loadHTML(
+      await loadHTML(
         `/admin/header-admin.html?v=${ADMIN_VERSION}`,
         "header-admin-placeholder",
         "header-admin.html"
       );
 
-      const okFooter = await loadHTML(
+      await loadHTML(
         `/admin/footer-admin.html?v=${ADMIN_VERSION}`,
         "footer-admin-placeholder",
         "footer-admin.html"
       );
 
-      const okHeaderJs = await loadScript("/admin/header-admin.js", "header-admin.js");
+      await loadScript("/admin/header-admin.js", "header-admin.js");
 
-      if (!okHead || !okHeader || !okFooter || !okHeaderJs) {
-        console.warn("🟧 [ADMIN CRITICAL 2055] Uno o più componenti non caricati correttamente (NON BLOCCA)");
-      }
-
-      console.log("🟩 [ADMIN CRITICAL 2055] critical-core-ready (ADMIN)");
-      window.__adminCriticalCoreReady = true;
-      document.dispatchEvent(new Event("critical-core-ready"));
+      console.log("🟩 [ADMIN CRITICAL 2055] HTML base ADMIN caricato (JAVA-MODE)");
+      // Nessun evento. Nessun critical-core-ready.
+      // Il SUPREMO ADMIN gestisce tutto.
     })();
 
   })();
