@@ -8,6 +8,7 @@ body {
 #game-container {
   display: flex;
   height: 100vh;
+  position: relative; /* necessario per posizionare chat-toggle */
 }
 
 /* Avatar */
@@ -31,6 +32,18 @@ body {
   display: flex;
   flex-direction: column;
   background: #181818;
+
+  /* Animazione apertura/chiusura */
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  height: 100%;
+  transform: translateY(100%);
+  transition: 0.3s ease;
+}
+
+#chat-container.open {
+  transform: translateY(0);
 }
 
 #chat-box {
@@ -110,4 +123,30 @@ body {
 
 .mm-quick:hover {
   background: #555;
+}
+
+/* =========================================================
+   🔥 CHAT ICON — PULSANTE DI APERTURA
+========================================================= */
+#chat-toggle {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: #222;
+  padding: 10px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #444;
+  transition: 0.2s;
+  z-index: 999;
+}
+
+#chat-toggle:hover {
+  background: #333;
+}
+
+#chat-toggle img {
+  width: 40px;
+  height: 40px;
+  display: block;
 }
