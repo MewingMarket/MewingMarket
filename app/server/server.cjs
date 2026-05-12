@@ -144,7 +144,15 @@ async function bootInBackground(){
 
       console.warn(`🟨 [JS-DEBUG] NON TROVATO: ${filename}`);
       JS_DEBUG_ERRORS.push({ file: filename, error: "File non trovato" });
-      next();
+
+      // PATCH 2055: per i .js mancanti NON restituiamo HTML,
+      // ma un 404 JS-safe per evitare "Illegal return statement"
+      res.status(404);
+      res.setHeader("Content-Type","application/javascript; charset=utf-8");
+      res.setHeader("X-Content-Type-Options","nosniff");
+      return res.send(`// 404 JS not found: ${filename}\n`);
+
+      // (se preferisci il comportamento precedente, sostituisci con: next();)
     });
 
     app.get("/api/js-debug-report", (req, res) => {
