@@ -1,6 +1,6 @@
 /* =========================================================
    GAME ENGINE — UNIVERSAL JSON 2027
-   Fusione chat.js + premium.js
+   Fusione chat.js + premium.js + chat-icon toggle
 ========================================================= */
 
 document.addEventListener("critical-ready", () => {
@@ -13,6 +13,14 @@ document.addEventListener("critical-ready", () => {
   const chatAttach = document.getElementById("chat-attach");
   const chatFile = document.getElementById("chat-file");
   const avatarImg = document.getElementById("avatar-img");
+
+  /* TOGGLE CHAT ICON */
+  const chatToggle = document.getElementById("chat-toggle");
+  const chatContainer = document.getElementById("chat-container");
+
+  chatToggle.addEventListener("click", () => {
+    chatContainer.classList.toggle("open");
+  });
 
   /* SANITIZE */
   const clean = (t) =>
