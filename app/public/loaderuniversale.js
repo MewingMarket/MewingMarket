@@ -121,7 +121,7 @@ if (window.__LOADER_UNIVERSALE_PUBLIC_2055__) {
     // ============================================================
     // AVVIO (CON LOCK LOCALE)
     // ============================================================
-    async function run() {
+    async function runUniversale() {
       const state = window.__UNIVERSALE_PUBLIC_RUN_STATE__;
 
       if (state.done) {
@@ -153,7 +153,7 @@ if (window.__LOADER_UNIVERSALE_PUBLIC_2055__) {
     // ============================================================
     // PATCH 2055: ascolta SOLO l’evento del SUPREMO PUBLIC
     // ============================================================
-    document.addEventListener("supremo-public-load-universale", run);
+    document.addEventListener("supremo-public-load-universale", runUniversale);
 
   })();
 }
