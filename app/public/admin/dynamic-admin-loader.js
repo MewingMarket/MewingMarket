@@ -5,7 +5,7 @@
 // =========================================================
 
 if (window.__DYNAMIC_ADMIN_LOADER_2055__) {
-  console.warn("dynamic-admin-loader.js già caricato → skip");
+  console.warn("[DYNAMIC ADMIN 2055] dynamic-admin-loader.js già caricato → skip");
 } else {
   window.__DYNAMIC_ADMIN_LOADER_2055__ = true;
 
@@ -16,70 +16,75 @@ if (window.__DYNAMIC_ADMIN_LOADER_2055__) {
     // ============================================================
     // 1) ANTI-CACHE — impone al browser di NON fidarsi mai
     // ============================================================
-    try {
-      const tags = [
-        { h: "Cache-Control", c: "no-cache, no-store, must-revalidate" },
-        { h: "Pragma",        c: "no-cache" },
-        { h: "Expires",       c: "0" }
-      ];
+    function applyAntiCache() {
+      try {
+        const tags = [
+          { h: "Cache-Control", c: "no-cache, no-store, must-revalidate" },
+          { h: "Pragma",        c: "no-cache" },
+          { h: "Expires",       c: "0" }
+        ];
 
-      tags.forEach(t => {
-        const m = document.createElement("meta");
-        m.httpEquiv = t.h;
-        m.content = t.c;
-        document.head.appendChild(m);
-      });
+        tags.forEach(t => {
+          const m = document.createElement("meta");
+          m.httpEquiv = t.h;
+          m.content = t.c;
+          document.head.appendChild(m);
+        });
 
-      console.log("🟧 [DYNAMIC ADMIN] Anti-cache applicato");
-    } catch (e) {
-      console.warn("❌ [DYNAMIC ADMIN] Errore anti-cache:", e.message);
+        console.log("🟧 [DYNAMIC ADMIN] Anti-cache applicato");
+      } catch (e) {
+        console.warn("❌ [DYNAMIC ADMIN] Errore anti-cache:", e.message);
+      }
     }
 
     // ============================================================
     // 2) ANTI SERVICE WORKER — elimina ogni possibile interferenza
     // ============================================================
-    try {
-      console.log("🟧 [DYNAMIC ADMIN] Rimozione service worker + cache HTTP");
+    function removeServiceWorkers() {
+      try {
+        console.log("🟧 [DYNAMIC ADMIN] Rimozione service worker + cache HTTP");
 
-      if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.getRegistrations().then(regs => {
-          regs.forEach(r => r.unregister());
-        });
+        if ("serviceWorker" in navigator) {
+          navigator.serviceWorker.getRegistrations().then(regs => {
+            regs.forEach(r => r.unregister());
+          });
+        }
+
+        if (window.caches) {
+          caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+        }
+
+      } catch (e) {
+        console.warn("❌ [DYNAMIC ADMIN] Errore anti-service-worker:", e.message);
       }
-
-      if (window.caches) {
-        caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
-      }
-
-    } catch (e) {
-      console.warn("❌ [DYNAMIC ADMIN] Errore anti-service-worker:", e.message);
     }
 
     // ============================================================
-    // 3) DICHIARA RENDER COME FONTE UNICA DI VERITÀ
+    // 3) RENDER = FONTE UNICA DI VERITÀ
+    // Forza tutti gli script a bypassare la cache
     // ============================================================
-    try {
-      // Forza tutte le richieste JS a bypassare cache
-      const forceNoStore = () => {
+    function forceRenderNoStore() {
+      try {
         const scripts = document.querySelectorAll("script[src]");
         scripts.forEach(s => {
-          if (!s.src.includes("no-store")) {
-            const url = new URL(s.src);
-            url.searchParams.set("cache", "no-store");
-            s.src = url.toString();
-          }
+          const url = new URL(s.src);
+          url.searchParams.set("cache", "no-store");
+          s.src = url.toString();
         });
-      };
 
-      forceNoStore();
-      console.log("🟦 [DYNAMIC ADMIN] Render impostato come fonte unica di verità");
-    } catch (e) {
-      console.warn("❌ [DYNAMIC ADMIN] Errore no-store:", e.message);
+        console.log("🟦 [DYNAMIC ADMIN] Render impostato come fonte unica di verità");
+      } catch (e) {
+        console.warn("❌ [DYNAMIC ADMIN] Errore no-store:", e.message);
+      }
     }
 
     // ============================================================
-    // 4) FINE — nessun evento, nessun blocco, nessuna attesa
+    // ESECUZIONE ORDINATA (JAVA-MODE)
     // ============================================================
+    applyAntiCache();
+    removeServiceWorkers();
+    forceRenderNoStore();
+
     console.log("🟩 [DYNAMIC ADMIN 2055] Completato (ULTRA MINIMAL)");
 
   })();
