@@ -72,6 +72,32 @@ app.use(express.json({ limit: "200kb" }));
 app.use(express.urlencoded({ extended: false, limit: "200kb" }));
 
 /* =========================================================
+ * FIX 2055 — Servizio JS deterministico (UNICO BLOCCO)
+ * ========================================================= */
+app.use((req, res, next) => {
+  if (!req.path.match(/\.js($|\?)/)) return next();
+
+  const clean = req.path.split("?")[0];
+  const rel = clean.replace(/^\//, "");
+  const fullPath = path.join(process.cwd(), "app/public", rel);
+
+  if (fs.existsSync(fullPath)) {
+    res.setHeader("Content-Type", "application/javascript; charset=utf-8");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    console.log("🟩 [JS] Caricato:", rel);
+    return res.sendFile(fullPath);
+  }
+
+  console.warn("🟨 [JS] NON TROVATO:", rel);
+
+  // Risposta JS-safe (mai HTML)
+  res.status(404);
+  res.setHeader("Content-Type","application/javascript; charset=utf-8");
+  res.setHeader("X-Content-Type-Options","nosniff");
+  return res.send(`// 404 JS not found: ${rel}\n`);
+});
+
+/* =========================================================
  * /api/ping + diagnostica lite
  * =========================================================
  */
@@ -112,52 +138,6 @@ async function bootInBackground(){
 
     log(">> BOOT: parser middleware");
     app.use(cookieParser());
-
-    /* =========================================================
-     * 🟦 JS DEBUG — intercetta TUTTI i .js
-     * ========================================================= */
-    const JS_DEBUG_LOADED = [];
-    const JS_DEBUG_ERRORS = [];
-
-    app.use((req, res, next) => {
-      if (!req.path.match(/\.js($|\?)/)) return next();
-
-      const clean = req.path.split("?")[0];
-      const filename = clean.split("/").pop();
-      const fullPath = path.join(process.cwd(), "app/public", clean.replace(/^\//, ""));
-
-      console.log(`🟦 [JS-DEBUG] Richiesto: ${filename}`);
-      JS_DEBUG_LOADED.push(filename);
-
-      if (fs.existsSync(fullPath)) {
-        try {
-          res.setHeader("Content-Type","application/javascript; charset=utf-8");
-          res.setHeader("X-Content-Type-Options","nosniff");
-          console.log(`🟩 [JS-DEBUG] Caricato: ${filename}`);
-          return res.sendFile(fullPath);
-        } catch (err) {
-          console.error(`❌ [JS-DEBUG] ERRORE in ${filename}:`, err.message);
-          JS_DEBUG_ERRORS.push({ file: filename, error: err.message });
-          return next();
-        }
-      }
-
-      console.warn(`🟨 [JS-DEBUG] NON TROVATO: ${filename}`);
-      JS_DEBUG_ERRORS.push({ file: filename, error: "File non trovato" });
-
-      // PATCH 2055: per i .js mancanti NON restituiamo HTML,
-      // ma un 404 JS-safe per evitare "Illegal return statement"
-      res.status(404);
-      res.setHeader("Content-Type","application/javascript; charset=utf-8");
-      res.setHeader("X-Content-Type-Options","nosniff");
-      return res.send(`// 404 JS not found: ${filename}\n`);
-
-      // (se preferisci il comportamento precedente, sostituisci con: next();)
-    });
-
-    app.get("/api/js-debug-report", (req, res) => {
-      res.json({ loaded: JS_DEBUG_LOADED, errors: JS_DEBUG_ERRORS });
-    });
 
     /* =========================================================
      * UNIVERSAL JSON
