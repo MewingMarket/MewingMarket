@@ -1,11 +1,11 @@
 /* =========================================================
- * AUTH.JS — Persistenza SQL-SYNC (PATCH 2027.970)
- * FIX: Universal JSON + Robustezza totale
+ * AUTH.JS — Persistenza SQL-SYNC (PATCH 2055)
+ * FIX: Universal JSON + Robustezza totale + no-store
  * ========================================================= */
 
 console.log("🔐 [AUTH] Sistema di autenticazione avviato");
 
-const APP_VERSION = "2026.10";
+const APP_VERSION = "2055";
 
 /* =========================================================
    WRAPPER UNIVERSALE PER EVENTI UTENTE
@@ -15,6 +15,7 @@ async function apiAuth(path, payload = {}) {
   try {
     res = await fetch(path, {
       method: "POST",
+      cache: "no-store",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
