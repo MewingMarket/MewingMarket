@@ -23,7 +23,7 @@ if (!window.__SUPREMO_PUBLIC_2055__) {
     window.__LOADER_UNIVERSALE_CARICATO__ =
       window.__LOADER_UNIVERSALE_CARICATO__ || false;
 
-    console.log("⚡ [SUPREMO PUBLIC 2055] In attesa di critical-core-ready...");
+    console.log("⚡ [SUPREMO PUBLIC 2055] Inizializzazione SUPREMO...");
 
     // ============================================================
     // Utility caricamento script (deterministico)
@@ -161,9 +161,9 @@ if (!window.__SUPREMO_PUBLIC_2055__) {
     }
 
     // ============================================================
-    // Sequenza PUBLIC dopo critical-core-ready
+    // Sequenza PUBLIC controllata dal SUPREMO (Java-mode)
     // ============================================================
-    document.addEventListener("critical-core-ready", async () => {
+    async function runSupremoPublic() {
       const state = window.__SUPREMO_PUBLIC_RUN_STATE__;
 
       if (state.done) {
@@ -177,17 +177,17 @@ if (!window.__SUPREMO_PUBLIC_2055__) {
 
       state.running = true;
 
-      console.log("🟦 [SUPREMO PUBLIC 2055] critical-core-ready ricevuto");
+      // 0) Emissione critical-core-ready (spostata dal critical loader)
+      console.log("🟦 [SUPREMO PUBLIC 2055] Emissione critical-core-ready");
+      document.dispatchEvent(new Event("critical-core-ready"));
 
-      // ============================================================
+      console.log("🟦 [SUPREMO PUBLIC 2055] Sequenza SUPREMO avviata");
+
       // 1) AUTH
-      // ============================================================
       console.log("🔐 [SUPREMO PUBLIC] Carico auth.js");
       await loadScript("/auth.js");
 
-      // ============================================================
       // 2) SEO / Structured
-      // ============================================================
       if (needSEO()) {
         console.log("🌐 [SUPREMO PUBLIC] Carico seo.js");
         await loadScript("/seo.js");
@@ -204,17 +204,13 @@ if (!window.__SUPREMO_PUBLIC_2055__) {
       console.log("📌 [SUPREMO PUBLIC] Carico header.js");
       await loadScript("/header.js", "body");
 
-      // ============================================================
       // 3) Carrello
-      // ============================================================
       if (shouldLoadCarrello()) {
         console.log("🛒 [SUPREMO PUBLIC] Carico carrello.js");
         await loadScript("/carrello.js", "body");
       }
 
-      // ============================================================
       // 4) PAGE-JS: diretto o universale fallback
-      // ============================================================
       await new Promise(r => setTimeout(r, 0));
 
       const { base, src: expectedPageScript } = getExpectedPageScript();
@@ -236,9 +232,7 @@ if (!window.__SUPREMO_PUBLIC_2055__) {
         }
       }
 
-      // ============================================================
       // 5) Attesa page-js-loaded
-      // ============================================================
       console.log("📄 [SUPREMO PUBLIC] In attesa di page-js-loaded...");
       await new Promise(resolve => {
         document.addEventListener("page-js-loaded", resolve, { once: true });
@@ -246,22 +240,25 @@ if (!window.__SUPREMO_PUBLIC_2055__) {
 
       console.log("📄 [SUPREMO PUBLIC] page-js-loaded ricevuto");
 
-      // ============================================================
       // 6) Dynamic loader (anti-cache / anti-SW)
-      // ============================================================
       console.log("🔄 [SUPREMO PUBLIC] Carico dynamic-loader.js");
       await loadScript("/dynamic-loader.js");
 
-      // ============================================================
-      // 7) Critical ready finale
-      // ============================================================
+      // 7) Critical ready finale (spostato qui)
       console.log("🟩 [SUPREMO PUBLIC 2055] critical-ready");
       window.__criticalReady = true;
       document.dispatchEvent(new Event("critical-ready"));
 
       state.running = false;
       state.done = true;
-    });
+    }
+
+    // Trigger deterministico: DOM pronto
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", runSupremoPublic, { once: true });
+    } else {
+      runSupremoPublic();
+    }
 
   })();
 } else {
