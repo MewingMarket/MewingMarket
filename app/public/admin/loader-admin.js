@@ -112,34 +112,29 @@ if (window.__ADMIN_CRITICAL_LOADER_2050__) {
 
     await waitUntilServerReady();
 
-    // 1) HEAD
-    await fetchHTMLWithRetry(
+    const okHead = await fetchHTMLWithRetry(
       [`/admin/head-admin.html?v=${ADMIN_VERSION}`],
       "head-admin-placeholder",
       "admin-head-loaded",
       "head-admin.html"
     );
 
-    // 2) HEADER
-    await fetchHTMLWithRetry(
+    const okHeader = await fetchHTMLWithRetry(
       [`/admin/header-admin.html?v=${ADMIN_VERSION}`],
       "header-admin-placeholder",
       "admin-header-loaded",
       "header-admin.html"
     );
 
-    // 3) FOOTER
-    await fetchHTMLWithRetry(
+    const okFooter = await fetchHTMLWithRetry(
       [`/admin/footer-admin.html?v=${ADMIN_VERSION}`],
       "footer-admin-placeholder",
       "admin-footer-loaded",
       "footer-admin.html"
     );
 
-    // 4) HEADER-ADMIN.JS
-    await loadScriptSerial("/admin/header-admin.js");
+    const okScript = await loadScriptSerial("/admin/header-admin.js");
 
-    // 5) IMPORT DEBUG
     try {
       await import("/admin/header-admin.js?v=" + ADMIN_VERSION);
       console.log("📦 [IMPORT-OK] /admin/header-admin.js");
@@ -147,9 +142,11 @@ if (window.__ADMIN_CRITICAL_LOADER_2050__) {
       console.warn("📦❌ [IMPORT-FAIL] /admin/header-admin.js", e.message);
     }
 
-    /* =========================================================
-       CRITICAL-CORE-READY SEMPRE EMESSO
-    ========================================================= */
+    // LOG DI SICUREZZA (non blocca nulla)
+    if (!okHead || !okHeader || !okFooter || !okScript) {
+      console.warn("🟧 [ADMIN CRITICAL] Uno o più componenti non caricati correttamente");
+    }
+
     console.log("🟩 [ADMIN] critical-core-ready (MINIMAL MODE)");
     window.__criticalCoreReady = true;
     document.dispatchEvent(new Event("critical-core-ready"));
@@ -183,7 +180,7 @@ if (window.__ADMIN_CRITICAL_LOADER_2050__) {
   })();
 
   /* =========================================================
-     FALLBACK DI SICUREZZA — SE QUALCOSA BLOCCA IL CRITICAL
+     FALLBACK DI SICUREZZA
   ========================================================= */
   setTimeout(() => {
     if (!window.__criticalCoreReady) {
