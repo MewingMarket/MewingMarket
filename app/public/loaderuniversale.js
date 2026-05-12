@@ -2,16 +2,6 @@
 // LOADER UNIVERSALE PUBLIC — VERSIONE 2050 FALLBACK DOM
 // =========================================================
 
-// =========================================================
-// 🔒 MASTER LOCK 2052 — blocca re-run multipli dei loader
-// =========================================================
-if (window.__MASTER_LOADER_LOCK__) {
-  console.warn("🔒 [MASTER-LOCK] loaderuniversale.js bloccato → skip");
-  return;
-}
-window.__MASTER_LOADER_LOCK__ = true;
-// =========================================================
-
 if (window.__LOADER_UNIVERSALE_PUBLIC__) {
   console.warn("loaderuniversale.js già caricato, skip.");
 } else {
@@ -67,6 +57,14 @@ if (window.__LOADER_UNIVERSALE_PUBLIC__) {
       return normalizeName(parts.pop());
     }
 
+    function getExpectedPageScript() {
+      const base = getPageBase();
+      return {
+        base,
+        src: `/${base}.js`
+      };
+    }
+
     // ============================================================
     // CARICA SCRIPT (SAFE + CACHE)
     // ============================================================
@@ -103,23 +101,22 @@ if (window.__LOADER_UNIVERSALE_PUBLIC__) {
     // ============================================================
     // FALLBACK: CARICA JS DI PAGINA SOLO SE NON È GIÀ NEL DOM
     // ============================================================
-    async function loadPageScriptIfNeeded(base) {
-      const pageScript = `/${base}.js`;
+    async function loadPageScriptIfNeeded(expectedSrc) {
 
       if (
-        document.querySelector(`script[src="${pageScript}?v=${VERSION}"]`) ||
-        document.querySelector(`script[src="${pageScript}"]`)
+        document.querySelector(`script[src="${expectedSrc}?v=${VERSION}"]`) ||
+        document.querySelector(`script[src="${expectedSrc}"]`)
       ) {
-        console.log(`⏭️ [UNIVERSALE] Script di pagina già nel DOM → skip: ${pageScript}`);
+        console.log(`⏭️ [UNIVERSALE] Script di pagina già nel DOM → skip: ${expectedSrc}`);
         return true;
       }
 
-      console.log(`📦 [UNIVERSALE] Script di pagina NON presente → fallback loader: ${pageScript}`);
-      return await loadScript(pageScript);
+      console.log(`📦 [UNIVERSALE] Script di pagina NON presente → fallback loader: ${expectedSrc}`);
+      return await loadScript(expectedSrc);
     }
 
     // ============================================================
-    // AVVIO (CON LOCK)
+    // AVVIO (CON LOCK LOCALE)
     // ============================================================
     async function run() {
       const state = window.__UNIVERSALE_PUBLIC_RUN_STATE__;
@@ -136,10 +133,11 @@ if (window.__LOADER_UNIVERSALE_PUBLIC__) {
       state.running = true;
       console.log("🟦 [UNIVERSALE] Evento supremo-public-load-universale ricevuto → avvio run()");
 
-      const base = getPageBase();
+      const { base, src: expectedPageScript } = getExpectedPageScript();
       console.log("🔍 [UNIVERSALE] Pagina normalizzata:", base);
+      console.log("🔍 [UNIVERSALE] Script pagina atteso:", expectedPageScript);
 
-      await loadPageScriptIfNeeded(base);
+      await loadPageScriptIfNeeded(expectedPageScript);
 
       state.running = false;
       state.done = true;
