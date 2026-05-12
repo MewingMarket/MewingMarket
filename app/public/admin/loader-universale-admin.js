@@ -13,7 +13,7 @@ if (window.__LOADER_UNIVERSALE_ADMIN_2055__) {
 
     const VERSION = "2055";
 
-    // Cache locale per gli script caricati dall’universale (separata dal SUPREMO)
+    // Cache locale per gli script caricati dall’universale
     window.__UNIVERSALE_ADMIN_JS_CACHE__ =
       window.__UNIVERSALE_ADMIN_JS_CACHE__ || new Set();
 
@@ -112,9 +112,9 @@ if (window.__LOADER_UNIVERSALE_ADMIN_2055__) {
     }
 
     // ============================================================
-    // AVVIO (CON LOCK LOCALE, SOLO SU EVENTO SUPREMO)
+    // AVVIO (CON LOCK LOCALE)
     // ============================================================
-    async function run() {
+    async function runUniversaleAdmin() {
       const state = window.__UNIVERSALE_ADMIN_RUN_STATE__;
 
       if (state.done) {
@@ -145,7 +145,7 @@ if (window.__LOADER_UNIVERSALE_ADMIN_2055__) {
     // ============================================================
     // PATCH 2055: ascolta SOLO l’evento del SUPREMO ADMIN
     // ============================================================
-    document.addEventListener("supremo-admin-load-universale", run);
+    document.addEventListener("supremo-admin-load-universale", runUniversaleAdmin);
 
   })();
 }
