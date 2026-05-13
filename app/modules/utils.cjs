@@ -1,32 +1,10 @@
-// modules/utils.js — VERSIONE MAX (blindata)
+// modules/utils.js — VERSIONE MAX 2027 (blindata, senza Payhip, senza slug)
 
 /* =========================================================
    FUNZIONI DI SICUREZZA BASE
 ========================================================= */
 function safeString(v) {
   return typeof v === "string" ? v : (v == null ? "" : String(v));
-}
-
-/* =========================================================
-   SLUG SICURO
-========================================================= */
-function safeSlug(text) {
-  try {
-    const t = safeString(text)
-      .trim()
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^\w\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
-      .replace(/^-+|-+$/g, "");
-
-    return t || "prodotto-" + Date.now();
-  } catch (err) {
-    console.error("safeSlug error:", err);
-    return "prodotto-" + Date.now();
-  }
 }
 
 /* =========================================================
@@ -127,24 +105,6 @@ function extractLinks(text) {
   }
 }
 
-function extractSlug(text) {
-  try {
-    if (!text) return "";
-    const parts = safeString(text).split("/");
-    return safeSlug(parts.pop());
-  } catch {
-    return "";
-  }
-}
-
-function isPayhipLink(url) {
-  try {
-    return typeof url === "string" && url.includes("payhip.com");
-  } catch {
-    return false;
-  }
-}
-
 function isYouTubeLink(url) {
   try {
     return typeof url === "string" && (
@@ -176,10 +136,9 @@ function cleanSearchQuery(text) {
 }
 
 /* =========================================================
-   EXPORT
+   EXPORT — VERSIONE PULITA 2027
 ========================================================= */
 module.exports = {
-  safeSlug,
   cleanText,
   cleanNumber,
   cleanURL,
@@ -190,8 +149,6 @@ module.exports = {
   safeText,
   shorten,
   extractLinks,
-  extractSlug,
-  isPayhipLink,
   isYouTubeLink,
   formatPrice,
   cleanSearchQuery
