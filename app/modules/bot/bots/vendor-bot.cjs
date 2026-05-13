@@ -1,13 +1,17 @@
 /**
  * Venditore AI — NPC commerciale (2027)
- * Path: app/modules/bot/bots/vendor.bot.cjs
+ * Path: app/modules/bot/bots/vendor-bot.cjs
  */
 
 const path = require("path");
 const { log } = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
 
-const catalog = require(path.join(process.cwd(), "app/modules/bot/handlers/catalogHandler.cjs"));
-const product = require(path.join(process.cwd(), "app/modules/bot/handlers/productHandler.cjs"));
+// Handlers
+const catalogHandler = require(path.join(process.cwd(), "app/modules/bot/handlers/catalogHandler.cjs"));
+const productHandler = require(path.join(process.cwd(), "app/modules/bot/handlers/productHandler.cjs"));
+
+// Premium Modules
+const Premium = require(path.join(process.cwd(), "app/modules/premium/index.cjs"));
 
 /* ============================================================
    MATCH — basato su INTENT Engine 2027
@@ -29,7 +33,7 @@ function match(intentObj) {
 }
 
 /* ============================================================
-   RUN — logica principale del bot
+   RUN — logica principale NPC
 ============================================================ */
 async function run(message, context = {}) {
   log("VENDOR_RUN", context);
@@ -37,19 +41,19 @@ async function run(message, context = {}) {
   const intentObj = context.intent || {};
   const intent = intentObj.intent || "generico";
   const productId = intentObj.productId || null;
-  const catalogList = context.catalog || [];
+  const catalog = context.catalog || [];
 
   /* ============================================================
      1) CATALOGO
   ============================================================= */
   if (intent === "catalogo") {
-    return catalog.catalogList(catalogList);
+    return catalogHandler.catalogList(catalog);
   }
 
   /* ============================================================
      2) PRODOTTO PRINCIPALE
   ============================================================= */
-  if (intent === "prodotto" || intent === "prezzo" || intent === "prezzo_prodotto" || intent === "acquisto_diretto") {
+  if (["prodotto", "prezzo", "prezzo_prodotto", "acquisto_diretto"].includes(intent)) {
     if (!productId) {
       return {
         avatar: "vendor",
@@ -62,7 +66,7 @@ async function run(message, context = {}) {
       };
     }
 
-    const p = catalogList.find(x => x.id === productId);
+    const p = catalog.find(x => x.id === productId);
     if (!p) {
       return {
         avatar: "vendor",
@@ -71,33 +75,52 @@ async function run(message, context = {}) {
       };
     }
 
-    return {
-      ...product.productHandler(p.titolo_breve, catalogList),
-      avatar: "vendor"
-    };
+    // Premium product card
+    const card = Premium.Cards.productCard(p);
+
+    // Aggiungo quick replies premium
+    card.quick_replies = Premium.Quick.productQuickReplies(p);
+
+    return card;
   }
 
   /* ============================================================
      3) DETTAGLI PRODOTTO
   ============================================================= */
   if (intent === "dettagli_prodotto") {
-    const p = catalogList.find(x => x.id === productId);
-    return product.productDetailsHandler(p);
+    const p = catalog.find(x => x.id === productId);
+    if (!p) {
+      return {
+        avatar: "vendor",
+        type: "text",
+        text: "Non trovo i dettagli di questo prodotto."
+      };
+    }
+
+    return Premium.Cards.productDetailsCard(p);
   }
 
   /* ============================================================
      4) IMMAGINE PRODOTTO
   ============================================================= */
   if (intent === "immagine_prodotto") {
-    const p = catalogList.find(x => x.id === productId);
-    return product.productImageHandler(p);
+    const p = catalog.find(x => x.id === productId);
+    if (!p) {
+      return {
+        avatar: "vendor",
+        type: "text",
+        text: "Non trovo l'immagine di questo prodotto."
+      };
+    }
+
+    return Premium.Cards.productImageCard(p);
   }
 
   /* ============================================================
      5) RECENSIONI (mock locale)
   ============================================================= */
   if (intent === "recensioni") {
-    const p = catalogList.find(x => x.id === productId);
+    const p = catalog.find(x => x.id === productId);
 
     if (!p) {
       return {
@@ -107,28 +130,17 @@ async function run(message, context = {}) {
       };
     }
 
-    return {
-      avatar: "vendor",
-      type: "reviews_list",
-      product: {
-        id: p.id,
-        title: p.titolo_breve
-      },
-      reviews: [
-        { user: "Utente A", rating: 5, comment: "Ottimo prodotto!" },
-        { user: "Utente B", rating: 4, comment: "Molto utile." }
-      ],
-      actions: [
-        { label: "Correlati", intent: "prodotti_correlati", productId: p.id }
-      ]
-    };
+    return Premium.Cards.productReviewsCard(p, [
+      { user: "Utente A", rating: 5, comment: "Ottimo prodotto!" },
+      { user: "Utente B", rating: 4, comment: "Molto utile." }
+    ]);
   }
 
   /* ============================================================
-     6) PRODOTTI CORRELATI (mock locale)
+     6) PRODOTTI CORRELATI
   ============================================================= */
   if (intent === "prodotti_correlati") {
-    const p = catalogList.find(x => x.id === productId);
+    const p = catalog.find(x => x.id === productId);
 
     if (!p) {
       return {
@@ -138,22 +150,7 @@ async function run(message, context = {}) {
       };
     }
 
-    const related = catalogList
-      .filter(x => x.id !== p.id)
-      .slice(0, 3);
-
-    return {
-      type: "carousel",
-      avatar: "vendor",
-      title: `Prodotti correlati a ${p.titolo_breve}`,
-      items: related.map(r => ({
-        id: r.id,
-        title: r.titolo_breve,
-        description: r.descrizione_breve,
-        price_cent: r.prezzo_cent,
-        image: r.immagine_url
-      }))
-    };
+    return Premium.Cross.crossSellByCategory(p, catalog);
   }
 
   /* ============================================================
@@ -175,13 +172,29 @@ async function run(message, context = {}) {
    SIDEKICK — compresenza (quando parla il Professore)
 ============================================================ */
 async function sidekick(message, context = {}) {
+  const product = context.intent?.rawProduct || null;
+
+  if (!product) {
+    return {
+      avatar: "vendor",
+      type: "text",
+      text: "Se vuoi, posso mostrarti i prodotti più popolari."
+    };
+  }
+
   return {
     avatar: "vendor",
     type: "text",
-    text: "Se vuoi, posso mostrarti anche i prodotti correlati o le recensioni."
+    text: `Vuoi vedere prodotti simili a *${product.titolo_breve}*?`,
+    actions: [
+      { label: "Correlati", intent: "prodotti_correlati", productId: product.id }
+    ]
   };
 }
 
+/* ============================================================
+   EXPORT NPC
+============================================================ */
 module.exports = {
   name: "vendor",
   avatar: "vendor",
