@@ -1,6 +1,6 @@
 /**
  * Professore AI — Supporto + Spiegazioni tecniche
- * Path: app/modules/bot/bots/professore.bot.cjs
+ * Path: app/modules/bot/bots/professore-bot.cjs
  */
 
 const db = require("../../db/database.cjs");
