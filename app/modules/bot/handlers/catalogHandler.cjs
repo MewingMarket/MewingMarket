@@ -1,12 +1,17 @@
 /**
- * modules/bot/handlers/catalogHandler.cjs — VERSIONE VIDEOGIOCO 2027
- * Catalog Helper — usato da Vendor AI + Influencer AI
+ * modules/bot/handlers/catalogHandler.cjs — VERSIONE VIDEOGIOCO 2027 (PATCH COMPLETA)
+ * Catalog Helper — usato da Vendor AI + Influencer AI + Professor AI
  * Nessun HTML, solo JSON UI per il Game Engine
  */
 
 const path = require("path");
-const { normalizeProduct } = require(path.join(process.cwd(), "app/modules/bot/catalogo.cjs"));
 const { log } = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
+const catalogo = require(path.join(process.cwd(), "app/modules/catalogo.cjs"));
+
+/* Normalizzazione prodotto */
+function N(p) {
+  return catalogo.normalizeProduct ? catalogo.normalizeProduct(p) : p;
+}
 
 /* ============================================================
    1) LISTA COMPLETA CATALOGO (UI stile WhatsApp)
@@ -14,7 +19,9 @@ const { log } = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
 function catalogList(products = []) {
   log("CATALOG_LIST", { count: products.length });
 
-  if (!products.length) {
+  const list = products.map(N);
+
+  if (!list.length) {
     return {
       type: "text",
       avatar: "vendor",
@@ -26,7 +33,7 @@ function catalogList(products = []) {
     type: "list",
     avatar: "vendor",
     title: "Catalogo MewingMarket",
-    items: products.map(p => ({
+    items: list.map(p => ({
       id: p.id,
       label: p.titolo_breve,
       price_cent: p.prezzo_cent,
@@ -39,16 +46,24 @@ function catalogList(products = []) {
 }
 
 /* ============================================================
-   2) SUGGERIMENTI (carousel) — usato da Vendor + Influencer
+   2) SUGGERIMENTI (carousel) — Vendor + Influencer
 ============================================================ */
 function catalogSuggestions(products = []) {
-  const top = products.slice(0, 3).map(normalizeProduct);
+  const list = products.map(N).slice(0, 3);
+
+  if (!list.length) {
+    return {
+      type: "text",
+      avatar: "vendor",
+      text: "Non ho suggerimenti al momento."
+    };
+  }
 
   return {
     type: "carousel",
     avatar: "vendor",
     title: "Prodotti consigliati",
-    items: top.map(p => ({
+    items: list.map(p => ({
       id: p.id,
       title: p.titolo_breve,
       description: p.descrizione_breve,
@@ -62,13 +77,21 @@ function catalogSuggestions(products = []) {
    3) SUGGERIMENTI PER INFLUENCER (sidekick)
 ============================================================ */
 function influencerSuggestions(products = []) {
-  const top = products.slice(0, 2).map(normalizeProduct);
+  const list = products.map(N).slice(0, 2);
+
+  if (!list.length) {
+    return {
+      type: "text",
+      avatar: "influencer",
+      text: "Non ho hype da aggiungere ora 😅"
+    };
+  }
 
   return {
     type: "carousel",
     avatar: "influencer",
     title: "Hai visto questi? 🔥",
-    items: top.map(p => ({
+    items: list.map(p => ({
       id: p.id,
       title: p.titolo_breve,
       description: p.descrizione_breve,
@@ -78,15 +101,16 @@ function influencerSuggestions(products = []) {
 }
 
 /* ============================================================
-   4) CARD PER TUTORIAL (TV + video)
+   4) CARD PER TUTORIAL (Professor)
 ============================================================ */
 function tutorialCard(product) {
-  if (!product) return null;
+  const p = N(product);
+  if (!p) return null;
 
   return {
     type: "tutorial_card",
     avatar: "professor",
-    title: `Come usare ${product.titolo_breve}`,
+    title: `Come usare ${p.titolo_breve}`,
     steps: [
       "Apri il prodotto",
       "Segui le istruzioni",
@@ -96,7 +120,7 @@ function tutorialCard(product) {
       {
         label: "Guarda il video",
         type: "open_video",
-        video_url: product.youtube_url
+        video_url: p.youtube_url
       }
     ]
   };
