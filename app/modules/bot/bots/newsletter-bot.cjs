@@ -30,7 +30,11 @@ function match(intentObj) {
    RUN — logica principale NPC
 ============================================================ */
 async function run(message, context = {}) {
-  log("NEWSLETTER_RUN", context);
+  log("NEWSLETTER_RUN", {
+    uid: context.uid,
+    intent: context.intent?.intent,
+    catalogCount: context.catalog?.length || 0
+  });
 
   const intentObj = context.intent || {};
   const intent = intentObj.intent || "generico";
@@ -51,7 +55,7 @@ async function run(message, context = {}) {
   }
 
   /* ============================================================
-     3) FOLLOW-UP (NPC → messaggio motivazionale / retention)
+     3) FOLLOW-UP (NPC → retention)
   ============================================================= */
   if (intent === "follow_up") {
     return {
@@ -67,7 +71,7 @@ async function run(message, context = {}) {
   }
 
   /* ============================================================
-     4) REMINDER (NPC → non crea reminder, spiega)
+     4) REMINDER (NPC → spiega, non crea)
   ============================================================= */
   if (intent === "reminder") {
     return {
@@ -111,6 +115,14 @@ async function run(message, context = {}) {
   ============================================================= */
   if (intent === "novita") {
     const products = catalog.slice(0, 3);
+
+    if (!products.length) {
+      return {
+        avatar: "newsletter",
+        type: "text",
+        text: "Al momento non ci sono novità disponibili."
+      };
+    }
 
     return {
       avatar: "newsletter",
