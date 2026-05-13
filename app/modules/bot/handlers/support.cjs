@@ -1,5 +1,5 @@
 /**
- * modules/bot/handlers/support.cjs — VERSIONE VIDEOGIOCO 2027
+ * modules/bot/handlers/support.cjs — VERSIONE VIDEOGIOCO 2027 (PATCH COMPLETA)
  * Support Helper — Professore AI
  * Nessun HTML, nessun GPT, solo JSON UI compatibile con Game Engine
  */
@@ -11,6 +11,8 @@ const { log } = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
    LOGIN / REGISTRAZIONE / PASSWORD
 ============================================================ */
 function supportLogin() {
+  log("SUPPORT_LOGIN");
+
   return {
     type: "text",
     avatar: "professor",
@@ -19,6 +21,8 @@ function supportLogin() {
 }
 
 function supportRegistrazione() {
+  log("SUPPORT_REGISTRAZIONE");
+
   return {
     type: "text",
     avatar: "professor",
@@ -27,6 +31,8 @@ function supportRegistrazione() {
 }
 
 function supportPasswordReset() {
+  log("SUPPORT_PASSWORD_RESET");
+
   return {
     type: "text",
     avatar: "professor",
@@ -38,6 +44,8 @@ function supportPasswordReset() {
    ORDINI
 ============================================================ */
 function supportOrdini() {
+  log("SUPPORT_ORDINI");
+
   return {
     type: "text",
     avatar: "professor",
@@ -49,6 +57,8 @@ function supportOrdini() {
    DOWNLOAD
 ============================================================ */
 function supportDownload() {
+  log("SUPPORT_DOWNLOAD");
+
   return {
     type: "text",
     avatar: "professor",
@@ -60,6 +70,8 @@ function supportDownload() {
    PAGAMENTI
 ============================================================ */
 function supportPagamento() {
+  log("SUPPORT_PAGAMENTO");
+
   return {
     type: "text",
     avatar: "professor",
@@ -71,6 +83,8 @@ function supportPagamento() {
    RIMBORSO
 ============================================================ */
 function supportRimborso() {
+  log("SUPPORT_RIMBORSO");
+
   return {
     type: "text",
     avatar: "professor",
@@ -82,6 +96,8 @@ function supportRimborso() {
    CONTATTI
 ============================================================ */
 function supportContatti() {
+  log("SUPPORT_CONTATTI");
+
   return {
     type: "text",
     avatar: "professor",
@@ -93,6 +109,10 @@ function supportContatti() {
    TUTORIAL CARD (TV + video)
 ============================================================ */
 function supportTutorial(videoUrl, title = "Tutorial") {
+  log("SUPPORT_TUTORIAL", { videoUrl, title });
+
+  const safeUrl = typeof videoUrl === "string" ? videoUrl : null;
+
   return {
     type: "tutorial_card",
     avatar: "professor",
@@ -102,13 +122,15 @@ function supportTutorial(videoUrl, title = "Tutorial") {
       "Guarda il video tutorial",
       "Completa l’azione nella Dashboard"
     ],
-    actions: [
-      {
-        label: "Guarda il video",
-        type: "open_video",
-        video_url: videoUrl
-      }
-    ]
+    actions: safeUrl
+      ? [
+          {
+            label: "Guarda il video",
+            type: "open_video",
+            video_url: safeUrl
+          }
+        ]
+      : []
   };
 }
 
@@ -116,6 +138,8 @@ function supportTutorial(videoUrl, title = "Tutorial") {
    FALLBACK GENERICO
 ============================================================ */
 function supportGeneric() {
+  log("SUPPORT_GENERIC");
+
   return {
     type: "quick_replies",
     avatar: "professor",
@@ -125,7 +149,8 @@ function supportGeneric() {
       { label: "Download", intent: "download" },
       { label: "Pagamenti", intent: "pagamento" },
       { label: "Rimborso", intent: "rimborso" },
-      { label: "Contatti", intent: "contatti" }
+      { label: "Contatti", intent: "contatti" },
+      { label: "Menu", intent: "menu" }
     ]
   };
 }
