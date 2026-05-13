@@ -1,6 +1,6 @@
 /**
  * Venditore AI — Bot commerciale
- * Path: app/modules/bot/bots/vendor.bot.cjs
+ * Path: app/modules/bot/bots/vendor-bot.cjs
  */
 
 const db = require("../../db/database.cjs"); // adatta se necessario
