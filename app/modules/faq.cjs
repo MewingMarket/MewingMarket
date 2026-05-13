@@ -88,8 +88,39 @@ function render(item) {
 `;
 }
 
+/* =========================================================
+   FUNZIONI EXTRA — JSON / FRAMES (senza toccare la logica)
+========================================================= */
+
+function toJSON(item) {
+  if (!item) return null;
+  return {
+    id: item.id,
+    type: "faq_card",
+    question: item.question,
+    answer: item.answer,
+    keywords: item.keywords || []
+  };
+}
+
+function toFrame(item, avatar = "assistant") {
+  if (!item) return null;
+  return {
+    avatar,
+    type: "faq_card",
+    title: item.question,
+    text: item.answer,
+    meta: {
+      id: item.id,
+      keywords: item.keywords || []
+    }
+  };
+}
+
 module.exports = {
   search,
   render,
-  all: () => FAQ_ITEMS
+  all: () => FAQ_ITEMS,
+  toJSON,
+  toFrame
 };
