@@ -1,6 +1,7 @@
 /* =========================================================
- * SERVER — HARDENED MODE (2050.901)
+ * SERVER — HARDENED MODE (2051.000)
  * Anti‑PHP, Anti‑Bot, Anti‑OOM, Anti‑Scanner + API-GUARD
+ * Compatibile con Game Engine 2027 + Bot Engine
  * =========================================================
  */
 
@@ -73,7 +74,8 @@ app.use(express.urlencoded({ extended: false, limit: "200kb" }));
 
 /* =========================================================
  * FIX 2055 — Servizio JS deterministico (UNICO BLOCCO)
- * ========================================================= */
+ * =========================================================
+ */
 app.use((req, res, next) => {
   if (!req.path.match(/\.js($|\?)/)) return next();
 
@@ -90,7 +92,6 @@ app.use((req, res, next) => {
 
   console.warn("🟨 [JS] NON TROVATO:", rel);
 
-  // Risposta JS-safe (mai HTML)
   res.status(404);
   res.setHeader("Content-Type","application/javascript; charset=utf-8");
   res.setHeader("X-Content-Type-Options","nosniff");
