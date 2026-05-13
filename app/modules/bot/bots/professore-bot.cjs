@@ -6,6 +6,7 @@
 const path = require("path");
 const { log } = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
 
+// Handlers
 const support = require(path.join(process.cwd(), "app/modules/bot/handlers/support.cjs"));
 const legal = require(path.join(process.cwd(), "app/modules/bot/handlers/legal.cjs"));
 
@@ -44,7 +45,7 @@ async function run(message, context = {}) {
 
   /* ============================================================
      1) ORDINI (spiegazione, non DB)
-  ============================================================ */
+  ============================================================= */
   if (intent === "ordini") {
     return {
       avatar: "professor",
@@ -64,7 +65,7 @@ async function run(message, context = {}) {
 
   /* ============================================================
      2) DOWNLOAD (spiegazione, non DB)
-  ============================================================ */
+  ============================================================= */
   if (intent === "download") {
     return {
       avatar: "professor",
@@ -83,7 +84,7 @@ async function run(message, context = {}) {
 
   /* ============================================================
      3) SUPPORTO STANDARD (usa Support Helper)
-  ============================================================ */
+  ============================================================= */
   if (intent === "login")          return support.supportLogin();
   if (intent === "registrazione")  return support.supportRegistrazione();
   if (intent === "password_reset") return support.supportPasswordReset();
@@ -94,14 +95,14 @@ async function run(message, context = {}) {
 
   /* ============================================================
      4) POLICY / LEGAL (usa Legal Helper)
-  ============================================================ */
+  ============================================================= */
   if (intent === "privacy") return legal.legalPrivacy();
   if (intent === "termini") return legal.legalTerms();
   if (intent === "cookie")  return legal.legalCookie();
 
   /* ============================================================
      5) SPIEGAZIONI TECNICHE
-  ============================================================ */
+  ============================================================= */
   if (intent === "come_funziona") {
     return {
       avatar: "professor",
@@ -132,7 +133,7 @@ async function run(message, context = {}) {
 
   /* ============================================================
      6) FALLBACK
-  ============================================================ */
+  ============================================================= */
   return {
     avatar: "professor",
     type: "quick_replies",
@@ -145,6 +146,9 @@ async function run(message, context = {}) {
   };
 }
 
+/* ============================================================
+   EXPORT NPC
+============================================================ */
 module.exports = {
   name: "professor",
   avatar: "professor",
