@@ -38,7 +38,10 @@ function match(intentObj) {
    RUN — logica principale del Professore AI
 ============================================================ */
 async function run(message, context = {}) {
-  log("PROFESSORE_RUN", context);
+  log("PROFESSORE_RUN", {
+    uid: context.uid,
+    intent: context.intent?.intent
+  });
 
   const intentObj = context.intent || {};
   const intent = intentObj.intent || "generico";
@@ -104,6 +107,8 @@ async function run(message, context = {}) {
      5) SPIEGAZIONI TECNICHE
   ============================================================= */
   if (intent === "come_funziona") {
+    const video = "https://cdn.mewingmarket.it/video/come-funziona.mp4";
+
     return {
       avatar: "professor",
       type: "tutorial_card",
@@ -117,7 +122,7 @@ async function run(message, context = {}) {
         {
           label: "Guarda il video",
           type: "open_video",
-          video_url: "https://cdn.mewingmarket.it/video/come-funziona.mp4"
+          video_url: video
         }
       ]
     };
