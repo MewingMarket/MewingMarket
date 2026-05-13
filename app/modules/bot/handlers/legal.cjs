@@ -1,5 +1,5 @@
 /**
- * modules/bot/handlers/legal.cjs — VERSIONE VIDEOGIOCO 2027
+ * modules/bot/handlers/legal.cjs — VERSIONE VIDEOGIOCO 2027 (PATCH COMPLETA)
  * Legal Helper — Professore AI
  * Nessun HTML, nessun GPT, solo JSON UI compatibile con Game Engine
  */
@@ -18,7 +18,9 @@ function legalPrivacy() {
     avatar: "professor",
     layout: "legal",
     title: "Privacy Policy",
-    text: "Raccogliamo solo i dati necessari (nome, email) per newsletter e gestione ordini. I pagamenti sono gestiti da PayPal. Puoi richiedere modifica o cancellazione dei tuoi dati in qualsiasi momento.",
+    text:
+      "Raccogliamo solo i dati necessari (nome, email) per newsletter e gestione ordini. " +
+      "I pagamenti sono gestiti da PayPal. Puoi richiedere modifica o cancellazione dei tuoi dati in qualsiasi momento.",
     actions: [
       { label: "Apri pagina completa", intent: "open_privacy_page" },
       { label: "Torna al menu", intent: "menu" }
@@ -37,7 +39,9 @@ function legalTerms() {
     avatar: "professor",
     layout: "legal",
     title: "Termini e Condizioni",
-    text: "Vendiamo prodotti digitali con download immediato. L’uso è personale. I pagamenti sono gestiti tramite PayPal. Tutti i dettagli sono disponibili nella pagina completa.",
+    text:
+      "Vendiamo prodotti digitali con download immediato. L’uso è personale. " +
+      "I pagamenti sono gestiti tramite PayPal. Tutti i dettagli sono disponibili nella pagina completa.",
     actions: [
       { label: "Apri pagina completa", intent: "open_terms_page" },
       { label: "Torna al menu", intent: "menu" }
@@ -56,7 +60,9 @@ function legalCookie() {
     avatar: "professor",
     layout: "legal",
     title: "Cookie Policy",
-    text: "Utilizziamo cookie tecnici per il funzionamento del sito e cookie analitici anonimi per migliorare l’esperienza. Nessun cookie di marketing o tracciamento esterno.",
+    text:
+      "Utilizziamo cookie tecnici per il funzionamento del sito e cookie analitici anonimi per migliorare l’esperienza. " +
+      "Nessun cookie di marketing o tracciamento esterno.",
     actions: [
       { label: "Apri pagina completa", intent: "open_cookie_page" },
       { label: "Torna al menu", intent: "menu" }
@@ -68,6 +74,10 @@ function legalCookie() {
    TUTORIAL TV (video)
 ============================================================ */
 function legalTutorial(videoUrl) {
+  log("LEGAL_TUTORIAL", { videoUrl });
+
+  const safeUrl = typeof videoUrl === "string" ? videoUrl : null;
+
   return {
     type: "tutorial_card",
     avatar: "professor",
@@ -77,13 +87,15 @@ function legalTutorial(videoUrl) {
       "Comprendi privacy, termini e cookie",
       "Consulta le pagine complete se ti servono dettagli"
     ],
-    actions: [
-      {
-        label: "Guarda il video",
-        type: "open_video",
-        video_url: videoUrl
-      }
-    ]
+    actions: safeUrl
+      ? [
+          {
+            label: "Guarda il video",
+            type: "open_video",
+            video_url: safeUrl
+          }
+        ]
+      : []
   };
 }
 
@@ -91,6 +103,8 @@ function legalTutorial(videoUrl) {
    FALLBACK
 ============================================================ */
 function legalGeneric() {
+  log("LEGAL_GENERIC");
+
   return {
     type: "quick_replies",
     avatar: "professor",
@@ -98,7 +112,8 @@ function legalGeneric() {
     options: [
       { label: "Privacy", intent: "legal_privacy" },
       { label: "Termini", intent: "legal_terms" },
-      { label: "Cookie", intent: "legal_cookie" }
+      { label: "Cookie", intent: "legal_cookie" },
+      { label: "Menu", intent: "menu" }
     ]
   };
 }
