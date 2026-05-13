@@ -36,7 +36,12 @@ function match(intentObj) {
    RUN — logica principale NPC
 ============================================================ */
 async function run(message, context = {}) {
-  log("VENDOR_RUN", context);
+  log("VENDOR_RUN", {
+    uid: context.uid,
+    intent: context.intent?.intent,
+    productId: context.intent?.productId,
+    catalogCount: context.catalog?.length || 0
+  });
 
   const intentObj = context.intent || {};
   const intent = intentObj.intent || "generico";
