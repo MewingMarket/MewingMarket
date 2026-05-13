@@ -1,99 +1,95 @@
 /**
- * Router AI — Smistamento bot intelligente
- * Path: app/modules/bot/core/router-bot.cjs
+ * Router AI — VERSIONE VIDEOGIOCO 2027
+ * Smistamento avatar intelligente + compresenza + handoff
+ * Path: app/modules/bot/core/router.bot.cjs
  */
 
 const path = require("path");
 
-// Carichiamo i bot specializzati
+// Intent Engine locale (NO GPT)
+const { generateIntent } = require(path.join(process.cwd(), "app/modules/bot/intent-engine.cjs"));
+
+// Avatar (NPC)
 const vendorBot = require(path.join(process.cwd(), "app/modules/bot/bots/vendor.bot.cjs"));
 const professorBot = require(path.join(process.cwd(), "app/modules/bot/bots/professore.bot.cjs"));
 const influencerBot = require(path.join(process.cwd(), "app/modules/bot/bots/influencer.bot.cjs"));
 const newsletterBot = require(path.join(process.cwd(), "app/modules/bot/bots/newsletter.bot.cjs"));
 const genericBot = require(path.join(process.cwd(), "app/modules/bot/bots/generic.bot.cjs"));
 
-// Motore AI universale (intent detection)
-const ai = require(path.join(process.cwd(), "app/server/modules/ai.cjs"));
-
 /* ============================================================
    BOT REGISTRY — ordine di priorità
 ============================================================ */
-const BOT_LIST = [
-  vendorBot,
-  professorBot,
-  influencerBot,
-  newsletterBot,
-  genericBot // fallback finale
-];
+const BOT_MAP = {
+  vendor: vendorBot,
+  professor: professorBot,
+  influencer: influencerBot,
+  newsletter: newsletterBot,
+  assistant: genericBot
+};
 
 /* ============================================================
-   ROUTER PRINCIPALE
+   ROUTER PRINCIPALE — versione videogioco
 ============================================================ */
 async function routeMessage(message, context = {}) {
   const cleanMsg = (message || "").trim();
   if (!cleanMsg) {
-    return {
-      avatar: "assistant",
-      type: "text",
-      text: "Non ho ricevuto alcun messaggio."
-    };
-  }
-
-  /* ============================================================
-     1) INTENT DETECTION (AI)
-  ============================================================= */
-  let intent = { intent: "generico" };
-
-  try {
-    intent = await ai.generateIntent(cleanMsg, context);
-  } catch (err) {
-    intent = { intent: "generico" };
-  }
-
-  context.intent = intent;
-
-  /* ============================================================
-     2) MATCH BOT MANUALE (keyword-based)
-     — garantisce compatibilità anche senza AI
-  ============================================================= */
-  for (const bot of BOT_LIST) {
-    try {
-      if (bot.match(cleanMsg)) {
-        return await bot.run(cleanMsg, context);
+    return [
+      {
+        avatar: "assistant",
+        type: "text",
+        text: "Non ho ricevuto alcun messaggio."
       }
-    } catch (err) {
-      console.error("❌ Errore bot:", bot.name, err);
-    }
+    ];
   }
 
   /* ============================================================
-     3) MATCH BOT BASATO SU INTENT
+     1) INTENT ENGINE (locale, deterministico)
   ============================================================= */
-  switch (intent.intent) {
-    case "recensioni":
-    case "prezzo":
-    case "prodotti_correlati":
-      return await vendorBot.run(cleanMsg, context);
+  const intentData = await generateIntent(cleanMsg, context.catalog || []);
+  context.intent = intentData;
 
-    case "assistenza":
-    case "download":
-    case "ordini":
-    case "rimborso":
-      return await professorBot.run(cleanMsg, context);
+  const avatar = intentData.avatar || "assistant";
+  const bot = BOT_MAP[avatar] || genericBot;
 
-    case "video_motivazionale":
-    case "tutorial":
-    case "hype":
-      return await influencerBot.run(cleanMsg, context);
+  /* ============================================================
+     2) BOT PRINCIPALE (avatar target)
+  ============================================================= */
+  const mainResponse = await bot.run(cleanMsg, context);
 
-    case "newsletter":
-    case "follow_up":
-    case "novità":
-      return await newsletterBot.run(cleanMsg, context);
+  /* ============================================================
+     3) COMPRESENZA — avatar secondari che intervengono
+     Esempi:
+     - Venditore parla → Influencer aggiunge hype
+     - Professore parla → Venditore aggiunge un prodotto
+     - Newsletter parla → Influencer suggerisce i social
+  ============================================================= */
+  const extraResponses = [];
 
-    default:
-      return await genericBot.run(cleanMsg, context);
+  // Venditore → Influencer aggiunge hype
+  if (avatar === "vendor") {
+    const hype = await influencerBot.sidekick(cleanMsg, context);
+    if (hype) extraResponses.push(hype);
   }
+
+  // Professore → Venditore suggerisce un prodotto
+  if (avatar === "professor") {
+    const suggestion = await vendorBot.sidekick(cleanMsg, context);
+    if (suggestion) extraResponses.push(suggestion);
+  }
+
+  // Newsletter → Influencer suggerisce i social
+  if (avatar === "newsletter") {
+    const pr = await influencerBot.sidekick(cleanMsg, context);
+    if (pr) extraResponses.push(pr);
+  }
+
+  /* ============================================================
+     4) OUTPUT — lista di messaggi JSON per il Game Engine
+  ============================================================= */
+  return [
+    mainResponse,
+    ...extraResponses
+  ];
 }
 
 /* ============================================================
