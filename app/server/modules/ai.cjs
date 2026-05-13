@@ -1,32 +1,15 @@
 // FILE: app/server/modules/ai.cjs
-// PATH ASSOLUTO: app/server/modules/ai.cjs
-
-/**
- * =========================================================
- * AI UNIVERSALE — MewingMarket
- * Versione 2027.1 — Esteso con:
- *  - generateText()
- *  - generateValidation()
- *  - generateImage()
- * Mantiene callGPT() come motore centrale.
- * =========================================================
- */
+// PATCH 2027 — aggiunta generateIntent()
 
 const https = require("https");
 const fetch = require("node-fetch");
 
-/* ============================================================
-   HTTPS AGENT — evita blocchi su Render
-============================================================ */
 const agent = new https.Agent({
   keepAlive: true,
   maxSockets: 10,
   timeout: 10000
 });
 
-/* ============================================================
-   SYSTEM PROMPT BASE
-============================================================ */
 const BASE_SYSTEM_PROMPT = `
 Sei il Copilot ufficiale di MewingMarket.
 Tono: chiaro, diretto, professionale, amichevole.
@@ -38,9 +21,6 @@ Regole:
 - Rispetta sempre il contesto fornito.
 `;
 
-/* ============================================================
-   FUNZIONE PRINCIPALE — callGPT()
-============================================================ */
 async function callGPT({
   userPrompt = "",
   extraSystem = "",
@@ -103,8 +83,7 @@ async function callGPT({
 }
 
 /* ============================================================
-   FUNZIONE: generateText(prompt)
-   - restituisce testo puro
+   generateText()
 ============================================================ */
 async function generateText(prompt) {
   const out = await callGPT({ userPrompt: prompt });
@@ -112,8 +91,7 @@ async function generateText(prompt) {
 }
 
 /* ============================================================
-   FUNZIONE: generateValidation(prompt)
-   - restituisce JSON strutturato
+   generateValidation()
 ============================================================ */
 async function generateValidation(prompt) {
   const out = await callGPT({
@@ -149,8 +127,7 @@ Rispondi SOLO in JSON valido con questa struttura:
 }
 
 /* ============================================================
-   FUNZIONE: generateImage(prompt)
-   - restituisce base64 immagine
+   generateImage()
 ============================================================ */
 async function generateImage(prompt) {
   try {
@@ -182,11 +159,49 @@ async function generateImage(prompt) {
 }
 
 /* ============================================================
+   generateIntent() — PATCH 2027
+   Restituisce SOLO JSON INTENT
+============================================================ */
+async function generateIntent(prompt, context = {}) {
+  const INTENT_SYSTEM = `
+Sei un motore di INTENT DETECTION.
+NON generi testo umano.
+NON generi markup.
+NON generi emoji.
+NON generi spiegazioni.
+
+Il tuo unico compito è:
+- capire l'intento dell'utente
+- estrarre eventuali parametri (productId, topic, ecc.)
+- restituire SOLO un JSON valido
+
+Esempi validi:
+{"intent":"recensioni","productId":12}
+{"intent":"assistenza","topic":"download"}
+{"intent":"video_motivazionale"}
+{"intent":"generico"}
+`;
+
+  const out = await callGPT({
+    userPrompt: prompt,
+    extraSystem: INTENT_SYSTEM,
+    extraData: { context }
+  });
+
+  try {
+    return JSON.parse(out);
+  } catch {
+    return { intent: "generico" };
+  }
+}
+
+/* ============================================================
    EXPORT
 ============================================================ */
 module.exports = {
   callGPT,
   generateText,
   generateValidation,
-  generateImage
+  generateImage,
+  generateIntent   // 🔥 nuovo export
 };
