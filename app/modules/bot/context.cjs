@@ -1,41 +1,44 @@
 /**
- * modules/bot/context.cjs — VERSIONE DEFINITIVA PATCHATA
- * Gestione contesto conversazionale del bot
- * Compatibile con catalogo SQL, ID-based, descrizione PRO
+ * modules/bot/context.cjs — VERSIONE 2027
+ * Gestione contesto conversazionale per Router AI + Bot
+ * Compatibile con catalogo SQL e intent AI
  */
 
 const path = require("path");
+
 const {
   normalizeProduct,
   findProductById,
   findProductFromText
-} = require(path.join(__dirname, "catalogo.cjs"));
+} = require(path.join(process.cwd(), "app/modules/bot/catalogo.cjs"));
 
 /* ============================================================
-   STRUTTURA CONTESTO
+   CREA CONTESTO
+   — struttura minimale, deterministica
 ============================================================ */
 function createContext() {
   return {
-    last_intent: null,
-    last_product_id: null,
-    last_product: null,
-    last_query: null,
-    history: []
+    intent: null,            // ultimo intento AI
+    productId: null,         // ultimo prodotto usato
+    product: null,           // oggetto prodotto
+    query: null,             // ultimo testo utente
+    history: []              // log conversazionale
   };
 }
 
 /* ============================================================
    AGGIORNA CONTESTO
+   — chiamato dal Router AI dopo generateIntent()
 ============================================================ */
 function updateContext(ctx, data = {}) {
   if (!ctx) return;
 
-  if (data.intent) ctx.last_intent = data.intent;
-  if (data.query) ctx.last_query = data.query;
+  if (data.intent) ctx.intent = data.intent;
+  if (data.query) ctx.query = data.query;
 
   if (data.product) {
-    ctx.last_product = normalizeProduct(data.product);
-    ctx.last_product_id = ctx.last_product?.id || null;
+    ctx.product = normalizeProduct(data.product);
+    ctx.productId = ctx.product?.id || null;
   }
 
   ctx.history.push({
@@ -46,19 +49,20 @@ function updateContext(ctx, data = {}) {
 
 /* ============================================================
    RECUPERA PRODOTTO DAL CONTESTO
+   — usato dai bot (Venditore AI, Professore AI, ecc.)
 ============================================================ */
 async function getContextProduct(ctx, catalog = []) {
   if (!ctx) return null;
 
-  // Se abbiamo ID → recupero diretto
-  if (ctx.last_product_id) {
-    const p = findProductById(ctx.last_product_id, catalog);
+  // Caso 1: ID esplicito
+  if (ctx.productId) {
+    const p = findProductById(ctx.productId, catalog);
     if (p) return p;
   }
 
-  // Se abbiamo testo → fuzzy
-  if (ctx.last_query) {
-    const p = findProductFromText(ctx.last_query, catalog);
+  // Caso 2: fuzzy search sull’ultima query
+  if (ctx.query) {
+    const p = await findProductFromText(ctx.query, catalog);
     if (p) return p;
   }
 
@@ -70,10 +74,11 @@ async function getContextProduct(ctx, catalog = []) {
 ============================================================ */
 function resetContext(ctx) {
   if (!ctx) return;
-  ctx.last_intent = null;
-  ctx.last_product_id = null;
-  ctx.last_product = null;
-  ctx.last_query = null;
+
+  ctx.intent = null;
+  ctx.productId = null;
+  ctx.product = null;
+  ctx.query = null;
   ctx.history = [];
 }
 
