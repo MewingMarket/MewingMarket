@@ -1,6 +1,7 @@
 /**
- * modules/bot/catalogo.cjs
- * Catalogo dinamico — versione aggiornata SQL + ID-based + descrizione PRO
+ * modules/bot/catalogo.cjs — VERSIONE 2027
+ * Catalogo dinamico — SQL + ID-based + ricerca fuzzy
+ * Compatibile con Router AI + Bot JSON
  */
 
 const Fuse = require("fuse.js");
@@ -20,7 +21,7 @@ const fuseOptions = {
 };
 
 /* ============================================================
-   FUNZIONE: normalizza prodotto SQL
+   NORMALIZZA PRODOTTO SQL
 ============================================================ */
 function normalizeProduct(p) {
   if (!p) return null;
@@ -33,14 +34,18 @@ function normalizeProduct(p) {
     descrizione_lunga: p.descrizione_lunga || "",
     prezzo_cent: Number(p.prezzo_cent) || 0,
     immagine_url: p.immagine_url || "",
-    categoria: Array.isArray(p.categoria) ? p.categoria : [],
+    categoria: Array.isArray(p.categoria)
+      ? p.categoria
+      : typeof p.categoria === "string"
+      ? p.categoria.split(",").map(c => c.trim())
+      : [],
     youtube_url: p.youtube_url || "",
     catalog_video_block: p.catalog_video_block || ""
   };
 }
 
 /* ============================================================
-   FUNZIONE: trova prodotto per ID
+   TROVA PRODOTTO PER ID
 ============================================================ */
 function findProductById(id, products = []) {
   id = Number(id);
@@ -49,12 +54,13 @@ function findProductById(id, products = []) {
 }
 
 /* ============================================================
-   FUNZIONE: ricerca fuzzy da testo
+   RICERCA FUZZY DA TESTO
 ============================================================ */
 function findProductFromText(text, products = []) {
   if (!text || !products.length) return null;
 
-  const fuse = new Fuse(products.map(normalizeProduct), fuseOptions);
+  const normalized = products.map(normalizeProduct);
+  const fuse = new Fuse(normalized, fuseOptions);
   const results = fuse.search(text);
 
   if (!results.length) return null;
@@ -63,58 +69,47 @@ function findProductFromText(text, products = []) {
 }
 
 /* ============================================================
-   RISPOSTA BREVE PRODOTTO (PRO breve)
+   RISPOSTE JSON PER I BOT (NO HTML)
 ============================================================ */
-function productReply(product) {
-  if (!product) return "Prodotto non trovato.";
+function productCardJSON(product) {
+  if (!product) return null;
 
-  const prezzo = (product.prezzo_cent / 100).toFixed(2);
-
-  return `
-<div class="mm-card">
-  <div class="mm-card-title">${product.titolo_breve}</div>
-  <div class="mm-card-body">
-    ${product.descrizione_breve}
-    <br><br>
-    <b>${prezzo}€</b><br>
-    <a href="https://www.mewingmarket.it/prodotto/${product.id}" class="mm-btn">Apri</a>
-  </div>
-</div>
-`;
+  return {
+    type: "product_card",
+    product: {
+      id: product.id,
+      title: product.titolo,
+      description: product.descrizione_breve,
+      price_cent: product.prezzo_cent,
+      image: product.immagine_url
+    }
+  };
 }
 
-/* ============================================================
-   RISPOSTA LUNGA PRODOTTO (PRO lunga)
-============================================================ */
-function productLongReply(product) {
-  if (!product) return "Prodotto non trovato.";
+function productDetailsJSON(product) {
+  if (!product) return null;
 
-  const prezzo = (product.prezzo_cent / 100).toFixed(2);
-
-  return `
-<div class="mm-card">
-  <div class="mm-card-title">${product.titolo}</div>
-  <div class="mm-card-body">
-    ${product.descrizione_lunga}
-    <br><br>
-    <b>${prezzo}€</b><br>
-    <a href="https://www.mewingmarket.it/prodotto/${product.id}" class="mm-btn">Apri</a>
-  </div>
-</div>
-`;
+  return {
+    type: "product_details",
+    product: {
+      id: product.id,
+      title: product.titolo,
+      description: product.descrizione_lunga,
+      price_cent: product.prezzo_cent,
+      image: product.immagine_url,
+      youtube_url: product.youtube_url
+    }
+  };
 }
 
-/* ============================================================
-   RISPOSTA IMMAGINE PRODOTTO
-============================================================ */
-function productImageReply(product) {
-  if (!product) return "";
+function productImageJSON(product) {
+  if (!product) return null;
 
-  return `
-<div class="mm-card">
-  <img src="${product.immagine_url}" alt="${product.titolo_breve}" class="mm-img">
-</div>
-`;
+  return {
+    type: "image",
+    url: product.immagine_url,
+    alt: product.titolo_breve
+  };
 }
 
 /* ============================================================
@@ -124,7 +119,7 @@ module.exports = {
   normalizeProduct,
   findProductById,
   findProductFromText,
-  productReply,
-  productLongReply,
-  productImageReply
+  productCardJSON,
+  productDetailsJSON,
+  productImageJSON
 };
