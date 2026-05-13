@@ -1,6 +1,6 @@
 /**
- * premium/index.cjs
- * Hub centrale per tutti i moduli premium.
+ * premium/index.cjs — VERSIONE VIDEOGIOCO 2027
+ * Hub centrale per tutti i moduli premium JSON UI.
  * Importa e riesporta tutto in modo ordinato.
  */
 
