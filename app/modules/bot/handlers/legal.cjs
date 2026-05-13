@@ -1,7 +1,7 @@
 /**
- * modules/bot/handlers/legal.cjs — VERSIONE 2027
- * Legal Helper — usato dal bot Professore AI
- * Nessun HTML, nessun GPT, solo JSON UI
+ * modules/bot/handlers/legal.cjs — VERSIONE VIDEOGIOCO 2027
+ * Legal Helper — Professore AI
+ * Nessun HTML, nessun GPT, solo JSON UI compatibile con Game Engine
  */
 
 const path = require("path");
@@ -15,13 +15,13 @@ function legalPrivacy() {
 
   return {
     type: "card",
-    avatar: "professor_ai",
+    avatar: "professor",
     layout: "legal",
     title: "Privacy Policy",
-    text: "Raccogliamo solo i dati necessari (nome, email) per la newsletter e per la gestione degli ordini. I pagamenti sono gestiti da PayPal. Puoi richiedere modifica o cancellazione dei tuoi dati in qualsiasi momento.",
+    text: "Raccogliamo solo i dati necessari (nome, email) per newsletter e gestione ordini. I pagamenti sono gestiti da PayPal. Puoi richiedere modifica o cancellazione dei tuoi dati in qualsiasi momento.",
     actions: [
-      { label: "Apri pagina completa", value: "open_privacy_page" },
-      { label: "Torna al menu", value: "menu" }
+      { label: "Apri pagina completa", intent: "open_privacy_page" },
+      { label: "Torna al menu", intent: "menu" }
     ]
   };
 }
@@ -34,13 +34,13 @@ function legalTerms() {
 
   return {
     type: "card",
-    avatar: "professor_ai",
+    avatar: "professor",
     layout: "legal",
     title: "Termini e Condizioni",
     text: "Vendiamo prodotti digitali con download immediato. L’uso è personale. I pagamenti sono gestiti tramite PayPal. Tutti i dettagli sono disponibili nella pagina completa.",
     actions: [
-      { label: "Apri pagina completa", value: "open_terms_page" },
-      { label: "Torna al menu", value: "menu" }
+      { label: "Apri pagina completa", intent: "open_terms_page" },
+      { label: "Torna al menu", intent: "menu" }
     ]
   };
 }
@@ -53,13 +53,36 @@ function legalCookie() {
 
   return {
     type: "card",
-    avatar: "professor_ai",
+    avatar: "professor",
     layout: "legal",
     title: "Cookie Policy",
-    text: "Utilizziamo cookie tecnici per il funzionamento del sito e cookie analitici anonimi per migliorare l’esperienza utente. Nessun cookie di marketing o tracciamento esterno.",
+    text: "Utilizziamo cookie tecnici per il funzionamento del sito e cookie analitici anonimi per migliorare l’esperienza. Nessun cookie di marketing o tracciamento esterno.",
     actions: [
-      { label: "Apri pagina completa", value: "open_cookie_page" },
-      { label: "Torna al menu", value: "menu" }
+      { label: "Apri pagina completa", intent: "open_cookie_page" },
+      { label: "Torna al menu", intent: "menu" }
+    ]
+  };
+}
+
+/* ============================================================
+   TUTORIAL TV (video)
+============================================================ */
+function legalTutorial(videoUrl) {
+  return {
+    type: "tutorial_card",
+    avatar: "professor",
+    title: "Come funzionano le policy",
+    steps: [
+      "Guarda il video sulla TV",
+      "Comprendi privacy, termini e cookie",
+      "Consulta le pagine complete se ti servono dettagli"
+    ],
+    actions: [
+      {
+        label: "Guarda il video",
+        type: "open_video",
+        video_url: videoUrl
+      }
     ]
   };
 }
@@ -70,22 +93,23 @@ function legalCookie() {
 function legalGeneric() {
   return {
     type: "quick_replies",
-    avatar: "professor_ai",
+    avatar: "professor",
     text: "Vuoi informazioni su privacy, termini o cookie?",
     options: [
-      { label: "Privacy", value: "privacy" },
-      { label: "Termini", value: "termini" },
-      { label: "Cookie", value: "cookie" }
+      { label: "Privacy", intent: "legal_privacy" },
+      { label: "Termini", intent: "legal_terms" },
+      { label: "Cookie", intent: "legal_cookie" }
     ]
   };
 }
 
 /* ============================================================
-   EXPORT — usato da Professore AI
+   EXPORT — Professore AI
 ============================================================ */
 module.exports = {
   legalPrivacy,
   legalTerms,
   legalCookie,
+  legalTutorial,
   legalGeneric
 };
