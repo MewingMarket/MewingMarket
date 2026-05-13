@@ -1,13 +1,23 @@
 /**
- * modules/bot/catalogo.cjs — VERSIONE 2027
+ * modules/bot/catalogo.cjs — VERSIONE 2027 (PATCH COMPLETA)
  * Catalogo dinamico — SQL + ID-based + ricerca fuzzy
- * Compatibile con Router AI + Bot JSON
+ * Compatibile con Router AI + Bot JSON + Game Engine
  */
 
+const path = require("path");
 const Fuse = require("fuse.js");
 
 /* ============================================================
-   CONFIGURAZIONE FUSE (ricerca fuzzy)
+   IMPORT CORRETTO — catalogo SQL reale
+============================================================ */
+const {
+  getCatalog,
+  findProductById: findByIdSQL,
+  findProductFromText: findByTextSQL
+} = require(path.join(process.cwd(), "app/modules/catalogo.cjs"));
+
+/* ============================================================
+   CONFIGURAZIONE FUSE (ricerca fuzzy locale)
 ============================================================ */
 const fuseOptions = {
   includeScore: true,
@@ -40,26 +50,34 @@ function normalizeProduct(p) {
       ? p.categoria.split(",").map(c => c.trim())
       : [],
     youtube_url: p.youtube_url || "",
+    youtube_description: p.youtube_description || "",
     catalog_video_block: p.catalog_video_block || ""
   };
 }
 
 /* ============================================================
-   TROVA PRODOTTO PER ID
+   TROVA PRODOTTO PER ID (SQL)
 ============================================================ */
-function findProductById(id, products = []) {
-  id = Number(id);
-  const p = products.find(pr => Number(pr.id) === id);
+async function findProductById(id) {
+  const p = await findByIdSQL(id);
   return normalizeProduct(p);
 }
 
 /* ============================================================
-   RICERCA FUZZY DA TESTO
+   RICERCA FUZZY DA TESTO (SQL + fallback Fuse)
 ============================================================ */
-function findProductFromText(text, products = []) {
-  if (!text || !products.length) return null;
+async function findProductFromText(text) {
+  if (!text) return null;
 
-  const normalized = products.map(normalizeProduct);
+  // 1) SQL search
+  const sqlMatch = await findByTextSQL(text);
+  if (sqlMatch) return normalizeProduct(sqlMatch);
+
+  // 2) Fallback fuzzy locale
+  const catalog = await getCatalog();
+  if (!catalog.length) return null;
+
+  const normalized = catalog.map(normalizeProduct);
   const fuse = new Fuse(normalized, fuseOptions);
   const results = fuse.search(text);
 
