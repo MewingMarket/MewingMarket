@@ -3,24 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Scuola Digitale AI — Videogioco</title>
-
-  <!-- CSS del gioco -->
+  <title>Gioca con i Bot</title>
   <link rel="stylesheet" href="game.css">
 </head>
 
 <body>
 
-  <!-- =========================================================
-       SPA — SCHERMATE DEL GIOCO
-  ========================================================== -->
-
   <!-- SCREEN 1 — LAUNCHER -->
   <div class="screen" id="screen-launcher">
     <div class="launcher-box">
-      <img src="/chat-icon.png" class="launcher-icon" alt="Launcher">
-      <h1>Scuola Digitale AI</h1>
-      <button onclick="goTo('screen-login')">Inizia</button>
+      <img src="/chat-icon.png" class="launcher-icon" alt="Launcher" onclick="goTo('screen-login')">
+      <h2 class="launcher-subtitle">Gioca con i Bot</h2>
     </div>
   </div>
 
@@ -37,12 +30,12 @@
 
     <div class="avatar-grid">
       <div class="avatar-card" data-avatar="male">
-        <img src="/avatars/male.png" alt="Avatar Uomo">
+        <img src="/videogioco/uomo saggio.png" alt="Avatar Uomo">
         <span>Uomo</span>
       </div>
 
       <div class="avatar-card" data-avatar="female">
-        <img src="/avatars/female.png" alt="Avatar Donna">
+        <img src="/videogioco/donna saggia.png" alt="Avatar Donna">
         <span>Donna</span>
       </div>
     </div>
@@ -72,7 +65,7 @@
 
       <!-- Avatar dinamico -->
       <div id="avatar-area">
-        <img id="avatar-img" src="/avatars/default.png" alt="Avatar">
+        <img id="avatar-img" src="/videogioco/uomo saggio.png" alt="Avatar">
       </div>
 
       <!-- Chat -->
@@ -91,10 +84,6 @@
     </div>
 
   </div>
-
-  <!-- =========================================================
-       SCRIPT DEL GIOCO
-  ========================================================== -->
 
   <script src="game.js"></script>
   <script src="chat.js"></script>
