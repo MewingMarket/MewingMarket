@@ -1,12 +1,20 @@
 /**
- * Intent Engine — VERSIONE VIDEOGIOCO 2027
+ * Intent Engine — VERSIONE VIDEOGIOCO 2027 (PATCH COMPLETA)
  * Locale, deterministico, zero GPT.
  * Restituisce: intent + avatar + productId + rawProduct + keywords + category
  */
 
 const path = require("path");
-const { normalize, extractKeywords } = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
-const { findProductFromText, findProductById } = require(path.join(process.cwd(), "app/modules/bot/catalogo.cjs"));
+const {
+  normalize,
+  cleanSearchQuery,
+  extractLinks
+} = require(path.join(process.cwd(), "app/modules/utils.js"));
+
+const {
+  findProductFromText,
+  findProductById
+} = require(path.join(process.cwd(), "app/modules/catalogo.cjs"));
 
 /* ============================================================
    1) INTENT DI BASE
@@ -65,13 +73,13 @@ const AVATAR_MAP = {
 };
 
 /* ============================================================
-   3) RICONOSCIMENTO INTENT
+   3) RICONOSCIMENTO INTENT (locale)
 ============================================================ */
 function detectIntent(text) {
-  const t = normalize(text);
+  const t = cleanSearchQuery(text);
 
   for (const [intent, keywords] of Object.entries(INTENTS)) {
-    if (keywords.some(k => t.includes(normalize(k)))) {
+    if (keywords.some(k => t.includes(cleanSearchQuery(k)))) {
       return intent;
     }
   }
@@ -82,18 +90,18 @@ function detectIntent(text) {
 /* ============================================================
    4) RICONOSCIMENTO PRODOTTO
 ============================================================ */
-async function detectProduct(text, catalog = []) {
-  const t = normalize(text);
+async function detectProduct(text) {
+  const t = cleanSearchQuery(text);
 
   // ID esplicito
   const idMatch = t.match(/\b(\d{1,4})\b/);
   if (idMatch) {
-    const p = findProductById(Number(idMatch[1]), catalog);
+    const p = await findProductById(Number(idMatch[1]));
     if (p) return p;
   }
 
   // fuzzy
-  const p = await findProductFromText(text, catalog);
+  const p = await findProductFromText(text);
   if (p) return p;
 
   return null;
@@ -102,22 +110,24 @@ async function detectProduct(text, catalog = []) {
 /* ============================================================
    5) INTENT ENGINE COMPLETO
 ============================================================ */
-async function generateIntent(text, catalog = []) {
-  const intent = detectIntent(text);
-  const product = await detectProduct(text, catalog);
+async function generateIntent(text) {
+  const localIntent = detectIntent(text);
+  const product = await detectProduct(text);
 
-  const keywords = extractKeywords(text);
+  const keywords = cleanSearchQuery(text).split(" ").filter(w => w.length > 2);
   const category = product?.categoria || null;
 
   return {
-    intent,
+    raw: text,
+    intent: localIntent,
     subintent: null,
-    avatar: AVATAR_MAP[intent] || "assistant",
+    avatar: AVATAR_MAP[localIntent] || "assistant",
     productId: product?.id || null,
     rawProduct: product || null,
     category,
     keywords,
-    confidence: 1
+    confidence: 1,
+    source: "local"
   };
 }
 
