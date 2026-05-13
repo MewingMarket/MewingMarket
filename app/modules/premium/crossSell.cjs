@@ -1,164 +1,141 @@
 /**
- * premium/crossSell.cjs
- * Modulo per suggerimenti intelligenti (cross-sell).
+ * premium/crossSell.cjs — VERSIONE VIDEOGIOCO 2027
+ * Modulo JSON UI per suggerimenti intelligenti (cross-sell).
+ * Compatibile con Game Engine WhatsApp-style.
  */
 
-function escapeHTML(str = "") {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
-/* ------------------------------------------
-   CROSS-SELL GENERICO — suggerimento base
------------------------------------------- */
+/* ============================================================
+   CROSS-SELL GENERICO
+============================================================ */
 function crossSellGeneric(product) {
-  if (!product) return "";
+  if (!product) {
+    return {
+      type: "text",
+      avatar: "vendor",
+      text: "Posso consigliarti prodotti correlati se vuoi."
+    };
+  }
 
-  return `
-<div class="mm-info">
-  <div class="mm-info-title">💡 Ti potrebbe interessare anche</div>
-  <div class="mm-info-body">
-    Posso consigliarti prodotti correlati per migliorare ancora di più i tuoi risultati.
-  </div>
-</div>
-`;
+  return {
+    type: "card",
+    avatar: "vendor",
+    layout: "info",
+    title: "💡 Ti potrebbe interessare anche",
+    text: "Vuoi migliorare ancora di più i tuoi risultati? Posso mostrarti prodotti correlati.",
+    actions: [
+      { label: "Mostra correlati", intent: "prodotti_correlati", productId: product.id }
+    ]
+  };
 }
 
-/* ------------------------------------------
+/* ============================================================
    CROSS-SELL PER CATEGORIA
------------------------------------------- */
+============================================================ */
 function crossSellByCategory(product, allProducts = []) {
-  if (!product || !Array.isArray(allProducts)) return "";
+  if (!product || !Array.isArray(allProducts)) {
+    return crossSellGeneric(product);
+  }
 
-  const categoria = product.categoria || product.category;
+  const categoria = product.categoria;
   if (!categoria) return crossSellGeneric(product);
 
-  const correlati = allProducts.filter(
-    p => p.id !== product.id && p.categoria === categoria
-  );
+  const correlati = allProducts
+    .filter(p => p.id !== product.id && p.categoria === categoria)
+    .slice(0, 3);
 
   if (!correlati.length) return crossSellGeneric(product);
 
-  let html = `
-<div class="mm-info">
-  <div class="mm-info-title">🔗 Prodotti correlati</div>
-  <div class="mm-info-body">
-    Altri prodotti nella categoria <b>${escapeHTML(categoria)}</b>:
-  </div>
-</div>
-`;
-
-  for (const p of correlati) {
-    const id = escapeHTML(String(p.id || ""));
-    const link = `https://www.mewingmarket.it/prodotto/${id}`;
-
-    html += `
-<div class="mm-card">
-  <div class="mm-card-header">
-    <div class="mm-card-title">${escapeHTML(p.titoloBreve || p.titolo)}</div>
-    <div class="mm-card-price">${escapeHTML(p.prezzo)}€</div>
-  </div>
-  <div class="mm-card-footer">
-    <a class="mm-btn-small" href="${link}" target="_blank">Apri</a>
-  </div>
-</div>
-`;
-  }
-
-  return html;
+  return {
+    type: "carousel",
+    avatar: "vendor",
+    title: `🔗 Prodotti correlati (${categoria})`,
+    items: correlati.map(p => ({
+      id: p.id,
+      title: p.titolo_breve,
+      description: p.descrizione_breve,
+      price_cent: p.prezzo_cent,
+      image: p.immagine_url
+    })),
+    actions: [
+      { label: "Mostra dettagli", intent: "dettagli_prodotto", productId: product.id }
+    ]
+  };
 }
 
-/* ------------------------------------------
-   CROSS-SELL SPECIFICO PER PRODOTTO
------------------------------------------- */
+/* ============================================================
+   CROSS-SELL BASATO SU SIMILITUDINE DEL TITOLO
+============================================================ */
 function crossSellByProduct(product, allProducts = []) {
-  if (!product) return "";
+  if (!product) return crossSellGeneric(product);
 
-  const titolo = product.titoloBreve || product.titolo || "";
-  const keywords = titolo.toLowerCase().split(" ");
+  const titolo = (product.titolo_breve || product.titolo || "").toLowerCase();
+  const keywords = titolo.split(" ").filter(k => k.length > 3);
 
   const correlati = allProducts.filter(p => {
     if (p.id === product.id) return false;
-    const t = (p.titoloBreve || p.titolo || "").toLowerCase();
+    const t = (p.titolo_breve || p.titolo || "").toLowerCase();
     return keywords.some(k => t.includes(k));
-  });
+  }).slice(0, 3);
 
   if (!correlati.length) return crossSellGeneric(product);
 
-  let html = `
-<div class="mm-info">
-  <div class="mm-info-title">✨ Basato su ciò che hai visto</div>
-  <div class="mm-info-body">
-    Questi prodotti sono particolarmente affini a <b>${escapeHTML(titolo)}</b>:
-  </div>
-</div>
-`;
-
-  for (const p of correlati) {
-    const id = escapeHTML(String(p.id || ""));
-    const link = `https://www.mewingmarket.it/prodotto/${id}`;
-
-    html += `
-<div class="mm-card">
-  <div class="mm-card-header">
-    <div class="mm-card-title">${escapeHTML(p.titoloBreve || p.titolo)}</div>
-    <div class="mm-card-price">${escapeHTML(p.prezzo)}€</div>
-  </div>
-  <div class="mm-card-footer">
-    <a class="mm-btn-small" href="${link}" target="_blank">Apri</a>
-  </div>
-</div>
-`;
-  }
-
-  return html;
+  return {
+    type: "carousel",
+    avatar: "vendor",
+    title: "✨ Basato su ciò che hai visto",
+    items: correlati.map(p => ({
+      id: p.id,
+      title: p.titolo_breve,
+      description: p.descrizione_breve,
+      price_cent: p.prezzo_cent,
+      image: p.immagine_url
+    })),
+    actions: [
+      { label: "Mostra correlati", intent: "prodotti_correlati", productId: product.id }
+    ]
+  };
 }
 
-/* ------------------------------------------
-   CROSS-SELL UPGRADE — versione premium
------------------------------------------- */
+/* ============================================================
+   CROSS-SELL UPGRADE (versione premium)
+============================================================ */
 function crossSellUpgrade(product, allProducts = []) {
-  if (!product) return "";
+  if (!product) return crossSellGeneric(product);
 
-  const titolo = product.titoloBreve || product.titolo || "";
+  const upgrade = allProducts
+    .filter(
+      p =>
+        p.id !== product.id &&
+        p.categoria === product.categoria &&
+        Number(p.prezzo_cent) > Number(product.prezzo_cent)
+    )
+    .sort((a, b) => b.prezzo_cent - a.prezzo_cent);
 
-  const upgrade = allProducts.filter(
-    p =>
-      p.id !== product.id &&
-      p.categoria === product.categoria &&
-      Number(p.prezzo) > Number(product.prezzo)
-  );
+  if (!upgrade.length) return null;
 
-  if (!upgrade.length) return "";
+  const best = upgrade[0];
 
-  const best = upgrade.sort((a, b) => Number(b.prezzo) - Number(a.prezzo))[0];
-
-  const id = escapeHTML(String(best.id || ""));
-  const link = `https://www.mewingmarket.it/prodotto/${id}`;
-
-  return `
-<div class="mm-success">
-  <div class="mm-success-title">⬆️ Upgrade consigliato</div>
-  <div class="mm-success-body">
-    Se vuoi una versione più completa rispetto a <b>${escapeHTML(titolo)}</b>, valuta:
-  </div>
-</div>
-
-<div class="mm-card">
-  <div class="mm-card-header">
-    <div class="mm-card-title">${escapeHTML(best.titoloBreve || best.titolo)}</div>
-    <div class="mm-card-price">${escapeHTML(best.prezzo)}€</div>
-  </div>
-  <div class="mm-card-footer">
-    <a class="mm-btn" href="${link}" target="_blank">Scopri di più</a>
-  </div>
-</div>
-`;
+  return {
+    type: "card",
+    avatar: "vendor",
+    layout: "upgrade",
+    title: "⬆️ Upgrade consigliato",
+    text: `Se vuoi una versione più completa rispetto a *${product.titolo_breve}*, valuta questo:`,
+    product: {
+      id: best.id,
+      title: best.titolo_breve,
+      price_cent: best.prezzo_cent,
+      image: best.immagine_url
+    },
+    actions: [
+      { label: "Apri prodotto", intent: "prodotto", productId: best.id }
+    ]
+  };
 }
 
-/* EXPORT UNICO */
+/* ============================================================
+   EXPORT
+============================================================ */
 module.exports = {
   crossSellGeneric,
   crossSellByCategory,
