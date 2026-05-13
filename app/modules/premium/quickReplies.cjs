@@ -5,7 +5,7 @@
  */
 
 const path = require("path");
-const { normalizeProduct } = require(path.join(process.cwd(), "app/modules/premium/catalogo.cjs"));
+const { normalizeProduct } = require(path.join(process.cwd(), "app/modules/catalogo.cjs"));
 
 /* ============================================================
    QUICK REPLIES PER PRODOTTO (intent-driven)
