@@ -11,7 +11,7 @@ const {
   stripHTML,
   safeText: globalSafeText,
   extractLinks: globalExtractLinks
-} = require(path.join(process.cwd(), "app/modules/utils.js"));
+} = require(path.join(process.cwd(), "app/modules/utils.cjs"));
 
 /* ============================================================
    LOG ENGINE — logging totale
