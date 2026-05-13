@@ -1,5 +1,5 @@
 /**
- * modules/bot/handlers/conversation.cjs — VERSIONE VIDEOGIOCO 2027
+ * modules/bot/handlers/conversation.cjs — VERSIONE VIDEOGIOCO 2027 (PATCH COMPLETA)
  * Conversation Helper — Avatar Generico (Narratore)
  * Nessun HTML, nessun GPT, solo JSON UI compatibile con Game Engine
  */
@@ -58,6 +58,10 @@ function conversationMenu() {
    TUTORIAL TV (video onboarding)
 ============================================================ */
 function conversationTutorial(videoUrl) {
+  log("CONVERSATION_TUTORIAL", { videoUrl });
+
+  const safeUrl = typeof videoUrl === "string" ? videoUrl : null;
+
   return {
     type: "tutorial_card",
     avatar: "assistant",
@@ -67,13 +71,15 @@ function conversationTutorial(videoUrl) {
       "Interagisci con gli avatar",
       "Guarda i video tutorial sulla TV"
     ],
-    actions: [
-      {
-        label: "Guarda il video",
-        type: "open_video",
-        video_url: videoUrl
-      }
-    ]
+    actions: safeUrl
+      ? [
+          {
+            label: "Guarda il video",
+            type: "open_video",
+            video_url: safeUrl
+          }
+        ]
+      : []
   };
 }
 
@@ -81,6 +87,8 @@ function conversationTutorial(videoUrl) {
    FALLBACK
 ============================================================ */
 function conversationFallback() {
+  log("CONVERSATION_FALLBACK");
+
   return {
     type: "quick_replies",
     avatar: "assistant",
