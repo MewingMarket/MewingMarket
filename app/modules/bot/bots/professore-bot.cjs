@@ -1,58 +1,50 @@
 /**
- * Professore AI — Supporto + Spiegazioni tecniche
+ * Professore AI — Supporto + Spiegazioni tecniche (2027)
  * Path: app/modules/bot/bots/professore-bot.cjs
  */
 
+const path = require("path");
 const db = require("../../db/database.cjs");
 
-/* =========================================================
-   MATCH — quando interviene il Professore AI
-========================================================= */
+const { log } = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
+const support = require(path.join(process.cwd(), "app/modules/bot/handlers/support.cjs"));
+const legal = require(path.join(process.cwd(), "app/modules/bot/handlers/legal.cjs"));
 
-function match(message) {
-  if (!message) return false;
-  const m = message.toLowerCase();
-
-  return (
-    /* Supporto tecnico */
-    m.includes("ordine") ||
-    m.includes("ordini") ||
-    m.includes("download") ||
-    m.includes("scaricare") ||
-    m.includes("non funziona") ||
-    m.includes("errore") ||
-    m.includes("problema") ||
-    m.includes("assistenza") ||
-    m.includes("rimborso") ||
-    m.includes("rimborsami") ||
-    m.includes("accesso") ||
-    m.includes("login") ||
-    m.includes("password") ||
-
-    /* Professore / spiegazioni */
-    m.includes("spiega") ||
-    m.includes("come funziona") ||
-    m.includes("perché") ||
-    m.includes("privacy") ||
-    m.includes("policy") ||
-    m.includes("termini") ||
-    m.includes("gdpr") ||
-    m.includes("sicurezza")
-  );
+/* ============================================================
+   MATCH — basato su INTENT, non sul testo
+============================================================ */
+function match(intent) {
+  return [
+    "supporto",
+    "ordini",
+    "download",
+    "pagamento",
+    "rimborso",
+    "contatti",
+    "login",
+    "registrazione",
+    "password_reset",
+    "privacy",
+    "termini",
+    "cookie",
+    "spiega",
+    "come_funziona"
+  ].includes(intent);
 }
 
-/* =========================================================
+/* ============================================================
    RUN — logica principale del bot
-========================================================= */
-
+============================================================ */
 async function run(message, context = {}) {
-  const m = message.toLowerCase();
+  log("PROFESSORE_RUN", context);
+
+  const intent = context.intent;
   const userId = context.userId || null;
 
-  /* =========================================================
+  /* ============================================================
      1) ORDINI
-  ========================================================== */
-  if (m.includes("ordine") || m.includes("ordini")) {
+  ============================================================ */
+  if (intent === "ordini") {
     if (!userId) {
       return {
         avatar: "professor_ai",
@@ -80,15 +72,15 @@ async function run(message, context = {}) {
       orders: orders.map(o => ({
         id: o.id,
         title: o.titolo,
-        download: !!o.download_url
+        downloadable: !!o.download_url
       }))
     };
   }
 
-  /* =========================================================
+  /* ============================================================
      2) DOWNLOAD
-  ========================================================== */
-  if (m.includes("download") || m.includes("scaricare")) {
+  ============================================================ */
+  if (intent === "download") {
     if (!userId) {
       return {
         avatar: "professor_ai",
@@ -121,67 +113,48 @@ async function run(message, context = {}) {
     };
   }
 
-  /* =========================================================
-     3) RIMBORSO
-  ========================================================== */
-  if (m.includes("rimborso") || m.includes("rimborsami")) {
-    return {
-      avatar: "professor_ai",
-      type: "text",
-      text:
-        "Per richiedere un rimborso apri un ticket dalla pagina Assistenza. " +
-        "Il nostro team risponde entro 24–48 ore."
-    };
-  }
+  /* ============================================================
+     3) SUPPORTO STANDARD (usa Support Helper)
+  ============================================================ */
+  if (intent === "login")          return support.supportLogin();
+  if (intent === "registrazione")  return support.supportRegistrazione();
+  if (intent === "password_reset") return support.supportPasswordReset();
+  if (intent === "pagamento")      return support.supportPagamento();
+  if (intent === "rimborso")       return support.supportRimborso();
+  if (intent === "contatti")       return support.supportContatti();
+  if (intent === "supporto")       return support.supportGeneric();
 
-  /* =========================================================
-     4) LOGIN / ACCESSO
-  ========================================================== */
-  if (m.includes("login") || m.includes("accesso") || m.includes("password")) {
-    return {
-      avatar: "professor_ai",
-      type: "text",
-      text:
-        "Per accedere al tuo account vai su *Dashboard → Accedi*. " +
-        "Se hai dimenticato la password puoi reimpostarla dalla stessa pagina."
-    };
-  }
+  /* ============================================================
+     4) POLICY / LEGAL (usa Legal Helper)
+  ============================================================ */
+  if (intent === "privacy") return legal.legalPrivacy();
+  if (intent === "termini") return legal.legalTerms();
+  if (intent === "cookie")  return legal.legalCookie();
 
-  /* =========================================================
-     5) SPIEGAZIONI TECNICHE / POLICY
-  ========================================================== */
-  if (m.includes("privacy") || m.includes("gdpr") || m.includes("policy")) {
+  /* ============================================================
+     5) SPIEGAZIONI TECNICHE
+  ============================================================ */
+  if (intent === "come_funziona") {
     return {
       avatar: "professor_ai",
       type: "text",
       text:
-        "La nostra Privacy Policy segue gli standard GDPR. " +
-        "I tuoi dati vengono utilizzati solo per fornirti i servizi acquistati."
-    };
-  }
-
-  if (m.includes("come funziona")) {
-    return {
-      avatar: "professor_ai",
-      type: "text",
-      text:
-        "Funziona così: dopo l'acquisto ricevi subito l'accesso al tuo prodotto. " +
+        "Funziona così: dopo l'acquisto ricevi subito l’accesso al tuo prodotto. " +
         "Lo trovi nella Dashboard, nella sezione *I miei download*."
     };
   }
 
-  if (m.includes("spiega") || m.includes("perché")) {
+  if (intent === "spiega") {
     return {
       avatar: "professor_ai",
       type: "text",
-      text:
-        "Certo! Dimmi cosa vuoi che ti spieghi e ti preparo una risposta chiara e semplice."
+      text: "Certo! Dimmi cosa vuoi che ti spieghi e preparo una risposta chiara e semplice."
     };
   }
 
-  /* =========================================================
+  /* ============================================================
      6) FALLBACK
-  ========================================================== */
+  ============================================================ */
   return {
     avatar: "professor_ai",
     type: "quick_replies",
@@ -195,7 +168,7 @@ async function run(message, context = {}) {
 }
 
 module.exports = {
-  name: "Professore AI",
+  name: "professore",
   avatar: "professor_ai",
   match,
   run
