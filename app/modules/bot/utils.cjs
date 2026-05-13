@@ -1,13 +1,13 @@
 /**
  * modules/bot/utils.cjs
- * Utility interne del bot — logging, reply, emoji, stato, UID
- * + PATCH: normalizzazione avanzata, ricerca, sicurezza GPT
+ * Utility interne del bot — versione 2027
+ * Compatibile con Router AI + Bot JSON
  */
 
 const path = require("path");
 
-// PATCH: require assoluto
-const { stripHTML } = require(path.join(process.cwd(), "app/modules/utils.cjs")); // usa il tuo utils generale
+// Utils generali del progetto
+const { stripHTML } = require(path.join(process.cwd(), "app/modules/utils.cjs"));
 
 /* ============================================================
    LOG ENGINE — logging totale
@@ -46,26 +46,11 @@ function cleanSearchQuery(text = "") {
 }
 
 /* ============================================================
-   EMOJI BOOSTER
+   KEYWORD EXTRACTOR
 ============================================================ */
-function addEmojis(text = "") {
-  log("EMOJI_IN", text);
-  try {
-    if (!text || typeof text !== "string") return text || "";
-    const out = text
-      .replace(/\bciao\b/gi, "ciao 👋")
-      .replace(/\bgrazie\b/gi, "grazie 🙏")
-      .replace(/\bok\b/gi, "ok 👍")
-      .replace(/\bperfetto\b/gi, "perfetto 😎")
-      .replace(/\bottimo\b/gi, "ottimo 🔥")
-      .replace(/\bscusa\b/gi, "scusa 😅");
-
-    log("EMOJI_OUT", out);
-    return out;
-  } catch (err) {
-    log("EMOJI_ERROR", err);
-    return text;
-  }
+function extractKeywords(text = "") {
+  const t = cleanSearchQuery(text);
+  return t.split(" ").filter(w => w.length > 2);
 }
 
 /* ============================================================
@@ -75,49 +60,6 @@ function generateUID() {
   const uid = "mm_" + Math.random().toString(36).substring(2, 12);
   log("UID_GENERATED", uid);
   return uid;
-}
-
-/* ============================================================
-   STATE MANAGER
-============================================================ */
-function setState(req, newState) {
-  try {
-    const old = req?.userState?.state || "none";
-    log("STATE_CHANGE", { old, new: newState });
-    if (req.userState) req.userState.state = newState;
-  } catch (err) {
-    log("STATE_ERROR", err);
-  }
-}
-
-/* ============================================================
-   BOT REPLY WRAPPER (VERSIONE RESILIENTE)
-============================================================ */
-function reply(res, text) {
-  try {
-    log("BOT_REPLY", text);
-
-    const payload = { reply: addEmojis(text || "") };
-
-    if (res && typeof res.json === "function") {
-      return res.json(payload);
-    }
-
-    return payload;
-
-  } catch (err) {
-    log("BOT_REPLY_ERROR", err);
-
-    const fallback = {
-      reply: "C’è un piccolo problema tecnico, ma posso aiutarti."
-    };
-
-    if (res && typeof res.json === "function") {
-      return res.json(fallback);
-    }
-
-    return fallback;
-  }
 }
 
 /* ============================================================
@@ -136,24 +78,27 @@ function isYes(text) {
 }
 
 /* ============================================================
-   KEYWORD EXTRACTOR (PATCH)
+   STATE MANAGER (compatibile con bot)
 ============================================================ */
-function extractKeywords(text = "") {
-  const t = cleanSearchQuery(text);
-  return t.split(" ").filter(w => w.length > 2);
+function setState(req, newState) {
+  try {
+    const old = req?.userState?.state || "none";
+    log("STATE_CHANGE", { old, new: newState });
+    if (req.userState) req.userState.state = newState;
+  } catch (err) {
+    log("STATE_ERROR", err);
+  }
 }
 
 /* ============================================================
-   EXPORT
+   EXPORT — versione pulita per Router AI + Bot
 ============================================================ */
 module.exports = {
   log,
-  reply,
-  addEmojis,
-  generateUID,
-  setState,
-  isYes,
   normalize,
   cleanSearchQuery,
-  extractKeywords
+  extractKeywords,
+  generateUID,
+  isYes,
+  setState
 };
