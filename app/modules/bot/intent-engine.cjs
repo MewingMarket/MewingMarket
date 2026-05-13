@@ -9,7 +9,7 @@ const {
   normalize,
   cleanSearchQuery,
   extractLinks
-} = require(path.join(process.cwd(), "app/modules/utils.js"));
+} = require(path.join(process.cwd(), "app/modules/utils.cjs"));
 
 const {
   findProductFromText,
