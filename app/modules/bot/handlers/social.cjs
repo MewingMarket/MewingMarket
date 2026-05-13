@@ -1,5 +1,5 @@
 /**
- * modules/bot/handlers/social.cjs — VERSIONE VIDEOGIOCO 2027
+ * modules/bot/handlers/social.cjs — VERSIONE VIDEOGIOCO 2027 (PATCH COMPLETA)
  * Social Helper — Influencer AI
  * Nessun HTML, nessun GPT, solo JSON UI compatibile con Game Engine
  */
@@ -23,15 +23,19 @@ const SOCIAL_LINKS = {
    SOCIAL SPECIFICO (profilo singolo)
 ============================================================ */
 function socialSpecific(platform) {
-  log("SOCIAL_SPECIFIC", platform);
+  log("SOCIAL_SPECIFIC", { platform });
 
   const link = SOCIAL_LINKS[platform];
 
   if (!link) {
     return {
-      type: "text",
+      type: "quick_replies",
       avatar: "influencer",
-      text: "Non trovo questo social. Vuoi vedere la lista completa?"
+      text: "Non trovo questo social. Vuoi vedere la lista completa?",
+      options: [
+        { label: "Mostra tutti i social", intent: "social_list" },
+        { label: "Menu", intent: "menu" }
+      ]
     };
   }
 
@@ -42,7 +46,8 @@ function socialSpecific(platform) {
     title: `Profilo ${platform}`,
     link,
     actions: [
-      { label: "Mostra tutti i social", intent: "social_list" }
+      { label: "Mostra tutti i social", intent: "social_list" },
+      { label: "Torna al menu", intent: "menu" }
     ]
   };
 }
@@ -73,9 +78,12 @@ function socialGeneric() {
    SOCIAL VIDEO CARD (TV + animazione)
 ============================================================ */
 function socialVideo(platform) {
-  const link = SOCIAL_LINKS[platform];
+  log("SOCIAL_VIDEO", { platform });
 
-  if (!link) {
+  const link = SOCIAL_LINKS[platform];
+  const safeUrl = typeof link === "string" ? link : null;
+
+  if (!safeUrl) {
     return {
       type: "text",
       avatar: "influencer",
@@ -96,7 +104,7 @@ function socialVideo(platform) {
       {
         label: "Guarda il video",
         type: "open_video",
-        video_url: link
+        video_url: safeUrl
       }
     ]
   };
