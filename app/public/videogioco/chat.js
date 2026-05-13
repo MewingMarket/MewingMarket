@@ -5,7 +5,6 @@
 
 document.addEventListener("DOMContentLoaded", () => {
 
-  /* ELEMENTI BASE */
   const chatBox = document.getElementById("chat-box");
   const chatInput = document.getElementById("chat-input");
   const chatSend = document.getElementById("chat-send");
@@ -14,23 +13,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const chatFile = document.getElementById("chat-file");
   const avatarImg = document.getElementById("avatar-img");
 
-  /* TOGGLE CHAT ICON */
-  const chatToggle = document.getElementById("chat-toggle");
-  const chatContainer = document.getElementById("screen-chat");
-
-  if (chatToggle) {
-    chatToggle.addEventListener("click", () => {
-      goTo("screen-chat");
-    });
-  }
-
-  /* SANITIZE */
   const clean = (t) =>
     typeof t === "string"
       ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
       : "";
 
-  /* BOLLE */
   function addMessage(text, sender = "bot") {
     const bubble = document.createElement("div");
     bubble.className = sender === "user" ? "chat-bubble user" : "chat-bubble bot";
@@ -39,9 +26,25 @@ document.addEventListener("DOMContentLoaded", () => {
     chatBox.scrollTop = chatBox.scrollHeight;
   }
 
-  /* =========================================================
-     RENDER JSON (NUOVO)
-  ========================================================== */
+  /* AVATAR MAPPING PER BOT */
+
+  function changeAvatar(botName) {
+    const gender = localStorage.getItem("player_avatar"); // male/female
+
+    const map = {
+      vendor: gender === "female" ? "donna manager" : "uomo manager",
+      influencer: gender === "female" ? "influencer donna" : "influencer uomo",
+      professor: gender === "female" ? "professoressa" : "professore",
+      newsletter: gender === "female" ? "postina" : "postino",
+      generic: gender === "female" ? "donna saggia" : "uomo saggio"
+    };
+
+    const file = map[botName] || (gender === "female" ? "donna saggia" : "uomo saggio");
+    avatarImg.src = `/videogioco/${file}.png`;
+  }
+
+  /* RENDER JSON */
+
   function renderJSON(data) {
     if (!data) return;
 
@@ -56,30 +59,13 @@ document.addEventListener("DOMContentLoaded", () => {
         renderQuickReplies(data.options);
         break;
 
-      case "tutorial_card":
-      case "guide":
-      case "carousel":
-      case "product_card":
-      case "product_details":
-      case "product_reviews":
-        renderCard(data);
-        break;
-
       default:
         addMessage("⚠️ Risposta non riconosciuta.", "bot");
     }
   }
 
-  /* =========================================================
-     AVATAR
-  ========================================================== */
-  function changeAvatar(name) {
-    avatarImg.src = `/avatars/${name}.png`;
-  }
+  /* QUICK REPLIES */
 
-  /* =========================================================
-     QUICK REPLIES
-  ========================================================== */
   function renderQuickReplies(options) {
     const container = document.createElement("div");
     container.className = "quick-replies";
@@ -103,17 +89,15 @@ document.addEventListener("DOMContentLoaded", () => {
     chatSend.click();
   });
 
-  /* =========================================================
-     SCROLL AUTOMATICO
-  ========================================================== */
+  /* SCROLL AUTO */
+
   const observer = new MutationObserver(() => {
     chatBox.scrollTop = chatBox.scrollHeight;
   });
   observer.observe(chatBox, { childList: true });
 
-  /* =========================================================
-     API UNIVERSALE
-  ========================================================== */
+  /* API UNIVERSALE */
+
   async function apiChat(path, options = {}) {
     let res;
     try {
@@ -134,9 +118,8 @@ document.addEventListener("DOMContentLoaded", () => {
     return json.data;
   }
 
-  /* =========================================================
-     INVIO TESTO
-  ========================================================== */
+  /* INVIO TESTO */
+
   async function sendTextMessage() {
     const message = clean(chatInput.value);
     if (!message) return;
@@ -144,7 +127,7 @@ document.addEventListener("DOMContentLoaded", () => {
     addMessage(message, "user");
     chatInput.value = "";
 
-    const activeBot = localStorage.getItem("active_bot") || "vendor";
+    const activeBot = localStorage.getItem("active_bot") || "generic";
 
     const data = await apiChat("/api/chat/chat", {
       method: "POST",
@@ -158,6 +141,20 @@ document.addEventListener("DOMContentLoaded", () => {
     renderJSON(data);
   }
 
-  chatSend.addEventListener("click", sendTextMessage);
+  if (chatSend) chatSend.addEventListener("click", sendTextMessage);
+
+  /* BENVENUTO DEL SAGGIO DOPO SCELTA AVATAR */
+
+  const welcomePending = localStorage.getItem("welcome_sage_pending");
+  if (welcomePending === "1") {
+    const gender = localStorage.getItem("player_avatar");
+    const npc = gender === "female" ? "donna saggia" : "uomo saggio";
+    avatarImg.src = `/videogioco/${npc}.png`;
+
+    addMessage("Benvenuto nel gioco! Io sarò la tua guida.", "bot");
+    addMessage("Ora scegli il bot con cui vuoi giocare dalla schermata principale.", "bot");
+
+    localStorage.removeItem("welcome_sage_pending");
+  }
 
 });
