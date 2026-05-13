@@ -43,32 +43,34 @@
     <button id="avatar-confirm" disabled onclick="confirmAvatar()">Conferma</button>
   </div>
 
-  <!-- SCREEN 4 — HOME DEL GIOCO -->
+  <!-- SCREEN 4 — HOME (SFONDO BIANCO + AVATAR SAGGIO) -->
   <div class="screen" id="screen-home">
+
+    <div id="home-avatar-box">
+      <img id="home-avatar" src="/videogioco/uomo saggio.png">
+    </div>
+
     <h2 id="welcome-title"></h2>
 
     <div id="bot-buttons">
-      <button onclick="setBot('vendor')">Venditore</button>
-      <button onclick="setBot('influencer')">Influencer</button>
-      <button onclick="setBot('professor')">Professore</button>
-      <button onclick="setBot('newsletter')">Newsletter</button>
-      <button onclick="setBot('generic')">Generico</button>
+      <button onclick="chooseBot('vendor')">Venditore</button>
+      <button onclick="chooseBot('influencer')">Influencer</button>
+      <button onclick="chooseBot('professor')">Professore</button>
+      <button onclick="chooseBot('newsletter')">Newsletter</button>
+      <button onclick="chooseBot('generic')">Generico</button>
     </div>
 
-    <button class="open-chat-btn" onclick="goTo('screen-chat')">Apri Chat</button>
   </div>
 
-  <!-- SCREEN 5 — CHAT -->
+  <!-- SCREEN 5 — CHAT (SFONDO GIOCO) -->
   <div class="screen" id="screen-chat">
 
     <div id="game-container">
 
-      <!-- Avatar dinamico -->
       <div id="avatar-area">
         <img id="avatar-img" src="/videogioco/uomo saggio.png" alt="Avatar">
       </div>
 
-      <!-- Chat -->
       <div id="chat-container">
         <div id="chat-box"></div>
 
