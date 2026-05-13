@@ -1,5 +1,5 @@
 /**
- * Avatar Generico — Onboarding, smistamento, intent base (2027)
+ * Avatar Generico — Narratore / Onboarding / fallback (2027)
  * Path: app/modules/bot/bots/generic-bot.cjs
  */
 
@@ -9,11 +9,10 @@ const conv = require(path.join(process.cwd(), "app/modules/bot/handlers/conversa
 const fb = require(path.join(process.cwd(), "app/modules/bot/handlers/fallback.cjs"));
 
 /* ============================================================
-   MATCH — l’avatar generico risponde SEMPRE se nessun altro bot matcha
+   MATCH — il bot generico risponde SEMPRE se nessun altro bot matcha
 ============================================================ */
-function match(intent) {
-  // Il bot generico è il fallback universale
-  return true;
+function match() {
+  return true; // fallback universale
 }
 
 /* ============================================================
@@ -22,7 +21,8 @@ function match(intent) {
 async function run(message, context = {}, extras = {}) {
   log("GENERIC_RUN", context);
 
-  const intent = context.intent;
+  const intentObj = context.intent || {};
+  const intent = intentObj.intent || "generico";
 
   /* ============================================================
      1) SALUTI / ONBOARDING
