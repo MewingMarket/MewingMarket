@@ -1,5 +1,5 @@
 /**
- * modules/bot/handlers/productHandler.cjs — VERSIONE VIDEOGIOCO 2027
+ * modules/bot/handlers/productHandler.cjs — VERSIONE VIDEOGIOCO 2027 (PATCH COMPLETA)
  * Product Helper — Vendor AI
  * Nessun HTML, solo JSON UI compatibile con Game Engine
  */
@@ -11,14 +11,14 @@ const {
   productCardJSON,
   productDetailsJSON,
   productImageJSON
-} = require(path.join(process.cwd(), "app/modules/bot/catalogo.cjs"));
+} = require(path.join(process.cwd(), "app/modules/catalogo.cjs"));
 
 const { log } = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
 
 /* ============================================================
    1) PRODOTTO PRINCIPALE (ricerca ID + fuzzy)
 ============================================================ */
-async function productHandler(text, catalog = []) {
+async function productHandler(text) {
   log("PRODUCT_HANDLER", { text });
 
   if (!text) {
@@ -34,12 +34,12 @@ async function productHandler(text, catalog = []) {
   // 1) Match ID
   const idMatch = text.match(/\b(\d{1,4})\b/);
   if (idMatch) {
-    product = findProductById(Number(idMatch[1]), catalog);
+    product = await findProductById(Number(idMatch[1]));
   }
 
   // 2) Fuzzy search
   if (!product) {
-    product = await findProductFromText(text, catalog);
+    product = await findProductFromText(text);
   }
 
   if (!product) {
@@ -61,7 +61,7 @@ async function productHandler(text, catalog = []) {
    2) DETTAGLI PRODOTTO (descrizione lunga)
 ============================================================ */
 async function productDetailsHandler(product) {
-  log("PRODUCT_DETAILS_HANDLER");
+  log("PRODUCT_DETAILS_HANDLER", { id: product?.id });
 
   if (!product) {
     return {
@@ -81,7 +81,7 @@ async function productDetailsHandler(product) {
    3) IMMAGINE PRODOTTO
 ============================================================ */
 async function productImageHandler(product) {
-  log("PRODUCT_IMAGE_HANDLER");
+  log("PRODUCT_IMAGE_HANDLER", { id: product?.id });
 
   if (!product) {
     return {
@@ -101,6 +101,8 @@ async function productImageHandler(product) {
    4) TUTORIAL CARD (TV + video)
 ============================================================ */
 function productTutorialCard(product) {
+  log("PRODUCT_TUTORIAL_CARD", { id: product?.id });
+
   if (!product) {
     return {
       type: "text",
@@ -108,6 +110,8 @@ function productTutorialCard(product) {
       text: "Dimmi quale prodotto vuoi approfondire."
     };
   }
+
+  const safeUrl = typeof product.youtube_url === "string" ? product.youtube_url : null;
 
   return {
     type: "tutorial_card",
@@ -118,13 +122,15 @@ function productTutorialCard(product) {
       "Segui le istruzioni",
       "Applica subito ciò che impari"
     ],
-    actions: [
-      {
-        label: "Guarda il video",
-        type: "open_video",
-        video_url: product.youtube_url
-      }
-    ]
+    actions: safeUrl
+      ? [
+          {
+            label: "Guarda il video",
+            type: "open_video",
+            video_url: safeUrl
+          }
+        ]
+      : []
   };
 }
 
