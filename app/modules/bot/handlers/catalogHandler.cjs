@@ -1,44 +1,67 @@
 /**
- * modules/bot/handlers/catalogHandler.cjs — VERSIONE DEFINITIVA PATCHATA
- * Risposta catalogo dinamico per bot MewingMarket
+ * modules/bot/handlers/catalogHandler.cjs — VERSIONE 2027
+ * Catalog Helper — usato dal bot Vendor AI
+ * Nessun HTML, solo JSON UI
  */
 
 const path = require("path");
-const { listAllProducts } = require(path.join(__dirname, "..", "catalogo.cjs"));
-const { updateContext } = require(path.join(__dirname, "..", "context.cjs"));
+const { normalizeProduct } = require(path.join(process.cwd(), "app/modules/bot/catalogo.cjs"));
+const { log } = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
 
 /* ============================================================
-   RISPOSTA CATALOGO
+   CATALOGO COMPLETO (JSON UI)
 ============================================================ */
-async function catalogHandler(ctx) {
-  const products = await listAllProducts();
+function catalogList(products = []) {
+  log("CATALOG_LIST", { count: products.length });
 
   if (!products.length) {
-    return "Il catalogo è temporaneamente non disponibile.";
+    return {
+      type: "text",
+      avatar: "sales_ai",
+      text: "Il catalogo è temporaneamente non disponibile."
+    };
   }
 
-  // Aggiorna contesto
-  updateContext(ctx, { intent: "catalogo" });
-
-  // Risposta premium
-  let out = "📚 <b>Catalogo MewingMarket</b>\n\n";
-
-  for (const p of products) {
-    const prezzo = (p.prezzo_cent / 100).toFixed(2);
-
-    out += `
-<b>${p.titolo_breve}</b>
-${p.descrizione_breve}
-💰 <b>${prezzo}€</b>
-👉 https://www.mewingmarket.it/prodotto/${p.id}
-
-`;
-  }
-
-  return out.trim();
+  return {
+    type: "list",
+    avatar: "sales_ai",
+    title: "Catalogo MewingMarket",
+    items: products.map(p => ({
+      label: p.titolo_breve,
+      value: `prodotto_${p.id}`,
+      price_cent: p.prezzo_cent,
+      image: p.immagine_url
+    })),
+    actions: [
+      { label: "Torna al menu", value: "menu" }
+    ]
+  };
 }
 
 /* ============================================================
-   EXPORT
+   CATALOGO RIDOTTO (per suggerimenti)
 ============================================================ */
-module.exports = catalogHandler;
+function catalogSuggestions(products = []) {
+  const top = products.slice(0, 3).map(normalizeProduct);
+
+  return {
+    type: "carousel",
+    avatar: "sales_ai",
+    title: "Prodotti consigliati",
+    items: top.map(p => ({
+      id: p.id,
+      title: p.titolo_breve,
+      description: p.descrizione_breve,
+      price_cent: p.prezzo_cent,
+      image: p.immagine_url
+    }))
+  };
+}
+
+/* ============================================================
+   EXPORT — usato da Vendor AI
+============================================================ */
+module.exports = {
+  catalogList,
+  catalogSuggestions
+};
