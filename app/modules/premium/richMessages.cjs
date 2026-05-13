@@ -1,133 +1,106 @@
 /**
- * premium/richMessages.cjs
- * Modulo per messaggi ricchi in stile WhatsApp.
+ * premium/richMessages.cjs — VERSIONE VIDEOGIOCO 2027
+ * Modulo JSON UI per messaggi ricchi WhatsApp-style.
+ * Nessun HTML, solo JSON compatibile con Game Engine.
  */
 
-function escapeHTML(str = "") {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
-/* ------------------------------------------
+/* ============================================================
    BLOCCO SEZIONATO — stile WhatsApp Business
------------------------------------------- */
-function sectionedMessage({ title = "", sections = [] }) {
-  let html = `
-<div class="mm-rich">
-  <div class="mm-rich-title">${escapeHTML(title)}</div>
-`;
-
-  for (const sec of sections) {
-    html += `
-    <div class="mm-rich-section">
-      <div class="mm-rich-section-title">${escapeHTML(sec.title || "")}</div>
-      <div class="mm-rich-section-body">${escapeHTML(sec.body || "")}</div>
-    </div>
-    `;
-  }
-
-  html += `</div>`;
-  return html;
+============================================================ */
+function sectionedMessage({ title = "", sections = [], avatar = "assistant" }) {
+  return {
+    type: "sectioned",
+    avatar,
+    title,
+    sections: sections.map(sec => ({
+      title: sec.title || "",
+      body: sec.body || ""
+    }))
+  };
 }
 
-/* ------------------------------------------
+/* ============================================================
    INFO CARD — messaggio informativo elegante
------------------------------------------- */
-function infoMessage({ title = "", body = "" }) {
-  return `
-<div class="mm-info">
-  <div class="mm-info-title">ℹ️ ${escapeHTML(title)}</div>
-  <div class="mm-info-body">${escapeHTML(body)}</div>
-</div>
-`;
+============================================================ */
+function infoMessage({ title = "", body = "", avatar = "assistant" }) {
+  return {
+    type: "card",
+    avatar,
+    layout: "info",
+    title: `ℹ️ ${title}`,
+    text: body
+  };
 }
 
-/* ------------------------------------------
+/* ============================================================
    ALERT / WARNING — messaggio di avviso
------------------------------------------- */
-function warningMessage({ title = "", body = "" }) {
-  return `
-<div class="mm-warning">
-  <div class="mm-warning-title">⚠️ ${escapeHTML(title)}</div>
-  <div class="mm-warning-body">${escapeHTML(body)}</div>
-</div>
-`;
+============================================================ */
+function warningMessage({ title = "", body = "", avatar = "assistant" }) {
+  return {
+    type: "card",
+    avatar,
+    layout: "warning",
+    title: `⚠️ ${title}`,
+    text: body
+  };
 }
 
-/* ------------------------------------------
+/* ============================================================
    SUCCESS / CONFERMA — messaggio positivo
------------------------------------------- */
-function successMessage({ title = "", body = "" }) {
-  return `
-<div class="mm-success">
-  <div class="mm-success-title">✅ ${escapeHTML(title)}</div>
-  <div class="mm-success-body">${escapeHTML(body)}</div>
-</div>
-`;
+============================================================ */
+function successMessage({ title = "", body = "", avatar = "assistant" }) {
+  return {
+    type: "card",
+    avatar,
+    layout: "success",
+    title: `✅ ${title}`,
+    text: body
+  };
 }
 
-/* ------------------------------------------
+/* ============================================================
    HERO MESSAGE — titolo grande + descrizione
------------------------------------------- */
-function heroMessage({ title = "", subtitle = "", body = "" }) {
-  return `
-<div class="mm-hero">
-  <div class="mm-hero-title">${escapeHTML(title)}</div>
-  <div class="mm-hero-subtitle">${escapeHTML(subtitle)}</div>
-  <div class="mm-hero-body">${escapeHTML(body)}</div>
-</div>
-`;
+============================================================ */
+function heroMessage({ title = "", subtitle = "", body = "", avatar = "assistant" }) {
+  return {
+    type: "hero",
+    avatar,
+    title,
+    subtitle,
+    body
+  };
 }
 
-/* ------------------------------------------
+/* ============================================================
    BULLET LIST — lista elegante
------------------------------------------- */
-function bulletList({ title = "", items = [] }) {
-  let html = `
-<div class="mm-bullet">
-  <div class="mm-bullet-title">${escapeHTML(title)}</div>
-  <ul class="mm-bullet-list">
-`;
-
-  for (const item of items) {
-    html += `<li>${escapeHTML(item)}</li>`;
-  }
-
-  html += `
-  </ul>
-</div>
-`;
-
-  return html;
+============================================================ */
+function bulletList({ title = "", items = [], avatar = "assistant" }) {
+  return {
+    type: "list_bullet",
+    avatar,
+    title,
+    items
+  };
 }
 
-/* ------------------------------------------
+/* ============================================================
    FEATURE LIST — icona + testo
------------------------------------------- */
-function featureList({ title = "", features = [] }) {
-  let html = `
-<div class="mm-features">
-  <div class="mm-features-title">${escapeHTML(title)}</div>
-`;
-
-  for (const f of features) {
-    html += `
-    <div class="mm-feature-row">
-      <div class="mm-feature-icon">${escapeHTML(f.icon || "•")}</div>
-      <div class="mm-feature-text">${escapeHTML(f.text || "")}</div>
-    </div>
-    `;
-  }
-
-  html += `</div>`;
-  return html;
+============================================================ */
+function featureList({ title = "", features = [], avatar = "assistant" }) {
+  return {
+    type: "features",
+    avatar,
+    title,
+    features: features.map(f => ({
+      icon: f.icon || "•",
+      text: f.text || ""
+    }))
+  };
 }
 
-/* ------------------------------------------
-   EXPORT UNICO
------------------------------------------- */
+/* ============================================================
+   EXPORT
+============================================================ */
 module.exports = {
   sectionedMessage,
   infoMessage,
