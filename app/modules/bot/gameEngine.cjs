@@ -22,12 +22,12 @@ const { log } = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
 const intentEngine = require(path.join(process.cwd(), "app/modules/bot/intent-engine.cjs"));
 const router = require(path.join(process.cwd(), "app/modules/bot/core/router.bot.cjs"));
 
-/* NPC */
-const vendor = require(path.join(process.cwd(), "app/modules/bot/bots/vendor.bot.cjs"));
-const professor = require(path.join(process.cwd(), "app/modules/bot/bots/professore.bot.cjs"));
-const influencer = require(path.join(process.cwd(), "app/modules/bot/bots/influencer.bot.cjs"));
-const newsletter = require(path.join(process.cwd(), "app/modules/bot/bots/newsletter.bot.cjs"));
-const generic = require(path.join(process.cwd(), "app/modules/bot/bots/generic.bot.cjs"));
+/* NPC — NOMI REALI */
+const vendor = require(path.join(process.cwd(), "app/modules/bot/bots/vendor-bot.cjs"));
+const professor = require(path.join(process.cwd(), "app/modules/bot/bots/professore-bot.cjs"));
+const influencer = require(path.join(process.cwd(), "app/modules/bot/bots/influencer-bot.cjs"));
+const newsletter = require(path.join(process.cwd(), "app/modules/bot/bots/newsletter-bot.cjs"));
+const generic = require(path.join(process.cwd(), "app/modules/bot/bots/generic-bot.cjs"));
 
 /* Premium UI */
 const Premium = require(path.join(process.cwd(), "app/modules/premium/index.cjs"));
@@ -55,12 +55,10 @@ function normalizeResponse(ui = {}) {
 function enrichResponse(ui, context = {}) {
   const product = context.intent?.rawProduct || null;
 
-  // Product card → quick replies
   if (ui.type === "product_card" && product && !ui.quick_replies) {
     ui.quick_replies = Premium.Quick.productQuickReplies(product);
   }
 
-  // List → azioni base
   if (ui.type === "list" && ui.title && !ui.actions) {
     ui.actions = [{ label: "Torna al menu", intent: "menu" }];
   }
@@ -77,7 +75,6 @@ async function maybeAddSidekick(mainBot, mainUI, message, context) {
   const vendorBot = vendor;
   const influencerBot = influencer;
 
-  // Professore → Vendor suggerisce prodotti
   if (mainBot.name === "professor" && context.intent.rawProduct) {
     if (vendorBot?.sidekick) {
       const s = await vendorBot.sidekick(message, context);
@@ -85,7 +82,6 @@ async function maybeAddSidekick(mainBot, mainUI, message, context) {
     }
   }
 
-  // Vendor → Influencer aggiunge hype
   if (mainBot.name === "vendor") {
     if (influencerBot?.sidekick) {
       const s = await influencerBot.sidekick(message, context);
@@ -93,7 +89,6 @@ async function maybeAddSidekick(mainBot, mainUI, message, context) {
     }
   }
 
-  // Newsletter → Influencer aggiunge PR
   if (mainBot.name === "newsletter") {
     if (influencerBot?.sidekick) {
       const s = await influencerBot.sidekick(message, context);
@@ -110,7 +105,6 @@ async function maybeAddSidekick(mainBot, mainUI, message, context) {
 async function runGame(message, extraContext = {}) {
   const uid = extraContext.uid;
 
-  /* 1) Intent Engine locale + AI */
   const localIntent = intentEngine.detect(message);
   const aiIntent = await ai.generateIntent(message, { uid });
 
@@ -131,7 +125,6 @@ async function runGame(message, extraContext = {}) {
 
   log("GAME_ENGINE_INTENT", intentObj);
 
-  /* 2) Router → NPC */
   const botName = router.pickAvatar(intentObj);
   const bot = {
     vendor,
@@ -143,16 +136,12 @@ async function runGame(message, extraContext = {}) {
 
   log("GAME_ENGINE_BOT", { bot: bot?.name });
 
-  /* 3) NPC → UI JSON */
   const ui = await bot.run(message, context);
 
-  /* 4) Normalizza + arricchisci */
   const enriched = enrichResponse(normalizeResponse(ui), context);
 
-  /* 5) Sidekick */
   const frames = await maybeAddSidekick(bot, enriched, message, context);
 
-  /* 6) Output finale */
   return frames;
 }
 
