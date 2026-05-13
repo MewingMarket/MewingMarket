@@ -1,148 +1,119 @@
 /**
- * premium/cards.cjs
- * Modulo completo per card prodotto, catalogo, video, prezzo e confronto.
- * Compatibile con la UI WhatsApp-style.
+ * premium/cards.cjs — VERSIONE VIDEOGIOCO 2027
+ * Modulo JSON UI per card prodotto, catalogo, video, prezzo e confronto.
+ * Compatibile con Game Engine WhatsApp-style.
  */
 
-function escapeHTML(str = "") {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
-/* ------------------------------------------
-   CARD PRODOTTO
------------------------------------------- */
 function productCard(product) {
-  if (!product) return "";
+  if (!product) {
+    return {
+      type: "text",
+      avatar: "vendor",
+      text: "Non ho trovato questo prodotto."
+    };
+  }
 
-  const titolo = escapeHTML(product.titolo || "");
-  const breve = escapeHTML(product.titoloBreve || titolo);
-  const prezzo = escapeHTML(product.prezzo || "");
-  const id = escapeHTML(String(product.id || ""));
-  const descrizione = escapeHTML(product.descrizioneBreve || "");
-
-  const link = `https://www.mewingmarket.it/prodotto/${id}`;
-
-  return `
-<div class="mm-card">
-  <div class="mm-card-header">
-    <div class="mm-card-title">${breve}</div>
-    <div class="mm-card-price">${prezzo}€</div>
-  </div>
-
-  <div class="mm-card-body">
-    <p>${descrizione}</p>
-  </div>
-
-  <div class="mm-card-footer">
-    <a class="mm-btn" href="${link}" target="_blank">Apri prodotto</a>
-  </div>
-</div>
-`;
+  return {
+    type: "product_card",
+    avatar: "vendor",
+    product: {
+      id: product.id,
+      title: product.titolo_breve || product.titolo,
+      description: product.descrizione_breve,
+      price_cent: product.prezzo_cent,
+      image: product.immagine_url
+    },
+    actions: [
+      { label: "Dettagli", intent: "dettagli_prodotto", productId: product.id },
+      { label: "Recensioni", intent: "recensioni", productId: product.id },
+      { label: "Correlati", intent: "prodotti_correlati", productId: product.id }
+    ]
+  };
 }
 
 /* ------------------------------------------
-   CARD CATALOGO
+   CATALOGO (LISTA)
 ------------------------------------------ */
 function catalogCard(products = []) {
-  if (!Array.isArray(products) || !products.length) {
-    return `<div class="mm-card">Nessun prodotto disponibile.</div>`;
+  if (!products.length) {
+    return {
+      type: "text",
+      avatar: "vendor",
+      text: "Il catalogo è vuoto."
+    };
   }
 
-  let html = `
-<div class="mm-card">
-  <div class="mm-card-header">
-    <div class="mm-card-title">📚 Catalogo MewingMarket</div>
-  </div>
-  <div class="mm-card-body">
-`;
-
-  for (const p of products) {
-    const titolo = escapeHTML(p.titoloBreve || p.titolo || "");
-    const prezzo = escapeHTML(p.prezzo || "");
-    const id = escapeHTML(String(p.id || ""));
-    const link = `https://www.mewingmarket.it/prodotto/${id}`;
-
-    html += `
-    <div class="mm-product-row">
-      <div class="mm-product-info">
-        <div class="mm-product-title">${titolo}</div>
-        <div class="mm-product-price">${prezzo}€</div>
-      </div>
-      <a class="mm-btn-small" href="${link}" target="_blank">Apri</a>
-    </div>
-    `;
-  }
-
-  html += `
-  </div>
-</div>
-`;
-
-  return html;
+  return {
+    type: "list",
+    avatar: "vendor",
+    title: "Catalogo MewingMarket",
+    items: products.map(p => ({
+      id: p.id,
+      label: p.titolo_breve,
+      price_cent: p.prezzo_cent,
+      image: p.immagine_url,
+      intent: "prodotto",
+      productId: p.id
+    })),
+    actions: [
+      { label: "Torna al menu", intent: "menu" }
+    ]
+  };
 }
 
 /* ------------------------------------------
-   CARD VIDEO
+   VIDEO CARD (TV)
 ------------------------------------------ */
-function videoCard(url) {
+function videoCard(url, title = "Video") {
   if (!url) {
-    return `
-<div class="mm-card">
-  <div class="mm-card-body">
-    Nessun video disponibile per questo prodotto.
-  </div>
-</div>
-`;
+    return {
+      type: "text",
+      avatar: "influencer",
+      text: "Nessun video disponibile."
+    };
   }
 
-  const safeUrl = escapeHTML(url);
-
-  return `
-<div class="mm-card">
-  <div class="mm-card-header">
-    <div class="mm-card-title">🎥 Video di presentazione</div>
-  </div>
-
-  <div class="mm-card-body">
-    <p>Guarda il video introduttivo del prodotto.</p>
-  </div>
-
-  <div class="mm-card-footer">
-    <a class="mm-btn" href="${safeUrl}" target="_blank">Guarda il video</a>
-  </div>
-</div>
-`;
+  return {
+    type: "tutorial_card",
+    avatar: "influencer",
+    title,
+    steps: [
+      "Guarda il video sulla TV",
+      "Segui i passaggi",
+      "Applica ciò che impari"
+    ],
+    actions: [
+      {
+        label: "Guarda il video",
+        type: "open_video",
+        video_url: url
+      }
+    ]
+  };
 }
 
 /* ------------------------------------------
    CARD PREZZO
 ------------------------------------------ */
 function priceCard(product) {
-  if (!product) return "";
+  if (!product) {
+    return {
+      type: "text",
+      avatar: "vendor",
+      text: "Non trovo il prezzo di questo prodotto."
+    };
+  }
 
-  const titolo = escapeHTML(product.titoloBreve || product.titolo || "");
-  const prezzo = escapeHTML(product.prezzo || "");
-  const id = escapeHTML(String(product.id || ""));
-  const link = `https://www.mewingmarket.it/prodotto/${id}`;
-
-  return `
-<div class="mm-card">
-  <div class="mm-card-header">
-    <div class="mm-card-title">💰 Prezzo: ${prezzo}€</div>
-  </div>
-
-  <div class="mm-card-body">
-    <p><b>${titolo}</b> è un prodotto digitale immediatamente scaricabile dopo l’acquisto.</p>
-  </div>
-
-  <div class="mm-card-footer">
-    <a class="mm-btn" href="${link}" target="_blank">Apri prodotto</a>
-  </div>
-</div>
-`;
+  return {
+    type: "card",
+    avatar: "vendor",
+    layout: "price",
+    title: `💰 Prezzo: ${(product.prezzo_cent / 100).toFixed(2)}€`,
+    text: `${product.titolo_breve} è un prodotto digitale immediatamente scaricabile.`,
+    actions: [
+      { label: "Apri prodotto", intent: "prodotto", productId: product.id }
+    ]
+  };
 }
 
 /* ------------------------------------------
@@ -150,50 +121,40 @@ function priceCard(product) {
 ------------------------------------------ */
 function compareCard(a, b) {
   if (!a || !b) {
-    return `
-<div class="mm-card">
-  <div class="mm-card-body">
-    Non ho abbastanza informazioni per confrontare i prodotti.
-  </div>
-</div>
-`;
+    return {
+      type: "text",
+      avatar: "vendor",
+      text: "Non ho abbastanza informazioni per confrontare i prodotti."
+    };
   }
 
-  const titoloA = escapeHTML(a.titoloBreve || a.titolo || "");
-  const titoloB = escapeHTML(b.titoloBreve || b.titolo || "");
-  const prezzoA = escapeHTML(a.prezzo || "");
-  const prezzoB = escapeHTML(b.prezzo || "");
-  const idA = escapeHTML(String(a.id || ""));
-  const idB = escapeHTML(String(b.id || ""));
-
-  const linkA = `https://www.mewingmarket.it/prodotto/${idA}`;
-  const linkB = `https://www.mewingmarket.it/prodotto/${idB}`;
-
-  return `
-<div class="mm-card">
-  <div class="mm-card-header">
-    <div class="mm-card-title">🔍 Confronto prodotti</div>
-  </div>
-
-  <div class="mm-card-body mm-compare">
-    <div class="mm-compare-col">
-      <div class="mm-compare-title">${titoloA}</div>
-      <div class="mm-compare-price">${prezzoA}€</div>
-      <a class="mm-btn-small" href="${linkA}" target="_blank">Apri</a>
-    </div>
-
-    <div class="mm-compare-col">
-      <div class="mm-compare-title">${titoloB}</div>
-      <div class="mm-compare-price">${prezzoB}€</div>
-      <a class="mm-btn-small" href="${linkB}" target="_blank">Apri</a>
-    </div>
-  </div>
-</div>
-`;
+  return {
+    type: "compare",
+    avatar: "vendor",
+    title: "🔍 Confronto prodotti",
+    products: [
+      {
+        id: a.id,
+        title: a.titolo_breve,
+        price_cent: a.prezzo_cent,
+        image: a.immagine_url
+      },
+      {
+        id: b.id,
+        title: b.titolo_breve,
+        price_cent: b.prezzo_cent,
+        image: b.immagine_url
+      }
+    ],
+    actions: [
+      { label: "Apri A", intent: "prodotto", productId: a.id },
+      { label: "Apri B", intent: "prodotto", productId: b.id }
+    ]
+  };
 }
 
 /* ------------------------------------------
-   EXPORT UNICO E CORRETTO
+   EXPORT JSON UI
 ------------------------------------------ */
 module.exports = {
   productCard,
