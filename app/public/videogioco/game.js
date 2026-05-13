@@ -1,93 +1,49 @@
-/* =========================================================
- * GAME ENGINE 2027 — NAVIGAZIONE + STATO GIOCO
- * Launcher → Login → Avatar → Home → Chat
- * ========================================================= */
-
 function goTo(screenId) {
-  document.querySelectorAll(".screen").forEach(s => {
-    s.style.display = "none";
-  });
-  const target = document.getElementById(screenId);
-  if (target) target.style.display = "block";
+  document.querySelectorAll(".screen").forEach(s => s.style.display = "none");
+  document.getElementById(screenId).style.display = "block";
 }
 
-/* LOGIN */
-
 function saveName() {
-  const input = document.getElementById("player-name");
-  if (!input) return;
-
-  const name = input.value.trim();
+  const name = document.getElementById("player-name").value.trim();
   if (!name) return;
-
   localStorage.setItem("player_name", name);
   goTo("screen-avatar");
 }
-
-/* AVATAR */
 
 let selectedAvatar = null;
 
 document.addEventListener("click", e => {
   const card = e.target.closest(".avatar-card");
   if (!card) return;
-
-  document.querySelectorAll(".avatar-card").forEach(c =>
-    c.classList.remove("selected")
-  );
-
+  document.querySelectorAll(".avatar-card").forEach(c => c.classList.remove("selected"));
   card.classList.add("selected");
   selectedAvatar = card.dataset.avatar;
-
-  const confirmBtn = document.getElementById("avatar-confirm");
-  if (confirmBtn) confirmBtn.disabled = false;
+  document.getElementById("avatar-confirm").disabled = false;
 });
 
 function confirmAvatar() {
-  if (!selectedAvatar) return;
-
   localStorage.setItem("player_avatar", selectedAvatar);
-
-  const name = localStorage.getItem("player_name") || "";
-  const title = document.getElementById("welcome-title");
-  if (title) title.textContent = `Benvenuto ${name}!`;
-
-  // avatar di default: saggio uomo/donna
-  const avatarImg = document.getElementById("avatar-img");
-  if (avatarImg) {
-    const npc = selectedAvatar === "male" ? "uomo saggio" : "donna saggia";
-    avatarImg.src = `/videogioco/${npc}.png`;
-  }
-
-  // flag per messaggio di benvenuto in chat
+  const name = localStorage.getItem("player_name");
+  document.getElementById("welcome-title").textContent = `Benvenuto ${name}!`;
   localStorage.setItem("welcome_sage_pending", "1");
-
   goTo("screen-home");
+  loadHomeAvatar();
 }
 
-/* BOT SELECTOR */
+function loadHomeAvatar() {
+  const gender = localStorage.getItem("player_avatar");
+  const homeAvatar = document.getElementById("home-avatar");
+  homeAvatar.src = gender === "female"
+    ? "/videogioco/donna saggia.png"
+    : "/videogioco/uomo saggio.png";
+}
 
-function setBot(botName) {
+function chooseBot(botName) {
   localStorage.setItem("active_bot", botName);
+  goTo("screen-chat");
 }
-
-/* AVVIO INIZIALE */
-
-window.addEventListener("load", () => {
-  goTo("screen-launcher");
-
-  const savedAvatar = localStorage.getItem("player_avatar");
-  const avatarImg = document.getElementById("avatar-img");
-
-  if (savedAvatar && avatarImg) {
-    const npc = savedAvatar === "male" ? "uomo saggio" : "donna saggia";
-    avatarImg.src = `/videogioco/${npc}.png`;
-  }
-});
-
-/* ESPORT FUNZIONI GLOBALI */
 
 window.goTo = goTo;
 window.saveName = saveName;
 window.confirmAvatar = confirmAvatar;
-window.setBot = setBot;
+window.chooseBot = chooseBot;
