@@ -1,28 +1,46 @@
 /**
- * Game Engine 2027 — Core loop NPC + JSON UI
- * Path: app/modules/bot/gameEngine.cjs
+ * Game Engine 2027 — Core loop NPC + JSON UI (PATCH COMPLETA)
+ * Path: app/modules/bot/game-engine.cjs
  *
- * Nessun HTML, nessun GPT, solo:
- * - Intent Engine 2027
- * - Router AI 2027
- * - NPC bot (vendor, influencer, professor, newsletter, assistant)
- * - UI JSON WhatsApp-style
+ * Compatibile con:
+ * - intentEngine (locale + AI)
+ * - router.bot.cjs
+ * - NPC 2027
+ * - Premium Modules
+ * - FAQ / Guides (toFrame)
+ * - Catalogo
+ * - Memory
+ * - Server 2027
  */
 
 const path = require("path");
 const { log } = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
 
-// Intent Engine (estrazione intent + parametri)
+/* ============================================================
+   MODULI CORE
+============================================================ */
 const intentEngine = require(path.join(process.cwd(), "app/modules/bot/intent-engine.cjs"));
+const router = require(path.join(process.cwd(), "app/modules/bot/core/router.bot.cjs"));
 
-// Router AI (sceglie quale NPC deve parlare)
-const router = require(path.join(process.cwd(), "app/modules/bot/core/router.cjs"));
+/* NPC */
+const vendor = require(path.join(process.cwd(), "app/modules/bot/bots/vendor.bot.cjs"));
+const professor = require(path.join(process.cwd(), "app/modules/bot/bots/professore.bot.cjs"));
+const influencer = require(path.join(process.cwd(), "app/modules/bot/bots/influencer.bot.cjs"));
+const newsletter = require(path.join(process.cwd(), "app/modules/bot/bots/newsletter.bot.cjs"));
+const generic = require(path.join(process.cwd(), "app/modules/bot/bots/generic.bot.cjs"));
 
-// Premium UI helpers (JSON only)
+/* Premium UI */
 const Premium = require(path.join(process.cwd(), "app/modules/premium/index.cjs"));
 
+/* Moduli esterni */
+const catalogo = require(path.join(process.cwd(), "app/modules/catalogo.cjs"));
+const faq = require(path.join(process.cwd(), "app/modules/faq.cjs"));
+const guides = require(path.join(process.cwd(), "app/modules/guides.cjs"));
+const memory = require(path.join(process.cwd(), "app/modules/memory.js"));
+const ai = require(path.join(process.cwd(), "app/server/modules/ai.cjs"));
+
 /* ============================================================
-   NORMALIZZAZIONE RISPOSTA UI
+   NORMALIZZAZIONE UI
 ============================================================ */
 function normalizeResponse(ui = {}) {
   if (!ui.avatar) ui.avatar = "assistant";
@@ -32,17 +50,17 @@ function normalizeResponse(ui = {}) {
 }
 
 /* ============================================================
-   ENRICH — AGGIUNGE QUICK REPLIES / PREMIUM UI
+   ENRICH — PREMIUM UI
 ============================================================ */
 function enrichResponse(ui, context = {}) {
-  const product = context.intent.rawProduct || null;
+  const product = context.intent?.rawProduct || null;
 
-  // Product card → aggiungi quick replies premium
+  // Product card → quick replies
   if (ui.type === "product_card" && product && !ui.quick_replies) {
     ui.quick_replies = Premium.Quick.productQuickReplies(product);
   }
 
-  // Catalog list → aggiungi azioni base
+  // List → azioni base
   if (ui.type === "list" && ui.title && !ui.actions) {
     ui.actions = [{ label: "Torna al menu", intent: "menu" }];
   }
@@ -51,13 +69,13 @@ function enrichResponse(ui, context = {}) {
 }
 
 /* ============================================================
-   SIDEKICK HANDLER — COMPRESENZA NPC
+   SIDEKICK — COMPRESENZA NPC
 ============================================================ */
 async function maybeAddSidekick(mainBot, mainUI, message, context) {
   const frames = [normalizeResponse(mainUI)];
 
-  const vendorBot = router.getBotByName("vendor");
-  const influencerBot = router.getBotByName("influencer");
+  const vendorBot = vendor;
+  const influencerBot = influencer;
 
   // Professore → Vendor suggerisce prodotti
   if (mainBot.name === "professor" && context.intent.rawProduct) {
@@ -90,36 +108,51 @@ async function maybeAddSidekick(mainBot, mainUI, message, context) {
    LOOP PRINCIPALE — GAME ENGINE
 ============================================================ */
 async function runGame(message, extraContext = {}) {
-  // 1) Intent Engine → estrae intent strutturato
-  const intentObj = await intentEngine.generateIntent(message, extraContext.catalog || []);
-  const context = { ...extraContext, intent: intentObj };
+  const uid = extraContext.uid;
+
+  /* 1) Intent Engine locale + AI */
+  const localIntent = intentEngine.detect(message);
+  const aiIntent = await ai.generateIntent(message, { uid });
+
+  const intentObj = {
+    ...localIntent,
+    ...aiIntent,
+    raw: message
+  };
+
+  const context = {
+    ...extraContext,
+    intent: intentObj,
+    memory: memory.get(uid),
+    catalogo,
+    faq,
+    guides
+  };
 
   log("GAME_ENGINE_INTENT", intentObj);
 
-  // 2) Router AI → sceglie NPC
-  const bot = router.route(intentObj);
+  /* 2) Router → NPC */
+  const botName = router.pickAvatar(intentObj);
+  const bot = {
+    vendor,
+    professor,
+    influencer,
+    newsletter,
+    generic
+  }[botName] || generic;
+
   log("GAME_ENGINE_BOT", { bot: bot?.name });
 
-  if (!bot || typeof bot.run !== "function") {
-    return [
-      normalizeResponse({
-        avatar: "assistant",
-        type: "text",
-        text: "Non so bene chi dovrebbe rispondere a questo. Vuoi vedere il menu?"
-      })
-    ];
-  }
-
-  // 3) NPC → genera UI JSON
+  /* 3) NPC → UI JSON */
   const ui = await bot.run(message, context);
 
-  // 4) Normalizza + arricchisce UI
+  /* 4) Normalizza + arricchisci */
   const enriched = enrichResponse(normalizeResponse(ui), context);
 
-  // 5) Compresenza (sidekick)
+  /* 5) Sidekick */
   const frames = await maybeAddSidekick(bot, enriched, message, context);
 
-  // 6) Output finale: uno o più frame UI
+  /* 6) Output finale */
   return frames;
 }
 
