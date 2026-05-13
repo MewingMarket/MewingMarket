@@ -1,6 +1,4 @@
-/* =========================================================
-   GLOBAL
-========================================================= */
+/* GLOBAL */
 
 body {
   margin: 0;
@@ -23,9 +21,16 @@ h1, h2, h3 {
   font-weight: 600;
 }
 
-/* =========================================================
-   LAUNCHER
-========================================================= */
+/* SFONDO GIOCO */
+
+#screen-home,
+#screen-chat,
+#screen-avatar,
+#screen-login {
+  background: url('/videogioco/sfondo gioco.png') center/cover no-repeat;
+}
+
+/* LAUNCHER */
 
 #screen-launcher {
   display: flex;
@@ -34,11 +39,22 @@ h1, h2, h3 {
   justify-content: center;
 }
 
+.launcher-box {
+  text-align: center;
+}
+
 .launcher-icon {
   width: 120px;
   height: 120px;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
   animation: pulse 2s infinite;
+  cursor: pointer;
+}
+
+.launcher-subtitle {
+  margin-top: 10px;
+  font-size: 22px;
+  opacity: 0.85;
 }
 
 @keyframes pulse {
@@ -47,24 +63,7 @@ h1, h2, h3 {
   100% { transform: scale(1); opacity: 0.9; }
 }
 
-.launcher-box button {
-  padding: 14px 24px;
-  background: #4a90e2;
-  border: none;
-  border-radius: 10px;
-  color: #fff;
-  font-size: 18px;
-  cursor: pointer;
-  margin-top: 20px;
-}
-
-.launcher-box button:hover {
-  background: #6ab0ff;
-}
-
-/* =========================================================
-   LOGIN
-========================================================= */
+/* LOGIN */
 
 #screen-login {
   text-align: center;
@@ -94,9 +93,7 @@ h1, h2, h3 {
   background: #6ab0ff;
 }
 
-/* =========================================================
-   SCELTA AVATAR
-========================================================= */
+/* SCELTA AVATAR */
 
 #screen-avatar {
   text-align: center;
@@ -145,9 +142,7 @@ h1, h2, h3 {
   cursor: not-allowed;
 }
 
-/* =========================================================
-   HOME DEL GIOCO
-========================================================= */
+/* HOME DEL GIOCO */
 
 #screen-home {
   text-align: center;
@@ -197,12 +192,9 @@ h1, h2, h3 {
   background: #6ab0ff;
 }
 
-/* =========================================================
-   CHAT (INTEGRATA NEL GAME)
-========================================================= */
+/* CHAT */
 
 #screen-chat {
-  display: none;
   padding: 0;
 }
 
@@ -213,9 +205,10 @@ h1, h2, h3 {
 }
 
 /* Avatar area */
+
 #avatar-area {
   width: 25%;
-  background: #111;
+  background: rgba(0,0,0,0.7);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -228,11 +221,12 @@ h1, h2, h3 {
 }
 
 /* Chat container */
+
 #chat-container {
   width: 75%;
   display: flex;
   flex-direction: column;
-  background: #181818;
+  background: rgba(0,0,0,0.75);
 }
 
 #chat-box {
@@ -259,6 +253,7 @@ h1, h2, h3 {
 }
 
 /* Input area */
+
 #chat-input-area {
   display: flex;
   padding: 10px;
@@ -294,6 +289,7 @@ h1, h2, h3 {
 }
 
 /* Quick replies */
+
 .quick-replies {
   display: flex;
   flex-wrap: wrap;
@@ -314,9 +310,7 @@ h1, h2, h3 {
   background: #555;
 }
 
-/* =========================================================
-   CHAT ICON (Launcher)
-========================================================= */
+/* CHAT ICON (se la userai in futuro) */
 
 #chat-toggle {
   position: absolute;
