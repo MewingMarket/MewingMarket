@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scuola Digitale AI — Videogioco</title>
+
+  <!-- CSS del gioco -->
+  <link rel="stylesheet" href="game.css">
+</head>
+
+<body>
+
+  <!-- =========================================================
+       SPA — SCHERMATE DEL GIOCO
+  ========================================================== -->
+
+  <!-- SCREEN 1 — LAUNCHER -->
+  <div class="screen" id="screen-launcher">
+    <div class="launcher-box">
+      <img src="/chat-icon.png" class="launcher-icon" alt="Launcher">
+      <h1>Scuola Digitale AI</h1>
+      <button onclick="goTo('screen-login')">Inizia</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 2 — LOGIN -->
+  <div class="screen" id="screen-login">
+    <h2>Come ti chiami?</h2>
+    <input id="player-name" type="text" placeholder="Il tuo nome">
+    <button onclick="saveName()">Continua</button>
+  </div>
+
+  <!-- SCREEN 3 — SCELTA AVATAR -->
+  <div class="screen" id="screen-avatar">
+    <h2>Scegli il tuo avatar</h2>
+
+    <div class="avatar-grid">
+      <div class="avatar-card" data-avatar="male">
+        <img src="/avatars/male.png" alt="Avatar Uomo">
+        <span>Uomo</span>
+      </div>
+
+      <div class="avatar-card" data-avatar="female">
+        <img src="/avatars/female.png" alt="Avatar Donna">
+        <span>Donna</span>
+      </div>
+    </div>
+
+    <button id="avatar-confirm" disabled onclick="confirmAvatar()">Conferma</button>
+  </div>
+
+  <!-- SCREEN 4 — HOME DEL GIOCO -->
+  <div class="screen" id="screen-home">
+    <h2 id="welcome-title"></h2>
+
+    <div id="bot-buttons">
+      <button onclick="setBot('vendor')">Venditore</button>
+      <button onclick="setBot('influencer')">Influencer</button>
+      <button onclick="setBot('professor')">Professore</button>
+      <button onclick="setBot('newsletter')">Newsletter</button>
+      <button onclick="setBot('generic')">Generico</button>
+    </div>
+
+    <button class="open-chat-btn" onclick="goTo('screen-chat')">Apri Chat</button>
+  </div>
+
+  <!-- SCREEN 5 — CHAT -->
+  <div class="screen" id="screen-chat">
+
+    <div id="game-container">
+
+      <!-- Avatar dinamico -->
+      <div id="avatar-area">
+        <img id="avatar-img" src="/avatars/default.png" alt="Avatar">
+      </div>
+
+      <!-- Chat -->
+      <div id="chat-container">
+        <div id="chat-box"></div>
+
+        <div id="chat-input-area">
+          <input id="chat-input" type="text" placeholder="Scrivi un messaggio...">
+          <button id="chat-send">➤</button>
+          <button id="chat-voice">🎤</button>
+          <button id="chat-attach">📎</button>
+          <input id="chat-file" type="file" hidden>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- =========================================================
+       SCRIPT DEL GIOCO
+  ========================================================== -->
+
+  <script src="game.js"></script>
+  <script src="chat.js"></script>
+
+</body>
+</html>
