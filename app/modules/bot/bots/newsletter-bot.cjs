@@ -1,24 +1,22 @@
 /**
- * Newsletter AI — Follow-up, onboarding, retention (2027)
+ * Newsletter AI — NPC informativo / onboarding / retention (2027)
  * Path: app/modules/bot/bots/newsletter-bot.cjs
  */
 
 const path = require("path");
-const db = require("../../db/database.cjs");
-
 const { log } = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
 const newsletter = require(path.join(process.cwd(), "app/modules/bot/handlers/newsletter.cjs"));
 
 /* ============================================================
-   MATCH — basato su INTENT, non sul testo
+   MATCH — basato su INTENT Engine 2027
 ============================================================ */
-function match(intent) {
+function match(intentObj) {
+  const intent = intentObj?.intent || "generico";
+
   return [
     "newsletter",
     "newsletter_subscribe",
     "newsletter_unsubscribe",
-    "newsletter_subscribe_confirm",
-    "newsletter_unsubscribe_confirm",
     "follow_up",
     "novita",
     "reminder",
@@ -34,166 +32,112 @@ function match(intent) {
 async function run(message, context = {}) {
   log("NEWSLETTER_RUN", context);
 
-  const intent = context.intent;
-  const email = context.email || null;
-  const userId = context.userId || null;
+  const intentObj = context.intent || {};
+  const intent = intentObj.intent || "generico";
 
   /* ============================================================
-     1) ISCRIZIONE NEWSLETTER
-  ============================================================ */
+     1) ISCRIZIONE (spiegazione, non azione)
+  ============================================================= */
   if (intent === "newsletter_subscribe") {
     return newsletter.newsletterSubscribe();
   }
 
-  if (intent === "newsletter_subscribe_confirm") {
-    if (!email) {
-      return {
-        avatar: "newsletter_ai",
-        type: "text",
-        text: "Per iscriverti alla newsletter ho bisogno della tua email."
-      };
-    }
-
-    await db.run(
-      "INSERT OR IGNORE INTO newsletter (email, created_at) VALUES (?, datetime('now'))",
-      [email]
-    );
-
-    return newsletter.newsletterSubscribeConfirm(email);
-  }
-
   /* ============================================================
-     2) DISISCRIZIONE NEWSLETTER
-  ============================================================ */
+     2) DISISCRIZIONE (spiegazione, non azione)
+  ============================================================= */
   if (intent === "newsletter_unsubscribe") {
     return newsletter.newsletterUnsubscribe();
   }
 
-  if (intent === "newsletter_unsubscribe_confirm") {
-    if (!email) {
-      return {
-        avatar: "newsletter_ai",
-        type: "text",
-        text: "Per disiscriverti dalla newsletter ho bisogno della tua email."
-      };
-    }
-
-    await db.run("DELETE FROM newsletter WHERE email = ?", [email]);
-
-    return newsletter.newsletterUnsubscribeConfirm(email);
-  }
-
   /* ============================================================
-     3) FOLLOW-UP POST ACQUISTO
-  ============================================================ */
+     3) FOLLOW-UP (NPC → messaggio motivazionale)
+  ============================================================= */
   if (intent === "follow_up") {
-    if (!userId) {
-      return {
-        avatar: "newsletter_ai",
-        type: "text",
-        text: "Per inviarti un follow-up personalizzato devi prima accedere al tuo account."
-      };
-    }
-
-    const lastOrder = await db.get(
-      "SELECT * FROM ordini WHERE utente_id = ? ORDER BY created_at DESC LIMIT 1",
-      [userId]
-    );
-
-    if (!lastOrder) {
-      return {
-        avatar: "newsletter_ai",
-        type: "text",
-        text: "Non trovo ordini recenti. Vuoi vedere i prodotti disponibili?"
-      };
-    }
-
     return {
-      avatar: "newsletter_ai",
+      avatar: "newsletter",
       type: "text",
       text:
-        `Grazie per il tuo acquisto di *${lastOrder.titolo}*! ` +
-        `Se hai bisogno di aiuto o vuoi consigli su come usarlo al meglio, sono qui per te.`,
+        "Grazie per essere passato! Se vuoi rimanere aggiornato su novità, guide e contenuti utili, posso mostrarti come iscriverti alla newsletter.",
       actions: [
-        { label: "Mostra download", value: "download" },
-        { label: "Consigli rapidi", value: "consiglio_rapido" }
+        { label: "Come iscrivermi", intent: "newsletter_subscribe" },
+        { label: "Novità", intent: "novita" }
       ]
     };
   }
 
   /* ============================================================
-     4) REMINDER
-  ============================================================ */
+     4) REMINDER (NPC → non crea reminder, spiega)
+  ============================================================= */
   if (intent === "reminder") {
     return {
-      avatar: "newsletter_ai",
+      avatar: "newsletter",
       type: "quick_replies",
-      text: "Quando vuoi che ti ricordi?",
+      text: "Vuoi sapere come impostare un promemoria?",
       options: [
-        { label: "Tra 24 ore", value: "reminder_24h" },
-        { label: "Domani mattina", value: "reminder_domani" },
-        { label: "Tra una settimana", value: "reminder_7giorni" }
+        { label: "Tra 24 ore", intent: "reminder_24h" },
+        { label: "Domani mattina", intent: "reminder_domani" },
+        { label: "Tra una settimana", intent: "reminder_7giorni" }
       ]
     };
   }
 
   if (intent === "reminder_24h") {
     return {
-      avatar: "newsletter_ai",
+      avatar: "newsletter",
       type: "text",
-      text: "Perfetto! Ti invierò un promemoria tra 24 ore."
+      text: "Per impostare un promemoria tra 24 ore puoi usare il calendario del tuo dispositivo."
     };
   }
 
   if (intent === "reminder_domani") {
     return {
-      avatar: "newsletter_ai",
+      avatar: "newsletter",
       type: "text",
-      text: "Riceverai un promemoria domani mattina."
+      text: "Per impostare un promemoria domani mattina usa l’app Promemoria o Calendario."
     };
   }
 
   if (intent === "reminder_7giorni") {
     return {
-      avatar: "newsletter_ai",
+      avatar: "newsletter",
       type: "text",
-      text: "Ti ricorderò tutto tra una settimana."
+      text: "Per un promemoria tra una settimana puoi usare qualsiasi app di task o calendario."
     };
   }
 
   /* ============================================================
-     5) NOVITÀ / NUOVE USCITE
-  ============================================================ */
+     5) NOVITÀ (mock locale, niente DB)
+  ============================================================= */
   if (intent === "novita") {
-    const products = await db.all(
-      "SELECT * FROM prodotti ORDER BY created_at DESC LIMIT 3"
-    );
+    const products = (context.catalog || []).slice(0, 3);
 
     return {
-      avatar: "newsletter_ai",
-      type: "products_list",
+      avatar: "newsletter",
+      type: "carousel",
       title: "Ultime novità",
-      products: products.map(p => ({
+      items: products.map(p => ({
         id: p.id,
-        title: p.nome,
-        price_cent: p.prezzo_cent
+        title: p.titolo_breve,
+        description: p.descrizione_breve,
+        price_cent: p.prezzo_cent,
+        image: p.immagine_url
       })),
       actions: [
-        { label: "Mostra tutto", value: "catalogo" },
-        { label: "Iscrivimi alla newsletter", value: "newsletter_subscribe" }
+        { label: "Mostra tutto", intent: "catalogo" },
+        { label: "Come iscrivermi", intent: "newsletter_subscribe" }
       ]
     };
   }
 
   /* ============================================================
      6) FALLBACK
-  ============================================================ */
+  ============================================================= */
   return newsletter.newsletterGeneric();
 }
 
 module.exports = {
   name: "newsletter",
-  avatar: "newsletter_ai",
+  avatar: "newsletter",
   match,
   run
 };
