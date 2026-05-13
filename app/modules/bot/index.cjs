@@ -13,7 +13,7 @@ const intentEngine = require(path.join(process.cwd(), "app/modules/bot/intent-en
 /* ============================================================
    ROUTER AI (decide quale avatar risponde)
 ============================================================ */
-const router = require(path.join(process.cwd(), "app/modules/bot/core/router.bot.cjs"));
+const router = require(path.join(process.cwd(), "app/modules/bot/core/router.cjs"));
 
 /* ============================================================
    AVATAR (NPC del videogioco) — NOMI REALI
