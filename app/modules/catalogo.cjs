@@ -5,7 +5,7 @@
  */
 
 const path = require("path");
-const { normalize, extractKeywords } = require(path.join(__dirname, "bot", "utils.cjs"));
+const { normalize, cleanSearchQuery } = require(path.join(process.cwd(), "app/modules/utils.cjs"));
 const fetch = require("node-fetch");
 
 // Endpoint backend SQL
@@ -75,7 +75,7 @@ async function findProductFromText(text) {
 
   const PRODUCTS = await getCatalog();
   const t = normalize(text);
-  const keys = extractKeywords(text);
+  const query = cleanSearchQuery(text);
 
   // Match diretto
   let match = PRODUCTS.find(p =>
@@ -85,6 +85,8 @@ async function findProductFromText(text) {
   if (match) return match;
 
   // Match fuzzy per keyword
+  const keys = query.split(" ").filter(w => w && w.length > 2);
+
   for (const p of PRODUCTS) {
     const full = normalize(`${p.titolo} ${p.titolo_breve} ${p.descrizione_breve}`);
     if (keys.some(k => full.includes(k))) return p;
@@ -108,7 +110,8 @@ async function listAllProducts() {
 function fuzzyMatchProduct(text = "") {
   if (!text) return null;
   const t = normalize(text);
-  const keys = extractKeywords(text);
+  const query = cleanSearchQuery(text);
+  const keys = query.split(" ").filter(w => w && w.length > 2);
 
   const PRODUCTS = CACHE || [];
   if (!PRODUCTS.length) return null;
@@ -130,7 +133,7 @@ function fuzzyMatchProduct(text = "") {
 }
 
 /* ============================================================
-   RISPOSTE PRODOTTO — VERSIONE PREMIUM PRO
+   RISPOSTE PRODOTTO — LEGACY HTML (SERVER)
 ============================================================ */
 function productReply(p) {
   if (!p) return "Non ho trovato questo prodotto.";
