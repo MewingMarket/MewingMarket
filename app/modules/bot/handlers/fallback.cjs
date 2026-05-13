@@ -1,7 +1,7 @@
 /**
- * modules/bot/handlers/fallback.cjs — VERSIONE 2027
- * Fallback Helper — usato dal bot Avatar Generico
- * Nessun HTML, nessun GPT, solo JSON UI
+ * modules/bot/handlers/fallback.cjs — VERSIONE VIDEOGIOCO 2027
+ * Fallback Helper — Avatar Generico (Assistant)
+ * Nessun HTML, nessun GPT, solo JSON UI compatibile con Game Engine
  */
 
 const path = require("path");
@@ -49,7 +49,30 @@ function fallbackProduct(product) {
 }
 
 /* ============================================================
-   FALLBACK GENERICO
+   FALLBACK TUTORIAL TV (video)
+============================================================ */
+function fallbackTutorial(videoUrl) {
+  return {
+    type: "tutorial_card",
+    avatar: "assistant",
+    title: "Non ho capito bene, ma questo può aiutarti",
+    steps: [
+      "Guarda il video sulla TV",
+      "Segui le istruzioni",
+      "Torna al menu per continuare"
+    ],
+    actions: [
+      {
+        label: "Guarda il video",
+        type: "open_video",
+        video_url: videoUrl
+      }
+    ]
+  };
+}
+
+/* ============================================================
+   FALLBACK GENERICO (intent‑driven)
 ============================================================ */
 function fallbackGeneric() {
   return {
@@ -57,21 +80,22 @@ function fallbackGeneric() {
     avatar: "assistant",
     text: "Non ho capito bene. Posso aiutarti con catalogo, supporto, social o newsletter.",
     options: [
-      { label: "Catalogo", value: "catalogo" },
-      { label: "Supporto", value: "supporto" },
-      { label: "Social", value: "social" },
-      { label: "Newsletter", value: "newsletter" },
-      { label: "Menu", value: "menu" }
+      { label: "Catalogo", intent: "catalogo" },
+      { label: "Supporto", intent: "supporto" },
+      { label: "Social", intent: "social" },
+      { label: "Newsletter", intent: "newsletter" },
+      { label: "Menu", intent: "menu" }
     ]
   };
 }
 
 /* ============================================================
-   EXPORT — usato da Avatar Generico
+   EXPORT — Avatar Generico
 ============================================================ */
 module.exports = {
   fallbackFAQ,
   fallbackGuide,
   fallbackProduct,
+  fallbackTutorial,
   fallbackGeneric
 };
