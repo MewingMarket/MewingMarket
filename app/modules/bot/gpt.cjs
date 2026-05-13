@@ -1,77 +1,77 @@
 /**
  * modules/bot/gpt.cjs
- * GPT engine — versione blindata, robusta, con timeout e agent HTTPS
- * PATCH: ora usa il motore AI universale (ai.cjs)
+ * GPT engine — versione per Router AI
+ * Ora NON genera testo finale, ma solo INTENT JSON
  */
 
 const path = require("path");
+const { log } = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
 
-// PATCH: require assoluto
-const { addEmojis, log } = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
-
-// 🔥 Nuovo motore AI universale
-// PATCH: require ASSOLUTO basato su process.cwd()
-// Percorso reale: app/server/modules/ai.cjs
+// Motore AI universale
 const callAI = require(path.join(process.cwd(), "app/server/modules/ai.cjs"));
 
 /* ============================================================
-   SYSTEM PROMPT BASE (solo per il BOT)
+   SYSTEM PROMPT — versione INTENT ONLY
 ============================================================ */
 const BASE_SYSTEM_PROMPT = `
-Sei il Copilot ufficiale di MewingMarket.
-Tono: chiaro, diretto, professionale, amichevole.
-Regole: non inventare prodotti, non inventare prezzi.
-Usa markup WhatsApp-style.
+Sei un motore di INTENT DETECTION.
+NON generi testo umano.
+NON generi risposte conversazionali.
+NON generi markup.
+NON generi emoji.
+
+Il tuo unico compito è:
+- capire l'intento dell'utente
+- estrarre eventuali parametri (productId, topic, ecc.)
+- restituire SOLO un JSON valido
+
+Esempi di output validi:
+{"intent":"recensioni","productId":12}
+{"intent":"assistenza","topic":"download"}
+{"intent":"video_motivazionale"}
+{"intent":"prodotti_correlati","productId":5}
+
+Se non capisci, restituisci:
+{"intent":"generico"}
 `;
 
 /* ============================================================
-   CALL GPT — versione blindata (BOT WRAPPER)
+   CALL GPT — versione INTENT ONLY
 ============================================================ */
-async function callGPT(
-  userPrompt,
-  memory = [],
-  context = {},
-  extraSystem = "",
-  extraData = {}
-) {
-  log("GPT_CALL_START", { userPrompt, memory, context, extraSystem, extraData });
+async function callGPTIntent(userPrompt, memory = [], context = {}) {
+  log("GPT_INTENT_START", { userPrompt, memory, context });
 
   try {
     if (!process.env.OPENROUTER_API_KEY) {
       log("GPT_NO_KEY", "OPENROUTER_API_KEY mancante");
-      return addEmojis("Sto avendo un problema tecnico, ma posso aiutarti.");
+      return { intent: "generico" };
     }
 
-    /* ============================================================
-       PATCH: risposte brevi senza GPT (evita bug OpenRouter)
-    ============================================================= */
-    const short = (userPrompt || "").trim().toLowerCase();
-    if (["ciao", "hey", "hi", "salve", "menu", "ok"].includes(short)) {
-      return addEmojis("Ciao! 👋 Come posso aiutarti oggi?");
-    }
-
-    /* ============================================================
-       Chiamata al nuovo motore AI universale
-    ============================================================= */
     const response = await callAI({
       userPrompt,
       memory,
-      extraSystem: BASE_SYSTEM_PROMPT + (extraSystem || ""),
-      extraData: {
-        ...extraData,
-        context
-      }
+      extraSystem: BASE_SYSTEM_PROMPT,
+      extraData: { context }
     });
 
-    return addEmojis(response);
+    // PATCH: se la risposta NON è JSON valido → fallback
+    try {
+      const parsed = JSON.parse(response);
+      if (parsed && typeof parsed === "object") return parsed;
+    } catch (err) {
+      log("GPT_INTENT_PARSE_FAIL", response);
+      return { intent: "generico" };
+    }
+
+    return { intent: "generico" };
 
   } catch (err) {
-    log("GPT_FATAL_ERROR", err);
-    return addEmojis("C’è un piccolo problema tecnico, ma posso aiutarti.");
+    log("GPT_INTENT_FATAL", err);
+    return { intent: "generico" };
   }
 }
 
 /* ============================================================
    EXPORT
 ============================================================ */
-module.exports = callGPT;
+module.exports = callGPTIntent;
