@@ -1,14 +1,14 @@
 /**
- * modules/bot/handlers/conversation.cjs — VERSIONE 2027
- * Conversation Helper — usato dal bot Avatar Generico
- * Nessun HTML, nessun GPT, solo JSON UI
+ * modules/bot/handlers/conversation.cjs — VERSIONE VIDEOGIOCO 2027
+ * Conversation Helper — Avatar Generico (Narratore)
+ * Nessun HTML, nessun GPT, solo JSON UI compatibile con Game Engine
  */
 
 const path = require("path");
 const { log } = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
 
 /* ============================================================
-   CONVERSAZIONE GENERICA
+   CONVERSAZIONE GENERICA (onboarding)
 ============================================================ */
 function conversationGeneric() {
   log("CONVERSATION_GENERIC");
@@ -16,19 +16,19 @@ function conversationGeneric() {
   return {
     type: "quick_replies",
     avatar: "assistant",
-    text: "Ciao! Posso aiutarti con il catalogo, le guide, il supporto, i social o la newsletter. Cosa vuoi fare?",
+    text: "Ciao! Benvenuto nel tuo spazio interattivo. Posso guidarti tra catalogo, guide, supporto, social e newsletter. Dove vuoi andare?",
     options: [
-      { label: "Catalogo", value: "catalogo" },
-      { label: "Supporto", value: "supporto" },
-      { label: "Social", value: "social" },
-      { label: "Newsletter", value: "newsletter" },
-      { label: "Menu", value: "menu" }
+      { label: "Catalogo", intent: "catalogo" },
+      { label: "Supporto", intent: "supporto" },
+      { label: "Social", intent: "social" },
+      { label: "Newsletter", intent: "newsletter" },
+      { label: "Menu", intent: "menu" }
     ]
   };
 }
 
 /* ============================================================
-   MENU PRINCIPALE
+   MENU PRINCIPALE (navigazione)
 ============================================================ */
 function conversationMenu() {
   log("CONVERSATION_MENU");
@@ -38,18 +38,41 @@ function conversationMenu() {
     avatar: "assistant",
     title: "Menu principale",
     items: [
-      { label: "Catalogo prodotti", value: "catalogo" },
-      { label: "Guide e FAQ", value: "faq" },
-      { label: "Supporto", value: "supporto" },
-      { label: "Ordini", value: "ordini" },
-      { label: "Download", value: "download" },
-      { label: "Pagamenti", value: "pagamento" },
-      { label: "Rimborsi", value: "rimborso" },
-      { label: "Social", value: "social" },
-      { label: "Newsletter", value: "newsletter" }
+      { label: "Catalogo prodotti", intent: "catalogo" },
+      { label: "Guide e FAQ", intent: "faq" },
+      { label: "Supporto", intent: "supporto" },
+      { label: "Ordini", intent: "ordini" },
+      { label: "Download", intent: "download" },
+      { label: "Pagamenti", intent: "pagamento" },
+      { label: "Rimborsi", intent: "rimborso" },
+      { label: "Social", intent: "social" },
+      { label: "Newsletter", intent: "newsletter" }
     ],
     actions: [
-      { label: "Torna indietro", value: "home" }
+      { label: "Torna indietro", intent: "home" }
+    ]
+  };
+}
+
+/* ============================================================
+   TUTORIAL TV (video onboarding)
+============================================================ */
+function conversationTutorial(videoUrl) {
+  return {
+    type: "tutorial_card",
+    avatar: "assistant",
+    title: "Come usare questo spazio",
+    steps: [
+      "Naviga tra i menu",
+      "Interagisci con gli avatar",
+      "Guarda i video tutorial sulla TV"
+    ],
+    actions: [
+      {
+        label: "Guarda il video",
+        type: "open_video",
+        video_url: videoUrl
+      }
     ]
   };
 }
@@ -59,17 +82,21 @@ function conversationMenu() {
 ============================================================ */
 function conversationFallback() {
   return {
-    type: "text",
+    type: "quick_replies",
     avatar: "assistant",
-    text: "Non ho capito bene. Vuoi vedere il menu?"
+    text: "Non ho capito bene. Vuoi tornare al menu principale?",
+    options: [
+      { label: "Apri menu", intent: "menu" }
+    ]
   };
 }
 
 /* ============================================================
-   EXPORT — usato da Avatar Generico
+   EXPORT — Avatar Generico
 ============================================================ */
 module.exports = {
   conversationGeneric,
   conversationMenu,
+  conversationTutorial,
   conversationFallback
 };
