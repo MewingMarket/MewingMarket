@@ -1,58 +1,30 @@
 /**
- * Venditore AI — Bot commerciale (2027)
- * Path: app/modules/bot/bots/vendor-bot.cjs
+ * Venditore AI — NPC commerciale (2027)
+ * Path: app/modules/bot/bots/vendor.bot.cjs
  */
 
 const path = require("path");
-const db = require("../../db/database.cjs");
-
 const { log } = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
-const {
-  productCardJSON,
-  productDetailsJSON,
-  productImageJSON
-} = require(path.join(process.cwd(), "app/modules/bot/catalogo.cjs"));
+
+const catalog = require(path.join(process.cwd(), "app/modules/bot/handlers/catalogHandler.cjs"));
+const product = require(path.join(process.cwd(), "app/modules/bot/handlers/productHandler.cjs"));
 
 /* ============================================================
-   HELPERS DB
+   MATCH — basato su INTENT Engine 2027
 ============================================================ */
-async function getProductById(id) {
-  const rows = await db.all("SELECT * FROM prodotti WHERE id = ?", [id]);
-  return rows[0] || null;
-}
+function match(intentObj) {
+  const intent = intentObj?.intent || "generico";
 
-async function getReviews(productId, limit = 5) {
-  return await db.all(
-    "SELECT * FROM feedback WHERE prodotto_id = ? ORDER BY created_at DESC LIMIT ?",
-    [productId, limit]
-  );
-}
-
-async function getRelated(productId, limit = 3) {
-  return await db.all(
-    `
-    SELECT * FROM prodotti
-    WHERE id != ?
-    ORDER BY RANDOM()
-    LIMIT ?
-    `,
-    [productId, limit]
-  );
-}
-
-/* ============================================================
-   MATCH — decide se il bot deve rispondere
-   (basato su intent, NON sul testo)
-============================================================ */
-function match(intent) {
   return [
     "prodotto",
+    "prezzo",
     "prezzo_prodotto",
     "recensioni",
     "prodotti_correlati",
     "dettagli_prodotto",
     "immagine_prodotto",
-    "acquisto_diretto"
+    "acquisto_diretto",
+    "catalogo"
   ].includes(intent);
 }
 
@@ -62,152 +34,158 @@ function match(intent) {
 async function run(message, context = {}) {
   log("VENDOR_RUN", context);
 
-  const intent = context.intent;
-  const productId = context.productId || null;
+  const intentObj = context.intent || {};
+  const intent = intentObj.intent || "generico";
+  const productId = intentObj.productId || null;
+  const catalogList = context.catalog || [];
 
   /* ============================================================
-     1) RECENSIONI
-  ============================================================ */
-  if (intent === "recensioni") {
+     1) CATALOGO
+  ============================================================= */
+  if (intent === "catalogo") {
+    return catalog.catalogList(catalogList);
+  }
+
+  /* ============================================================
+     2) PRODOTTO PRINCIPALE
+  ============================================================= */
+  if (intent === "prodotto" || intent === "prezzo" || intent === "prezzo_prodotto" || intent === "acquisto_diretto") {
     if (!productId) {
       return {
-        avatar: "sales_ai",
+        avatar: "vendor",
+        type: "quick_replies",
+        text: "Quale prodotto ti interessa?",
+        options: [
+          { label: "Catalogo", intent: "catalogo" },
+          { label: "Prodotti consigliati", intent: "catalogo" }
+        ]
+      };
+    }
+
+    const p = catalogList.find(x => x.id === productId);
+    if (!p) {
+      return {
+        avatar: "vendor",
+        type: "text",
+        text: "Non trovo questo prodotto."
+      };
+    }
+
+    return {
+      ...product.productHandler(p.titolo_breve, catalogList),
+      avatar: "vendor"
+    };
+  }
+
+  /* ============================================================
+     3) DETTAGLI PRODOTTO
+  ============================================================= */
+  if (intent === "dettagli_prodotto") {
+    const p = catalogList.find(x => x.id === productId);
+    return product.productDetailsHandler(p);
+  }
+
+  /* ============================================================
+     4) IMMAGINE PRODOTTO
+  ============================================================= */
+  if (intent === "immagine_prodotto") {
+    const p = catalogList.find(x => x.id === productId);
+    return product.productImageHandler(p);
+  }
+
+  /* ============================================================
+     5) RECENSIONI (mock locale)
+  ============================================================= */
+  if (intent === "recensioni") {
+    const p = catalogList.find(x => x.id === productId);
+
+    if (!p) {
+      return {
+        avatar: "vendor",
         type: "text",
         text: "Dimmi di quale prodotto vuoi vedere le recensioni."
       };
     }
 
-    const product = await getProductById(productId);
-    const reviews = await getReviews(productId);
-
     return {
-      avatar: "sales_ai",
+      avatar: "vendor",
       type: "reviews_list",
       product: {
-        id: product.id,
-        title: product.nome
+        id: p.id,
+        title: p.titolo_breve
       },
-      reviews: reviews.map(r => ({
-        user: r.utente_id || "Utente",
-        rating: r.rating,
-        comment: r.commento
-      })),
+      reviews: [
+        { user: "Utente A", rating: 5, comment: "Ottimo prodotto!" },
+        { user: "Utente B", rating: 4, comment: "Molto utile." }
+      ],
       actions: [
-        { label: "Prodotti correlati", value: `prodotti_correlati ${product.id}` }
+        { label: "Correlati", intent: "prodotti_correlati", productId: p.id }
       ]
     };
   }
 
   /* ============================================================
-     2) PRODOTTI CORRELATI
-  ============================================================ */
+     6) PRODOTTI CORRELATI (mock locale)
+  ============================================================= */
   if (intent === "prodotti_correlati") {
-    if (!productId) {
+    const p = catalogList.find(x => x.id === productId);
+
+    if (!p) {
       return {
-        avatar: "sales_ai",
+        avatar: "vendor",
         type: "text",
         text: "Dimmi prima un prodotto, poi ti mostro quelli correlati."
       };
     }
 
-    const product = await getProductById(productId);
-    const related = await getRelated(productId);
+    const related = catalogList
+      .filter(x => x.id !== p.id)
+      .slice(0, 3);
 
     return {
-      avatar: "sales_ai",
-      type: "products_list",
-      title: `Prodotti correlati a ${product.nome}`,
-      products: related.map(p => ({
-        id: p.id,
-        title: p.nome,
-        price_cent: p.prezzo_cent
-      })),
-      actions: [
-        { label: "Recensioni", value: `recensioni ${product.id}` }
-      ]
+      type: "carousel",
+      avatar: "vendor",
+      title: `Prodotti correlati a ${p.titolo_breve}`,
+      items: related.map(r => ({
+        id: r.id,
+        title: r.titolo_breve,
+        description: r.descrizione_breve,
+        price_cent: r.prezzo_cent,
+        image: r.immagine_url
+      }))
     };
   }
 
   /* ============================================================
-     3) PREZZO / PRODOTTO PRINCIPALE
-  ============================================================ */
-  if (intent === "prodotto" || intent === "prezzo_prodotto" || intent === "acquisto_diretto") {
-    if (!productId) {
-      return {
-        avatar: "sales_ai",
-        type: "text",
-        text: "Quale prodotto ti interessa?"
-      };
-    }
-
-    const product = await getProductById(productId);
-
-    return {
-      avatar: "sales_ai",
-      type: "product_card",
-      product: {
-        id: product.id,
-        title: product.nome,
-        description: product.descrizione,
-        price_cent: product.prezzo_cent
-      },
-      actions: [
-        { label: "Recensioni", value: `recensioni ${product.id}` },
-        { label: "Correlati", value: `prodotti_correlati ${product.id}` }
-      ]
-    };
-  }
-
-  /* ============================================================
-     4) DETTAGLI PRODOTTO
-  ============================================================ */
-  if (intent === "dettagli_prodotto") {
-    if (!productId) {
-      return {
-        avatar: "sales_ai",
-        type: "text",
-        text: "Dimmi quale prodotto vuoi approfondire."
-      };
-    }
-
-    const product = await getProductById(productId);
-    return productDetailsJSON(product);
-  }
-
-  /* ============================================================
-     5) IMMAGINE PRODOTTO
-  ============================================================ */
-  if (intent === "immagine_prodotto") {
-    if (!productId) {
-      return {
-        avatar: "sales_ai",
-        type: "text",
-        text: "Dimmi quale prodotto vuoi vedere."
-      };
-    }
-
-    const product = await getProductById(productId);
-    return productImageJSON(product);
-  }
-
-  /* ============================================================
-     6) FALLBACK COMMERCIALE
-  ============================================================ */
+     7) FALLBACK COMMERCIALE
+  ============================================================= */
   return {
-    avatar: "sales_ai",
+    avatar: "vendor",
     type: "quick_replies",
     text: "Come posso aiutarti a scegliere il prodotto giusto?",
     options: [
-      { label: "Prodotti consigliati", value: "catalogo" },
-      { label: "Recensioni", value: "recensioni" },
-      { label: "Assistenza", value: "supporto" }
+      { label: "Catalogo", intent: "catalogo" },
+      { label: "Prodotti consigliati", intent: "catalogo" },
+      { label: "Assistenza", intent: "supporto" }
     ]
+  };
+}
+
+/* ============================================================
+   SIDEKICK — compresenza (quando parla il Professore)
+============================================================ */
+async function sidekick(message, context = {}) {
+  return {
+    avatar: "vendor",
+    type: "text",
+    text: "Se vuoi, posso mostrarti anche i prodotti correlati o le recensioni."
   };
 }
 
 module.exports = {
   name: "vendor",
-  avatar: "sales_ai",
+  avatar: "vendor",
   match,
-  run
+  run,
+  sidekick
 };
