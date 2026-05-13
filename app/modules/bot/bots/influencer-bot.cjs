@@ -1,50 +1,48 @@
 /**
- * Influencer AI — Bot motivazionale / contenuti video
+ * Influencer AI — Bot motivazionale / contenuti video (2027)
  * Path: app/modules/bot/bots/influencer-bot.cjs
  */
 
-const db = require("../../db/database.cjs"); // adatta se necessario
+const path = require("path");
+const db = require("../../db/database.cjs");
+const { log } = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
 
-/* =========================================================
-   MATCH — quando interviene l'Influencer AI
-========================================================= */
-
-function match(message) {
-  if (!message) return false;
-  const m = message.toLowerCase();
-
-  return (
-    m.includes("video") ||
-    m.includes("tutorial") ||
-    m.includes("motivami") ||
-    m.includes("ispirami") ||
-    m.includes("mostrami come") ||
-    m.includes("come si fa") ||
-    m.includes("hype") ||
-    m.includes("consiglio veloce") ||
-    m.includes("influencer") ||
-    m.includes("motivazione")
-  );
+/* ============================================================
+   MATCH — basato su INTENT, non sul testo
+============================================================ */
+function match(intent) {
+  return [
+    "video_prodotto",
+    "video_motivazionale",
+    "tutorial_prodotto",
+    "motivazione",
+    "consiglio_rapido",
+    "consiglio_del_giorno",
+    "influencer"
+  ].includes(intent);
 }
 
-/* =========================================================
-   RUN — logica principale dell'Influencer AI
-========================================================= */
-
+/* ============================================================
+   RUN — logica principale
+============================================================ */
 async function run(message, context = {}) {
-  const m = message.toLowerCase();
-  const productId = context.productId || context.lastProductId || null;
+  log("INFLUENCER_RUN", context);
 
-  /* --- VIDEO TUTORIAL SU PRODOTTO --- */
-  if (m.includes("video") || m.includes("tutorial") || m.includes("mostrami come")) {
+  const intent = context.intent;
+  const productId = context.productId || null;
+
+  /* ============================================================
+     1) VIDEO TUTORIAL PRODOTTO
+  ============================================================ */
+  if (intent === "video_prodotto" || intent === "tutorial_prodotto") {
     if (!productId) {
       return {
         avatar: "influencer_ai",
         type: "quick_replies",
         text: "Su quale prodotto vuoi un video tutorial?",
         options: [
-          { label: "Prodotti popolari", value: "prodotti consigliati" },
-          { label: "Mostra video generico", value: "video motivazionale" }
+          { label: "Prodotti consigliati", value: "catalogo" },
+          { label: "Video motivazionale", value: "video_motivazionale" }
         ]
       };
     }
@@ -57,43 +55,65 @@ async function run(message, context = {}) {
       title: `Tutorial rapido: ${product.nome}`,
       url: `https://cdn.mewingmarket.it/video/tutorial-${product.id}.mp4`,
       actions: [
-        { label: "Mostra recensioni", value: `recensioni prodotto ${product.id}` },
-        { label: "Prodotti correlati", value: `correlati ${product.id}` }
+        { label: "Recensioni", value: `recensioni ${product.id}` },
+        { label: "Correlati", value: `prodotti_correlati ${product.id}` }
       ]
     };
   }
 
-  /* --- MOTIVAZIONE / HYPE --- */
-  if (m.includes("motivami") || m.includes("ispirami") || m.includes("hype")) {
+  /* ============================================================
+     2) VIDEO MOTIVAZIONALE
+  ============================================================ */
+  if (intent === "video_motivazionale") {
+    return {
+      avatar: "influencer_ai",
+      type: "video",
+      title: "🔥 Video motivazionale",
+      url: "https://cdn.mewingmarket.it/video/motivazione-1.mp4",
+      actions: [
+        { label: "Altro video", value: "video_motivazionale" },
+        { label: "Consiglio rapido", value: "consiglio_rapido" }
+      ]
+    };
+  }
+
+  /* ============================================================
+     3) MOTIVAZIONE / HYPE
+  ============================================================ */
+  if (intent === "motivazione") {
     return {
       avatar: "influencer_ai",
       type: "text",
       text:
-        "🔥 Ascolta, Simone. Ogni volta che investi in te stesso, stai costruendo una versione più forte di te. " +
+        "🔥 Simone, ogni volta che investi in te stesso stai costruendo una versione più forte di te. " +
         "Non serve essere perfetti: serve iniziare. E tu hai già iniziato.",
       actions: [
-        { label: "Mostra un video", value: "video motivazionale" },
-        { label: "Consigli rapidi", value: "consiglio veloce" }
+        { label: "Mostra un video", value: "video_motivazionale" },
+        { label: "Consiglio rapido", value: "consiglio_rapido" }
       ]
     };
   }
 
-  /* --- CONSIGLI RAPIDI --- */
-  if (m.includes("consiglio veloce")) {
+  /* ============================================================
+     4) CONSIGLIO RAPIDO
+  ============================================================ */
+  if (intent === "consiglio_rapido") {
     return {
       avatar: "influencer_ai",
       type: "quick_replies",
       text: "Ecco tre consigli rapidi:",
       options: [
-        { label: "🔥 Migliora subito", value: "video motivazionale" },
-        { label: "📘 Impara una cosa nuova", value: "tutorial veloce" },
-        { label: "💡 Consiglio del giorno", value: "consiglio del giorno" }
+        { label: "🔥 Migliora subito", value: "video_motivazionale" },
+        { label: "📘 Impara una cosa nuova", value: "tutorial_prodotto" },
+        { label: "💡 Consiglio del giorno", value: "consiglio_del_giorno" }
       ]
     };
   }
 
-  /* --- CONSIGLIO DEL GIORNO --- */
-  if (m.includes("consiglio del giorno")) {
+  /* ============================================================
+     5) CONSIGLIO DEL GIORNO
+  ============================================================ */
+  if (intent === "consiglio_del_giorno") {
     return {
       avatar: "influencer_ai",
       type: "text",
@@ -101,41 +121,29 @@ async function run(message, context = {}) {
         "💡 *Consiglio del giorno:* Non aspettare il momento perfetto. " +
         "Il momento perfetto è quando decidi di iniziare.",
       actions: [
-        { label: "Mostra un video", value: "video motivazionale" },
-        { label: "Altro consiglio", value: "consiglio veloce" }
+        { label: "Mostra un video", value: "video_motivazionale" },
+        { label: "Altro consiglio", value: "consiglio_rapido" }
       ]
     };
   }
 
-  /* --- VIDEO MOTIVAZIONALE GENERICO --- */
-  if (m.includes("video motivazionale")) {
-    return {
-      avatar: "influencer_ai",
-      type: "video",
-      title: "🔥 Video motivazionale",
-      url: "https://cdn.mewingmarket.it/video/motivazione-1.mp4",
-      actions: [
-        { label: "Altro video", value: "video motivazionale" },
-        { label: "Consiglio rapido", value: "consiglio veloce" }
-      ]
-    };
-  }
-
-  /* --- FALLBACK --- */
+  /* ============================================================
+     6) FALLBACK INFLUENCER
+  ============================================================ */
   return {
     avatar: "influencer_ai",
     type: "quick_replies",
     text: "Vuoi un video, un consiglio o un po' di motivazione?",
     options: [
-      { label: "Mostra un video", value: "video motivazionale" },
-      { label: "Consiglio veloce", value: "consiglio veloce" },
-      { label: "Motivami", value: "motivami" }
+      { label: "Mostra un video", value: "video_motivazionale" },
+      { label: "Consiglio rapido", value: "consiglio_rapido" },
+      { label: "Motivami", value: "motivazione" }
     ]
   };
 }
 
 module.exports = {
-  name: "Influencer AI",
+  name: "influencer",
   avatar: "influencer_ai",
   match,
   run
