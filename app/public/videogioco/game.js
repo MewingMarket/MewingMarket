@@ -11,10 +11,8 @@ function goTo(screenId) {
   if (target) target.style.display = "block";
 }
 
-/* ===========================
- * LOGIN
- * ===========================
- */
+/* LOGIN */
+
 function saveName() {
   const input = document.getElementById("player-name");
   if (!input) return;
@@ -26,10 +24,8 @@ function saveName() {
   goTo("screen-avatar");
 }
 
-/* ===========================
- * AVATAR
- * ===========================
- */
+/* AVATAR */
+
 let selectedAvatar = null;
 
 document.addEventListener("click", e => {
@@ -56,46 +52,41 @@ function confirmAvatar() {
   const title = document.getElementById("welcome-title");
   if (title) title.textContent = `Benvenuto ${name}!`;
 
-  // aggiorna avatar anche nella chat
+  // avatar di default: saggio uomo/donna
   const avatarImg = document.getElementById("avatar-img");
-  if (avatarImg) avatarImg.src = `/avatars/${selectedAvatar}.png`;
+  if (avatarImg) {
+    const npc = selectedAvatar === "male" ? "uomo saggio" : "donna saggia";
+    avatarImg.src = `/videogioco/${npc}.png`;
+  }
+
+  // flag per messaggio di benvenuto in chat
+  localStorage.setItem("welcome_sage_pending", "1");
 
   goTo("screen-home");
 }
 
-/* ===========================
- * BOT SELECTOR
- * ===========================
- */
+/* BOT SELECTOR */
+
 function setBot(botName) {
   localStorage.setItem("active_bot", botName);
 }
 
-/* ===========================
- * AVVIO INIZIALE
- * ===========================
- */
+/* AVVIO INIZIALE */
+
 window.addEventListener("load", () => {
-  // schermata iniziale: launcher
   goTo("screen-launcher");
 
-  // se esiste già un avatar salvato, aggiorna la chat
   const savedAvatar = localStorage.getItem("player_avatar");
-  if (savedAvatar) {
-    const avatarImg = document.getElementById("avatar-img");
-    if (avatarImg) avatarImg.src = `/avatars/${savedAvatar}.png`;
-  }
+  const avatarImg = document.getElementById("avatar-img");
 
-  // se esiste già un nome, potresti saltare il login (opzionale)
-  // const savedName = localStorage.getItem("player_name");
-  // if (savedName && savedAvatar) goTo("screen-home");
+  if (savedAvatar && avatarImg) {
+    const npc = savedAvatar === "male" ? "uomo saggio" : "donna saggia";
+    avatarImg.src = `/videogioco/${npc}.png`;
+  }
 });
 
-/* ===========================
- * ESPORT FUNZIONI GLOBALI
- * (se servono inline in HTML)
- * ===========================
- */
+/* ESPORT FUNZIONI GLOBALI */
+
 window.goTo = goTo;
 window.saveName = saveName;
 window.confirmAvatar = confirmAvatar;
