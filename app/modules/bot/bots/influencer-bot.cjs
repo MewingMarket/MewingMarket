@@ -32,7 +32,12 @@ function match(intentObj) {
    RUN — logica principale NPC
 ============================================================ */
 async function run(message, context = {}) {
-  log("INFLUENCER_RUN", context);
+  log("INFLUENCER_RUN", {
+    uid: context.uid,
+    intent: context.intent?.intent,
+    productId: context.intent?.productId,
+    catalogCount: context.catalog?.length || 0
+  });
 
   const intentObj = context.intent || {};
   const intent = intentObj.intent || "generico";
@@ -64,6 +69,8 @@ async function run(message, context = {}) {
       };
     }
 
+    const safeUrl = typeof p.youtube_url === "string" ? p.youtube_url : null;
+
     return {
       type: "tutorial_card",
       avatar: "influencer",
@@ -73,13 +80,15 @@ async function run(message, context = {}) {
         "Segui i passaggi",
         "Applica subito ciò che impari"
       ],
-      actions: [
-        {
-          label: "Guarda il video",
-          type: "open_video",
-          video_url: p.youtube_url
-        }
-      ]
+      actions: safeUrl
+        ? [
+            {
+              label: "Guarda il video",
+              type: "open_video",
+              video_url: safeUrl
+            }
+          ]
+        : []
     };
   }
 
@@ -175,6 +184,8 @@ async function run(message, context = {}) {
    SIDEKICK — compresenza (quando parla il Vendor)
 ============================================================ */
 async function sidekick(message, context = {}) {
+  log("INFLUENCER_SIDEKICK", { productId: context.intent?.productId });
+
   return {
     avatar: "influencer",
     type: "text",
