@@ -1,13 +1,15 @@
 /**
  * Influencer AI — NPC motivazionale / PR / video (2027)
- * Path: app/modules/bot/bots/influencer.bot.cjs
+ * Path: app/modules/bot/bots/influencer-bot.cjs
  */
 
 const path = require("path");
 const { log } = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
+
+// Handlers
 const social = require(path.join(process.cwd(), "app/modules/bot/handlers/social.cjs"));
-const catalog = require(path.join(process.cwd(), "app/modules/bot/handlers/catalogHandler.cjs"));
-const product = require(path.join(process.cwd(), "app/modules/bot/handlers/productHandler.cjs"));
+const catalogHandler = require(path.join(process.cwd(), "app/modules/bot/handlers/catalogHandler.cjs"));
+const productHandler = require(path.join(process.cwd(), "app/modules/bot/handlers/productHandler.cjs"));
 
 /* ============================================================
    MATCH — basato su INTENT Engine 2027
@@ -27,7 +29,7 @@ function match(intentObj) {
 }
 
 /* ============================================================
-   RUN — logica principale
+   RUN — logica principale NPC
 ============================================================ */
 async function run(message, context = {}) {
   log("INFLUENCER_RUN", context);
@@ -35,7 +37,7 @@ async function run(message, context = {}) {
   const intentObj = context.intent || {};
   const intent = intentObj.intent || "generico";
   const productId = intentObj.productId || null;
-  const catalogList = context.catalog || [];
+  const catalog = context.catalog || [];
 
   /* ============================================================
      1) VIDEO TUTORIAL PRODOTTO
@@ -53,7 +55,7 @@ async function run(message, context = {}) {
       };
     }
 
-    const p = catalogList.find(x => x.id === productId);
+    const p = catalog.find(x => x.id === productId);
     if (!p) {
       return {
         avatar: "influencer",
@@ -183,6 +185,9 @@ async function sidekick(message, context = {}) {
   };
 }
 
+/* ============================================================
+   EXPORT NPC
+============================================================ */
 module.exports = {
   name: "influencer",
   avatar: "influencer",
