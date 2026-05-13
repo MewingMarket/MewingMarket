@@ -101,8 +101,41 @@ function render(item) {
 `;
 }
 
+/* =========================================================
+   FUNZIONI EXTRA — JSON / FRAMES (senza toccare la logica)
+========================================================= */
+
+function toJSON(item) {
+  if (!item) return null;
+  return {
+    id: item.id,
+    type: "guide_card",
+    title: item.title,
+    description: item.description,
+    slug: item.slug,
+    keywords: item.keywords || []
+  };
+}
+
+function toFrame(item, avatar = "assistant") {
+  if (!item) return null;
+  return {
+    avatar,
+    type: "guide_card",
+    title: item.title,
+    text: item.description,
+    meta: {
+      id: item.id,
+      slug: item.slug,
+      keywords: item.keywords || []
+    }
+  };
+}
+
 module.exports = {
   search,
   render,
-  all: () => GUIDES
+  all: () => GUIDES,
+  toJSON,
+  toFrame
 };
