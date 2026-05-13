@@ -1,19 +1,20 @@
 /**
- * Professore AI — Supporto + Spiegazioni tecniche (2027)
+ * Professore AI — NPC tecnico / guida / spiegazioni (2027)
  * Path: app/modules/bot/bots/professore-bot.cjs
  */
 
 const path = require("path");
-const db = require("../../db/database.cjs");
-
 const { log } = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
+
 const support = require(path.join(process.cwd(), "app/modules/bot/handlers/support.cjs"));
 const legal = require(path.join(process.cwd(), "app/modules/bot/handlers/legal.cjs"));
 
 /* ============================================================
-   MATCH — basato su INTENT, non sul testo
+   MATCH — basato su INTENT Engine 2027
 ============================================================ */
-function match(intent) {
+function match(intentObj) {
+  const intent = intentObj?.intent || "generico";
+
   return [
     "supporto",
     "ordini",
@@ -33,83 +34,50 @@ function match(intent) {
 }
 
 /* ============================================================
-   RUN — logica principale del bot
+   RUN — logica principale del Professore AI
 ============================================================ */
 async function run(message, context = {}) {
   log("PROFESSORE_RUN", context);
 
-  const intent = context.intent;
-  const userId = context.userId || null;
+  const intentObj = context.intent || {};
+  const intent = intentObj.intent || "generico";
 
   /* ============================================================
-     1) ORDINI
+     1) ORDINI (spiegazione, non DB)
   ============================================================ */
   if (intent === "ordini") {
-    if (!userId) {
-      return {
-        avatar: "professor_ai",
-        type: "text",
-        text: "Per mostrarti i tuoi ordini devi prima accedere al tuo account."
-      };
-    }
-
-    const orders = await db.all(
-      "SELECT * FROM ordini WHERE utente_id = ? ORDER BY created_at DESC",
-      [userId]
-    );
-
-    if (!orders.length) {
-      return {
-        avatar: "professor_ai",
-        type: "text",
-        text: "Non risultano ordini associati al tuo account."
-      };
-    }
-
     return {
-      avatar: "professor_ai",
-      type: "orders_overview",
-      orders: orders.map(o => ({
-        id: o.id,
-        title: o.titolo,
-        downloadable: !!o.download_url
-      }))
+      avatar: "professor",
+      type: "guide",
+      title: "Come vedere i tuoi ordini",
+      steps: [
+        "Accedi alla Dashboard",
+        "Vai nella sezione *I miei ordini*",
+        "Troverai la lista completa dei tuoi acquisti"
+      ],
+      actions: [
+        { label: "Mostra download", intent: "download" },
+        { label: "Torna al menu", intent: "menu" }
+      ]
     };
   }
 
   /* ============================================================
-     2) DOWNLOAD
+     2) DOWNLOAD (spiegazione, non DB)
   ============================================================ */
   if (intent === "download") {
-    if (!userId) {
-      return {
-        avatar: "professor_ai",
-        type: "text",
-        text: "Per accedere ai tuoi download devi prima effettuare il login."
-      };
-    }
-
-    const downloads = await db.all(
-      "SELECT * FROM ordini WHERE utente_id = ? AND download_url IS NOT NULL",
-      [userId]
-    );
-
-    if (!downloads.length) {
-      return {
-        avatar: "professor_ai",
-        type: "text",
-        text: "Non hai ancora prodotti scaricabili."
-      };
-    }
-
     return {
-      avatar: "professor_ai",
-      type: "downloads_list",
-      downloads: downloads.map(d => ({
-        id: d.id,
-        title: d.titolo,
-        url: d.download_url
-      }))
+      avatar: "professor",
+      type: "guide",
+      title: "Come accedere ai tuoi download",
+      steps: [
+        "Accedi alla Dashboard",
+        "Vai nella sezione *I miei download*",
+        "Troverai tutti i file acquistati"
+      ],
+      actions: [
+        { label: "Come funziona", intent: "come_funziona" }
+      ]
     };
   }
 
@@ -136,17 +104,27 @@ async function run(message, context = {}) {
   ============================================================ */
   if (intent === "come_funziona") {
     return {
-      avatar: "professor_ai",
-      type: "text",
-      text:
-        "Funziona così: dopo l'acquisto ricevi subito l’accesso al tuo prodotto. " +
-        "Lo trovi nella Dashboard, nella sezione *I miei download*."
+      avatar: "professor",
+      type: "tutorial_card",
+      title: "Come funziona il sistema",
+      steps: [
+        "Acquisti un prodotto digitale",
+        "Lo trovi subito nella Dashboard",
+        "Puoi scaricarlo o consultarlo quando vuoi"
+      ],
+      actions: [
+        {
+          label: "Guarda il video",
+          type: "open_video",
+          video_url: "https://cdn.mewingmarket.it/video/come-funziona.mp4"
+        }
+      ]
     };
   }
 
   if (intent === "spiega") {
     return {
-      avatar: "professor_ai",
+      avatar: "professor",
       type: "text",
       text: "Certo! Dimmi cosa vuoi che ti spieghi e preparo una risposta chiara e semplice."
     };
@@ -156,20 +134,20 @@ async function run(message, context = {}) {
      6) FALLBACK
   ============================================================ */
   return {
-    avatar: "professor_ai",
+    avatar: "professor",
     type: "quick_replies",
     text: "Come posso aiutarti?",
     options: [
-      { label: "Vedi i miei ordini", value: "ordini" },
-      { label: "Mostra download", value: "download" },
-      { label: "Spiegami qualcosa", value: "spiega" }
+      { label: "Ordini", intent: "ordini" },
+      { label: "Download", intent: "download" },
+      { label: "Spiegami qualcosa", intent: "spiega" }
     ]
   };
 }
 
 module.exports = {
-  name: "professore",
-  avatar: "professor_ai",
+  name: "professor",
+  avatar: "professor",
   match,
   run
 };
