@@ -1,7 +1,7 @@
 /**
- * modules/bot/handlers/social.cjs — VERSIONE 2027
- * Social Helper — usato da Influencer AI
- * Nessun HTML, nessun GPT, solo JSON UI
+ * modules/bot/handlers/social.cjs — VERSIONE VIDEOGIOCO 2027
+ * Social Helper — Influencer AI
+ * Nessun HTML, nessun GPT, solo JSON UI compatibile con Game Engine
  */
 
 const path = require("path");
@@ -20,7 +20,7 @@ const SOCIAL_LINKS = {
 };
 
 /* ============================================================
-   SOCIAL SPECIFICO
+   SOCIAL SPECIFICO (profilo singolo)
 ============================================================ */
 function socialSpecific(platform) {
   log("SOCIAL_SPECIFIC", platform);
@@ -30,48 +30,83 @@ function socialSpecific(platform) {
   if (!link) {
     return {
       type: "text",
-      avatar: "influencer_ai",
+      avatar: "influencer",
       text: "Non trovo questo social. Vuoi vedere la lista completa?"
     };
   }
 
   return {
     type: "card",
-    avatar: "influencer_ai",
+    avatar: "influencer",
     layout: "social_profile",
     title: `Profilo ${platform}`,
     link,
     actions: [
-      { label: "Mostra tutti i social", value: "social" }
+      { label: "Mostra tutti i social", intent: "social_list" }
     ]
   };
 }
 
 /* ============================================================
-   SOCIAL GENERICO
+   SOCIAL GENERICO (lista completa)
 ============================================================ */
 function socialGeneric() {
   log("SOCIAL_GENERIC");
 
   return {
     type: "list",
-    avatar: "influencer_ai",
+    avatar: "influencer",
     title: "I nostri social",
     items: Object.keys(SOCIAL_LINKS).map(key => ({
       label: key,
-      value: `social_${key}`,
+      intent: "social_specific",
+      platform: key,
       link: SOCIAL_LINKS[key]
     })),
     actions: [
-      { label: "Torna al menu", value: "menu" }
+      { label: "Torna al menu", intent: "menu" }
     ]
   };
 }
 
 /* ============================================================
-   EXPORT — usato da Influencer AI
+   SOCIAL VIDEO CARD (TV + animazione)
+============================================================ */
+function socialVideo(platform) {
+  const link = SOCIAL_LINKS[platform];
+
+  if (!link) {
+    return {
+      type: "text",
+      avatar: "influencer",
+      text: "Non trovo il video per questo social."
+    };
+  }
+
+  return {
+    type: "tutorial_card",
+    avatar: "influencer",
+    title: `Video su ${platform}`,
+    steps: [
+      "Guarda il video direttamente dalla TV",
+      "Segui il creator",
+      "Scopri i contenuti esclusivi"
+    ],
+    actions: [
+      {
+        label: "Guarda il video",
+        type: "open_video",
+        video_url: link
+      }
+    ]
+  };
+}
+
+/* ============================================================
+   EXPORT — Influencer AI
 ============================================================ */
 module.exports = {
   socialSpecific,
-  socialGeneric
+  socialGeneric,
+  socialVideo
 };
