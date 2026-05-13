@@ -1,22 +1,25 @@
 /**
- * modules/bot/intent.cjs — VERSIONE DEFINITIVA PATCHATA
- * Intent detection premium per bot MewingMarket
- * Compatibile con SQL, ID-based, descrizione PRO
+ * modules/bot/intent.cjs — VERSIONE 2027
+ * Intent Helper — supporto locale ai bot
+ * NON sostituisce generateIntent() (AI)
  */
 
 const path = require("path");
 
-// PATCH: require assoluti
+// Utils
 const { normalize } = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
+
+// Catalogo (ricerca locale)
 const {
   findProductFromText,
   findProductById
 } = require(path.join(process.cwd(), "app/modules/bot/catalogo.cjs"));
 
 /* ============================================================
-   INTENT BASE
+   INTENT LOCALI (fallback)
+   — usati SOLO se generateIntent() non capisce
 ============================================================ */
-const INTENTS = [
+const LOCAL_INTENTS = [
   { key: "saluto",      match: ["ciao", "hey", "buongiorno", "buonasera"] },
   { key: "catalogo",    match: ["catalogo", "prodotti", "lista", "novità"] },
   { key: "aiuto",       match: ["aiuto", "help", "non so", "come funziona"] },
@@ -28,12 +31,13 @@ const INTENTS = [
 ];
 
 /* ============================================================
-   RICONOSCIMENTO INTENT
+   FALLBACK INTENT DETECTION (locale)
+   — usato SOLO se generateIntent() ritorna "generico"
 ============================================================ */
-function detectIntent(text = "") {
+function detectLocalIntent(text = "") {
   const t = normalize(text);
 
-  for (const intent of INTENTS) {
+  for (const intent of LOCAL_INTENTS) {
     if (intent.match.some(k => t.includes(normalize(k)))) {
       return intent.key;
     }
@@ -43,7 +47,7 @@ function detectIntent(text = "") {
 }
 
 /* ============================================================
-   RICONOSCIMENTO PRODOTTO (ID o testo)
+   RICONOSCIMENTO PRODOTTO (ID o fuzzy)
 ============================================================ */
 async function detectProduct(text, catalog = []) {
   if (!text) return null;
@@ -66,10 +70,11 @@ async function detectProduct(text, catalog = []) {
 }
 
 /* ============================================================
-   INTENT COMPLETO (intent + prodotto)
+   INTENT COMPLETO (fallback)
+   — usato SOLO se generateIntent() fallisce
 ============================================================ */
 async function detectFullIntent(text, catalog = []) {
-  const intent = detectIntent(text);
+  const intent = detectLocalIntent(text);
   const product = await detectProduct(text, catalog);
 
   return {
@@ -82,7 +87,7 @@ async function detectFullIntent(text, catalog = []) {
    EXPORT
 ============================================================ */
 module.exports = {
-  detectIntent,
+  detectLocalIntent,
   detectProduct,
   detectFullIntent
 };
