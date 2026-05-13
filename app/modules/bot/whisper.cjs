@@ -1,17 +1,18 @@
 /**
  * modules/bot/whisper.cjs
- * WHISPER — trascrizione audio blindata e robusta
+ * WHISPER — trascrizione audio blindata e robusta (2027)
  */
 
 const fs = require("fs");
 const axios = require("axios");
 const FormData = require("form-data");
+const path = require("path");
 
-// PATCH: usa il logger globale del bot, fallback console
+// Logger globale del bot (fallback console)
 const log = global.logBot || console.log;
 
 /* ============================================================
-   TRANSCRIBE AUDIO — versione blindata
+   TRANSCRIBE AUDIO — versione blindata + require assoluti
 ============================================================ */
 async function transcribeAudio(filePath) {
   log("AUDIO_TRANSCRIBE_START", filePath);
@@ -51,7 +52,11 @@ async function transcribeAudio(filePath) {
 
     log("AUDIO_TRANSCRIBE_RESPONSE", res.data);
 
-    return res.data?.text || "Non riesco a capire il vocale.";
+    const text = res.data?.text || "";
+
+    // PATCH: normalizzazione testo
+    return text.trim() || "Non riesco a capire il vocale.";
+
   } catch (err) {
     log("AUDIO_TRANSCRIBE_FATAL", err);
     return "Il vocale non è chiaro.";
