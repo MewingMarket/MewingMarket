@@ -1,19 +1,21 @@
 /**
- * modules/bot/intent-engine.cjs — VERSIONE 2027
- * Intent Engine locale — NO GPT, NO API
- * Filosofia videogioco: avatar + intent + subintent + parametri
+ * Intent Engine — VERSIONE VIDEOGIOCO 2027
+ * Locale, deterministico, zero GPT.
+ * Restituisce: intent + avatar + productId + rawProduct + keywords + category
  */
 
 const path = require("path");
-const { normalize, extractKeywords } = require("./utils.cjs");
-const { findProductFromText, findProductById } = require("./catalogo.cjs");
+const { normalize, extractKeywords } = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
+const { findProductFromText, findProductById } = require(path.join(process.cwd(), "app/modules/bot/catalogo.cjs"));
 
 /* ============================================================
-   1) DEFINIZIONE INTENTI PRINCIPALI
+   1) INTENT DI BASE
 ============================================================ */
 const INTENTS = {
   saluto: ["ciao", "hey", "buongiorno", "buonasera", "salve"],
+  menu: ["menu", "aiuto", "help"],
   catalogo: ["catalogo", "prodotti", "lista", "novita", "novità"],
+  prodotto: ["prodotto", "mostrami", "voglio", "cerca"],
   prezzo: ["prezzo", "quanto costa", "costa"],
   recensioni: ["recensioni", "recensione", "opinioni"],
   correlati: ["correlati", "simili", "alternativa"],
@@ -25,25 +27,39 @@ const INTENTS = {
   motivazione: ["motivami", "ispirami", "hype"],
   guida: ["come si fa", "come funziona", "istruzioni", "tutorial"],
   newsletter: ["newsletter", "email", "aggiornami"],
+  download: ["download", "scaricare", "scarica"],
+  ordini: ["ordini", "acquisti", "storico"],
+  privacy: ["privacy"],
+  termini: ["termini", "condizioni"],
+  cookie: ["cookie"],
+  supporto: ["supporto", "assistenza"],
   generico: []
 };
 
 /* ============================================================
-   2) MAPPATURA INTENT → AVATAR
+   2) INTENT → AVATAR
 ============================================================ */
 const AVATAR_MAP = {
   saluto: "assistant",
+  menu: "assistant",
   catalogo: "vendor",
+  prodotto: "vendor",
   prezzo: "vendor",
   recensioni: "vendor",
   correlati: "vendor",
-  video: "influencer",
   descrizione: "vendor",
   immagine: "vendor",
   trattativa: "vendor",
   obiezione: "vendor",
+  video: "influencer",
   motivazione: "influencer",
   guida: "professor",
+  download: "professor",
+  ordini: "professor",
+  privacy: "professor",
+  termini: "professor",
+  cookie: "professor",
+  supporto: "professor",
   newsletter: "newsletter",
   generico: "assistant"
 };
@@ -90,12 +106,18 @@ async function generateIntent(text, catalog = []) {
   const intent = detectIntent(text);
   const product = await detectProduct(text, catalog);
 
+  const keywords = extractKeywords(text);
+  const category = product?.categoria || null;
+
   return {
     intent,
-    subintent: null, // lo aggiungeremo dopo
+    subintent: null,
     avatar: AVATAR_MAP[intent] || "assistant",
     productId: product?.id || null,
-    rawProduct: product || null
+    rawProduct: product || null,
+    category,
+    keywords,
+    confidence: 1
   };
 }
 
