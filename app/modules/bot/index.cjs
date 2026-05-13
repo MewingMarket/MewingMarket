@@ -16,13 +16,13 @@ const intentEngine = require(path.join(process.cwd(), "app/modules/bot/intent-en
 const router = require(path.join(process.cwd(), "app/modules/bot/core/router.bot.cjs"));
 
 /* ============================================================
-   AVATAR (NPC del videogioco)
+   AVATAR (NPC del videogioco) — NOMI REALI
 ============================================================ */
-const vendor = require(path.join(process.cwd(), "app/modules/bot/bots/vendor.bot.cjs"));
-const professor = require(path.join(process.cwd(), "app/modules/bot/bots/professore.bot.cjs"));
-const influencer = require(path.join(process.cwd(), "app/modules/bot/bots/influencer.bot.cjs"));
-const newsletter = require(path.join(process.cwd(), "app/modules/bot/bots/newsletter.bot.cjs"));
-const generic = require(path.join(process.cwd(), "app/modules/bot/bots/generic.bot.cjs"));
+const vendor = require(path.join(process.cwd(), "app/modules/bot/bots/vendor-bot.cjs"));
+const professor = require(path.join(process.cwd(), "app/modules/bot/bots/professore-bot.cjs"));
+const influencer = require(path.join(process.cwd(), "app/modules/bot/bots/influencer-bot.cjs"));
+const newsletter = require(path.join(process.cwd(), "app/modules/bot/bots/newsletter-bot.cjs"));
+const generic = require(path.join(process.cwd(), "app/modules/bot/bots/generic-bot.cjs"));
 
 /* ============================================================
    UTILS (normalizzazione, keyword, logging)
@@ -61,10 +61,10 @@ async function detectIntent(text, uid) {
     return { intent: "generico" };
   }
 
-  // 1) Intent Engine locale
+  // Intent Engine locale
   const localIntent = intentEngine.detect(text);
 
-  // 2) Intent AI (fallback)
+  // Intent AI (fallback)
   const aiIntent = await ai.generateIntent(text, { uid });
 
   // Merge deterministico
@@ -122,8 +122,16 @@ async function handleConversation(reqOrIntent, text, uid, userState = {}) {
   });
 
   // Game Engine → frames
-  if (gameEngine) {
-    return gameEngine.buildFrames(npcReply, avatar, uid);
+  if (gameEngine && typeof gameEngine.runGame === "function") {
+    return gameEngine.runGame(text, {
+      uid,
+      intent: intentObj,
+      userState,
+      memory: memory.get(uid),
+      catalogo,
+      faq,
+      guides
+    });
   }
 
   // Fallback → testo semplice
