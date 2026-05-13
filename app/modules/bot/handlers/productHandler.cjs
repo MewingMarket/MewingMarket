@@ -1,81 +1,95 @@
 /**
- * modules/bot/handlers/productHandler.cjs — VERSIONE DEFINITIVA PATCHATA
- * Risposta prodotto dinamico per bot MewingMarket
+ * modules/bot/handlers/productHandler.cjs — VERSIONE 2027
+ * Product Helper — usato dal bot Vendor AI
+ * Nessun HTML, solo JSON UI
  */
 
 const path = require("path");
 const {
   findProductFromText,
   findProductById,
-  productReply,
-  productLongReply,
-  productImageReply
-} = require(path.join(__dirname, "..", "catalogo.cjs"));
+  productCardJSON,
+  productDetailsJSON,
+  productImageJSON
+} = require(path.join(process.cwd(), "app/modules/bot/catalogo.cjs"));
 
-const { updateContext } = require(path.join(__dirname, "..", "context.cjs"));
+const { log } = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
 
 /* ============================================================
-   HANDLER PRODOTTO
+   PRODOTTO PRINCIPALE (ricerca ID + fuzzy)
 ============================================================ */
-async function productHandler(ctx, text, catalog = []) {
-  if (!text) return "Non ho capito quale prodotto intendi.";
+async function productHandler(text, catalog = []) {
+  log("PRODUCT_HANDLER", { text });
 
-  // 1) Prova ID
-  const idMatch = text.match(/\b(\d{1,4})\b/);
+  if (!text) {
+    return {
+      type: "text",
+      avatar: "sales_ai",
+      text: "Dimmi quale prodotto vuoi vedere."
+    };
+  }
+
   let product = null;
 
+  // 1) Match ID
+  const idMatch = text.match(/\b(\d{1,4})\b/);
   if (idMatch) {
     product = findProductById(Number(idMatch[1]), catalog);
   }
 
-  // 2) Prova fuzzy
+  // 2) Fuzzy search
   if (!product) {
     product = await findProductFromText(text, catalog);
   }
 
   if (!product) {
-    return "Non ho trovato nessun prodotto con queste informazioni.";
+    return {
+      type: "text",
+      avatar: "sales_ai",
+      text: "Non ho trovato nessun prodotto con queste informazioni."
+    };
   }
 
-  // Aggiorna contesto
-  updateContext(ctx, {
-    intent: "prodotto",
-    product,
-    query: text
-  });
-
-  // Risposta premium PRO breve
-  return productReply(product);
+  // Risposta JSON UI
+  return productCardJSON(product);
 }
 
 /* ============================================================
-   HANDLER DETTAGLI (descrizione lunga)
+   DETTAGLI PRODOTTO (descrizione lunga)
 ============================================================ */
-async function productDetailsHandler(ctx, catalog = []) {
-  const product = ctx.last_product;
+async function productDetailsHandler(product) {
+  log("PRODUCT_DETAILS_HANDLER");
 
   if (!product) {
-    return "Dimmi quale prodotto vuoi approfondire.";
+    return {
+      type: "text",
+      avatar: "sales_ai",
+      text: "Dimmi quale prodotto vuoi approfondire."
+    };
   }
 
-  return productLongReply(product);
+  return productDetailsJSON(product);
 }
 
 /* ============================================================
-   HANDLER IMMAGINE
+   IMMAGINE PRODOTTO
 ============================================================ */
-async function productImageHandler(ctx, catalog = []) {
-  const product = ctx.last_product;
+async function productImageHandler(product) {
+  log("PRODUCT_IMAGE_HANDLER");
 
   if (!product) {
-    return "Dimmi quale prodotto vuoi vedere.";
+    return {
+      type: "text",
+      avatar: "sales_ai",
+      text: "Dimmi quale prodotto vuoi vedere."
+    };
   }
 
-  return productImageReply(product);
+  return productImageJSON(product);
 }
 
 /* ============================================================
-   EXPORT
+   EXPORT — usato da Vendor AI
 ============================================================ */
 module.exports = {
   productHandler,
