@@ -1,9 +1,9 @@
 /* =========================================================
    GAME ENGINE — UNIVERSAL JSON 2027
-   Fusione chat.js + premium.js + chat-icon toggle
+   chat.js patchato per SPA + backend 2027
 ========================================================= */
 
-document.addEventListener("critical-ready", () => {
+document.addEventListener("DOMContentLoaded", () => {
 
   /* ELEMENTI BASE */
   const chatBox = document.getElementById("chat-box");
@@ -16,11 +16,13 @@ document.addEventListener("critical-ready", () => {
 
   /* TOGGLE CHAT ICON */
   const chatToggle = document.getElementById("chat-toggle");
-  const chatContainer = document.getElementById("chat-container");
+  const chatContainer = document.getElementById("screen-chat");
 
-  chatToggle.addEventListener("click", () => {
-    chatContainer.classList.toggle("open");
-  });
+  if (chatToggle) {
+    chatToggle.addEventListener("click", () => {
+      goTo("screen-chat");
+    });
+  }
 
   /* SANITIZE */
   const clean = (t) =>
@@ -54,12 +56,13 @@ document.addEventListener("critical-ready", () => {
         renderQuickReplies(data.options);
         break;
 
-      case "card":
+      case "tutorial_card":
+      case "guide":
+      case "carousel":
+      case "product_card":
+      case "product_details":
+      case "product_reviews":
         renderCard(data);
-        break;
-
-      case "reviews_list":
-        renderReviews(data);
         break;
 
       default:
@@ -71,11 +74,11 @@ document.addEventListener("critical-ready", () => {
      AVATAR
   ========================================================== */
   function changeAvatar(name) {
-    avatarImg.src = `avatars/${name}.png`;
+    avatarImg.src = `/avatars/${name}.png`;
   }
 
   /* =========================================================
-     QUICK REPLIES (premium.js riciclato)
+     QUICK REPLIES
   ========================================================== */
   function renderQuickReplies(options) {
     const container = document.createElement("div");
@@ -84,7 +87,7 @@ document.addEventListener("critical-ready", () => {
     options.forEach(opt => {
       const btn = document.createElement("button");
       btn.className = "mm-quick";
-      btn.dataset.value = opt.value;
+      btn.dataset.value = opt.intent || opt.value;
       btn.textContent = opt.label;
       container.appendChild(btn);
     });
@@ -101,7 +104,7 @@ document.addEventListener("critical-ready", () => {
   });
 
   /* =========================================================
-     SCROLL AUTOMATICO (premium.js riciclato)
+     SCROLL AUTOMATICO
   ========================================================== */
   const observer = new MutationObserver(() => {
     chatBox.scrollTop = chatBox.scrollHeight;
@@ -141,10 +144,15 @@ document.addEventListener("critical-ready", () => {
     addMessage(message, "user");
     chatInput.value = "";
 
+    const activeBot = localStorage.getItem("active_bot") || "vendor";
+
     const data = await apiChat("/api/chat/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message })
+      body: JSON.stringify({
+        message,
+        bot: activeBot
+      })
     });
 
     renderJSON(data);
