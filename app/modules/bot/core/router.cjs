@@ -1,12 +1,14 @@
 /**
- * Router AI — VERSIONE VIDEOGIOCO 2027
+ * Router AI — VERSIONE VIDEOGIOCO 2027 (PATCH COMPLETA)
  * Smistamento avatar intelligente + compresenza + handoff
- * Path: app/modules/bot/core/router.cjs
+ * Path: app/modules/bot/core/router.bot.cjs
  */
 
 const path = require("path");
 
-// NPC (bot)
+/* ============================================================
+   IMPORT NPC CORRETTI (nomi reali)
+============================================================ */
 const vendorBot = require(path.join(process.cwd(), "app/modules/bot/bots/vendor-bot.cjs"));
 const professorBot = require(path.join(process.cwd(), "app/modules/bot/bots/professore-bot.cjs"));
 const influencerBot = require(path.join(process.cwd(), "app/modules/bot/bots/influencer-bot.cjs"));
@@ -21,14 +23,27 @@ const BOT_MAP = {
   professor: professorBot,
   influencer: influencerBot,
   newsletter: newsletterBot,
-  assistant: genericBot
+  assistant: genericBot,
+  generic: genericBot
 };
 
 /* ============================================================
-   ROUTER PRINCIPALE — restituisce il bot corretto
+   pickAvatar() — versione 2027
+   (compatibile con Intent Engine + Game Engine)
+============================================================ */
+function pickAvatar(intentObj = {}) {
+  const avatar = intentObj.avatar || "assistant";
+
+  if (BOT_MAP[avatar]) return avatar;
+
+  return "assistant";
+}
+
+/* ============================================================
+   route() — restituisce il bot corretto
 ============================================================ */
 function route(intentObj = {}) {
-  const avatar = intentObj.avatar || "assistant";
+  const avatar = pickAvatar(intentObj);
   return BOT_MAP[avatar] || genericBot;
 }
 
@@ -43,6 +58,7 @@ function getBotByName(name) {
    EXPORT
 ============================================================ */
 module.exports = {
+  pickAvatar,
   route,
   getBotByName
 };
