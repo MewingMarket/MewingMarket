@@ -1,16 +1,37 @@
 /**
- * modules/bot/context.cjs — VERSIONE 2027
- * Gestione contesto conversazionale per Router AI + Bot
- * Compatibile con catalogo SQL e intent AI
+ * modules/bot/context.cjs — VERSIONE 2027 (PATCH COMPLETA)
+ * Gestione contesto conversazionale per Router AI + Bot + Game Engine
+ * Compatibile con catalogo SQL, intent AI e NPC 2027
  */
 
 const path = require("path");
 
+/* ============================================================
+   IMPORT CORRETTI (catalogo reale)
+============================================================ */
 const {
-  normalizeProduct,
   findProductById,
   findProductFromText
-} = require(path.join(process.cwd(), "app/modules/bot/catalogo.cjs"));
+} = require(path.join(process.cwd(), "app/modules/catalogo.cjs"));
+
+/* Normalizzazione prodotto (fallback) */
+function normalizeProduct(p) {
+  if (!p || typeof p !== "object") return null;
+
+  return {
+    id: p.id || null,
+    titolo: p.titolo || "",
+    titolo_breve: p.titolo_breve || p.titolo || "",
+    descrizione_breve: p.descrizione_breve || "",
+    descrizione_lunga: p.descrizione_lunga || "",
+    prezzo_cent: p.prezzo_cent || 0,
+    immagine_url: p.immagine_url || "",
+    categoria: Array.isArray(p.categoria) ? p.categoria : [],
+    youtube_url: p.youtube_url || "",
+    youtube_description: p.youtube_description || "",
+    catalog_video_block: p.catalog_video_block || ""
+  };
+}
 
 /* ============================================================
    CREA CONTESTO
@@ -51,19 +72,19 @@ function updateContext(ctx, data = {}) {
    RECUPERA PRODOTTO DAL CONTESTO
    — usato dai bot (Venditore AI, Professore AI, ecc.)
 ============================================================ */
-async function getContextProduct(ctx, catalog = []) {
+async function getContextProduct(ctx) {
   if (!ctx) return null;
 
   // Caso 1: ID esplicito
   if (ctx.productId) {
-    const p = findProductById(ctx.productId, catalog);
-    if (p) return p;
+    const p = await findProductById(ctx.productId);
+    if (p) return normalizeProduct(p);
   }
 
   // Caso 2: fuzzy search sull’ultima query
   if (ctx.query) {
-    const p = await findProductFromText(ctx.query, catalog);
-    if (p) return p;
+    const p = await findProductFromText(ctx.query);
+    if (p) return normalizeProduct(p);
   }
 
   return null;
