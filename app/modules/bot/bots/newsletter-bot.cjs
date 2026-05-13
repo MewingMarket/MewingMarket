@@ -27,13 +27,14 @@ function match(intentObj) {
 }
 
 /* ============================================================
-   RUN — logica principale del bot
+   RUN — logica principale NPC
 ============================================================ */
 async function run(message, context = {}) {
   log("NEWSLETTER_RUN", context);
 
   const intentObj = context.intent || {};
   const intent = intentObj.intent || "generico";
+  const catalog = context.catalog || [];
 
   /* ============================================================
      1) ISCRIZIONE (spiegazione, non azione)
@@ -50,7 +51,7 @@ async function run(message, context = {}) {
   }
 
   /* ============================================================
-     3) FOLLOW-UP (NPC → messaggio motivazionale)
+     3) FOLLOW-UP (NPC → messaggio motivazionale / retention)
   ============================================================= */
   if (intent === "follow_up") {
     return {
@@ -109,7 +110,7 @@ async function run(message, context = {}) {
      5) NOVITÀ (mock locale, niente DB)
   ============================================================= */
   if (intent === "novita") {
-    const products = (context.catalog || []).slice(0, 3);
+    const products = catalog.slice(0, 3);
 
     return {
       avatar: "newsletter",
@@ -135,6 +136,9 @@ async function run(message, context = {}) {
   return newsletter.newsletterGeneric();
 }
 
+/* ============================================================
+   EXPORT NPC
+============================================================ */
 module.exports = {
   name: "newsletter",
   avatar: "newsletter",
