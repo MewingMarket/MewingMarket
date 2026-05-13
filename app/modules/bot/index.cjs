@@ -1,13 +1,6 @@
 /**
- * modules/bot/index.cjs — VERSIONE VIDEOGIOCO 2027
- * MAIN orchestrator del sistema BOT
- * Espone:
- * - Intent Engine (locale, NO GPT)
- * - Router AI (smistamento avatar)
- * - Avatar (Vendor, Professore, Influencer, Newsletter, Generico)
- * - Utils (normalizzazione, keyword, ecc.)
- * - Whisper (trascrizione vocale)
- * - Game Engine (UI JSON → frontend stile WhatsApp)
+ * modules/bot/index.cjs — VERSIONE VIDEOGIOCO 2027 (PATCH COMPLETA)
+ * Orchestratore BOT + Intent Engine + Router + NPC + Game Engine
  */
 
 const path = require("path");
@@ -43,7 +36,6 @@ const transcribeAudio = require(path.join(process.cwd(), "app/modules/bot/whispe
 
 /* ============================================================
    GAME ENGINE (UI JSON → frontend stile WhatsApp)
-   — lo aggiungeremo dopo
 ============================================================ */
 let gameEngine = null;
 try {
@@ -53,11 +45,125 @@ try {
 }
 
 /* ============================================================
+   MODULI ESTERNI (catalogo, faq, guides, memory, ai)
+============================================================ */
+const catalogo = require(path.join(process.cwd(), "app/modules/catalogo.cjs"));
+const faq = require(path.join(process.cwd(), "app/modules/faq.cjs"));
+const guides = require(path.join(process.cwd(), "app/modules/guides.cjs"));
+const memory = require(path.join(process.cwd(), "app/modules/memory.js"));
+const ai = require(path.join(process.cwd(), "app/server/modules/ai.cjs"));
+
+/* ============================================================
+   1) detectIntent() — wrapper deterministico
+============================================================ */
+async function detectIntent(text, uid) {
+  if (!text || typeof text !== "string") {
+    return { intent: "generico" };
+  }
+
+  // 1) Intent Engine locale
+  const localIntent = intentEngine.detect(text);
+
+  // 2) Intent AI (fallback)
+  const aiIntent = await ai.generateIntent(text, { uid });
+
+  // Merge deterministico
+  return {
+    intent: localIntent?.intent || aiIntent?.intent || "generico",
+    ...localIntent,
+    ...aiIntent
+  };
+}
+
+/* ============================================================
+   2) handleConversation() — orchestratore centrale
+============================================================ */
+async function handleConversation(reqOrIntent, text, uid, userState = {}) {
+  let intentObj;
+
+  // Caso 1: chiamato da chat.cjs → req
+  if (typeof reqOrIntent === "object" && reqOrIntent.body) {
+    const message = reqOrIntent.body.message || "";
+    uid = reqOrIntent.uid;
+    text = message;
+
+    intentObj = await detectIntent(message, uid);
+  }
+
+  // Caso 2: chiamato da chat-voice.cjs → intent già pronto
+  else {
+    intentObj = reqOrIntent;
+  }
+
+  // Salva memoria
+  memory.push(uid, text);
+
+  // Router → avatar
+  const avatar = router.pickAvatar(intentObj);
+
+  // NPC → risposta
+  const npc = {
+    vendor,
+    professor,
+    influencer,
+    newsletter,
+    generic
+  }[avatar] || generic;
+
+  const npcReply = await npc.run(text, {
+    uid,
+    intent: intentObj,
+    userState,
+    memory: memory.get(uid),
+    catalogo,
+    faq,
+    guides,
+    utils
+  });
+
+  // Game Engine → frames
+  if (gameEngine) {
+    return gameEngine.buildFrames(npcReply, avatar, uid);
+  }
+
+  // Fallback → testo semplice
+  return {
+    reply: npcReply?.text || "Ok!",
+    avatar
+  };
+}
+
+/* ============================================================
+   3) reply() — builder UI JSON (fallback)
+============================================================ */
+function reply(response, uid) {
+  if (response?.frames) return response;
+
+  return {
+    frames: [
+      {
+        type: "text",
+        text: response?.reply || "Ok!"
+      }
+    ]
+  };
+}
+
+/* ============================================================
+   4) runGame() — wrapper ufficiale
+============================================================ */
+async function runGame(message, context = {}) {
+  const intent = await detectIntent(message, context.uid);
+  const result = await handleConversation(intent, message, context.uid, context);
+  return reply(result, context.uid);
+}
+
+/* ============================================================
    EXPORT — orchestratore completo
 ============================================================ */
 module.exports = {
-  intentEngine,   // nuovo cervello
-  router,         // smistamento avatar
+  intentEngine,
+  router,
   vendor,
   professor,
   influencer,
@@ -65,5 +171,17 @@ module.exports = {
   generic,
   utils,
   transcribeAudio,
-  gameEngine       // arriverà dopo
+  gameEngine,
+
+  detectIntent,
+  handleConversation,
+  reply,
+  runGame,
+
+  // moduli esterni
+  catalogo,
+  faq,
+  guides,
+  memory,
+  ai
 };
