@@ -1,118 +1,93 @@
 /**
- * premium/postPurchase.cjs
- * Modulo per messaggi premium dopo l’acquisto.
+ * premium/postPurchase.cjs — VERSIONE VIDEOGIOCO 2027
+ * Modulo JSON UI per messaggi premium post-acquisto.
+ * Compatibile con Game Engine WhatsApp-style.
  */
 
-function escapeHTML(str = "") {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
-/* ------------------------------------------
+/* ============================================================
    MESSAGGIO POST-ACQUISTO — principale
------------------------------------------- */
+============================================================ */
 function postPurchaseMessage(product) {
-  if (!product) return "";
+  if (!product) {
+    return {
+      type: "text",
+      avatar: "vendor",
+      text: "Acquisto completato! Puoi accedere ai tuoi prodotti dalla Dashboard."
+    };
+  }
 
-  const titolo = escapeHTML(product.titoloBreve || product.titolo || "");
-  const id = escapeHTML(String(product.id || ""));
-  const link = `https://www.mewingmarket.it/prodotto/${id}`;
-
-  return `
-<div class="mm-success">
-  <div class="mm-success-title">🎉 Acquisto completato!</div>
-  <div class="mm-success-body">
-    Hai appena acquistato <b>${titolo}</b>.<br>
-    Puoi accedere subito al tuo prodotto dalla pagina dedicata.
-  </div>
-</div>
-
-<div class="mm-info">
-  <div class="mm-info-title">📥 Accesso immediato</div>
-  <div class="mm-info-body">
-    Apri la pagina del prodotto per trovare tutti i materiali:<br>
-    <a href="${link}" target="_blank">Apri il tuo prodotto</a>
-  </div>
-</div>
-`;
+  return {
+    type: "card",
+    avatar: "vendor",
+    layout: "success",
+    title: "🎉 Acquisto completato!",
+    text: `Hai acquistato *${product.titolo_breve}*. Puoi accedere subito al materiale dalla tua Dashboard.`,
+    actions: [
+      { label: "Come iniziare", intent: "post_acquisto_start", productId: product.id },
+      { label: "Mostra risorse", intent: "post_acquisto_risorse", productId: product.id }
+    ]
+  };
 }
 
-/* ------------------------------------------
+/* ============================================================
    COME INIZIARE — guida rapida post-acquisto
------------------------------------------- */
+============================================================ */
 function gettingStartedMessage(product) {
-  const titolo = escapeHTML(product?.titoloBreve || product?.titolo || "");
-
-  return `
-<div class="mm-rich">
-  <div class="mm-rich-title">🚀 Come iniziare con ${titolo}</div>
-
-  <div class="mm-rich-section">
-    <div class="mm-rich-section-title">1. Accedi al materiale</div>
-    <div class="mm-rich-section-body">
-      Tutti i file sono disponibili nella pagina del prodotto.
-    </div>
-  </div>
-
-  <div class="mm-rich-section">
-    <div class="mm-rich-section-title">2. Apri la cartella principale</div>
-    <div class="mm-rich-section-body">
-      Troverai la struttura completa del prodotto, già organizzata.
-    </div>
-  </div>
-
-  <div class="mm-rich-section">
-    <div class="mm-rich-section-title">3. Segui l’ordine consigliato</div>
-    <div class="mm-rich-section-body">
-      Parti dal file “LEGGIMI” o dalla guida introduttiva.
-    </div>
-  </div>
-</div>
-`;
+  return {
+    type: "guide",
+    avatar: "vendor",
+    title: `🚀 Come iniziare con ${product?.titolo_breve || "il tuo prodotto"}`,
+    steps: [
+      "Accedi alla Dashboard",
+      "Apri la sezione *I miei download*",
+      "Troverai tutti i file organizzati nella cartella principale",
+      "Parti dal file *LEGGIMI* o dalla guida introduttiva"
+    ],
+    actions: [
+      { label: "Mostra risorse", intent: "post_acquisto_risorse", productId: product?.id }
+    ]
+  };
 }
 
-/* ------------------------------------------
-   RISORSE UTILI — link e materiali extra
------------------------------------------- */
+/* ============================================================
+   RISORSE UTILI — materiali extra
+============================================================ */
 function usefulResourcesMessage(product) {
-  const titolo = escapeHTML(product?.titoloBreve || product?.titolo || "");
-
-  return `
-<div class="mm-info">
-  <div class="mm-info-title">📚 Risorse utili per ${titolo}</div>
-  <div class="mm-info-body">
-    • Video introduttivo (se disponibile)<br>
-    • Guida rapida PDF<br>
-    • Template e file inclusi<br>
-    • Accesso immediato al materiale
-  </div>
-</div>
-`;
+  return {
+    type: "list",
+    avatar: "vendor",
+    title: `📚 Risorse utili per ${product?.titolo_breve || "il tuo prodotto"}`,
+    items: [
+      { label: "Video introduttivo", intent: "video_prodotto", productId: product?.id },
+      { label: "Guida rapida PDF", intent: "guida_pdf", productId: product?.id },
+      { label: "Template inclusi", intent: "template_prodotto", productId: product?.id },
+      { label: "Accesso ai file", intent: "download" }
+    ],
+    actions: [
+      { label: "Serve aiuto?", intent: "post_acquisto_help" }
+    ]
+  };
 }
 
-/* ------------------------------------------
+/* ============================================================
    SERVE AIUTO? — supporto post-acquisto
------------------------------------------- */
+============================================================ */
 function needHelpMessage() {
-  return `
-<div class="mm-warning">
-  <div class="mm-warning-title">❓ Serve aiuto?</div>
-  <div class="mm-warning-body">
-    Posso aiutarti con:<br>
-    • Download<br>
-    • Accesso ai file<br>
-    • Problemi con gli archivi<br>
-    • Domande sul prodotto
-  </div>
-</div>
-`;
+  return {
+    type: "quick_replies",
+    avatar: "professor",
+    text: "Hai bisogno di aiuto con download, file o istruzioni?",
+    options: [
+      { label: "Download", intent: "download" },
+      { label: "Accesso ai file", intent: "supporto" },
+      { label: "Problemi tecnici", intent: "spiega" }
+    ]
+  };
 }
 
-/* ------------------------------------------
-   EXPORT UNICO
------------------------------------------- */
+/* ============================================================
+   EXPORT
+============================================================ */
 module.exports = {
   postPurchaseMessage,
   gettingStartedMessage,
