@@ -1,88 +1,98 @@
 /**
- * modules/bot/handlers/newsletter.cjs
- * Gestione conversazione newsletter (subscribe / unsubscribe)
+ * modules/bot/handlers/newsletter.cjs — VERSIONE 2027
+ * Newsletter Helper — usato dal bot Newsletter AI
+ * Nessun HTML, nessun GPT, solo JSON UI
  */
 
 const path = require("path");
-
-// PATCH: require assoluti
-const callGPT = require(path.join(process.cwd(), "app/modules/bot/gpt.cjs"));
-const { reply, log } = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
-const Memory = require(path.join(process.cwd(), "app/modules/memory.cjs"));
-
-// 🔥 PATCH: percorso corretto
-const Context = require(path.join(process.cwd(), "app/modules/bot/context.cjs"));
+const { log } = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
 
 /* ============================================================
-   HANDLER DISISCRIZIONE
+   ISCRIZIONE
 ============================================================ */
-async function handleUnsubscribe(req, res, rawText) {
-  const uid = req?.uid || "unknown_user";
-  const pageContext = Context.get(uid) || {};
+function newsletterSubscribe() {
+  log("NEWSLETTER_SUBSCRIBE");
 
-  // ⭐ PATCH: aggiorna contesto automaticamente
-  Context.update(uid, "newsletter", "unsubscribe");
-
-  const base = `
-<div class="mm-card">
-  <div class="mm-card-title">Annulla iscrizione</div>
-  <div class="mm-card-body">
-    Puoi annullare l'iscrizione qui:<br>
-    <a href="disiscriviti.html">disiscriviti.html</a><br><br>
-    Se hai problemi: supporto@mewingmarket.it
-  </div>
-</div>
-`;
-
-  const enriched = await callGPT(
-    rawText || "Disiscrizione newsletter",
-    Memory.get(uid),
-    pageContext,
-    "\nRendi il messaggio più empatico."
-  );
-
-  return reply(res, enriched || base);
+  return {
+    type: "card",
+    avatar: "newsletter_ai",
+    layout: "newsletter_subscribe",
+    title: "Iscrizione alla newsletter",
+    text: "Riceverai contenuti utili, aggiornamenti e risorse pratiche.",
+    actions: [
+      { label: "Iscrivimi", value: "newsletter_subscribe_confirm" },
+      { label: "Annulla", value: "menu" }
+    ]
+  };
 }
 
 /* ============================================================
-   HANDLER ISCRIZIONE
+   DISISCRIZIONE
 ============================================================ */
-async function handleSubscribe(req, res, rawText) {
-  const uid = req?.uid || "unknown_user";
-  const pageContext = Context.get(uid) || {};
+function newsletterUnsubscribe() {
+  log("NEWSLETTER_UNSUBSCRIBE");
 
-  // ⭐ PATCH: aggiorna contesto automaticamente
-  Context.update(uid, "newsletter", "subscribe");
-
-  const base = `
-<div class="mm-card">
-  <div class="mm-card-title">Iscriviti alla newsletter</div>
-  <div class="mm-card-body">
-    Riceverai contenuti utili, aggiornamenti e risorse pratiche.<br><br>
-    <a href="iscrizione.html">iscrizione.html</a>
-  </div>
-</div>
-`;
-
-  const enriched = await callGPT(
-    rawText || "Iscrizione newsletter",
-    Memory.get(uid),
-    pageContext,
-    "\nRendi il messaggio più motivante."
-  );
-
-  return reply(res, enriched || base);
+  return {
+    type: "card",
+    avatar: "newsletter_ai",
+    layout: "newsletter_unsubscribe",
+    title: "Annulla iscrizione",
+    text: "Puoi annullare l’iscrizione in qualsiasi momento.",
+    actions: [
+      { label: "Disiscrivimi", value: "newsletter_unsubscribe_confirm" },
+      { label: "Annulla", value: "menu" }
+    ]
+  };
 }
 
 /* ============================================================
-   ROUTER INTERNO
+   CONFERMA ISCRIZIONE
 ============================================================ */
-module.exports = function newsletterHandler(req, res, sub, rawText) {
-  log("HANDLER_NEWSLETTER", { sub, rawText });
+function newsletterSubscribeConfirm(email = null) {
+  return {
+    type: "text",
+    avatar: "newsletter_ai",
+    text: email
+      ? `Perfetto! Ho iscritto **${email}** alla newsletter.`
+      : "Iscrizione completata!"
+  };
+}
 
-  if (sub === "unsubscribe") {
-    return handleUnsubscribe(req, res, rawText);
-  }
+/* ============================================================
+   CONFERMA DISISCRIZIONE
+============================================================ */
+function newsletterUnsubscribeConfirm(email = null) {
+  return {
+    type: "text",
+    avatar: "newsletter_ai",
+    text: email
+      ? `Ho rimosso **${email}** dalla newsletter.`
+      : "Disiscrizione completata!"
+  };
+}
 
-  return handleSubscribe(req, res, rawText);
+/* ============================================================
+   FALLBACK GENERICO
+============================================================ */
+function newsletterGeneric() {
+  return {
+    type: "quick_replies",
+    avatar: "newsletter_ai",
+    text: "Vuoi iscriverti o disiscriverti dalla newsletter?",
+    options: [
+      { label: "Iscrivimi", value: "newsletter_subscribe" },
+      { label: "Disiscrivimi", value: "newsletter_unsubscribe" }
+    ]
+  };
+}
+
+/* ============================================================
+   EXPORT — usato da Newsletter AI
+============================================================ */
+module.exports = {
+  newsletterSubscribe,
+  newsletterUnsubscribe,
+  newsletterSubscribeConfirm,
+  newsletterUnsubscribeConfirm,
+  newsletterGeneric
 };
