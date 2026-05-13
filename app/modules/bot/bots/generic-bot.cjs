@@ -21,7 +21,11 @@ function match() {
    RUN — logica principale NPC
 ============================================================ */
 async function run(message, context = {}, extras = {}) {
-  log("GENERIC_RUN", context);
+  log("GENERIC_RUN", {
+    uid: context.uid,
+    intent: context.intent?.intent,
+    memory: context.memory?.length || 0
+  });
 
   const intentObj = context.intent || {};
   const intent = intentObj.intent || "generico";
