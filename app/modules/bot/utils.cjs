@@ -1,13 +1,17 @@
 /**
  * modules/bot/utils.cjs
  * Utility interne del bot — versione 2027
- * Compatibile con Router AI + Bot JSON
+ * Compatibile con Router AI + Bot JSON + Game Engine
  */
 
 const path = require("path");
 
 // Utils generali del progetto
-const { stripHTML } = require(path.join(process.cwd(), "app/modules/utils.cjs"));
+const {
+  stripHTML,
+  safeText: globalSafeText,
+  extractLinks: globalExtractLinks
+} = require(path.join(process.cwd(), "app/modules/utils.js"));
 
 /* ============================================================
    LOG ENGINE — logging totale
@@ -26,7 +30,7 @@ function log(section, data) {
    NORMALIZZAZIONE TESTO (PATCH)
 ============================================================ */
 function normalize(text = "") {
-  return text
+  return (text || "")
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "") // rimuove accenti
@@ -51,6 +55,28 @@ function cleanSearchQuery(text = "") {
 function extractKeywords(text = "") {
   const t = cleanSearchQuery(text);
   return t.split(" ").filter(w => w.length > 2);
+}
+
+/* ============================================================
+   SAFE TEXT (per NPC + Game Engine)
+============================================================ */
+function safeText(text = "") {
+  try {
+    return globalSafeText(stripHTML(text));
+  } catch {
+    return (text || "").trim();
+  }
+}
+
+/* ============================================================
+   LINK EXTRACTOR (per Vendor + Influencer)
+============================================================ */
+function extractLinks(text = "") {
+  try {
+    return globalExtractLinks(text);
+  } catch {
+    return [];
+  }
 }
 
 /* ============================================================
@@ -91,13 +117,15 @@ function setState(req, newState) {
 }
 
 /* ============================================================
-   EXPORT — versione pulita per Router AI + Bot
+   EXPORT — versione pulita per Router AI + Bot + Game Engine
 ============================================================ */
 module.exports = {
   log,
   normalize,
   cleanSearchQuery,
   extractKeywords,
+  extractLinks,
+  safeText,
   generateUID,
   isYes,
   setState
