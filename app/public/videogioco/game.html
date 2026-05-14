@@ -22,7 +22,7 @@
     <button onclick="goTo('screen-avatar')">Cambia avatar</button>
     <button onclick="goTo('screen-home')">Cambia bot</button>
     <button onclick="goTo('screen-newgame')">Nuova partita</button>
-    <button onclick="goTo('screen-loading')">Caricamento</button>
+    <button onclick="goTo('screen-loading')">Continua partita</button>
     <button onclick="exitGame()">Salva ed esci</button>
   </div>
 
@@ -136,11 +136,24 @@
   </div>
 
   <!-- =========================================================
-       SCREEN 7 — CARICAMENTO
+       SCREEN 7 — CONTINUA PARTITA (EX CARICAMENTO)
   ========================================================== -->
-  <div class="screen" id="screen-loading">
-    <h2>Caricamento…</h2>
-    <div class="loader"></div>
+  <div class="screen" id="screen-loading" style="text-align:center; padding-top:80px; color:#fff;">
+    <h2>Continua Partita</h2>
+
+    <p style="margin-top:10px; opacity:0.8;">Seleziona una partita salvata</p>
+
+    <select id="saved-games"
+            style="padding:12px; font-size:18px; margin-top:20px; border-radius:8px; width:260px;">
+      <option value="">Caricamento...</option>
+    </select>
+
+    <br>
+
+    <button onclick="loadSelectedGame()"
+            style="margin-top:25px; padding:12px 20px; font-size:18px; border-radius:10px; cursor:pointer;">
+      Carica Partita
+    </button>
   </div>
 
   <!-- =========================================================
