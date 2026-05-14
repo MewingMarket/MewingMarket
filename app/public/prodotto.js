@@ -195,3 +195,137 @@ function setupAcquistoDiretto(p) {
     window.location.href = "checkout.html";
   };
 }
+/* =========================================================
+   ⭐ PATCH PROMO — PRODOTTO PERSONALIZZATO
+========================================================= */
+
+/* 1) Recupera catalogo personalizzato e trova il prodotto */
+async function getProdottoPersonalizzato(id) {
+  try {
+    const res = await fetch("/api/catalogo/personalizzato", { method: "GET" });
+    const json = await res.json();
+    if (!json.success) return null;
+
+    const prodotti = json.prodotti || [];
+    const p = prodotti.find(x => String(x.id) === String(id));
+
+    if (p && p.promo_attiva) {
+      console.log("🎉 [PRODOTTO] Promo attiva → uso prodotto personalizzato");
+      return p;
+    }
+
+    return null;
+  } catch (err) {
+    console.warn("⚠️ [PRODOTTO] Errore prodotto personalizzato:", err);
+    return null;
+  }
+}
+
+/* =========================================================
+   ⭐ PATCH PROMO — FUNZIONE RENDER PRODOTTO
+========================================================= */
+function renderProdotto(p) {
+  console.log("🎨 [PRODOTTO] renderProdotto()", p);
+
+  const elTitolo = document.getElementById("prodotto-titolo");
+  const elSub = document.getElementById("prodotto-subtitle");
+  const elDesc = document.getElementById("prodotto-descrizione");
+  const elImg = document.getElementById("prodotto-immagine");
+  const elPrezzo = document.getElementById("prodotto-prezzo");
+  const heroLeft = document.querySelector(".hero-left");
+
+  if (elTitolo) elTitolo.textContent = p.titolo;
+  if (elSub) elSub.textContent = p.descrizione_breve || "";
+  if (elDesc) elDesc.innerHTML = p.descrizione_lunga || p.descrizione || "";
+
+  /* PREZZO */
+  const prezzoBase = (p.prezzo_cent / 100).toFixed(2);
+  const prezzoPromo = p.promo_attiva
+    ? (p.prezzo_scontato_cent / 100).toFixed(2)
+    : null;
+
+  if (elPrezzo) {
+    if (p.promo_attiva) {
+      elPrezzo.innerHTML = `
+        <span class="prezzo-originale">€${prezzoBase}</span>
+        <span class="prezzo-scontato">€${prezzoPromo}</span>
+      `;
+    } else {
+      elPrezzo.textContent = `€${prezzoBase}`;
+    }
+  }
+
+  /* IMMAGINE */
+  if (elImg) {
+    elImg.src = p.immagine_url || p.immagine || "/placeholder.webp";
+  }
+
+  /* BADGE PROMO */
+  if (p.promo_attiva && heroLeft) {
+    const badge = document.createElement("div");
+    badge.className = "promo-badge";
+    badge.textContent = p.promo_badge || "Promo";
+    heroLeft.appendChild(badge);
+  }
+
+  /* COUNTDOWN */
+  if (p.promo_scadenza) {
+    const countdown = document.createElement("div");
+    countdown.className = "promo-countdown";
+    countdown.dataset.scadenza = p.promo_scadenza;
+    elPrezzo.insertAdjacentElement("afterend", countdown);
+    initCountdownProdotto();
+  }
+}
+
+/* =========================================================
+   ⭐ PATCH PROMO — COUNTDOWN
+========================================================= */
+function initCountdownProdotto() {
+  const el = document.querySelector(".promo-countdown");
+  if (!el) return;
+
+  function update() {
+    const end = new Date(el.dataset.scadenza);
+    const now = new Date();
+    const diff = end - now;
+
+    if (diff <= 0) {
+      el.textContent = "Promo scaduta";
+      return;
+    }
+
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+
+    el.textContent = `Termina tra ${h}h ${m}m`;
+  }
+
+  update();
+  setInterval(update, 60000);
+}
+
+/* =========================================================
+   ⭐ PATCH PROMO — INTEGRAZIONE IN caricaDettaglioProdotto()
+========================================================= */
+const _caricaDettaglioProdottoOriginale = caricaDettaglioProdotto;
+
+caricaDettaglioProdotto = async function () {
+  console.log("🧪 [PRODOTTO] Patch PROMO attiva");
+
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get("id");
+
+  /* 1) Prova prodotto personalizzato */
+  const promoProdotto = await getProdottoPersonalizzato(id);
+  if (promoProdotto) {
+    console.log("🟢 [PRODOTTO] Uso versione personalizzata");
+    renderProdotto(promoProdotto);
+    setupAcquistoDiretto(promoProdotto);
+    return;
+  }
+
+  /* 2) Nessuna promo → esegui codice originale */
+  console.log("⚪ [PRODOTTO] Nessuna promo → uso SQL normale");
+  await _caricaDettaglioProdottoOriginale();
+};
