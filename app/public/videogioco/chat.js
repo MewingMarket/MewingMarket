@@ -1,3 +1,9 @@
+/*
+  FILE: chat.js
+  PATH: /app/public/videogioco/chat.js
+  DESC: Logica chat + LIM: messaggi, avatar, animazioni, video tutorial.
+*/
+
 document.addEventListener("DOMContentLoaded", () => {
 
   const chatBox = document.getElementById("chat-box");
@@ -30,6 +36,7 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => avatarImg.classList.remove("avatar-talking"), 400);
   }
 
+  /* Mappa bot → PNG in base al genere */
   function changeAvatar(botName) {
     const gender = localStorage.getItem("player_avatar");
     const map = {
@@ -44,11 +51,14 @@ document.addEventListener("DOMContentLoaded", () => {
     npcEnter();
   }
 
+  /* Esporta per game.js */
+  window.changeAvatar = changeAvatar;
+
+  /* Render sulla LIM: testo o video */
   function renderOnLIM(data) {
     if (!data) return;
     limScreen.innerHTML = "";
 
-    // testo sulla LIM
     if (data.type === "text" && data.text) {
       const p = document.createElement("p");
       p.innerHTML = clean(data.text);
@@ -57,10 +67,9 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // video tutorial sulla LIM
     if (data.type === "video" && data.url) {
       const url = clean(data.url);
-      // se è YouTube, iframe; altrimenti video tag
+
       if (url.includes("youtube.com") || url.includes("youtu.be")) {
         const iframe = document.createElement("iframe");
         iframe.src = url;
@@ -80,7 +89,6 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // fallback
     if (data.fallback) {
       const p = document.createElement("p");
       p.innerHTML = clean(data.fallback);
@@ -93,7 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const res = await fetch(path, options);
       const json = await res.json();
-      return json.data;
+      return json.data || json;
     } catch {
       addMessage("❌ Errore rete.");
       return null;
@@ -108,14 +116,15 @@ document.addEventListener("DOMContentLoaded", () => {
     chatInput.value = "";
 
     const bot = localStorage.getItem("active_bot") || "generic";
+    const gender = localStorage.getItem("player_avatar") === "female" ? "female" : "male";
 
-    const data = await apiChat("/api/chat/chat", {
+    const data = await apiChat("/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         message,
-        bot // persona scelta
-        // l'intent viene comunque calcolato dal backend (compresenza)
+        bot,
+        gender
       })
     });
 
@@ -126,8 +135,16 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   if (chatSend) chatSend.addEventListener("click", sendTextMessage);
+  if (chatInput) {
+    chatInput.addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        sendTextMessage();
+      }
+    });
+  }
 
-  // BENVENUTO DEL SAGGIO ALL'INGRESSO IN CHAT
+  /* Messaggio di benvenuto del saggio alla prima entrata in chat */
   const welcomePending = localStorage.getItem("welcome_sage_pending");
   if (welcomePending === "1") {
     const gender = localStorage.getItem("player_avatar");
