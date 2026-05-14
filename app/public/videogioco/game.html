@@ -1,7 +1,7 @@
 <!--
   FILE: game.html
   PATH: /app/public/videogioco/game.html
-  DESC: Interfaccia videogioco completa con sfondo, menu, navigazione, LIM e chat.
+  DESC: Interfaccia videogioco completa con sfondo, navbar, LIM e chat.
 -->
 <!DOCTYPE html>
 <html lang="it">
@@ -15,22 +15,15 @@
 <body>
 
   <!-- =========================================================
-       MENU SUPERIORE (TORNA AL SITO + SALVA ED ESCI)
+       NAVBAR SUPERIORE
   ========================================================== -->
   <div id="top-menu">
-    <button onclick="window.location.href='/'">Torna al sito</button>
-    <button onclick="exitGame()">Salva ed esci</button>
-  </div>
-
-  <!-- =========================================================
-       MENU LATERALE DI NAVIGAZIONE
-  ========================================================== -->
-  <div id="side-nav">
-    <button onclick="goTo('screen-home')">Home</button>
+    <button onclick="goTo('screen-launcher')">Home</button>
     <button onclick="goTo('screen-avatar')">Cambia avatar</button>
     <button onclick="goTo('screen-home')">Cambia bot</button>
     <button onclick="goTo('screen-newgame')">Nuova partita</button>
     <button onclick="goTo('screen-loading')">Caricamento</button>
+    <button onclick="exitGame()">Salva ed esci</button>
   </div>
 
   <!-- =========================================================
@@ -74,7 +67,7 @@
   </div>
 
   <!-- =========================================================
-       SCREEN 4 — HOME (SFONDO GIOCO)
+       SCREEN 4 — HOME (MENU PRINCIPALE)
   ========================================================== -->
   <div class="screen" id="screen-home">
 
@@ -82,7 +75,7 @@
       <img id="home-avatar" src="/videogioco/uomo saggio.png" alt="Guida">
     </div>
 
-    <div id="home-message" class="typewriter">
+    <div id="home-message" class="textarea-msg typewriter">
       Benvenuto nel gioco!<br>
       Scegli un’opzione qui sotto.
     </div>
@@ -100,7 +93,7 @@
   </div>
 
   <!-- =========================================================
-       SCREEN 5 — CHAT (SFONDO GIOCO + LIM + CHATBOX)
+       SCREEN 5 — CHAT (LIM + CHATBOX)
   ========================================================== -->
   <div class="screen" id="screen-chat">
 
