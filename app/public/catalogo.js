@@ -62,6 +62,63 @@ function avviaCatalogo() {
       : "";
 
   /* =========================================================
+     COUNTDOWN PROMO
+  ========================================================== */
+  let countdownTimer = null;
+
+  function initCountdown() {
+    if (countdownTimer) {
+      clearInterval(countdownTimer);
+      countdownTimer = null;
+    }
+
+    const els = document.querySelectorAll(".promo-countdown");
+    if (!els.length) return;
+
+    const update = () => {
+      const now = new Date();
+      els.forEach((el) => {
+        const iso = el.dataset.scadenza;
+        if (!iso) return;
+        const end = new Date(iso);
+        const diff = end - now;
+        if (diff <= 0) {
+          el.textContent = "Promo scaduta";
+          return;
+        }
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        el.textContent = `Termina tra ${hours}h ${minutes}m`;
+      });
+    };
+
+    update();
+    countdownTimer = setInterval(update, 60000);
+  }
+
+  /* =========================================================
+     CATALOGO PERSONALIZZATO (PROMO)
+  ========================================================== */
+  async function getCatalogoPersonalizzato() {
+    try {
+      const res = await fetch("/api/catalogo/personalizzato", { method: "GET" });
+      const json = await res.json();
+      if (!json.success) return null;
+
+      const prodotti = json.prodotti || [];
+      if (prodotti.some((p) => p.promo_attiva)) {
+        console.log("🎉 [CATALOGO] Promo attiva → uso catalogo personalizzato");
+        return prodotti;
+      }
+
+      return null;
+    } catch (err) {
+      console.warn("⚠️ [CATALOGO] Errore catalogo personalizzato:", err);
+      return null;
+    }
+  }
+
+  /* =========================================================
      CARD HTML
   ========================================================== */
   function cardHTML(p) {
@@ -69,9 +126,14 @@ function avviaCatalogo() {
     const id = p.id;
     const titolo = clean(p.titolo_breve || p.titolo || "Prodotto");
     const img = p.immagine_url || p.immagine || "/placeholder.webp";
-    const prezzoEuro = (Number(p.prezzo_cent || 0) / 100).toFixed(2);
+    const prezzoBaseEuro = (Number(p.prezzo_cent || 0) / 100).toFixed(2);
     const pCent = p.prezzo_cent || 0;
     const desc = clean(p.descrizione_breve || "");
+
+    const hasPromo = p.promo_attiva && p.prezzo_scontato_cent;
+    const prezzoPromoEuro = hasPromo
+      ? (Number(p.prezzo_scontato_cent || 0) / 100).toFixed(2)
+      : null;
 
     const vId = p.youtube_video_id || p.video_id;
     const linkYouTube = vId
@@ -90,14 +152,36 @@ function avviaCatalogo() {
     }
     const catsAttr = catArray.map((c) => clean(c)).join(" ");
 
+    const badgeHtml = p.promo_attiva
+      ? `<div class="promo-badge">${clean(p.promo_badge || "Promo")}</div>`
+      : "";
+
+    const countdownHtml =
+      p.promo_scadenza || p.scadenza
+        ? `<p class="promo-countdown" data-scadenza="${
+            p.promo_scadenza || p.scadenza
+          }"></p>`
+        : "";
+
+    const prezzoHtml = hasPromo
+      ? `<p class="prezzo">
+           <span class="prezzo-originale">€${prezzoBaseEuro}</span>
+           <span class="prezzo-scontato">€${prezzoPromoEuro}</span>
+         </p>`
+      : `<p class="prezzo">€${prezzoBaseEuro}</p>`;
+
     return `
       <div class="product-card" data-cat="${catsAttr}" data-id="${id}">
-        <div class="img-container"><img src="${img}" alt="${titolo}" loading="lazy"></div>
+        <div class="img-container">
+          <img src="${img}" alt="${titolo}" loading="lazy">
+          ${badgeHtml}
+        </div>
         <div class="card-content">
           <h2>${titolo}</h2>
           <p class="desc-breve">${desc}</p>
           ${linkYouTube}
-          <p class="prezzo">€${prezzoEuro}</p>
+          ${prezzoHtml}
+          ${countdownHtml}
           <div class="card-buttons">
             <a href="prodotto.html?id=${id}" class="btn-dettagli">Scopri</a>
             <div class="cart-controls">
@@ -161,25 +245,34 @@ function avviaCatalogo() {
       return;
     }
 
-    const data = await apiCatalogo("/api/prodotti/getProdotti", {
-      method: "GET"
-    });
+    // ⭐ PATCH PROMO — prova catalogo personalizzato
+    let prodotti = null;
+    const promoCatalogo = await getCatalogoPersonalizzato();
+    if (promoCatalogo) {
+      console.log("🟢 [CATALOGO] Uso catalogo personalizzato");
+      prodotti = promoCatalogo;
+    } else {
+      const data = await apiCatalogo("/api/prodotti/getProdotti", {
+        method: "GET"
+      });
 
-    if (!data) {
-      console.warn("❌ [CATALOGO] Nessun dato ricevuto");
-      grid.innerHTML = "<p>Errore nel caricamento del catalogo.</p>";
-      return;
+      if (!data) {
+        console.warn("❌ [CATALOGO] Nessun dato ricevuto");
+        grid.innerHTML = "<p>Errore nel caricamento del catalogo.</p>";
+        return;
+      }
+
+      prodotti = Array.isArray(data)
+        ? data
+        : data.prodotti || data.data || [];
     }
-
-    const prodotti = Array.isArray(data)
-      ? data
-      : data.prodotti || data.data || [];
 
     console.log("🟢 [CATALOGO] Prodotti caricati:", prodotti.length);
 
     window.prodottiOriginali = prodotti;
 
     grid.innerHTML = prodotti.map((p) => cardHTML(p)).join("");
+    initCountdown();
 
     if (catBox) {
       const tutteLeCat = new Set();
@@ -242,6 +335,7 @@ function avviaCatalogo() {
               });
 
         grid.innerHTML = filtrati.map((p) => cardHTML(p)).join("");
+        initCountdown();
       };
     });
 
@@ -254,6 +348,7 @@ function avviaCatalogo() {
           grid.innerHTML = window.prodottiOriginali
             .map((p) => cardHTML(p))
             .join("");
+          initCountdown();
           return;
         }
 
@@ -262,6 +357,7 @@ function avviaCatalogo() {
         );
 
         grid.innerHTML = filtrati.map((p) => cardHTML(p)).join("");
+        initCountdown();
       };
     });
   }
