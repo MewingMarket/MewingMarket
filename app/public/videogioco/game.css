@@ -9,7 +9,7 @@
 ============================================================ */
 body {
   margin: 0;
-  background: #ffffff;
+  background: #000;
   font-family: Arial, sans-serif;
   color: #000;
   overflow: hidden;
@@ -24,54 +24,45 @@ body {
 }
 
 /* ============================================================
-   MENU SUPERIORE
+   NAVBAR IN ALTO
 ============================================================ */
 #top-menu {
   position: fixed;
-  top: 10px;
-  right: 10px;
-  z-index: 9999;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 44px;
+  background: rgba(0,0,0,0.85);
   display: flex;
+  align-items: center;
+  justify-content: center;
   gap: 10px;
+  z-index: 9999;
 }
 
 #top-menu button {
-  padding: 8px 12px;
-  background: rgba(0,0,0,0.7);
+  padding: 6px 10px;
+  background: rgba(255,255,255,0.08);
   color: #fff;
   border: none;
   border-radius: 6px;
   cursor: pointer;
+  font-size: 13px;
 }
 
 /* ============================================================
-   MENU LATERALE
+   (RIMOSSO) MENU LATERALE
+   — non usato più, lasciato solo per sicurezza ma nascosto
 ============================================================ */
 #side-nav {
-  position: fixed;
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  z-index: 9999;
-}
-
-#side-nav button {
-  padding: 8px 12px;
-  background: rgba(0,0,0,0.6);
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
+  display: none !important;
 }
 
 /* ============================================================
    LAUNCHER
 ============================================================ */
 #screen-launcher {
-  padding: 40px;
+  padding-top: 60px; /* spazio per navbar */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -103,7 +94,7 @@ body {
 ============================================================ */
 #screen-login,
 #screen-avatar {
-  padding: 40px;
+  padding: 80px 40px 40px; /* spazio per navbar */
   background: #ffffff;
 }
 
@@ -149,9 +140,9 @@ body {
    HOME — SFONDO GIOCO
 ============================================================ */
 #screen-home {
-  padding: 40px;
+  padding: 80px 40px 40px; /* spazio per navbar */
   text-align: center;
-  background: url('/videogioco/sfondo gioco.png') center/cover no-repeat !important;
+  background: url('/videogioco/sfondo-gioco.png') center/cover no-repeat !important;
   color: #fff;
 }
 
@@ -166,10 +157,25 @@ body {
   border-radius: 12px;
 }
 
+/* textarea animata per il narratore */
 #home-message {
-  font-size: 20px;
+  font-size: 18px;
   margin-bottom: 10px;
-  min-height: 60px;
+  min-height: 80px;
+}
+
+.textarea-msg {
+  width: 90%;
+  max-width: 500px;
+  margin: 0 auto 20px auto;
+  padding: 15px;
+  background: rgba(0,0,0,0.6);
+  border-radius: 10px;
+  color: #fff;
+  font-size: 18px;
+  line-height: 1.4;
+  min-height: 80px;
+  text-align: center;
 }
 
 /* Animazione typewriter */
@@ -223,7 +229,7 @@ body {
 ============================================================ */
 #screen-chat {
   position: relative;
-  background: url('/videogioco/sfondo gioco.png') center/cover no-repeat !important;
+  background: url('/videogioco/sfondo-gioco.png') center/cover no-repeat !important;
 }
 
 /* ============================================================
@@ -231,7 +237,7 @@ body {
 ============================================================ */
 #classroom-layer {
   position: absolute;
-  inset: 0;
+  inset: 44px 0 0 0; /* sotto la navbar */
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -289,6 +295,7 @@ body {
   flex-direction: column;
   gap: 8px;
   pointer-events: auto;
+  z-index: 9998; /* sempre sopra lo sfondo e sotto la navbar */
 }
 
 #chat-box {
@@ -370,8 +377,8 @@ body {
 #screen-newgame,
 #screen-loading {
   text-align: center;
-  padding-top: 100px;
-  background: url('/videogioco/sfondo gioco.png') center/cover no-repeat !important;
+  padding-top: 80px;
+  background: url('/videogioco/sfondo-gioco.png') center/cover no-repeat !important;
   color: #fff;
 }
 
