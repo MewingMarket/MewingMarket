@@ -50,11 +50,26 @@ async function productHandler(text) {
     };
   }
 
-  // Risposta JSON UI (card prodotto)
-  return {
+  // Card base
+  const card = {
     ...productCardJSON(product),
     avatar: "vendor"
   };
+
+  // ⭐ PATCH PROMO — aggiunta badge + prezzo scontato
+  if (product.promo_attiva) {
+    card.promo = {
+      attiva: true,
+      prezzo_scontato_cent: product.prezzo_scontato_cent,
+      badge: product.promo_badge || "Promo"
+    };
+
+    if (product.promo_scadenza) {
+      card.promo_scadenza = product.promo_scadenza;
+    }
+  }
+
+  return card;
 }
 
 /* ============================================================
@@ -71,10 +86,25 @@ async function productDetailsHandler(product) {
     };
   }
 
-  return {
+  const card = {
     ...productDetailsJSON(product),
     avatar: "vendor"
   };
+
+  // ⭐ PATCH PROMO
+  if (product.promo_attiva) {
+    card.promo = {
+      attiva: true,
+      prezzo_scontato_cent: product.prezzo_scontato_cent,
+      badge: product.promo_badge || "Promo"
+    };
+
+    if (product.promo_scadenza) {
+      card.promo_scadenza = product.promo_scadenza;
+    }
+  }
+
+  return card;
 }
 
 /* ============================================================
@@ -91,10 +121,25 @@ async function productImageHandler(product) {
     };
   }
 
-  return {
+  const card = {
     ...productImageJSON(product),
     avatar: "vendor"
   };
+
+  // ⭐ PATCH PROMO
+  if (product.promo_attiva) {
+    card.promo = {
+      attiva: true,
+      prezzo_scontato_cent: product.prezzo_scontato_cent,
+      badge: product.promo_badge || "Promo"
+    };
+
+    if (product.promo_scadenza) {
+      card.promo_scadenza = product.promo_scadenza;
+    }
+  }
+
+  return card;
 }
 
 /* ============================================================
@@ -113,7 +158,7 @@ function productTutorialCard(product) {
 
   const safeUrl = typeof product.youtube_url === "string" ? product.youtube_url : null;
 
-  return {
+  const card = {
     type: "tutorial_card",
     avatar: "vendor",
     title: `Tutorial: ${product.titolo_breve}`,
@@ -132,6 +177,21 @@ function productTutorialCard(product) {
         ]
       : []
   };
+
+  // ⭐ PATCH PROMO
+  if (product.promo_attiva) {
+    card.promo = {
+      attiva: true,
+      prezzo_scontato_cent: product.prezzo_scontato_cent,
+      badge: product.promo_badge || "Promo"
+    };
+
+    if (product.promo_scadenza) {
+      card.promo_scadenza = product.promo_scadenza;
+    }
+  }
+
+  return card;
 }
 
 /* ============================================================
