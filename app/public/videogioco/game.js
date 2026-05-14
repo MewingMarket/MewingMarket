@@ -24,7 +24,8 @@ function goTo(screenId) {
 /* ============================================================
    SALVA ED ESCI
 ============================================================ */
-function exitGame() {
+async function exitGame() {
+  await saveGameState();
   localStorage.removeItem("active_bot");
   localStorage.removeItem("welcome_sage_pending");
   window.location.href = "/";
@@ -136,6 +137,49 @@ function startNewGame() {
 }
 
 /* ============================================================
+   SALVATAGGIO PARTITA (BACKEND)
+============================================================ */
+async function saveGameState() {
+  const lim = document.getElementById("lim-screen");
+
+  const payload = {
+    name: localStorage.getItem("player_name") || "",
+    avatar: localStorage.getItem("player_avatar") || "",
+    bot: localStorage.getItem("active_bot") || "",
+    lastMessage: localStorage.getItem("last_message") || "",
+    limState: lim ? lim.innerHTML : ""
+  };
+
+  await fetch("/api/game/save", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+}
+
+/* ============================================================
+   CARICAMENTO PARTITA (BACKEND)
+============================================================ */
+async function loadGameState() {
+  const res = await fetch("/api/game/load", { method: "POST" });
+  const json = await res.json();
+
+  if (!json.success) return false;
+
+  const data = json.data;
+
+  localStorage.setItem("player_name", data.name);
+  localStorage.setItem("player_avatar", data.avatar);
+  localStorage.setItem("active_bot", data.bot);
+  localStorage.setItem("last_message", data.lastMessage);
+
+  const lim = document.getElementById("lim-screen");
+  if (lim) lim.innerHTML = data.limState;
+
+  return true;
+}
+
+/* ============================================================
    AVVIO DEL GIOCO
 ============================================================ */
 window.addEventListener("load", () => {
@@ -152,3 +196,5 @@ window.chooseBot = chooseBot;
 window.loadHomeAvatar = loadHomeAvatar;
 window.exitGame = exitGame;
 window.startNewGame = startNewGame;
+window.saveGameState = saveGameState;
+window.loadGameState = loadGameState;
