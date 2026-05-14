@@ -1,12 +1,16 @@
 /* =========================================================
    FILE: /public/carrello.js
-   CARRELLO SQL-READY — MODELLO DEFINITIVO (PATCH 2055)
+   CARRELLO SQL-READY — MODELLO DEFINITIVO (PATCH 2056)
    Fix: ordine eventi + rimozione DOMContentLoaded
+   Patch Promo: prezzo_scontato_cent + promo_attiva
 ========================================================= */
 
 window.Cart = window.Cart || {
   key: "mewing_cart",
 
+  /* -----------------------------------------
+     GET
+  ----------------------------------------- */
   get() {
     try {
       const raw = localStorage.getItem(this.key);
@@ -16,6 +20,9 @@ window.Cart = window.Cart || {
     }
   },
 
+  /* -----------------------------------------
+     SAVE
+  ----------------------------------------- */
   save(items) {
     try {
       localStorage.setItem(this.key, JSON.stringify(items));
@@ -25,12 +32,19 @@ window.Cart = window.Cart || {
     triggerCartUpdate();
   },
 
+  /* -----------------------------------------
+     ADD (PATCH PROMO)
+  ----------------------------------------- */
   add(product) {
     const items = this.get();
     const idCercato = product.id;
     const existing = items.find(p => p.id == idCercato);
 
-    const prezzoCent = Number(product.prezzo_cent) || 0;
+    // Prezzi
+    const prezzoBaseCent = Number(product.prezzo_cent) || 0;
+    const prezzoPromoCent = product.promo_attiva
+      ? Number(product.prezzo_scontato_cent || prezzoBaseCent)
+      : prezzoBaseCent;
 
     if (existing) {
       existing.qty = (Number(existing.qty) || 1) + 1;
@@ -38,9 +52,16 @@ window.Cart = window.Cart || {
       items.push({
         id: idCercato,
         titolo: product.titolo,
-        prezzo_cent: prezzoCent,
-        prezzo: prezzoCent / 100,
         immagine: product.immagine,
+
+        // PATCH PROMO
+        prezzo_cent: prezzoPromoCent,          // prezzo effettivo usato nel checkout
+        prezzo_originale_cent: prezzoBaseCent, // utile per mostrare prezzo barrato
+        promo_attiva: !!product.promo_attiva,
+        prezzo_scontato_cent: product.promo_attiva
+          ? prezzoPromoCent
+          : null,
+
         qty: 1
       });
     }
@@ -48,11 +69,17 @@ window.Cart = window.Cart || {
     this.save(items);
   },
 
+  /* -----------------------------------------
+     REMOVE
+  ----------------------------------------- */
   remove(id) {
     const items = this.get().filter(p => p.id != id);
     this.save(items);
   },
 
+  /* -----------------------------------------
+     UPDATE QTY
+  ----------------------------------------- */
   updateQty(id, delta) {
     const items = this.get();
     const p = items.find(i => i.id == id);
@@ -68,6 +95,9 @@ window.Cart = window.Cart || {
     this.save(items);
   },
 
+  /* -----------------------------------------
+     SET QTY
+  ----------------------------------------- */
   setQty(id, qty) {
     const items = this.get();
     const p = items.find(i => i.id == id);
@@ -77,10 +107,16 @@ window.Cart = window.Cart || {
     this.save(items);
   },
 
+  /* -----------------------------------------
+     CLEAR
+  ----------------------------------------- */
   clear() {
     this.save([]);
   },
 
+  /* -----------------------------------------
+     TOTAL (PATCH PROMO)
+  ----------------------------------------- */
   total() {
     const items = this.get();
     const sum = items.reduce((s, p) => {
@@ -91,17 +127,32 @@ window.Cart = window.Cart || {
     return sum / 100;
   },
 
+  /* -----------------------------------------
+     COUNT
+  ----------------------------------------- */
   count() {
     return this.get().reduce((sum, p) => sum + (Number(p.qty) || 1), 0);
   },
 
+  /* -----------------------------------------
+     GET FOR CHECKOUT (PATCH PROMO)
+  ----------------------------------------- */
   getForCheckout() {
     return this.get().map(p => ({
       prodotto_id: p.id,
-      prezzo_cent: Number(p.prezzo_cent) || 0,
       qty: Number(p.qty) || 1,
+
+      // Prezzo effettivo
+      prezzo_cent: Number(p.prezzo_cent) || 0,
+
+      // Info utili
       titolo: p.titolo || "",
-      immagine: p.immagine || ""
+      immagine: p.immagine || "",
+
+      // PATCH PROMO
+      promo_attiva: !!p.promo_attiva,
+      prezzo_originale_cent: Number(p.prezzo_originale_cent) || null,
+      prezzo_scontato_cent: Number(p.prezzo_scontato_cent) || null
     }));
   }
 };
@@ -146,8 +197,6 @@ document.addEventListener("click", (e) => {
 document.addEventListener("cart-updated", aggiornaBadgeCarrello);
 document.addEventListener("header-loaded", aggiornaBadgeCarrello);
 document.addEventListener("auth-ready", aggiornaBadgeCarrello);
-
-// RIMOSSO: DOMContentLoaded (non affidabile con critical 2055)
 
 // Evento finale, emesso dopo aver registrato tutti gli handler
 document.dispatchEvent(new Event("cart-ready"));
