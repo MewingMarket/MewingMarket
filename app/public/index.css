@@ -157,7 +157,7 @@
   margin-top: 30px;
 }
 
-/* Card prodotto (compatibile con catalogo.css) */
+/* Card prodotto */
 .product-card {
   background: #ffffff;
   border-radius: 10px;
@@ -165,6 +165,7 @@
   padding: 15px;
   text-align: left;
   transition: 0.2s;
+  position: relative;
 }
 
 .product-card:hover {
@@ -195,6 +196,48 @@
 }
 
 /* ===========================
+   ⭐ PATCH PROMO — BADGE + PREZZI + COUNTDOWN
+=========================== */
+
+/* BADGE PROMO */
+.promo-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: #e74c3c;
+  color: #fff;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+}
+
+/* PREZZO ORIGINALE BARRATO */
+.prezzo-originale {
+  font-size: 0.9rem;
+  color: #999;
+  text-decoration: line-through;
+  margin-right: 6px;
+}
+
+/* PREZZO SCONTATO */
+.prezzo-scontato {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #27ae60;
+}
+
+/* COUNTDOWN */
+.promo-countdown {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #e67e22;
+  margin-top: 6px;
+}
+
+/* ===========================
    RESPONSIVE
 =========================== */
 
@@ -209,6 +252,7 @@
     max-width: 300px;
   }
 }
+
 .btn-admin-header {
   margin-left: auto;
   font-weight: 600;
