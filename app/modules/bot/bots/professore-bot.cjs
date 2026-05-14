@@ -61,11 +61,11 @@ async function run(message, context = {}) {
       blocks: [
         {
           title: "👨‍🏫 Modalità DEMO",
-          text: "Sono il Professore. Posso aiutarti con spiegazioni tecniche, ma per accedere al supporto completo devi effettuare il login."
+          text: "Sono il Professore. Posso darti spiegazioni base, ma per ricevere supporto tecnico completo devi accedere."
         },
         {
           title: "Cosa posso fare ora",
-          text: "• Spiegazioni base<br>• Come funziona il sito<br>• Come accedere ai download"
+          text: "• Spiegazioni semplici<br>• Come funziona il sito<br>• Come accedere ai download"
         },
         {
           title: "Sblocca il supporto completo",
@@ -126,46 +126,50 @@ async function run(message, context = {}) {
   if (intent === "cookie")  return legal.legalCookie();
 
   /* ============================================================
-     5) MISSIONE DIDATTICA AUTOMATICA (core del Professore)
+     5) MISSIONE DIDATTICA AUTOMATICA (senza video)
   ============================================================= */
   if (intent === "problema" || intent === "errore" || intent === "tecnico") {
     const problema = message || "Problema non specificato";
 
-    // Estrae prodotto scelto dall’utente (se presente)
-    const prodotto = context.selectedProduct
-      ? await productHandler.getProduct(context.selectedProduct)
+    // Estrae GUIDA scelta dall’utente (non prodotto commerciale)
+    const guida = context.selectedGuide
+      ? await productHandler.getGuide(context.selectedGuide)
       : null;
+
+    const blocks = [
+      {
+        title: "👨‍🏫 Ho analizzato il tuo problema",
+        text: problema
+      },
+      {
+        title: "Perché succede",
+        text: guida
+          ? guida.spiegazione_tecnica || "Questo problema è comune e si risolve facilmente."
+          : "Questo problema è comune e si risolve facilmente."
+      },
+      {
+        title: "Cosa fare ora",
+        text: guida
+          ? guida.step_tecnici || "1) Controlla la posizione\n2) Ripeti l’esercizio\n3) Verifica dopo 7 giorni"
+          : "1) Controlla la posizione\n2) Ripeti l’esercizio\n3) Verifica dopo 7 giorni"
+      }
+    ];
+
+    // CTA finale → approfondimento guida
+    if (guida) {
+      blocks.push({
+        title: "Vuoi approfondire?",
+        cta: {
+          label: "Apri la guida completa",
+          href: `/guida/${guida.id}`
+        }
+      });
+    }
 
     return {
       avatar: "professor",
       type: "mission",
-      blocks: [
-        {
-          title: "👨‍🏫 Ho analizzato il tuo problema",
-          text: problema
-        },
-        {
-          title: "Perché succede",
-          text: prodotto
-            ? prodotto.descrizione_tecnica || "Questo problema è comune e si risolve facilmente."
-            : "Questo problema è comune e si risolve facilmente."
-        },
-        {
-          title: "Cosa fare ora",
-          text: prodotto
-            ? prodotto.step_tecnici || "1) Controlla la posizione\n2) Ripeti l’esercizio\n3) Verifica dopo 7 giorni"
-            : "1) Controlla la posizione\n2) Ripeti l’esercizio\n3) Verifica dopo 7 giorni"
-        },
-        prodotto
-          ? {
-              title: "Vuoi approfondire?",
-              cta: {
-                label: "Apri la guida completa",
-                href: `/prodotto/${prodotto.id}`
-              }
-            }
-          : null
-      ].filter(Boolean)
+      blocks
     };
   }
 
@@ -173,8 +177,6 @@ async function run(message, context = {}) {
      6) SPIEGAZIONI TECNICHE
   ============================================================= */
   if (intent === "come_funziona") {
-    const video = "https://cdn.mewingmarket.it/video/come-funziona.mp4";
-
     return {
       avatar: "professor",
       type: "mission",
@@ -182,13 +184,6 @@ async function run(message, context = {}) {
         {
           title: "📘 Come funziona il sistema",
           text: "Acquisti un prodotto digitale → Lo trovi subito nella Dashboard → Puoi scaricarlo quando vuoi."
-        },
-        {
-          title: "Guarda il video",
-          cta: {
-            label: "Apri video",
-            href: video
-          }
         }
       ]
     };
