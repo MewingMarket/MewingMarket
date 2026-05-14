@@ -33,15 +33,38 @@
   box-shadow: 0 8px 20px rgba(0,0,0,0.12);
 }
 
+/* CONTENITORE IMMAGINE + BADGE */
+.img-container {
+  position: relative;
+  width: 100%;
+  margin-bottom: 15px;
+}
+
 .product-card img {
   width: 100%;
   height: 200px;
   object-fit: contain; /* Rispetta le proporzioni delle copertine dei libri/prodotti */
   border-radius: 8px;
   background: #f8f9fa;
-  margin-bottom: 15px;
 }
 
+/* BADGE PROMO */
+.promo-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: #e74c3c;
+  color: #ffffff;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+/* TESTI CARD */
 .product-card h2 {
   font-size: 1.15rem;
   color: #222;
@@ -61,11 +84,37 @@
   flex-grow: 1; /* Spinge il prezzo e i bottoni verso il basso */
 }
 
+/* PREZZI */
 .product-card .prezzo {
   font-size: 1.3rem;
   font-weight: 700;
   color: #2ecc71; /* Verde MewingMarket */
-  margin-bottom: 15px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+/* Prezzo originale barrato */
+.prezzo-originale {
+  font-size: 0.95rem;
+  color: #999;
+  text-decoration: line-through;
+}
+
+/* Prezzo scontato evidenziato */
+.prezzo-scontato {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #27ae60;
+}
+
+/* COUNTDOWN PROMO */
+.promo-countdown {
+  font-size: 0.8rem;
+  color: #e67e22;
+  font-weight: 600;
+  margin-bottom: 12px;
 }
 
 /* CONTENITORE PULSANTI (Allineato in fondo) */
