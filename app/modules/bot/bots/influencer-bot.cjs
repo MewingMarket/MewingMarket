@@ -24,7 +24,9 @@ function match(intentObj) {
     "motivazione",
     "consiglio_rapido",
     "consiglio_del_giorno",
-    "influencer"
+    "influencer",
+    "social",
+    "seguimi"
   ].includes(intent);
 }
 
@@ -34,6 +36,7 @@ function match(intentObj) {
 async function run(message, context = {}) {
   log("INFLUENCER_RUN", {
     uid: context.uid,
+    logged: context.userLogged,
     intent: context.intent?.intent,
     productId: context.intent?.productId,
     catalogCount: context.catalog?.length || 0
@@ -45,17 +48,46 @@ async function run(message, context = {}) {
   const catalog = context.catalog || [];
 
   /* ============================================================
-     1) VIDEO TUTORIAL PRODOTTO
+     0) GUEST MODE → SOLO SOCIAL / MOTIVAZIONE
+  ============================================================= */
+  if (!context.userLogged) {
+    return {
+      avatar: "influencer",
+      type: "mission",
+      blocks: [
+        {
+          title: "🔥 Benvenuto nella modalità DEMO!",
+          text: "Io sono l'Influencer. Posso motivarti, darti hype e mostrarti i nostri social."
+        },
+        {
+          title: "Funzioni disponibili",
+          text: "• Video motivazionali<br>• Consigli rapidi<br>• Link ai social"
+        },
+        {
+          title: "Sblocca tutte le funzioni",
+          text: "Accedi al sito per sbloccare tutorial, prodotti e missioni complete."
+        }
+      ]
+    };
+  }
+
+  /* ============================================================
+     1) VIDEO TUTORIAL PRODOTTO (solo utenti loggati)
   ============================================================= */
   if (intent === "video_prodotto" || intent === "tutorial_prodotto") {
     if (!productId) {
       return {
         avatar: "influencer",
-        type: "quick_replies",
-        text: "Su quale prodotto vuoi un video tutorial?",
-        options: [
-          { label: "Prodotti consigliati", intent: "catalogo" },
-          { label: "Video motivazionale", intent: "video_motivazionale" }
+        type: "mission",
+        blocks: [
+          {
+            title: "Quale prodotto vuoi vedere?",
+            text: "Scegli un prodotto e ti mostro un video tutorial."
+          },
+          {
+            title: "Opzioni",
+            text: "• Prodotti consigliati<br>• Video motivazionale"
+          }
         ]
       };
     }
@@ -72,23 +104,27 @@ async function run(message, context = {}) {
     const safeUrl = typeof p.youtube_url === "string" ? p.youtube_url : null;
 
     return {
-      type: "tutorial_card",
+      type: "mission",
       avatar: "influencer",
-      title: `Tutorial rapido: ${p.titolo_breve}`,
-      steps: [
-        "Guarda il video sulla TV",
-        "Segui i passaggi",
-        "Applica subito ciò che impari"
-      ],
-      actions: safeUrl
-        ? [
-            {
-              label: "Guarda il video",
-              type: "open_video",
-              video_url: safeUrl
+      blocks: [
+        {
+          title: `Tutorial rapido: ${p.titolo_breve}`,
+          text: "Ecco un video rapido per capire come funziona."
+        },
+        {
+          title: "Passaggi",
+          text: "1) Guarda il video<br>2) Segui i passaggi<br>3) Applica subito ciò che impari"
+        },
+        safeUrl
+          ? {
+              title: "Guarda il video",
+              cta: {
+                label: "Apri video",
+                href: safeUrl
+              }
             }
-          ]
-        : []
+          : null
+      ].filter(Boolean)
     };
   }
 
@@ -97,19 +133,19 @@ async function run(message, context = {}) {
   ============================================================= */
   if (intent === "video_motivazionale") {
     return {
-      type: "tutorial_card",
+      type: "mission",
       avatar: "influencer",
-      title: "🔥 Video motivazionale",
-      steps: [
-        "Guarda il video sulla TV",
-        "Respira",
-        "Riparti più forte"
-      ],
-      actions: [
+      blocks: [
         {
-          label: "Guarda il video",
-          type: "open_video",
-          video_url: "https://cdn.mewingmarket.it/video/motivazione-1.mp4"
+          title: "🔥 Video motivazionale",
+          text: "Respira, concentrati, riparti più forte."
+        },
+        {
+          title: "Guarda il video",
+          cta: {
+            label: "Apri video",
+            href: "https://cdn.mewingmarket.it/video/motivazione-1.mp4"
+          }
         }
       ]
     };
@@ -121,13 +157,16 @@ async function run(message, context = {}) {
   if (intent === "motivazione") {
     return {
       avatar: "influencer",
-      type: "text",
-      text:
-        "🔥 Simone, ogni passo che fai costruisce una versione più forte di te. " +
-        "Non serve essere perfetti: serve iniziare. E tu hai già iniziato.",
-      actions: [
-        { label: "Mostra un video", intent: "video_motivazionale" },
-        { label: "Consiglio rapido", intent: "consiglio_rapido" }
+      type: "mission",
+      blocks: [
+        {
+          title: "🔥 Motivazione",
+          text: "Ogni passo che fai costruisce una versione più forte di te."
+        },
+        {
+          title: "Vuoi altro?",
+          text: "• Mostra un video<br>• Consiglio rapido"
+        }
       ]
     };
   }
@@ -138,12 +177,12 @@ async function run(message, context = {}) {
   if (intent === "consiglio_rapido") {
     return {
       avatar: "influencer",
-      type: "quick_replies",
-      text: "Ecco tre consigli rapidi:",
-      options: [
-        { label: "🔥 Migliora subito", intent: "video_motivazionale" },
-        { label: "📘 Impara una cosa nuova", intent: "tutorial_prodotto" },
-        { label: "💡 Consiglio del giorno", intent: "consiglio_del_giorno" }
+      type: "mission",
+      blocks: [
+        {
+          title: "Ecco tre consigli rapidi:",
+          text: "🔥 Migliora subito<br>📘 Impara una cosa nuova<br>💡 Consiglio del giorno"
+        }
       ]
     };
   }
@@ -154,28 +193,50 @@ async function run(message, context = {}) {
   if (intent === "consiglio_del_giorno") {
     return {
       avatar: "influencer",
-      type: "text",
-      text:
-        "💡 *Consiglio del giorno:* Non aspettare il momento perfetto. " +
-        "Il momento perfetto è quando decidi di iniziare.",
-      actions: [
-        { label: "Mostra un video", intent: "video_motivazionale" },
-        { label: "Altro consiglio", intent: "consiglio_rapido" }
+      type: "mission",
+      blocks: [
+        {
+          title: "💡 Consiglio del giorno",
+          text: "Non aspettare il momento perfetto. Il momento perfetto è quando decidi di iniziare."
+        }
       ]
     };
   }
 
   /* ============================================================
-     6) FALLBACK INFLUENCER
+     6) SOCIAL (ruolo principale influencer)
+  ============================================================= */
+  if (intent === "social" || intent === "seguimi") {
+    return {
+      avatar: "influencer",
+      type: "mission",
+      blocks: [
+        {
+          title: "Seguici sui social",
+          text: "Per vedere esempi reali, trasformazioni e consigli quotidiani."
+        },
+        {
+          title: "Link",
+          text:
+            "<a href='https://instagram.com/...'>Instagram</a><br>" +
+            "<a href='https://tiktok.com/...'>TikTok</a><br>" +
+            "<a href='https://youtube.com/...'>YouTube</a>"
+        }
+      ]
+    };
+  }
+
+  /* ============================================================
+     7) FALLBACK INFLUENCER
   ============================================================= */
   return {
     avatar: "influencer",
-    type: "quick_replies",
-    text: "Vuoi un video, un consiglio o un po' di motivazione?",
-    options: [
-      { label: "Mostra un video", intent: "video_motivazionale" },
-      { label: "Consiglio rapido", intent: "consiglio_rapido" },
-      { label: "Motivami", intent: "motivazione" }
+    type: "mission",
+    blocks: [
+      {
+        title: "🔥 Cosa vuoi fare?",
+        text: "• Mostra un video<br>• Consiglio rapido<br>• Motivami<br>• Seguimi sui social"
+      }
     ]
   };
 }
@@ -188,10 +249,12 @@ async function sidekick(message, context = {}) {
 
   return {
     avatar: "influencer",
-    type: "text",
-    text: "🔥 Questo prodotto spacca! Se vuoi ti mostro anche un video motivazionale.",
-    actions: [
-      { label: "Mostra video", intent: "video_motivazionale" }
+    type: "mission",
+    blocks: [
+      {
+        title: "🔥 Questo prodotto spacca!",
+        text: "Se vuoi ti mostro anche un video motivazionale."
+      }
     ]
   };
 }
