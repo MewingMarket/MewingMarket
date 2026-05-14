@@ -81,125 +81,8 @@ function initPage() {
 }
 
 /* =========================================================
-   CARICA DETTAGLIO PRODOTTO (TUO CODICE ORIGINALE)
-========================================================= */
-async function caricaDettaglioProdotto() {
-  console.log("📥 [PRODOTTO] Avvio caricamento dettaglio…");
-
-  const params = new URLSearchParams(window.location.search);
-  const id = params.get("id");
-
-  if (!id) {
-    console.warn("⚠️ [PRODOTTO] Nessun ID prodotto nella URL");
-    return;
-  }
-
-  const data = await apiProdotto(`/api/prodotti/getProdottoById/${id}`, {
-    method: "GET"
-  });
-
-  console.log("📦 [PRODOTTO] Risposta API:", data);
-
-  if (!data) {
-    console.error("🔥 [PRODOTTO] Errore caricamento SQL");
-    const container = document.getElementById("prodotto-descrizione");
-    if (container) container.textContent = "Errore: Prodotto non disponibile.";
-    return;
-  }
-
-  const p = data.prodotto || data;
-
-  if (!p || !p.id) {
-    console.warn("❌ [PRODOTTO] Prodotto non trovato");
-    const container = document.getElementById("prodotto-descrizione");
-    if (container) container.textContent = "Prodotto non trovato.";
-    return;
-  }
-
-  console.log("🟢 [PRODOTTO] Prodotto caricato:", p);
-
-  /* =========================================================
-     1) Update UI
-  ========================================================== */
-  document.title = `${p.titolo} | MewingMarket`;
-
-  const elTitolo = document.getElementById("prodotto-titolo");
-  const elSub = document.getElementById("prodotto-subtitle");
-  const elDesc = document.getElementById("prodotto-descrizione");
-  const elImg = document.getElementById("prodotto-immagine");
-  const elPrezzo = document.getElementById("prodotto-prezzo");
-
-  if (elTitolo) elTitolo.textContent = p.titolo;
-  if (elSub) elSub.textContent = p.descrizione_breve || "";
-  if (elDesc) elDesc.innerHTML = p.descrizione_lunga || p.descrizione || "";
-
-  const prezzoEuro = p.prezzo_cent
-    ? (p.prezzo_cent / 100).toFixed(2)
-    : Number(p.prezzo || 0).toFixed(2);
-
-  if (elPrezzo) elPrezzo.textContent = `€${prezzoEuro}`;
-
-  if (elImg) {
-    elImg.src = p.immagine_url || p.immagine || "/placeholder.webp";
-  }
-
-  /* =========================================================
-     2) Video YouTube
-  ========================================================== */
-  const videoId = p.youtube_video_id || p.video_id;
-  const videoSection = document.getElementById("video-section");
-  const videoIframe = document.getElementById("prodotto-video");
-
-  if (videoId && videoSection && videoIframe) {
-    console.log("🎬 [PRODOTTO] Video YouTube:", videoId);
-    videoIframe.src = `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`;
-    videoSection.style.display = "block";
-  } else if (videoSection) {
-    console.log("🎬 [PRODOTTO] Nessun video disponibile");
-    videoSection.style.display = "none";
-  }
-
-  /* =========================================================
-     3) Acquista Ora
-  ========================================================== */
-  setupAcquistoDiretto(p);
-}
-
-/* =========================================================
-   ACQUISTA ORA → Carrello + Checkout
-========================================================= */
-function setupAcquistoDiretto(p) {
-  const btnAcquista = document.getElementById("btn-acquista-hero");
-
-  if (!btnAcquista) {
-    console.warn("⚠️ [PRODOTTO] btn-acquista-hero NON trovato");
-    return;
-  }
-
-  btnAcquista.onclick = () => {
-    console.log("🛒 [PRODOTTO] Click su Acquista Ora");
-
-    const prodCarrello = {
-      id: p.id,
-      titolo: p.titolo,
-      prezzo_cent: p.prezzo_cent || Math.round(Number(p.prezzo) * 100),
-      immagine: p.immagine_url || p.immagine || "/placeholder.webp"
-    };
-
-    console.log("📦 [PRODOTTO] Aggiungo al carrello:", prodCarrello);
-
-    if (typeof window.aggiungiAlCarrello === "function") {
-      window.aggiungiAlCarrello(prodCarrello);
-    }
-
-    window.location.href = "checkout.html";
-  };
-}
-/* =========================================================
    ⭐ PATCH PROMO — PRODOTTO PERSONALIZZATO
 ========================================================= */
-
-/* 1) Recupera catalogo personalizzato e trova il prodotto */
 async function getProdottoPersonalizzato(id) {
   try {
     const res = await fetch("/api/catalogo/personalizzato", { method: "GET" });
@@ -222,7 +105,7 @@ async function getProdottoPersonalizzato(id) {
 }
 
 /* =========================================================
-   ⭐ PATCH PROMO — FUNZIONE RENDER PRODOTTO
+   ⭐ PATCH PROMO — RENDER PRODOTTO
 ========================================================= */
 function renderProdotto(p) {
   console.log("🎨 [PRODOTTO] renderProdotto()", p);
@@ -238,7 +121,6 @@ function renderProdotto(p) {
   if (elSub) elSub.textContent = p.descrizione_breve || "";
   if (elDesc) elDesc.innerHTML = p.descrizione_lunga || p.descrizione || "";
 
-  /* PREZZO */
   const prezzoBase = (p.prezzo_cent / 100).toFixed(2);
   const prezzoPromo = p.promo_attiva
     ? (p.prezzo_scontato_cent / 100).toFixed(2)
@@ -255,12 +137,10 @@ function renderProdotto(p) {
     }
   }
 
-  /* IMMAGINE */
   if (elImg) {
     elImg.src = p.immagine_url || p.immagine || "/placeholder.webp";
   }
 
-  /* BADGE PROMO */
   if (p.promo_attiva && heroLeft) {
     const badge = document.createElement("div");
     badge.className = "promo-badge";
@@ -268,7 +148,6 @@ function renderProdotto(p) {
     heroLeft.appendChild(badge);
   }
 
-  /* COUNTDOWN */
   if (p.promo_scadenza) {
     const countdown = document.createElement("div");
     countdown.className = "promo-countdown";
@@ -306,7 +185,7 @@ function initCountdownProdotto() {
 }
 
 /* =========================================================
-   ⭐ PATCH PROMO — INTEGRAZIONE IN caricaDettaglioProdotto()
+   ⭐ PATCH PROMO — OVERRIDE caricaDettaglioProdotto()
 ========================================================= */
 const _caricaDettaglioProdottoOriginale = caricaDettaglioProdotto;
 
@@ -316,7 +195,6 @@ caricaDettaglioProdotto = async function () {
   const params = new URLSearchParams(window.location.search);
   const id = params.get("id");
 
-  /* 1) Prova prodotto personalizzato */
   const promoProdotto = await getProdottoPersonalizzato(id);
   if (promoProdotto) {
     console.log("🟢 [PRODOTTO] Uso versione personalizzata");
@@ -325,7 +203,39 @@ caricaDettaglioProdotto = async function () {
     return;
   }
 
-  /* 2) Nessuna promo → esegui codice originale */
   console.log("⚪ [PRODOTTO] Nessuna promo → uso SQL normale");
   await _caricaDettaglioProdottoOriginale();
 };
+
+/* =========================================================
+   ACQUISTA ORA → Carrello + Checkout
+========================================================= */
+function setupAcquistoDiretto(p) {
+  const btnAcquista = document.getElementById("btn-acquista-hero");
+
+  if (!btnAcquista) {
+    console.warn("⚠️ [PRODOTTO] btn-acquista-hero NON trovato");
+    return;
+  }
+
+  btnAcquista.onclick = () => {
+    console.log("🛒 [PRODOTTO] Click su Acquista Ora");
+
+    const prodCarrello = {
+      id: p.id,
+      titolo: p.titolo,
+      prezzo_cent: p.promo_attiva
+        ? p.prezzo_scontato_cent
+        : p.prezzo_cent || Math.round(Number(p.prezzo) * 100),
+      immagine: p.immagine_url || p.immagine || "/placeholder.webp"
+    };
+
+    console.log("📦 [PRODOTTO] Aggiungo al carrello:", prodCarrello);
+
+    if (typeof window.aggiungiAlCarrello === "function") {
+      window.aggiungiAlCarrello(prodCarrello);
+    }
+
+    window.location.href = "checkout.html";
+  };
+}
