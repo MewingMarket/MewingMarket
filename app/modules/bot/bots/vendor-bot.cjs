@@ -28,7 +28,10 @@ function match(intentObj) {
     "dettagli_prodotto",
     "immagine_prodotto",
     "acquisto_diretto",
-    "catalogo"
+    "catalogo",
+
+    // ⭐ PATCH PROMOZIONI
+    "missione_completata"
   ].includes(intent);
 }
 
@@ -87,6 +90,29 @@ async function run(message, context = {}) {
     card.quick_replies = Premium.Quick.productQuickReplies(p);
 
     return card;
+  }
+
+  /* ============================================================
+     ⭐ PATCH — 2.5) MISSIONE COMPLETATA → CREA PROMOZIONE
+  ============================================================= */
+  if (intent === "missione_completata") {
+    return {
+      avatar: "vendor",
+      type: "mission",
+      blocks: [
+        {
+          title: "🎉 Missione completata!",
+          text: "Hai completato la missione di vendita. Ora puoi ottenere la tua promozione personalizzata."
+        },
+        {
+          title: "Ottieni la tua promozione",
+          cta: {
+            label: "Genera promozione",
+            href: "/api/promo/genera"
+          }
+        }
+      ]
+    };
   }
 
   /* ============================================================
