@@ -1,7 +1,7 @@
 /*
   FILE: game.js
   PATH: /app/public/videogioco/game.js
-  DESC: Logica schermate videogioco: flusso, nome, avatar, bot, transizioni, navigazione.
+  DESC: Logica schermate videogioco: flusso, nome, avatar, bot, transizioni, navbar.
 */
 
 /* ============================================================
@@ -12,7 +12,7 @@ function goTo(screenId) {
   const target = document.getElementById(screenId);
   if (target) target.style.display = "block";
 
-  // Forza la chatbox visibile quando entri in chat
+  // Forza chatbox visibile
   if (screenId === "screen-chat") {
     setTimeout(() => {
       const chatPanel = document.getElementById("chat-panel");
@@ -70,7 +70,7 @@ function confirmAvatar() {
 
   loadHomeAvatar();
 
-  // Mostra messaggio del saggio alla prima entrata in chat
+  // Messaggio del saggio alla prima entrata in chat
   localStorage.setItem("welcome_sage_pending", "1");
 
   goTo("screen-home");
@@ -87,12 +87,39 @@ function loadHomeAvatar() {
 }
 
 /* ============================================================
-   SCELTA BOT → CAMBIO AVATAR + ENTRA IN CHAT
+   SCELTA BOT → LOGICA COMPLETA
 ============================================================ */
 function chooseBot(botName) {
+
+  /* ---------------------------------------------
+     BOT GENERICO = NARRATORE (NON APRE LA CHAT)
+  ---------------------------------------------- */
+  if (botName === "generic") {
+
+    const gender = localStorage.getItem("player_avatar");
+    const npc = gender === "female" ? "donna saggia" : "uomo saggio";
+
+    // Avatar fermo
+    const homeAvatar = document.getElementById("home-avatar");
+    homeAvatar.src = `/videogioco/${npc}.png`;
+
+    // Messaggio animato
+    const msg = document.getElementById("home-message");
+    msg.classList.remove("typewriter");
+    void msg.offsetWidth; // reset animazione
+    msg.classList.add("typewriter");
+
+    msg.innerHTML = "Io sono la tua guida.<br>Da qui puoi scegliere un bot per iniziare.";
+
+    // NON aprire la chat
+    return;
+  }
+
+  /* ---------------------------------------------
+     ALTRI BOT → APRONO LA CHAT
+  ---------------------------------------------- */
   localStorage.setItem("active_bot", botName);
 
-  // Aggiorna avatar se chat.js è già caricato
   if (typeof window.changeAvatar === "function") {
     window.changeAvatar(botName);
   }
