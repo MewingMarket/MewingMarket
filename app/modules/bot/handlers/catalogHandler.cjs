@@ -29,16 +29,35 @@ function catalogList(products = []) {
     };
   }
 
-  return {
-    type: "list",
-    avatar: "vendor",
-    title: "Catalogo MewingMarket",
-    items: list.map(p => ({
+  // ⭐ PATCH PROMO — aggiunta badge + prezzo scontato
+  const listPromo = list.map(p => {
+    const base = {
       id: p.id,
       label: p.titolo_breve,
       price_cent: p.prezzo_cent,
       image: p.immagine_url
-    })),
+    };
+
+    if (p.promo_attiva) {
+      base.promo = {
+        attiva: true,
+        prezzo_scontato_cent: p.prezzo_scontato_cent,
+        badge: p.promo_badge || "Promo"
+      };
+
+      if (p.promo_scadenza) {
+        base.promo_scadenza = p.promo_scadenza;
+      }
+    }
+
+    return base;
+  });
+
+  return {
+    type: "list",
+    avatar: "vendor",
+    title: "Catalogo MewingMarket",
+    items: listPromo,
     actions: [
       { label: "Torna al menu", intent: "menu" }
     ]
@@ -63,13 +82,30 @@ function catalogSuggestions(products = []) {
     type: "carousel",
     avatar: "vendor",
     title: "Prodotti consigliati",
-    items: list.map(p => ({
-      id: p.id,
-      title: p.titolo_breve,
-      description: p.descrizione_breve,
-      price_cent: p.prezzo_cent,
-      image: p.immagine_url
-    }))
+    items: list.map(p => {
+      const item = {
+        id: p.id,
+        title: p.titolo_breve,
+        description: p.descrizione_breve,
+        price_cent: p.prezzo_cent,
+        image: p.immagine_url
+      };
+
+      // ⭐ PATCH PROMO
+      if (p.promo_attiva) {
+        item.promo = {
+          attiva: true,
+          prezzo_scontato_cent: p.prezzo_scontato_cent,
+          badge: p.promo_badge || "Promo"
+        };
+
+        if (p.promo_scadenza) {
+          item.promo_scadenza = p.promo_scadenza;
+        }
+      }
+
+      return item;
+    })
   };
 }
 
@@ -91,12 +127,29 @@ function influencerSuggestions(products = []) {
     type: "carousel",
     avatar: "influencer",
     title: "Hai visto questi? 🔥",
-    items: list.map(p => ({
-      id: p.id,
-      title: p.titolo_breve,
-      description: p.descrizione_breve,
-      image: p.immagine_url
-    }))
+    items: list.map(p => {
+      const item = {
+        id: p.id,
+        title: p.titolo_breve,
+        description: p.descrizione_breve,
+        image: p.immagine_url
+      };
+
+      // ⭐ PATCH PROMO
+      if (p.promo_attiva) {
+        item.promo = {
+          attiva: true,
+          prezzo_scontato_cent: p.prezzo_scontato_cent,
+          badge: p.promo_badge || "Promo"
+        };
+
+        if (p.promo_scadenza) {
+          item.promo_scadenza = p.promo_scadenza;
+        }
+      }
+
+      return item;
+    })
   };
 }
 
