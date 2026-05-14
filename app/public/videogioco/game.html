@@ -1,7 +1,7 @@
 <!--
   FILE: game.html
   PATH: /app/public/videogioco/game.html
-  DESC: Interfaccia videogioco: launcher, login, scelta avatar, home bot, chat con LIM.
+  DESC: Interfaccia videogioco completa con sfondo, menu, navigazione, LIM e chat.
 -->
 <!DOCTYPE html>
 <html lang="it">
@@ -14,7 +14,28 @@
 
 <body>
 
-  <!-- SCREEN 1 — LAUNCHER (sfondo bianco) -->
+  <!-- =========================================================
+       MENU SUPERIORE (TORNA AL SITO + SALVA ED ESCI)
+  ========================================================== -->
+  <div id="top-menu">
+    <button onclick="window.location.href='/'">Torna al sito</button>
+    <button onclick="exitGame()">Salva ed esci</button>
+  </div>
+
+  <!-- =========================================================
+       MENU LATERALE DI NAVIGAZIONE
+  ========================================================== -->
+  <div id="side-nav">
+    <button onclick="goTo('screen-home')">Home</button>
+    <button onclick="goTo('screen-avatar')">Cambia avatar</button>
+    <button onclick="goTo('screen-home')">Cambia bot</button>
+    <button onclick="goTo('screen-newgame')">Nuova partita</button>
+    <button onclick="goTo('screen-loading')">Caricamento</button>
+  </div>
+
+  <!-- =========================================================
+       SCREEN 1 — LAUNCHER
+  ========================================================== -->
   <div class="screen" id="screen-launcher">
     <div class="launcher-box">
       <img src="/chat-icon.png" class="launcher-icon" alt="Launcher" onclick="goTo('screen-login')">
@@ -22,14 +43,18 @@
     </div>
   </div>
 
-  <!-- SCREEN 2 — LOGIN (sfondo bianco) -->
+  <!-- =========================================================
+       SCREEN 2 — LOGIN
+  ========================================================== -->
   <div class="screen" id="screen-login">
     <h2>Come ti chiami?</h2>
     <input id="player-name" type="text" placeholder="Il tuo nome">
     <button onclick="saveName()">Continua</button>
   </div>
 
-  <!-- SCREEN 3 — SCELTA AVATAR (sfondo bianco) -->
+  <!-- =========================================================
+       SCREEN 3 — SCELTA AVATAR
+  ========================================================== -->
   <div class="screen" id="screen-avatar">
     <h2>Scegli il tuo avatar</h2>
 
@@ -48,7 +73,9 @@
     <button id="avatar-confirm" disabled onclick="confirmAvatar()">Conferma</button>
   </div>
 
-  <!-- SCREEN 4 — HOME (sfondo gioco + avatar generico + messaggio) -->
+  <!-- =========================================================
+       SCREEN 4 — HOME (SFONDO GIOCO)
+  ========================================================== -->
   <div class="screen" id="screen-home">
 
     <div id="home-avatar-box">
@@ -72,7 +99,9 @@
 
   </div>
 
-  <!-- SCREEN 5 — CHAT (sfondo gioco + LIM + avatar + chatbox) -->
+  <!-- =========================================================
+       SCREEN 5 — CHAT (SFONDO GIOCO + LIM + CHATBOX)
+  ========================================================== -->
   <div class="screen" id="screen-chat">
 
     <div id="classroom-layer">
@@ -87,7 +116,7 @@
       </div>
     </div>
 
-    <!-- CHATBOX ALLA BASE DEL FASCIO -->
+    <!-- CHATBOX -->
     <div id="chat-panel">
       <div id="chat-box"></div>
 
@@ -102,6 +131,26 @@
 
   </div>
 
+  <!-- =========================================================
+       SCREEN 6 — NUOVA PARTITA
+  ========================================================== -->
+  <div class="screen" id="screen-newgame">
+    <h2>Nuova Partita</h2>
+    <p>Inizia una nuova avventura con i bot.</p>
+    <button onclick="startNewGame()">Inizia</button>
+  </div>
+
+  <!-- =========================================================
+       SCREEN 7 — CARICAMENTO
+  ========================================================== -->
+  <div class="screen" id="screen-loading">
+    <h2>Caricamento…</h2>
+    <div class="loader"></div>
+  </div>
+
+  <!-- =========================================================
+       SCRIPT
+  ========================================================== -->
   <script src="game.js"></script>
   <script src="chat.js"></script>
 
