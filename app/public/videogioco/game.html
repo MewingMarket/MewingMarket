@@ -1,3 +1,8 @@
+<!--
+  FILE: game.html
+  PATH: /app/public/videogioco/game.html
+  DESC: Interfaccia videogioco: launcher, login, scelta avatar, home bot, chat con LIM.
+-->
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -9,7 +14,7 @@
 
 <body>
 
-  <!-- SCREEN 1 — LAUNCHER -->
+  <!-- SCREEN 1 — LAUNCHER (sfondo bianco) -->
   <div class="screen" id="screen-launcher">
     <div class="launcher-box">
       <img src="/chat-icon.png" class="launcher-icon" alt="Launcher" onclick="goTo('screen-login')">
@@ -17,14 +22,14 @@
     </div>
   </div>
 
-  <!-- SCREEN 2 — LOGIN -->
+  <!-- SCREEN 2 — LOGIN (sfondo bianco) -->
   <div class="screen" id="screen-login">
     <h2>Come ti chiami?</h2>
     <input id="player-name" type="text" placeholder="Il tuo nome">
     <button onclick="saveName()">Continua</button>
   </div>
 
-  <!-- SCREEN 3 — SCELTA AVATAR -->
+  <!-- SCREEN 3 — SCELTA AVATAR (sfondo bianco) -->
   <div class="screen" id="screen-avatar">
     <h2>Scegli il tuo avatar</h2>
 
@@ -43,11 +48,16 @@
     <button id="avatar-confirm" disabled onclick="confirmAvatar()">Conferma</button>
   </div>
 
-  <!-- SCREEN 4 — HOME (SFONDO BIANCO + SAGGIO) -->
+  <!-- SCREEN 4 — HOME (sfondo gioco + avatar generico + messaggio) -->
   <div class="screen" id="screen-home">
 
     <div id="home-avatar-box">
       <img id="home-avatar" src="/videogioco/uomo saggio.png" alt="Guida">
+    </div>
+
+    <div id="home-message" class="typewriter">
+      Benvenuto nel gioco!<br>
+      Scegli un’opzione qui sotto.
     </div>
 
     <h2 id="welcome-title"></h2>
@@ -62,7 +72,7 @@
 
   </div>
 
-  <!-- SCREEN 5 — CHAT (LIM + AVATAR + CHATBOX) -->
+  <!-- SCREEN 5 — CHAT (sfondo gioco + LIM + avatar + chatbox) -->
   <div class="screen" id="screen-chat">
 
     <div id="classroom-layer">
