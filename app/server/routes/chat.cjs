@@ -38,6 +38,31 @@ const GUIDES = {
 };
 
 /* =========================================================
+   NORMALIZZATORE RISPOSTA → FORMATO UNICO PER IL FRONTEND
+========================================================= */
+function normalizeTextReply(finalReply, fallbackAvatar) {
+  const safe = finalReply || {};
+
+  const type = safe.type || "text";
+  const text = safe.text || safe.reply || "";
+  const avatar = safe.avatar || fallbackAvatar;
+
+  const base = { success: true, type, avatar };
+
+  if (type === "video") {
+    return {
+      ...base,
+      url: safe.url || ""
+    };
+  }
+
+  return {
+    ...base,
+    text
+  };
+}
+
+/* =========================================================
    FUNZIONE: chat (Java‑mode)
 ========================================================= */
 async function chat(req) {
@@ -50,15 +75,17 @@ async function chat(req) {
 
   try {
     if (typeof global.logBot === "function") {
-      global.logBot("chat_request", { uid, message });
+      global.logBot("chat_request", { uid, message, botAvatar, gender });
     }
 
     // Protezione catalogo
     if (!global.catalogReady) {
       return {
         success: true,
-        reply: "Sto pensando… un attimo 😄",
-        delay: true
+        type: "text",
+        text: "Sto pensando… un attimo 😄",
+        delay: true,
+        avatar: botAvatar
       };
     }
 
@@ -70,27 +97,25 @@ async function chat(req) {
       gender
     });
 
+    const resolvedAvatar = intentData?.avatar || botAvatar;
+
     /* =====================================================
        2) SE NON È UNA GUIDA → risposta normale del bot
     ====================================================== */
-    if (intentData.intent !== "guida" || !intentData.tutorial?.guideKey) {
+    if (!intentData || intentData.intent !== "guida" || !intentData.tutorial?.guideKey) {
       const finalReply = await handleConversation(req);
 
       trackGA4("chat_message", {
         uid,
         message,
-        intent: intentData.intent || "unknown"
+        intent: intentData?.intent || "unknown"
       });
 
       if (typeof global.logBot === "function") {
-        global.logBot("chat_response", { uid });
+        global.logBot("chat_response", { uid, intent: intentData?.intent || "unknown" });
       }
 
-      return {
-        success: true,
-        ...finalReply,
-        avatar: intentData.avatar || botAvatar
-      };
+      return normalizeTextReply(finalReply, resolvedAvatar);
     }
 
     /* =====================================================
@@ -103,8 +128,8 @@ async function chat(req) {
       return {
         success: true,
         type: "text",
-        reply: "Non ho ancora una guida video per questa domanda, ma posso spiegartelo a parole.",
-        avatar: intentData.avatar || botAvatar
+        text: "Non ho ancora una guida video per questa domanda, ma posso spiegartelo a parole.",
+        avatar: resolvedAvatar
       };
     }
 
@@ -133,11 +158,15 @@ async function chat(req) {
       intent: "guida"
     });
 
+    if (typeof global.logBot === "function") {
+      global.logBot("chat_response_tutorial", { uid, guideKey });
+    }
+
     return {
       success: true,
       type: "video",
       url: videoUrl,
-      avatar: intentData.avatar || botAvatar
+      avatar: resolvedAvatar
     };
 
   } catch (err) {
@@ -149,7 +178,9 @@ async function chat(req) {
 
     return {
       success: false,
-      reply: "Si è verificato un errore. Riprova tra qualche secondo."
+      type: "text",
+      text: "Si è verificato un errore. Riprova tra qualche secondo.",
+      error: true
     };
   }
 }
