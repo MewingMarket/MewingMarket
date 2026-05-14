@@ -43,11 +43,11 @@
     <button id="avatar-confirm" disabled onclick="confirmAvatar()">Conferma</button>
   </div>
 
-  <!-- SCREEN 4 — HOME (SFONDO BIANCO + AVATAR SAGGIO) -->
+  <!-- SCREEN 4 — HOME (SFONDO BIANCO + SAGGIO) -->
   <div class="screen" id="screen-home">
 
     <div id="home-avatar-box">
-      <img id="home-avatar" src="/videogioco/uomo saggio.png">
+      <img id="home-avatar" src="/videogioco/uomo saggio.png" alt="Guida">
     </div>
 
     <h2 id="welcome-title"></h2>
@@ -62,27 +62,32 @@
 
   </div>
 
-  <!-- SCREEN 5 — CHAT (SFONDO GIOCO) -->
+  <!-- SCREEN 5 — CHAT (LIM + AVATAR + CHATBOX) -->
   <div class="screen" id="screen-chat">
 
-    <div id="game-container">
+    <div id="classroom-layer">
+      <!-- LIM -->
+      <div id="lim-area">
+        <div id="lim-screen"></div>
+      </div>
 
+      <!-- AVATAR -->
       <div id="avatar-area">
         <img id="avatar-img" src="/videogioco/uomo saggio.png" alt="Avatar">
       </div>
+    </div>
 
-      <div id="chat-container">
-        <div id="chat-box"></div>
+    <!-- CHATBOX ALLA BASE DEL FASCIO -->
+    <div id="chat-panel">
+      <div id="chat-box"></div>
 
-        <div id="chat-input-area">
-          <input id="chat-input" type="text" placeholder="Scrivi un messaggio...">
-          <button id="chat-send">➤</button>
-          <button id="chat-voice">🎤</button>
-          <button id="chat-attach">📎</button>
-          <input id="chat-file" type="file" hidden>
-        </div>
+      <div id="chat-input-area">
+        <input id="chat-input" type="text" placeholder="Scrivi un messaggio...">
+        <button id="chat-send">➤</button>
+        <button id="chat-voice">🎤</button>
+        <button id="chat-attach">📎</button>
+        <input id="chat-file" type="file" hidden>
       </div>
-
     </div>
 
   </div>
