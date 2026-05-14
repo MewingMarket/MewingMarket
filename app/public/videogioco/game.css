@@ -4,7 +4,9 @@
   DESC: Stili videogioco: schermate, sfondi, LIM, avatar, chat, animazioni NPC.
 */
 
-/* GLOBAL */
+/* ============================================================
+   GLOBAL
+============================================================ */
 body {
   margin: 0;
   background: #ffffff;
@@ -18,9 +20,56 @@ body {
   width: 100vw;
   height: 100vh;
   box-sizing: border-box;
+  position: relative;
 }
 
-/* LAUNCHER */
+/* ============================================================
+   MENU SUPERIORE
+============================================================ */
+#top-menu {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 9999;
+  display: flex;
+  gap: 10px;
+}
+
+#top-menu button {
+  padding: 8px 12px;
+  background: rgba(0,0,0,0.7);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* ============================================================
+   MENU LATERALE
+============================================================ */
+#side-nav {
+  position: fixed;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 9999;
+}
+
+#side-nav button {
+  padding: 8px 12px;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* ============================================================
+   LAUNCHER
+============================================================ */
 #screen-launcher {
   padding: 40px;
   display: flex;
@@ -49,7 +98,9 @@ body {
   100% { transform: scale(1); opacity: 0.9; }
 }
 
-/* LOGIN / AVATAR / HOME BASE */
+/* ============================================================
+   LOGIN + SCELTA AVATAR (schermate bianche)
+============================================================ */
 #screen-login,
 #screen-avatar {
   padding: 40px;
@@ -61,7 +112,9 @@ body {
   margin-bottom: 20px;
 }
 
-/* SCELTA AVATAR */
+/* ============================================================
+   SCELTA AVATAR
+============================================================ */
 .avatar-grid {
   display: flex;
   justify-content: center;
@@ -92,11 +145,13 @@ body {
   object-fit: contain;
 }
 
-/* HOME — SFONDO GIOCO + AVATAR + MESSAGGIO */
+/* ============================================================
+   HOME — SFONDO GIOCO
+============================================================ */
 #screen-home {
   padding: 40px;
   text-align: center;
-  background: url('/videogioco/sfondo gioco.png') center/cover no-repeat;
+  background: url('/videogioco/sfondo gioco.png') center/cover no-repeat !important;
   color: #fff;
 }
 
@@ -163,13 +218,17 @@ body {
 #bot-buttons button:nth-child(4) { background: #ffc107; color: #000; }
 #bot-buttons button:nth-child(5) { background: #607d8b; }
 
-/* CHAT SCREEN: SFONDO GIOCO */
+/* ============================================================
+   CHAT — SFONDO GIOCO
+============================================================ */
 #screen-chat {
   position: relative;
-  background: url('/videogioco/sfondo gioco.png') center/cover no-repeat;
+  background: url('/videogioco/sfondo gioco.png') center/cover no-repeat !important;
 }
 
-/* LAYER SUPERIORE: LIM + AVATAR */
+/* ============================================================
+   LIM + AVATAR
+============================================================ */
 #classroom-layer {
   position: absolute;
   inset: 0;
@@ -180,7 +239,6 @@ body {
   pointer-events: none;
 }
 
-/* LIM */
 #lim-area {
   width: 55%;
   height: 55%;
@@ -204,7 +262,6 @@ body {
   font-size: 14px;
 }
 
-/* AVATAR A DESTRA */
 #avatar-area {
   width: 20%;
   display: flex;
@@ -219,7 +276,9 @@ body {
   border-radius: 12px;
 }
 
-/* CHATBOX IN BASSO (BASE DEL FASCIO) */
+/* ============================================================
+   CHATBOX
+============================================================ */
 #chat-panel {
   position: absolute;
   left: 0;
@@ -283,7 +342,9 @@ body {
   cursor: pointer;
 }
 
-/* ANIMAZIONI NPC */
+/* ============================================================
+   ANIMAZIONI NPC
+============================================================ */
 @keyframes npcEnter {
   0% { opacity: 0; transform: translateX(40px) scale(0.95); }
   100% { opacity: 1; transform: translateX(0) scale(1); }
@@ -301,4 +362,29 @@ body {
 
 .avatar-talking {
   animation: npcTalk 0.4s ease-out;
+}
+
+/* ============================================================
+   NUOVA PARTITA + CARICAMENTO
+============================================================ */
+#screen-newgame,
+#screen-loading {
+  text-align: center;
+  padding-top: 100px;
+  background: url('/videogioco/sfondo gioco.png') center/cover no-repeat !important;
+  color: #fff;
+}
+
+.loader {
+  width: 60px;
+  height: 60px;
+  border: 6px solid #fff;
+  border-top-color: transparent;
+  border-radius: 50%;
+  margin: 20px auto;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
