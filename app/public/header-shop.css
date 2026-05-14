@@ -1,3 +1,8 @@
+/* =========================================================
+   HEADER SHOP — Versione Premium 2027.400
+   Pulito, moderno, compatibile con badge carrello
+========================================================= */
+
 .shop-header {
   background: #fff;
   border-bottom: 1px solid #eee;
@@ -21,17 +26,35 @@
 .main-nav a {
   font-weight: 500;
   color: #000;
+  text-decoration: none;
+  transition: 0.2s;
 }
+
+.main-nav a:hover {
+  color: #007bff;
+}
+
+/* =========================================================
+   CARRELLO ICONA + BADGE
+========================================================= */
 
 #cart-wrapper {
   position: relative;
   cursor: pointer;
+  display: flex;
+  align-items: center;
 }
 
 #cart-icon {
   font-size: 26px;
+  transition: 0.2s;
 }
 
+#cart-icon:hover {
+  transform: scale(1.1);
+}
+
+/* BADGE CARRELLO */
 #cart-badge {
   position: absolute;
   top: -6px;
@@ -42,4 +65,45 @@
   border-radius: 50%;
   font-size: 12px;
   font-weight: bold;
+  display: none; /* appare solo se count > 0 */
+  transition: 0.2s;
+}
+
+/* Effetto quando il numero cambia */
+#cart-badge.updated {
+  transform: scale(1.2);
+}
+
+/* =========================================================
+   ⭐ PATCH PROMO (opzionale, non invasiva)
+   Se in futuro vuoi mostrare un badge promo nel header
+========================================================= */
+
+.header-promo-badge {
+  background: #e74c3c;
+  color: #fff;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-left: 10px;
+  display: inline-block;
+}
+
+/* =========================================================
+   ADMIN BUTTON (già presente)
+========================================================= */
+
+.btn-admin-header {
+  margin-left: auto;
+  font-weight: 600;
+  color: #007bff;
+  text-decoration: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  transition: 0.2s;
+}
+
+.btn-admin-header:hover {
+  background: #e8f0ff;
 }
