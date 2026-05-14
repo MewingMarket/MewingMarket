@@ -12,6 +12,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const avatarImg = document.getElementById("avatar-img");
   const limScreen = document.getElementById("lim-screen");
 
+  /* ============================================================
+     UTILS
+  ============================================================ */
   function clean(t) {
     return typeof t === "string"
       ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
@@ -26,6 +29,9 @@ document.addEventListener("DOMContentLoaded", () => {
     chatBox.scrollTop = chatBox.scrollHeight;
   }
 
+  /* ============================================================
+     ANIMAZIONI NPC
+  ============================================================ */
   function npcEnter() {
     avatarImg.classList.add("avatar-enter");
     setTimeout(() => avatarImg.classList.remove("avatar-enter"), 500);
@@ -36,9 +42,12 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => avatarImg.classList.remove("avatar-talking"), 400);
   }
 
-  /* Mappa bot → PNG in base al genere */
+  /* ============================================================
+     CAMBIO AVATAR — Mappa corretta in base ai file reali
+  ============================================================ */
   function changeAvatar(botName) {
     const gender = localStorage.getItem("player_avatar");
+
     const map = {
       vendor: gender === "female" ? "donna manager" : "uomo manager",
       influencer: gender === "female" ? "influencer donna" : "influencer uomo",
@@ -46,7 +55,9 @@ document.addEventListener("DOMContentLoaded", () => {
       newsletter: gender === "female" ? "postina" : "postino",
       generic: gender === "female" ? "donna saggia" : "uomo saggio"
     };
-    const file = map[botName] || (gender === "female" ? "donna saggia" : "uomo saggio");
+
+    const file = map[botName] || map.generic;
+
     avatarImg.src = `/videogioco/${file}.png`;
     npcEnter();
   }
@@ -54,11 +65,14 @@ document.addEventListener("DOMContentLoaded", () => {
   /* Esporta per game.js */
   window.changeAvatar = changeAvatar;
 
-  /* Render sulla LIM: testo o video */
+  /* ============================================================
+     RENDER LIM (testo + video)
+  ============================================================ */
   function renderOnLIM(data) {
     if (!data) return;
     limScreen.innerHTML = "";
 
+    /* TESTO */
     if (data.type === "text" && data.text) {
       const p = document.createElement("p");
       p.innerHTML = clean(data.text);
@@ -67,6 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    /* VIDEO */
     if (data.type === "video" && data.url) {
       const url = clean(data.url);
 
@@ -85,10 +100,12 @@ document.addEventListener("DOMContentLoaded", () => {
         video.style.height = "100%";
         limScreen.appendChild(video);
       }
+
       npcTalk();
       return;
     }
 
+    /* FALLBACK */
     if (data.fallback) {
       const p = document.createElement("p");
       p.innerHTML = clean(data.fallback);
@@ -97,6 +114,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  /* ============================================================
+     API CHAT
+  ============================================================ */
   async function apiChat(path, options = {}) {
     try {
       const res = await fetch(path, options);
@@ -108,6 +128,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  /* ============================================================
+     INVIO MESSAGGIO
+  ============================================================ */
   async function sendTextMessage() {
     const message = clean(chatInput.value);
     if (!message) return;
@@ -144,7 +167,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  /* Messaggio di benvenuto del saggio alla prima entrata in chat */
+  /* ============================================================
+     MESSAGGIO DI BENVENUTO DEL SAGGIO
+  ============================================================ */
   const welcomePending = localStorage.getItem("welcome_sage_pending");
   if (welcomePending === "1") {
     const gender = localStorage.getItem("player_avatar");
