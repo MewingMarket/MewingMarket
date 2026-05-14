@@ -50,7 +50,7 @@ try {
 const catalogo = require(path.join(process.cwd(), "app/modules/catalogo.cjs"));
 const faq = require(path.join(process.cwd(), "app/modules/faq.cjs"));
 const guides = require(path.join(process.cwd(), "app/modules/guides.cjs"));
-const memory = require(path.join(process.cwd(), "app/modules/memory.js"));
+const memory = require(path.join(process.cwd(), "app/modules/memory.cjs"));
 const ai = require(path.join(process.cwd(), "app/server/modules/ai.cjs"));
 
 /* ============================================================
