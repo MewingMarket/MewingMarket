@@ -19,6 +19,11 @@ function goTo(screenId) {
       if (chatPanel) chatPanel.style.display = "flex";
     }, 50);
   }
+
+  // Quando entri nello screen "Caricamento" → carica lista partite
+  if (screenId === "screen-loading") {
+    loadGameList();
+  }
 }
 
 /* ============================================================
@@ -158,13 +163,43 @@ async function saveGameState() {
 }
 
 /* ============================================================
-   CARICAMENTO PARTITA (BACKEND)
+   LISTA PARTITE PER COMBO BOX
 ============================================================ */
-async function loadGameState() {
-  const res = await fetch("/api/game/load", { method: "POST" });
+async function loadGameList() {
+  const res = await fetch("/api/game/list", { method: "POST" });
   const json = await res.json();
 
-  if (!json.success) return false;
+  const select = document.getElementById("saved-games");
+  if (!select) return;
+
+  select.innerHTML = `<option value="">Seleziona una partita...</option>`;
+
+  if (!json.success) return;
+
+  json.data.forEach(p => {
+    const opt = document.createElement("option");
+    const date = new Date(p.updated_at).toLocaleString("it-IT");
+    opt.value = p.id;
+    opt.textContent = `${p.name} — ${date}`;
+    select.appendChild(opt);
+  });
+}
+
+/* ============================================================
+   CARICA PARTITA SELEZIONATA
+============================================================ */
+async function loadSelectedGame() {
+  const id = document.getElementById("saved-games").value;
+  if (!id) return;
+
+  const res = await fetch("/api/game/loadOne", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id })
+  });
+
+  const json = await res.json();
+  if (!json.success) return;
 
   const data = json.data;
 
@@ -176,7 +211,7 @@ async function loadGameState() {
   const lim = document.getElementById("lim-screen");
   if (lim) lim.innerHTML = data.limState;
 
-  return true;
+  goTo("screen-chat");
 }
 
 /* ============================================================
@@ -197,4 +232,5 @@ window.loadHomeAvatar = loadHomeAvatar;
 window.exitGame = exitGame;
 window.startNewGame = startNewGame;
 window.saveGameState = saveGameState;
-window.loadGameState = loadGameState;
+window.loadGameList = loadGameList;
+window.loadSelectedGame = loadSelectedGame;
