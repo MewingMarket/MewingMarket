@@ -1,3 +1,9 @@
+/*
+  FILE: game.js
+  PATH: /app/public/videogioco/game.js
+  DESC: Logica schermate videogioco: flusso, nome, avatar, bot, transizioni.
+*/
+
 function goTo(screenId) {
   document.querySelectorAll(".screen").forEach(s => s.style.display = "none");
   const target = document.getElementById(screenId);
@@ -6,7 +12,7 @@ function goTo(screenId) {
 
 function saveName() {
   const input = document.getElementById("player-name");
-  const name = input.value.trim();
+  const name = (input.value || "").trim();
   if (!name) return;
   localStorage.setItem("player_name", name);
   goTo("screen-avatar");
@@ -14,6 +20,7 @@ function saveName() {
 
 let selectedAvatar = null;
 
+/* Selezione avatar uomo/donna */
 document.addEventListener("click", e => {
   const card = e.target.closest(".avatar-card");
   if (!card) return;
@@ -30,11 +37,16 @@ function confirmAvatar() {
   const name = localStorage.getItem("player_name") || "";
   document.getElementById("welcome-title").textContent = `Benvenuto ${name}!`;
 
-  localStorage.setItem("welcome_sage_pending", "1");
-  goTo("screen-home");
+  // avatar generico in home
   loadHomeAvatar();
+
+  // flag per messaggio di benvenuto in chat
+  localStorage.setItem("welcome_sage_pending", "1");
+
+  goTo("screen-home");
 }
 
+/* Carica avatar saggio in base al genere */
 function loadHomeAvatar() {
   const gender = localStorage.getItem("player_avatar");
   const homeAvatar = document.getElementById("home-avatar");
@@ -43,18 +55,26 @@ function loadHomeAvatar() {
     : "/videogioco/uomo saggio.png";
 }
 
+/* Scelta bot → cambia avatar + va in chat */
 function chooseBot(botName) {
-  // persona scelta (vendor, influencer, professor, newsletter, generic)
   localStorage.setItem("active_bot", botName);
-  // la logica di intent resta automatica nel backend
+
+  // se chat.js è già caricato, aggiorna subito l’avatar
+  if (typeof window.changeAvatar === "function") {
+    window.changeAvatar(botName);
+  }
+
   goTo("screen-chat");
 }
 
+/* Avvio */
 window.addEventListener("load", () => {
   goTo("screen-launcher");
 });
 
+/* Esport per HTML inline */
 window.goTo = goTo;
 window.saveName = saveName;
 window.confirmAvatar = confirmAvatar;
 window.chooseBot = chooseBot;
+window.loadHomeAvatar = loadHomeAvatar;
