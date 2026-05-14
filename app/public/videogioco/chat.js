@@ -1,7 +1,7 @@
 /*
   FILE: chat.js
   PATH: /app/public/videogioco/chat.js
-  DESC: Logica chat + LIM: messaggi, avatar, animazioni, video tutorial.
+  DESC: Logica chat + LIM moderna: messaggi, avatar, animazioni, video tutorial.
 */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -71,7 +71,7 @@ document.addEventListener("DOMContentLoaded", () => {
   window.changeAvatar = changeAvatar;
 
   /* ============================================================
-     RENDER LIM (testo + video)
+     RENDER LIM (testo + video) — ottimizzato per LIM moderna
   ============================================================ */
   function renderOnLIM(data) {
     if (!limScreen || !data) return;
@@ -90,19 +90,24 @@ document.addEventListener("DOMContentLoaded", () => {
     if (data.type === "video" && data.url) {
       const url = clean(data.url);
 
+      // YouTube
       if (url.includes("youtube.com") || url.includes("youtu.be")) {
         const iframe = document.createElement("iframe");
         iframe.src = url;
         iframe.width = "100%";
         iframe.height = "100%";
         iframe.style.border = "0";
+        iframe.allowFullscreen = true;
         limScreen.appendChild(iframe);
-      } else {
+      } 
+      // MP4 / altri formati
+      else {
         const video = document.createElement("video");
         video.src = url;
         video.controls = true;
         video.style.width = "100%";
         video.style.height = "100%";
+        video.style.borderRadius = "10px";
         limScreen.appendChild(video);
       }
 
