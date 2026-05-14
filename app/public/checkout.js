@@ -1,6 +1,7 @@
 /* =========================================================
    CHECKOUT — UNIVERSAL JSON PATCH 2027.970
    PATCH 2050 — AUTORUN + DEBUG ESTESO
+   PATCH 2052 — PREZZI PROMO + TOTALE SCONTATO
 ========================================================= */
 
 console.log("📌 [CHECKOUT] File caricato nel DOM");
@@ -164,7 +165,7 @@ async function initCheckout() {
   }
 
   // -------------------------------------------------------
-  // 3) Rendering prodotti e calcolo Totale
+  // 3) Rendering prodotti e calcolo Totale (con promo)
   // -------------------------------------------------------
   console.log("🧮 [CHECKOUT] Calcolo totale…");
 
@@ -174,21 +175,35 @@ async function initCheckout() {
   if (container) {
     container.innerHTML = cart
       .map((item) => {
-        const pc = Number(item.prezzo_cent) || 0;
         const q = Number(item.qty) || 1;
-        totaleCent += pc * q;
 
-        const prezzo = (pc / 100).toFixed(2);
-        const subtotal = ((pc * q) / 100).toFixed(2);
+        const baseCent = Number(item.prezzo_cent) || 0;
+        const promoCent = item.promo_attiva
+          ? Number(item.prezzo_scontato_cent || baseCent)
+          : baseCent;
+
+        const prezzoBaseEuro = (baseCent / 100).toFixed(2);
+        const prezzoPromoEuro = (promoCent / 100).toFixed(2);
+
+        const subtotalCent = promoCent * q;
+        totaleCent += subtotalCent;
+
+        const subtotalEuro = (subtotalCent / 100).toFixed(2);
+
+        const prezzoHTML = item.promo_attiva
+          ? `
+            <p>Prezzo: <span class="prezzo-originale">€${prezzoBaseEuro}</span> <span class="prezzo-scontato">€${prezzoPromoEuro}</span></p>
+          `
+          : `<p>Prezzo: €${prezzoBaseEuro}</p>`;
 
         return `
           <div class="checkout-item">
             <img src="${item.immagine || '/placeholder.webp'}" alt="${item.titolo}">
             <div class="info">
               <h3>${item.titolo}</h3>
-              <p>Prezzo: €${prezzo}</p>
+              ${prezzoHTML}
               <p>Quantità: ${q}</p>
-              <p>Subtotale: <strong>€${subtotal}</strong></p>
+              <p>Subtotale: <strong>€${subtotalEuro}</strong></p>
             </div>
           </div>
         `;
