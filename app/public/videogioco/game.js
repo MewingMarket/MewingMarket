@@ -17,12 +17,23 @@ function goTo(screenId) {
     setTimeout(() => {
       const chatPanel = document.getElementById("chat-panel");
       if (chatPanel) chatPanel.style.display = "flex";
+
+      // Se c'è un bot attivo, aggiorna avatar in chat
+      const activeBot = localStorage.getItem("active_bot") || "generic";
+      if (typeof window.changeAvatar === "function") {
+        window.changeAvatar(activeBot);
+      }
     }, 50);
   }
 
   // Quando entri nello screen "Caricamento" → carica lista partite
   if (screenId === "screen-loading") {
     loadGameList();
+  }
+
+  // Quando entri in home, ricarica avatar saggio
+  if (screenId === "screen-home") {
+    loadHomeAvatar();
   }
 }
 
@@ -62,7 +73,8 @@ document.addEventListener("click", e => {
   card.classList.add("selected");
   selectedAvatar = card.dataset.avatar;
 
-  document.getElementById("avatar-confirm").disabled = false;
+  const btn = document.getElementById("avatar-confirm");
+  if (btn) btn.disabled = false;
 });
 
 /* Conferma avatar */
@@ -72,7 +84,8 @@ function confirmAvatar() {
   localStorage.setItem("player_avatar", selectedAvatar);
 
   const name = localStorage.getItem("player_name") || "";
-  document.getElementById("welcome-title").textContent = `Benvenuto ${name}!`;
+  const titleEl = document.getElementById("welcome-title");
+  if (titleEl) titleEl.textContent = `Benvenuto ${name}!`;
 
   loadHomeAvatar();
 
@@ -86,6 +99,7 @@ function confirmAvatar() {
 function loadHomeAvatar() {
   const gender = localStorage.getItem("player_avatar");
   const homeAvatar = document.getElementById("home-avatar");
+  if (!homeAvatar) return;
 
   homeAvatar.src = gender === "female"
     ? "/videogioco/donna saggia.png"
@@ -107,15 +121,19 @@ function chooseBot(botName) {
 
     // Avatar fermo
     const homeAvatar = document.getElementById("home-avatar");
-    homeAvatar.src = `/videogioco/${npc}.png`;
+    if (homeAvatar) {
+      homeAvatar.src = `/videogioco/${npc}.png`;
+    }
 
     // Messaggio animato
     const msg = document.getElementById("home-message");
-    msg.classList.remove("typewriter");
-    void msg.offsetWidth; // reset animazione
-    msg.classList.add("typewriter");
+    if (msg) {
+      msg.classList.remove("typewriter");
+      void msg.offsetWidth; // reset animazione
+      msg.classList.add("typewriter");
 
-    msg.innerHTML = "Io sono la tua guida.<br>Da qui puoi scegliere un bot per iniziare.";
+      msg.innerHTML = "Io sono la tua guida.<br>Da qui puoi scegliere un bot per iniziare.";
+    }
 
     // NON aprire la chat
     return;
@@ -155,11 +173,15 @@ async function saveGameState() {
     limState: lim ? lim.innerHTML : ""
   };
 
-  await fetch("/api/game/save", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  });
+  try {
+    await fetch("/api/game/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+  } catch {
+    // silenzioso: il gioco continua anche se il salvataggio fallisce
+  }
 }
 
 /* ============================================================
@@ -189,7 +211,10 @@ async function loadGameList() {
    CARICA PARTITA SELEZIONATA
 ============================================================ */
 async function loadSelectedGame() {
-  const id = document.getElementById("saved-games").value;
+  const select = document.getElementById("saved-games");
+  if (!select) return;
+
+  const id = select.value;
   if (!id) return;
 
   const res = await fetch("/api/game/loadOne", {
@@ -203,13 +228,13 @@ async function loadSelectedGame() {
 
   const data = json.data;
 
-  localStorage.setItem("player_name", data.name);
-  localStorage.setItem("player_avatar", data.avatar);
-  localStorage.setItem("active_bot", data.bot);
-  localStorage.setItem("last_message", data.lastMessage);
+  localStorage.setItem("player_name", data.name || "");
+  localStorage.setItem("player_avatar", data.avatar || "");
+  localStorage.setItem("active_bot", data.bot || "");
+  localStorage.setItem("last_message", data.lastMessage || "");
 
   const lim = document.getElementById("lim-screen");
-  if (lim) lim.innerHTML = data.limState;
+  if (lim) lim.innerHTML = data.limState || "";
 
   goTo("screen-chat");
 }
