@@ -22,6 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function addMessage(text, sender = "bot") {
+    if (!chatBox) return;
     const bubble = document.createElement("div");
     bubble.className = sender === "user" ? "chat-bubble user" : "chat-bubble bot";
     bubble.innerHTML = clean(text);
@@ -33,11 +34,13 @@ document.addEventListener("DOMContentLoaded", () => {
      ANIMAZIONI NPC
   ============================================================ */
   function npcEnter() {
+    if (!avatarImg) return;
     avatarImg.classList.add("avatar-enter");
     setTimeout(() => avatarImg.classList.remove("avatar-enter"), 500);
   }
 
   function npcTalk() {
+    if (!avatarImg) return;
     avatarImg.classList.add("avatar-talking");
     setTimeout(() => avatarImg.classList.remove("avatar-talking"), 400);
   }
@@ -46,6 +49,8 @@ document.addEventListener("DOMContentLoaded", () => {
      CAMBIO AVATAR — Mappa corretta in base ai file reali
   ============================================================ */
   function changeAvatar(botName) {
+    if (!avatarImg) return;
+
     const gender = localStorage.getItem("player_avatar");
 
     const map = {
@@ -62,17 +67,17 @@ document.addEventListener("DOMContentLoaded", () => {
     npcEnter();
   }
 
-  /* Esporta per game.js */
+  // Esporta per game.js
   window.changeAvatar = changeAvatar;
 
   /* ============================================================
      RENDER LIM (testo + video)
   ============================================================ */
   function renderOnLIM(data) {
-    if (!data) return;
+    if (!limScreen || !data) return;
     limScreen.innerHTML = "";
 
-    /* TESTO */
+    // TESTO
     if (data.type === "text" && data.text) {
       const p = document.createElement("p");
       p.innerHTML = clean(data.text);
@@ -81,7 +86,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    /* VIDEO */
+    // VIDEO
     if (data.type === "video" && data.url) {
       const url = clean(data.url);
 
@@ -105,7 +110,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    /* FALLBACK */
+    // FALLBACK
     if (data.fallback) {
       const p = document.createElement("p");
       p.innerHTML = clean(data.fallback);
@@ -120,6 +125,10 @@ document.addEventListener("DOMContentLoaded", () => {
   async function apiChat(path, options = {}) {
     try {
       const res = await fetch(path, options);
+      if (!res.ok) {
+        addMessage("❌ Errore server.");
+        return null;
+      }
       const json = await res.json();
       return json.data || json;
     } catch {
@@ -132,6 +141,8 @@ document.addEventListener("DOMContentLoaded", () => {
      INVIO MESSAGGIO
   ============================================================ */
   async function sendTextMessage() {
+    if (!chatInput) return;
+
     const message = clean(chatInput.value);
     if (!message) return;
 
@@ -141,7 +152,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const bot = localStorage.getItem("active_bot") || "generic";
     const gender = localStorage.getItem("player_avatar") === "female" ? "female" : "male";
 
-    const data = await apiChat("/chat", {
+    const data = await apiChat("/api/chat/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -152,6 +163,11 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     if (!data) return;
+
+    if (data.success === false) {
+      if (data.text) addMessage(data.text, "bot");
+      return;
+    }
 
     if (data.avatar) changeAvatar(data.avatar);
     renderOnLIM(data);
@@ -171,7 +187,7 @@ document.addEventListener("DOMContentLoaded", () => {
      MESSAGGIO DI BENVENUTO DEL SAGGIO
   ============================================================ */
   const welcomePending = localStorage.getItem("welcome_sage_pending");
-  if (welcomePending === "1") {
+  if (welcomePending === "1" && avatarImg && limScreen) {
     const gender = localStorage.getItem("player_avatar");
     const npc = gender === "female" ? "donna saggia" : "uomo saggio";
     avatarImg.src = `/videogioco/${npc}.png`;
