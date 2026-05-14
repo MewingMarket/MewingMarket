@@ -83,6 +83,13 @@ module.exports = {
 
   jslist: {
     ...R("routes/jslist.cjs")
+  },
+
+  /* ============================================================
+     GAME — SALVATAGGIO E CARICAMENTO PARTITA
+  ============================================================ */
+  game: {
+    ...R("routes/game.cjs")
   }
 
 };
