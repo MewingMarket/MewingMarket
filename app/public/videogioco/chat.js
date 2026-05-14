@@ -1,7 +1,7 @@
 /*
   FILE: chat.js
   PATH: /app/public/videogioco/chat.js
-  DESC: Logica chat + LIM moderna: messaggi, avatar, animazioni, video tutorial.
+  DESC: Logica chat + LIM moderna: messaggi, avatar, animazioni, missioni.
 */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -46,7 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* ============================================================
-     CAMBIO AVATAR — Mappa corretta in base ai file reali
+     CAMBIO AVATAR
   ============================================================ */
   function changeAvatar(botName) {
     if (!avatarImg) return;
@@ -67,17 +67,18 @@ document.addEventListener("DOMContentLoaded", () => {
     npcEnter();
   }
 
-  // Esporta per game.js
   window.changeAvatar = changeAvatar;
 
   /* ============================================================
-     RENDER LIM (testo + video) — ottimizzato per LIM moderna
+     RENDER LIM — SUPPORTA MISSIONI
   ============================================================ */
   function renderOnLIM(data) {
     if (!limScreen || !data) return;
     limScreen.innerHTML = "";
 
-    // TESTO
+    /* ============================
+       1) TESTO SEMPLICE
+    ============================ */
     if (data.type === "text" && data.text) {
       const p = document.createElement("p");
       p.innerHTML = clean(data.text);
@@ -86,42 +87,49 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // VIDEO
-    if (data.type === "video" && data.url) {
-      const url = clean(data.url);
+    /* ============================
+       2) MISSIONE (blocks)
+    ============================ */
+    if (data.type === "mission" && Array.isArray(data.blocks)) {
+      data.blocks.forEach(block => {
+        const div = document.createElement("div");
+        div.className = "lim-block";
 
-      // YouTube
-      if (url.includes("youtube.com") || url.includes("youtu.be")) {
-        const iframe = document.createElement("iframe");
-        iframe.src = url;
-        iframe.width = "100%";
-        iframe.height = "100%";
-        iframe.style.border = "0";
-        iframe.allowFullscreen = true;
-        limScreen.appendChild(iframe);
-      } 
-      // MP4 / altri formati
-      else {
-        const video = document.createElement("video");
-        video.src = url;
-        video.controls = true;
-        video.style.width = "100%";
-        video.style.height = "100%";
-        video.style.borderRadius = "10px";
-        limScreen.appendChild(video);
-      }
+        if (block.title) {
+          const h3 = document.createElement("h3");
+          h3.textContent = block.title;
+          div.appendChild(h3);
+        }
+
+        if (block.text) {
+          const p = document.createElement("p");
+          p.innerHTML = clean(block.text);
+          div.appendChild(p);
+        }
+
+        if (block.cta) {
+          const a = document.createElement("a");
+          a.href = block.cta.href;
+          a.textContent = block.cta.label;
+          a.target = "_blank";
+          a.className = "lim-cta";
+          div.appendChild(a);
+        }
+
+        limScreen.appendChild(div);
+      });
 
       npcTalk();
       return;
     }
 
-    // FALLBACK
-    if (data.fallback) {
-      const p = document.createElement("p");
-      p.innerHTML = clean(data.fallback);
-      limScreen.appendChild(p);
-      npcTalk();
-    }
+    /* ============================
+       3) FALLBACK
+    ============================ */
+    const p = document.createElement("p");
+    p.innerHTML = clean(data.fallback || "Nessuna risposta disponibile.");
+    limScreen.appendChild(p);
+    npcTalk();
   }
 
   /* ============================================================
@@ -168,11 +176,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     if (!data) return;
-
-    if (data.success === false) {
-      if (data.text) addMessage(data.text, "bot");
-      return;
-    }
 
     if (data.avatar) changeAvatar(data.avatar);
     renderOnLIM(data);
