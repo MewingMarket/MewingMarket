@@ -12,7 +12,7 @@ function goTo(screenId) {
   const target = document.getElementById(screenId);
   if (target) target.style.display = "block";
 
-  // Forza chatbox visibile
+  // Forza chatbox visibile quando entri in chat
   if (screenId === "screen-chat") {
     setTimeout(() => {
       const chatPanel = document.getElementById("chat-panel");
