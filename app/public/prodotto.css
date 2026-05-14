@@ -171,3 +171,51 @@
     font-size: 2rem;
   }
 }
+/* =========================================================
+   ⭐ PATCH PROMOZIONI — PRODOTTO PREMIUM 2027
+   ========================================================= */
+
+/* BADGE PROMO (sopra l’immagine) */
+.promo-badge {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background: #e74c3c;
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+  z-index: 10;
+}
+
+/* CONTENITORE IMMAGINE CON BADGE */
+.hero-left {
+  position: relative;
+}
+
+/* PREZZO ORIGINALE BARRATO */
+.prezzo-originale {
+  font-size: 1.2rem;
+  color: #999;
+  text-decoration: line-through;
+  margin-right: 10px;
+}
+
+/* PREZZO SCONTATO */
+.prezzo-scontato {
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: #27ae60;
+}
+
+/* COUNTDOWN PROMO */
+.promo-countdown {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #e67e22;
+  margin-top: 8px;
+}
