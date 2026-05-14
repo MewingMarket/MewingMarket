@@ -22,7 +22,8 @@ function match(intentObj) {
     "reminder",
     "reminder_24h",
     "reminder_domani",
-    "reminder_7giorni"
+    "reminder_7giorni",
+    "gestisci_newsletter"
   ].includes(intent);
 }
 
@@ -32,6 +33,7 @@ function match(intentObj) {
 async function run(message, context = {}) {
   log("NEWSLETTER_RUN", {
     uid: context.uid,
+    logged: context.userLogged,
     intent: context.intent?.intent,
     catalogCount: context.catalog?.length || 0
   });
@@ -41,47 +43,111 @@ async function run(message, context = {}) {
   const catalog = context.catalog || [];
 
   /* ============================================================
-     1) ISCRIZIONE (spiegazione, non azione)
+     0) GUEST MODE → SOLO SPIEGAZIONE
   ============================================================= */
-  if (intent === "newsletter_subscribe") {
-    return newsletter.newsletterSubscribe();
-  }
-
-  /* ============================================================
-     2) DISISCRIZIONE (spiegazione, non azione)
-  ============================================================= */
-  if (intent === "newsletter_unsubscribe") {
-    return newsletter.newsletterUnsubscribe();
-  }
-
-  /* ============================================================
-     3) FOLLOW-UP (NPC → retention)
-  ============================================================= */
-  if (intent === "follow_up") {
+  if (!context.userLogged) {
     return {
       avatar: "newsletter",
-      type: "text",
-      text:
-        "Grazie per essere passato! Se vuoi rimanere aggiornato su novità, guide e contenuti utili, posso mostrarti come iscriverti alla newsletter.",
-      actions: [
-        { label: "Come iscrivermi", intent: "newsletter_subscribe" },
-        { label: "Novità", intent: "novita" }
+      type: "mission",
+      blocks: [
+        {
+          title: "📬 Modalità DEMO",
+          text: "Posso mostrarti come funziona la newsletter, ma per iscriverti devi accedere."
+        },
+        {
+          title: "Cosa puoi fare ora",
+          text: "• Vedere come funziona l’iscrizione<br>• Capire cosa riceverai"
+        },
+        {
+          title: "Sblocca tutte le funzioni",
+          text: "Accedi al sito per iscriverti o gestire la tua newsletter."
+        }
       ]
     };
   }
 
   /* ============================================================
-     4) REMINDER (NPC → spiega, non crea)
+     1) ISCRIZIONE (link reale)
+  ============================================================= */
+  if (intent === "newsletter_subscribe") {
+    return {
+      avatar: "newsletter",
+      type: "mission",
+      blocks: [
+        {
+          title: "📬 Iscriviti alla Newsletter",
+          text: "Riceverai guide, aggiornamenti e contenuti esclusivi."
+        },
+        {
+          title: "Procedi all’iscrizione",
+          cta: {
+            label: "Vai alla pagina di iscrizione",
+            href: "/iscrizione.html"
+          }
+        }
+      ]
+    };
+  }
+
+  /* ============================================================
+     2) DISISCRIZIONE (link reale)
+  ============================================================= */
+  if (intent === "newsletter_unsubscribe") {
+    return {
+      avatar: "newsletter",
+      type: "mission",
+      blocks: [
+        {
+          title: "❌ Disiscriviti dalla Newsletter",
+          text: "Se vuoi interrompere le comunicazioni, puoi farlo qui."
+        },
+        {
+          title: "Procedi alla disiscrizione",
+          cta: {
+            label: "Vai alla pagina di disiscrizione",
+            href: "/disiscriviti.html"
+          }
+        }
+      ]
+    };
+  }
+
+  /* ============================================================
+     3) FOLLOW-UP (retention)
+  ============================================================= */
+  if (intent === "follow_up") {
+    return {
+      avatar: "newsletter",
+      type: "mission",
+      blocks: [
+        {
+          title: "Grazie per essere passato!",
+          text: "Vuoi rimanere aggiornato su novità, guide e contenuti utili?"
+        },
+        {
+          title: "Cosa vuoi fare?",
+          text: "• Iscriverti<br>• Vedere le novità"
+        }
+      ]
+    };
+  }
+
+  /* ============================================================
+     4) REMINDER (solo spiegazione)
   ============================================================= */
   if (intent === "reminder") {
     return {
       avatar: "newsletter",
-      type: "quick_replies",
-      text: "Vuoi sapere come impostare un promemoria?",
-      options: [
-        { label: "Tra 24 ore", intent: "reminder_24h" },
-        { label: "Domani mattina", intent: "reminder_domani" },
-        { label: "Tra una settimana", intent: "reminder_7giorni" }
+      type: "mission",
+      blocks: [
+        {
+          title: "⏰ Impostare un promemoria",
+          text: "Scegli quando vuoi essere ricordato."
+        },
+        {
+          title: "Opzioni",
+          text: "• Tra 24 ore<br>• Domani mattina<br>• Tra una settimana"
+        }
       ]
     };
   }
@@ -90,7 +156,7 @@ async function run(message, context = {}) {
     return {
       avatar: "newsletter",
       type: "text",
-      text: "Per impostare un promemoria tra 24 ore puoi usare il calendario del tuo dispositivo."
+      text: "Per impostare un promemoria tra 24 ore usa il calendario del tuo dispositivo."
     };
   }
 
@@ -98,7 +164,7 @@ async function run(message, context = {}) {
     return {
       avatar: "newsletter",
       type: "text",
-      text: "Per impostare un promemoria domani mattina usa l’app Promemoria o Calendario."
+      text: "Per un promemoria domani mattina usa l’app Promemoria o Calendario."
     };
   }
 
@@ -106,12 +172,12 @@ async function run(message, context = {}) {
     return {
       avatar: "newsletter",
       type: "text",
-      text: "Per un promemoria tra una settimana puoi usare qualsiasi app di task o calendario."
+      text: "Per un promemoria tra una settimana puoi usare qualsiasi app di task."
     };
   }
 
   /* ============================================================
-     5) NOVITÀ (mock locale, niente DB)
+     5) NOVITÀ (solo 3 prodotti)
   ============================================================= */
   if (intent === "novita") {
     const products = catalog.slice(0, 3);
@@ -126,18 +192,21 @@ async function run(message, context = {}) {
 
     return {
       avatar: "newsletter",
-      type: "carousel",
-      title: "Ultime novità",
-      items: products.map(p => ({
-        id: p.id,
-        title: p.titolo_breve,
-        description: p.descrizione_breve,
-        price_cent: p.prezzo_cent,
-        image: p.immagine_url
-      })),
-      actions: [
-        { label: "Mostra tutto", intent: "catalogo" },
-        { label: "Come iscrivermi", intent: "newsletter_subscribe" }
+      type: "mission",
+      blocks: [
+        {
+          title: "🆕 Ultime novità",
+          text: products
+            .map(p => `• <b>${p.titolo_breve}</b>: ${p.descrizione_breve}`)
+            .join("<br>")
+        },
+        {
+          title: "Vuoi vedere tutto il catalogo?",
+          cta: {
+            label: "Apri catalogo",
+            href: "/catalogo"
+          }
+        }
       ]
     };
   }
@@ -145,7 +214,16 @@ async function run(message, context = {}) {
   /* ============================================================
      6) FALLBACK
   ============================================================= */
-  return newsletter.newsletterGeneric();
+  return {
+    avatar: "newsletter",
+    type: "mission",
+    blocks: [
+      {
+        title: "📬 Gestione Newsletter",
+        text: "Vuoi iscriverti, disiscriverti o vedere le novità?"
+      }
+    ]
+  };
 }
 
 /* ============================================================
