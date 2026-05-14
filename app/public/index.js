@@ -2,6 +2,7 @@
    HOME PREMIUM — UNIVERSAL JSON PATCH 2027.970
    PATCH 2050 — AUTORUN + DEBUG ESTESO
    PATCH 2051 — ANTI-LOOP (LOCK ESECUZIONE)
+   PATCH 2052 — PROMO CATALOGO PERSONALIZZATO + COUNTDOWN
 ========================================================= */
 
 console.log("📌 [HOME] File caricato nel DOM");
@@ -102,7 +103,114 @@ function initPage() {
 }
 
 /* =========================================================
-   CODICE ORIGINALE INCAPSULATO
+   ⭐ PATCH PROMO — CATALOGO PERSONALIZZATO
+========================================================= */
+async function getCatalogoPersonalizzatoHome() {
+  try {
+    const res = await fetch("/api/catalogo/personalizzato", { method: "GET" });
+    const json = await res.json();
+    if (!json.success) return null;
+
+    const prodotti = json.prodotti || [];
+    if (prodotti.length && prodotti.some(p => p.promo_attiva)) {
+      console.log("🎉 [HOME] Promo attiva → uso catalogo personalizzato");
+      return prodotti;
+    }
+
+    return null;
+  } catch (err) {
+    console.warn("⚠️ [HOME] Errore catalogo personalizzato:", err);
+    return null;
+  }
+}
+
+/* =========================================================
+   ⭐ PATCH PROMO — CARD HTML TOP 3
+========================================================= */
+function cardHTMLHome(p) {
+  const img = p.immagine_url || p.immagine || "/placeholder.webp";
+  const titolo = p.titolo || "Prodotto";
+  const desc = p.descrizione_breve || "";
+  const id = p.id;
+
+  const prezzoBase = (Number(p.prezzo_cent || 0) / 100).toFixed(2);
+  const prezzoPromo = p.promo_attiva
+    ? (Number(p.prezzo_scontato_cent || 0) / 100).toFixed(2)
+    : null;
+
+  const badge = p.promo_attiva
+    ? `<div class="promo-badge">${p.promo_badge || "Promo"}</div>`
+    : "";
+
+  const countdown = p.promo_scadenza
+    ? `<p class="promo-countdown" data-scadenza="${p.promo_scadenza}"></p>`
+    : "";
+
+  const prezzoHTML = p.promo_attiva
+    ? `
+      <p class="price">
+        <span class="prezzo-originale">€${prezzoBase}</span>
+        <span class="prezzo-scontato">€${prezzoPromo}</span>
+      </p>
+    `
+    : `<p class="price">€${prezzoBase}</p>`;
+
+  const vId = p.youtube_video_id || p.video_id;
+  const linkYouTube = vId
+    ? `<a href="https://www.youtube.com/watch?v=${vId}" target="_blank" class="yt-link-home">📺 Guarda video su YouTube</a>`
+    : "";
+
+  return `
+    <article class="product-card">
+      <div class="img-container">
+        <img src="${img}" alt="${titolo}" loading="lazy">
+        ${badge}
+      </div>
+      <div class="card-body">
+        <h3>${titolo}</h3>
+        <p class="desc-breve">${desc}</p>
+        ${linkYouTube}
+        ${prezzoHTML}
+        ${countdown}
+        <div class="card-buttons">
+          <a href="prodotto.html?id=${id}" class="btn-dettagli" style="width: 100%; text-align: center;">Scopri di più</a>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+/* =========================================================
+   ⭐ PATCH PROMO — COUNTDOWN HOME
+========================================================= */
+function initCountdownHome() {
+  const els = document.querySelectorAll(".promo-countdown");
+  if (!els.length) return;
+
+  function update() {
+    const now = new Date();
+    els.forEach(el => {
+      const end = new Date(el.dataset.scadenza);
+      const diff = end - now;
+
+      if (diff <= 0) {
+        el.textContent = "Promo scaduta";
+        return;
+      }
+
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+
+      el.textContent = `Termina tra ${h}h ${m}m`;
+    });
+  }
+
+  update();
+  setInterval(update, 60000);
+}
+
+/* =========================================================
+   CODICE ORIGINALE INCAPSULATO (PATCHATO)
 ========================================================= */
 function avviaHomepage() {
   console.log("🔥 home-premium.js READY — Avvio sezioni homepage");
@@ -119,7 +227,11 @@ function avviaHomepage() {
       return;
     }
 
-    const data = await apiHome("/api/prodotti/getProdotti", { method: "GET" });
+    // Prima provo catalogo personalizzato
+    let data = await getCatalogoPersonalizzatoHome();
+    if (!data) {
+      data = await apiHome("/api/prodotti/getProdotti", { method: "GET" });
+    }
 
     console.log("📥 [HOME] Risposta prodotti:", data);
 
@@ -140,45 +252,27 @@ function avviaHomepage() {
     grid.innerHTML = "";
 
     products.slice(0, 3).forEach((p) => {
-      const img = p.immagine_url || p.immagine || "/placeholder.webp";
-      const titolo = p.titolo || "Prodotto";
-      const descrizione = p.descrizione_breve || "";
-      const prezzo = (Number(p.prezzo_cent || 0) / 100).toFixed(2);
-      const id = p.id;
-
-      const vId = p.youtube_video_id || p.video_id;
-      const linkYouTube = vId
-        ? `<a href="https://www.youtube.com/watch?v=${vId}" target="_blank" class="yt-link-home">📺 Guarda video su YouTube</a>`
-        : "";
-
-      const card = document.createElement("article");
-      card.className = "product-card";
-      card.innerHTML = `
-        <div class="img-container">
-          <img src="${img}" alt="${titolo}" loading="lazy">
-        </div>
-        <div class="card-body">
-          <h3>${titolo}</h3>
-          <p class="desc-breve">${descrizione}</p>
-          ${linkYouTube}
-          <p class="price">€${prezzo}</p>
-
-          <div class="card-buttons">
-            <a href="prodotto.html?id=${id}" class="btn-dettagli" style="width: 100%; text-align: center;">Scopri di più</a>
-          </div>
-        </div>
-      `;
+      const wrapper = document.createElement("div");
+      wrapper.innerHTML = cardHTMLHome(p);
+      // cardHTMLHome già restituisce <article class="product-card">...</article>
+      const card = wrapper.firstElementChild;
       grid.appendChild(card);
     });
+
+    initCountdownHome();
   })();
 
   /* ------------------------------
-     2) SLIDER HERO (Immagini dinamiche da SQL)
+     2) SLIDER HERO (Immagini dinamiche)
   ------------------------------ */
   (async () => {
     console.log("🖼️ [HOME] Carico slider hero…");
 
-    const dataHero = await apiHome("/api/prodotti/getProdotti", { method: "GET" });
+    // Anche qui: prima provo catalogo personalizzato
+    let dataHero = await getCatalogoPersonalizzatoHome();
+    if (!dataHero) {
+      dataHero = await apiHome("/api/prodotti/getProdotti", { method: "GET" });
+    }
 
     if (!dataHero) {
       console.warn("⚠️ [HOME] Nessun dato per slider");
