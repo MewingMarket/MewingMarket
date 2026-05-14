@@ -1,7 +1,17 @@
 /**
- * Intent Engine — VERSIONE VIDEOGIOCO 2027 (PATCH COMPLETA)
+ * FILE: intent-engine.cjs
+ * PATH: /app/modules/bot/intent-engine.cjs
+ * VERSIONE: VIDEOGIOCO 2027 — PATCH COMPLETA
+ *
  * Locale, deterministico, zero GPT.
- * Restituisce: intent + avatar + productId + rawProduct + keywords + category
+ * Restituisce:
+ *  - intent
+ *  - avatar
+ *  - productId
+ *  - rawProduct
+ *  - keywords
+ *  - category
+ *  - tutorial (guideKey + avatar + gender) se serve generare video
  */
 
 const path = require("path");
@@ -33,7 +43,18 @@ const INTENTS = {
   trattativa: ["sconto", "troppo caro", "caro", "abbassa", "trattiamo"],
   obiezione: ["non so", "non sono sicuro", "dubbi"],
   motivazione: ["motivami", "ispirami", "hype"],
-  guida: ["come si fa", "come funziona", "istruzioni", "tutorial"],
+
+  /* PATCH 2027 — guida avanzata */
+  guida: [
+    "come si fa",
+    "come funziona",
+    "istruzioni",
+    "tutorial",
+    "spiegami come",
+    "mostrami come",
+    "guida"
+  ],
+
   newsletter: ["newsletter", "email", "aggiornami"],
   download: ["download", "scaricare", "scarica"],
   ordini: ["ordini", "acquisti", "storico"],
@@ -61,13 +82,17 @@ const AVATAR_MAP = {
   obiezione: "vendor",
   video: "influencer",
   motivazione: "influencer",
+
+  /* PATCH 2027 — guida → professore */
   guida: "professor",
+
   download: "professor",
   ordini: "professor",
   privacy: "professor",
   termini: "professor",
   cookie: "professor",
   supporto: "professor",
+
   newsletter: "newsletter",
   generico: "assistant"
 };
@@ -108,20 +133,41 @@ async function detectProduct(text) {
 }
 
 /* ============================================================
-   5) INTENT ENGINE COMPLETO
+   5) PATCH 2027 — RICONOSCIMENTO GUIDA → guideKey
 ============================================================ */
-async function generateIntent(text) {
+function detectGuideKey(text) {
+  const t = cleanSearchQuery(text);
+
+  if (t.includes("scaricare") && t.includes("prodotto"))
+    return "come-scaricare-un-prodotto";
+
+  if (t.includes("newsletter"))
+    return "come-funziona-la-newsletter";
+
+  if (t.includes("ordini") || t.includes("acquisti"))
+    return "come-vedere-i-miei-ordini";
+
+  return null;
+}
+
+/* ============================================================
+   6) INTENT ENGINE COMPLETO (PATCHATO)
+============================================================ */
+async function generateIntent(text, options = {}) {
   const localIntent = detectIntent(text);
   const product = await detectProduct(text);
 
   const keywords = cleanSearchQuery(text).split(" ").filter(w => w.length > 2);
   const category = product?.categoria || null;
 
-  return {
+  const botAvatar = options.botAvatar || AVATAR_MAP[localIntent] || "assistant";
+  const gender = options.gender === "female" ? "female" : "male";
+
+  const base = {
     raw: text,
     intent: localIntent,
     subintent: null,
-    avatar: AVATAR_MAP[localIntent] || "assistant",
+    avatar: botAvatar,
     productId: product?.id || null,
     rawProduct: product || null,
     category,
@@ -129,6 +175,23 @@ async function generateIntent(text) {
     confidence: 1,
     source: "local"
   };
+
+  /* =====================================================
+     PATCH 2027 — se è una guida → attiva tutorial video
+  ====================================================== */
+  if (localIntent === "guida") {
+    const guideKey = detectGuideKey(text);
+
+    if (guideKey) {
+      base.tutorial = {
+        guideKey,
+        botAvatar,
+        gender
+      };
+    }
+  }
+
+  return base;
 }
 
 /* ============================================================
@@ -137,5 +200,6 @@ async function generateIntent(text) {
 module.exports = {
   generateIntent,
   detectIntent,
-  detectProduct
+  detectProduct,
+  detectGuideKey
 };
