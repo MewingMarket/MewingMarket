@@ -23,6 +23,9 @@ const { getCachedTutorial, setCachedTutorial } = require(path.join(process.cwd()
 // GA4
 const { trackGA4 } = require(path.join(process.cwd(), "app/server/services/ga4.cjs"));
 
+// XP + MISSION ENGINE
+const missionEngine = require(path.join(process.cwd(), "app/modules/game/mission-engine.cjs"));
+
 /* =========================================================
    GUIDES (stub — poi le prendi dal DB o file)
 ========================================================= */
@@ -53,6 +56,13 @@ function normalizeTextReply(finalReply, fallbackAvatar) {
     return {
       ...base,
       url: safe.url || ""
+    };
+  }
+
+  if (type === "mission") {
+    return {
+      ...base,
+      blocks: Array.isArray(safe.blocks) ? safe.blocks : []
     };
   }
 
@@ -98,6 +108,7 @@ async function chat(req) {
     });
 
     const resolvedAvatar = intentData?.avatar || botAvatar;
+    const intentName = intentData?.intent || "unknown";
 
     /* =====================================================
        2) SE NON È GUIDA / TUTORIAL → risposta normale del bot
@@ -108,14 +119,74 @@ async function chat(req) {
     if (!isGuide && !isTutorialProdotto) {
       const finalReply = await handleConversation(req);
 
+      // XP + Missioni
+      let missionResult = null;
+      try {
+        missionResult = await missionEngine.processEvent({
+          uid,
+          intent: intentName,
+          botAvatar
+        });
+      } catch (e) {
+        console.error("❌ Errore missionEngine.processEvent:", e);
+      }
+
+      // Enrichment LIM con XP / livello / missioni
+      if (missionResult && (missionResult.xpEarned > 0 ||
+                            missionResult.levelUp ||
+                            (missionResult.completedMissions && missionResult.completedMissions.length))) {
+
+        // Se il bot non ha già type mission, lo trasformiamo in mission mantenendo il contenuto
+        if (finalReply.type !== "mission") {
+          const originalText = finalReply.text || finalReply.reply || "";
+          finalReply.type = "mission";
+          finalReply.blocks = [];
+
+          if (originalText) {
+            finalReply.blocks.push({
+              title: "",
+              text: originalText
+            });
+          }
+        } else if (!Array.isArray(finalReply.blocks)) {
+          finalReply.blocks = [];
+        }
+
+        // XP guadagnati
+        if (missionResult.xpEarned > 0) {
+          finalReply.blocks.unshift({
+            title: "✨ XP guadagnati",
+            text: `+${missionResult.xpEarned} XP`
+          });
+        }
+
+        // Level up
+        if (missionResult.levelUp) {
+          finalReply.blocks.unshift({
+            title: "🎉 Livello aumentato!",
+            text: `Sei ora livello ${missionResult.levelUp.newLevel}`
+          });
+        }
+
+        // Missioni completate
+        if (missionResult.completedMissions && missionResult.completedMissions.length) {
+          missionResult.completedMissions.forEach(m => {
+            finalReply.blocks.unshift({
+              title: "🏆 Missione completata!",
+              text: m.title || m.mission_key || "Missione completata"
+            });
+          });
+        }
+      }
+
       trackGA4("chat_message", {
         uid,
         message,
-        intent: intentData?.intent || "unknown"
+        intent: intentName
       });
 
       if (typeof global.logBot === "function") {
-        global.logBot("chat_response", { uid, intent: intentData?.intent || "unknown" });
+        global.logBot("chat_response", { uid, intent: intentName });
       }
 
       return normalizeTextReply(finalReply, resolvedAvatar);
@@ -175,6 +246,61 @@ async function chat(req) {
     ====================================================== */
     if (isTutorialProdotto) {
       const finalReply = await handleConversation(req);
+
+      // XP + Missioni anche per tutorial_prodotto
+      let missionResult = null;
+      try {
+        missionResult = await missionEngine.processEvent({
+          uid,
+          intent: "tutorial_prodotto",
+          botAvatar
+        });
+      } catch (e) {
+        console.error("❌ Errore missionEngine.processEvent (tutorial_prodotto):", e);
+      }
+
+      if (missionResult && (missionResult.xpEarned > 0 ||
+                            missionResult.levelUp ||
+                            (missionResult.completedMissions && missionResult.completedMissions.length))) {
+
+        if (finalReply.type !== "mission") {
+          const originalText = finalReply.text || finalReply.reply || "";
+          finalReply.type = "mission";
+          finalReply.blocks = [];
+
+          if (originalText) {
+            finalReply.blocks.push({
+              title: "",
+              text: originalText
+            });
+          }
+        } else if (!Array.isArray(finalReply.blocks)) {
+          finalReply.blocks = [];
+        }
+
+        if (missionResult.xpEarned > 0) {
+          finalReply.blocks.unshift({
+            title: "✨ XP guadagnati",
+            text: `+${missionResult.xpEarned} XP`
+          });
+        }
+
+        if (missionResult.levelUp) {
+          finalReply.blocks.unshift({
+            title: "🎉 Livello aumentato!",
+            text: `Sei ora livello ${missionResult.levelUp.newLevel}`
+          });
+        }
+
+        if (missionResult.completedMissions && missionResult.completedMissions.length) {
+          missionResult.completedMissions.forEach(m => {
+            finalReply.blocks.unshift({
+              title: "🏆 Missione completata!",
+              text: m.title || m.mission_key || "Missione completata"
+            });
+          });
+        }
+      }
 
       trackGA4("chat_message", {
         uid,
