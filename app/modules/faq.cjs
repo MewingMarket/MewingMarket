@@ -117,10 +117,46 @@ function toFrame(item, avatar = "assistant") {
   };
 }
 
+/* =========================================================
+   FUNZIONI EXTRA AGGIUNTE (2027)
+   — NON toccano nulla di esistente
+========================================================= */
+
+// 1) Recupera FAQ per ID
+function getById(id) {
+  return FAQ_ITEMS.find(f => f.id === id) || null;
+}
+
+// 2) Cerca FAQ per keyword singola
+function searchKeywords(keyword = "") {
+  const k = cleanSearchQuery(keyword).toLowerCase();
+  if (!k) return [];
+
+  return FAQ_ITEMS.filter(item =>
+    (item.keywords || []).some(kw => kw.toLowerCase().includes(k))
+  );
+}
+
+// 3) Testo pulito per Tutorial AI (script video)
+function getTextForTutorial(id) {
+  const item = getById(id);
+  if (!item) return null;
+
+  return `${item.question}. ${item.answer}`;
+}
+
+/* =========================================================
+   EXPORT COMPLETO
+========================================================= */
 module.exports = {
   search,
   render,
   all: () => FAQ_ITEMS,
   toJSON,
-  toFrame
+  toFrame,
+
+  // Funzioni extra
+  getById,
+  searchKeywords,
+  getTextForTutorial
 };
