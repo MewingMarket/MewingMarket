@@ -67,34 +67,31 @@ function enrichResponse(ui, context = {}) {
 }
 
 /* ============================================================
-   SIDEKICK — COMPRESENZA NPC
+   SIDEKICK — COMPRESENZA NPC (Router 2027)
 ============================================================ */
 async function maybeAddSidekick(mainBot, mainUI, message, context) {
   const frames = [normalizeResponse(mainUI)];
 
-  const vendorBot = vendor;
-  const influencerBot = influencer;
+  const sidekick = await router.runSidekick(mainBot.name, message, context);
+  if (sidekick) frames.push(normalizeResponse(sidekick));
 
-  if (mainBot.name === "professor" && context.intent.rawProduct) {
-    if (vendorBot?.sidekick) {
-      const s = await vendorBot.sidekick(message, context);
-      if (s) frames.push(normalizeResponse(s));
-    }
-  }
+  return frames;
+}
 
-  if (mainBot.name === "vendor") {
-    if (influencerBot?.sidekick) {
-      const s = await influencerBot.sidekick(message, context);
-      if (s) frames.push(normalizeResponse(s));
-    }
-  }
+/* ============================================================
+   HANDOFF — quando un bot passa la palla a un altro
+============================================================ */
+async function maybeHandoff(frames, message, context) {
+  const last = frames[frames.length - 1];
+  const handoff = router.detectHandoff(last);
 
-  if (mainBot.name === "newsletter") {
-    if (influencerBot?.sidekick) {
-      const s = await influencerBot.sidekick(message, context);
-      if (s) frames.push(normalizeResponse(s));
-    }
-  }
+  if (!handoff) return frames;
+
+  const nextBot = router.getBotByName(handoff);
+  if (!nextBot) return frames;
+
+  const ui = await nextBot.run(message, context);
+  frames.push(normalizeResponse(ui));
 
   return frames;
 }
@@ -105,6 +102,9 @@ async function maybeAddSidekick(mainBot, mainUI, message, context) {
 async function runGame(message, extraContext = {}) {
   const uid = extraContext.uid;
 
+  /* ------------------------------
+     1) INTENT ENGINE (locale + AI)
+  ------------------------------ */
   const localIntent = intentEngine.detect(message);
   const aiIntent = await ai.generateIntent(message, { uid });
 
@@ -114,17 +114,23 @@ async function runGame(message, extraContext = {}) {
     raw: message
   };
 
+  /* ------------------------------
+     2) CONTEXT COMPLETO
+  ------------------------------ */
   const context = {
     ...extraContext,
     intent: intentObj,
     memory: memory.get(uid),
-    catalogo,
+    catalog: await catalogo.getAll(),
     faq,
     guides
   };
 
   log("GAME_ENGINE_INTENT", intentObj);
 
+  /* ------------------------------
+     3) ROUTER → BOT CORRETTO
+  ------------------------------ */
   const botName = router.pickAvatar(intentObj);
   const bot = {
     vendor,
@@ -136,12 +142,25 @@ async function runGame(message, extraContext = {}) {
 
   log("GAME_ENGINE_BOT", { bot: bot?.name });
 
+  /* ------------------------------
+     4) RISPOSTA PRINCIPALE NPC
+  ------------------------------ */
   const ui = await bot.run(message, context);
-
   const enriched = enrichResponse(normalizeResponse(ui), context);
 
-  const frames = await maybeAddSidekick(bot, enriched, message, context);
+  /* ------------------------------
+     5) COMPRESENZA (sidekick)
+  ------------------------------ */
+  let frames = await maybeAddSidekick(bot, enriched, message, context);
 
+  /* ------------------------------
+     6) HANDOFF (bot → altro bot)
+  ------------------------------ */
+  frames = await maybeHandoff(frames, message, context);
+
+  /* ------------------------------
+     7) OUTPUT FINALE
+  ------------------------------ */
   return frames;
 }
 
