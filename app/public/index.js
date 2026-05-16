@@ -8,15 +8,15 @@
 console.log("📌 [HOME] File caricato nel DOM");
 
 /* =========================================================
-   🔒 PATCH ANTI-LOOP 2051
-   Impedisce che home-premium.js venga eseguito più volte
-   quando loaderuniversale/dynamic-loader ricaricano il DOM.
+   🔒 PATCH ANTI-LOOP 2051 (FIX: incapsulato in IIFE)
 ========================================================= */
-if (window.__HOME_PREMIUM_RUNNING__) {
-  console.warn("🏁 [HOME] già in esecuzione → skip");
-  return;
-}
-window.__HOME_PREMIUM_RUNNING__ = true;
+(function() {
+  if (window.__HOME_PREMIUM_RUNNING__) {
+    console.warn("🏁 [HOME] già in esecuzione → skip");
+    return;
+  }
+  window.__HOME_PREMIUM_RUNNING__ = true;
+})();
 
 /* =========================================================
    WRAPPER UNIVERSALE (universal-json)
@@ -227,7 +227,6 @@ function avviaHomepage() {
       return;
     }
 
-    // Prima provo catalogo personalizzato
     let data = await getCatalogoPersonalizzatoHome();
     if (!data) {
       data = await apiHome("/api/prodotti/getProdotti", { method: "GET" });
@@ -254,7 +253,6 @@ function avviaHomepage() {
     products.slice(0, 3).forEach((p) => {
       const wrapper = document.createElement("div");
       wrapper.innerHTML = cardHTMLHome(p);
-      // cardHTMLHome già restituisce <article class="product-card">...</article>
       const card = wrapper.firstElementChild;
       grid.appendChild(card);
     });
@@ -268,7 +266,6 @@ function avviaHomepage() {
   (async () => {
     console.log("🖼️ [HOME] Carico slider hero…");
 
-    // Anche qui: prima provo catalogo personalizzato
     let dataHero = await getCatalogoPersonalizzatoHome();
     if (!dataHero) {
       dataHero = await apiHome("/api/prodotti/getProdotti", { method: "GET" });
