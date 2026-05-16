@@ -18,6 +18,18 @@ const sql = require(path.join(process.cwd(), "app/modules/catalogo-sql.cjs"));
 function normalizeProduct(p) {
   if (!p) return null;
 
+  // Categoria: JSON → array
+  let categoria = [];
+  try {
+    if (typeof p.categoria === "string") {
+      categoria = JSON.parse(p.categoria);
+    } else if (Array.isArray(p.categoria)) {
+      categoria = p.categoria;
+    }
+  } catch {
+    categoria = [];
+  }
+
   return {
     id: Number(p.id),
     titolo: p.titolo || "",
@@ -26,16 +38,18 @@ function normalizeProduct(p) {
     descrizione_lunga: p.descrizione_lunga || "",
     prezzo_cent: Number(p.prezzo_cent) || 0,
     immagine_url: p.immagine_url || "",
-    categoria: Array.isArray(p.categoria)
-      ? p.categoria
-      : typeof p.categoria === "string"
-      ? p.categoria.split(",").map(c => c.trim())
-      : [],
+    categoria,
     youtube_url: p.youtube_url || "",
     youtube_description: p.youtube_description || "",
     file_consegna_url: p.file_consegna_url || "",
     config_json: p.config_json || null,
-    catalog_video_block: p.catalog_video_block || ""
+    catalog_video_block: p.catalog_video_block || "",
+
+    // Promo 2027
+    promo_attiva: Boolean(p.promo_attiva),
+    prezzo_scontato_cent: Number(p.prezzo_scontato_cent) || null,
+    promo_badge: p.promo_badge || null,
+    promo_scadenza: p.promo_scadenza || null
   };
 }
 
@@ -45,8 +59,9 @@ function normalizeProduct(p) {
 let CACHE = [];
 let LAST_FETCH = 0;
 
-function refreshCache() {
-  CACHE = sql.getAllProducts().map(normalizeProduct);
+async function refreshCache() {
+  const rows = await sql.getAllProducts();
+  CACHE = rows.map(normalizeProduct);
   LAST_FETCH = Date.now();
 }
 
@@ -54,7 +69,7 @@ async function getCatalog() {
   const now = Date.now();
 
   if (now - LAST_FETCH > 30000 || CACHE.length === 0) {
-    refreshCache();
+    await refreshCache();
   }
 
   return CACHE;
@@ -64,7 +79,7 @@ async function getCatalog() {
    RICERCA PER ID
 ============================================================ */
 async function findProductById(id) {
-  const p = sql.getProductById(Number(id));
+  const p = await sql.getProductById(Number(id));
   return normalizeProduct(p);
 }
 
@@ -108,7 +123,7 @@ async function listAllProducts() {
 }
 
 /* ============================================================
-   UI JSON PER I BOT
+   UI JSON PER I BOT (2027)
 ============================================================ */
 function productCardJSON(product) {
   if (!product) return null;
@@ -120,7 +135,10 @@ function productCardJSON(product) {
       title: product.titolo,
       description: product.descrizione_breve,
       price_cent: product.prezzo_cent,
-      image: product.immagine_url
+      image: product.immagine_url,
+      promo_attiva: product.promo_attiva,
+      prezzo_scontato_cent: product.prezzo_scontato_cent,
+      promo_badge: product.promo_badge
     }
   };
 }
@@ -136,7 +154,10 @@ function productDetailsJSON(product) {
       description: product.descrizione_lunga,
       price_cent: product.prezzo_cent,
       image: product.immagine_url,
-      youtube_url: product.youtube_url
+      youtube_url: product.youtube_url,
+      promo_attiva: product.promo_attiva,
+      prezzo_scontato_cent: product.prezzo_scontato_cent,
+      promo_badge: product.promo_badge
     }
   };
 }
@@ -145,7 +166,7 @@ function productImageJSON(product) {
   if (!product) return null;
 
   return {
-    type: "image",
+    type: "image_card",
     url: product.immagine_url,
     alt: product.titolo_breve
   };
