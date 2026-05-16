@@ -11,7 +11,8 @@
  *  - rawProduct
  *  - keywords
  *  - category
- *  - tutorial (guideKey + avatar + gender) se serve generare video
+ *  - tutorial (guideKey + avatar + gender)
+ *  - botOwner (per Router 2027)
  */
 
 const path = require("path");
@@ -32,16 +33,20 @@ const {
 const INTENTS = {
   saluto: ["ciao", "hey", "buongiorno", "buonasera", "salve"],
   menu: ["menu", "aiuto", "help"],
+
   catalogo: ["catalogo", "prodotti", "lista", "novita", "novità"],
+
   prodotto: ["prodotto", "mostrami", "voglio", "cerca"],
   prezzo: ["prezzo", "quanto costa", "costa"],
   recensioni: ["recensioni", "recensione", "opinioni"],
   correlati: ["correlati", "simili", "alternativa"],
-  video: ["video", "youtube", "tutorial"],
   descrizione: ["descrizione", "dettagli", "spiega"],
   immagine: ["immagine", "foto", "anteprima"],
+
   trattativa: ["sconto", "troppo caro", "caro", "abbassa", "trattiamo"],
   obiezione: ["non so", "non sono sicuro", "dubbi"],
+
+  video: ["video", "youtube", "tutorial"],
   motivazione: ["motivami", "ispirami", "hype"],
 
   /* PATCH 2027 — guida avanzata */
@@ -62,6 +67,17 @@ const INTENTS = {
   termini: ["termini", "condizioni"],
   cookie: ["cookie"],
   supporto: ["supporto", "assistenza"],
+
+  /* PATCH 2027 — missioni */
+  missione_completata: ["missione completata", "ho finito", "completato"],
+
+  /* PATCH 2027 — tutorial prodotto */
+  tutorial_prodotto: ["tutorial prodotto", "video prodotto", "istruzioni prodotto"],
+
+  /* PATCH 2027 — newsletter avanzata */
+  newsletter_subscribe_confirm: ["iscrivimi", "voglio iscrivermi", "ok iscrizione"],
+  newsletter_unsubscribe_confirm: ["disiscrivimi", "voglio disiscrivermi"],
+
   generico: []
 };
 
@@ -71,6 +87,7 @@ const INTENTS = {
 const AVATAR_MAP = {
   saluto: "assistant",
   menu: "assistant",
+
   catalogo: "vendor",
   prodotto: "vendor",
   prezzo: "vendor",
@@ -80,11 +97,12 @@ const AVATAR_MAP = {
   immagine: "vendor",
   trattativa: "vendor",
   obiezione: "vendor",
+
   video: "influencer",
   motivazione: "influencer",
 
-  /* PATCH 2027 — guida → professore */
   guida: "professor",
+  tutorial_prodotto: "professor",
 
   download: "professor",
   ordini: "professor",
@@ -94,6 +112,11 @@ const AVATAR_MAP = {
   supporto: "professor",
 
   newsletter: "newsletter",
+  newsletter_subscribe_confirm: "newsletter",
+  newsletter_unsubscribe_confirm: "newsletter",
+
+  missione_completata: "vendor",
+
   generico: "assistant"
 };
 
@@ -160,7 +183,7 @@ async function generateIntent(text, options = {}) {
   const keywords = cleanSearchQuery(text).split(" ").filter(w => w.length > 2);
   const category = product?.categoria || null;
 
-  const botAvatar = options.botAvatar || AVATAR_MAP[localIntent] || "assistant";
+  const botAvatar = AVATAR_MAP[localIntent] || "assistant";
   const gender = options.gender === "female" ? "female" : "male";
 
   const base = {
@@ -168,6 +191,7 @@ async function generateIntent(text, options = {}) {
     intent: localIntent,
     subintent: null,
     avatar: botAvatar,
+    botOwner: botAvatar, // PATCH 2027 → Router usa questo
     productId: product?.id || null,
     rawProduct: product || null,
     category,
@@ -179,7 +203,7 @@ async function generateIntent(text, options = {}) {
   /* =====================================================
      PATCH 2027 — se è una guida → attiva tutorial video
   ====================================================== */
-  if (localIntent === "guida") {
+  if (localIntent === "guida" || localIntent === "tutorial_prodotto") {
     const guideKey = detectGuideKey(text);
 
     if (guideKey) {
