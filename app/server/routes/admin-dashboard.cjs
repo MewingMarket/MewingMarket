@@ -2,6 +2,7 @@
    FILE: app/server/routes/admin-dashboard.cjs
    MODALITÀ: Java‑mode (funzioni, no Express)
    DESCRIZIONE: Dashboard Admin — Vendite + Ordini + KPI
+   PATCH 2027.1 — Auto‑Ottimizzazione Catalogo
 ========================================================= */
 
 const path = require("path");
@@ -9,6 +10,11 @@ const R = (p) => require(path.join(process.cwd(), "app/server", p));
 
 const db = R("db/database.cjs");
 const categorieRimborso = R("modules/rimborso-categorie.cjs");
+
+/* =========================================================
+   🔥 NUOVO: require pipeline auto‑ottimizzazione
+========================================================= */
+const autoOpt = R("services/catalogo-auto-opt.cjs");
 
 /* =========================================================
    FUNZIONE: adminDashboard
@@ -29,6 +35,9 @@ async function adminDashboard(req) {
       db.prepare(`DELETE FROM sqlite_sequence WHERE name='vendite'`).run();
     }
 
+    /* =========================================================
+       KPI VENDITE
+    ========================================================== */
     const venditeKPI = db.prepare(`
       SELECT 
         COUNT(*) AS venditeTotali,
@@ -53,6 +62,21 @@ async function adminDashboard(req) {
       LIMIT 10
     `).all();
 
+    /* =========================================================
+       🔥 NUOVO: vendite per prodotto (per pipeline)
+    ========================================================== */
+    const venditePerProdotto = db.prepare(`
+      SELECT prodotto_id AS id, COUNT(*) AS vendite
+      FROM vendite
+      GROUP BY prodotto_id
+    `).all();
+
+    const venditeMap = {};
+    venditePerProdotto.forEach(v => venditeMap[v.id] = v.vendite);
+
+    /* =========================================================
+       UTM
+    ========================================================== */
     const utm = db.prepare(`
       SELECT utm_source AS source, utm_medium AS medium, utm_campaign AS campaign,
              referrer, COUNT(*) AS vendite
@@ -62,6 +86,9 @@ async function adminDashboard(req) {
       ORDER BY vendite DESC
     `).all();
 
+    /* =========================================================
+       ORDINI COMPLETI
+    ========================================================== */
     const ordini = db.prepare(`
       SELECT 
         o.id, o.utente_id, o.prodotti_json, o.totale_cent, o.stato,
@@ -82,6 +109,9 @@ async function adminDashboard(req) {
       annullati: ordini.filter(o => o.stato === "annullato").length
     };
 
+    /* =========================================================
+       ORIGINE SINTETICA
+    ========================================================== */
     const venditeByUID = db.prepare(`
       SELECT uid, origine, utm_source, utm_medium, utm_campaign, referrer
       FROM vendite
@@ -151,6 +181,9 @@ async function adminDashboard(req) {
       };
     });
 
+    /* =========================================================
+       🔥 RISPOSTA COMPLETA
+    ========================================================== */
     return {
       success: true,
       vendite: {
@@ -161,7 +194,8 @@ async function adminDashboard(req) {
         },
         vendite30,
         topProdotti,
-        utm
+        utm,
+        venditePerProdotto: venditeMap   // 🔥 nuovo campo
       },
       ordini: {
         kpi: ordiniKPI,
@@ -176,8 +210,21 @@ async function adminDashboard(req) {
 }
 
 /* =========================================================
+   🔥 NUOVO ENDPOINT: avvio pipeline auto‑ottimizzazione
+========================================================= */
+async function autoOptimize(req) {
+  console.log("🚀 [AUTO-OPT] Richiesta avvio pipeline");
+
+  if (req.user?.ruolo !== "admin") {
+    return { success: false, error: "Accesso negato" };
+  }
+
+  const result = await autoOpt.autoOttimizzaCatalogo();
+  return { success: true, log: result.log };
+}
+
+/* =========================================================
    ALIAS INTELLIGENTE — compatibilità frontend
-   (il frontend chiama getDashboard)
 ========================================================= */
 async function getDashboard(req) {
   console.log("[DEBUG adminDashboard] alias getDashboard() → adminDashboard()");
@@ -189,5 +236,6 @@ async function getDashboard(req) {
 ========================================================= */
 module.exports = {
   adminDashboard,
-  getDashboard
+  getDashboard,
+  autoOptimize   // 🔥 nuovo export
 };
