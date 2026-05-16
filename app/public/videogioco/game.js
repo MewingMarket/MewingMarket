@@ -92,6 +92,11 @@ function confirmAvatar() {
   // Messaggio del saggio alla prima entrata in chat
   localStorage.setItem("welcome_sage_pending", "1");
 
+  // Reset XP / LEVEL / MISSIONI alla prima partita
+  localStorage.setItem("player_xp", "0");
+  localStorage.setItem("player_level", "1");
+  localStorage.setItem("player_missions", "[]");
+
   goTo("screen-home");
 }
 
@@ -156,6 +161,12 @@ function chooseBot(botName) {
 ============================================================ */
 function startNewGame() {
   localStorage.clear();
+
+  // ⭐ RESET XP / LEVEL / MISSIONI
+  localStorage.setItem("player_xp", "0");
+  localStorage.setItem("player_level", "1");
+  localStorage.setItem("player_missions", "[]");
+
   goTo("screen-login");
 }
 
@@ -170,7 +181,12 @@ async function saveGameState() {
     avatar: localStorage.getItem("player_avatar") || "",
     bot: localStorage.getItem("active_bot") || "",
     lastMessage: localStorage.getItem("last_message") || "",
-    limState: lim ? lim.innerHTML : ""
+    limState: lim ? lim.innerHTML : "",
+
+    // ⭐ NUOVI CAMPI
+    xp: parseInt(localStorage.getItem("player_xp") || "0", 10),
+    level: parseInt(localStorage.getItem("player_level") || "1", 10),
+    missions: localStorage.getItem("player_missions") || "[]"
   };
 
   try {
@@ -180,7 +196,7 @@ async function saveGameState() {
       body: JSON.stringify(payload)
     });
   } catch {
-    // silenzioso: il gioco continua anche se il salvataggio fallisce
+    // silenzioso
   }
 }
 
@@ -232,6 +248,11 @@ async function loadSelectedGame() {
   localStorage.setItem("player_avatar", data.avatar || "");
   localStorage.setItem("active_bot", data.bot || "");
   localStorage.setItem("last_message", data.lastMessage || "");
+
+  // ⭐ NUOVI CAMPI
+  localStorage.setItem("player_xp", data.xp || "0");
+  localStorage.setItem("player_level", data.level || "1");
+  localStorage.setItem("player_missions", data.missions || "[]");
 
   const lim = document.getElementById("lim-screen");
   if (lim) lim.innerHTML = data.limState || "";
