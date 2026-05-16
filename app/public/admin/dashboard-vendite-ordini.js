@@ -1,6 +1,7 @@
 // =========================================================
 // Dashboard Admin — UNIVERSAL JSON PATCH 2027.970
 // PATCH 2050 — AUTORUN + DEBUG ESTESO
+// PATCH 2027.1 — Auto‑Ottimizzazione Catalogo
 // =========================================================
 
 console.log("📌 [DASHBOARD-ADMIN] File caricato nel DOM");
@@ -36,7 +37,6 @@ console.log("📌 [DASHBOARD-ADMIN] File caricato nel DOM");
 function initPage() {
   console.log("🏁 [DASHBOARD-ADMIN] initPage() eseguita");
 
-  // Se critical-ready non è ancora arrivato, aspettiamo
   if (!window.__criticalReady) {
     console.log("⏳ [DASHBOARD-ADMIN] critical-ready NON ancora emesso → attendo evento");
     document.addEventListener("critical-ready", initPage, { once: true });
@@ -48,7 +48,7 @@ function initPage() {
 }
 
 // =========================================================
-// CODICE ORIGINALE INCAPSULATO
+// CODICE ORIGINALE INCAPSULATO + PATCH AUTO‑OPT
 // =========================================================
 async function avviaDashboard() {
   console.log("🔥 Dashboard INIT - Autonoma");
@@ -59,6 +59,11 @@ async function avviaDashboard() {
     location.href = "/admin/login";
     return;
   }
+
+  /* ---------------------------------------------------------
+     🔥 PATCH: aggiungo bottone Auto‑Ottimizza Catalogo
+  --------------------------------------------------------- */
+  aggiungiBottoneAutoOptimize();
 
   try {
     console.log("🔧 [DASHBOARD-ADMIN] Diagnostica rimborso…");
@@ -121,6 +126,53 @@ async function adminApi(path, options = {}) {
   }
 
   return json.data;
+}
+
+/* =========================================================
+   🔥 PATCH: Bottone Auto‑Ottimizzazione Catalogo
+========================================================= */
+function aggiungiBottoneAutoOptimize() {
+  const header = document.querySelector(".dashboard-container");
+  if (!header) return;
+
+  const btn = document.createElement("button");
+  btn.id = "btn-auto-opt";
+  btn.className = "btn-primario";
+  btn.style = "margin-bottom:20px; width:100%; padding:15px; font-weight:bold;";
+  btn.textContent = "⚙️ Auto‑Ottimizza Catalogo (AI)";
+
+  const logBox = document.createElement("pre");
+  logBox.id = "auto-opt-log";
+  logBox.style = `
+    display:none;
+    background:#111;
+    color:#0f0;
+    padding:15px;
+    margin-top:15px;
+    font-size:0.85rem;
+    border-radius:6px;
+    max-height:300px;
+    overflow-y:auto;
+  `;
+
+  btn.onclick = async () => {
+    logBox.style.display = "block";
+    logBox.textContent = "⏳ Avvio pipeline AI...\n";
+
+    const data = await adminApi("/api/admin/dashboard/autoOptimize", {
+      method: "POST"
+    });
+
+    if (!data) {
+      logBox.textContent += "\n❌ Errore durante l'ottimizzazione.";
+      return;
+    }
+
+    logBox.textContent += data.log.join("\n") + "\n\n✅ COMPLETATO";
+  };
+
+  header.prepend(logBox);
+  header.prepend(btn);
 }
 
 /* =========================================================
