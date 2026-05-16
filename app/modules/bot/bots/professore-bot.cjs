@@ -18,7 +18,7 @@ try {
   tutorial = require(path.join(process.cwd(), "app/modules/tutorial/tutorial.cjs"));
   tutorialsAI = require(path.join(process.cwd(), "app/modules/tutorials.cjs"));
 } catch {
-  // opzionale: il sistema funziona anche senza moduli tutorial
+  // opzionale
 }
 
 /* ============================================================
@@ -63,7 +63,7 @@ async function run(message, context = {}) {
   const intent = intentObj.intent || "generico";
 
   /* ============================================================
-     0) GUEST MODE → SOLO SPIEGAZIONI BASE
+     0) GUEST MODE → SOLO SPIEGAZIONI BASE + missione onboarding
   ============================================================= */
   if (!context.userLogged) {
     return {
@@ -75,19 +75,19 @@ async function run(message, context = {}) {
           text: "Sono il Professore. Posso darti spiegazioni base, ma per ricevere supporto tecnico completo devi accedere."
         },
         {
-          title: "Cosa posso fare ora",
-          text: "• Spiegazioni semplici<br>• Come funziona il sito<br>• Come accedere ai download"
+          title: "🎯 Missione",
+          text: "Accedi per sbloccare tutorial, video AI e supporto tecnico avanzato."
         },
         {
-          title: "Sblocca il supporto completo",
-          text: "Accedi al sito per ricevere assistenza tecnica personalizzata."
+          title: "Cosa posso fare ora",
+          text: "• Spiegazioni semplici<br>• Come funziona il sito<br>• Come accedere ai download"
         }
       ]
     };
   }
 
   /* ============================================================
-     1) ORDINI (spiegazione)
+     1) ORDINI (missione: view_orders)
   ============================================================= */
   if (intent === "ordini") {
     return {
@@ -96,14 +96,18 @@ async function run(message, context = {}) {
       blocks: [
         {
           title: "📦 Come vedere i tuoi ordini",
-          text: "Accedi alla Dashboard → Sezione *I miei ordini* → Trovi tutto lì."
+          text: "Dashboard → *I miei ordini* → Trovi tutto lì."
+        },
+        {
+          title: "🎯 Missione",
+          text: "Hai visualizzato la guida sugli ordini!"
         }
       ]
     };
   }
 
   /* ============================================================
-     2) DOWNLOAD (spiegazione)
+     2) DOWNLOAD (missione: view_downloads)
   ============================================================= */
   if (intent === "download") {
     return {
@@ -113,13 +117,17 @@ async function run(message, context = {}) {
         {
           title: "📥 Come accedere ai tuoi download",
           text: "Dashboard → *I miei download* → Scarica i file acquistati."
+        },
+        {
+          title: "🎯 Missione",
+          text: "Hai visualizzato la guida ai download!"
         }
       ]
     };
   }
 
   /* ============================================================
-     3) SUPPORTO STANDARD (usa Support Helper)
+     3) SUPPORTO STANDARD (missioni automatiche via chat.cjs)
   ============================================================= */
   if (intent === "login")          return support.supportLogin();
   if (intent === "registrazione")  return support.supportRegistrazione();
@@ -130,14 +138,14 @@ async function run(message, context = {}) {
   if (intent === "supporto")       return support.supportGeneric();
 
   /* ============================================================
-     4) POLICY / LEGAL (usa Legal Helper)
+     4) POLICY / LEGAL
   ============================================================= */
   if (intent === "privacy") return legal.legalPrivacy();
   if (intent === "termini") return legal.legalTerms();
   if (intent === "cookie")  return legal.legalCookie();
 
   /* ============================================================
-     5) MISSIONE DIDATTICA AUTOMATICA (senza video)
+     5) PROBLEMA TECNICO (missione: technical_help)
   ============================================================= */
   if (intent === "problema" || intent === "errore" || intent === "tecnico") {
     const problema = message || "Problema non specificato";
@@ -162,6 +170,10 @@ async function run(message, context = {}) {
         text: guida
           ? guida.step_tecnici || "1) Controlla la posizione\n2) Ripeti l’esercizio\n3) Verifica dopo 7 giorni"
           : "1) Controlla la posizione\n2) Ripeti l’esercizio\n3) Verifica dopo 7 giorni"
+      },
+      {
+        title: "🎯 Missione",
+        text: "Hai richiesto assistenza tecnica!"
       }
     ];
 
@@ -183,7 +195,7 @@ async function run(message, context = {}) {
   }
 
   /* ============================================================
-     6) TUTORIAL PRODOTTO + VIDEO AI (Database Tutorial + Video AI)
+     6) TUTORIAL PRODOTTO + VIDEO AI (missione: product_tutorial)
   ============================================================= */
   if (intent === "tutorial_prodotto" && tutorial && tutorialsAI) {
     const slug = intentObj.slug || null;
@@ -194,17 +206,19 @@ async function run(message, context = {}) {
         type: "mission",
         blocks: [
           {
-            title: "Quale tutorial vuoi vedere?",
+            title: "📘 Quale tutorial vuoi vedere?",
             text: "Dimmi il nome della guida o del problema che vuoi risolvere."
+          },
+          {
+            title: "🎯 Missione",
+            text: "Scegli un tutorial prodotto."
           }
         ]
       };
     }
 
-    // 1) prova a leggere dal DB tutorial
     let guida = await tutorial.getTutorial(slug);
 
-    // 2) se non esiste, crea una guida base dal messaggio
     if (!guida) {
       guida = {
         titolo: slug.replace(/-/g, " "),
@@ -213,7 +227,6 @@ async function run(message, context = {}) {
       };
     }
 
-    // 3) se non ha ancora video, generane uno con tutorials.cjs
     let videoUrl = guida.video_url;
     if (!videoUrl) {
       try {
@@ -224,15 +237,17 @@ async function run(message, context = {}) {
           "professor",
           gender
         );
-      } catch {
-        // se fallisce la generazione, continua solo con testo
-      }
+      } catch {}
     }
 
     const blocks = [
       {
         title: `📘 ${guida.titolo}`,
         text: guida.testo
+      },
+      {
+        title: "🎯 Missione",
+        text: "Hai aperto un tutorial prodotto!"
       }
     ];
 
@@ -254,7 +269,7 @@ async function run(message, context = {}) {
   }
 
   /* ============================================================
-     7) SPIEGAZIONI TECNICHE
+     7) SPIEGAZIONI TECNICHE (missione: explanation)
   ============================================================= */
   if (intent === "come_funziona") {
     return {
@@ -264,6 +279,10 @@ async function run(message, context = {}) {
         {
           title: "📘 Come funziona il sistema",
           text: "Acquisti un prodotto digitale → Lo trovi subito nella Dashboard → Puoi scaricarlo quando vuoi."
+        },
+        {
+          title: "🎯 Missione",
+          text: "Hai richiesto una spiegazione tecnica!"
         }
       ]
     };
@@ -277,6 +296,10 @@ async function run(message, context = {}) {
         {
           title: "Dimmi cosa vuoi che ti spieghi",
           text: "Sono qui per aiutarti con qualsiasi dubbio tecnico."
+        },
+        {
+          title: "🎯 Missione",
+          text: "Hai aperto una richiesta di spiegazione!"
         }
       ]
     };
@@ -292,6 +315,10 @@ async function run(message, context = {}) {
       {
         title: "Come posso aiutarti?",
         text: "• Ordini<br>• Download<br>• Problemi tecnici<br>• Spiegazioni<br>• Tutorial prodotto"
+      },
+      {
+        title: "🎯 Missione suggerita",
+        text: "Prova a chiedere un tutorial prodotto!"
       }
     ]
   };
