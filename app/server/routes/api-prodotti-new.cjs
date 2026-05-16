@@ -2,12 +2,7 @@
    FILE: app/server/routes/api-prodotti-new.cjs
    MODALITÀ: Java‑mode (funzioni, no Express)
    DESCRIZIONE: Catalogo prodotti — SQL definitivo (ID-based)
-   COMPATIBILE CON:
-   - immagine_url
-   - file_consegna_url
-   - config_json
-   - categorie automatiche
-   - pipeline social automatica
+   PATCH 2027.1 — Competitor Intelligence
 ========================================================= */
 
 const path = require("path");
@@ -60,7 +55,7 @@ async function getProdottoById(req) {
 
 /* =========================================================
    FUNZIONE 3 — salvaProdotto (ADMIN)
-   🔥 QUI PARTE LA PIPELINE SOCIAL
+   🔥 PATCH: supporto campi competitor
 ========================================================= */
 async function salvaProdotto(req) {
   console.log("[DEBUG prodotti] salvaProdotto()");
@@ -72,13 +67,26 @@ async function salvaProdotto(req) {
       return { success: false, error: "Titolo e prezzo obbligatori" };
     }
 
-    // SUPPORTO COMPLETO:
-    // - immagine_url
-    // - file_consegna_url
-    // - config_json
-    // - categorie automatiche
-    const prodotto = catalogo.saveProduct(data); // SINCRONO
+    /* ---------------------------------------------------------
+       🔥 PATCH: accettiamo i nuovi campi competitor
+    --------------------------------------------------------- */
+    const prodottoData = {
+      ...data,
 
+      percentuale_competitor: data.percentuale_competitor || null,
+      punteggio_saturazione: data.punteggio_saturazione || null,
+      punteggio_opportunita: data.punteggio_opportunita || null,
+      configurazione_consigliata: data.configurazione_consigliata || null
+    };
+
+    /* ---------------------------------------------------------
+       SALVATAGGIO SQL
+    --------------------------------------------------------- */
+    const prodotto = catalogo.saveProduct(prodottoData); // SINCRONO
+
+    /* ---------------------------------------------------------
+       MIRROR JSON
+    --------------------------------------------------------- */
     try {
       await jsonGen.exportProducts();
       await jsonGen.exportCategories();
@@ -88,11 +96,9 @@ async function salvaProdotto(req) {
       console.warn("⚠️ Mirror JSON fallito, ma SQL ok:", errJson.message);
     }
 
-    /* =========================================================
-       🔥 AGGANCIO PIPELINE SOCIAL
-       Il prodotto è ora nel catalogo SQL → pipeline parte.
-       NON BLOCCA la risposta al frontend.
-    ========================================================== */
+    /* ---------------------------------------------------------
+       PIPELINE SOCIAL
+    --------------------------------------------------------- */
     try {
       pipeline.pipelineProdotto(prodotto.id);
       console.log("🚀 Pipeline social avviata per prodotto:", prodotto.id);
@@ -120,7 +126,6 @@ async function generaDescrizioneAI(req) {
       return { success: false, error: "Titolo mancante" };
     }
 
-    // Placeholder — la tua AI reale è in api-prodotti-ai.cjs
     return {
       success: true,
       descrizione_lunga: `<h3>Analisi di ${titolo}</h3><p>Descrizione ottimizzata generata dall'AI basata sul contenuto fornito...</p>`,
