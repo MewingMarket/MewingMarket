@@ -48,7 +48,7 @@ async function run(message, context = {}) {
   const catalog = context.catalog || [];
 
   /* ============================================================
-     0) GUEST MODE → MOTIVAZIONE + SPINTA REGISTRAZIONE + NEWSLETTER
+     0) GUEST MODE → MOTIVAZIONE + MISSIONE DI ONBOARDING
   ============================================================= */
   if (!context.userLogged) {
     return {
@@ -60,12 +60,8 @@ async function run(message, context = {}) {
           text: "Io sono l'Influencer. Posso motivarti e mostrarti i nostri social."
         },
         {
-          title: "Funzioni disponibili",
-          text: "• Video motivazionali<br>• Consigli rapidi<br>• Link ai social"
-        },
-        {
-          title: "Sblocca tutte le funzioni",
-          text: "Accedi o registrati per sbloccare tutorial, prodotti e missioni complete."
+          title: "🎯 Missione",
+          text: "Accedi per sbloccare video esclusivi, missioni e premi."
         },
         {
           title: "Vuoi restare aggiornato?",
@@ -76,7 +72,7 @@ async function run(message, context = {}) {
   }
 
   /* ============================================================
-     1) VIDEO TUTORIAL PRODOTTO (solo utenti loggati)
+     1) VIDEO TUTORIAL PRODOTTO (missione: product_tutorial)
   ============================================================= */
   if (intent === "video_prodotto" || intent === "tutorial_prodotto") {
     if (!productId) {
@@ -85,12 +81,12 @@ async function run(message, context = {}) {
         type: "mission",
         blocks: [
           {
-            title: "Quale prodotto vuoi vedere?",
+            title: "🎥 Quale prodotto vuoi vedere?",
             text: "Scegli un prodotto e ti mostro un video tutorial."
           },
           {
-            title: "Opzioni",
-            text: "• Prodotti consigliati<br>• Video motivazionale"
+            title: "🎯 Missione",
+            text: "Apri un prodotto dal catalogo."
           }
         ]
       };
@@ -112,7 +108,7 @@ async function run(message, context = {}) {
       avatar: "influencer",
       blocks: [
         {
-          title: `Tutorial rapido: ${p.titolo_breve}`,
+          title: `🎥 Tutorial rapido: ${p.titolo_breve}`,
           text: "Ecco un video rapido per capire come funziona."
         },
         {
@@ -133,7 +129,7 @@ async function run(message, context = {}) {
   }
 
   /* ============================================================
-     2) VIDEO MOTIVAZIONALE
+     2) VIDEO MOTIVAZIONALE (missione: watch_motivation_video)
   ============================================================= */
   if (intent === "video_motivazionale") {
     return {
@@ -156,7 +152,7 @@ async function run(message, context = {}) {
   }
 
   /* ============================================================
-     3) MOTIVAZIONE / HYPE
+     3) MOTIVAZIONE / HYPE (missione: ask_motivation)
   ============================================================= */
   if (intent === "motivazione") {
     return {
@@ -168,15 +164,15 @@ async function run(message, context = {}) {
           text: "Ogni passo che fai costruisce una versione più forte di te."
         },
         {
-          title: "Vuoi altro?",
-          text: "• Mostra un video<br>• Consiglio rapido"
+          title: "🎯 Missione",
+          text: "Guarda un video motivazionale o chiedi un consiglio rapido."
         }
       ]
     };
   }
 
   /* ============================================================
-     4) CONSIGLIO RAPIDO
+     4) CONSIGLIO RAPIDO (missione: quick_tip)
   ============================================================= */
   if (intent === "consiglio_rapido") {
     return {
@@ -184,15 +180,19 @@ async function run(message, context = {}) {
       type: "mission",
       blocks: [
         {
-          title: "Ecco tre consigli rapidi:",
+          title: "⚡ Consigli rapidi",
           text: "🔥 Migliora subito<br>📘 Impara una cosa nuova<br>💡 Consiglio del giorno"
+        },
+        {
+          title: "🎯 Missione",
+          text: "Chiedi il consiglio del giorno."
         }
       ]
     };
   }
 
   /* ============================================================
-     5) CONSIGLIO DEL GIORNO
+     5) CONSIGLIO DEL GIORNO (missione: daily_tip)
   ============================================================= */
   if (intent === "consiglio_del_giorno") {
     return {
@@ -202,29 +202,35 @@ async function run(message, context = {}) {
         {
           title: "💡 Consiglio del giorno",
           text: "Non aspettare il momento perfetto. Il momento perfetto è quando decidi di iniziare."
+        },
+        {
+          title: "🎯 Missione completabile",
+          text: "Hai ottenuto il consiglio del giorno!"
         }
       ]
     };
   }
 
   /* ============================================================
-     6) SOCIAL (ruolo principale influencer) + DATABASE SOCIAL
+     6) SOCIAL (missione: open_social)
   ============================================================= */
   if (intent === "social" || intent === "seguimi" || intent === "influencer") {
     try {
-      // prova a prendere un post reale dal DB social
       const post = await social.getRandomForLIM?.("instagram");
-      if (post) return post; // già in formato LIM
+      if (post) return post;
     } catch (e) {}
 
-    // fallback statico
     return {
       avatar: "influencer",
       type: "mission",
       blocks: [
         {
-          title: "Seguici sui social",
+          title: "📱 Seguici sui social",
           text: "Per vedere esempi reali, trasformazioni e consigli quotidiani."
+        },
+        {
+          title: "🎯 Missione",
+          text: "Apri uno dei nostri social."
         },
         {
           title: "Link",
@@ -247,6 +253,10 @@ async function run(message, context = {}) {
       {
         title: "🔥 Cosa vuoi fare?",
         text: "• Mostra un video<br>• Consiglio rapido<br>• Motivami<br>• Seguimi sui social"
+      },
+      {
+        title: "🎯 Missione suggerita",
+        text: "Chiedi un consiglio rapido!"
       }
     ]
   };
@@ -265,6 +275,10 @@ async function sidekick(message, context = {}) {
       {
         title: "🔥 Questo prodotto spacca!",
         text: "Se vuoi ti mostro anche un video motivazionale."
+      },
+      {
+        title: "🎯 Missione combo",
+        text: "Parla con due NPC diversi nella stessa sessione."
       }
     ]
   };
