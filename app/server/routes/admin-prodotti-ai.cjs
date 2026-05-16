@@ -1,12 +1,12 @@
 // FILE: app/server/routes/admin-prodotti-ai.cjs
 // PATH ASSOLUTO: app/server/routes/admin-prodotti-ai.cjs
+// VERSIONE PATCH: Competitor Intelligence 2027.1
 
 /* =========================================================
    ADMIN PRODOTTI AI — Versione 2027.1
    - getprodottidacreare
-   - approvaprodotto (con immagine + file)
+   - approvaprodotto (con immagine + file + competitor intelligence)
    - eliminaprodottodacreare
-   - require assoluti (R → app/)
 ========================================================= */
 
 const path = require("path");
@@ -46,6 +46,7 @@ async function getprodottidacreare(req) {
 
 /* =========================================================
    2) APPROVA E PUBBLICA PRODOTTO
+   🔥 PATCH: integra campi competitor + prezzo consigliato
 ========================================================= */
 async function approvaprodotto(req) {
   console.log("[ADMIN AI] approvaprodotto()");
@@ -64,6 +65,19 @@ async function approvaprodotto(req) {
     if (!p) return { success: false, error: "Prodotto da creare non trovato" };
 
     /* ---------------------------------------------------------
+       RECUPERO CONFIG + COMPETITOR (se presenti)
+    --------------------------------------------------------- */
+    let config = {};
+    try {
+      config = JSON.parse(p.config_json || "{}");
+    } catch {
+      config = {};
+    }
+
+    const prezzoConsigliato = config.prezzo_consigliato || p.prezzo_cent;
+    const configSuggerita = config.suggerita || null;
+
+    /* ---------------------------------------------------------
        GENERA DESCRIZIONE BREVE AUTOMATICA
     --------------------------------------------------------- */
     const descrizioneBreve = p.descrizione_tecnica
@@ -71,17 +85,32 @@ async function approvaprodotto(req) {
       : "";
 
     /* ---------------------------------------------------------
-       COSTRUZIONE PRODOTTO FINALE
+       COSTRUZIONE PRODOTTO FINALE (PATCH)
+       🔥 Inseriamo:
+       - prezzo consigliato
+       - configurazione consigliata
+       - campi competitor (se presenti)
     --------------------------------------------------------- */
     const dataProd = {
       titolo: p.titolo,
       descrizione_lunga: p.descrizione_tecnica,
       descrizione_breve: descrizioneBreve,
-      prezzo_cent: p.prezzo_cent,
+
+      // 🔥 prezzo consigliato
+      prezzo_cent: prezzoConsigliato,
+
       immagine: p.immagine_url || null,
       file_consegna_url: p.file_consegna_url || null,
       categoria: p.categoria || null,
-      config_json: p.config_json || null
+
+      // 🔥 config consigliata
+      config_json: p.config_json || null,
+
+      // 🔥 campi competitor (se presenti)
+      percentuale_competitor: p.percentuale_competitor || null,
+      punteggio_saturazione: p.punteggio_saturazione || null,
+      punteggio_opportunita: p.punteggio_opportunita || null,
+      configurazione_consigliata: configSuggerita
     };
 
     /* ---------------------------------------------------------
