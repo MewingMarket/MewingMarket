@@ -3,6 +3,7 @@
 /* =========================================================
    VALIDAZIONE PRODOTTI — Versione 2026.300
    PATCH 2050 — AUTORUN + DEBUG ESTESO
+   PATCH 2027.1 — Competitor Intelligence UI
 ========================================================= */
 
 console.log("📌 [VALIDAZIONE-PRODOTTI] File caricato nel DOM");
@@ -38,7 +39,6 @@ console.log("📌 [VALIDAZIONE-PRODOTTI] File caricato nel DOM");
 function initPage() {
   console.log("🏁 [VALIDAZIONE-PRODOTTI] initPage() eseguita");
 
-  // Se critical-ready non è ancora arrivato, aspettiamo
   if (!window.__criticalReady) {
     console.log("⏳ [VALIDAZIONE-PRODOTTI] critical-ready NON ancora emesso → attendo evento");
     document.addEventListener("critical-ready", initPage, { once: true });
@@ -51,7 +51,7 @@ function initPage() {
 }
 
 // =========================================================
-// CODICE ORIGINALE INCAPSULATO
+// CODICE ORIGINALE INCAPSULATO + PATCH COMPETITOR
 // =========================================================
 function avviaValidazioneProdotti() {
   console.log("🔥 validazione-prodotti.js READY");
@@ -104,6 +104,13 @@ function avviaValidazioneProdotti() {
   const kpiCategoria = document.getElementById("kpi-categoria");
   const kpiId = document.getElementById("kpi-id");
 
+  /* 🔥 PATCH: KPI COMPETITOR */
+  const kpiCompetitor = document.getElementById("kpi-competitor");
+  const kpiSaturazione = document.getElementById("kpi-saturazione");
+  const kpiOpportunita = document.getElementById("kpi-opportunita");
+  const kpiPrezzoCons = document.getElementById("kpi-prezzo-consigliato");
+  const kpiConfigCons = document.getElementById("kpi-config-consigliata");
+
   let validazioneCorrente = null;
 
   /* =========================================================
@@ -131,11 +138,20 @@ function avviaValidazioneProdotti() {
 
     validazioneCorrente = data;
 
-    /* KPI */
+    /* KPI BASE */
     kpiTrend.textContent = data.trend_score;
     kpiColore.textContent = data.colore;
     kpiCategoria.textContent = data.categoria || "—";
     kpiId.textContent = data.id;
+
+    /* 🔥 KPI COMPETITOR */
+    if (data.competitor) {
+      kpiCompetitor.textContent = data.competitor.percentuale_competitor + "%";
+      kpiSaturazione.textContent = data.competitor.punteggio_saturazione;
+      kpiOpportunita.textContent = data.competitor.punteggio_opportunita;
+      kpiPrezzoCons.textContent = (data.competitor.prezzo_consigliato / 100).toFixed(2) + "€";
+      kpiConfigCons.textContent = data.competitor.configurazione_consigliata || "—";
+    }
 
     /* Testi */
     valMotivazione.textContent = data.motivazione || "—";
@@ -149,6 +165,7 @@ function avviaValidazioneProdotti() {
 
   /* =========================================================
      GENERA PRODOTTO (AI)
+     🔥 PATCH: passa prezzo consigliato + config consigliata
   ========================================================== */
   btnGenera.onclick = async () => {
     console.log("⚙️ [VALIDAZIONE-PRODOTTI] Generazione prodotto AI…");
@@ -160,13 +177,17 @@ function avviaValidazioneProdotti() {
 
     statusGenerazione.textContent = "Generazione prodotto AI...";
 
+    /* 🔥 CONFIG BASE + CONFIG CONSIGLIATA */
     const config = {
       type: "ebook",
       pages: 120,
       level: "intermedio",
       language: "IT",
       target: "principianti",
-      price: 49
+      price: validazioneCorrente?.competitor?.prezzo_consigliato
+        ? validazioneCorrente.competitor.prezzo_consigliato / 100
+        : 49,
+      suggerita: validazioneCorrente?.competitor?.configurazione_consigliata || ""
     };
 
     const data = await adminApi("/api/ai/generateproduct", {
