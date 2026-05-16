@@ -12,13 +12,11 @@ function goTo(screenId) {
   const target = document.getElementById(screenId);
   if (target) target.style.display = "block";
 
-  // Forza chatbox visibile quando entri in chat
   if (screenId === "screen-chat") {
     setTimeout(() => {
       const chatPanel = document.getElementById("chat-panel");
       if (chatPanel) chatPanel.style.display = "flex";
 
-      // Se c'è un bot attivo, aggiorna avatar in chat
       const activeBot = localStorage.getItem("active_bot") || "generic";
       if (typeof window.changeAvatar === "function") {
         window.changeAvatar(activeBot);
@@ -26,14 +24,13 @@ function goTo(screenId) {
     }, 50);
   }
 
-  // Quando entri nello screen "Caricamento" → carica lista partite
   if (screenId === "screen-loading") {
     loadGameList();
   }
 
-  // Quando entri in home, ricarica avatar saggio
   if (screenId === "screen-home") {
     loadHomeAvatar();
+    updateHUD();
   }
 }
 
@@ -59,7 +56,7 @@ function saveName() {
 }
 
 /* ============================================================
-   SCELTA AVATAR UOMO/DONNA
+   SCELTA AVATAR
 ============================================================ */
 let selectedAvatar = null;
 
@@ -77,7 +74,6 @@ document.addEventListener("click", e => {
   if (btn) btn.disabled = false;
 });
 
-/* Conferma avatar */
 function confirmAvatar() {
   if (!selectedAvatar) return;
 
@@ -89,10 +85,9 @@ function confirmAvatar() {
 
   loadHomeAvatar();
 
-  // Messaggio del saggio alla prima entrata in chat
   localStorage.setItem("welcome_sage_pending", "1");
 
-  // Reset XP / LEVEL / MISSIONI alla prima partita
+  // RESET XP / LEVEL / MISSIONI
   localStorage.setItem("player_xp", "0");
   localStorage.setItem("player_level", "1");
   localStorage.setItem("player_missions", "[]");
@@ -100,7 +95,6 @@ function confirmAvatar() {
   goTo("screen-home");
 }
 
-/* Avatar saggio in home */
 function loadHomeAvatar() {
   const gender = localStorage.getItem("player_avatar");
   const homeAvatar = document.getElementById("home-avatar");
@@ -112,41 +106,27 @@ function loadHomeAvatar() {
 }
 
 /* ============================================================
-   SCELTA BOT → LOGICA COMPLETA
+   SCELTA BOT
 ============================================================ */
 function chooseBot(botName) {
-
-  /* ---------------------------------------------
-     BOT GENERICO = NARRATORE (NON APRE LA CHAT)
-  ---------------------------------------------- */
   if (botName === "generic") {
-
     const gender = localStorage.getItem("player_avatar");
     const npc = gender === "female" ? "donna saggia" : "uomo saggio";
 
-    // Avatar fermo
     const homeAvatar = document.getElementById("home-avatar");
-    if (homeAvatar) {
-      homeAvatar.src = `/videogioco/${npc}.png`;
-    }
+    if (homeAvatar) homeAvatar.src = `/videogioco/${npc}.png`;
 
-    // Messaggio animato
     const msg = document.getElementById("home-message");
     if (msg) {
       msg.classList.remove("typewriter");
-      void msg.offsetWidth; // reset animazione
+      void msg.offsetWidth;
       msg.classList.add("typewriter");
-
       msg.innerHTML = "Io sono la tua guida.<br>Da qui puoi scegliere un bot per iniziare.";
     }
 
-    // NON aprire la chat
     return;
   }
 
-  /* ---------------------------------------------
-     ALTRI BOT → APRONO LA CHAT
-  ---------------------------------------------- */
   localStorage.setItem("active_bot", botName);
 
   if (typeof window.changeAvatar === "function") {
@@ -162,7 +142,6 @@ function chooseBot(botName) {
 function startNewGame() {
   localStorage.clear();
 
-  // ⭐ RESET XP / LEVEL / MISSIONI
   localStorage.setItem("player_xp", "0");
   localStorage.setItem("player_level", "1");
   localStorage.setItem("player_missions", "[]");
@@ -171,7 +150,7 @@ function startNewGame() {
 }
 
 /* ============================================================
-   SALVATAGGIO PARTITA (BACKEND)
+   SALVATAGGIO PARTITA
 ============================================================ */
 async function saveGameState() {
   const lim = document.getElementById("lim-screen");
@@ -183,7 +162,6 @@ async function saveGameState() {
     lastMessage: localStorage.getItem("last_message") || "",
     limState: lim ? lim.innerHTML : "",
 
-    // ⭐ NUOVI CAMPI
     xp: parseInt(localStorage.getItem("player_xp") || "0", 10),
     level: parseInt(localStorage.getItem("player_level") || "1", 10),
     missions: localStorage.getItem("player_missions") || "[]"
@@ -195,13 +173,11 @@ async function saveGameState() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
-  } catch {
-    // silenzioso
-  }
+  } catch {}
 }
 
 /* ============================================================
-   LISTA PARTITE PER COMBO BOX
+   LISTA PARTITE
 ============================================================ */
 async function loadGameList() {
   const res = await fetch("/api/game/list", { method: "POST" });
@@ -224,7 +200,7 @@ async function loadGameList() {
 }
 
 /* ============================================================
-   CARICA PARTITA SELEZIONATA
+   CARICA PARTITA
 ============================================================ */
 async function loadSelectedGame() {
   const select = document.getElementById("saved-games");
@@ -249,7 +225,6 @@ async function loadSelectedGame() {
   localStorage.setItem("active_bot", data.bot || "");
   localStorage.setItem("last_message", data.lastMessage || "");
 
-  // ⭐ NUOVI CAMPI
   localStorage.setItem("player_xp", data.xp || "0");
   localStorage.setItem("player_level", data.level || "1");
   localStorage.setItem("player_missions", data.missions || "[]");
@@ -261,6 +236,26 @@ async function loadSelectedGame() {
 }
 
 /* ============================================================
+   HUD XP / LEVEL
+============================================================ */
+function updateHUD() {
+  const xp = parseInt(localStorage.getItem("player_xp") || "0", 10);
+  const level = parseInt(localStorage.getItem("player_level") || "1", 10);
+
+  const xpEl = document.getElementById("hud-xp");
+  const lvlEl = document.getElementById("hud-level");
+  const bar = document.getElementById("hud-xp-bar");
+
+  if (xpEl) xpEl.textContent = xp;
+  if (lvlEl) lvlEl.textContent = level;
+
+  const xpNeeded = level * 100;
+  const percent = Math.min(100, Math.floor((xp / xpNeeded) * 100));
+
+  if (bar) bar.style.width = percent + "%";
+}
+
+/* ============================================================
    AVVIO DEL GIOCO
 ============================================================ */
 window.addEventListener("load", () => {
@@ -268,7 +263,7 @@ window.addEventListener("load", () => {
 });
 
 /* ============================================================
-   EXPORT FUNZIONI PER HTML INLINE
+   EXPORT FUNZIONI
 ============================================================ */
 window.goTo = goTo;
 window.saveName = saveName;
@@ -280,3 +275,4 @@ window.startNewGame = startNewGame;
 window.saveGameState = saveGameState;
 window.loadGameList = loadGameList;
 window.loadSelectedGame = loadSelectedGame;
+window.updateHUD = updateHUD;
