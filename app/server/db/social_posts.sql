@@ -1,4 +1,4 @@
-CREATE TABLE social_posts (
+CREATE TABLE IF NOT EXISTS social_posts (
   id INT AUTO_INCREMENT PRIMARY KEY,
   piattaforma VARCHAR(50) NOT NULL,
   tipo VARCHAR(50) NOT NULL, -- video, reel, foto, testo
