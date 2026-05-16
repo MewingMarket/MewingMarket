@@ -132,10 +132,52 @@ function toFrame(item, avatar = "assistant") {
   };
 }
 
+/* =========================================================
+   FUNZIONI EXTRA AGGIUNTE (2027)
+   — NON toccano nulla di esistente
+========================================================= */
+
+// 1) Recupera guida per slug
+function getBySlug(slug) {
+  return GUIDES.find(g => g.slug === slug) || null;
+}
+
+// 2) Recupera guida per ID
+function getById(id) {
+  return GUIDES.find(g => g.id === id) || null;
+}
+
+// 3) Cerca per keyword singola
+function searchKeywords(keyword = "") {
+  const k = cleanSearchQuery(keyword).toLowerCase();
+  if (!k) return [];
+
+  return GUIDES.filter(item =>
+    (item.keywords || []).some(kw => kw.toLowerCase().includes(k))
+  );
+}
+
+// 4) Testo pulito per Tutorial AI (script video)
+function getTextForTutorial(slug) {
+  const item = getBySlug(slug);
+  if (!item) return null;
+
+  return `${item.title}. ${item.description}`;
+}
+
+/* =========================================================
+   EXPORT COMPLETO
+========================================================= */
 module.exports = {
   search,
   render,
   all: () => GUIDES,
   toJSON,
-  toFrame
+  toFrame,
+
+  // Funzioni extra
+  getBySlug,
+  getById,
+  searchKeywords,
+  getTextForTutorial
 };
