@@ -11,7 +11,7 @@ const path = require("path");
 // BOT ENGINE (risposte normali)
 const { handleConversation } = require(path.join(process.cwd(), "app/modules/bot/index.cjs"));
 
-// INTENT ENGINE (riconosce guida + tutorial)
+// INTENT ENGINE (riconosce guida + tutorial + tutorial_prodotto)
 const { generateIntent } = require(path.join(process.cwd(), "app/modules/bot/intent-engine.cjs"));
 
 // TUTORIAL ENGINE (avatar parlante + video)
@@ -90,7 +90,7 @@ async function chat(req) {
     }
 
     /* =====================================================
-       1) INTENT ENGINE — capisce se è una guida
+       1) INTENT ENGINE — capisce se è guida o tutorial_prodotto
     ====================================================== */
     const intentData = await generateIntent(message, {
       botAvatar,
@@ -100,9 +100,12 @@ async function chat(req) {
     const resolvedAvatar = intentData?.avatar || botAvatar;
 
     /* =====================================================
-       2) SE NON È UNA GUIDA → risposta normale del bot
+       2) SE NON È GUIDA / TUTORIAL → risposta normale del bot
     ====================================================== */
-    if (!intentData || intentData.intent !== "guida" || !intentData.tutorial?.guideKey) {
+    const isGuide = intentData?.intent === "guida" && intentData?.tutorial?.guideKey;
+    const isTutorialProdotto = intentData?.intent === "tutorial_prodotto";
+
+    if (!isGuide && !isTutorialProdotto) {
       const finalReply = await handleConversation(req);
 
       trackGA4("chat_message", {
@@ -119,55 +122,68 @@ async function chat(req) {
     }
 
     /* =====================================================
-       3) È UNA GUIDA → generiamo tutorial video automatico
+       3) È UNA GUIDA → tutorial video automatico
     ====================================================== */
-    const { guideKey } = intentData.tutorial;
-    const guideText = GUIDES[guideKey];
+    if (isGuide) {
+      const { guideKey } = intentData.tutorial;
+      const guideText = GUIDES[guideKey];
 
-    if (!guideText) {
+      if (!guideText) {
+        return {
+          success: true,
+          type: "text",
+          text: "Non ho ancora una guida video per questa domanda, ma posso spiegartelo a parole.",
+          avatar: resolvedAvatar
+        };
+      }
+
+      const cacheKey = `${guideKey}:${botAvatar}:${gender}`;
+      let videoUrl = getCachedTutorial(cacheKey);
+
+      if (!videoUrl) {
+        videoUrl = await createTutorialForGuide(
+          guideKey,
+          guideText,
+          botAvatar,
+          gender
+        );
+        setCachedTutorial(cacheKey, videoUrl);
+      }
+
+      trackGA4("chat_message", {
+        uid,
+        message,
+        intent: "guida"
+      });
+
+      if (typeof global.logBot === "function") {
+        global.logBot("chat_response_tutorial", { uid, guideKey });
+      }
+
       return {
         success: true,
-        type: "text",
-        text: "Non ho ancora una guida video per questa domanda, ma posso spiegartelo a parole.",
+        type: "video",
+        url: videoUrl,
         avatar: resolvedAvatar
       };
     }
 
     /* =====================================================
-       4) CACHE — se il video esiste già, non rigenerarlo
+       4) È UN TUTORIAL PRODOTTO (Intent Engine 2027)
+       → Professore Bot gestisce già la logica
+       → Qui facciamo solo fallback video se richiesto
     ====================================================== */
-    const cacheKey = `${guideKey}:${botAvatar}:${gender}`;
-    let videoUrl = getCachedTutorial(cacheKey);
+    if (isTutorialProdotto) {
+      const finalReply = await handleConversation(req);
 
-    if (!videoUrl) {
-      videoUrl = await createTutorialForGuide(
-        guideKey,
-        guideText,
-        botAvatar,
-        gender
-      );
-      setCachedTutorial(cacheKey, videoUrl);
+      trackGA4("chat_message", {
+        uid,
+        message,
+        intent: "tutorial_prodotto"
+      });
+
+      return normalizeTextReply(finalReply, resolvedAvatar);
     }
-
-    /* =====================================================
-       5) RISPOSTA VIDEO PER LA LIM
-    ====================================================== */
-    trackGA4("chat_message", {
-      uid,
-      message,
-      intent: "guida"
-    });
-
-    if (typeof global.logBot === "function") {
-      global.logBot("chat_response_tutorial", { uid, guideKey });
-    }
-
-    return {
-      success: true,
-      type: "video",
-      url: videoUrl,
-      avatar: resolvedAvatar
-    };
 
   } catch (err) {
     console.error("❌ Errore chat:", err);
