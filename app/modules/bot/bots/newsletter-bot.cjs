@@ -17,12 +17,17 @@ function match(intentObj) {
     "newsletter",
     "newsletter_subscribe",
     "newsletter_unsubscribe",
+    "newsletter_subscribe_confirm",
+    "newsletter_unsubscribe_confirm",
+
     "follow_up",
     "novita",
+
     "reminder",
     "reminder_24h",
     "reminder_domani",
     "reminder_7giorni",
+
     "gestisci_newsletter"
   ].includes(intent);
 }
@@ -35,15 +40,17 @@ async function run(message, context = {}) {
     uid: context.uid,
     logged: context.userLogged,
     intent: context.intent?.intent,
+    email: context.email || null,
     catalogCount: context.catalog?.length || 0
   });
 
   const intentObj = context.intent || {};
   const intent = intentObj.intent || "generico";
+  const email = context.email || null;
   const catalog = context.catalog || [];
 
   /* ============================================================
-     0) GUEST MODE → SOLO SPIEGAZIONE
+     0) GUEST MODE → onboarding + motivazione registrazione
   ============================================================= */
   if (!context.userLogged) {
     return {
@@ -52,68 +59,71 @@ async function run(message, context = {}) {
       blocks: [
         {
           title: "📬 Modalità DEMO",
-          text: "Posso mostrarti come funziona la newsletter, ma per iscriverti devi accedere."
+          text: "Sono il Newsletter Bot. Posso mostrarti come funziona la newsletter."
         },
         {
           title: "Cosa puoi fare ora",
-          text: "• Vedere come funziona l’iscrizione<br>• Capire cosa riceverai"
+          text: "• Capire cosa riceverai<br>• Vedere le novità<br>• Ricevere motivazione dall’Influencer Bot"
         },
         {
-          title: "Sblocca tutte le funzioni",
-          text: "Accedi al sito per iscriverti o gestire la tua newsletter."
+          title: "Per iscriverti",
+          text: "Accedi o crea un account."
         }
       ]
     };
   }
 
   /* ============================================================
-     1) ISCRIZIONE (link reale)
+     1) ISCRIZIONE — step 1
   ============================================================= */
   if (intent === "newsletter_subscribe") {
-    return {
-      avatar: "newsletter",
-      type: "mission",
-      blocks: [
-        {
-          title: "📬 Iscriviti alla Newsletter",
-          text: "Riceverai guide, aggiornamenti e contenuti esclusivi."
-        },
-        {
-          title: "Procedi all’iscrizione",
-          cta: {
-            label: "Vai alla pagina di iscrizione",
-            href: "/iscrizione.html"
-          }
-        }
-      ]
-    };
+    return newsletter.newsletterSubscribe();
   }
 
   /* ============================================================
-     2) DISISCRIZIONE (link reale)
+     1b) ISCRIZIONE — step 2 (con email)
+  ============================================================= */
+  if (intent === "newsletter_subscribe_confirm") {
+    if (!email) {
+      return {
+        avatar: "newsletter",
+        type: "text",
+        text: "Per iscriverti alla newsletter ho bisogno della tua email."
+      };
+    }
+
+    await newsletter.addEmail(email);
+
+    return newsletter.newsletterSubscribeConfirm(email);
+  }
+
+  /* ============================================================
+     2) DISISCRIZIONE — step 1
   ============================================================= */
   if (intent === "newsletter_unsubscribe") {
-    return {
-      avatar: "newsletter",
-      type: "mission",
-      blocks: [
-        {
-          title: "❌ Disiscriviti dalla Newsletter",
-          text: "Se vuoi interrompere le comunicazioni, puoi farlo qui."
-        },
-        {
-          title: "Procedi alla disiscrizione",
-          cta: {
-            label: "Vai alla pagina di disiscrizione",
-            href: "/disiscriviti.html"
-          }
-        }
-      ]
-    };
+    return newsletter.newsletterUnsubscribe();
   }
 
   /* ============================================================
-     3) FOLLOW-UP (retention)
+     2b) DISISCRIZIONE — step 2 (con email)
+  ============================================================= */
+  if (intent === "newsletter_unsubscribe_confirm") {
+    if (!email) {
+      return {
+        avatar: "newsletter",
+        type: "text",
+        text: "Per disiscriverti dalla newsletter ho bisogno della tua email."
+      };
+    }
+
+    await newsletter.removeEmail(email);
+
+    return newsletter.newsletterUnsubscribeConfirm(email);
+  }
+
+  /* ============================================================
+     3) FOLLOW-UP (retention + motivazione utenti)
+     — come nelle tue foto Notion
   ============================================================= */
   if (intent === "follow_up") {
     return {
@@ -121,12 +131,12 @@ async function run(message, context = {}) {
       type: "mission",
       blocks: [
         {
-          title: "Grazie per essere passato!",
-          text: "Vuoi rimanere aggiornato su novità, guide e contenuti utili?"
+          title: "📬 Follow-up",
+          text: "Vuoi rimanere aggiornato su guide, novità e contenuti utili?"
         },
         {
-          title: "Cosa vuoi fare?",
-          text: "• Iscriverti<br>• Vedere le novità"
+          title: "Cosa posso fare per te",
+          text: "• Iscriverti alla newsletter<br>• Mostrarti le ultime novità<br>• Farti motivare dall’Influencer Bot"
         }
       ]
     };
@@ -138,16 +148,12 @@ async function run(message, context = {}) {
   if (intent === "reminder") {
     return {
       avatar: "newsletter",
-      type: "mission",
-      blocks: [
-        {
-          title: "⏰ Impostare un promemoria",
-          text: "Scegli quando vuoi essere ricordato."
-        },
-        {
-          title: "Opzioni",
-          text: "• Tra 24 ore<br>• Domani mattina<br>• Tra una settimana"
-        }
+      type: "quick_replies",
+      text: "Quando vuoi che ti ricordi?",
+      options: [
+        { label: "Tra 24 ore", value: "reminder_24h" },
+        { label: "Domani mattina", value: "reminder_domani" },
+        { label: "Tra una settimana", value: "reminder_7giorni" }
       ]
     };
   }
@@ -156,7 +162,7 @@ async function run(message, context = {}) {
     return {
       avatar: "newsletter",
       type: "text",
-      text: "Per impostare un promemoria tra 24 ore usa il calendario del tuo dispositivo."
+      text: "Perfetto! Ti invierò un promemoria tra 24 ore."
     };
   }
 
@@ -164,7 +170,7 @@ async function run(message, context = {}) {
     return {
       avatar: "newsletter",
       type: "text",
-      text: "Per un promemoria domani mattina usa l’app Promemoria o Calendario."
+      text: "Riceverai un promemoria domani mattina."
     };
   }
 
@@ -172,7 +178,7 @@ async function run(message, context = {}) {
     return {
       avatar: "newsletter",
       type: "text",
-      text: "Per un promemoria tra una settimana puoi usare qualsiasi app di task."
+      text: "Ti ricorderò tutto tra una settimana."
     };
   }
 
