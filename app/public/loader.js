@@ -2,7 +2,8 @@
 // CRITICAL LOADER — PUBLIC 2055 (JAVA-MODE ULTRA MINIMAL)
 // Percorso reale: /app/public/loader.js
 // Carica SOLO head.html / header.html / footer.html / header.js
-// NON emette più eventi. Nessun retry. Nessun fallback.
+// NON emette eventi. Nessun retry. Nessun fallback.
+// Compatibile con SUPREMO 2055 (pipeline corretta).
 // =========================================================
 
 if (window.__CRITICAL_LOADER_PUBLIC_2055__) {
@@ -34,6 +35,7 @@ if (window.__CRITICAL_LOADER_PUBLIC_2055__) {
             } else {
               const temp = document.createElement("div");
               temp.innerHTML = html;
+
               [...temp.children].forEach(node => {
                 if (node.tagName === "SCRIPT") {
                   const s = document.createElement("script");
@@ -84,14 +86,22 @@ if (window.__CRITICAL_LOADER_PUBLIC_2055__) {
     // SEQUENZA CRITICA — SOLO HTML + header.js
     // ============================================================
     (async () => {
+
+      // 1) HEAD
       await loadHTML(`/head.html?v=${VERSION}`, null, "head.html");
+
+      // 2) HEADER
       await loadHTML(`/header.html?v=${VERSION}`, "header-placeholder", "header.html");
+
+      // 3) FOOTER
       await loadHTML(`/footer.html?v=${VERSION}`, "footer-placeholder", "footer.html");
+
+      // 4) HEADER.JS (sempre dopo header.html)
       await loadScript("/header.js", "body");
 
       console.log("🟩 [CRITICAL PUBLIC 2055] HTML base caricato (JAVA-MODE)");
       // Nessun evento. Nessun critical-core-ready.
-      // Il SUPREMO gestisce tutto.
+      // SUPREMO gestisce tutto.
     })();
 
   })();
