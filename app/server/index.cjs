@@ -53,7 +53,7 @@ module.exports = {
     ...R("routes/paypal-create.cjs"),
     ...R("routes/paypal-complete.cjs"),
     ...R("routes/paypal-cancel.cjs"),
-    ...R("routes/paypal-ricerca.cjs")             // ⭐ nello screenshot
+    ...R("routes/paypal-ricrea.cjs")             // ⭐ nello screenshot
   },
 
   /* ============================================================
