@@ -31,6 +31,30 @@ async function run(message, context = {}, extras = {}) {
   const intent = intentObj.intent || "generico";
 
   /* ============================================================
+     0) GUEST MODE — onboarding migliorato
+  ============================================================= */
+  if (!context.userLogged && intent === "saluto") {
+    return {
+      avatar: "assistant",
+      type: "mission",
+      blocks: [
+        {
+          title: "👋 Benvenuto!",
+          text: "Io sono il Narratore. Ti guiderò nel videogioco conversazionale."
+        },
+        {
+          title: "Cosa puoi fare ora",
+          text: "• Scegli un bot dalla Home<br>• Prova a scrivere qualcosa<br>• Esplora il mondo"
+        },
+        {
+          title: "Per sbloccare tutto",
+          text: "Accedi o registrati."
+        }
+      ]
+    };
+  }
+
+  /* ============================================================
      1) SALUTI / ONBOARDING
   ============================================================= */
   if (intent === "saluto" || intent === "onboarding") {
@@ -67,7 +91,31 @@ async function run(message, context = {}, extras = {}) {
   }
 
   /* ============================================================
-     6) FALLBACK GENERICO
+     6) TUTORIAL PRODOTTO SENZA BOT CORRETTO
+     (Intent Engine ha rilevato tutorial ma Professore non ha risposto)
+  ============================================================= */
+  if (intent === "tutorial_prodotto" && !extras.guide) {
+    return {
+      avatar: "assistant",
+      type: "mission",
+      blocks: [
+        {
+          title: "📘 Tutorial prodotto",
+          text: "Per i tutorial dettagliati ti consiglio di parlare con il Professore."
+        },
+        {
+          title: "Vuoi aprire il Professore?",
+          cta: {
+            label: "Apri Professore",
+            href: "#professor"
+          }
+        }
+      ]
+    };
+  }
+
+  /* ============================================================
+     7) FALLBACK GENERICO
   ============================================================= */
   return fb.fallbackGeneric();
 }
