@@ -1,5 +1,6 @@
 // FILE: app/server/routes/api-prodotti-ai.cjs
 // PATH ASSOLUTO: app/server/routes/api-prodotti-ai.cjs
+// VERSIONE PATCH: Competitor Intelligence 2027.1
 
 const express = require("express");
 const path = require("path");
@@ -12,8 +13,9 @@ const router = express.Router();
 const ROOT = process.cwd();
 
 const db = require(path.join(ROOT, "app/server/db/database.cjs"));
-const ai = require(path.join(ROOT, "app/server/modules/ai.cjs")); // ✅ CORRETTO
+const ai = require(path.join(ROOT, "app/server/modules/ai.cjs"));
 const pdfGenerator = require(path.join(ROOT, "app/server/services/pdf-generator.cjs"));
+const competitorAI = require(path.join(ROOT, "app/server/modules/ai-competitor-intel.cjs"));
 
 /* =========================================================
    UNIVERSAL JSON HELPERS
@@ -27,11 +29,15 @@ function fail(error) {
 
 /* =========================================================
    POST /api/ai/searchproduct
+   🔥 PATCH: Competitor Intelligence
 ========================================================= */
 router.post("/searchproduct", async (req, res) => {
   try {
     const { query } = req.body;
 
+    /* ---------------------------------------------------------
+       1) VALIDAZIONE BASE (già esistente)
+    --------------------------------------------------------- */
     const prompt = `
 Analizza l'idea di prodotto seguente e restituisci:
 - titolo
@@ -46,9 +52,25 @@ Idea: ${query}
 
     const result = await ai.generateValidation(prompt);
 
+    /* ---------------------------------------------------------
+       2) COMPETITOR INTELLIGENCE (nuovo)
+    --------------------------------------------------------- */
+    const comp = await competitorAI.analizzaCompetitor({
+      titolo: result.titolo,
+      categoria: result.categoria
+    });
+
+    /* ---------------------------------------------------------
+       3) SALVATAGGIO COMPLETO IN validazioni
+    --------------------------------------------------------- */
     const stmt = await db.prepare(`
-      INSERT INTO validazioni (titolo, categoria, trend_score, colore, motivazione, note_ricerca, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+      INSERT INTO validazioni (
+        titolo, categoria, trend_score, colore, motivazione, note_ricerca,
+        percentuale_competitor, punteggio_saturazione, punteggio_opportunita,
+        prezzo_consigliato, configurazione_consigliata,
+        created_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
     `);
 
     const info = await stmt.run(
@@ -57,12 +79,18 @@ Idea: ${query}
       result.trend_score || 0,
       result.colore || "giallo",
       result.motivazione || "",
-      result.note_ricerca || ""
+      result.note_ricerca || "",
+      comp.percentuale_competitor || 0,
+      comp.punteggio_saturazione || 0,
+      comp.punteggio_opportunita || 0,
+      comp.prezzo_consigliato || 2900,
+      comp.configurazione_consigliata || ""
     );
 
     return res.json(ok({
       id: info.lastID,
-      ...result
+      ...result,
+      competitor: comp
     }));
 
   } catch (err) {
@@ -163,6 +191,7 @@ Il contenuto deve essere:
 
 /* =========================================================
    POST /api/ai/generateproduct
+   🔥 PATCH: usa prezzo consigliato + config consigliata
 ========================================================= */
 router.post("/generateproduct", async (req, res) => {
   try {
@@ -196,7 +225,20 @@ La descrizione deve essere:
 
     const descrizione_tecnica = await ai.generateText(promptDescrizione);
 
-    const prezzo_cent = Math.round((config.price || 49) * 100);
+    /* ---------------------------------------------------------
+       PREZZO CONSIGLIATO (competitor intelligence)
+    --------------------------------------------------------- */
+    const prezzo_cent = val.prezzo_consigliato
+      ? Math.round(val.prezzo_consigliato)
+      : Math.round((config.price || 49) * 100);
+
+    /* ---------------------------------------------------------
+       CONFIGURAZIONE CONSIGLIATA (competitor intelligence)
+    --------------------------------------------------------- */
+    const configFinale = {
+      ...config,
+      suggerita: val.configurazione_consigliata || ""
+    };
 
     /* ---------------------------------------------------------
        CREA RECORD IN prodotti_da_creare
@@ -212,7 +254,7 @@ La descrizione deve essere:
       val.categoria || "",
       descrizione_tecnica,
       prezzo_cent,
-      JSON.stringify(config || {})
+      JSON.stringify(configFinale)
     );
 
     const id = info.lastID;
@@ -243,7 +285,7 @@ La descrizione deve essere:
         id,
         titolo: val.titolo,
         descrizione: descrizione_tecnica,
-        config
+        config: configFinale
       })
     }).then(r => r.json());
 
@@ -266,7 +308,7 @@ La descrizione deve essere:
       prezzo_cent,
       immagine_url: imgUrl,
       file_consegna_url: fileUrl,
-      config
+      config: configFinale
     }));
 
   } catch (err) {
