@@ -1,9 +1,8 @@
 // =========================================================
 // ADMIN CRITICAL LOADER — Versione 2055 (JAVA-MODE ULTRA MINIMAL)
 // Percorso reale: /app/public/admin/admin-critical-loader-2055.js
-// Carica SOLO head-admin.html / header-admin.html / footer-admin.html / header-admin.js
+// Carica SOLO head-admin.html / header-admin.html / footer-admin.html
 // NON emette eventi. Nessun retry. Nessun fallback.
-// Compatibile con SUPREMO ADMIN 2055.
 // =========================================================
 
 if (window.__ADMIN_CRITICAL_LOADER_2055__) {
@@ -58,59 +57,28 @@ if (window.__ADMIN_CRITICAL_LOADER_2055__) {
     }
 
     // ============================================================
-    // Utility: carica script JS in modo deterministico
-    // ============================================================
-    function loadScript(src, label) {
-      return new Promise(resolve => {
-        console.log("➡️ [ADMIN CRITICAL] LOAD-REQUEST", src);
-
-        const s = document.createElement("script");
-        s.src = `${src}?v=${ADMIN_VERSION}`;
-        s.async = false;
-
-        s.onload = () => {
-          console.log("✅ [ADMIN CRITICAL] LOAD-OK", label || src);
-          resolve(true);
-        };
-
-        s.onerror = () => {
-          console.warn("❌ [ADMIN CRITICAL] LOAD-FAIL", label || src);
-          resolve(false);
-        };
-
-        document.head.appendChild(s);
-      });
-    }
-
-    // ============================================================
-    // SEQUENZA CRITICA — SOLO HTML + header-admin.js
+    // SEQUENZA CRITICA — SOLO HTML
     // ============================================================
     (async () => {
       console.log("🟦 [ADMIN CRITICAL 2055] Sequenza minimal avviata");
 
-      // 1) HEAD ADMIN
       await loadHTML(
         `/admin/head-admin.html?v=${ADMIN_VERSION}`,
         "head-admin-placeholder",
         "head-admin.html"
       );
 
-      // 2) HEADER ADMIN
       await loadHTML(
         `/admin/header-admin.html?v=${ADMIN_VERSION}`,
         "header-admin-placeholder",
         "header-admin.html"
       );
 
-      // 3) FOOTER ADMIN
       await loadHTML(
         `/admin/footer-admin.html?v=${ADMIN_VERSION}`,
         "footer-admin-placeholder",
         "footer-admin.html"
       );
-
-      // 4) HEADER-ADMIN.JS (sempre dopo header-admin.html)
-      await loadScript("/admin/header-admin.js", "header-admin.js");
 
       console.log("🟩 [ADMIN CRITICAL 2055] HTML base ADMIN caricato (JAVA-MODE)");
       // Nessun evento. Nessun critical-core-ready.
