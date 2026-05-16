@@ -24,6 +24,9 @@ if (window.__LOADER_UNIVERSALE_ADMIN_2055__) {
         done: false
       };
 
+    // Flag globali
+    window.__pageJsLoaded = window.__pageJsLoaded || false;
+
     console.log("⚡ [UNIVERSALE ADMIN 2055] Avvio loader universale ADMIN (FALLBACK MODE)");
 
     // ============================================================
@@ -138,8 +141,14 @@ if (window.__LOADER_UNIVERSALE_ADMIN_2055__) {
       state.running = false;
       state.done = true;
 
-      console.log("🟩 [UNIVERSALE ADMIN] page-js-loaded (fallback universale)");
-      document.dispatchEvent(new Event("page-js-loaded"));
+      // Evita doppie emissioni
+      if (!window.__pageJsLoaded) {
+        console.log("🟩 [UNIVERSALE ADMIN] page-js-loaded (fallback universale)");
+        window.__pageJsLoaded = true;
+        document.dispatchEvent(new Event("page-js-loaded"));
+      } else {
+        console.log("🟩 [UNIVERSALE ADMIN] page-js-loaded era già presente → nessuna emissione");
+      }
     }
 
     // ============================================================
