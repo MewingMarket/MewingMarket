@@ -1,7 +1,7 @@
 /*
   FILE: chat.js
   PATH: /app/public/videogioco/chat.js
-  DESC: Logica chat + LIM moderna: messaggi, avatar, animazioni, missioni.
+  DESC: Logica chat + LIM moderna: messaggi, avatar, animazioni, missioni + XP/Level.
 */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -70,15 +70,87 @@ document.addEventListener("DOMContentLoaded", () => {
   window.changeAvatar = changeAvatar;
 
   /* ============================================================
-     RENDER LIM — SUPPORTA MISSIONI
+     XP + LEVEL — RENDER
+  ============================================================ */
+  function renderXP(data) {
+    if (!limScreen) return;
+
+    const div = document.createElement("div");
+    div.className = "lim-block";
+
+    const h3 = document.createElement("h3");
+    h3.textContent = "⭐ XP guadagnati!";
+    div.appendChild(h3);
+
+    const p = document.createElement("p");
+    p.innerHTML = `Hai ottenuto <b>${data.xp}</b> XP`;
+    div.appendChild(p);
+
+    limScreen.appendChild(div);
+    npcTalk();
+  }
+
+  function renderLevelUp(data) {
+    if (!limScreen) return;
+
+    const div = document.createElement("div");
+    div.className = "lim-block";
+
+    const h3 = document.createElement("h3");
+    h3.textContent = "🎉 LIVELLO SUPERATO!";
+    div.appendChild(h3);
+
+    const p = document.createElement("p");
+    p.innerHTML = `Complimenti! Sei salito al livello <b>${data.level}</b>`;
+    div.appendChild(p);
+
+    limScreen.appendChild(div);
+    npcTalk();
+  }
+
+  function renderMissionComplete(data) {
+    if (!limScreen) return;
+
+    const div = document.createElement("div");
+    div.className = "lim-block";
+
+    const h3 = document.createElement("h3");
+    h3.textContent = "🏆 Missione completata!";
+    div.appendChild(h3);
+
+    const p = document.createElement("p");
+    p.innerHTML = `Hai completato: <b>${data.mission}</b>`;
+    div.appendChild(p);
+
+    limScreen.appendChild(div);
+    npcTalk();
+  }
+
+  /* ============================================================
+     RENDER LIM — SUPPORTA MISSIONI + XP + LEVEL
   ============================================================ */
   function renderOnLIM(data) {
     if (!limScreen || !data) return;
     limScreen.innerHTML = "";
 
-    /* ============================
-       1) TESTO SEMPLICE
-    ============================ */
+    /* XP */
+    if (data.type === "xp") {
+      renderXP(data);
+      return;
+    }
+
+    /* LEVEL UP */
+    if (data.type === "level_up") {
+      renderLevelUp(data);
+      return;
+    }
+
+    /* MISSIONE COMPLETATA */
+    if (data.missionCompleted) {
+      renderMissionComplete(data);
+    }
+
+    /* TESTO SEMPLICE */
     if (data.type === "text" && data.text) {
       const p = document.createElement("p");
       p.innerHTML = clean(data.text);
@@ -87,9 +159,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    /* ============================
-       2) MISSIONE (blocks)
-    ============================ */
+    /* MISSIONE (blocks) */
     if (data.type === "mission" && Array.isArray(data.blocks)) {
       data.blocks.forEach(block => {
         const div = document.createElement("div");
@@ -123,9 +193,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    /* ============================
-       3) FALLBACK
-    ============================ */
+    /* FALLBACK */
     const p = document.createElement("p");
     p.innerHTML = clean(data.fallback || "Nessuna risposta disponibile.");
     limScreen.appendChild(p);
