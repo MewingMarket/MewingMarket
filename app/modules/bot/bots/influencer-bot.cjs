@@ -48,7 +48,7 @@ async function run(message, context = {}) {
   const catalog = context.catalog || [];
 
   /* ============================================================
-     0) GUEST MODE → SOLO SOCIAL / MOTIVAZIONE
+     0) GUEST MODE → MOTIVAZIONE + SPINTA REGISTRAZIONE + NEWSLETTER
   ============================================================= */
   if (!context.userLogged) {
     return {
@@ -56,8 +56,8 @@ async function run(message, context = {}) {
       type: "mission",
       blocks: [
         {
-          title: "🔥 Benvenuto nella modalità DEMO!",
-          text: "Io sono l'Influencer. Posso motivarti, darti hype e mostrarti i nostri social."
+          title: "🔥 Modalità DEMO",
+          text: "Io sono l'Influencer. Posso motivarti e mostrarti i nostri social."
         },
         {
           title: "Funzioni disponibili",
@@ -65,7 +65,11 @@ async function run(message, context = {}) {
         },
         {
           title: "Sblocca tutte le funzioni",
-          text: "Accedi al sito per sbloccare tutorial, prodotti e missioni complete."
+          text: "Accedi o registrati per sbloccare tutorial, prodotti e missioni complete."
+        },
+        {
+          title: "Vuoi restare aggiornato?",
+          text: "Iscriviti alla newsletter per ricevere consigli e novità."
         }
       ]
     };
@@ -204,9 +208,16 @@ async function run(message, context = {}) {
   }
 
   /* ============================================================
-     6) SOCIAL (ruolo principale influencer)
+     6) SOCIAL (ruolo principale influencer) + DATABASE SOCIAL
   ============================================================= */
-  if (intent === "social" || intent === "seguimi") {
+  if (intent === "social" || intent === "seguimi" || intent === "influencer") {
+    try {
+      // prova a prendere un post reale dal DB social
+      const post = await social.getRandomForLIM?.("instagram");
+      if (post) return post; // già in formato LIM
+    } catch (e) {}
+
+    // fallback statico
     return {
       avatar: "influencer",
       type: "mission",
