@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS player_progress (
+  uid TEXT PRIMARY KEY,
+  xp INTEGER DEFAULT 0,
+  level INTEGER DEFAULT 1,
+  last_update INTEGER
+);
