@@ -63,63 +63,24 @@ if (!window.__SUPREMO_PUBLIC_2055__) {
     }
 
     // ============================================================
-    // NORMALIZZAZIONE NOME PAGINA
+    // RICONOSCIMENTO JS DI PAGINA A PRESCINDERE DAL NOME
     // ============================================================
-    function normalizeName(name) {
-      return name
-        .toLowerCase()
-        .replace(/\.html?$/, "")
-        .replace(/\.js$/, "")
-        .replace(/[^a-z0-9\-]/g, "")
-        .replace(/\-+/g, "-")
-        .trim();
-    }
-
-    function getPageBase() {
-      const p = window.location.pathname;
-
-      if (p === "/" || p === "") return "index";
-
-      const parts = p.split("/").filter(Boolean);
-
-      if (parts.length >= 2 && /^\d+$/.test(parts[parts.length - 1])) {
-        return normalizeName(parts[parts.length - 2]);
-      }
-
-      if (parts.length >= 2 && !parts[parts.length - 1].includes(".")) {
-        return normalizeName(parts.join("-"));
-      }
-
-      return normalizeName(parts.pop());
-    }
-
-    function getExpectedPageScript() {
-      const base = getPageBase();
-      return {
-        base,
-        src: `/${base}.js`
-      };
-    }
-
-    // ============================================================
-    // Rileva se il JS pagina è già nel DOM
-    // ============================================================
-    function paginaHaJsDiPagina(expectedSrc) {
+    function paginaHaJsDiPagina() {
       const scripts = document.querySelectorAll("script[src]");
 
       for (const s of scripts) {
         const src = s.getAttribute("src");
         if (!src) continue;
 
+        // Escludiamo solo i loader
         if (src.includes("loadersupremo")) continue;
         if (src.includes("loaderuniversale")) continue;
         if (src.includes("dynamic-loader")) continue;
         if (src.includes("loader.js")) continue;
 
-        if (src === expectedSrc || src.startsWith(expectedSrc + "?")) {
-          console.log("🔍 [SUPREMO PUBLIC] JS pagina già presente:", src);
-          return true;
-        }
+        // QUALSIASI ALTRO JS È IL JS DI PAGINA
+        console.log("🔍 [SUPREMO PUBLIC] JS pagina rilevato nel DOM:", src);
+        return true;
       }
 
       return false;
@@ -226,13 +187,9 @@ if (!window.__SUPREMO_PUBLIC_2055__) {
       // ============================================================
       await new Promise(r => setTimeout(r, 0));
 
-      const { base, src: expectedPageScript } = getExpectedPageScript();
-      console.log("🔍 [SUPREMO PUBLIC] Pagina normalizzata:", base);
-      console.log("🔍 [SUPREMO PUBLIC] Script pagina atteso:", expectedPageScript);
+      if (paginaHaJsDiPagina()) {
 
-      if (paginaHaJsDiPagina(expectedPageScript)) {
-
-        console.log("📄 [SUPREMO PUBLIC] JS pagina già presente");
+        console.log("📄 [SUPREMO PUBLIC] JS pagina già presente nel DOM");
 
         if (window.__pageJsLoaded && window.__criticalReady) {
           console.log("📄 [SUPREMO PUBLIC] page-js-loaded + critical-ready già presenti → skip universale COMPLETO");
