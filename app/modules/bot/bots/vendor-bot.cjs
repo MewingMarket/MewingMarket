@@ -30,7 +30,7 @@ function match(intentObj) {
     "acquisto_diretto",
     "catalogo",
 
-    // ⭐ PATCH PROMOZIONI
+    // Missioni commerciali
     "missione_completata"
   ].includes(intent);
 }
@@ -52,24 +52,48 @@ async function run(message, context = {}) {
   const catalog = context.catalog || [];
 
   /* ============================================================
-     1) CATALOGO
+     1) CATALOGO (missione: open_catalog)
   ============================================================= */
   if (intent === "catalogo") {
-    return catalogHandler.catalogList(catalog);
+    const card = catalogHandler.catalogList(catalog);
+
+    return {
+      avatar: "vendor",
+      type: "mission",
+      blocks: [
+        {
+          title: "📚 Catalogo prodotti",
+          text: "Ecco i prodotti disponibili."
+        },
+        {
+          title: "🎯 Missione",
+          text: "Hai aperto il catalogo!"
+        },
+        {
+          title: "Prodotti",
+          text: card.html || "Lista prodotti non disponibile."
+        }
+      ]
+    };
   }
 
   /* ============================================================
-     2) PRODOTTO PRINCIPALE
+     2) PRODOTTO PRINCIPALE (missione: view_product)
   ============================================================= */
   if (["prodotto", "prezzo", "prezzo_prodotto", "acquisto_diretto"].includes(intent)) {
     if (!productId) {
       return {
         avatar: "vendor",
-        type: "quick_replies",
-        text: "Quale prodotto ti interessa?",
-        options: [
-          { label: "Catalogo", intent: "catalogo" },
-          { label: "Prodotti consigliati", intent: "catalogo" }
+        type: "mission",
+        blocks: [
+          {
+            title: "📦 Quale prodotto vuoi vedere?",
+            text: "Scegli un prodotto dal catalogo."
+          },
+          {
+            title: "🎯 Missione",
+            text: "Apri un prodotto dal catalogo."
+          }
         ]
       };
     }
@@ -83,17 +107,37 @@ async function run(message, context = {}) {
       };
     }
 
-    // Premium product card
     const card = Premium.Cards.productCard(p);
 
-    // Aggiungo quick replies premium
-    card.quick_replies = Premium.Quick.productQuickReplies(p);
-
-    return card;
+    return {
+      avatar: "vendor",
+      type: "mission",
+      blocks: [
+        {
+          title: `📦 ${p.titolo_breve}`,
+          text: p.descrizione_breve
+        },
+        {
+          title: "Prezzo",
+          text: `${p.prezzo} €`
+        },
+        {
+          title: "🎯 Missione",
+          text: "Hai visualizzato un prodotto!"
+        },
+        {
+          title: "Apri scheda completa",
+          cta: {
+            label: "Dettagli prodotto",
+            href: `/prodotto/${p.id}`
+          }
+        }
+      ]
+    };
   }
 
   /* ============================================================
-     ⭐ PATCH — 2.5) MISSIONE COMPLETATA → CREA PROMOZIONE
+     2.5) MISSIONE COMPLETATA → PROMOZIONE
   ============================================================= */
   if (intent === "missione_completata") {
     return {
@@ -102,7 +146,11 @@ async function run(message, context = {}) {
       blocks: [
         {
           title: "🎉 Missione completata!",
-          text: "Hai completato la missione di vendita. Ora puoi ottenere la tua promozione personalizzata."
+          text: "Hai completato la missione di vendita."
+        },
+        {
+          title: "🎁 Ricompensa",
+          text: "Puoi ottenere una promozione personalizzata."
         },
         {
           title: "Ottieni la tua promozione",
@@ -116,7 +164,7 @@ async function run(message, context = {}) {
   }
 
   /* ============================================================
-     3) DETTAGLI PRODOTTO
+     3) DETTAGLI PRODOTTO (missione: view_product_details)
   ============================================================= */
   if (intent === "dettagli_prodotto") {
     const p = catalog.find(x => x.id === productId);
@@ -128,11 +176,26 @@ async function run(message, context = {}) {
       };
     }
 
-    return Premium.Cards.productDetailsCard(p);
+    const card = Premium.Cards.productDetailsCard(p);
+
+    return {
+      avatar: "vendor",
+      type: "mission",
+      blocks: [
+        {
+          title: `📘 Dettagli: ${p.titolo_breve}`,
+          text: card.html || "Dettagli non disponibili."
+        },
+        {
+          title: "🎯 Missione",
+          text: "Hai visualizzato i dettagli di un prodotto!"
+        }
+      ]
+    };
   }
 
   /* ============================================================
-     4) IMMAGINE PRODOTTO
+     4) IMMAGINE PRODOTTO (missione: view_product_image)
   ============================================================= */
   if (intent === "immagine_prodotto") {
     const p = catalog.find(x => x.id === productId);
@@ -144,11 +207,26 @@ async function run(message, context = {}) {
       };
     }
 
-    return Premium.Cards.productImageCard(p);
+    const card = Premium.Cards.productImageCard(p);
+
+    return {
+      avatar: "vendor",
+      type: "mission",
+      blocks: [
+        {
+          title: `🖼️ Immagine: ${p.titolo_breve}`,
+          text: card.html || "Immagine non disponibile."
+        },
+        {
+          title: "🎯 Missione",
+          text: "Hai visualizzato l’immagine di un prodotto!"
+        }
+      ]
+    };
   }
 
   /* ============================================================
-     5) RECENSIONI (mock locale)
+     5) RECENSIONI (missione: view_reviews)
   ============================================================= */
   if (intent === "recensioni") {
     const p = catalog.find(x => x.id === productId);
@@ -161,14 +239,29 @@ async function run(message, context = {}) {
       };
     }
 
-    return Premium.Cards.productReviewsCard(p, [
+    const card = Premium.Cards.productReviewsCard(p, [
       { user: "Utente A", rating: 5, comment: "Ottimo prodotto!" },
       { user: "Utente B", rating: 4, comment: "Molto utile." }
     ]);
+
+    return {
+      avatar: "vendor",
+      type: "mission",
+      blocks: [
+        {
+          title: `⭐ Recensioni: ${p.titolo_breve}`,
+          text: card.html || "Nessuna recensione disponibile."
+        },
+        {
+          title: "🎯 Missione",
+          text: "Hai visualizzato le recensioni!"
+        }
+      ]
+    };
   }
 
   /* ============================================================
-     6) PRODOTTI CORRELATI
+     6) PRODOTTI CORRELATI (missione: view_related)
   ============================================================= */
   if (intent === "prodotti_correlati") {
     const p = catalog.find(x => x.id === productId);
@@ -181,7 +274,22 @@ async function run(message, context = {}) {
       };
     }
 
-    return Premium.Cross.crossSellByCategory(p, catalog);
+    const card = Premium.Cross.crossSellByCategory(p, catalog);
+
+    return {
+      avatar: "vendor",
+      type: "mission",
+      blocks: [
+        {
+          title: `🔗 Correlati a ${p.titolo_breve}`,
+          text: card.html || "Nessun prodotto correlato trovato."
+        },
+        {
+          title: "🎯 Missione",
+          text: "Hai visualizzato prodotti correlati!"
+        }
+      ]
+    };
   }
 
   /* ============================================================
@@ -189,12 +297,16 @@ async function run(message, context = {}) {
   ============================================================= */
   return {
     avatar: "vendor",
-    type: "quick_replies",
-    text: "Come posso aiutarti a scegliere il prodotto giusto?",
-    options: [
-      { label: "Catalogo", intent: "catalogo" },
-      { label: "Prodotti consigliati", intent: "catalogo" },
-      { label: "Assistenza", intent: "supporto" }
+    type: "mission",
+    blocks: [
+      {
+        title: "Come posso aiutarti?",
+        text: "• Catalogo<br>• Prezzi<br>• Recensioni<br>• Prodotti correlati"
+      },
+      {
+        title: "🎯 Missione suggerita",
+        text: "Apri il catalogo!"
+      }
     ]
   };
 }
@@ -208,17 +320,35 @@ async function sidekick(message, context = {}) {
   if (!product) {
     return {
       avatar: "vendor",
-      type: "text",
-      text: "Se vuoi, posso mostrarti i prodotti più popolari."
+      type: "mission",
+      blocks: [
+        {
+          title: "🛒 Suggerimento",
+          text: "Se vuoi, posso mostrarti i prodotti più popolari."
+        },
+        {
+          title: "🎯 Missione combo",
+          text: "Parla con due NPC diversi nella stessa sessione."
+        }
+      ]
     };
   }
 
   return {
     avatar: "vendor",
-    type: "text",
-    text: `Vuoi vedere prodotti simili a *${product.titolo_breve}*?`,
-    actions: [
-      { label: "Correlati", intent: "prodotti_correlati", productId: product.id }
+    type: "mission",
+    blocks: [
+      {
+        title: `🔍 Vuoi vedere prodotti simili a ${product.titolo_breve}?`,
+        text: "Posso mostrarti alternative e correlati."
+      },
+      {
+        title: "Apri correlati",
+        cta: {
+          label: "Prodotti correlati",
+          href: `#prodotti_correlati_${product.id}`
+        }
+      }
     ]
   };
 }
