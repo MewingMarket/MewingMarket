@@ -31,7 +31,7 @@ async function run(message, context = {}, extras = {}) {
   const intent = intentObj.intent || "generico";
 
   /* ============================================================
-     0) GUEST MODE — onboarding migliorato
+     0) GUEST MODE — onboarding migliorato + missione iniziale
   ============================================================= */
   if (!context.userLogged && intent === "saluto") {
     return {
@@ -43,12 +43,12 @@ async function run(message, context = {}, extras = {}) {
           text: "Io sono il Narratore. Ti guiderò nel videogioco conversazionale."
         },
         {
-          title: "Cosa puoi fare ora",
-          text: "• Scegli un bot dalla Home<br>• Prova a scrivere qualcosa<br>• Esplora il mondo"
+          title: "🎯 Missione iniziale",
+          text: "Scegli un bot dalla Home per iniziare la tua avventura."
         },
         {
-          title: "Per sbloccare tutto",
-          text: "Accedi o registrati."
+          title: "Suggerimento",
+          text: "Ogni bot ha una personalità diversa. Provali tutti!"
         }
       ]
     };
@@ -56,9 +56,23 @@ async function run(message, context = {}, extras = {}) {
 
   /* ============================================================
      1) SALUTI / ONBOARDING
+     (missione: 'parla con un NPC')
   ============================================================= */
   if (intent === "saluto" || intent === "onboarding") {
-    return conv.conversationGeneric();
+    return {
+      avatar: "assistant",
+      type: "mission",
+      blocks: [
+        {
+          title: "👋 Ciao!",
+          text: "Sono sempre qui se ti serve una mano."
+        },
+        {
+          title: "🎯 Missione",
+          text: "Parla con uno dei bot per scoprire cosa può fare."
+        }
+      ]
+    };
   }
 
   /* ============================================================
@@ -84,7 +98,6 @@ async function run(message, context = {}, extras = {}) {
 
   /* ============================================================
      5) PRODOTTO NON RICONOSCIUTO
-     (Intent Engine ha trovato un prodotto ma non è compito del Vendor)
   ============================================================= */
   if (intent === "prodotto_sconosciuto" && extras.product) {
     return fb.fallbackProduct(extras.product);
@@ -92,7 +105,6 @@ async function run(message, context = {}, extras = {}) {
 
   /* ============================================================
      6) TUTORIAL PRODOTTO SENZA BOT CORRETTO
-     (Intent Engine ha rilevato tutorial ma Professore non ha risposto)
   ============================================================= */
   if (intent === "tutorial_prodotto" && !extras.guide) {
     return {
@@ -104,7 +116,11 @@ async function run(message, context = {}, extras = {}) {
           text: "Per i tutorial dettagliati ti consiglio di parlare con il Professore."
         },
         {
-          title: "Vuoi aprire il Professore?",
+          title: "🎯 Missione",
+          text: "Apri il Professore per continuare il tutorial."
+        },
+        {
+          title: "Vai al Professore",
           cta: {
             label: "Apri Professore",
             href: "#professor"
@@ -115,9 +131,26 @@ async function run(message, context = {}, extras = {}) {
   }
 
   /* ============================================================
-     7) FALLBACK GENERICO
+     7) FALLBACK GENERICO — con missione di esplorazione
   ============================================================= */
-  return fb.fallbackGeneric();
+  return {
+    avatar: "assistant",
+    type: "mission",
+    blocks: [
+      {
+        title: "🤔 Non ho capito bene",
+        text: "Ma non preoccuparti, possiamo continuare!"
+      },
+      {
+        title: "🎯 Missione suggerita",
+        text: "Prova a chiedere qualcosa a uno dei bot specializzati."
+      },
+      {
+        title: "Suggerimenti",
+        text: "• Vendor: prodotti e catalogo<br>• Influencer: motivazione<br>• Professore: tutorial e guide"
+      }
+    ]
+  };
 }
 
 /* ============================================================
