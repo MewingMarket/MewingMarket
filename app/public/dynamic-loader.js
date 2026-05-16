@@ -2,6 +2,7 @@
 // DYNAMIC LOADER — SAFE MODE 2055 (ULTRA MINIMAL PUBLIC)
 // Percorso reale: /app/public/dynamic-loader.js
 // Scopo: garantire che TUTTI i JS successivi siano freschi
+// Compatibile con SUPREMO 2055 (no loop, no race)
 // =========================================================
 
 if (window.__DYNAMIC_LOADER_2055__) {
@@ -61,18 +62,33 @@ if (window.__DYNAMIC_LOADER_2055__) {
 
     // ============================================================
     // 3) RENDER = FONTE UNICA DI VERITÀ
-    // Forza tutti gli script a bypassare la cache
+    // Patchata: NON tocca gli script già modificati da SUPREMO
     // ============================================================
     function forceRenderNoStore() {
       try {
         const scripts = document.querySelectorAll("script[src]");
+
         scripts.forEach(s => {
+          const src = s.getAttribute("src");
+          if (!src) return;
+
+          // NON toccare loader, supremo, universale, critical
+          if (
+            src.includes("loadersupremo") ||
+            src.includes("loaderuniversale") ||
+            src.includes("dynamic-loader") ||
+            src.includes("critical-loader") ||
+            src.includes("loader.js")
+          ) {
+            return;
+          }
+
           const url = new URL(s.src);
           url.searchParams.set("cache", "no-store");
           s.src = url.toString();
         });
 
-        console.log("🟦 [DYNAMIC] Render impostato come fonte unica di verità");
+        console.log("🟦 [DYNAMIC] Render impostato come fonte unica di verità (SAFE)");
       } catch (e) {
         console.warn("❌ [DYNAMIC] Errore no-store:", e.message);
       }
