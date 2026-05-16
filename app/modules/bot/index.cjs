@@ -16,7 +16,7 @@ const intentEngine = require(path.join(process.cwd(), "app/modules/bot/intent-en
 const router = require(path.join(process.cwd(), "app/modules/bot/core/router.cjs"));
 
 /* ============================================================
-   AVATAR (NPC del videogioco) — NOMI REALI
+   AVATAR (NPC del videogioco)
 ============================================================ */
 const vendor = require(path.join(process.cwd(), "app/modules/bot/bots/vendor-bot.cjs"));
 const professor = require(path.join(process.cwd(), "app/modules/bot/bots/professore-bot.cjs"));
@@ -25,27 +25,25 @@ const newsletter = require(path.join(process.cwd(), "app/modules/bot/bots/newsle
 const generic = require(path.join(process.cwd(), "app/modules/bot/bots/generic-bot.cjs"));
 
 /* ============================================================
-   UTILS (normalizzazione, keyword, logging)
+   UTILS
 ============================================================ */
 const utils = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
 
 /* ============================================================
-   WHISPER (trascrizione vocale → testo)
+   WHISPER (trascrizione vocale)
 ============================================================ */
 const transcribeAudio = require(path.join(process.cwd(), "app/modules/bot/whisper.cjs"));
 
 /* ============================================================
-   GAME ENGINE (UI JSON → frontend stile WhatsApp)
+   GAME ENGINE (UI JSON → frontend)
 ============================================================ */
 let gameEngine = null;
 try {
   gameEngine = require(path.join(process.cwd(), "app/modules/bot/game-engine.cjs"));
-} catch {
-  // Non esiste ancora, lo creeremo dopo
-}
+} catch {}
 
 /* ============================================================
-   MODULI ESTERNI (catalogo, faq, guides, memory, ai)
+   MODULI ESTERNI
 ============================================================ */
 const catalogo = require(path.join(process.cwd(), "app/modules/catalogo.cjs"));
 const faq = require(path.join(process.cwd(), "app/modules/faq.cjs"));
@@ -54,20 +52,16 @@ const memory = require(path.join(process.cwd(), "app/modules/memory.cjs"));
 const ai = require(path.join(process.cwd(), "app/server/modules/ai.cjs"));
 
 /* ============================================================
-   1) detectIntent() — wrapper deterministico
+   1) detectIntent() — fusione deterministica
 ============================================================ */
 async function detectIntent(text, uid) {
   if (!text || typeof text !== "string") {
     return { intent: "generico" };
   }
 
-  // Intent Engine locale
   const localIntent = intentEngine.detect(text);
-
-  // Intent AI (fallback)
   const aiIntent = await ai.generateIntent(text, { uid });
 
-  // Merge deterministico
   return {
     intent: localIntent?.intent || aiIntent?.intent || "generico",
     ...localIntent,
@@ -95,13 +89,13 @@ async function handleConversation(reqOrIntent, text, uid, userState = {}) {
     intentObj = reqOrIntent;
   }
 
-  // Salva memoria
+  // Memoria
   memory.push(uid, text);
 
   // Router → avatar
   const avatar = router.pickAvatar(intentObj);
 
-  // NPC → risposta
+  // NPC selezionato
   const npc = {
     vendor,
     professor,
@@ -110,6 +104,7 @@ async function handleConversation(reqOrIntent, text, uid, userState = {}) {
     generic
   }[avatar] || generic;
 
+  // Risposta NPC
   const npcReply = await npc.run(text, {
     uid,
     intent: intentObj,
@@ -144,7 +139,7 @@ async function handleConversation(reqOrIntent, text, uid, userState = {}) {
 /* ============================================================
    3) reply() — builder UI JSON (fallback)
 ============================================================ */
-function reply(response, uid) {
+function reply(response) {
   if (response?.frames) return response;
 
   return {
@@ -163,7 +158,7 @@ function reply(response, uid) {
 async function runGame(message, context = {}) {
   const intent = await detectIntent(message, context.uid);
   const result = await handleConversation(intent, message, context.uid, context);
-  return reply(result, context.uid);
+  return reply(result);
 }
 
 /* ============================================================
@@ -186,7 +181,6 @@ module.exports = {
   reply,
   runGame,
 
-  // moduli esterni
   catalogo,
   faq,
   guides,
