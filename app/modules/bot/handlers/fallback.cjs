@@ -58,7 +58,7 @@ function fallbackProduct(product) {
     avatar: "assistant",
     product: {
       id: product.id,
-      title: product.titolo || "Prodotto",
+      title: product.titolo || product.titolo_breve || "Prodotto",
       description: product.descrizione_breve || "",
       price_cent: product.prezzo_cent || 0,
       image: product.immagine_url || ""
