@@ -6,21 +6,32 @@
 
 const cache = new Map();
 
-/**
- * getCachedTutorial
- */
+/* ============================================================
+   GET
+============================================================ */
 function getCachedTutorial(key) {
+  if (!key) return null;
   return cache.get(key) || null;
 }
 
-/**
- * setCachedTutorial
- */
+/* ============================================================
+   SET
+============================================================ */
 function setCachedTutorial(key, url) {
+  if (!key || !url) return false;
   cache.set(key, url);
+  return true;
+}
+
+/* ============================================================
+   CLEAR (opzionale ma utile)
+============================================================ */
+function clearTutorialCache() {
+  cache.clear();
 }
 
 module.exports = {
   getCachedTutorial,
-  setCachedTutorial
+  setCachedTutorial,
+  clearTutorialCache
 };
