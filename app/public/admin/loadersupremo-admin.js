@@ -23,6 +23,10 @@ if (!window.__SUPREMO_ADMIN_LOADER_2055__) {
     window.__LOADER_UNIVERSALE_ADMIN_CARICATO__ =
       window.__LOADER_UNIVERSALE_ADMIN_CARICATO__ || false;
 
+    // Flag globali
+    window.__pageJsLoaded = window.__pageJsLoaded || false;
+    window.__criticalReady = window.__criticalReady || false;
+
     console.log("⚡ [SUPREMO ADMIN 2055] Inizializzazione SUPREMO ADMIN...");
 
     // ============================================================
@@ -126,8 +130,9 @@ if (!window.__SUPREMO_ADMIN_LOADER_2055__) {
     async function runSupremoAdmin() {
       const state = window.__SUPREMO_ADMIN_RUN_STATE__;
 
-      if (state.done) {
-        console.log("⏭️ [SUPREMO ADMIN] Sequenza già completata");
+      // Skip corretto
+      if (state.done && window.__pageJsLoaded && window.__criticalReady) {
+        console.log("⏭️ [SUPREMO ADMIN] Sequenza già completata (page-js + critical-ready)");
         return;
       }
       if (state.running) {
@@ -136,10 +141,6 @@ if (!window.__SUPREMO_ADMIN_LOADER_2055__) {
       }
 
       state.running = true;
-
-      // 0) Emissione critical-core-ready (spostato dal critical admin)
-      console.log("🟦 [SUPREMO ADMIN 2055] Emissione critical-core-ready");
-      document.dispatchEvent(new Event("critical-core-ready"));
 
       console.log("🟦 [SUPREMO ADMIN 2055] Avvio sequenza SUPREMO ADMIN");
 
@@ -181,9 +182,31 @@ if (!window.__SUPREMO_ADMIN_LOADER_2055__) {
       console.log("🔍 [SUPREMO ADMIN] Script pagina atteso:", expectedPageScript);
 
       if (paginaAdminHaJsDiPagina(expectedPageScript)) {
-        console.log("📄 [SUPREMO ADMIN] JS pagina già presente → skip universale");
-        document.dispatchEvent(new Event("page-js-loaded"));
+
+        console.log("📄 [SUPREMO ADMIN] JS pagina già presente");
+
+        // Skip universale corretto
+        if (window.__pageJsLoaded && window.__criticalReady) {
+          console.log("📄 [SUPREMO ADMIN] page-js-loaded + critical-ready già presenti → skip universale COMPLETO");
+          state.running = false;
+          state.done = true;
+          return;
+        }
+
+        // Se manca critical-ready → continua pipeline
+        if (!window.__criticalReady) {
+          console.warn("⚠️ [SUPREMO ADMIN] JS pagina presente MA critical-ready mancante → continuo pipeline");
+        }
+
+        // Se manca page-js-loaded → emettilo ora
+        if (!window.__pageJsLoaded) {
+          console.log("🟩 [SUPREMO ADMIN] page-js-loaded (diretto)");
+          window.__pageJsLoaded = true;
+          document.dispatchEvent(new Event("page-js-loaded"));
+        }
+
       } else {
+        // Fallback universale
         if (!window.__LOADER_UNIVERSALE_ADMIN_CARICATO__) {
           window.__LOADER_UNIVERSALE_ADMIN_CARICATO__ = true;
 
@@ -195,10 +218,17 @@ if (!window.__SUPREMO_ADMIN_LOADER_2055__) {
       }
 
       // 5) Attesa page-js-loaded
-      console.log("📄 [SUPREMO ADMIN] In attesa di page-js-loaded...");
-      await new Promise(resolve => {
-        document.addEventListener("page-js-loaded", resolve, { once: true });
-      });
+      if (!window.__pageJsLoaded) {
+        console.log("📄 [SUPREMO ADMIN] In attesa di page-js-loaded...");
+        await new Promise(resolve => {
+          document.addEventListener("page-js-loaded", () => {
+            window.__pageJsLoaded = true;
+            resolve();
+          }, { once: true });
+        });
+      } else {
+        console.log("📄 [SUPREMO ADMIN] page-js-loaded era già presente → nessuna attesa");
+      }
 
       console.log("📄 [SUPREMO ADMIN] page-js-loaded ricevuto");
 
@@ -207,9 +237,13 @@ if (!window.__SUPREMO_ADMIN_LOADER_2055__) {
       await loadScript("/admin/dynamic-admin-loader.js");
 
       // 7) Critical ready finale
-      console.log("🟩 [SUPREMO ADMIN 2055] critical-ready (ADMIN)");
-      window.__criticalReady = true;
-      document.dispatchEvent(new Event("critical-ready"));
+      if (!window.__criticalReady) {
+        console.log("🟩 [SUPREMO ADMIN 2055] critical-ready (ADMIN)");
+        window.__criticalReady = true;
+        document.dispatchEvent(new Event("critical-ready"));
+      } else {
+        console.log("🟩 [SUPREMO ADMIN 2055] critical-ready era già presente");
+      }
 
       state.running = false;
       state.done = true;
