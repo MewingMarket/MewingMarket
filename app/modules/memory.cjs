@@ -1,4 +1,4 @@
-// modules/memory.js — VERSIONE MAX (blindata)
+// modules/memory.cjs — VERSIONE 2027 (blindata, compatibile con Intent Engine)
 
 /*
   Struttura memoria per ogni utente:
@@ -11,11 +11,13 @@
 
 const memoryStore = {};
 
-/* =========================================================
+/* ============================================================
    FUNZIONI DI SICUREZZA
-========================================================= */
+============================================================ */
 function safeUID(uid) {
-  return typeof uid === "string" || typeof uid === "number" ? String(uid) : null;
+  return typeof uid === "string" || typeof uid === "number"
+    ? String(uid)
+    : null;
 }
 
 function ensureMemory(uid) {
@@ -23,23 +25,29 @@ function ensureMemory(uid) {
   if (!id) return null;
 
   if (!memoryStore[id] || typeof memoryStore[id] !== "object") {
-    memoryStore[id] = { messages: [], prefs: {}, ts: Date.now() };
+    memoryStore[id] = {
+      messages: [],
+      prefs: {},
+      ts: Date.now()
+    };
   }
 
   return memoryStore[id];
 }
 
-/* =========================================================
-   EXPORT
-========================================================= */
+/* ============================================================
+   EXPORT FUNZIONI
+============================================================ */
 module.exports = {
-  // Aggiunge un messaggio alla memoria
+  /* -----------------------------------------
+     Aggiunge un messaggio alla memoria
+  ----------------------------------------- */
   push(uid, text) {
     const mem = ensureMemory(uid);
     if (!mem) return;
 
     if (typeof text === "string" && text.trim() !== "") {
-      mem.messages.push(text);
+      mem.messages.push(text.trim());
     }
 
     mem.ts = Date.now();
@@ -50,12 +58,14 @@ module.exports = {
     }
   },
 
-  // Recupera memoria conversazionale
+  /* -----------------------------------------
+     Recupera memoria conversazionale
+  ----------------------------------------- */
   get(uid) {
     const mem = ensureMemory(uid);
     if (!mem) return [];
 
-    // Se la memoria è troppo vecchia (> 45 minuti), reset
+    // Reset se troppo vecchia (> 45 minuti)
     if (mem.ts && Date.now() - mem.ts > 45 * 60 * 1000) {
       memoryStore[uid] = { messages: [], prefs: {}, ts: Date.now() };
       return [];
@@ -64,29 +74,40 @@ module.exports = {
     return Array.isArray(mem.messages) ? mem.messages : [];
   },
 
-  // Salva preferenze utente
+  /* -----------------------------------------
+     Salva preferenze utente
+  ----------------------------------------- */
   setPref(uid, key, value) {
     const mem = ensureMemory(uid);
     if (!mem) return;
 
-    if (typeof key === "string") {
+    if (typeof key === "string" && key.trim() !== "") {
       mem.prefs[key] = value;
     }
 
     mem.ts = Date.now();
   },
 
-  // Recupera preferenze
+  /* -----------------------------------------
+     Recupera preferenze
+  ----------------------------------------- */
   getPrefs(uid) {
     const mem = ensureMemory(uid);
     if (!mem) return {};
     return mem.prefs || {};
   },
 
-  // Reset totale
+  /* -----------------------------------------
+     Reset totale
+  ----------------------------------------- */
   reset(uid) {
     const id = safeUID(uid);
     if (!id) return;
-    memoryStore[id] = { messages: [], prefs: {}, ts: Date.now() };
+
+    memoryStore[id] = {
+      messages: [],
+      prefs: {},
+      ts: Date.now()
+    };
   }
 };
