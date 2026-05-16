@@ -28,9 +28,11 @@ const AVATAR_PNG_MAP = {
 
 /**
  * getAvatarPng
+ * Restituisce il PNG corretto in base a botAvatar + gender
  */
 function getAvatarPng(botAvatar, gender) {
-  const key = `${botAvatar}_${gender === "female" ? "female" : "male"}`;
+  const normalizedGender = gender === "female" ? "female" : "male";
+  const key = `${botAvatar}_${normalizedGender}`;
   return AVATAR_PNG_MAP[key] || AVATAR_PNG_MAP["generic_male"];
 }
 
@@ -42,23 +44,35 @@ function getAvatarPng(botAvatar, gender) {
  * gender: "male" | "female"
  */
 async function createTutorialForGuide(guideKey, guideText, botAvatar, gender) {
+  if (!guideKey || !guideText) {
+    throw new Error("createTutorialForGuide: guideKey o guideText mancanti.");
+  }
+
+  // Normalizzazione slug
+  const safeKey = String(guideKey).trim().toLowerCase();
+
+  // 1) Script
   const script = generateVideoScript(guideText, {
-    title: guideKey.replace(/-/g, " ")
+    title: safeKey.replace(/-/g, " ")
   });
 
-  const voice = await generateVoice(script.voiceover, botAvatar, guideKey);
+  // 2) Voce
+  const voice = await generateVoice(script.voiceover, botAvatar, safeKey);
 
+  // 3) Avatar PNG → animazione
   const avatarPng = getAvatarPng(botAvatar, gender);
-  const avatarVideo = await animateAvatar(avatarPng, voice.filePath, botAvatar, guideKey);
+  const avatarVideo = await animateAvatar(avatarPng, voice.filePath, botAvatar, safeKey);
 
+  // 4) Render finale
   const tutorial = await renderTutorialVideo({
-    guideKey,
+    guideKey: safeKey,
     avatarKey: botAvatar,
     script,
     voice,
     avatarVideo
   });
 
+  // 5) Restituisce solo il percorso pubblico
   return tutorial.publicPath;
 }
 
