@@ -50,7 +50,7 @@ async function run(message, context = {}) {
   const catalog = context.catalog || [];
 
   /* ============================================================
-     0) GUEST MODE → onboarding + motivazione registrazione
+     0) GUEST MODE → onboarding + missione
   ============================================================= */
   if (!context.userLogged) {
     return {
@@ -62,22 +62,35 @@ async function run(message, context = {}) {
           text: "Sono il Newsletter Bot. Posso mostrarti come funziona la newsletter."
         },
         {
-          title: "Cosa puoi fare ora",
-          text: "• Capire cosa riceverai<br>• Vedere le novità<br>• Ricevere motivazione dall’Influencer Bot"
+          title: "🎯 Missione",
+          text: "Accedi per iscriverti alla newsletter e sbloccare premi."
         },
         {
-          title: "Per iscriverti",
-          text: "Accedi o crea un account."
+          title: "Cosa puoi fare ora",
+          text: "• Capire cosa riceverai<br>• Vedere le novità<br>• Ricevere motivazione dall’Influencer Bot"
         }
       ]
     };
   }
 
   /* ============================================================
-     1) ISCRIZIONE — step 1
+     1) ISCRIZIONE — step 1 (missione: newsletter_signup)
   ============================================================= */
   if (intent === "newsletter_subscribe") {
-    return newsletter.newsletterSubscribe();
+    return {
+      avatar: "newsletter",
+      type: "mission",
+      blocks: [
+        {
+          title: "📬 Iscrizione newsletter",
+          text: "Inserisci la tua email per completare l’iscrizione."
+        },
+        {
+          title: "🎯 Missione",
+          text: "Completa l’iscrizione per ottenere XP extra."
+        }
+      ]
+    };
   }
 
   /* ============================================================
@@ -94,14 +107,40 @@ async function run(message, context = {}) {
 
     await newsletter.addEmail(email);
 
-    return newsletter.newsletterSubscribeConfirm(email);
+    return {
+      avatar: "newsletter",
+      type: "mission",
+      blocks: [
+        {
+          title: "🎉 Iscrizione completata!",
+          text: `Ti ho iscritto alla newsletter con l’email <b>${email}</b>.`
+        },
+        {
+          title: "🎯 Missione completata",
+          text: "Hai completato la missione: Iscriviti alla newsletter."
+        }
+      ]
+    };
   }
 
   /* ============================================================
      2) DISISCRIZIONE — step 1
   ============================================================= */
   if (intent === "newsletter_unsubscribe") {
-    return newsletter.newsletterUnsubscribe();
+    return {
+      avatar: "newsletter",
+      type: "mission",
+      blocks: [
+        {
+          title: "📭 Disiscrizione",
+          text: "Inserisci la tua email per disiscriverti."
+        },
+        {
+          title: "Nota",
+          text: "Potrai sempre iscriverti di nuovo in futuro."
+        }
+      ]
+    };
   }
 
   /* ============================================================
@@ -118,12 +157,24 @@ async function run(message, context = {}) {
 
     await newsletter.removeEmail(email);
 
-    return newsletter.newsletterUnsubscribeConfirm(email);
+    return {
+      avatar: "newsletter",
+      type: "mission",
+      blocks: [
+        {
+          title: "📭 Disiscrizione completata",
+          text: `Hai rimosso l’email <b>${email}</b> dalla newsletter.`
+        },
+        {
+          title: "🎯 Missione",
+          text: "Hai completato la missione: Gestisci newsletter."
+        }
+      ]
+    };
   }
 
   /* ============================================================
-     3) FOLLOW-UP (retention + motivazione utenti)
-     — come nelle tue foto Notion
+     3) FOLLOW-UP (missione: follow_up)
   ============================================================= */
   if (intent === "follow_up") {
     return {
@@ -135,15 +186,15 @@ async function run(message, context = {}) {
           text: "Vuoi rimanere aggiornato su guide, novità e contenuti utili?"
         },
         {
-          title: "Cosa posso fare per te",
-          text: "• Iscriverti alla newsletter<br>• Mostrarti le ultime novità<br>• Farti motivare dall’Influencer Bot"
+          title: "🎯 Missione",
+          text: "Iscriviti alla newsletter o guarda le novità."
         }
       ]
     };
   }
 
   /* ============================================================
-     4) REMINDER (solo spiegazione)
+     4) REMINDER (missione: reminder)
   ============================================================= */
   if (intent === "reminder") {
     return {
@@ -161,29 +212,48 @@ async function run(message, context = {}) {
   if (intent === "reminder_24h") {
     return {
       avatar: "newsletter",
-      type: "text",
-      text: "Perfetto! Ti invierò un promemoria tra 24 ore."
+      type: "mission",
+      blocks: [
+        {
+          title: "⏰ Promemoria impostato",
+          text: "Ti invierò un promemoria tra 24 ore."
+        },
+        {
+          title: "🎯 Missione",
+          text: "Hai impostato un reminder!"
+        }
+      ]
     };
   }
 
   if (intent === "reminder_domani") {
     return {
       avatar: "newsletter",
-      type: "text",
-      text: "Riceverai un promemoria domani mattina."
+      type: "mission",
+      blocks: [
+        {
+          title: "⏰ Promemoria impostato",
+          text: "Riceverai un promemoria domani mattina."
+        }
+      ]
     };
   }
 
   if (intent === "reminder_7giorni") {
     return {
       avatar: "newsletter",
-      type: "text",
-      text: "Ti ricorderò tutto tra una settimana."
+      type: "mission",
+      blocks: [
+        {
+          title: "⏰ Promemoria impostato",
+          text: "Ti ricorderò tutto tra una settimana."
+        }
+      ]
     };
   }
 
   /* ============================================================
-     5) NOVITÀ (solo 3 prodotti)
+     5) NOVITÀ (missione: view_news)
   ============================================================= */
   if (intent === "novita") {
     const products = catalog.slice(0, 3);
@@ -207,6 +277,10 @@ async function run(message, context = {}) {
             .join("<br>")
         },
         {
+          title: "🎯 Missione",
+          text: "Hai visualizzato le novità!"
+        },
+        {
           title: "Vuoi vedere tutto il catalogo?",
           cta: {
             label: "Apri catalogo",
@@ -227,6 +301,10 @@ async function run(message, context = {}) {
       {
         title: "📬 Gestione Newsletter",
         text: "Vuoi iscriverti, disiscriverti o vedere le novità?"
+      },
+      {
+        title: "🎯 Missione suggerita",
+        text: "Prova a chiedere: 'Mostrami le novità'."
       }
     ]
   };
