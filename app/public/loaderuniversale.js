@@ -24,6 +24,9 @@ if (window.__LOADER_UNIVERSALE_PUBLIC_2055__) {
         done: false
       };
 
+    // Flag globali
+    window.__pageJsLoaded = window.__pageJsLoaded || false;
+
     console.log("⚡ [UNIVERSALE PUBLIC 2055] Avvio loader universale PUBLIC (FALLBACK MODE)");
 
     // ============================================================
@@ -39,9 +42,6 @@ if (window.__LOADER_UNIVERSALE_PUBLIC_2055__) {
         .trim();
     }
 
-    // ============================================================
-    // NOME BASE PAGINA
-    // ============================================================
     function getPageBase() {
       const p = window.location.pathname;
 
@@ -146,8 +146,14 @@ if (window.__LOADER_UNIVERSALE_PUBLIC_2055__) {
       state.running = false;
       state.done = true;
 
-      console.log("🟩 [UNIVERSALE PUBLIC] page-js-loaded (fallback universale)");
-      document.dispatchEvent(new Event("page-js-loaded"));
+      // Evita doppie emissioni
+      if (!window.__pageJsLoaded) {
+        console.log("🟩 [UNIVERSALE PUBLIC] page-js-loaded (fallback universale)");
+        window.__pageJsLoaded = true;
+        document.dispatchEvent(new Event("page-js-loaded"));
+      } else {
+        console.log("🟩 [UNIVERSALE PUBLIC] page-js-loaded era già presente → nessuna emissione");
+      }
     }
 
     // ============================================================
