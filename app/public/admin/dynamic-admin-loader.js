@@ -2,6 +2,7 @@
 // DYNAMIC ADMIN LOADER — SAFE MODE 2055 (ULTRA MINIMAL)
 // Percorso reale: /app/public/admin/dynamic-admin-loader.js
 // Scopo: garantire che TUTTI i JS successivi siano freschi
+// Compatibile con SUPREMO ADMIN 2055 (no loop, no race)
 // =========================================================
 
 if (window.__DYNAMIC_ADMIN_LOADER_2055__) {
@@ -60,19 +61,37 @@ if (window.__DYNAMIC_ADMIN_LOADER_2055__) {
     }
 
     // ============================================================
-    // 3) RENDER = FONTE UNICA DI VERITÀ
-    // Forza tutti gli script a bypassare la cache
+    // 3) RENDER = FONTE UNICA DI VERITÀ (SAFE MODE)
+    // NON tocca loader, supremo, universale, critical
     // ============================================================
     function forceRenderNoStore() {
       try {
         const scripts = document.querySelectorAll("script[src]");
+
         scripts.forEach(s => {
+          const src = s.getAttribute("src");
+          if (!src) return;
+
+          // NON toccare i loader della pipeline
+          if (
+            src.includes("loadersupremo-admin") ||
+            src.includes("loader-universale-admin") ||
+            src.includes("admin-critical-loader") ||
+            src.includes("dynamic-admin-loader") ||
+            src.includes("loadersupremo") ||
+            src.includes("loaderuniversale") ||
+            src.includes("critical-loader") ||
+            src.includes("dynamic-loader")
+          ) {
+            return;
+          }
+
           const url = new URL(s.src);
           url.searchParams.set("cache", "no-store");
           s.src = url.toString();
         });
 
-        console.log("🟦 [DYNAMIC ADMIN] Render impostato come fonte unica di verità");
+        console.log("🟦 [DYNAMIC ADMIN] Render impostato come fonte unica di verità (SAFE)");
       } catch (e) {
         console.warn("❌ [DYNAMIC ADMIN] Errore no-store:", e.message);
       }
