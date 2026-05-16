@@ -1,66 +1,122 @@
-// =========================================================
-// FILE: app/server/services/catalogo-auto-opt.cjs
-// SCOPO: Pipeline mensile di Auto‑Ottimizzazione Catalogo
-// VERSIONE: 2027.1 — Java‑mode
-// FUNZIONI FORNITE:
-// - autoOttimizzaCatalogo()
-//   → legge vendite
-//   → identifica best seller / deboli / flop
-//   → aggiorna prezzi
-//   → aggiorna descrizioni
-//   → aggiorna visibilità
-//   → crea bundle (placeholder)
-// =========================================================
+/* =========================================================
+   FILE: app/server/services/catalogo-auto-opt.cjs
+   DESCRIZIONE:
+   Pipeline Auto‑Ottimizzazione Catalogo (AI)
+   Versione 2027.1
+========================================================= */
 
-const catalogo = require("../modules/catalogo-sql.cjs");
-const ordini = require("../modules/ordini.cjs");
-const ai = require("../modules/ai.cjs");
+const path = require("path");
+const ROOT = process.cwd();
+const R = (p) => require(path.join(ROOT, "app", p));
 
+/* =========================================================
+   REQUIRE ASSOLUTI
+========================================================= */
+const catalogo = R("modules/catalogo-sql.cjs");
+const ai = R("server/modules/ai.cjs");
+const db = R("server/db/database.cjs");
+
+/* =========================================================
+   FUNZIONE PRINCIPALE
+========================================================= */
 async function autoOttimizzaCatalogo() {
-  console.log("🚀 [AUTO-OPT] Avvio pipeline auto‑ottimizzazione catalogo");
+  const log = [];
+  log.push("🚀 Avvio pipeline Auto‑Ottimizzazione Catalogo…");
 
-  try {
-    // 1) Leggi tutti i prodotti
-    const prodotti = catalogo.getAllProducts();
+  const prodotti = catalogo.getAllProducts();
+  const vendite = catalogo.getVenditePerProdotto();
 
-    // 2) Leggi vendite per prodotto
-    const vendite = ordini.getVenditePerProdotto(); // funzione da patchare
+  const oggi = new Date();
+  const cutoff90 = new Date(oggi.getTime() - 90 * 86400000).toISOString().slice(0, 10);
 
-    const log = [];
+  /* =========================================================
+     CICLO PRODOTTI
+  ========================================================== */
+  for (const p of prodotti) {
+    const id = p.id;
+    const v = vendite[id] || 0;
 
-    for (const p of prodotti) {
-      const v = vendite[p.id] || 0;
+    log.push(`\n📦 Prodotto #${id} — ${p.titolo}`);
+    log.push(`   Vendite: ${v}`);
 
-      // CLASSIFICAZIONE BASE
-      if (v >= 20) {
-        log.push(`🔥 BEST SELLER: ${p.titolo}`);
-        // placeholder: aumento prezzo
-      } else if (v >= 5) {
-        log.push(`📈 PRODOTTO OK: ${p.titolo}`);
-        // placeholder: migliora descrizione
-      } else if (v === 0) {
-        log.push(`💀 FLOP: ${p.titolo}`);
-        // placeholder: nascondi o abbassa prezzo
-      } else {
-        log.push(`🟡 DEBOLE: ${p.titolo}`);
-        // placeholder: ritocca prezzo
-      }
+    /* ---------------------------------------------------------
+       1) NASCONDI FLOP (0 vendite in 90 giorni)
+    --------------------------------------------------------- */
+    const vendite90 = db.prepare(`
+      SELECT COUNT(*) AS n
+      FROM vendite
+      WHERE prodotto_id = ?
+      AND DATE(created_at) >= DATE(?)
+    `).get(id, cutoff90).n;
+
+    if (vendite90 === 0) {
+      log.push("   ❌ Nessuna vendita in 90 giorni → NASCONDO");
+      catalogo.hideProduct(id);
+      continue;
     }
 
-    return {
-      success: true,
-      log
-    };
+    /* ---------------------------------------------------------
+       2) AUMENTA PREZZO se vendite alte
+    --------------------------------------------------------- */
+    if (v >= 50) {
+      const nuovoPrezzo = Math.round(p.prezzo_cent * 1.15);
+      log.push(`   📈 Vendite alte → aumento prezzo a ${(nuovoPrezzo / 100).toFixed(2)}€`);
+      catalogo.updateProductPrice(id, nuovoPrezzo);
+    }
 
-  } catch (err) {
-    console.error("❌ ERRORE autoOttimizzaCatalogo:", err);
-    return {
-      success: false,
-      error: err.message
-    };
+    /* ---------------------------------------------------------
+       3) RIDUCI PREZZO se vendite basse
+    --------------------------------------------------------- */
+    if (v > 0 && v < 5) {
+      const nuovoPrezzo = Math.round(p.prezzo_cent * 0.85);
+      log.push(`   📉 Vendite basse → riduco prezzo a ${(nuovoPrezzo / 100).toFixed(2)}€`);
+      catalogo.updateProductPrice(id, nuovoPrezzo);
+    }
+
+    /* ---------------------------------------------------------
+       4) AGGIORNA DESCRIZIONE (AI)
+       Solo se descrizione breve è troppo corta
+    --------------------------------------------------------- */
+    if ((p.descrizione_breve || "").length < 60) {
+      log.push("   ✍️ Descrizione breve insufficiente → rigenero con AI");
+
+      const prompt = `
+Rigenera una descrizione breve efficace per un prodotto digitale.
+
+Titolo: ${p.titolo}
+Descrizione tecnica: ${p.descrizione_lunga}
+
+Requisiti:
+- massimo 160 caratteri
+- orientata alla vendita
+- chiara e professionale
+`;
+
+      const nuovaDesc = await ai.generateText(prompt);
+      catalogo.updateProductDescription(id, nuovaDesc);
+      log.push("   ✔️ Descrizione aggiornata");
+    }
+
+    /* ---------------------------------------------------------
+       5) CONFIGURAZIONE CONSIGLIATA (competitor)
+    --------------------------------------------------------- */
+    if (p.configurazione_consigliata) {
+      log.push("   🔧 Applico configurazione consigliata (competitor)");
+
+      const cfg = p.config_json || {};
+      cfg.suggerita = p.configurazione_consigliata;
+
+      catalogo.updateProductConfig(id, cfg);
+    }
   }
+
+  log.push("\n✅ Pipeline completata.");
+  return { log };
 }
 
+/* =========================================================
+   EXPORT
+========================================================= */
 module.exports = {
   autoOttimizzaCatalogo
 };
