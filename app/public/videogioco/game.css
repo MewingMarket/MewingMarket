@@ -432,3 +432,50 @@ body {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+/* ============================================================
+   XP / LEVEL UP / MISSION COMPLETE — STILI SPECIALI
+============================================================ */
+
+/* Blocco XP */
+.lim-block.xp-block {
+  border-left-color: #ffcc00;
+  background: #fff8d1;
+}
+
+.lim-block.xp-block h3 {
+  color: #b88600;
+}
+
+/* Blocco Level Up */
+.lim-block.levelup-block {
+  border-left-color: #4caf50;
+  background: #e8fbe8;
+  animation: levelUpPulse 1.2s ease-out;
+}
+
+@keyframes levelUpPulse {
+  0% { transform: scale(0.95); opacity: 0.6; }
+  50% { transform: scale(1.03); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.lim-block.levelup-block h3 {
+  color: #2e7d32;
+}
+
+/* Blocco Mission Complete */
+.lim-block.mission-complete-block {
+  border-left-color: #2196f3;
+  background: #e7f3ff;
+  animation: missionFlash 0.8s ease-out;
+}
+
+@keyframes missionFlash {
+  0% { background: #bbdeff; }
+  50% { background: #e7f3ff; }
+  100% { background: #bbdeff; }
+}
+
+.lim-block.mission-complete-block h3 {
+  color: #0d47a1;
+}
