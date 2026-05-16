@@ -23,6 +23,10 @@ if (!window.__SUPREMO_PUBLIC_2055__) {
     window.__LOADER_UNIVERSALE_CARICATO__ =
       window.__LOADER_UNIVERSALE_CARICATO__ || false;
 
+    // Flag globali di stato pagina
+    window.__pageJsLoaded = window.__pageJsLoaded || false;
+    window.__criticalReady = window.__criticalReady || false;
+
     console.log("⚡ [SUPREMO PUBLIC 2055] Inizializzazione SUPREMO...");
 
     // ============================================================
@@ -166,8 +170,8 @@ if (!window.__SUPREMO_PUBLIC_2055__) {
     async function runSupremoPublic() {
       const state = window.__SUPREMO_PUBLIC_RUN_STATE__;
 
-      if (state.done) {
-        console.log("⏭️ [SUPREMO PUBLIC] Sequenza già completata");
+      if (state.done && window.__pageJsLoaded && window.__criticalReady) {
+        console.log("⏭️ [SUPREMO PUBLIC] Sequenza già completata (page-js + critical-ready)");
         return;
       }
       if (state.running) {
@@ -176,12 +180,14 @@ if (!window.__SUPREMO_PUBLIC_2055__) {
       }
 
       state.running = true;
-
-      // 0) Emissione critical-core-ready (spostata dal critical loader)
-      console.log("🟦 [SUPREMO PUBLIC 2055] Emissione critical-core-ready");
-      document.dispatchEvent(new Event("critical-core-ready"));
-
       console.log("🟦 [SUPREMO PUBLIC 2055] Sequenza SUPREMO avviata");
+
+      // 0) CRITICAL LOADER — SEMPRE PRIMA DI TUTTO
+      console.log("🟦 [SUPREMO PUBLIC] Carico critical-loader-public.js");
+      await loadScript("/critical-loader-public.js");
+
+      console.log("🟦 [SUPREMO PUBLIC] Carico critical-loader-private.js");
+      await loadScript("/critical-loader-private.js");
 
       // 1) AUTH
       console.log("🔐 [SUPREMO PUBLIC] Carico auth.js");
@@ -218,10 +224,30 @@ if (!window.__SUPREMO_PUBLIC_2055__) {
       console.log("🔍 [SUPREMO PUBLIC] Script pagina atteso:", expectedPageScript);
 
       if (paginaHaJsDiPagina(expectedPageScript)) {
-        console.log("📄 [SUPREMO PUBLIC] JS pagina già presente → skip universale");
-        console.log("🟩 [SUPREMO PUBLIC] page-js-loaded (diretto)");
-        document.dispatchEvent(new Event("page-js-loaded"));
+        // JS pagina già nel DOM → gestiamo bene lo skip
+        console.log("📄 [SUPREMO PUBLIC] JS pagina già presente");
+
+        // Se pagina davvero completa → skip universale
+        if (window.__pageJsLoaded && window.__criticalReady) {
+          console.log("📄 [SUPREMO PUBLIC] page-js-loaded + critical-ready già presenti → skip universale COMPLETO");
+          state.running = false;
+          state.done = true;
+          return;
+        }
+
+        // Se manca critical-ready → NON fermarti, continua pipeline
+        if (!window.__criticalReady) {
+          console.warn("⚠️ [SUPREMO PUBLIC] JS pagina presente MA critical-ready mancante → continuo pipeline");
+        }
+
+        // Se manca page-js-loaded → emettilo ora
+        if (!window.__pageJsLoaded) {
+          console.log("🟩 [SUPREMO PUBLIC] page-js-loaded (diretto)");
+          window.__pageJsLoaded = true;
+          document.dispatchEvent(new Event("page-js-loaded"));
+        }
       } else {
+        // JS pagina NON presente → usa loader universale
         if (!window.__LOADER_UNIVERSALE_CARICATO__) {
           window.__LOADER_UNIVERSALE_CARICATO__ = true;
 
@@ -232,11 +258,18 @@ if (!window.__SUPREMO_PUBLIC_2055__) {
         }
       }
 
-      // 5) Attesa page-js-loaded
-      console.log("📄 [SUPREMO PUBLIC] In attesa di page-js-loaded...");
-      await new Promise(resolve => {
-        document.addEventListener("page-js-loaded", resolve, { once: true });
-      });
+      // 5) Attesa page-js-loaded (solo se non già emesso)
+      if (!window.__pageJsLoaded) {
+        console.log("📄 [SUPREMO PUBLIC] In attesa di page-js-loaded...");
+        await new Promise(resolve => {
+          document.addEventListener("page-js-loaded", () => {
+            window.__pageJsLoaded = true;
+            resolve();
+          }, { once: true });
+        });
+      } else {
+        console.log("📄 [SUPREMO PUBLIC] page-js-loaded era già presente → nessuna attesa");
+      }
 
       console.log("📄 [SUPREMO PUBLIC] page-js-loaded ricevuto");
 
@@ -244,10 +277,14 @@ if (!window.__SUPREMO_PUBLIC_2055__) {
       console.log("🔄 [SUPREMO PUBLIC] Carico dynamic-loader.js");
       await loadScript("/dynamic-loader.js");
 
-      // 7) Critical ready finale (spostato qui)
-      console.log("🟩 [SUPREMO PUBLIC 2055] critical-ready");
-      window.__criticalReady = true;
-      document.dispatchEvent(new Event("critical-ready"));
+      // 7) Critical ready finale (se non già emesso)
+      if (!window.__criticalReady) {
+        console.log("🟩 [SUPREMO PUBLIC 2055] critical-ready (emesso da SUPREMO)");
+        window.__criticalReady = true;
+        document.dispatchEvent(new Event("critical-ready"));
+      } else {
+        console.log("🟩 [SUPREMO PUBLIC 2055] critical-ready era già presente");
+      }
 
       state.running = false;
       state.done = true;
