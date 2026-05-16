@@ -206,6 +206,17 @@ async function bootInBackground(){
     } catch(e){ logErr("router:", e); }
 
     /* =========================================================
+     * 🔥 CRON AUTO‑OPTIMIZE (PATCH 2027.1)
+     * =========================================================
+     */
+    log(">> BOOT: cron-auto-opt");
+    try {
+      require("./startup/cron-auto-opt.cjs")();
+    } catch(e){
+      logErr("cron-auto-opt:", e.message);
+    }
+
+    /* =========================================================
      * STATICHE
      * =========================================================
      */
