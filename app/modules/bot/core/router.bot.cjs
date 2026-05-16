@@ -32,10 +32,17 @@ const BOT_MAP = {
    (compatibile con Intent Engine + Game Engine)
 ============================================================ */
 function pickAvatar(intentObj = {}) {
-  const avatar = intentObj.avatar || "assistant";
+  // 1) Se il bot ha dichiarato un avatar specifico → usalo
+  if (intentObj.avatar && BOT_MAP[intentObj.avatar]) {
+    return intentObj.avatar;
+  }
 
-  if (BOT_MAP[avatar]) return avatar;
+  // 2) Se l’intent ha un “botOwner” (Intent Engine 2027)
+  if (intentObj.botOwner && BOT_MAP[intentObj.botOwner]) {
+    return intentObj.botOwner;
+  }
 
+  // 3) Fallback → generic
   return "assistant";
 }
 
@@ -48,10 +55,35 @@ function route(intentObj = {}) {
 }
 
 /* ============================================================
-   GET BOT BY NAME — usato dal Game Engine per compresenza
+   SIDEKICK ENGINE — compresenza automatica
+   (Vendor + Influencer + Professore)
 ============================================================ */
-function getBotByName(name) {
-  return BOT_MAP[name] || null;
+async function runSidekick(mainBotName, message, context) {
+  const sidekickOrder = ["influencer", "vendor", "professor"];
+
+  for (const botName of sidekickOrder) {
+    if (botName === mainBotName) continue;
+
+    const bot = BOT_MAP[botName];
+    if (typeof bot.sidekick === "function") {
+      try {
+        const res = await bot.sidekick(message, context);
+        if (res) return res;
+      } catch {}
+    }
+  }
+
+  return null;
+}
+
+/* ============================================================
+   HANDOFF ENGINE — quando un bot passa la palla a un altro
+============================================================ */
+function detectHandoff(response) {
+  if (!response || !response.actions) return null;
+
+  const action = response.actions.find(a => a.intent && BOT_MAP[a.intent]);
+  return action ? action.intent : null;
 }
 
 /* ============================================================
@@ -60,5 +92,7 @@ function getBotByName(name) {
 module.exports = {
   pickAvatar,
   route,
-  getBotByName
+  getBotByName: name => BOT_MAP[name] || null,
+  runSidekick,
+  detectHandoff
 };
