@@ -1,14 +1,10 @@
 // =========================================================
 // File: app/modules/catalogo-sql.cjs
 // Catalogo prodotti — Versione SQL definitiva (ID-based)
-// + CATEGORIE AUTOMATICHE MULTI-CATEGORIA (JSON STRING)
-// + Supporto completo: immagine_url, file_consegna_url, config_json
-// + Require assoluti
+// PATCH 2027.1 — Auto-Ottimizzazione Catalogo + Competitor Intelligence
 // =========================================================
 
 const path = require("path");
-
-// REQUIRE ASSOLUTO
 const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
 
 // =========================================================
@@ -99,6 +95,12 @@ function normalizeProduct(row) {
     file_consegna_url: row.file_consegna_url,
 
     config_json: row.config_json ? JSON.parse(row.config_json) : null,
+
+    // 🔥 PATCH: campi competitor
+    percentuale_competitor: row.percentuale_competitor,
+    punteggio_saturazione: row.punteggio_saturazione,
+    punteggio_opportunita: row.punteggio_opportunita,
+    configurazione_consigliata: row.configurazione_consigliata,
 
     youtube_url: row.youtube_url,
     youtube_title: row.youtube_title,
@@ -191,6 +193,7 @@ function getAllCategories() {
 
 // =========================================================
 // SAVE PRODUCT — con supporto file_consegna_url + config_json
+// + 🔥 PATCH: campi competitor
 // =========================================================
 function saveProduct(data) {
   const titolo = (data.titolo || "").trim();
@@ -236,6 +239,10 @@ function saveProduct(data) {
         immagine_url = ?,
         file_consegna_url = ?,
         config_json = ?, 
+        percentuale_competitor = ?,
+        punteggio_saturazione = ?,
+        punteggio_opportunita = ?,
+        configurazione_consigliata = ?,
         updated_at = ?
       WHERE id = ?
     `).run(
@@ -248,6 +255,10 @@ function saveProduct(data) {
       immagine_url,
       file_consegna_url,
       config_json,
+      data.percentuale_competitor || null,
+      data.punteggio_saturazione || null,
+      data.punteggio_opportunita || null,
+      data.configurazione_consigliata || null,
       now,
       data.id
     );
@@ -267,9 +278,13 @@ function saveProduct(data) {
       immagine_url,
       file_consegna_url,
       config_json,
+      percentuale_competitor,
+      punteggio_saturazione,
+      punteggio_opportunita,
+      configurazione_consigliata,
       created_at,
       updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     titolo,
     titolo_breve,
@@ -280,6 +295,10 @@ function saveProduct(data) {
     immagine_url,
     file_consegna_url,
     config_json,
+    data.percentuale_competitor || null,
+    data.punteggio_saturazione || null,
+    data.punteggio_opportunita || null,
+    data.configurazione_consigliata || null,
     now,
     now
   );
@@ -322,11 +341,76 @@ function updateProductYouTubeFields(id, fields) {
   );
 }
 
+// =========================================================
+// 🔥 NUOVE FUNZIONI PER AUTO-OTTIMIZZAZIONE CATALOGO
+// =========================================================
+
+// Aggiorna prezzo
+function updateProductPrice(id, newPriceCent) {
+  db.prepare(`
+    UPDATE prodotti
+    SET prezzo_cent = ?, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).run(newPriceCent, id);
+}
+
+// Aggiorna descrizione
+function updateProductDescription(id, newDesc) {
+  const breve = makeDescrizioneBreve(newDesc);
+  db.prepare(`
+    UPDATE prodotti
+    SET descrizione_lunga = ?, descrizione_breve = ?, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).run(newDesc, breve, id);
+}
+
+// Nascondi flop
+function hideProduct(id) {
+  db.prepare(`
+    UPDATE prodotti
+    SET categoria = '["nascosto"]', updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).run(id);
+}
+
+// Aggiorna config_json
+function updateProductConfig(id, config) {
+  db.prepare(`
+    UPDATE prodotti
+    SET config_json = ?, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).run(JSON.stringify(config), id);
+}
+
+// =========================================================
+// 🔥 FUNZIONE: VENDITE PER PRODOTTO (per pipeline mensile)
+// =========================================================
+function getVenditePerProdotto() {
+  const rows = db.prepare(`
+    SELECT prodotto_id AS id, COUNT(*) AS vendite
+    FROM ordini
+    WHERE stato = 'completato'
+    GROUP BY prodotto_id
+  `).all();
+
+  const map = {};
+  for (const r of rows) map[r.id] = r.vendite;
+  return map;
+}
+
+// =========================================================
 module.exports = {
   getAllProducts,
   getProductById,
   getAllCategories,
   saveProduct,
   deleteProduct,
-  updateProductYouTubeFields
+  updateProductYouTubeFields,
+
+  // 🔥 nuove funzioni
+  updateProductPrice,
+  updateProductDescription,
+  hideProduct,
+  updateProductConfig,
+  getVenditePerProdotto
 };
