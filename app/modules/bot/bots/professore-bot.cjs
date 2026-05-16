@@ -11,6 +11,16 @@ const support = require(path.join(process.cwd(), "app/modules/bot/handlers/suppo
 const legal = require(path.join(process.cwd(), "app/modules/bot/handlers/legal.cjs"));
 const productHandler = require(path.join(process.cwd(), "app/modules/bot/handlers/productHandler.cjs"));
 
+// Tutorial AI (DB + Video)
+let tutorial = null;
+let tutorialsAI = null;
+try {
+  tutorial = require(path.join(process.cwd(), "app/modules/tutorial/tutorial.cjs"));
+  tutorialsAI = require(path.join(process.cwd(), "app/modules/tutorials.cjs"));
+} catch {
+  // opzionale: il sistema funziona anche senza moduli tutorial
+}
+
 /* ============================================================
    MATCH — basato su INTENT Engine 2027
 ============================================================ */
@@ -34,7 +44,8 @@ function match(intentObj) {
     "termini",
     "cookie",
     "spiega",
-    "come_funziona"
+    "come_funziona",
+    "tutorial_prodotto"
   ].includes(intent);
 }
 
@@ -131,7 +142,6 @@ async function run(message, context = {}) {
   if (intent === "problema" || intent === "errore" || intent === "tecnico") {
     const problema = message || "Problema non specificato";
 
-    // Estrae GUIDA scelta dall’utente (non prodotto commerciale)
     const guida = context.selectedGuide
       ? await productHandler.getGuide(context.selectedGuide)
       : null;
@@ -155,7 +165,6 @@ async function run(message, context = {}) {
       }
     ];
 
-    // CTA finale → approfondimento guida
     if (guida) {
       blocks.push({
         title: "Vuoi approfondire?",
@@ -174,7 +183,78 @@ async function run(message, context = {}) {
   }
 
   /* ============================================================
-     6) SPIEGAZIONI TECNICHE
+     6) TUTORIAL PRODOTTO + VIDEO AI (Database Tutorial + Video AI)
+  ============================================================= */
+  if (intent === "tutorial_prodotto" && tutorial && tutorialsAI) {
+    const slug = intentObj.slug || null;
+
+    if (!slug) {
+      return {
+        avatar: "professor",
+        type: "mission",
+        blocks: [
+          {
+            title: "Quale tutorial vuoi vedere?",
+            text: "Dimmi il nome della guida o del problema che vuoi risolvere."
+          }
+        ]
+      };
+    }
+
+    // 1) prova a leggere dal DB tutorial
+    let guida = await tutorial.getTutorial(slug);
+
+    // 2) se non esiste, crea una guida base dal messaggio
+    if (!guida) {
+      guida = {
+        titolo: slug.replace(/-/g, " "),
+        testo: message || "Guida generica.",
+        video_url: null
+      };
+    }
+
+    // 3) se non ha ancora video, generane uno con tutorials.cjs
+    let videoUrl = guida.video_url;
+    if (!videoUrl) {
+      try {
+        const gender = context.gender === "female" ? "female" : "male";
+        videoUrl = await tutorialsAI.createTutorialForGuide(
+          slug,
+          guida.testo,
+          "professor",
+          gender
+        );
+      } catch {
+        // se fallisce la generazione, continua solo con testo
+      }
+    }
+
+    const blocks = [
+      {
+        title: `📘 ${guida.titolo}`,
+        text: guida.testo
+      }
+    ];
+
+    if (videoUrl) {
+      blocks.push({
+        title: "Guarda il video tutorial",
+        cta: {
+          label: "Apri video",
+          href: videoUrl
+        }
+      });
+    }
+
+    return {
+      avatar: "professor",
+      type: "mission",
+      blocks
+    };
+  }
+
+  /* ============================================================
+     7) SPIEGAZIONI TECNICHE
   ============================================================= */
   if (intent === "come_funziona") {
     return {
@@ -203,7 +283,7 @@ async function run(message, context = {}) {
   }
 
   /* ============================================================
-     7) FALLBACK
+     8) FALLBACK
   ============================================================= */
   return {
     avatar: "professor",
@@ -211,7 +291,7 @@ async function run(message, context = {}) {
     blocks: [
       {
         title: "Come posso aiutarti?",
-        text: "• Ordini<br>• Download<br>• Problemi tecnici<br>• Spiegazioni"
+        text: "• Ordini<br>• Download<br>• Problemi tecnici<br>• Spiegazioni<br>• Tutorial prodotto"
       }
     ]
   };
