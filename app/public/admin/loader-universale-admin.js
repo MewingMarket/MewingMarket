@@ -1,17 +1,43 @@
 // =========================================================
-// LOADER UNIVERSALE ADMIN 2055 — FALLBACK DOM MODE
+// LOADER UNIVERSALE ADMIN 2056 — FALLBACK DOM MODE (SLEEP)
 // Percorso reale: /app/public/admin/loader-universale-admin.js
-// Ruolo: SOLO FALLBACK, chiamato dal SUPREMO ADMIN
+// Ruolo: SOLO FALLBACK, ma DISATTIVATO di default.
+// Attivabile con: window.__ENABLE_UNIVERSALE_ADMIN_FALLBACK__ = true
 // =========================================================
 
-if (window.__LOADER_UNIVERSALE_ADMIN_2055__) {
-  console.warn("[UNIVERSALE ADMIN 2055] Già caricato → skip");
+if (window.__LOADER_UNIVERSALE_ADMIN_2056__) {
+  console.warn("[UNIVERSALE ADMIN 2056] Già caricato → skip");
 } else {
-  window.__LOADER_UNIVERSALE_ADMIN_2055__ = true;
+  window.__LOADER_UNIVERSALE_ADMIN_2056__ = true;
+
+  // Flag globale: fallback disattivato di default
+  window.__ENABLE_UNIVERSALE_ADMIN_FALLBACK__ =
+    window.__ENABLE_UNIVERSALE_ADMIN_FALLBACK__ ?? false;
+
+  console.log(
+    "⚡ [UNIVERSALE ADMIN 2056] Loader universale ADMIN caricato (fallback attivo:",
+    window.__ENABLE_UNIVERSALE_ADMIN_FALLBACK__,
+    ")"
+  );
 
   (function () {
 
-    const VERSION = "2055";
+    const VERSION = "2056";
+
+    // ============================================================
+    // SE FALLBACK È DISATTIVATO → NON FARE NULLA
+    // ============================================================
+    if (!window.__ENABLE_UNIVERSALE_ADMIN_FALLBACK__) {
+      console.log("⏸️ [UNIVERSALE ADMIN 2056] Modalità SLEEP → nessuna esecuzione");
+      document.addEventListener("supremo-admin-load-universale", () => {
+        console.log("⏸️ [UNIVERSALE ADMIN 2056] Evento ricevuto → fallback DISATTIVATO");
+      });
+      return; // STOP COMPLETO
+    }
+
+    // ============================================================
+    // FALLBACK ATTIVO — LOGICA COMPLETA
+    // ============================================================
 
     // Cache locale per gli script caricati dall’universale
     window.__UNIVERSALE_ADMIN_JS_CACHE__ =
@@ -27,7 +53,7 @@ if (window.__LOADER_UNIVERSALE_ADMIN_2055__) {
     // Flag globali
     window.__pageJsLoaded = window.__pageJsLoaded || false;
 
-    console.log("⚡ [UNIVERSALE ADMIN 2055] Avvio loader universale ADMIN (FALLBACK MODE)");
+    console.log("🟦 [UNIVERSALE ADMIN 2056] Fallback ATTIVO");
 
     // ============================================================
     // NORMALIZZAZIONE
@@ -42,9 +68,6 @@ if (window.__LOADER_UNIVERSALE_ADMIN_2055__) {
         .trim();
     }
 
-    // ============================================================
-    // NOME BASE PAGINA
-    // ============================================================
     function getPageBase() {
       const p = window.location.pathname.replace("/admin/", "");
 
@@ -131,7 +154,7 @@ if (window.__LOADER_UNIVERSALE_ADMIN_2055__) {
 
       state.running = true;
 
-      console.log("🟦 [UNIVERSALE ADMIN] Evento supremo-admin-load-universale ricevuto → avvio run()");
+      console.log("🟦 [UNIVERSALE ADMIN] Evento supremo-admin-load-universale → avvio fallback");
 
       const base = getPageBase();
       console.log("🔍 [UNIVERSALE ADMIN] Pagina normalizzata:", base);
@@ -141,7 +164,6 @@ if (window.__LOADER_UNIVERSALE_ADMIN_2055__) {
       state.running = false;
       state.done = true;
 
-      // Evita doppie emissioni
       if (!window.__pageJsLoaded) {
         console.log("🟩 [UNIVERSALE ADMIN] page-js-loaded (fallback universale)");
         window.__pageJsLoaded = true;
@@ -152,7 +174,7 @@ if (window.__LOADER_UNIVERSALE_ADMIN_2055__) {
     }
 
     // ============================================================
-    // PATCH 2055: ascolta SOLO l’evento del SUPREMO ADMIN
+    // LISTENER FALLBACK
     // ============================================================
     document.addEventListener("supremo-admin-load-universale", runUniversaleAdmin);
 
