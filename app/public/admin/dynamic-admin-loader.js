@@ -1,21 +1,26 @@
 // =========================================================
-// DYNAMIC ADMIN LOADER — SAFE MODE 2056 (ULTRA MINIMAL)
-// Percorso reale: /app/public/admin/dynamic-admin-loader.js
-// Scopo: garantire che TUTTI i JS successivi siano freschi
-// Compatibile con SUPREMO ADMIN 2056 (no loop, no race)
+// DYNAMIC LOADER — SAFE MODE 2056 (ULTRA MINIMAL PUBLIC)
+// Patch 2056: anti-loop, critical-ready, micro-delay, fusibile globale
 // =========================================================
 
-if (window.__DYNAMIC_ADMIN_LOADER_2056__) {
-  console.warn("[DYNAMIC ADMIN 2056] dynamic-admin-loader.js già caricato → skip");
+if (window.__DYNAMIC_LOADER_2056__) {
+  console.warn("[DYNAMIC 2056] dynamic-loader.js già caricato → skip");
 } else {
-  window.__DYNAMIC_ADMIN_LOADER_2056__ = true;
+  window.__DYNAMIC_LOADER_2056__ = true;
 
   (function () {
 
-    console.log("⚡ [DYNAMIC ADMIN 2056] Avvio dynamic-admin-loader (SAFE MODE)");
+    // 🔥 FUSIBILE: se la logica è già stata eseguita, non rifare nulla
+    if (window.__DYNAMIC_PUBLIC_ALREADY_RAN__) {
+      console.log("⏭️ [DYNAMIC 2056] Logica già eseguita → skip completo");
+      return;
+    }
+    window.__DYNAMIC_PUBLIC_ALREADY_RAN__ = true;
+
+    console.log("⚡ [DYNAMIC 2056] Avvio dynamic-loader (ULTRA MINIMAL)");
 
     // ============================================================
-    // 1) ANTI-CACHE — impone al browser di NON fidarsi mai
+    // 1) ANTI-CACHE
     // ============================================================
     function applyAntiCache() {
       try {
@@ -32,18 +37,18 @@ if (window.__DYNAMIC_ADMIN_LOADER_2056__) {
           document.head.appendChild(m);
         });
 
-        console.log("🟧 [DYNAMIC ADMIN] Anti-cache applicato");
+        console.log("🟧 [DYNAMIC] Anti-cache applicato");
       } catch (e) {
-        console.warn("❌ [DYNAMIC ADMIN] Errore anti-cache:", e.message);
+        console.warn("❌ [DYNAMIC] Errore anti-cache:", e.message);
       }
     }
 
     // ============================================================
-    // 2) ANTI SERVICE WORKER — elimina ogni possibile interferenza
+    // 2) ANTI SERVICE WORKER
     // ============================================================
     function removeServiceWorkers() {
       try {
-        console.log("🟧 [DYNAMIC ADMIN] Rimozione service worker + cache HTTP");
+        console.log("🟧 [DYNAMIC] Rimozione service worker + cache HTTP");
 
         if ("serviceWorker" in navigator) {
           navigator.serviceWorker.getRegistrations().then(regs => {
@@ -56,13 +61,12 @@ if (window.__DYNAMIC_ADMIN_LOADER_2056__) {
         }
 
       } catch (e) {
-        console.warn("❌ [DYNAMIC ADMIN] Errore anti-service-worker:", e.message);
+        console.warn("❌ [DYNAMIC] Errore anti-service-worker:", e.message);
       }
     }
 
     // ============================================================
-    // 3) RENDER = FONTE UNICA DI VERITÀ (SAFE MODE 2056, ANTI-LOOP)
-    // NON tocca loader, supremo, universale, critical
+    // 3) RENDER = FONTE UNICA DI VERITÀ (ANTI-LOOP 2056)
     // ============================================================
     function forceRenderNoStore() {
       try {
@@ -72,16 +76,13 @@ if (window.__DYNAMIC_ADMIN_LOADER_2056__) {
           const src = s.getAttribute("src");
           if (!src) return;
 
-          // NON toccare i loader della pipeline
+          // NON toccare loader, supremo, universale, critical
           if (
-            src.includes("loadersupremo-admin") ||
-            src.includes("loader-universale-admin") ||
-            src.includes("admin-critical-loader") ||
-            src.includes("dynamic-admin-loader") ||
             src.includes("loadersupremo") ||
             src.includes("loaderuniversale") ||
+            src.includes("dynamic-loader") ||
             src.includes("critical-loader") ||
-            src.includes("dynamic-loader")
+            src.includes("loader.js")
           ) {
             return;
           }
@@ -93,35 +94,49 @@ if (window.__DYNAMIC_ADMIN_LOADER_2056__) {
             return;
           }
 
-          // Applica no-store una sola volta
           url.searchParams.set("cache", "no-store");
           s.src = url.toString();
         });
 
-        console.log("🟦 [DYNAMIC ADMIN] Render impostato come fonte unica di verità (SAFE 2056 + ANTI-LOOP)");
+        console.log("🟦 [DYNAMIC] Render impostato come fonte unica di verità (SAFE + ANTI-LOOP)");
       } catch (e) {
-        console.warn("❌ [DYNAMIC ADMIN] Errore no-store:", e.message);
+        console.warn("❌ [DYNAMIC] Errore no-store:", e.message);
       }
     }
 
     // ============================================================
-    // 4) MICRO-DELAY per evitare race con SUPREMO ADMIN
+    // 4) EMISSIONE CRITICAL-READY (PATCH 2056)
     // ============================================================
-    function microDelay() {
-      return new Promise(r => setTimeout(r, 15));
+    function emitCriticalReady() {
+      try {
+        console.log("🟩 [DYNAMIC] Emissione evento critical-ready…");
+
+        setTimeout(() => {
+          // se già emesso, non rifare
+          if (window.__criticalReady) {
+            console.log("💚 [DYNAMIC] critical-ready era già true → nessuna ri-emissione");
+            return;
+          }
+
+          window.__criticalReady = true;
+          document.dispatchEvent(new Event("critical-ready"));
+          console.log("💚 [DYNAMIC] critical-ready EMESSO");
+        }, 50);
+
+      } catch (e) {
+        console.warn("❌ [DYNAMIC] Errore critical-ready:", e.message);
+      }
     }
 
     // ============================================================
-    // ESECUZIONE ORDINATA (JAVA-MODE)
+    // ESECUZIONE ORDINATA
     // ============================================================
-    (async () => {
-      applyAntiCache();
-      removeServiceWorkers();
-      await microDelay();
-      forceRenderNoStore();
+    applyAntiCache();
+    removeServiceWorkers();
+    forceRenderNoStore();
+    emitCriticalReady();
 
-      console.log("🟩 [DYNAMIC ADMIN 2056] Completato (ULTRA MINIMAL SAFE)");
-    })();
+    console.log("🟩 [DYNAMIC 2056] Completato (ULTRA MINIMAL)");
 
   })();
 }
