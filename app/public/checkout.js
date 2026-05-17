@@ -2,6 +2,7 @@
    CHECKOUT — UNIVERSAL JSON PATCH 2027.970
    PATCH 2050 — AUTORUN + DEBUG ESTESO
    PATCH 2052 — PREZZI PROMO + TOTALE SCONTATO
+   PATCH 2056 — TOKEN UNICO + RECUPERO EVENTI PERSI
 ========================================================= */
 
 console.log("📌 [CHECKOUT] File caricato nel DOM");
@@ -53,10 +54,27 @@ function initPage() {
 }
 
 // =========================================================
-// LISTENER ORIGINALI INCAPSULATI
+// LISTENER ORIGINALI INCAPSULATI (PATCH 2056)
 // =========================================================
 function avviaListenersCheckout() {
   console.log("🎧 [CHECKOUT] Attivo listener auth-ready e cart-ready");
+
+  // Snapshot stato attuale (recupero eventi già avvenuti)
+  authOk = !!window.isLogged;
+
+  try {
+    if (window.Cart && typeof window.Cart.get === "function") {
+      const c = window.Cart.get();
+      cartOk = Array.isArray(c) && c.length > 0;
+    } else {
+      cartOk = false;
+    }
+  } catch {
+    cartOk = false;
+  }
+
+  console.log("🔎 [CHECKOUT] Snapshot iniziale → authOk:", authOk, "cartOk:", cartOk);
+  tryStartCheckout();
 
   document.addEventListener("auth-ready", () => {
     console.log("🔓 [CHECKOUT] auth-ready ricevuto");
@@ -80,12 +98,15 @@ function tryStartCheckout() {
 }
 
 /* =========================================================
-   WRAPPER UNIVERSALE
+   WRAPPER UNIVERSALE (PATCH 2056: mewing_token)
 ========================================================= */
 async function apiCheckout(path, options = {}) {
   console.log("🌐 [CHECKOUT] API:", path);
 
-  const token = localStorage.getItem("token");
+  const token =
+    localStorage.getItem("mewing_token") ||
+    localStorage.getItem("token") ||
+    "";
 
   const headers = {
     "Content-Type": "application/json",
@@ -104,6 +125,7 @@ async function apiCheckout(path, options = {}) {
   if (res.status === 401 || res.status === 403) {
     console.warn("🔒 [CHECKOUT] Token scaduto → redirect login");
     localStorage.removeItem("token");
+    localStorage.removeItem("mewing_token");
     window.location.href = "login.html";
     return null;
   }
@@ -130,7 +152,11 @@ async function apiCheckout(path, options = {}) {
 async function initCheckout() {
   console.log("🔥 [CHECKOUT] initCheckout() AVVIATO");
 
-  const token = localStorage.getItem("token");
+  const token =
+    localStorage.getItem("mewing_token") ||
+    localStorage.getItem("token") ||
+    "";
+
   if (!token) {
     console.warn("🔒 [CHECKOUT] Nessun token → redirect login");
     window.location.href = "login.html";
@@ -156,7 +182,7 @@ async function initCheckout() {
   // 2) Carica carrello
   // -------------------------------------------------------
   console.log("🛒 [CHECKOUT] Carico carrello…");
-  const cart = Cart.get();
+  const cart = window.Cart ? window.Cart.get() : [];
 
   if (!Array.isArray(cart) || cart.length === 0) {
     console.warn("⚠️ [CHECKOUT] Carrello vuoto → redirect catalogo");
@@ -177,10 +203,10 @@ async function initCheckout() {
       .map((item) => {
         const q = Number(item.qty) || 1;
 
-        const baseCent = Number(item.prezzo_cent) || 0;
+        const baseCent = Number(item.prezzo_originale_cent ?? item.prezzo_cent) || 0;
         const promoCent = item.promo_attiva
-          ? Number(item.prezzo_scontato_cent || baseCent)
-          : baseCent;
+          ? Number(item.prezzo_scontato_cent || item.prezzo_cent || baseCent)
+          : Number(item.prezzo_cent || baseCent);
 
         const prezzoBaseEuro = (baseCent / 100).toFixed(2);
         const prezzoPromoEuro = (promoCent / 100).toFixed(2);
@@ -235,7 +261,7 @@ async function initCheckout() {
     btn.disabled = true;
     btn.textContent = "Reindirizzamento...";
 
-    const payload = Cart.getForCheckout();
+    const payload = window.Cart ? window.Cart.getForCheckout() : [];
     console.log("📦 [CHECKOUT] Payload ordine:", payload);
 
     const data = await apiCheckout("/api/paypal/paypalCreateOrder", {
