@@ -1,13 +1,104 @@
 // =========================================================
-// LOADER SUPREMO — PUBLIC MODELLO 2056 (JAVA-MODE SAFE)
+// LOADER SUPREMO — PUBLIC MODELLO 2057 (JAVA-MODE SAFE)
 // =========================================================
 
-if (!window.__SUPREMO_PUBLIC_2056__) {
-  window.__SUPREMO_PUBLIC_2056__ = true;
+if (!window.__SUPREMO_PUBLIC_2057__) {
+  window.__SUPREMO_PUBLIC_2057__ = true;
 
   (function () {
 
-    const V = "2056";
+    const V = "2057";
+
+    // ============================================================
+    // PATCH 2057 — GLOBAL FETCH LOCK (ANTI-DUPLICAZIONE)
+    // ============================================================
+    (function() {
+      if (window.__GLOBAL_FETCH_LOCK_PATCHED__) return;
+      window.__GLOBAL_FETCH_LOCK_PATCHED__ = true;
+
+      console.log("🛡️ [SUPREMO PUBLIC 2057] Global Fetch Lock attivo");
+
+      const originalFetch = window.fetch;
+      const pending = new Map(); // url → Promise
+
+      window.fetch = function(url, options = {}) {
+        const key = typeof url === "string" ? url : url.url;
+
+        if (pending.has(key)) {
+          console.log("♻️ [FETCH-LOCK] Riutilizzo fetch:", key);
+          return pending.get(key);
+        }
+
+        const p = originalFetch(url, options)
+          .finally(() => pending.delete(key));
+
+        pending.set(key, p);
+        console.log("🚀 [FETCH-LOCK] Nuova fetch:", key);
+
+        return p;
+      };
+    })();
+
+    // ============================================================
+    // PATCH 2057 — GLOBAL SCRIPT LOCK (ANTI-DUPLICAZIONE SCRIPT)
+    // ============================================================
+    (function() {
+      if (window.__GLOBAL_SCRIPT_LOCK_PATCHED__) return;
+      window.__GLOBAL_SCRIPT_LOCK_PATCHED__ = true;
+
+      console.log("🛡️ [SUPREMO PUBLIC 2057] Global Script Lock attivo");
+
+      const origCreate = document.createElement;
+      const loaded = new Set();
+
+      document.createElement = function(tag) {
+        const el = origCreate.call(document, tag);
+
+        if (tag === "script") {
+          const origSet = Object.getOwnPropertyDescriptor(HTMLScriptElement.prototype, "src").set;
+
+          Object.defineProperty(el, "src", {
+            set(v) {
+              if (loaded.has(v)) {
+                console.warn("⛔ [SCRIPT-LOCK] Script già caricato:", v);
+                return;
+              }
+              loaded.add(v);
+              origSet.call(this, v);
+            }
+          });
+        }
+
+        return el;
+      };
+    })();
+
+    // ============================================================
+    // PATCH 2057 — GLOBAL EVENT LOCK (ANTI-DUPLICAZIONE EVENTI)
+    // ============================================================
+    (function() {
+      if (window.__GLOBAL_EVENT_LOCK_PATCHED__) return;
+      window.__GLOBAL_EVENT_LOCK_PATCHED__ = true;
+
+      console.log("🛡️ [SUPREMO PUBLIC 2057] Global Event Lock attivo");
+
+      const emitted = new Set();
+      const origDispatch = document.dispatchEvent;
+
+      document.dispatchEvent = function(ev) {
+        const name = ev.type;
+
+        if (name === "critical-ready" || name === "page-js-loaded") {
+          if (emitted.has(name)) {
+            console.warn("⛔ [EVENT-LOCK] Evento già emesso:", name);
+            return true;
+          }
+          emitted.add(name);
+        }
+
+        return origDispatch.call(document, ev);
+      };
+    })();
 
     // ============================================================
     // CACHE + LOCK
@@ -18,7 +109,7 @@ if (!window.__SUPREMO_PUBLIC_2056__) {
 
     window.__pageJsLoaded = window.__pageJsLoaded || false;
 
-    console.log("⚡ [SUPREMO PUBLIC 2056] Inizializzazione SUPREMO...");
+    console.log("⚡ [SUPREMO PUBLIC 2057] Inizializzazione SUPREMO...");
 
     // ============================================================
     // Utility caricamento script
@@ -122,37 +213,21 @@ if (!window.__SUPREMO_PUBLIC_2056__) {
       if (state.running || state.done) return;
       state.running = true;
 
-      console.log("🟦 [SUPREMO PUBLIC 2056] Sequenza SUPREMO avviata");
+      console.log("🟦 [SUPREMO PUBLIC 2057] Sequenza SUPREMO avviata");
 
-      // ============================================================
-      // 0) CRITICAL LOADER
-      // ============================================================
       await loadScript("/loader.js");
-
-      // ============================================================
-      // 1) AUTH
-      // ============================================================
       await loadScript("/auth.js");
 
-      // ============================================================
-      // 2) SEO / Structured
-      // ============================================================
       if (needSEO()) await loadScript("/seo.js");
       if (needStructured()) await loadScript("/structured-data.js");
 
       await loadScript("/tracking.js");
       await loadScript("/header.js", "body");
 
-      // ============================================================
-      // 3) Carrello
-      // ============================================================
       if (shouldLoadCarrello()) {
         await loadScript("/carrello.js", "body");
       }
 
-      // ============================================================
-      // 4) PAGE-JS
-      // ============================================================
       await new Promise(r => setTimeout(r, 0));
 
       if (paginaHaJsDiPagina()) {
@@ -162,13 +237,7 @@ if (!window.__SUPREMO_PUBLIC_2056__) {
         }
       }
 
-      // ============================================================
-      // 5) Dynamic loader (emette critical-ready)
-      // ============================================================
       await loadScript("/dynamic-loader.js");
-
-      // ❌ RIMOSSO: emissione critical-ready da SUPREMO
-      // dynamic-loader.js ora è l’unica fonte di critical-ready
 
       state.running = false;
       state.done = true;
@@ -183,5 +252,5 @@ if (!window.__SUPREMO_PUBLIC_2056__) {
 
   })();
 } else {
-  console.warn("SUPREMO PUBLIC 2056 già caricato, skip.");
+  console.warn("SUPREMO PUBLIC 2057 già caricato, skip.");
 }
