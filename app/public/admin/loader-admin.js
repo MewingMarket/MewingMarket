@@ -1,20 +1,21 @@
 // =========================================================
-// ADMIN CRITICAL LOADER — Versione 2055 (JAVA-MODE ULTRA MINIMAL)
-// Percorso reale: /app/public/admin/admin-critical-loader-2055.js
+// ADMIN CRITICAL LOADER — Versione 2056 (JAVA-MODE SAFE)
+// Percorso reale: /app/public/admin/admin-critical-loader.js
 // Carica SOLO head-admin.html / header-admin.html / footer-admin.html
-// NON emette eventi. Nessun retry. Nessun fallback.
+// Emissione evento: critical-core-loaded-admin (NON critical-ready)
+// Nessun retry. Nessun fallback.
 // =========================================================
 
-if (window.__ADMIN_CRITICAL_LOADER_2055__) {
-  console.warn("[ADMIN CRITICAL 2055] Già caricato → skip");
+if (window.__ADMIN_CRITICAL_LOADER_2056__) {
+  console.warn("[ADMIN CRITICAL 2056] Già caricato → skip");
 } else {
-  window.__ADMIN_CRITICAL_LOADER_2055__ = true;
+  window.__ADMIN_CRITICAL_LOADER_2056__ = true;
 
   (function () {
 
-    const ADMIN_VERSION = "2055";
+    const ADMIN_VERSION = "2056";
 
-    console.log("⚡ [ADMIN CRITICAL 2055] Avvio critical loader ADMIN (JAVA-MODE)");
+    console.log("⚡ [ADMIN CRITICAL 2056] Avvio critical loader ADMIN (JAVA-MODE SAFE)");
 
     // ============================================================
     // Utility: carica HTML in modo deterministico
@@ -57,10 +58,17 @@ if (window.__ADMIN_CRITICAL_LOADER_2055__) {
     }
 
     // ============================================================
+    // MICRO-DELAY per evitare race con SUPREMO ADMIN
+    // ============================================================
+    function microDelay() {
+      return new Promise(r => setTimeout(r, 20));
+    }
+
+    // ============================================================
     // SEQUENZA CRITICA — SOLO HTML
     // ============================================================
     (async () => {
-      console.log("🟦 [ADMIN CRITICAL 2055] Sequenza minimal avviata");
+      console.log("🟦 [ADMIN CRITICAL 2056] Sequenza minimal avviata");
 
       await loadHTML(
         `/admin/head-admin.html?v=${ADMIN_VERSION}`,
@@ -80,9 +88,17 @@ if (window.__ADMIN_CRITICAL_LOADER_2055__) {
         "footer-admin.html"
       );
 
-      console.log("🟩 [ADMIN CRITICAL 2055] HTML base ADMIN caricato (JAVA-MODE)");
-      // Nessun evento. Nessun critical-core-ready.
-      // SUPREMO ADMIN gestisce tutto.
+      // Evita che header-admin.js parta prima del DOM
+      await microDelay();
+
+      console.log("🟩 [ADMIN CRITICAL 2056] HTML base ADMIN caricato (JAVA-MODE)");
+
+      // ============================================================
+      // EMISSIONE EVENTO INTERNO (NON critical-ready)
+      // ============================================================
+      window.__adminCriticalCoreLoaded = true;
+      document.dispatchEvent(new Event("critical-core-loaded-admin"));
+
     })();
 
   })();
