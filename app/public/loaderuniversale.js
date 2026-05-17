@@ -1,33 +1,45 @@
 // =========================================================
-// LOADER UNIVERSALE PUBLIC — VERSIONE 2055 (FALLBACK MODE)
-// Percorso reale: /app/public/loaderuniversale.js
-// Ruolo: SOLO FALLBACK, attivato dal SUPREMO PUBLIC
+// LOADER UNIVERSALE PUBLIC — SLEEP MODE 2056
+// File completo ma DISATTIVATO di default.
+// Attivabile impostando: window.__ENABLE_UNIVERSALE_FALLBACK__ = true
 // =========================================================
 
-if (window.__LOADER_UNIVERSALE_PUBLIC_2055__) {
-  console.warn("[UNIVERSALE PUBLIC 2055] Già caricato → skip");
-} else {
-  window.__LOADER_UNIVERSALE_PUBLIC_2055__ = true;
+if (!window.__LOADER_UNIVERSALE_PUBLIC_2056__) {
+  window.__LOADER_UNIVERSALE_PUBLIC_2056__ = true;
+
+  console.log("⚡ [UNIVERSALE PUBLIC 2056] Loader universale caricato (SLEEP MODE)");
+
+  // ============================================================
+  // FLAG DI ATTIVAZIONE (default: OFF)
+  // ============================================================
+  if (!window.__ENABLE_UNIVERSALE_FALLBACK__) {
+    console.log("⏭️ [UNIVERSALE PUBLIC 2056] Fallback disattivato → nessuna azione");
+    document.addEventListener("supremo-public-load-universale", () => {
+      console.log("⏭️ [UNIVERSALE PUBLIC 2056] Evento ricevuto → fallback DISATTIVATO");
+    });
+    return; // 🔥 STOP: nessuna logica eseguita
+  }
+
+  // ============================================================
+  // DA QUI IN POI: fallback attivo SOLO se __ENABLE_UNIVERSALE_FALLBACK__ = true
+  // ============================================================
 
   (function () {
 
-    const VERSION = "2055";
+    const VERSION = "2056";
 
-    // Cache locale per gli script caricati dall’universale
     window.__UNIVERSALE_PUBLIC_JS_CACHE__ =
       window.__UNIVERSALE_PUBLIC_JS_CACHE__ || new Set();
 
-    // Stato esecuzione universale (solo fallback)
     window.__UNIVERSALE_PUBLIC_RUN_STATE__ =
       window.__UNIVERSALE_PUBLIC_RUN_STATE__ || {
         running: false,
         done: false
       };
 
-    // Flag globali
     window.__pageJsLoaded = window.__pageJsLoaded || false;
 
-    console.log("⚡ [UNIVERSALE PUBLIC 2055] Avvio loader universale PUBLIC (FALLBACK MODE)");
+    console.log("🟦 [UNIVERSALE PUBLIC 2056] Fallback ATTIVO");
 
     // ============================================================
     // NORMALIZZAZIONE
@@ -69,13 +81,13 @@ if (window.__LOADER_UNIVERSALE_PUBLIC_2055__) {
     }
 
     // ============================================================
-    // CARICA SCRIPT (SAFE + CACHE LOCALE)
+    // CARICA SCRIPT (SAFE)
     // ============================================================
     function loadScript(src) {
       const key = src;
 
       if (window.__UNIVERSALE_PUBLIC_JS_CACHE__.has(key)) {
-        console.log("⏭️ [UNIVERSALE PUBLIC] LOAD-SKIP già caricato:", key);
+        console.log("⏭️ [UNIVERSALE PUBLIC] LOAD-SKIP:", key);
         return Promise.resolve(true);
       }
 
@@ -119,45 +131,35 @@ if (window.__LOADER_UNIVERSALE_PUBLIC_2055__) {
     }
 
     // ============================================================
-    // AVVIO (CON LOCK LOCALE)
+    // AVVIO FALLBACK
     // ============================================================
     async function runUniversale() {
       const state = window.__UNIVERSALE_PUBLIC_RUN_STATE__;
 
-      if (state.done) {
-        console.log("⏭️ [UNIVERSALE PUBLIC] run() già completato → skip");
-        return;
-      }
-      if (state.running) {
-        console.log("⏭️ [UNIVERSALE PUBLIC] run() già in esecuzione → skip");
-        return;
-      }
+      if (state.done || state.running) return;
 
       state.running = true;
 
-      console.log("🟦 [UNIVERSALE PUBLIC] Evento supremo-public-load-universale ricevuto → avvio run()");
+      console.log("🟦 [UNIVERSALE PUBLIC] Evento supremo-public-load-universale → avvio fallback");
 
       const { base, src: expectedPageScript } = getExpectedPageScript();
-      console.log("🔍 [UNIVERSALE PUBLIC] Pagina normalizzata:", base);
-      console.log("🔍 [UNIVERSALE PUBLIC] Script pagina atteso:", expectedPageScript);
+      console.log("🔍 Pagina normalizzata:", base);
+      console.log("🔍 Script atteso:", expectedPageScript);
 
       await loadPageScriptIfNeeded(expectedPageScript);
 
       state.running = false;
       state.done = true;
 
-      // Evita doppie emissioni
       if (!window.__pageJsLoaded) {
-        console.log("🟩 [UNIVERSALE PUBLIC] page-js-loaded (fallback universale)");
+        console.log("🟩 [UNIVERSALE PUBLIC] page-js-loaded (fallback)");
         window.__pageJsLoaded = true;
         document.dispatchEvent(new Event("page-js-loaded"));
-      } else {
-        console.log("🟩 [UNIVERSALE PUBLIC] page-js-loaded era già presente → nessuna emissione");
       }
     }
 
     // ============================================================
-    // PATCH 2055: ascolta SOLO l’evento del SUPREMO PUBLIC
+    // LISTENER
     // ============================================================
     document.addEventListener("supremo-public-load-universale", runUniversale);
 
