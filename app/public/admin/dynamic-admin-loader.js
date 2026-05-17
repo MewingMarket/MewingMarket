@@ -61,7 +61,7 @@ if (window.__DYNAMIC_ADMIN_LOADER_2056__) {
     }
 
     // ============================================================
-    // 3) RENDER = FONTE UNICA DI VERITÀ (SAFE MODE 2056)
+    // 3) RENDER = FONTE UNICA DI VERITÀ (SAFE MODE 2056, ANTI-LOOP)
     // NON tocca loader, supremo, universale, critical
     // ============================================================
     function forceRenderNoStore() {
@@ -86,13 +86,19 @@ if (window.__DYNAMIC_ADMIN_LOADER_2056__) {
             return;
           }
 
-          // Applica no-store
           const url = new URL(s.src);
+
+          // 🔥 PATCH ANTI-LOOP: se già contiene cache= → NON toccare
+          if (url.searchParams.has("cache")) {
+            return;
+          }
+
+          // Applica no-store una sola volta
           url.searchParams.set("cache", "no-store");
           s.src = url.toString();
         });
 
-        console.log("🟦 [DYNAMIC ADMIN] Render impostato come fonte unica di verità (SAFE 2056)");
+        console.log("🟦 [DYNAMIC ADMIN] Render impostato come fonte unica di verità (SAFE 2056 + ANTI-LOOP)");
       } catch (e) {
         console.warn("❌ [DYNAMIC ADMIN] Errore no-store:", e.message);
       }
