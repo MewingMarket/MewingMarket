@@ -81,15 +81,32 @@ function initPage() {
 }
 
 /* =========================================================
-   ⭐ PATCH PROMO — PRODOTTO PERSONALIZZATO
+   ⭐ PATCH PROMO — PRODOTTO PERSONALIZZATO (Java-mode)
+   - Usa /api/catalogo/getCatalogoPersonalizzato
+   - Se trova l’ID e promo_attiva → override
 ========================================================= */
 async function getProdottoPersonalizzato(id) {
   try {
-    const res = await fetch("/api/catalogo/personalizzato", { method: "GET" });
-    const json = await res.json();
-    if (!json.success) return null;
+    console.log("🎯 [PRODOTTO] Richiesta catalogo personalizzato…");
 
-    const prodotti = json.prodotti || [];
+    const data = await apiProdotto("/api/catalogo/getCatalogoPersonalizzato", {
+      method: "GET"
+    });
+
+    if (!data) {
+      console.log("ℹ️ [PRODOTTO] Nessun catalogo personalizzato disponibile");
+      return null;
+    }
+
+    const prodotti = Array.isArray(data)
+      ? data
+      : (data.prodotti || data.data || []);
+
+    if (!prodotti || !prodotti.length) {
+      console.log("ℹ️ [PRODOTTO] Catalogo personalizzato vuoto");
+      return null;
+    }
+
     const p = prodotti.find(x => String(x.id) === String(id));
 
     if (p && p.promo_attiva) {
@@ -97,6 +114,7 @@ async function getProdottoPersonalizzato(id) {
       return p;
     }
 
+    console.log("ℹ️ [PRODOTTO] Nessuna promo attiva per questo ID");
     return null;
   } catch (err) {
     console.warn("⚠️ [PRODOTTO] Errore prodotto personalizzato:", err);
