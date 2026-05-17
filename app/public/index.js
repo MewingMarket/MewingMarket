@@ -104,19 +104,39 @@ function initPage() {
 
 /* =========================================================
    ⭐ PATCH PROMO — CATALOGO PERSONALIZZATO
+   - Usa Java-mode: /api/catalogo/getCatalogoPersonalizzato
+   - Ritorna SOLO prodotti con promo_attiva (se presenti)
 ========================================================= */
 async function getCatalogoPersonalizzatoHome() {
   try {
-    const res = await fetch("/api/catalogo/personalizzato", { method: "GET" });
-    const json = await res.json();
-    if (!json.success) return null;
+    console.log("🎯 [HOME] Richiesta catalogo personalizzato…");
 
-    const prodotti = json.prodotti || [];
-    if (prodotti.length && prodotti.some(p => p.promo_attiva)) {
-      console.log("🎉 [HOME] Promo attiva → uso catalogo personalizzato");
-      return prodotti;
+    // Java-mode: gruppo "catalogo" + funzione "getCatalogoPersonalizzato"
+    const data = await apiHome("/api/catalogo/getCatalogoPersonalizzato", {
+      method: "GET"
+    });
+
+    if (!data) {
+      console.log("ℹ️ [HOME] Nessun catalogo personalizzato disponibile");
+      return null;
     }
 
+    const prodotti = Array.isArray(data)
+      ? data
+      : (data.prodotti || data.data || []);
+
+    if (!prodotti || !prodotti.length) {
+      console.log("ℹ️ [HOME] Catalogo personalizzato vuoto");
+      return null;
+    }
+
+    const conPromo = prodotti.filter(p => p.promo_attiva);
+    if (conPromo.length) {
+      console.log("🎉 [HOME] Promo attiva → uso catalogo personalizzato (", conPromo.length, "prodotti )");
+      return conPromo;
+    }
+
+    console.log("ℹ️ [HOME] Catalogo personalizzato senza promo attive");
     return null;
   } catch (err) {
     console.warn("⚠️ [HOME] Errore catalogo personalizzato:", err);
@@ -278,7 +298,7 @@ function avviaHomepage() {
 
     const productsHero = Array.isArray(dataHero)
       ? dataHero
-      : (dataHero.prodotti || []);
+      : (dataHero.prodotti || dataHero.data || []);
 
     const images = productsHero
       .map(p => p.immagine_url || p.immagine)
