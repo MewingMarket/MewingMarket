@@ -1,14 +1,12 @@
 /* =========================================================
    HOME PREMIUM — UNIVERSAL JSON PATCH 2027.970
-   PATCH 2050 — AUTORUN + DEBUG ESTESO
-   PATCH 2051 — ANTI-LOOP (LOCK ESECUZIONE)
-   PATCH 2052 — PROMO CATALOGO PERSONALIZZATO + COUNTDOWN
+   PATCH 2057 — SINGLE FETCH MODE + ANTI-LOOP DEFINITIVO
 ========================================================= */
 
 console.log("📌 [HOME] File caricato nel DOM");
 
 /* =========================================================
-   🔒 PATCH ANTI-LOOP 2051 (FIX: incapsulato in IIFE)
+   🔒 PATCH ANTI-LOOP 2051 (LOCK ESECUZIONE)
 ========================================================= */
 (function() {
   if (window.__HOME_PREMIUM_RUNNING__) {
@@ -17,6 +15,29 @@ console.log("📌 [HOME] File caricato nel DOM");
   }
   window.__HOME_PREMIUM_RUNNING__ = true;
 })();
+
+/* =========================================================
+   SINGLE FETCH MODE — CACHE PROMISE
+========================================================= */
+let __CATALOGO_PROMISE__ = null;
+
+async function getCatalogoPersonalizzatoHomeCached() {
+  if (__CATALOGO_PROMISE__) {
+    console.log("♻️ [HOME] Riutilizzo catalogo personalizzato già in corso");
+    return __CATALOGO_PROMISE__;
+  }
+
+  console.log("🎯 [HOME] Prima richiesta catalogo personalizzato…");
+
+  __CATALOGO_PROMISE__ = getCatalogoPersonalizzatoHome()
+    .catch(err => {
+      console.warn("⚠️ [HOME] Errore catalogo personalizzato:", err);
+      __CATALOGO_PROMISE__ = null;
+      return null;
+    });
+
+  return __CATALOGO_PROMISE__;
+}
 
 /* =========================================================
    WRAPPER UNIVERSALE (universal-json)
@@ -104,40 +125,26 @@ function initPage() {
 
 /* =========================================================
    ⭐ PATCH PROMO — CATALOGO PERSONALIZZATO
-   - Usa Java-mode: /api/catalogo/getCatalogoPersonalizzato
-   - Ritorna SOLO prodotti con promo_attiva (se presenti)
 ========================================================= */
 async function getCatalogoPersonalizzatoHome() {
   try {
     console.log("🎯 [HOME] Richiesta catalogo personalizzato…");
 
-    // Java-mode: gruppo "catalogo" + funzione "getCatalogoPersonalizzato"
     const data = await apiHome("/api/catalogo/getCatalogoPersonalizzato", {
       method: "GET"
     });
 
-    if (!data) {
-      console.log("ℹ️ [HOME] Nessun catalogo personalizzato disponibile");
-      return null;
-    }
+    if (!data) return null;
 
     const prodotti = Array.isArray(data)
       ? data
       : (data.prodotti || data.data || []);
 
-    if (!prodotti || !prodotti.length) {
-      console.log("ℹ️ [HOME] Catalogo personalizzato vuoto");
-      return null;
-    }
+    if (!prodotti.length) return null;
 
     const conPromo = prodotti.filter(p => p.promo_attiva);
-    if (conPromo.length) {
-      console.log("🎉 [HOME] Promo attiva → uso catalogo personalizzato (", conPromo.length, "prodotti )");
-      return conPromo;
-    }
+    return conPromo.length ? conPromo : null;
 
-    console.log("ℹ️ [HOME] Catalogo personalizzato senza promo attive");
-    return null;
   } catch (err) {
     console.warn("⚠️ [HOME] Errore catalogo personalizzato:", err);
     return null;
@@ -145,7 +152,7 @@ async function getCatalogoPersonalizzatoHome() {
 }
 
 /* =========================================================
-   ⭐ PATCH PROMO — CARD HTML TOP 3
+   ⭐ CARD HTML TOP 3
 ========================================================= */
 function cardHTMLHome(p) {
   const img = p.immagine_url || p.immagine || "/placeholder.webp";
@@ -201,7 +208,7 @@ function cardHTMLHome(p) {
 }
 
 /* =========================================================
-   ⭐ PATCH PROMO — COUNTDOWN HOME
+   ⭐ COUNTDOWN HOME
 ========================================================= */
 function initCountdownHome() {
   const els = document.querySelectorAll(".promo-countdown");
@@ -230,95 +237,67 @@ function initCountdownHome() {
 }
 
 /* =========================================================
-   CODICE ORIGINALE INCAPSULATO (PATCHATO)
+   ⭐ AVVIO HOMEPAGE — SINGLE FETCH MODE
 ========================================================= */
-function avviaHomepage() {
+async function avviaHomepage() {
   console.log("🔥 home-premium.js READY — Avvio sezioni homepage");
 
-  /* ------------------------------
-     1) GRID HOMEPAGE (Top 3 Prodotti)
-  ------------------------------ */
-  (async () => {
-    console.log("📦 [HOME] Carico Top 3 prodotti…");
+  // ============================
+  // 1) FETCH UNICA
+  // ============================
+  let data = await getCatalogoPersonalizzatoHomeCached();
+  if (!data) {
+    data = await apiHome("/api/prodotti/getProdotti", { method: "GET" });
+  }
 
-    const grid = document.getElementById("products-grid");
-    if (!grid) {
-      console.warn("❌ [HOME] #products-grid NON trovato");
-      return;
-    }
+  if (!data) {
+    console.warn("⚠️ [HOME] Nessun dato disponibile");
+    return;
+  }
 
-    let data = await getCatalogoPersonalizzatoHome();
-    if (!data) {
-      data = await apiHome("/api/prodotti/getProdotti", { method: "GET" });
-    }
+  const products = Array.isArray(data)
+    ? data
+    : (data.prodotti || data.data || []);
 
-    console.log("📥 [HOME] Risposta prodotti:", data);
+  // ============================
+  // 2) TOP 3 PRODOTTI
+  // ============================
+  console.log("📦 [HOME] Rendering Top 3 prodotti…");
 
-    if (!data) {
-      grid.innerHTML = `<p class="info-msg">Il catalogo prodotti è in fase di aggiornamento.</p>`;
-      return;
-    }
-
-    const products = Array.isArray(data)
-      ? data
-      : (data.prodotti || data.data || []);
-
-    if (products.length === 0) {
-      grid.innerHTML = `<p class="info-msg">Il catalogo prodotti è in fase di aggiornamento.</p>`;
-      return;
-    }
-
+  const grid = document.getElementById("products-grid");
+  if (grid) {
     grid.innerHTML = "";
 
     products.slice(0, 3).forEach((p) => {
       const wrapper = document.createElement("div");
       wrapper.innerHTML = cardHTMLHome(p);
-      const card = wrapper.firstElementChild;
-      grid.appendChild(card);
+      grid.appendChild(wrapper.firstElementChild);
     });
 
     initCountdownHome();
-  })();
+  }
 
-  /* ------------------------------
-     2) SLIDER HERO (Immagini dinamiche)
-  ------------------------------ */
-  (async () => {
-    console.log("🖼️ [HOME] Carico slider hero…");
+  // ============================
+  // 3) SLIDER HERO
+  // ============================
+  console.log("🖼️ [HOME] Rendering slider hero…");
 
-    let dataHero = await getCatalogoPersonalizzatoHome();
-    if (!dataHero) {
-      dataHero = await apiHome("/api/prodotti/getProdotti", { method: "GET" });
-    }
+  const images = products
+    .map(p => p.immagine_url || p.immagine)
+    .filter(img => img && img.length > 5);
 
-    if (!dataHero) {
-      console.warn("⚠️ [HOME] Nessun dato per slider");
-      return;
-    }
-
-    const productsHero = Array.isArray(dataHero)
-      ? dataHero
-      : (dataHero.prodotti || dataHero.data || []);
-
-    const images = productsHero
-      .map(p => p.immagine_url || p.immagine)
-      .filter(img => img && img.length > 5);
-
-    console.log("🖼️ [HOME] Immagini slider:", images.length);
-
-    const slider = document.getElementById("hero-slider");
-    if (slider && images.length > 0) {
-      let index = 0;
-      const rotate = () => {
-        slider.style.opacity = 0;
-        setTimeout(() => {
-          slider.src = images[index];
-          slider.style.opacity = 1;
-          index = (index + 1) % images.length;
-        }, 400);
-      };
-      rotate();
-      setInterval(rotate, 6000);
-    }
-  })();
+  const slider = document.getElementById("hero-slider");
+  if (slider && images.length > 0) {
+    let index = 0;
+    const rotate = () => {
+      slider.style.opacity = 0;
+      setTimeout(() => {
+        slider.src = images[index];
+        slider.style.opacity = 1;
+        index = (index + 1) % images.length;
+      }, 400);
+    };
+    rotate();
+    setInterval(rotate, 6000);
+  }
 }
