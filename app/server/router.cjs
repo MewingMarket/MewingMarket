@@ -14,6 +14,7 @@ const R = (p) => require(path.join(process.cwd(), "app/server", p));
 const authUser = R("middleware/auth-user.cjs");
 const authAdmin = R("middleware/auth-admin.cjs");
 
+// jslist è un modulo con più funzioni, non un handler singolo
 const jslist = require("./routes/jslist.cjs");
 
 /* =========================================================
@@ -91,11 +92,19 @@ function resolveHandler(mod, rawName) {
    ENDPOINT SPECIALI
 ========================================================= */
 
-router.get("/js-list", jslist);
+// Endpoint diagnostico semplice
 router.get("/ping", (req, res) => res.json({ ok: true, ts: Date.now() }));
+
+// js-list: usiamo esplicitamente la funzione pubblica
+// (se non ti serve più, puoi anche rimuoverlo del tutto)
+if (typeof jslist.getPublicList === "function") {
+  router.get("/js-list", (req, res) => jslist.getPublicList(req, res));
+}
 
 /* =========================================================
    ROUTER UNIVERSALE FUZZY
+   Montato tipicamente come: app.use("/api", router)
+   → /api/:modulo/:funzione
 ========================================================= */
 
 router.all("/:modulo/:funzione", async (req, res) => {
@@ -126,24 +135,25 @@ router.all("/:modulo/:funzione", async (req, res) => {
 
     const handler = resolved.fn;
 
-    // AUTH
+    // AUTH ADMIN
     if (m === "admin") {
       const ok = await authAdmin(req, res);
       if (ok === false) return;
     }
 
+    // AUTH USER per moduli sensibili
     if (SENSITIVE_MODULES.has(m)) {
       const ok = await authUser(req, res);
       if (ok === false) return;
     }
 
-    // ESECUZIONE
+    // ESECUZIONE HANDLER
     let result;
     try {
       const maybePromise = handler(req, res);
       result = maybePromise instanceof Promise ? await maybePromise : maybePromise;
     } catch (e) {
-      console.error("❌ ROUTER HANDLER ERROR:", m, f, "→", e.message);
+      console.error("❌ ROUTER HANDLER ERROR:", m, f, "→", e);
       return res.json({ success: false, error: "Errore interno handler" });
     }
 
