@@ -11,8 +11,14 @@ module.exports = {
   prodotti: {
     ...R("routes/api-prodotti-new.cjs"),
     ...R("routes/prodotti-ai.cjs"),
-    ...R("routes/catalogo-personalizzato.cjs"),   // ⭐ presente nello screenshot
-    ...R("routes/product-page.cjs")               // ⭐ presente nello screenshot
+    ...R("routes/product-page.cjs")               // pagina prodotto pubblica
+  },
+
+  /* ============================================================
+     CATALOGO PERSONALIZZATO (endpoint /api/catalogo/...)
+  ============================================================ */
+  catalogo: {
+    ...R("routes/catalogo-personalizzato.cjs")    // ora il gruppo è "catalogo"
   },
 
   /* ============================================================
@@ -28,7 +34,7 @@ module.exports = {
   recensioni: {
     ...R("routes/api-feedback.cjs"),
     ...R("routes/api-recensioni-top.cjs"),
-    ...R("routes/meta-feed.cjs")                  // ⭐ presente nello screenshot
+    ...R("routes/meta-feed.cjs")
   },
 
   /* ============================================================
@@ -53,7 +59,7 @@ module.exports = {
     ...R("routes/paypal-create.cjs"),
     ...R("routes/paypal-complete.cjs"),
     ...R("routes/paypal-cancel.cjs"),
-    ...R("routes/paypal-ricrea.cjs")             // ⭐ nello screenshot
+    ...R("routes/paypal-ricrea.cjs")
   },
 
   /* ============================================================
@@ -157,7 +163,7 @@ module.exports = {
      SITEMAP
   ============================================================ */
   sitemap: {
-    ...R("routes/sitemap.cjs")                    // ⭐ presente nello screenshot
+    ...R("routes/sitemap.cjs")
   }
 
 };
