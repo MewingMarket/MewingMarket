@@ -42,7 +42,10 @@ window.Cart = window.Cart || {
 
     // Prezzi
     const prezzoBaseCent = Number(product.prezzo_cent) || 0;
-    const prezzoPromoCent = product.promo_attiva
+
+    // Fallback promo intelligente
+    const promoFlag = !!product.promo_attiva;
+    const prezzoPromoCent = promoFlag
       ? Number(product.prezzo_scontato_cent || prezzoBaseCent)
       : prezzoBaseCent;
 
@@ -57,10 +60,8 @@ window.Cart = window.Cart || {
         // PATCH PROMO
         prezzo_cent: prezzoPromoCent,          // prezzo effettivo usato nel checkout
         prezzo_originale_cent: prezzoBaseCent, // utile per mostrare prezzo barrato
-        promo_attiva: !!product.promo_attiva,
-        prezzo_scontato_cent: product.promo_attiva
-          ? prezzoPromoCent
-          : null,
+        promo_attiva: promoFlag,
+        prezzo_scontato_cent: promoFlag ? prezzoPromoCent : null,
 
         qty: 1
       });
@@ -177,16 +178,26 @@ function rimuoviSingoloDalCarrello(id) {
   window.Cart.updateQty(id, -1);
 }
 
+/* =========================================================
+   BADGE ROBUSTO (PATCH 2056)
+========================================================= */
 function aggiornaBadgeCarrello() {
   const badge = document.getElementById("cart-badge");
-  if (!badge) return;
+
+  if (!badge) {
+    // DOM non pronto → ritenta
+    document.addEventListener("DOMContentLoaded", aggiornaBadgeCarrello, { once: true });
+    return;
+  }
 
   const count = window.Cart.count();
   badge.textContent = count;
-
   badge.style.display = count > 0 ? "inline-block" : "none";
 }
 
+/* =========================================================
+   CLICK ICONA CARRELLO
+========================================================= */
 document.addEventListener("click", (e) => {
   const id = e.target.id;
   if (id === "cart-icon" || id === "cart-badge") {
@@ -194,9 +205,20 @@ document.addEventListener("click", (e) => {
   }
 });
 
+/* =========================================================
+   EVENTI
+========================================================= */
 document.addEventListener("cart-updated", aggiornaBadgeCarrello);
 document.addEventListener("header-loaded", aggiornaBadgeCarrello);
 document.addEventListener("auth-ready", aggiornaBadgeCarrello);
 
-// Evento finale, emesso dopo aver registrato tutti gli handler
-document.dispatchEvent(new Event("cart-ready"));
+/* =========================================================
+   CART-READY (PATCH 2056 — ordinato)
+========================================================= */
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => {
+    document.dispatchEvent(new Event("cart-ready"));
+  });
+} else {
+  document.dispatchEvent(new Event("cart-ready"));
+}
