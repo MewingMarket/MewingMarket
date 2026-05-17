@@ -1,6 +1,6 @@
 // ============================================================
-// SCANNER UNICO — BACKEND + FRONTEND + MATCHER + REPORT HTML
-// Percorso consigliato: /app/tools/scanner.js
+// SCANNER JAVA-MODE — BACKEND + FRONTEND + MATCHER + REPORT HTML
+// Percorso: /app/tools/scanner.js
 // Esegui con: node scanner.js
 // ============================================================
 
@@ -10,12 +10,40 @@ const path = require("path");
 // ------------------------------------------------------------
 // CONFIG
 // ------------------------------------------------------------
-const ROUTES_DIR = path.join(process.cwd(), "app/server/routes");
-const PUBLIC_DIR = path.join(process.cwd(), "app/public");
-const OUT_HTML = path.join(process.cwd(), "app/public/scan-report.html");
+const SERVER_INDEX = path.join(process.cwd(), "app/server/index.cjs");
+const PUBLIC_DIR   = path.join(process.cwd(), "app/public");
+const OUT_HTML     = path.join(process.cwd(), "app/public/scan-report.html");
 
 // ------------------------------------------------------------
-// UTILS
+// 1) SCAN BACKEND (JAVA-MODE, usando app/server/index.cjs)
+// ------------------------------------------------------------
+function scanBackendJavaMode() {
+  const modules = require(SERVER_INDEX); // { prodotti: {...}, admin: {...}, ... }
+
+  const endpoints = {}; // "GET /api/prodotti/getProdotti" → "prodotti"
+
+  for (const [groupName, groupExports] of Object.entries(modules)) {
+    if (!groupExports || typeof groupExports !== "object") continue;
+
+    for (const fnName of Object.keys(groupExports)) {
+      // Saltiamo cose non funzione (se mai ci fossero)
+      const value = groupExports[fnName];
+      if (typeof value !== "function") continue;
+
+      // In Java-mode non hai ancora il metodo (GET/POST),
+      // quindi per ora lo marchiamo come "ANY"
+      const method = "ANY";
+      const route  = `/api/${groupName}/${fnName}`;
+
+      endpoints[`${method} ${route}`] = groupName;
+    }
+  }
+
+  return endpoints;
+}
+
+// ------------------------------------------------------------
+// 2) SCAN FRONTEND (fetch, axios, XHR, ecc.)
 // ------------------------------------------------------------
 function readAllFiles(dir, ext = ".js") {
   let results = [];
@@ -35,35 +63,6 @@ function readAllFiles(dir, ext = ".js") {
   return results;
 }
 
-// ------------------------------------------------------------
-// 1) SCAN BACKEND ROUTES
-// ------------------------------------------------------------
-function scanBackendRoutes() {
-  const files = fs.readdirSync(ROUTES_DIR).filter(f => f.endsWith(".cjs"));
-  const endpoints = {};
-
-  // SOLO endpoint API
-  const regex = /(get|post|put|delete)\s*\(\s*["'`](\/api\/[a-zA-Z0-9\-\/]+)["'`]/gi;
-
-  for (const file of files) {
-    const full = path.join(ROUTES_DIR, file);
-    const content = fs.readFileSync(full, "utf8");
-
-    let match;
-    while ((match = regex.exec(content))) {
-      const method = match[1].toUpperCase();
-      const route = match[2];
-
-      endpoints[`${method} ${route}`] = file;
-    }
-  }
-
-  return endpoints;
-}
-
-// ------------------------------------------------------------
-// 2) SCAN FRONTEND (fetch, axios, form action, XHR)
-// ------------------------------------------------------------
 function scanFrontend() {
   const files = readAllFiles(PUBLIC_DIR, ".js");
   const endpoints = new Set();
@@ -83,12 +82,12 @@ function scanFrontend() {
 // 3) MATCHER BACKEND ↔ FRONTEND
 // ------------------------------------------------------------
 function compareEndpoints(backend, frontend) {
-  const backendList = Object.keys(backend);
-  const backendPaths = backendList.map(e => e.split(" ")[1]);
+  const backendList  = Object.keys(backend);          // ["ANY /api/prodotti/getProdotti", ...]
+  const backendPaths = backendList.map(e => e.split(" ")[1]); // ["/api/prodotti/getProdotti", ...]
 
-  const ok = frontend.filter(e => backendPaths.includes(e));
+  const ok      = frontend.filter(e => backendPaths.includes(e));
   const missing = frontend.filter(e => !backendPaths.includes(e));
-  const unused = backendPaths.filter(e => !frontend.includes(e));
+  const unused  = backendPaths.filter(e => !frontend.includes(e));
 
   const wrong = missing.filter(e =>
     backendPaths.some(b => b.split("/")[2] === e.split("/")[2])
@@ -106,7 +105,7 @@ function generateHTML(backend, frontend, report) {
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<title>Scan Report — Backend ↔ Frontend</title>
+<title>Scan Report — Backend ↔ Frontend (Java-mode)</title>
 <style>
 body { font-family: Arial; padding: 20px; background: #f5f5f5; }
 h1 { color: #333; }
@@ -120,7 +119,7 @@ pre { background: #222; color: #0f0; padding: 10px; border-radius: 6px; overflow
 </head>
 <body>
 
-<h1>🔍 Scan Report — Backend ↔ Frontend</h1>
+<h1>🔍 Scan Report — Backend ↔ Frontend (Java-mode)</h1>
 
 <section>
 <h2 class="ok">🟩 Endpoint OK</h2>
@@ -143,7 +142,7 @@ pre { background: #222; color: #0f0; padding: 10px; border-radius: 6px; overflow
 </section>
 
 <section>
-<h2>🟦 Backend Completo</h2>
+<h2>🟦 Backend Completo (Java-mode)</h2>
 <pre>${JSON.stringify(backend, null, 2)}</pre>
 </section>
 
@@ -163,8 +162,8 @@ pre { background: #222; color: #0f0; padding: 10px; border-radius: 6px; overflow
 // ------------------------------------------------------------
 // 5) RUN
 // ------------------------------------------------------------
-console.log("🔍 SCAN BACKEND...");
-const backend = scanBackendRoutes();
+console.log("🔍 SCAN BACKEND (Java-mode)...");
+const backend = scanBackendJavaMode();
 
 console.log("🔍 SCAN FRONTEND...");
 const frontend = scanFrontend();
