@@ -1,18 +1,18 @@
 // =========================================================
-// DYNAMIC ADMIN LOADER — SAFE MODE 2055 (ULTRA MINIMAL)
+// DYNAMIC ADMIN LOADER — SAFE MODE 2056 (ULTRA MINIMAL)
 // Percorso reale: /app/public/admin/dynamic-admin-loader.js
 // Scopo: garantire che TUTTI i JS successivi siano freschi
-// Compatibile con SUPREMO ADMIN 2055 (no loop, no race)
+// Compatibile con SUPREMO ADMIN 2056 (no loop, no race)
 // =========================================================
 
-if (window.__DYNAMIC_ADMIN_LOADER_2055__) {
-  console.warn("[DYNAMIC ADMIN 2055] dynamic-admin-loader.js già caricato → skip");
+if (window.__DYNAMIC_ADMIN_LOADER_2056__) {
+  console.warn("[DYNAMIC ADMIN 2056] dynamic-admin-loader.js già caricato → skip");
 } else {
-  window.__DYNAMIC_ADMIN_LOADER_2055__ = true;
+  window.__DYNAMIC_ADMIN_LOADER_2056__ = true;
 
   (function () {
 
-    console.log("⚡ [DYNAMIC ADMIN 2055] Avvio dynamic-admin-loader (ULTRA MINIMAL)");
+    console.log("⚡ [DYNAMIC ADMIN 2056] Avvio dynamic-admin-loader (SAFE MODE)");
 
     // ============================================================
     // 1) ANTI-CACHE — impone al browser di NON fidarsi mai
@@ -61,7 +61,7 @@ if (window.__DYNAMIC_ADMIN_LOADER_2055__) {
     }
 
     // ============================================================
-    // 3) RENDER = FONTE UNICA DI VERITÀ (SAFE MODE)
+    // 3) RENDER = FONTE UNICA DI VERITÀ (SAFE MODE 2056)
     // NON tocca loader, supremo, universale, critical
     // ============================================================
     function forceRenderNoStore() {
@@ -86,25 +86,36 @@ if (window.__DYNAMIC_ADMIN_LOADER_2055__) {
             return;
           }
 
+          // Applica no-store
           const url = new URL(s.src);
           url.searchParams.set("cache", "no-store");
           s.src = url.toString();
         });
 
-        console.log("🟦 [DYNAMIC ADMIN] Render impostato come fonte unica di verità (SAFE)");
+        console.log("🟦 [DYNAMIC ADMIN] Render impostato come fonte unica di verità (SAFE 2056)");
       } catch (e) {
         console.warn("❌ [DYNAMIC ADMIN] Errore no-store:", e.message);
       }
     }
 
     // ============================================================
+    // 4) MICRO-DELAY per evitare race con SUPREMO ADMIN
+    // ============================================================
+    function microDelay() {
+      return new Promise(r => setTimeout(r, 15));
+    }
+
+    // ============================================================
     // ESECUZIONE ORDINATA (JAVA-MODE)
     // ============================================================
-    applyAntiCache();
-    removeServiceWorkers();
-    forceRenderNoStore();
+    (async () => {
+      applyAntiCache();
+      removeServiceWorkers();
+      await microDelay();
+      forceRenderNoStore();
 
-    console.log("🟩 [DYNAMIC ADMIN 2055] Completato (ULTRA MINIMAL)");
+      console.log("🟩 [DYNAMIC ADMIN 2056] Completato (ULTRA MINIMAL SAFE)");
+    })();
 
   })();
 }
