@@ -1,21 +1,19 @@
 // =========================================================
-// DYNAMIC LOADER — SAFE MODE 2055 (ULTRA MINIMAL PUBLIC)
-// Percorso reale: /app/public/dynamic-loader.js
-// Scopo: garantire che TUTTI i JS successivi siano freschi
-// Compatibile con SUPREMO 2055 (no loop, no race)
+// DYNAMIC LOADER — SAFE MODE 2056 (ULTRA MINIMAL PUBLIC)
+// Patch 2056: aggiunto critical-ready + micro-delay
 // =========================================================
 
 if (window.__DYNAMIC_LOADER_2055__) {
-  console.warn("[DYNAMIC 2055] dynamic-loader.js già caricato → skip");
+  console.warn("[DYNAMIC 2056] dynamic-loader.js già caricato → skip");
 } else {
   window.__DYNAMIC_LOADER_2055__ = true;
 
   (function () {
 
-    console.log("⚡ [DYNAMIC 2055] Avvio dynamic-loader (ULTRA MINIMAL)");
+    console.log("⚡ [DYNAMIC 2056] Avvio dynamic-loader (ULTRA MINIMAL)");
 
     // ============================================================
-    // 1) ANTI-CACHE — impone al browser di NON fidarsi mai
+    // 1) ANTI-CACHE
     // ============================================================
     function applyAntiCache() {
       try {
@@ -39,7 +37,7 @@ if (window.__DYNAMIC_LOADER_2055__) {
     }
 
     // ============================================================
-    // 2) ANTI SERVICE WORKER — elimina ogni possibile interferenza
+    // 2) ANTI SERVICE WORKER
     // ============================================================
     function removeServiceWorkers() {
       try {
@@ -62,7 +60,6 @@ if (window.__DYNAMIC_LOADER_2055__) {
 
     // ============================================================
     // 3) RENDER = FONTE UNICA DI VERITÀ
-    // Patchata: NON tocca gli script già modificati da SUPREMO
     // ============================================================
     function forceRenderNoStore() {
       try {
@@ -95,13 +92,33 @@ if (window.__DYNAMIC_LOADER_2055__) {
     }
 
     // ============================================================
-    // ESECUZIONE ORDINATA (Java-mode)
+    // 4) EMISSIONE CRITICAL-READY (PATCH 2056)
+    // ============================================================
+    function emitCriticalReady() {
+      try {
+        console.log("🟩 [DYNAMIC] Emissione evento critical-ready…");
+
+        // micro-delay per evitare race con loader.js
+        setTimeout(() => {
+          window.__criticalReady = true;
+          document.dispatchEvent(new Event("critical-ready"));
+          console.log("💚 [DYNAMIC] critical-ready EMESSO");
+        }, 50);
+
+      } catch (e) {
+        console.warn("❌ [DYNAMIC] Errore critical-ready:", e.message);
+      }
+    }
+
+    // ============================================================
+    // ESECUZIONE ORDINATA
     // ============================================================
     applyAntiCache();
     removeServiceWorkers();
     forceRenderNoStore();
+    emitCriticalReady();
 
-    console.log("🟩 [DYNAMIC 2055] Completato (ULTRA MINIMAL)");
+    console.log("🟩 [DYNAMIC 2056] Completato (ULTRA MINIMAL)");
 
   })();
 }
