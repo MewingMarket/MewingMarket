@@ -1,12 +1,12 @@
 // =========================================================
 // DYNAMIC LOADER — SAFE MODE 2056 (ULTRA MINIMAL PUBLIC)
-// Patch 2056: aggiunto critical-ready + micro-delay
+// Patch 2056: anti-loop, critical-ready, micro-delay
 // =========================================================
 
-if (window.__DYNAMIC_LOADER_2055__) {
+if (window.__DYNAMIC_LOADER_2056__) {
   console.warn("[DYNAMIC 2056] dynamic-loader.js già caricato → skip");
 } else {
-  window.__DYNAMIC_LOADER_2055__ = true;
+  window.__DYNAMIC_LOADER_2056__ = true;
 
   (function () {
 
@@ -59,7 +59,7 @@ if (window.__DYNAMIC_LOADER_2055__) {
     }
 
     // ============================================================
-    // 3) RENDER = FONTE UNICA DI VERITÀ
+    // 3) RENDER = FONTE UNICA DI VERITÀ (ANTI-LOOP 2056)
     // ============================================================
     function forceRenderNoStore() {
       try {
@@ -81,11 +81,17 @@ if (window.__DYNAMIC_LOADER_2055__) {
           }
 
           const url = new URL(s.src);
+
+          // 🔥 PATCH ANTI-LOOP: se già contiene cache= → NON toccare
+          if (url.searchParams.has("cache")) {
+            return;
+          }
+
           url.searchParams.set("cache", "no-store");
           s.src = url.toString();
         });
 
-        console.log("🟦 [DYNAMIC] Render impostato come fonte unica di verità (SAFE)");
+        console.log("🟦 [DYNAMIC] Render impostato come fonte unica di verità (SAFE + ANTI-LOOP)");
       } catch (e) {
         console.warn("❌ [DYNAMIC] Errore no-store:", e.message);
       }
@@ -98,7 +104,6 @@ if (window.__DYNAMIC_LOADER_2055__) {
       try {
         console.log("🟩 [DYNAMIC] Emissione evento critical-ready…");
 
-        // micro-delay per evitare race con loader.js
         setTimeout(() => {
           window.__criticalReady = true;
           document.dispatchEvent(new Event("critical-ready"));
