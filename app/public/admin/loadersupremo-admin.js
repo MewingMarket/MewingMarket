@@ -1,11 +1,11 @@
 // =========================================================
-// LOADER SUPREMO — ADMIN MODELLO 2056 (JAVA-MODE ORDINATO)
+// LOADER SUPREMO — ADMIN MODELLO 2057 (JAVA-MODE ORDINATO)
 // Modalità STANDBY: il file è completo ma NON esegue nulla
 // finché non viene attivato manualmente.
 // =========================================================
 
-if (!window.__SUPREMO_ADMIN_LOADER_2056__) {
-  window.__SUPREMO_ADMIN_LOADER_2056__ = true;
+if (!window.__SUPREMO_ADMIN_LOADER_2057__) {
+  window.__SUPREMO_ADMIN_LOADER_2057__ = true;
 
   // Flag globale: se true → NON esegue auto-run
   window.__SUPREMO_ADMIN_STANDBY__ =
@@ -13,7 +13,98 @@ if (!window.__SUPREMO_ADMIN_LOADER_2056__) {
 
   (function () {
 
-    const V = "2056";
+    const V = "2057";
+
+    // ============================================================
+    // PATCH 2057 — GLOBAL FETCH LOCK (ANTI-DUPLICAZIONE)
+    // ============================================================
+    (function() {
+      if (window.__GLOBAL_FETCH_LOCK_PATCHED__) return;
+      window.__GLOBAL_FETCH_LOCK_PATCHED__ = true;
+
+      console.log("🛡️ [SUPREMO ADMIN 2057] Global Fetch Lock attivo");
+
+      const originalFetch = window.fetch;
+      const pending = new Map(); // url → Promise
+
+      window.fetch = function(url, options = {}) {
+        const key = typeof url === "string" ? url : url.url;
+
+        if (pending.has(key)) {
+          console.log("♻️ [FETCH-LOCK] Riutilizzo fetch:", key);
+          return pending.get(key);
+        }
+
+        const p = originalFetch(url, options)
+          .finally(() => pending.delete(key));
+
+        pending.set(key, p);
+        console.log("🚀 [FETCH-LOCK] Nuova fetch:", key);
+
+        return p;
+      };
+    })();
+
+    // ============================================================
+    // PATCH 2057 — GLOBAL SCRIPT LOCK (ANTI-DUPLICAZIONE SCRIPT)
+    // ============================================================
+    (function() {
+      if (window.__GLOBAL_SCRIPT_LOCK_PATCHED__) return;
+      window.__GLOBAL_SCRIPT_LOCK_PATCHED__ = true;
+
+      console.log("🛡️ [SUPREMO ADMIN 2057] Global Script Lock attivo");
+
+      const origCreate = document.createElement;
+      const loaded = new Set();
+
+      document.createElement = function(tag) {
+        const el = origCreate.call(document, tag);
+
+        if (tag === "script") {
+          const origSet = Object.getOwnPropertyDescriptor(HTMLScriptElement.prototype, "src").set;
+
+          Object.defineProperty(el, "src", {
+            set(v) {
+              if (loaded.has(v)) {
+                console.warn("⛔ [SCRIPT-LOCK] Script già caricato:", v);
+                return;
+              }
+              loaded.add(v);
+              origSet.call(this, v);
+            }
+          });
+        }
+
+        return el;
+      };
+    })();
+
+    // ============================================================
+    // PATCH 2057 — GLOBAL EVENT LOCK (ANTI-DUPLICAZIONE EVENTI)
+    // ============================================================
+    (function() {
+      if (window.__GLOBAL_EVENT_LOCK_PATCHED__) return;
+      window.__GLOBAL_EVENT_LOCK_PATCHED__ = true;
+
+      console.log("🛡️ [SUPREMO ADMIN 2057] Global Event Lock attivo");
+
+      const emitted = new Set();
+      const origDispatch = document.dispatchEvent;
+
+      document.dispatchEvent = function(ev) {
+        const name = ev.type;
+
+        if (name === "critical-ready" || name === "page-js-loaded") {
+          if (emitted.has(name)) {
+            console.warn("⛔ [EVENT-LOCK] Evento già emesso:", name);
+            return true;
+          }
+          emitted.add(name);
+        }
+
+        return origDispatch.call(document, ev);
+      };
+    })();
 
     // ============================================================
     // CACHE + LOCK LOCALE
@@ -28,11 +119,10 @@ if (!window.__SUPREMO_ADMIN_LOADER_2056__) {
     window.__LOADER_UNIVERSALE_ADMIN_CARICATO__ =
       window.__LOADER_UNIVERSALE_ADMIN_CARICATO__ || false;
 
-    // Flag globali
     window.__pageJsLoaded = window.__pageJsLoaded || false;
     window.__criticalReady = window.__criticalReady || false;
 
-    console.log("⚡ [SUPREMO ADMIN 2056] Loader admin caricato (modalità standby:", window.__SUPREMO_ADMIN_STANDBY__, ")");
+    console.log("⚡ [SUPREMO ADMIN 2057] Loader admin caricato (standby:", window.__SUPREMO_ADMIN_STANDBY__, ")");
 
     // ============================================================
     // Utility caricamento script
@@ -146,12 +236,10 @@ if (!window.__SUPREMO_ADMIN_LOADER_2056__) {
 
       state.running = true;
 
-      console.log("🟦 [SUPREMO ADMIN 2056] Avvio sequenza SUPREMO ADMIN");
+      console.log("🟦 [SUPREMO ADMIN 2057] Avvio sequenza SUPREMO ADMIN");
 
-      // 1) AUTH
       await loadScript("/auth.js");
 
-      // 2) SEO / STRUCTURED admin
       const p = window.location.pathname;
 
       const needSEO =
@@ -166,21 +254,17 @@ if (!window.__SUPREMO_ADMIN_LOADER_2056__) {
       if (needSEO) await loadScript("/admin/seo-admin.js");
       if (needStructured) await loadScript("/admin/structured-data-admin.js");
 
-      // 3) HEADER ADMIN
       await loadScript("/admin/header-admin.js", "body");
 
-      // 4) PAGE-JS diretto o universale fallback
       await new Promise(r => setTimeout(r, 0));
 
       const { base, src: expectedPageScript } = getExpectedPageScript();
 
       if (paginaAdminHaJsDiPagina(expectedPageScript)) {
-
         if (!window.__pageJsLoaded) {
           window.__pageJsLoaded = true;
           document.dispatchEvent(new Event("page-js-loaded"));
         }
-
       } else {
         if (!window.__LOADER_UNIVERSALE_ADMIN_CARICATO__) {
           window.__LOADER_UNIVERSALE_ADMIN_CARICATO__ = true;
@@ -190,7 +274,6 @@ if (!window.__SUPREMO_ADMIN_LOADER_2056__) {
         }
       }
 
-      // 5) Attesa page-js-loaded
       if (!window.__pageJsLoaded) {
         await new Promise(resolve => {
           document.addEventListener("page-js-loaded", () => {
@@ -200,10 +283,8 @@ if (!window.__SUPREMO_ADMIN_LOADER_2056__) {
         });
       }
 
-      // 6) Dynamic admin loader
       await loadScript("/admin/dynamic-admin-loader.js");
 
-      // 7) Critical ready finale
       if (!window.__criticalReady) {
         window.__criticalReady = true;
         document.dispatchEvent(new Event("critical-ready"));
@@ -214,7 +295,7 @@ if (!window.__SUPREMO_ADMIN_LOADER_2056__) {
     }
 
     // ============================================================
-    // ESPONE RUN MANUALE (FALLBACK)
+    // ESPONE RUN MANUALE
     // ============================================================
     window.runSupremoAdminManual = async function () {
       console.log("🟦 [SUPREMO ADMIN] runSupremoAdminManual() chiamato");
@@ -240,5 +321,5 @@ if (!window.__SUPREMO_ADMIN_LOADER_2056__) {
 
   })();
 } else {
-  console.warn("SUPREMO ADMIN 2056 già caricato, skip.");
+  console.warn("SUPREMO ADMIN 2057 già caricato, skip.");
 }
