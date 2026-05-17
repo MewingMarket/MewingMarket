@@ -12,7 +12,7 @@ const path = require("path");
 // ------------------------------------------------------------
 const ROUTES_DIR = path.join(process.cwd(), "app/server/routes");
 const PUBLIC_DIR = path.join(process.cwd(), "app/public");
-const OUT_HTML = path.join(process.cwd(), "app/data/scan-report.html");
+const OUT_HTML = path.join(process.cwd(), "app/public/scan-report.html");
 
 // ------------------------------------------------------------
 // UTILS
@@ -42,7 +42,8 @@ function scanBackendRoutes() {
   const files = fs.readdirSync(ROUTES_DIR).filter(f => f.endsWith(".cjs"));
   const endpoints = {};
 
-  const regex = /(get|post|put|delete)\s*\(\s*["'`](.*?)["'`]/gi;
+  // SOLO endpoint API
+  const regex = /(get|post|put|delete)\s*\(\s*["'`](\/api\/[a-zA-Z0-9\-\/]+)["'`]/gi;
 
   for (const file of files) {
     const full = path.join(ROUTES_DIR, file);
