@@ -1,21 +1,20 @@
 // =========================================================
-// CRITICAL LOADER — PUBLIC 2055 (JAVA-MODE ULTRA MINIMAL)
+// CRITICAL LOADER — PUBLIC 2056 (JAVA-MODE SAFE)
 // Percorso reale: /app/public/loader.js
-// Carica SOLO head.html / header.html / footer.html / header.js
-// NON emette eventi. Nessun retry. Nessun fallback.
-// Compatibile con SUPREMO 2055 (pipeline corretta).
+// Carica head.html / header.html / footer.html / header.js
+// Emissione evento: critical-core-loaded (NON critical-ready)
 // =========================================================
 
-if (window.__CRITICAL_LOADER_PUBLIC_2055__) {
-  console.warn("[CRITICAL PUBLIC 2055] Già caricato → skip");
+if (window.__CRITICAL_LOADER_PUBLIC_2056__) {
+  console.warn("[CRITICAL PUBLIC 2056] Già caricato → skip");
 } else {
-  window.__CRITICAL_LOADER_PUBLIC_2055__ = true;
+  window.__CRITICAL_LOADER_PUBLIC_2056__ = true;
 
   (function () {
 
-    const VERSION = "2055";
+    const VERSION = "2056";
 
-    console.log("⚡ [CRITICAL PUBLIC 2055] Avvio critical loader PUBLIC (JAVA-MODE)");
+    console.log("⚡ [CRITICAL PUBLIC 2056] Avvio critical loader PUBLIC (JAVA-MODE)");
 
     // ============================================================
     // Utility: carica HTML in modo deterministico
@@ -83,7 +82,7 @@ if (window.__CRITICAL_LOADER_PUBLIC_2055__) {
     }
 
     // ============================================================
-    // SEQUENZA CRITICA — SOLO HTML + header.js
+    // SEQUENZA CRITICA — HTML + header.js
     // ============================================================
     (async () => {
 
@@ -96,12 +95,18 @@ if (window.__CRITICAL_LOADER_PUBLIC_2055__) {
       // 3) FOOTER
       await loadHTML(`/footer.html?v=${VERSION}`, "footer-placeholder", "footer.html");
 
-      // 4) HEADER.JS (sempre dopo header.html)
+      // 4) MICRO-DELAY per evitare race con SUPREMO
+      await new Promise(r => setTimeout(r, 20));
+
+      // 5) HEADER.JS (sempre dopo header.html)
       await loadScript("/header.js", "body");
 
-      console.log("🟩 [CRITICAL PUBLIC 2055] HTML base caricato (JAVA-MODE)");
-      // Nessun evento. Nessun critical-core-ready.
-      // SUPREMO gestisce tutto.
+      console.log("🟩 [CRITICAL PUBLIC 2056] HTML base caricato (JAVA-MODE)");
+
+      // 6) EMISSIONE EVENTO PER SUPREMO
+      window.__criticalCoreLoaded = true;
+      document.dispatchEvent(new Event("critical-core-loaded"));
+
     })();
 
   })();
