@@ -1,6 +1,6 @@
 // =========================================================
 // LOADER SUPREMO — PUBLIC MODELLO 2057 (JAVA-MODE SAFE)
-// VERSIONE DEBUG: AUTH + HEADER + CARRELLO
+// VERSIONE CORRETTA: AUTH + CARRELLO, header.js NON caricato
 // =========================================================
 
 if (!window.__SUPREMO_PUBLIC_2057__) {
@@ -110,7 +110,7 @@ if (!window.__SUPREMO_PUBLIC_2057__) {
 
     window.__pageJsLoaded = window.__pageJsLoaded || false;
 
-    console.log("⚡ [SUPREMO PUBLIC 2057] Inizializzazione SUPREMO (AUTH + HEADER + CARRELLO)…");
+    console.log("⚡ [SUPREMO PUBLIC 2057] Inizializzazione SUPREMO (AUTH + CARRELLO)…");
 
     // ============================================================
     // Utility caricamento script
@@ -159,7 +159,7 @@ if (!window.__SUPREMO_PUBLIC_2057__) {
     }
 
     // ============================================================
-    // Sequenza PUBLIC (AUTH + HEADER + CARRELLO)
+    // Sequenza PUBLIC (AUTH + CARRELLO)
     // ============================================================
     async function runSupremoPublic() {
       const state = window.__SUPREMO_PUBLIC_RUN_STATE__;
@@ -167,7 +167,7 @@ if (!window.__SUPREMO_PUBLIC_2057__) {
       if (state.running || state.done) return;
       state.running = true;
 
-      console.log("🟦 [SUPREMO PUBLIC 2057] Sequenza SUPREMO (AUTH + HEADER + CARRELLO) avviata");
+      console.log("🟦 [SUPREMO PUBLIC 2057] Sequenza SUPREMO (AUTH + CARRELLO) avviata");
 
       // 🔥 OBBLIGATORIO
       await loadScript("/loader.js");
@@ -175,16 +175,16 @@ if (!window.__SUPREMO_PUBLIC_2057__) {
       // 🔥 OBBLIGATORIO
       await loadScript("/auth.js");
 
-      // 🔥 HEADER ATTIVO
-      await loadScript("/header.js", "body");
-
       // 🛒 CARRELLO SOLO NELLE PAGINE SHOP
       if (shouldLoadCarrello()) {
         await loadScript("/carrello.js", "body");
       }
 
-      // ❌ TUTTO IL RESTO DISATTIVATO
-      console.log("⛔ [DEBUG] Disattivati: seo.js, structured-data.js, tracking.js, dynamic-loader.js");
+      // ❌ header.js NON deve essere caricato dal SUPREMO
+      // ❌ dynamic-loader.js NON deve essere caricato dal SUPREMO
+      // ❌ seo.js / tracking.js / structured-data.js DISATTIVATI
+
+      console.log("⛔ [DEBUG] Disattivati: header.js, dynamic-loader.js, seo.js, structured-data.js, tracking.js");
 
       state.running = false;
       state.done = true;
