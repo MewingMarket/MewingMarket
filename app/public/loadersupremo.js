@@ -1,6 +1,6 @@
 // =========================================================
 // LOADER SUPREMO — PUBLIC MODELLO 2057 (JAVA-MODE SAFE)
-// VERSIONE: TUTTO ATTIVO tranne dynamic-loader.js
+// VERSIONE: TUTTO ON tranne tracking.js e dynamic-loader.js
 // =========================================================
 
 if (!window.__SUPREMO_PUBLIC_2057__) {
@@ -110,7 +110,7 @@ if (!window.__SUPREMO_PUBLIC_2057__) {
 
     window.__pageJsLoaded = window.__pageJsLoaded || false;
 
-    console.log("⚡ [SUPREMO PUBLIC 2057] Inizializzazione SUPREMO (NO DYNAMIC)…");
+    console.log("⚡ [SUPREMO PUBLIC 2057] Inizializzazione SUPREMO (NO TRACKING, NO DYNAMIC)…");
 
     // ============================================================
     // Utility caricamento script
@@ -185,7 +185,7 @@ if (!window.__SUPREMO_PUBLIC_2057__) {
     }
 
     // ============================================================
-    // Sequenza PUBLIC (TUTTO tranne dynamic-loader.js)
+    // Sequenza PUBLIC (NO tracking.js, NO dynamic-loader.js)
     // ============================================================
     async function runSupremoPublic() {
       const state = window.__SUPREMO_PUBLIC_RUN_STATE__;
@@ -193,7 +193,7 @@ if (!window.__SUPREMO_PUBLIC_2057__) {
       if (state.running || state.done) return;
       state.running = true;
 
-      console.log("🟦 [SUPREMO PUBLIC 2057] Sequenza SUPREMO (NO DYNAMIC) avviata");
+      console.log("🟦 [SUPREMO PUBLIC 2057] Sequenza SUPREMO avviata (NO TRACKING, NO DYNAMIC)");
 
       await loadScript("/loader.js");
       await loadScript("/auth.js");
@@ -201,15 +201,18 @@ if (!window.__SUPREMO_PUBLIC_2057__) {
       if (needSEO()) await loadScript("/seo.js");
       if (needStructured()) await loadScript("/structured-data.js");
 
-      await loadScript("/tracking.js");
+      // ❌ tracking.js OFF
+      console.log("⛔ tracking.js DISATTIVATO");
+
+      // header.js viene caricato dal critical loader
       await loadScript("/header.js", "body");
 
       if (shouldLoadCarrello()) {
         await loadScript("/carrello.js", "body");
       }
 
-      // ❌ dynamic-loader.js DISATTIVATO
-      console.log("⛔ [DEBUG] dynamic-loader.js DISATTIVATO");
+      // ❌ dynamic-loader.js OFF
+      console.log("⛔ dynamic-loader.js DISATTIVATO");
 
       state.running = false;
       state.done = true;
