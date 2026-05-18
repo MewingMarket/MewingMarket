@@ -1,6 +1,7 @@
 /**
  * FILE: app/server/routes/catalogo-personalizzato.cjs
- * DESCRIZIONE: Catalogo personalizzato con promozioni
+ * VERSIONE: 2057 — COMPLETAMENTE ASINCRONA E NON BLOCCANTE
+ * DESCRIZIONE: Catalogo personalizzato con promozioni (senza blocchi)
  */
 
 const path = require("path");
@@ -9,6 +10,7 @@ const catalogo = require(path.join(process.cwd(), "app/modules/catalogo-sql.cjs"
 
 /* ============================================================
    ENDPOINT: GET /api/catalogo/personalizzato
+   VERSIONE 2057 — FIXATA
 ============================================================ */
 async function getCatalogoPersonalizzato(req) {
   console.log("[CATALOGO PERSONALIZZATO] getCatalogoPersonalizzato()");
@@ -16,25 +18,36 @@ async function getCatalogoPersonalizzato(req) {
   try {
     const userId = req.user?.id;
 
-    // Se non loggato → catalogo normale
+    // ============================================================
+    // 1) CARICA PRODOTTI UNA SOLA VOLTA (asincrono)
+    // ============================================================
+    const prodotti = await catalogo.getAllProducts();
+
+    // ============================================================
+    // 2) UTENTE NON LOGGATO → catalogo normale
+    // ============================================================
     if (!userId) {
-      const prodotti = catalogo.getAllProducts();
       return { success: true, prodotti };
     }
 
-    // 1) Leggi promozione attiva
-    const promo = promoService.getPromoAttiva(userId);
+    // ============================================================
+    // 3) LEGGI PROMO ATTIVA (asincrono)
+    // ============================================================
+    const promo = await promoService.getPromoAttiva(userId);
 
     // Nessuna promo → catalogo normale
     if (!promo) {
-      const prodotti = catalogo.getAllProducts();
       return { success: true, prodotti };
     }
 
-    // 2) Applica sconti
-    const prodotti = catalogo.getAllProducts();
-    const prodottiScontati = promoService.applicaSconti(prodotti, promo, userId);
+    // ============================================================
+    // 4) APPLICA SCONTI (asincrono)
+    // ============================================================
+    const prodottiScontati = await promoService.applicaSconti(prodotti, promo, userId);
 
+    // ============================================================
+    // 5) RISPOSTA FINALE
+    // ============================================================
     return {
       success: true,
       prodotti: prodottiScontati
