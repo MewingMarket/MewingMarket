@@ -1,6 +1,6 @@
 // =========================================================
 // LOADER SUPREMO — PUBLIC MODELLO 2057 (JAVA-MODE SAFE)
-// VERSIONE DEBUG — TUTTI I CARICAMENTI DISATTIVATI
+// VERSIONE DEBUG: AUTH + HEADER + CARRELLO
 // =========================================================
 
 if (!window.__SUPREMO_PUBLIC_2057__) {
@@ -11,7 +11,7 @@ if (!window.__SUPREMO_PUBLIC_2057__) {
     const V = "2057";
 
     // ============================================================
-    // PATCH 2057 — GLOBAL FETCH LOCK (ANTI-DUPLICAZIONE)
+    // PATCH 2057 — GLOBAL FETCH LOCK
     // ============================================================
     (function() {
       if (window.__GLOBAL_FETCH_LOCK_PATCHED__) return;
@@ -110,18 +110,56 @@ if (!window.__SUPREMO_PUBLIC_2057__) {
 
     window.__pageJsLoaded = window.__pageJsLoaded || false;
 
-    console.log("⚡ [SUPREMO PUBLIC 2057] Inizializzazione SUPREMO (DEBUG MODE)…");
+    console.log("⚡ [SUPREMO PUBLIC 2057] Inizializzazione SUPREMO (AUTH + HEADER + CARRELLO)…");
 
     // ============================================================
-    // Utility caricamento script (NON USATA IN DEBUG)
+    // Utility caricamento script
     // ============================================================
     function loadScript(src, where = "head") {
-      console.log("⛔ [DEBUG] loadScript BLOCCATO:", src);
-      return Promise.resolve(true);
+      const key = src;
+
+      if (window.__SUPREMO_JS_CACHE__.has(key)) {
+        console.log("⏭️ [SUPREMO PUBLIC] LOAD-SKIP:", key);
+        return Promise.resolve(true);
+      }
+
+      return new Promise(resolve => {
+        console.log("➡️ [SUPREMO PUBLIC] LOAD-REQUEST:", key);
+
+        const s = document.createElement("script");
+        s.src = `${key}?v=${V}`;
+        s.async = false;
+
+        s.onload = () => {
+          console.log("✅ [SUPREMO PUBLIC] LOAD-OK:", key);
+          window.__SUPREMO_JS_CACHE__.add(key);
+          resolve(true);
+        };
+
+        s.onerror = () => {
+          console.warn("❌ [SUPREMO PUBLIC] LOAD-FAIL:", key);
+          resolve(false);
+        };
+
+        (where === "body" ? document.body : document.head).appendChild(s);
+      });
     }
 
     // ============================================================
-    // Sequenza PUBLIC (DEBUG: TUTTO DISATTIVATO)
+    // Carrello solo dove serve
+    // ============================================================
+    function shouldLoadCarrello() {
+      const p = window.location.pathname;
+      return (
+        p === "/" ||
+        p.includes("index") ||
+        p.includes("catalogo") ||
+        p.includes("prodotto")
+      );
+    }
+
+    // ============================================================
+    // Sequenza PUBLIC (AUTH + HEADER + CARRELLO)
     // ============================================================
     async function runSupremoPublic() {
       const state = window.__SUPREMO_PUBLIC_RUN_STATE__;
@@ -129,25 +167,24 @@ if (!window.__SUPREMO_PUBLIC_2057__) {
       if (state.running || state.done) return;
       state.running = true;
 
-      console.log("🟦 [SUPREMO PUBLIC 2057] Sequenza SUPREMO (DEBUG MODE) avviata");
+      console.log("🟦 [SUPREMO PUBLIC 2057] Sequenza SUPREMO (AUTH + HEADER + CARRELLO) avviata");
 
-      // ============================================================
-      // 🔥 UNICO SCRIPT PERMESSO: loader.js
-      // ============================================================
+      // 🔥 OBBLIGATORIO
       await loadScript("/loader.js");
 
-      // ============================================================
+      // 🔥 OBBLIGATORIO
+      await loadScript("/auth.js");
+
+      // 🔥 HEADER ATTIVO
+      await loadScript("/header.js", "body");
+
+      // 🛒 CARRELLO SOLO NELLE PAGINE SHOP
+      if (shouldLoadCarrello()) {
+        await loadScript("/carrello.js", "body");
+      }
+
       // ❌ TUTTO IL RESTO DISATTIVATO
-      // ============================================================
-      console.log("⛔ [DEBUG] Caricamenti globali disattivati:");
-      console.log("   - auth.js");
-      console.log("   - seo.js");
-      console.log("   - structured-data.js");
-      console.log("   - tracking.js");
-      console.log("   - header.js");
-      console.log("   - carrello.js");
-      console.log("   - dynamic-loader.js");
-      console.log("   - page-js");
+      console.log("⛔ [DEBUG] Disattivati: seo.js, structured-data.js, tracking.js, dynamic-loader.js");
 
       state.running = false;
       state.done = true;
