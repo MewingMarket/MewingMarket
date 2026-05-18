@@ -1,5 +1,6 @@
 // =========================================================
 // LOADER SUPREMO — PUBLIC MODELLO 2057 (JAVA-MODE SAFE)
+// VERSIONE DEBUG — TUTTI I CARICAMENTI DISATTIVATI
 // =========================================================
 
 if (!window.__SUPREMO_PUBLIC_2057__) {
@@ -19,7 +20,7 @@ if (!window.__SUPREMO_PUBLIC_2057__) {
       console.log("🛡️ [SUPREMO PUBLIC 2057] Global Fetch Lock attivo");
 
       const originalFetch = window.fetch;
-      const pending = new Map(); // url → Promise
+      const pending = new Map();
 
       window.fetch = function(url, options = {}) {
         const key = typeof url === "string" ? url : url.url;
@@ -40,7 +41,7 @@ if (!window.__SUPREMO_PUBLIC_2057__) {
     })();
 
     // ============================================================
-    // PATCH 2057 — GLOBAL SCRIPT LOCK (ANTI-DUPLICAZIONE SCRIPT)
+    // PATCH 2057 — GLOBAL SCRIPT LOCK
     // ============================================================
     (function() {
       if (window.__GLOBAL_SCRIPT_LOCK_PATCHED__) return;
@@ -74,7 +75,7 @@ if (!window.__SUPREMO_PUBLIC_2057__) {
     })();
 
     // ============================================================
-    // PATCH 2057 — GLOBAL EVENT LOCK (ANTI-DUPLICAZIONE EVENTI)
+    // PATCH 2057 — GLOBAL EVENT LOCK
     // ============================================================
     (function() {
       if (window.__GLOBAL_EVENT_LOCK_PATCHED__) return;
@@ -109,103 +110,18 @@ if (!window.__SUPREMO_PUBLIC_2057__) {
 
     window.__pageJsLoaded = window.__pageJsLoaded || false;
 
-    console.log("⚡ [SUPREMO PUBLIC 2057] Inizializzazione SUPREMO...");
+    console.log("⚡ [SUPREMO PUBLIC 2057] Inizializzazione SUPREMO (DEBUG MODE)…");
 
     // ============================================================
-    // Utility caricamento script
+    // Utility caricamento script (NON USATA IN DEBUG)
     // ============================================================
     function loadScript(src, where = "head") {
-      const key = src;
-
-      if (window.__SUPREMO_JS_CACHE__.has(key)) {
-        console.log("⏭️ [SUPREMO PUBLIC] LOAD-SKIP:", key);
-        return Promise.resolve(true);
-      }
-
-      return new Promise(resolve => {
-        console.log("➡️ [SUPREMO PUBLIC] LOAD-REQUEST:", key);
-
-        const s = document.createElement("script");
-        s.src = `${key}?v=${V}`;
-        s.async = false;
-
-        s.onload = () => {
-          console.log("✅ [SUPREMO PUBLIC] LOAD-OK:", key);
-          window.__SUPREMO_JS_CACHE__.add(key);
-          resolve(true);
-        };
-
-        s.onerror = () => {
-          console.warn("❌ [SUPREMO PUBLIC] LOAD-FAIL:", key);
-          resolve(false);
-        };
-
-        (where === "body" ? document.body : document.head).appendChild(s);
-      });
+      console.log("⛔ [DEBUG] loadScript BLOCCATO:", src);
+      return Promise.resolve(true);
     }
 
     // ============================================================
-    // RICONOSCIMENTO JS DI PAGINA
-    // ============================================================
-    function paginaHaJsDiPagina() {
-      const scripts = document.querySelectorAll("script[src]");
-
-      for (const s of scripts) {
-        const src = s.getAttribute("src");
-        if (!src) continue;
-
-        if (src.includes("loadersupremo")) continue;
-        if (src.includes("dynamic-loader")) continue;
-        if (src.includes("loader.js")) continue;
-
-        console.log("🔍 [SUPREMO PUBLIC] JS pagina rilevato:", src);
-        return true;
-      }
-
-      return false;
-    }
-
-    // ============================================================
-    // Carrello solo dove serve
-    // ============================================================
-    function shouldLoadCarrello() {
-      const p = window.location.pathname;
-      return (
-        p === "/" ||
-        p.includes("index") ||
-        p.includes("catalogo") ||
-        p.includes("prodotto")
-      );
-    }
-
-    // ============================================================
-    // SEO / Structured
-    // ============================================================
-    function needSEO() {
-      const p = window.location.pathname.toLowerCase();
-      return (
-        p === "/" ||
-        p.includes("index") ||
-        p.includes("catalogo") ||
-        p.includes("prodotto") ||
-        p.includes("top-recensioni") ||
-        p.includes("guide") ||
-        p.includes("faq") ||
-        p.includes("assistenza")
-      );
-    }
-
-    function needStructured() {
-      const p = window.location.pathname.toLowerCase();
-      return (
-        p.includes("catalogo") ||
-        p.includes("prodotto") ||
-        p.includes("recensioni")
-      );
-    }
-
-    // ============================================================
-    // Sequenza PUBLIC controllata dal SUPREMO (Java-mode)
+    // Sequenza PUBLIC (DEBUG: TUTTO DISATTIVATO)
     // ============================================================
     async function runSupremoPublic() {
       const state = window.__SUPREMO_PUBLIC_RUN_STATE__;
@@ -213,31 +129,25 @@ if (!window.__SUPREMO_PUBLIC_2057__) {
       if (state.running || state.done) return;
       state.running = true;
 
-      console.log("🟦 [SUPREMO PUBLIC 2057] Sequenza SUPREMO avviata");
+      console.log("🟦 [SUPREMO PUBLIC 2057] Sequenza SUPREMO (DEBUG MODE) avviata");
 
+      // ============================================================
+      // 🔥 UNICO SCRIPT PERMESSO: loader.js
+      // ============================================================
       await loadScript("/loader.js");
-      await loadScript("/auth.js");
 
-      if (needSEO()) await loadScript("/seo.js");
-      if (needStructured()) await loadScript("/structured-data.js");
-
-      await loadScript("/tracking.js");
-      await loadScript("/header.js", "body");
-
-      if (shouldLoadCarrello()) {
-        await loadScript("/carrello.js", "body");
-      }
-
-      await new Promise(r => setTimeout(r, 0));
-
-      if (paginaHaJsDiPagina()) {
-        if (!window.__pageJsLoaded) {
-          window.__pageJsLoaded = true;
-          document.dispatchEvent(new Event("page-js-loaded"));
-        }
-      }
-
-      await loadScript("/dynamic-loader.js");
+      // ============================================================
+      // ❌ TUTTO IL RESTO DISATTIVATO
+      // ============================================================
+      console.log("⛔ [DEBUG] Caricamenti globali disattivati:");
+      console.log("   - auth.js");
+      console.log("   - seo.js");
+      console.log("   - structured-data.js");
+      console.log("   - tracking.js");
+      console.log("   - header.js");
+      console.log("   - carrello.js");
+      console.log("   - dynamic-loader.js");
+      console.log("   - page-js");
 
       state.running = false;
       state.done = true;
