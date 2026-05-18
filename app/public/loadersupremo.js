@@ -1,6 +1,6 @@
 // =========================================================
 // LOADER SUPREMO — PUBLIC MODELLO 2057 (JAVA-MODE SAFE)
-// VERSIONE CORRETTA: AUTH + CARRELLO, header.js NON caricato
+// VERSIONE: TUTTO ATTIVO tranne dynamic-loader.js
 // =========================================================
 
 if (!window.__SUPREMO_PUBLIC_2057__) {
@@ -110,7 +110,7 @@ if (!window.__SUPREMO_PUBLIC_2057__) {
 
     window.__pageJsLoaded = window.__pageJsLoaded || false;
 
-    console.log("⚡ [SUPREMO PUBLIC 2057] Inizializzazione SUPREMO (AUTH + CARRELLO)…");
+    console.log("⚡ [SUPREMO PUBLIC 2057] Inizializzazione SUPREMO (NO DYNAMIC)…");
 
     // ============================================================
     // Utility caricamento script
@@ -159,7 +159,33 @@ if (!window.__SUPREMO_PUBLIC_2057__) {
     }
 
     // ============================================================
-    // Sequenza PUBLIC (AUTH + CARRELLO)
+    // SEO / Structured
+    // ============================================================
+    function needSEO() {
+      const p = window.location.pathname.toLowerCase();
+      return (
+        p === "/" ||
+        p.includes("index") ||
+        p.includes("catalogo") ||
+        p.includes("prodotto") ||
+        p.includes("top-recensioni") ||
+        p.includes("guide") ||
+        p.includes("faq") ||
+        p.includes("assistenza")
+      );
+    }
+
+    function needStructured() {
+      const p = window.location.pathname.toLowerCase();
+      return (
+        p.includes("catalogo") ||
+        p.includes("prodotto") ||
+        p.includes("recensioni")
+      );
+    }
+
+    // ============================================================
+    // Sequenza PUBLIC (TUTTO tranne dynamic-loader.js)
     // ============================================================
     async function runSupremoPublic() {
       const state = window.__SUPREMO_PUBLIC_RUN_STATE__;
@@ -167,24 +193,23 @@ if (!window.__SUPREMO_PUBLIC_2057__) {
       if (state.running || state.done) return;
       state.running = true;
 
-      console.log("🟦 [SUPREMO PUBLIC 2057] Sequenza SUPREMO (AUTH + CARRELLO) avviata");
+      console.log("🟦 [SUPREMO PUBLIC 2057] Sequenza SUPREMO (NO DYNAMIC) avviata");
 
-      // 🔥 OBBLIGATORIO
       await loadScript("/loader.js");
-
-      // 🔥 OBBLIGATORIO
       await loadScript("/auth.js");
 
-      // 🛒 CARRELLO SOLO NELLE PAGINE SHOP
+      if (needSEO()) await loadScript("/seo.js");
+      if (needStructured()) await loadScript("/structured-data.js");
+
+      await loadScript("/tracking.js");
+      await loadScript("/header.js", "body");
+
       if (shouldLoadCarrello()) {
         await loadScript("/carrello.js", "body");
       }
 
-      // ❌ header.js NON deve essere caricato dal SUPREMO
-      // ❌ dynamic-loader.js NON deve essere caricato dal SUPREMO
-      // ❌ seo.js / tracking.js / structured-data.js DISATTIVATI
-
-      console.log("⛔ [DEBUG] Disattivati: header.js, dynamic-loader.js, seo.js, structured-data.js, tracking.js");
+      // ❌ dynamic-loader.js DISATTIVATO
+      console.log("⛔ [DEBUG] dynamic-loader.js DISATTIVATO");
 
       state.running = false;
       state.done = true;
