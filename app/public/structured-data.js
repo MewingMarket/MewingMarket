@@ -1,11 +1,10 @@
-// =========================================================
-// STRUCTURED DATA – MEWINGMARKET (versione 2055 deterministica)
-// Nessun async IIFE, nessuna race, products.json assoluto
-// =========================================================
+/* =========================================================
+   STRUCTURED DATA – PATCH 2027.4
+   Compatibile con Java‑mode + Promo + Catalogo 2057
+========================================================= */
 
 (function () {
 
-  // Micro-wait per garantire che critical + SEO abbiano finito
   setTimeout(() => {
 
     const path = window.location.pathname.toLowerCase();
@@ -35,9 +34,9 @@
       }
     }
 
-    // ============================================================
-    // ORGANIZATION
-    // ============================================================
+    /* ============================================================
+       ORGANIZATION
+    ============================================================ */
     injectSchema({
       "@context": "https://schema.org",
       "@type": "Organization",
@@ -55,9 +54,9 @@
       ]
     });
 
-    // ============================================================
-    // STATIC PAGES
-    // ============================================================
+    /* ============================================================
+       STATIC PAGES
+    ============================================================ */
     if (path === "/" || path === "/index.html") {
       injectSchema({
         "@context": "https://schema.org",
@@ -107,11 +106,10 @@
       });
     }
 
-    // ============================================================
-    // PRODUCT PAGE
-    // ============================================================
+    /* ============================================================
+       PRODUCT PAGE
+    ============================================================ */
     if (!id) {
-      // Breadcrumb base
       injectSchema({
         "@context": "https://schema.org",
         "@type": "BreadcrumbList",
@@ -127,18 +125,23 @@
       return;
     }
 
-    // Carica products.json (assoluto)
-    fetch("/products.json", { cache: "no-store" })
-      .then(r => r.ok ? r.json() : null)
-      .then(products => {
-        if (!Array.isArray(products)) return;
+    /* ============================================================
+       CARICA PRODOTTO (POST /api/prodotti-new)
+    ============================================================ */
+    fetch("/api/prodotti-new", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" }
+    })
+      .then(r => r.json().catch(() => null))
+      .then(json => {
+        if (!json || !json.success || !Array.isArray(json.prodotti)) return;
 
-        const p = products.find(pr => String(pr.id) === String(id));
+        const p = json.prodotti.find(pr => String(pr.id) === String(id));
         if (!p) return;
 
-        // ============================================================
-        // BREADCRUMB
-        // ============================================================
+        /* ============================================================
+           BREADCRUMB
+        ============================================================ */
         injectSchema({
           "@context": "https://schema.org",
           "@type": "BreadcrumbList",
@@ -159,14 +162,19 @@
               "@type": "ListItem",
               "position": 3,
               "name": clean(p.titolo),
-              "item": `https://www.mewingmarket.it/prodotto.html?id=${clean(id)}`
+              "item": `https://www.mewingmarket.it/prodotto.html?id=${id}`
             }
           ]
         });
 
-        // ============================================================
-        // PRODUCT SCHEMA
-        // ============================================================
+        /* ============================================================
+           PRODUCT SCHEMA
+        ============================================================ */
+        const prezzoBase = Number(p.prezzo_cent || 0) / 100;
+        const prezzoPromo = p.promo_attiva
+          ? Number(p.prezzo_scontato_cent || 0) / 100
+          : null;
+
         const productSchema = {
           "@context": "https://schema.org/",
           "@type": "Product",
@@ -177,7 +185,7 @@
             p.descrizioneLunga ||
             ""
           ),
-          "image": safeURL(p.immagine),
+          "image": safeURL(p.immagine_url || p.immagine),
           "sku": clean(String(p.id)),
           "brand": {
             "@type": "Brand",
@@ -185,9 +193,9 @@
           },
           "offers": {
             "@type": "Offer",
-            "url": `https://www.mewingmarket.it/prodotto.html?id=${clean(id)}`,
+            "url": `https://www.mewingmarket.it/prodotto.html?id=${id}`,
             "priceCurrency": "EUR",
-            "price": Number(p.prezzo) || 0,
+            "price": prezzoPromo !== null ? prezzoPromo : prezzoBase,
             "availability": "https://schema.org/InStock"
           }
         };
@@ -202,7 +210,7 @@
 
         injectSchema(productSchema);
       })
-      .catch(err => console.error("Errore caricamento products.json:", err));
+      .catch(err => console.error("Errore structured-data:", err));
 
   }, 0);
 
