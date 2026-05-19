@@ -1,7 +1,7 @@
 /* =========================================================
    PRODOTTO.JS — UNIVERSAL JSON PATCH 2027.970
    SQL SYNC + YouTube + Acquista Ora
-   PATCH 2050 — AUTORUN + DEBUG ESTESO
+   PATCH 2057 — PROMO SOLO PER CHI LE HA + FIX API
 ========================================================= */
 
 console.log("📌 [PRODOTTO] File caricato nel DOM");
@@ -38,7 +38,8 @@ async function apiProdotto(path, options = {}) {
     return null;
   }
 
-  return json.data;
+  // Ritorno l'oggetto intero, non solo data
+  return json;
 }
 
 /* =========================================================
@@ -77,37 +78,70 @@ function initPage() {
 
   console.log("🟩 [PRODOTTO] critical-ready già presente → avvio caricamento prodotto");
 
-  caricaDettaglioProdotto();
+  if (typeof caricaDettaglioProdotto === "function") {
+    caricaDettaglioProdotto();
+  } else {
+    console.warn("❌ [PRODOTTO] caricaDettaglioProdotto() NON definita");
+  }
 }
 
 /* =========================================================
    ⭐ PATCH PROMO — PRODOTTO PERSONALIZZATO (Java-mode)
-   - Usa /api/catalogo/getCatalogoPersonalizzato
-   - Se trova l’ID e promo_attiva → override
+   - Usa promo SOLO se:
+   - utente loggato
+   - ha promo attiva
+   - poi chiama /api/catalogo/personalizzato
 ========================================================= */
 async function getProdottoPersonalizzato(id) {
   try {
-    console.log("🎯 [PRODOTTO] Richiesta catalogo personalizzato…");
+    console.log("🎯 [PRODOTTO] Verifica promo per prodotto ID:", id);
 
-    const data = await apiProdotto("/api/catalogo/getCatalogoPersonalizzato", {
+    // 1) Controllo utente loggato
+    const me = await apiProdotto("/api/auth/me", { method: "GET" });
+    const user = me && (me.user || me.data || null);
+    const isLogged = !!user;
+
+    if (!isLogged) {
+      console.log("👤 [PRODOTTO] Utente NON loggato → niente promo");
+      return null;
+    }
+
+    console.log("👤 [PRODOTTO] Utente loggato:", user.id || user.email || "OK");
+
+    // 2) Controllo promo attiva
+    const promoRes = await apiProdotto("/api/promo/attiva", {
       method: "GET"
     });
 
-    if (!data) {
+    const hasPromo = promoRes && (promoRes.promo || promoRes.data);
+
+    if (!hasPromo) {
+      console.log("🎯 [PRODOTTO] Nessuna promo attiva → niente prodotto personalizzato");
+      return null;
+    }
+
+    console.log("🎯 [PRODOTTO] Promo attiva trovata → richiedo catalogo personalizzato");
+
+    // 3) Catalogo personalizzato
+    const catRes = await apiProdotto("/api/catalogo/personalizzato", {
+      method: "GET"
+    });
+
+    if (!catRes) {
       console.log("ℹ️ [PRODOTTO] Nessun catalogo personalizzato disponibile");
       return null;
     }
 
-    const prodotti = Array.isArray(data)
-      ? data
-      : (data.prodotti || data.data || []);
+    const prodotti = Array.isArray(catRes)
+      ? catRes
+      : catRes.prodotti || catRes.data || [];
 
     if (!prodotti || !prodotti.length) {
       console.log("ℹ️ [PRODOTTO] Catalogo personalizzato vuoto");
       return null;
     }
 
-    const p = prodotti.find(x => String(x.id) === String(id));
+    const p = prodotti.find((x) => String(x.id) === String(id));
 
     if (p && p.promo_attiva) {
       console.log("🎉 [PRODOTTO] Promo attiva → uso prodotto personalizzato");
@@ -204,26 +238,37 @@ function initCountdownProdotto() {
 
 /* =========================================================
    ⭐ PATCH PROMO — OVERRIDE caricaDettaglioProdotto()
+   - Se promo valida → usa prodotto personalizzato
+   - Altrimenti → fallback alla versione SQL originale
 ========================================================= */
-const _caricaDettaglioProdottoOriginale = caricaDettaglioProdotto;
+if (typeof caricaDettaglioProdotto === "function") {
+  const _caricaDettaglioProdottoOriginale = caricaDettaglioProdotto;
 
-caricaDettaglioProdotto = async function () {
-  console.log("🧪 [PRODOTTO] Patch PROMO attiva");
+  caricaDettaglioProdotto = async function () {
+    console.log("🧪 [PRODOTTO] Patch PROMO attiva");
 
-  const params = new URLSearchParams(window.location.search);
-  const id = params.get("id");
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id");
 
-  const promoProdotto = await getProdottoPersonalizzato(id);
-  if (promoProdotto) {
-    console.log("🟢 [PRODOTTO] Uso versione personalizzata");
-    renderProdotto(promoProdotto);
-    setupAcquistoDiretto(promoProdotto);
-    return;
-  }
+    if (!id) {
+      console.warn("⚠️ [PRODOTTO] Nessun ID prodotto in querystring");
+      return _caricaDettaglioProdottoOriginale();
+    }
 
-  console.log("⚪ [PRODOTTO] Nessuna promo → uso SQL normale");
-  await _caricaDettaglioProdottoOriginale();
-};
+    const promoProdotto = await getProdottoPersonalizzato(id);
+    if (promoProdotto) {
+      console.log("🟢 [PRODOTTO] Uso versione personalizzata");
+      renderProdotto(promoProdotto);
+      setupAcquistoDiretto(promoProdotto);
+      return;
+    }
+
+    console.log("⚪ [PRODOTTO] Nessuna promo → uso SQL normale");
+    await _caricaDettaglioProdottoOriginale();
+  };
+} else {
+  console.warn("⚠️ [PRODOTTO] caricaDettaglioProdotto originale NON definita, patch PROMO non applicata");
+}
 
 /* =========================================================
    ACQUISTA ORA → Carrello + Checkout
