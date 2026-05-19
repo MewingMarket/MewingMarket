@@ -1,5 +1,6 @@
 /* =========================================================
    FILE: app/server/routes/api-feedback.cjs
+   VERSIONE: 2027.3 — PATCH STABILE
    MODALITÀ: Java‑mode (funzioni, no Express)
    DESCRIZIONE: Sistema recensioni utenti — SQL definitivo
 ========================================================= */
@@ -18,14 +19,19 @@ function safeParse(str) {
   catch { return []; }
 }
 
+function safe(v, fallback = "") {
+  return v === undefined || v === null ? fallback : v;
+}
+
 /* =========================================================
-   FUNZIONE 1 — prodottiAcquistati
+   1) prodottiAcquistati
 ========================================================= */
 async function prodottiAcquistati(req) {
   console.log("[DEBUG feedback] prodottiAcquistati()");
 
   try {
-    const userId = req.user.id;
+    const userId = req.user?.id;
+    if (!userId) return { success: false, error: "Utente non autenticato" };
 
     const stmt = db.prepare(`
       SELECT DISTINCT p.id, p.titolo_breve
@@ -47,13 +53,14 @@ async function prodottiAcquistati(req) {
 }
 
 /* =========================================================
-   FUNZIONE 2 — recensioniUtente
+   2) recensioniUtente
 ========================================================= */
 async function recensioniUtente(req) {
   console.log("[DEBUG feedback] recensioniUtente()");
 
   try {
-    const userId = req.user.id;
+    const userId = req.user?.id;
+    if (!userId) return { success: false, error: "Utente non autenticato" };
 
     const stmt = db.prepare(`
       SELECT 
@@ -80,20 +87,34 @@ async function recensioniUtente(req) {
 }
 
 /* =========================================================
-   FUNZIONE 3 — creaRecensione
+   3) creaRecensione
 ========================================================= */
 async function creaRecensione(req) {
   console.log("[DEBUG feedback] creaRecensione()");
 
   try {
-    const userId = req.user.id;
-    const userEmail = req.user.email;
-    const { prodotto_id, rating, commento } = req.body;
+    const userId = req.user?.id;
+    const userEmail = req.user?.email;
+
+    if (!userId) return { success: false, error: "Utente non autenticato" };
+
+    const { prodotto_id, rating, commento } = req.body || {};
 
     if (!prodotto_id || !rating || !commento) {
       return { success: false, error: "Dati mancanti" };
     }
 
+    if (isNaN(Number(rating)) || Number(rating) < 1 || Number(rating) > 5) {
+      return { success: false, error: "Rating non valido" };
+    }
+
+    if (String(commento).length > 1000) {
+      return { success: false, error: "Commento troppo lungo" };
+    }
+
+    /* ---------------------------------------------------------
+       Parole vietate (case-insensitive)
+    --------------------------------------------------------- */
     const paroleVietate = [
       "cazzo", "merda", "stronzo", "troia", "puttana", "vaffanculo",
       "bastardo", "cretino", "deficiente", "idiota"
@@ -104,7 +125,9 @@ async function creaRecensione(req) {
       return { success: false, error: "Linguaggio non consentito" };
     }
 
-    // Verifica acquisto
+    /* ---------------------------------------------------------
+       Verifica acquisto
+    --------------------------------------------------------- */
     const ordini = db.prepare(`
       SELECT prodotti_json
       FROM ordini
@@ -125,7 +148,9 @@ async function creaRecensione(req) {
       return { success: false, error: "Non hai acquistato questo prodotto" };
     }
 
-    // Blocco doppie recensioni
+    /* ---------------------------------------------------------
+       Blocco doppie recensioni
+    --------------------------------------------------------- */
     const esiste = db.prepare(`
       SELECT id FROM feedback
       WHERE utente_id = ? AND prodotto_id = ?
@@ -135,7 +160,9 @@ async function creaRecensione(req) {
       return { success: false, error: "Hai già recensito questo prodotto" };
     }
 
-    // Inserimento recensione
+    /* ---------------------------------------------------------
+       Inserimento recensione
+    --------------------------------------------------------- */
     db.prepare(`
       INSERT INTO feedback (
         utente_id,
@@ -146,7 +173,9 @@ async function creaRecensione(req) {
       ) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
     `).run(userId, prodotto_id, Number(rating), commento);
 
-    // Email ringraziamento (non blocca)
+    /* ---------------------------------------------------------
+       Email ringraziamento (non blocca)
+    --------------------------------------------------------- */
     try {
       inviaEmailFeedback({
         email: userEmail,
@@ -167,14 +196,16 @@ async function creaRecensione(req) {
 }
 
 /* =========================================================
-   FUNZIONE 4 — modificaRecensione
+   4) modificaRecensione
 ========================================================= */
 async function modificaRecensione(req) {
   console.log("[DEBUG feedback] modificaRecensione()");
 
   try {
-    const userId = req.user.id;
-    const { id, rating, commento } = req.body;
+    const userId = req.user?.id;
+    const { id, rating, commento } = req.body || {};
+
+    if (!userId) return { success: false, error: "Utente non autenticato" };
 
     const rec = db.prepare(`
       SELECT utente_id
@@ -182,13 +213,8 @@ async function modificaRecensione(req) {
       WHERE id = ?
     `).get(id);
 
-    if (!rec) {
-      return { success: false, error: "Recensione non trovata" };
-    }
-
-    if (rec.utente_id !== userId) {
-      return { success: false, error: "Non autorizzato" };
-    }
+    if (!rec) return { success: false, error: "Recensione non trovata" };
+    if (rec.utente_id !== userId) return { success: false, error: "Non autorizzato" };
 
     db.prepare(`
       UPDATE feedback
@@ -205,14 +231,16 @@ async function modificaRecensione(req) {
 }
 
 /* =========================================================
-   FUNZIONE 5 — eliminaRecensione
+   5) eliminaRecensione
 ========================================================= */
 async function eliminaRecensione(req) {
   console.log("[DEBUG feedback] eliminaRecensione()");
 
   try {
-    const userId = req.user.id;
-    const { id } = req.body;
+    const userId = req.user?.id;
+    const { id } = req.body || {};
+
+    if (!userId) return { success: false, error: "Utente non autenticato" };
 
     const rec = db.prepare(`
       SELECT utente_id
@@ -220,13 +248,8 @@ async function eliminaRecensione(req) {
       WHERE id = ?
     `).get(id);
 
-    if (!rec) {
-      return { success: false, error: "Recensione non trovata" };
-    }
-
-    if (rec.utente_id !== userId) {
-      return { success: false, error: "Non autorizzato" };
-    }
+    if (!rec) return { success: false, error: "Recensione non trovata" };
+    if (rec.utente_id !== userId) return { success: false, error: "Non autorizzato" };
 
     db.prepare(`DELETE FROM feedback WHERE id = ?`).run(id);
 
@@ -241,16 +264,8 @@ async function eliminaRecensione(req) {
 /* =========================================================
    ALIAS COMPATIBILITÀ FRONTEND
 ========================================================= */
-
-async function getProdottiAcquistati(req) {
-  console.log("[DEBUG feedback] alias getProdottiAcquistati() → prodottiAcquistati()");
-  return prodottiAcquistati(req);
-}
-
-async function getRecensioniUtente(req) {
-  console.log("[DEBUG feedback] alias getRecensioniUtente() → recensioniUtente()");
-  return recensioniUtente(req);
-}
+async function getProdottiAcquistati(req) { return prodottiAcquistati(req); }
+async function getRecensioniUtente(req) { return recensioniUtente(req); }
 
 /* =========================================================
    EXPORT — stile Java
