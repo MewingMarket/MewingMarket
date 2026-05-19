@@ -1,29 +1,42 @@
 /*
   FILE: app/server/routes/game.cjs
-  DESC: Router unico per salvataggio e caricamento partita
+  VERSIONE: 2027.2 — PATCH STABILE
+  DESC: Router unico per salvataggio, lista e caricamento partite
 */
 
 const path = require("path");
 const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
 
 /* ============================================================
-   SALVA PARTITA (crea una nuova riga)
+   UTILS
+============================================================ */
+function safe(v, fallback = "") {
+  return v === undefined || v === null ? fallback : v;
+}
+
+/* ============================================================
+   SALVA PARTITA
+   /api/game/save
 ============================================================ */
 async function save(req) {
-  const uid = req.uid;
-  const body = req.body || {};
-
   try {
+    const uid = req.uid;
+    const body = req.body || {};
+
+    if (!uid) {
+      return { success: false, message: "UID mancante" };
+    }
+
     db.prepare(`
       INSERT INTO game_state (uid, name, avatar, bot, last_message, lim_state, updated_at)
       VALUES (@uid, @name, @avatar, @bot, @last_message, @lim_state, @updated_at)
     `).run({
       uid,
-      name: body.name || "",
-      avatar: body.avatar || "",
-      bot: body.bot || "",
-      last_message: body.lastMessage || "",
-      lim_state: body.limState || "",
+      name: safe(body.name),
+      avatar: safe(body.avatar),
+      bot: safe(body.bot),
+      last_message: safe(body.lastMessage),
+      lim_state: safe(body.limState),
       updated_at: Date.now()
     });
 
@@ -36,12 +49,14 @@ async function save(req) {
 }
 
 /* ============================================================
-   LISTA PARTITE PER COMBO BOX
+   LISTA PARTITE
+   /api/game/list
 ============================================================ */
 async function list(req) {
-  const uid = req.uid;
-
   try {
+    const uid = req.uid;
+    if (!uid) return { success: false, message: "UID mancante" };
+
     const rows = db.prepare(`
       SELECT id, name, updated_at
       FROM game_state
@@ -58,19 +73,26 @@ async function list(req) {
 }
 
 /* ============================================================
-   CARICA UNA PARTITA SPECIFICA
+   CARICA UNA PARTITA
+   /api/game/loadOne
 ============================================================ */
 async function loadOne(req) {
-  const id = req.body?.id;
-
   try {
+    const id = req.body?.id;
+
+    if (!id || isNaN(Number(id))) {
+      return { success: false, message: "ID non valido" };
+    }
+
     const row = db.prepare(`
       SELECT *
       FROM game_state
       WHERE id = ?
     `).get(id);
 
-    if (!row) return { success: false, message: "Partita non trovata." };
+    if (!row) {
+      return { success: false, message: "Partita non trovata." };
+    }
 
     return {
       success: true,
@@ -89,4 +111,23 @@ async function loadOne(req) {
   }
 }
 
-module.exports = { save, list, loadOne };
+/* ============================================================
+   ALIAS COMPATIBILITÀ FRONTEND
+============================================================ */
+async function saveGame(req) { return save(req); }
+async function listGames(req) { return list(req); }
+async function loadGame(req) { return loadOne(req); }
+
+/* ============================================================
+   EXPORT — Java-mode
+============================================================ */
+module.exports = {
+  save,
+  list,
+  loadOne,
+
+  // alias
+  saveGame,
+  listGames,
+  loadGame
+};
