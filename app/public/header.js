@@ -1,9 +1,9 @@
 // =========================================================
-// HEADER.JS — Versione 2055 Deterministica
-// Compatibile con critical/supremo/universale/dynamic
+// HEADER.JS — Versione 2057.4 (Deterministica + Java‑mode)
+// Compatibile con critical-ready / auth 2027.4 / carrello 2056
 // =========================================================
 
-console.log("[HEADER 2055] Caricato");
+console.log("[HEADER 2057.4] Caricato");
 
 // =========================================================
 // RESET HEADER (guest) — usato da deploy e logout
@@ -38,9 +38,9 @@ document.addEventListener("header-reset", forceGuestHeader);
 document.addEventListener("auto-logout", forceGuestHeader);
 
 // =========================================================
-// AVVIO DETERMINISTICO (micro-wait 0ms)
+// AVVIO DOPO critical-ready
 // =========================================================
-setTimeout(() => {
+document.addEventListener("critical-ready", () => {
 
   console.log("[HEADER] Init…");
 
@@ -116,7 +116,9 @@ setTimeout(() => {
   // ============================================================
   // GUEST
   // ============================================================
-  if (!window.isLogged) {
+  const auth = window.authState || { loggato: false, admin: false, email: "" };
+
+  if (!auth.loggato) {
     console.log("[HEADER] Guest");
 
     if (isHome) cartWrapper.style.display = "none";
@@ -127,17 +129,17 @@ setTimeout(() => {
   // ============================================================
   // USER LOGGATO
   // ============================================================
-  console.log("[HEADER] User loggato:", window.userEmail);
+  console.log("[HEADER] User loggato:", auth.email);
 
   navLogin.style.display = "none";
   navRegister.style.display = "none";
   navLogout.style.display = "inline-block";
 
-  // Logout manuale (senza clear totale)
+  // Logout manuale
   navLogout.onclick = () => {
     localStorage.setItem("logoutReason", "manual");
-    ["token", "mewing_token", "email", "ruolo", "user", "sessionState"]
-      .forEach(k => localStorage.removeItem(k));
+    localStorage.removeItem("mewing_token");
+    document.dispatchEvent(new Event("header-reset"));
     window.location.href = "index.html";
   };
 
@@ -152,7 +154,7 @@ setTimeout(() => {
   // ============================================================
   // ADMIN
   // ============================================================
-  if (window.isAdmin) {
+  if (auth.admin) {
     adminTrigger.style.display = "inline-block";
     navProfilo.style.display = "none";
     if (isHome) cartWrapper.style.display = "none";
@@ -166,12 +168,12 @@ setTimeout(() => {
   }
 
   // ============================================================
-  // BADGE CARRELLO (solo shop)
+  // BADGE CARRELLO (carrello 2056)
   // ============================================================
   function updateBadge() {
     if (!cartBadge) return;
 
-    const cart = JSON.parse(localStorage.getItem("mewing_cart") || "[]");
+    const cart = JSON.parse(localStorage.getItem("mewing_cart_v2") || "[]");
     const count = cart.reduce((sum, p) => sum + (p.qty || 1), 0);
 
     if (isHome || isUser) {
@@ -188,4 +190,4 @@ setTimeout(() => {
 
   console.log("[HEADER] Pronto.");
 
-}, 0);
+});
