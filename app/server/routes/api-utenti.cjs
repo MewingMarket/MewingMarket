@@ -1,9 +1,10 @@
 /* =========================================================
    FILE: app/server/routes/api-utenti.cjs
+   VERSIONE: 2027.3 — PATCH STABILE
    MODALITÀ: Java‑mode (funzioni, no Express)
    DESCRIZIONE: Sistema utenti completo — Registrazione, Login,
                 Cambio email, Cambio password, Eliminazione,
-                Reset email/password, /me
+                Reset email/password, /me + alias
 ========================================================= */
 
 const crypto = require("crypto");
@@ -486,86 +487,24 @@ async function me(req) {
     return { success: false, error: "Errore server" };
   }
 }
+
 /* =========================================================
    ALIAS COMPATIBILITÀ FRONTEND
 ========================================================= */
 
-async function registrazioneUtente(req) {
-  console.log("[DEBUG utenti] alias registrazioneUtente() → registrazione()");
-  return registrazione(req);
-}
-
-async function loginUtente(req) {
-  console.log("[DEBUG utenti] alias loginUtente() → login()");
-  return login(req);
-}
-
-async function cambiaEmailUtente(req) {
-  console.log("[DEBUG utenti] alias cambiaEmailUtente() → cambiaEmail()");
-  return cambiaEmail(req);
-}
-
-async function cambiaPasswordUtente(req) {
-  console.log("[DEBUG utenti] alias cambiaPasswordUtente() → cambiaPassword()");
-  return cambiaPassword(req);
-}
-
-async function eliminaAccountUtente(req) {
-  console.log("[DEBUG utenti] alias eliminaAccountUtente() → eliminaAccount()");
-  return eliminaAccount(req);
-}
-
-async function resetPasswordRequestUtente(req) {
-  console.log("[DEBUG utenti] alias resetPasswordRequestUtente() → resetPasswordRequest()");
-  return resetPasswordRequest(req);
-}
-
-async function resetPasswordConfirmUtente(req) {
-  console.log("[DEBUG utenti] alias resetPasswordConfirmUtente() → resetPasswordConfirm()");
-  return resetPasswordConfirm(req);
-}
-
-async function resetEmailRequestUtente(req) {
-  console.log("[DEBUG utenti] alias resetEmailRequestUtente() → resetEmailRequest()");
-  return resetEmailRequest(req);
-}
-
-async function resetEmailConfirmUtente(req) {
-  console.log("[DEBUG utenti] alias resetEmailConfirmUtente() → resetEmailConfirm()");
-  return resetEmailConfirm(req);
-}
-
-async function meUtente(req) {
-  console.log("[DEBUG utenti] alias meUtente() → me()");
-  return me(req);
-}
+async function registrazioneUtente(req) { return registrazione(req); }
+async function loginUtente(req) { return login(req); }
+async function cambiaEmailUtente(req) { return cambiaEmail(req); }
+async function cambiaPasswordUtente(req) { return cambiaPassword(req); }
+async function eliminaAccountUtente(req) { return eliminaAccount(req); }
+async function resetPasswordRequestUtente(req) { return resetPasswordRequest(req); }
+async function resetPasswordConfirmUtente(req) { return resetPasswordConfirm(req); }
+async function resetEmailRequestUtente(req) { return resetEmailRequest(req); }
+async function resetEmailConfirmUtente(req) { return resetEmailConfirm(req); }
+async function meUtente(req) { return me(req); }
 
 /* =========================================================
    EXPORT — stile Java (funzioni + alias)
 ========================================================= */
 
-module.exports = {
-  // funzioni principali
-  registrazione,
-  login,
-  cambiaEmail,
-  cambiaPassword,
-  eliminaAccount,
-  resetPasswordRequest,
-  resetPasswordConfirm,
-  resetEmailRequest,
-  resetEmailConfirm,
-  me,
-
-  // alias compatibilità frontend
-  registrazioneUtente,
-  loginUtente,
-  cambiaEmailUtente,
-  cambiaPasswordUtente,
-  eliminaAccountUtente,
-  resetPasswordRequestUtente,
-  resetPasswordConfirmUtente,
-  resetEmailRequestUtente,
-  resetEmailConfirmUtente,
-  meUtente
-};
+module.exports
