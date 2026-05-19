@@ -1,55 +1,61 @@
-// =========================================================
-// Dashboard Admin — UNIVERSAL JSON PATCH 2027.970
-// PATCH 2050 — AUTORUN + DEBUG ESTESO
-// PATCH 2027.1 — Auto‑Ottimizzazione Catalogo
-// =========================================================
+/* =========================================================
+   DASHBOARD VENDITE & ORDINI — Versione 2058 (Single Loader Architecture)
+   - Nessun autorun
+   - Nessun DOMContentLoaded
+   - Nessun critical-ready
+   - Esegue SOLO quando chiamato da Loader Universale Admin
+========================================================= */
 
-console.log("📌 [DASHBOARD-ADMIN] File caricato nel DOM");
+console.log("📌 [DASHBOARD-ADMIN 2058] File caricato");
 
-// =========================================================
-// AUTORUN 2050 — parte SEMPRE, anche se il DOM è riscritto
-// =========================================================
-(function autorun() {
-  console.log("🚀 [DASHBOARD-ADMIN] Autorun avviato. DOM state:", document.readyState);
+/* =========================================================
+   WRAPPER UNIVERSALE ADMIN (token + universal-json)
+========================================================= */
+async function adminApi(path, options = {}) {
+  const token = localStorage.getItem("token");
 
-  if (document.readyState === "loading") {
-    console.log("⏳ [DASHBOARD-ADMIN] DOM non pronto → attendo DOMContentLoaded");
-    document.addEventListener("DOMContentLoaded", autorun, { once: true });
-    return;
+  const headers = {
+    "Content-Type": "application/json",
+    ...(options.headers || {}),
+    Authorization: token ? `Bearer ${token}` : ""
+  };
+
+  const res = await fetch(path, { ...options, headers });
+
+  if (res.status === 401 || res.status === 403) {
+    console.warn("🔒 [DASHBOARD-ADMIN] Token scaduto → redirect login");
+    localStorage.removeItem("token");
+    location.href = "/admin/login";
+    return null;
   }
 
-  console.log("🟢 [DASHBOARD-ADMIN] DOM pronto → avvio initPage()");
-
+  let json;
   try {
-    if (typeof initPage === "function") {
-      initPage();
-    } else {
-      console.warn("❌ [DASHBOARD-ADMIN] initPage() NON trovata → JS NON eseguito");
-    }
+    json = await res.json();
   } catch (e) {
-    console.error("🔥 [DASHBOARD-ADMIN] Errore in initPage():", e);
-  }
-})();
-
-// =========================================================
-// FUNZIONE PRINCIPALE DELLA PAGINA
-// =========================================================
-function initPage() {
-  console.log("🏁 [DASHBOARD-ADMIN] initPage() eseguita");
-
-  if (!window.__criticalReady) {
-    console.log("⏳ [DASHBOARD-ADMIN] critical-ready NON ancora emesso → attendo evento");
-    document.addEventListener("critical-ready", initPage, { once: true });
-    return;
+    console.error("❌ Risposta NON JSON da", path);
+    return null;
   }
 
-  console.log("🟩 [DASHBOARD-ADMIN] critical-ready già presente → avvio pagina");
-  avviaDashboard();
+  if (!json.success) {
+    console.warn("⚠️ Errore API:", json.error || json.raw);
+    return null;
+  }
+
+  return json.data;
 }
 
-// =========================================================
-// CODICE ORIGINALE INCAPSULATO + PATCH AUTO‑OPT
-// =========================================================
+/* =========================================================
+   PAGE INIT — chiamata da Loader Universale Admin 2058
+========================================================= */
+window.pageInit = function () {
+  console.log("🏁 [DASHBOARD-ADMIN 2058] pageInit() avviata");
+  avviaDashboard();
+};
+
+/* =========================================================
+   AVVIO DASHBOARD
+========================================================= */
 async function avviaDashboard() {
   console.log("🔥 Dashboard INIT - Autonoma");
 
@@ -89,43 +95,6 @@ async function avviaDashboard() {
       body.innerHTML = `<tr><td colspan="11" style="color:red; text-align:center;">Errore: ${err.message}</td></tr>`;
     }
   }
-}
-
-/* =========================================================
-   WRAPPER UNIVERSALE ADMIN (token + universal-json)
-========================================================= */
-async function adminApi(path, options = {}) {
-  const token = localStorage.getItem("token");
-
-  const headers = {
-    "Content-Type": "application/json",
-    ...(options.headers || {}),
-    Authorization: token ? `Bearer ${token}` : ""
-  };
-
-  const res = await fetch(path, { ...options, headers });
-
-  if (res.status === 401 || res.status === 403) {
-    console.warn("🔒 [DASHBOARD-ADMIN] Token scaduto → redirect login");
-    localStorage.removeItem("token");
-    location.href = "/admin/login";
-    return null;
-  }
-
-  let json;
-  try {
-    json = await res.json();
-  } catch (e) {
-    console.error("❌ Risposta NON JSON da", path);
-    return null;
-  }
-
-  if (!json.success) {
-    console.warn("⚠️ Errore API:", json.error || json.raw);
-    return null;
-  }
-
-  return json.data;
 }
 
 /* =========================================================
@@ -195,6 +164,26 @@ function renderKPI(data) {
   safeSet("kpi-ordini", o.totali ?? "0");
   safeSet("kpi-ordini-completati", o.completati ?? "0");
   safeSet("kpi-ordini-annullati", o.annullati ?? "0");
+}
+
+/* =========================================================
+   TOP PRODOTTI
+========================================================= */
+function renderTopProdotti(lista) {
+  const body = document.getElementById("top-prodotti-body");
+  if (!body) return;
+
+  body.innerHTML = "";
+
+  lista.forEach(p => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${p.id}</td>
+      <td>${p.vendite}</td>
+      <td>${(p.revenue_cent / 100).toFixed(2)}€</td>
+    `;
+    body.appendChild(tr);
+  });
 }
 
 /* =========================================================
