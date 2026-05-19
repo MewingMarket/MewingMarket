@@ -1,8 +1,8 @@
 // =========================================================
-// CRITICAL LOADER — PUBLIC 2057 (JAVA-MODE SAFE)
-// Percorso reale: /app/public/loader.js
+// CRITICAL LOADER — PUBLIC 2057.4 (JAVA-MODE SAFE)
+// Percorso: /app/public/loader.js
 // Carica head.html / header.html / footer.html / header.js
-// Emissione evento: critical-core-loaded (NON critical-ready)
+// Emissione evento: critical-ready (standard 2027.4)
 // =========================================================
 
 if (window.__CRITICAL_LOADER_PUBLIC_2057__) {
@@ -63,6 +63,15 @@ if (window.__CRITICAL_LOADER_PUBLIC_2057__) {
       return new Promise(resolve => {
         console.log("➡️ [CRITICAL PUBLIC] LOAD-REQUEST", src);
 
+        // Script-lock globale per evitare doppio load
+        if (window.__SCRIPT_LOCK__ && window.__SCRIPT_LOCK__[src]) {
+          console.warn("[SCRIPT-LOCK] Script già caricato:", src);
+          return resolve(true);
+        }
+
+        window.__SCRIPT_LOCK__ = window.__SCRIPT_LOCK__ || {};
+        window.__SCRIPT_LOCK__[src] = true;
+
         const s = document.createElement("script");
         s.src = `${src}?v=${VERSION}`;
         s.async = false;
@@ -103,9 +112,9 @@ if (window.__CRITICAL_LOADER_PUBLIC_2057__) {
 
       console.log("🟩 [CRITICAL PUBLIC 2057] HTML base caricato (JAVA-MODE)");
 
-      // 6) EMISSIONE EVENTO PER SUPREMO
-      window.__criticalCoreLoaded = true;
-      document.dispatchEvent(new Event("critical-core-loaded"));
+      // 6) EMISSIONE EVENTO STANDARD 2027.4
+      window.__criticalReady = true;
+      document.dispatchEvent(new Event("critical-ready"));
 
     })();
 
