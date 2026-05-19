@@ -1,7 +1,9 @@
 // ============================================================
-// SCANNER JAVA-MODE — BACKEND + FRONTEND + MATCHER + REPORT HTML
+// SCANNER UNIVERSALE — FULL DISCOVERY (API + NON API + JAVA)
+// Modalità: SMART MATCHING (B) + MIGRATION MODE (C)
+// Output: SOLO HTML
 // Percorso: /app/tools/scanner.js
-// Esegui con: node scanner.js
+// Esegui: node scanner.js
 // ============================================================
 
 const fs = require("fs");
@@ -10,42 +12,14 @@ const path = require("path");
 // ------------------------------------------------------------
 // CONFIG
 // ------------------------------------------------------------
-const SERVER_INDEX = path.join(process.cwd(), "app/server/index.cjs");
-const PUBLIC_DIR   = path.join(process.cwd(), "app/public");
-const OUT_HTML     = path.join(process.cwd(), "app/public/scan-report.html");
+const BACKEND_DIR = path.join(process.cwd(), "app/server");
+const FRONTEND_DIR = path.join(process.cwd(), "app/public");
+const OUT_HTML = path.join(process.cwd(), "app/public/scan-report.html");
 
 // ------------------------------------------------------------
-// 1) SCAN BACKEND (JAVA-MODE, usando app/server/index.cjs)
+// UTILS
 // ------------------------------------------------------------
-function scanBackendJavaMode() {
-  const modules = require(SERVER_INDEX); // { prodotti: {...}, admin: {...}, ... }
-
-  const endpoints = {}; // "GET /api/prodotti/getProdotti" → "prodotti"
-
-  for (const [groupName, groupExports] of Object.entries(modules)) {
-    if (!groupExports || typeof groupExports !== "object") continue;
-
-    for (const fnName of Object.keys(groupExports)) {
-      // Saltiamo cose non funzione (se mai ci fossero)
-      const value = groupExports[fnName];
-      if (typeof value !== "function") continue;
-
-      // In Java-mode non hai ancora il metodo (GET/POST),
-      // quindi per ora lo marchiamo come "ANY"
-      const method = "ANY";
-      const route  = `/api/${groupName}/${fnName}`;
-
-      endpoints[`${method} ${route}`] = groupName;
-    }
-  }
-
-  return endpoints;
-}
-
-// ------------------------------------------------------------
-// 2) SCAN FRONTEND (fetch, axios, XHR, ecc.)
-// ------------------------------------------------------------
-function readAllFiles(dir, ext = ".js") {
+function readAllFiles(dir, exts = [".js", ".cjs"]) {
   let results = [];
   const list = fs.readdirSync(dir);
 
@@ -54,8 +28,8 @@ function readAllFiles(dir, ext = ".js") {
     const stat = fs.statSync(full);
 
     if (stat.isDirectory()) {
-      results = results.concat(readAllFiles(full, ext));
-    } else if (file.endsWith(ext)) {
+      results = results.concat(readAllFiles(full, exts));
+    } else if (exts.some(ext => file.endsWith(ext))) {
       results.push(full);
     }
   }
@@ -63,37 +37,105 @@ function readAllFiles(dir, ext = ".js") {
   return results;
 }
 
-function scanFrontend() {
-  const files = readAllFiles(PUBLIC_DIR, ".js");
+// ------------------------------------------------------------
+// 1) SCAN BACKEND — EXPRESS + FASTIFY + JAVA-MODE
+// ------------------------------------------------------------
+function scanBackend() {
+  const files = readAllFiles(BACKEND_DIR, [".js", ".cjs"]);
   const endpoints = new Set();
 
-  const regex = /\/api\/[a-zA-Z0-9\-\/]+/g;
+  const regexExpress = /(app|router)\.(get|post|put|delete)\s*\(\s*["'`](\/[^"'`]+)["'`]/g;
+  const regexFastify = /fastify\.(get|post|put|delete)\s*\(\s*["'`](\/[^"'`]+)["'`]/g;
+  const regexJavaMode = /module\.exports\s*=\s*\{([\s\S]*?)\}/g;
 
   for (const file of files) {
     const content = fs.readFileSync(file, "utf8");
-    const matches = content.match(regex);
-    if (matches) matches.forEach(e => endpoints.add(e));
+
+    // EXPRESS
+    let match;
+    while ((match = regexExpress.exec(content)) !== null) {
+      endpoints.add(`${match[2].toUpperCase()} ${match[3]}`);
+    }
+
+    // FASTIFY
+    while ((match = regexFastify.exec(content)) !== null) {
+      endpoints.add(`${match[1].toUpperCase()} ${match[2]}`);
+    }
+
+    // JAVA-MODE (module.exports = { fn() {} })
+    let javaBlock;
+    while ((javaBlock = regexJavaMode.exec(content)) !== null) {
+      const inner = javaBlock[1];
+      const fnRegex = /([a-zA-Z0-9_]+)\s*\(/g;
+      let fn;
+
+      const fileName = path.basename(file).replace(/\.(cjs|js)$/, "");
+      while ((fn = fnRegex.exec(inner)) !== null) {
+        endpoints.add(`ANY /api/${fileName}/${fn[1]}`);
+      }
+    }
   }
 
   return [...endpoints];
 }
 
 // ------------------------------------------------------------
-// 3) MATCHER BACKEND ↔ FRONTEND
+// 2) SCAN FRONTEND — SOLO .JS
+// ------------------------------------------------------------
+function scanFrontend() {
+  const files = readAllFiles(FRONTEND_DIR, [".js"]);
+  const endpoints = new Set();
+
+  const regex = /["'`](\/[a-zA-Z0-9_\-\/\.]+)["'`]/g;
+
+  for (const file of files) {
+    const content = fs.readFileSync(file, "utf8");
+    let match;
+
+    while ((match = regex.exec(content)) !== null) {
+      const url = match[1];
+
+      // Consideriamo solo endpoint che iniziano con "/"
+      if (url.startsWith("/")) {
+        endpoints.add(url);
+      }
+    }
+  }
+
+  return [...endpoints];
+}
+
+// ------------------------------------------------------------
+// 3) SMART MATCHING + MIGRATION MODE
 // ------------------------------------------------------------
 function compareEndpoints(backend, frontend) {
-  const backendList  = Object.keys(backend);          // ["ANY /api/prodotti/getProdotti", ...]
-  const backendPaths = backendList.map(e => e.split(" ")[1]); // ["/api/prodotti/getProdotti", ...]
+  const backendPaths = backend.map(e => e.split(" ")[1]);
+  const ok = [];
+  const alias = [];
+  const similar = [];
+  const missing = [];
+  const unused = backendPaths.filter(b => !frontend.includes(b));
 
-  const ok      = frontend.filter(e => backendPaths.includes(e));
-  const missing = frontend.filter(e => !backendPaths.includes(e));
-  const unused  = backendPaths.filter(e => !frontend.includes(e));
+  for (const fe of frontend) {
+    if (backendPaths.includes(fe)) {
+      ok.push(fe);
+      continue;
+    }
 
-  const wrong = missing.filter(e =>
-    backendPaths.some(b => b.split("/")[2] === e.split("/")[2])
-  );
+    // SMART MATCHING (alias)
+    const feParts = fe.split("/").filter(Boolean);
+    const feGroup = feParts[1];
 
-  return { ok, missing, unused, wrong };
+    const candidates = backendPaths.filter(b => b.includes(`/${feGroup}/`));
+
+    if (candidates.length > 0) {
+      similar.push({ frontend: fe, backend: candidates });
+    } else {
+      missing.push(fe);
+    }
+  }
+
+  return { ok, alias, similar, missing, unused };
 }
 
 // ------------------------------------------------------------
@@ -105,7 +147,7 @@ function generateHTML(backend, frontend, report) {
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<title>Scan Report — Backend ↔ Frontend (Java-mode)</title>
+<title>Scan Report — Backend ↔ Frontend (FULL DISCOVERY)</title>
 <style>
 body { font-family: Arial; padding: 20px; background: #f5f5f5; }
 h1 { color: #333; }
@@ -114,12 +156,12 @@ pre { background: #222; color: #0f0; padding: 10px; border-radius: 6px; overflow
 .ok { color: green; }
 .missing { color: red; }
 .unused { color: orange; }
-.wrong { color: #c60; }
+.similar { color: #c60; }
 </style>
 </head>
 <body>
 
-<h1>🔍 Scan Report — Backend ↔ Frontend (Java-mode)</h1>
+<h1>🔍 Scan Report — Backend ↔ Frontend (FULL DISCOVERY)</h1>
 
 <section>
 <h2 class="ok">🟩 Endpoint OK</h2>
@@ -127,22 +169,22 @@ pre { background: #222; color: #0f0; padding: 10px; border-radius: 6px; overflow
 </section>
 
 <section>
-<h2 class="missing">🟥 Endpoint Mancanti (Frontend → Backend)</h2>
+<h2 class="similar">🟧 Endpoint Simili (SMART MATCH)</h2>
+<pre>${JSON.stringify(report.similar, null, 2)}</pre>
+</section>
+
+<section>
+<h2 class="missing">🟥 Endpoint Mancanti (da creare)</h2>
 <pre>${JSON.stringify(report.missing, null, 2)}</pre>
 </section>
 
 <section>
-<h2 class="unused">🟨 Endpoint Inutilizzati (Backend → Frontend)</h2>
+<h2 class="unused">🟨 Endpoint Inutilizzati (da rimuovere)</h2>
 <pre>${JSON.stringify(report.unused, null, 2)}</pre>
 </section>
 
 <section>
-<h2 class="wrong">🟧 Endpoint Simili (probabile errore)</h2>
-<pre>${JSON.stringify(report.wrong, null, 2)}</pre>
-</section>
-
-<section>
-<h2>🟦 Backend Completo (Java-mode)</h2>
+<h2>🟦 Backend Completo (FULL DISCOVERY)</h2>
 <pre>${JSON.stringify(backend, null, 2)}</pre>
 </section>
 
@@ -162,10 +204,10 @@ pre { background: #222; color: #0f0; padding: 10px; border-radius: 6px; overflow
 // ------------------------------------------------------------
 // 5) RUN
 // ------------------------------------------------------------
-console.log("🔍 SCAN BACKEND (Java-mode)...");
-const backend = scanBackendJavaMode();
+console.log("🔍 SCAN BACKEND (FULL DISCOVERY)...");
+const backend = scanBackend();
 
-console.log("🔍 SCAN FRONTEND...");
+console.log("🔍 SCAN FRONTEND (.js only)...");
 const frontend = scanFrontend();
 
 console.log("🔍 MATCH...");
