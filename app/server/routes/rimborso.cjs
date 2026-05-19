@@ -1,8 +1,9 @@
-/* =========================================================
-   FILE: app/server/routes/rimborso.cjs
-   MODALITÀ: Java‑mode (funzioni, no Express)
-   DESCRIZIONE: Rimborsi — Utente + Admin (intelligente)
-========================================================= */
+/**
+ * FILE: app/server/routes/rimborso.cjs
+ * VERSIONE: 2027.3 — PATCH STABILE
+ * MODALITÀ: Java‑mode (funzioni, no Express)
+ * DESCRIZIONE: Rimborsi — Utente + Admin (intelligente)
+ */
 
 const path = require("path");
 const R = (p) => require(path.join(process.cwd(), "app/server", p));
@@ -15,18 +16,24 @@ const categorieRimborso = R("modules/rimborso-categorie.cjs");
 const { generaRispostaRimborso } = R("modules/genera-risposta-rimborso.cjs");
 
 /* =========================================================
-   FUNZIONE 1 — creaRimborso (UTENTE)
+   UTILS
+========================================================= */
+function safe(v, fallback = "") {
+  return v === undefined || v === null ? fallback : v;
+}
+
+/* =========================================================
+   1) creaRimborso (UTENTE)
 ========================================================= */
 async function creaRimborso(req) {
   console.log("[DEBUG rimborso] creaRimborso()");
 
   try {
-    const userId = req.user.id;
-    const { ordine_id, motivo } = req.body;
+    const userId = req.user?.id;
+    const { ordine_id, motivo } = req.body || {};
 
-    if (!ordine_id || !motivo) {
-      return { success: false, error: "Campi mancanti." };
-    }
+    if (!userId) return { success: false, error: "Utente non autenticato." };
+    if (!ordine_id || !motivo) return { success: false, error: "Campi mancanti." };
 
     const ordine = db.prepare(`
       SELECT *
@@ -35,18 +42,15 @@ async function creaRimborso(req) {
       LIMIT 1
     `).get(ordine_id, userId);
 
-    if (!ordine) {
-      return { success: false, error: "Ordine non trovato." };
-    }
+    if (!ordine) return { success: false, error: "Ordine non trovato." };
 
     if (ordine.stato !== "completato") {
-      return {
-        success: false,
-        error: "Puoi richiedere rimborso solo per ordini completati."
-      };
+      return { success: false, error: "Puoi richiedere rimborso solo per ordini completati." };
     }
 
-    // 🔥 RICONOSCIMENTO CATEGORIA
+    /* ---------------------------------------------------------
+       RICONOSCIMENTO CATEGORIA
+    --------------------------------------------------------- */
     const motivoLower = motivo.toLowerCase();
 
     let categoriaRecord =
@@ -57,7 +61,9 @@ async function creaRimborso(req) {
 
     const tipo = categoriaRecord.tipo;
 
-    // CASO 1 — RISOLVIBILE → email → NON crea ticket
+    /* ---------------------------------------------------------
+       CASO 1 — RISOLVIBILE → email → NON crea ticket
+    --------------------------------------------------------- */
     if (tipo === "risolvibile") {
       await inviaEmailRimborso({
         email: req.user.email,
@@ -72,7 +78,9 @@ async function creaRimborso(req) {
       };
     }
 
-    // CASO 2 — NON RISOLVIBILE → crea ticket
+    /* ---------------------------------------------------------
+       CASO 2 — NON RISOLVIBILE → crea ticket
+    --------------------------------------------------------- */
     db.prepare(`
       INSERT INTO rimborsi (ordine_id, utente_id, motivo, stato)
       VALUES (?, ?, ?, 'in_attesa')
@@ -94,25 +102,33 @@ async function creaRimborso(req) {
 }
 
 /* =========================================================
-   FUNZIONE 2 — approvaRimborso (ADMIN)
+   2) approvaRimborso (ADMIN)
 ========================================================= */
 async function approvaRimborso(req) {
   console.log("[DEBUG rimborso] approvaRimborso()");
 
   try {
-    const rimborsoId = req.params.id;
+    const rimborsoId = req.params?.id;
+    if (!rimborsoId || isNaN(Number(rimborsoId))) {
+      return { success: false, error: "ID non valido." };
+    }
 
     const r = db.prepare(`SELECT * FROM rimborsi WHERE id = ?`).get(rimborsoId);
     if (!r) return { success: false, error: "Richiesta non trovata." };
 
+    if (r.stato !== "in_attesa") {
+      return { success: false, error: "Richiesta già gestita." };
+    }
+
     const ordine = db.prepare(`SELECT * FROM ordini WHERE id = ?`).get(r.ordine_id);
     if (!ordine) return { success: false, error: "Ordine non trovato." };
 
-    // Recupera email utente
     const utente = db.prepare(`SELECT email FROM utenti WHERE id = ?`).get(r.utente_id);
     const emailUtente = utente?.email || null;
 
-    // Aggiorna ordine
+    /* ---------------------------------------------------------
+       AGGIORNA ORDINE
+    --------------------------------------------------------- */
     db.prepare(`
       UPDATE ordini
       SET stato = 'rimborsato',
@@ -121,14 +137,18 @@ async function approvaRimborso(req) {
       WHERE id = ?
     `).run(ordine.id);
 
-    // Aggiorna rimborso
+    /* ---------------------------------------------------------
+       AGGIORNA RIMBORSO
+    --------------------------------------------------------- */
     db.prepare(`
       UPDATE rimborsi
       SET stato = 'approvato'
       WHERE id = ?
     `).run(rimborsoId);
 
-    // Email approvazione
+    /* ---------------------------------------------------------
+       EMAIL APPROVAZIONE
+    --------------------------------------------------------- */
     await inviaEmailRimborso({
       email: emailUtente,
       tipo: "approvato",
@@ -147,22 +167,23 @@ async function approvaRimborso(req) {
 }
 
 /* =========================================================
-   FUNZIONE 3 — rifiutaRimborso (ADMIN)
+   3) rifiutaRimborso (ADMIN)
 ========================================================= */
 async function rifiutaRimborso(req) {
   console.log("[DEBUG rimborso] rifiutaRimborso()");
 
   try {
-    const rimborsoId = req.params.id;
+    const rimborsoId = req.params?.id;
+    if (!rimborsoId || isNaN(Number(rimborsoId))) {
+      return { success: false, error: "ID non valido." };
+    }
 
     const r = db.prepare(`SELECT * FROM rimborsi WHERE id = ?`).get(rimborsoId);
     if (!r) return { success: false, error: "Richiesta non trovata." };
 
-    // Recupera email utente
     const utente = db.prepare(`SELECT email FROM utenti WHERE id = ?`).get(r.utente_id);
     const emailUtente = utente?.email || null;
 
-    // Riconoscimento categoria per email rifiuto
     const motivoLower = r.motivo.toLowerCase();
 
     let categoriaRecord =
@@ -171,14 +192,12 @@ async function rifiutaRimborso(req) {
       ) ||
       categorieRimborso.find(c => c.categoria === "altro");
 
-    // Aggiorna stato
     db.prepare(`
       UPDATE rimborsi
       SET stato = 'rifiutato'
       WHERE id = ?
     `).run(rimborsoId);
 
-    // Email rifiuto
     await inviaEmailRimborso({
       email: emailUtente,
       tipo: "rifiutato",
@@ -197,33 +216,18 @@ async function rifiutaRimborso(req) {
 /* =========================================================
    ALIAS COMPATIBILITÀ FRONTEND
 ========================================================= */
-
-async function crea(req) {
-  console.log("[DEBUG rimborso] alias crea() → creaRimborso()");
-  return creaRimborso(req);
-}
-
-async function procedi(req) {
-  console.log("[DEBUG rimborso] alias procedi() → approvaRimborso()");
-  return approvaRimborso(req);
-}
-
-async function rifiuta(req) {
-  console.log("[DEBUG rimborso] alias rifiuta() → rifiutaRimborso()");
-  return rifiutaRimborso(req);
-}
+async function crea(req) { return creaRimborso(req); }
+async function procedi(req) { return approvaRimborso(req); }
+async function rifiuta(req) { return rifiutaRimborso(req); }
 
 /* =========================================================
-   NUOVI ALIAS — richiesti dalla diagnostica
+   NUOVI ALIAS — richiesti dal frontend
 ========================================================= */
-
 async function rimborso(req) {
-  console.log("[DEBUG rimborso] alias rimborso() → OK");
   return { success: true, message: "Endpoint rimborso attivo" };
 }
 
 async function creaRichiesta(req) {
-  console.log("[DEBUG rimborso] alias creaRichiesta() → creaRimborso()");
   return creaRimborso(req);
 }
 
