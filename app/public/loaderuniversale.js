@@ -1,32 +1,18 @@
 // =========================================================
-// LOADER UNIVERSALE PUBLIC — SLEEP MODE 2056
-// File completo ma DISATTIVATO di default.
-// Attivabile impostando: window.__ENABLE_UNIVERSALE_FALLBACK__ = true
+// LOADER UNIVERSALE PUBLIC — PATCH 2058 (JAVA-MODE READY)
+// Carica il JS di pagina in base a window.__PAGE_ID__
+// Emissione evento: page-js-loaded
+// Percorso atteso JS pagina: /js/pagine/{page}.js
 // =========================================================
 
-if (!window.__LOADER_UNIVERSALE_PUBLIC_2056__) {
-  window.__LOADER_UNIVERSALE_PUBLIC_2056__ = true;
+if (!window.__LOADER_UNIVERSALE_PUBLIC_2058__) {
+  window.__LOADER_UNIVERSALE_PUBLIC_2058__ = true;
 
-  console.log("⚡ [UNIVERSALE PUBLIC 2056] Loader universale caricato (SLEEP MODE)");
-
-  // ============================================================
-  // FLAG DI ATTIVAZIONE (default: OFF)
-  // ============================================================
-  if (!window.__ENABLE_UNIVERSALE_FALLBACK__) {
-    console.log("⏭️ [UNIVERSALE PUBLIC 2056] Fallback disattivato → nessuna azione");
-    document.addEventListener("supremo-public-load-universale", () => {
-      console.log("⏭️ [UNIVERSALE PUBLIC 2056] Evento ricevuto → fallback DISATTIVATO");
-    });
-    return; // 🔥 STOP: nessuna logica eseguita
-  }
-
-  // ============================================================
-  // DA QUI IN POI: fallback attivo SOLO se __ENABLE_UNIVERSALE_FALLBACK__ = true
-  // ============================================================
+  console.log("⚡ [UNIVERSALE PUBLIC 2058] Loader universale attivo");
 
   (function () {
 
-    const VERSION = "2056";
+    const VERSION = "2058";
 
     window.__UNIVERSALE_PUBLIC_JS_CACHE__ =
       window.__UNIVERSALE_PUBLIC_JS_CACHE__ || new Set();
@@ -39,10 +25,8 @@ if (!window.__LOADER_UNIVERSALE_PUBLIC_2056__) {
 
     window.__pageJsLoaded = window.__pageJsLoaded || false;
 
-    console.log("🟦 [UNIVERSALE PUBLIC 2056] Fallback ATTIVO");
-
     // ============================================================
-    // NORMALIZZAZIONE
+    // NORMALIZZAZIONE NOME PAGINA
     // ============================================================
     function normalizeName(name) {
       return name
@@ -54,7 +38,7 @@ if (!window.__LOADER_UNIVERSALE_PUBLIC_2056__) {
         .trim();
     }
 
-    function getPageBase() {
+    function getPageBaseFromPath() {
       const p = window.location.pathname;
 
       if (p === "/" || p === "") return "index";
@@ -72,11 +56,18 @@ if (!window.__LOADER_UNIVERSALE_PUBLIC_2056__) {
       return normalizeName(parts.pop());
     }
 
+    function getPageId() {
+      if (typeof window.__PAGE_ID__ === "string" && window.__PAGE_ID__.trim()) {
+        return normalizeName(window.__PAGE_ID__);
+      }
+      return getPageBaseFromPath();
+    }
+
     function getExpectedPageScript() {
-      const base = getPageBase();
+      const base = getPageId();
       return {
         base,
-        src: `/${base}.js`
+        src: `/js/pagine/${base}.js`
       };
     }
 
@@ -114,10 +105,9 @@ if (!window.__LOADER_UNIVERSALE_PUBLIC_2056__) {
     }
 
     // ============================================================
-    // FALLBACK: CARICA JS DI PAGINA SOLO SE NON È GIÀ NEL DOM
+    // CARICA JS DI PAGINA SE NON È GIÀ PRESENTE
     // ============================================================
     async function loadPageScriptIfNeeded(expectedSrc) {
-
       if (
         document.querySelector(`script[src="${expectedSrc}?v=${VERSION}"]`) ||
         document.querySelector(`script[src="${expectedSrc}"]`)
@@ -126,12 +116,12 @@ if (!window.__LOADER_UNIVERSALE_PUBLIC_2056__) {
         return true;
       }
 
-      console.log(`📦 [UNIVERSALE PUBLIC] Script pagina NON presente → fallback loader: ${expectedSrc}`);
+      console.log(`📦 [UNIVERSALE PUBLIC] Script pagina NON presente → loader: ${expectedSrc}`);
       return await loadScript(expectedSrc);
     }
 
     // ============================================================
-    // AVVIO FALLBACK
+    // AVVIO LOADER UNIVERSALE
     // ============================================================
     async function runUniversale() {
       const state = window.__UNIVERSALE_PUBLIC_RUN_STATE__;
@@ -140,7 +130,7 @@ if (!window.__LOADER_UNIVERSALE_PUBLIC_2056__) {
 
       state.running = true;
 
-      console.log("🟦 [UNIVERSALE PUBLIC] Evento supremo-public-load-universale → avvio fallback");
+      console.log("🟦 [UNIVERSALE PUBLIC] Evento supremo-public-load-universale → avvio");
 
       const { base, src: expectedPageScript } = getExpectedPageScript();
       console.log("🔍 Pagina normalizzata:", base);
@@ -152,14 +142,14 @@ if (!window.__LOADER_UNIVERSALE_PUBLIC_2056__) {
       state.done = true;
 
       if (!window.__pageJsLoaded) {
-        console.log("🟩 [UNIVERSALE PUBLIC] page-js-loaded (fallback)");
+        console.log("🟩 [UNIVERSALE PUBLIC] page-js-loaded");
         window.__pageJsLoaded = true;
         document.dispatchEvent(new Event("page-js-loaded"));
       }
     }
 
     // ============================================================
-    // LISTENER
+    // LISTENER DA SUPREMO
     // ============================================================
     document.addEventListener("supremo-public-load-universale", runUniversale);
 
