@@ -1,80 +1,45 @@
-// FILE: public/admin/admin-prodotti.js
-// PATH: public/admin/admin-prodotti.js
 /* =========================================================
-   ADMIN PRODOTTI — Versione 2027.1 (AI + FILE + IMG + CONFIG)
-   PATCH 2050 — AUTORUN + DEBUG ESTESO
+   ADMIN PRODOTTI — Versione 2058 (Single Loader Architecture)
+   - Nessun autorun
+   - Nessun DOMContentLoaded
+   - Nessun critical-ready
+   - Esegue SOLO quando chiamato da Loader Universale Admin
 ========================================================= */
 
-console.log("📌 [ADMIN-PRODOTTI] File caricato nel DOM");
+console.log("📌 [ADMIN-PRODOTTI 2058] File caricato");
 
-// =========================================================
-// AUTORUN 2050 — parte SEMPRE, anche se il DOM è riscritto
-// =========================================================
-(function autorun() {
-  console.log("🚀 [ADMIN-PRODOTTI] Autorun avviato. DOM state:", document.readyState);
+/* =========================================================
+   API ADMIN
+========================================================= */
+async function adminApi(path, options = {}) {
+  const token = localStorage.getItem("token");
 
-  if (document.readyState === "loading") {
-    console.log("⏳ [ADMIN-PRODOTTI] DOM non pronto → attendo DOMContentLoaded");
-    document.addEventListener("DOMContentLoaded", autorun, { once: true });
-    return;
+  const headers = {
+    "Content-Type": "application/json",
+    ...(options.headers || {}),
+    Authorization: token ? `Bearer ${token}` : ""
+  };
+
+  const res = await fetch(path, { ...options, headers });
+
+  if (res.status === 401 || res.status === 403) {
+    console.warn("🔒 [ADMIN-PRODOTTI] Token non valido → redirect login");
+    localStorage.removeItem("token");
+    location.href = "/admin/login";
+    return null;
   }
 
-  console.log("🟢 [ADMIN-PRODOTTI] DOM pronto → avvio initPage()");
+  let json;
+  try { json = await res.json(); } catch { return null; }
 
-  try {
-    if (typeof initPage === "function") {
-      initPage();
-    } else {
-      console.warn("❌ [ADMIN-PRODOTTI] initPage() NON trovata → JS NON eseguito");
-    }
-  } catch (e) {
-    console.error("🔥 [ADMIN-PRODOTTI] Errore in initPage():", e);
-  }
-})();
+  return json.success ? json.data : null;
+}
 
-// =========================================================
-// FUNZIONE PRINCIPALE DELLA PAGINA
-// =========================================================
-function initPage() {
-  console.log("🏁 [ADMIN-PRODOTTI] initPage() eseguita");
-
-  // Se critical-ready non è ancora arrivato, aspettiamo
-  if (!window.__criticalReady) {
-    console.log("⏳ [ADMIN-PRODOTTI] critical-ready NON ancora emesso → attendo evento");
-    document.addEventListener("critical-ready", initPage, { once: true });
-    return;
-  }
-
-  console.log("🟩 [ADMIN-PRODOTTI] critical-ready già presente → avvio pagina");
-
-  /* =========================================================
-     API ADMIN
-  ========================================================== */
-  async function adminApi(path, options = {}) {
-    const token = localStorage.getItem("token");
-
-    const headers = {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-      Authorization: token ? `Bearer ${token}` : ""
-    };
-
-    const res = await fetch(path, { ...options, headers });
-
-    if (res.status === 401 || res.status === 403) {
-      console.warn("🔒 [ADMIN-PRODOTTI] Token non valido → redirect login");
-      localStorage.removeItem("token");
-      location.href = "/admin/login";
-      return null;
-    }
-
-    let json;
-    try { json = await res.json(); } catch { return null; }
-
-    return json.success ? json.data : null;
-  }
-
-  console.log("🔥 admin-prodotti.js 2027.1 READY");
+/* =========================================================
+   PAGE INIT — chiamata da Loader Universale Admin 2058
+========================================================= */
+window.pageInit = function () {
+  console.log("🏁 [ADMIN-PRODOTTI 2058] pageInit() avviata");
 
   /* ---------------------------------------------------------
      ELEMENTI DOM
@@ -309,4 +274,4 @@ function initPage() {
   console.log("🚀 [ADMIN-PRODOTTI] Avvio caricamento iniziale");
   caricaPubblicati();
   caricaDaCreare();
-}
+};
