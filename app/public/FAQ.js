@@ -1,51 +1,23 @@
 /* =========================================================
-   FAQ.js — PATCH 2050
-   Autorun universale + Debug esteso + Toggle blindato
+   FAQ.js — Versione 2058 (Single Loader Architecture)
+   - Nessun autorun
+   - Nessun DOMContentLoaded
+   - Nessun critical-ready
+   - Esegue SOLO quando chiamato da Loader Supremo 2058
 ========================================================= */
 
-console.log("📌 [FAQ] File caricato nel DOM");
+console.log("📌 [FAQ 2058] File caricato");
 
 /* =========================================================
-   AUTORUN 2050 — parte SEMPRE
+   PAGE INIT — chiamata da Loader Supremo 2058
 ========================================================= */
-(function autorun() {
-  console.log("🚀 [FAQ] Autorun avviato. DOM state:", document.readyState);
-
-  if (document.readyState === "loading") {
-    console.log("⏳ [FAQ] DOM non pronto → attendo DOMContentLoaded");
-    document.addEventListener("DOMContentLoaded", autorun, { once: true });
-    return;
-  }
-
-  console.log("🟢 [FAQ] DOM pronto → avvio initPage()");
-
-  try {
-    if (typeof initPage === "function") initPage();
-    else console.warn("❌ [FAQ] initPage() NON trovata");
-  } catch (e) {
-    console.error("🔥 [FAQ] Errore in initPage():", e);
-  }
-})();
-
-/* =========================================================
-   FUNZIONE PRINCIPALE
-========================================================= */
-function initPage() {
-  console.log("🏁 [FAQ] initPage() eseguita");
-
-  if (!window.__criticalReady) {
-    console.log("⏳ [FAQ] critical-ready NON ancora emesso → attendo evento");
-    document.addEventListener("critical-ready", initPage, { once: true });
-    return;
-  }
-
-  console.log("🟩 [FAQ] critical-ready già presente → avvio modulo FAQ");
-
+window.pageInit = function () {
+  console.log("🏁 [FAQ 2058] pageInit() avviata");
   avviaFAQ();
-}
+};
 
 /* =========================================================
-   CODICE ORIGINALE + BLINDATURE
+   MODULO FAQ (logica originale + blindature)
 ========================================================= */
 function avviaFAQ() {
   console.log("🔥 FAQ.js READY");
