@@ -1,8 +1,9 @@
-/* =========================================================
-   FILE: app/server/routes/newsletter.cjs
-   MODALITÀ: Java‑mode (funzioni, no Express)
-   DESCRIZIONE: Gestione iscrizione e disiscrizione newsletter
-========================================================= */
+/**
+ * FILE: app/server/routes/newsletter.cjs
+ * VERSIONE: 2027.3 — PATCH STABILE
+ * MODALITÀ: Java‑mode (funzioni, no Express)
+ * DESCRIZIONE: Gestione iscrizione e disiscrizione newsletter
+ */
 
 const axios = require("axios");
 const path = require("path");
@@ -36,12 +37,13 @@ function logNewsletter({ email, azione, origine = null, note = null }) {
 }
 
 /* =========================================================
-   FUNZIONE 1 — ISCRIZIONE NEWSLETTER
+   1) ISCRIZIONE NEWSLETTER
+   /api/newsletter/subscribe
 ========================================================= */
 async function newsletterSubscribe(req) {
   console.log("[DEBUG newsletter] newsletterSubscribe()");
 
-  const uid = req.uid;
+  const uid = req.uid || null;
   const rawEmail = req.body?.email || "";
   const email = String(rawEmail).trim().toLowerCase();
 
@@ -50,17 +52,39 @@ async function newsletterSubscribe(req) {
   }
 
   try {
-    if (typeof global.logEvent === "function") {
-      global.logEvent("newsletter_subscribe_attempt", { uid, email });
+    /* ---------------------------------------------------------
+       TRACKING
+    --------------------------------------------------------- */
+    try {
+      if (typeof global.logEvent === "function") {
+        global.logEvent("newsletter_subscribe_attempt", { uid, email });
+      }
+    } catch {}
+
+    /* ---------------------------------------------------------
+       BREVO
+    --------------------------------------------------------- */
+    try {
+      await syncBrevoUtenteStatoReale({
+        email,
+        newsletter: true
+      });
+    } catch (err) {
+      console.warn("⚠️ syncBrevoUtenteStatoReale fallito:", err?.message);
     }
 
-    await syncBrevoUtenteStatoReale({
-      email,
-      newsletter: true
-    });
+    /* ---------------------------------------------------------
+       GA4
+    --------------------------------------------------------- */
+    try {
+      trackGA4("newsletter_subscribe", { uid, email });
+    } catch (err) {
+      console.warn("⚠️ trackGA4 fallito:", err?.message);
+    }
 
-    trackGA4("newsletter_subscribe", { uid, email });
-
+    /* ---------------------------------------------------------
+       LOG
+    --------------------------------------------------------- */
     logNewsletter({
       email,
       azione: "subscribe",
@@ -68,7 +92,14 @@ async function newsletterSubscribe(req) {
       note: null
     });
 
-    await inviaEmailNewsletterBenvenuto({ email });
+    /* ---------------------------------------------------------
+       EMAIL BENVENUTO
+    --------------------------------------------------------- */
+    try {
+      await inviaEmailNewsletterBenvenuto({ email });
+    } catch (err) {
+      console.warn("⚠️ inviaEmailNewsletterBenvenuto fallito:", err?.message);
+    }
 
     return { success: true };
 
@@ -79,12 +110,13 @@ async function newsletterSubscribe(req) {
 }
 
 /* =========================================================
-   FUNZIONE 2 — DISISCRIZIONE NEWSLETTER
+   2) DISISCRIZIONE NEWSLETTER
+   /api/newsletter/unsubscribe
 ========================================================= */
 async function newsletterUnsubscribe(req) {
   console.log("[DEBUG newsletter] newsletterUnsubscribe()");
 
-  const uid = req.uid;
+  const uid = req.uid || null;
   const rawEmail = req.body?.email || "";
   const email = String(rawEmail).trim().toLowerCase();
 
@@ -93,13 +125,30 @@ async function newsletterUnsubscribe(req) {
   }
 
   try {
-    await syncBrevoUtenteStatoReale({
-      email,
-      newsletter: false
-    });
+    /* ---------------------------------------------------------
+       BREVO
+    --------------------------------------------------------- */
+    try {
+      await syncBrevoUtenteStatoReale({
+        email,
+        newsletter: false
+      });
+    } catch (err) {
+      console.warn("⚠️ syncBrevoUtenteStatoReale fallito:", err?.message);
+    }
 
-    trackGA4("newsletter_unsubscribe", { uid, email });
+    /* ---------------------------------------------------------
+       GA4
+    --------------------------------------------------------- */
+    try {
+      trackGA4("newsletter_unsubscribe", { uid, email });
+    } catch (err) {
+      console.warn("⚠️ trackGA4 fallito:", err?.message);
+    }
 
+    /* ---------------------------------------------------------
+       LOG
+    --------------------------------------------------------- */
     logNewsletter({
       email,
       azione: "unsubscribe",
@@ -107,7 +156,14 @@ async function newsletterUnsubscribe(req) {
       note: null
     });
 
-    await inviaEmailNewsletterUnsubscribe({ email });
+    /* ---------------------------------------------------------
+       EMAIL DISISCRIZIONE
+    --------------------------------------------------------- */
+    try {
+      await inviaEmailNewsletterUnsubscribe({ email });
+    } catch (err) {
+      console.warn("⚠️ inviaEmailNewsletterUnsubscribe fallito:", err?.message);
+    }
 
     return { success: true };
 
@@ -118,7 +174,8 @@ async function newsletterUnsubscribe(req) {
 }
 
 /* =========================================================
-   FUNZIONE 3 — STATO NEWSLETTER
+   3) STATO NEWSLETTER
+   /api/newsletter/status
 ========================================================= */
 async function newsletterStatus(req) {
   console.log("[DEBUG newsletter] newsletterStatus()");
@@ -154,23 +211,10 @@ async function newsletterStatus(req) {
 
 /* =========================================================
    ALIAS COMPATIBILITÀ FRONTEND
-   (ex Express: /newsletter/subscribe, /newsletter/unsubscribe, /newsletter/status)
 ========================================================= */
-
-async function subscribe(req) {
-  console.log("[DEBUG newsletter] alias subscribe() → newsletterSubscribe()");
-  return newsletterSubscribe(req);
-}
-
-async function unsubscribe(req) {
-  console.log("[DEBUG newsletter] alias unsubscribe() → newsletterUnsubscribe()");
-  return newsletterUnsubscribe(req);
-}
-
-async function status(req) {
-  console.log("[DEBUG newsletter] alias status() → newsletterStatus()");
-  return newsletterStatus(req);
-}
+async function subscribe(req) { return newsletterSubscribe(req); }
+async function unsubscribe(req) { return newsletterUnsubscribe(req); }
+async function status(req) { return newsletterStatus(req); }
 
 /* =========================================================
    EXPORT — stile Java
