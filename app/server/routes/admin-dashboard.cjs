@@ -1,8 +1,8 @@
 /* =========================================================
    FILE: app/server/routes/admin-dashboard.cjs
+   VERSIONE: 2027.4 — PATCH STABILE
    MODALITÀ: Java‑mode (funzioni, no Express)
    DESCRIZIONE: Dashboard Admin — Vendite + Ordini + KPI
-   PATCH 2027.1 — Auto‑Ottimizzazione Catalogo
 ========================================================= */
 
 const path = require("path");
@@ -10,34 +10,50 @@ const R = (p) => require(path.join(process.cwd(), "app/server", p));
 
 const db = R("db/database.cjs");
 const categorieRimborso = R("modules/rimborso-categorie.cjs");
-
-/* =========================================================
-   🔥 NUOVO: require pipeline auto‑ottimizzazione
-========================================================= */
 const autoOpt = R("services/catalogo-auto-opt.cjs");
 
 /* =========================================================
-   FUNZIONE: adminDashboard
-   (ex GET /admin/dashboard)
+   UTILS
+========================================================= */
+function safeParse(str) {
+  try { return JSON.parse(str); }
+  catch { return []; }
+}
+
+function safe(v, fallback = null) {
+  return v === undefined || v === null ? fallback : v;
+}
+
+/* =========================================================
+   FUNZIONE PRINCIPALE: adminDashboard
 ========================================================= */
 async function adminDashboard(req) {
   console.log("[DEBUG adminDashboard] chiamato adminDashboard()");
 
   try {
+    /* ---------------------------------------------------------
+       0) Controllo permessi
+    --------------------------------------------------------- */
     if (req.user?.ruolo !== "admin") {
-      console.log("[DEBUG adminDashboard] accesso negato");
       return { success: false, error: "Accesso negato" };
     }
 
+    /* ---------------------------------------------------------
+       1) Reset vendite se non ci sono ordini
+    --------------------------------------------------------- */
     const countOrdini = db.prepare(`SELECT COUNT(*) AS n FROM ordini`).get().n;
     if (countOrdini === 0) {
-      db.prepare(`DELETE FROM vendite`).run();
-      db.prepare(`DELETE FROM sqlite_sequence WHERE name='vendite'`).run();
+      try {
+        db.prepare(`DELETE FROM vendite`).run();
+        db.prepare(`DELETE FROM sqlite_sequence WHERE name='vendite'`).run();
+      } catch (err) {
+        console.warn("⚠️ Errore reset vendite:", err.message);
+      }
     }
 
-    /* =========================================================
-       KPI VENDITE
-    ========================================================== */
+    /* ---------------------------------------------------------
+       2) KPI VENDITE
+    --------------------------------------------------------- */
     const venditeKPI = db.prepare(`
       SELECT 
         COUNT(*) AS venditeTotali,
@@ -62,9 +78,9 @@ async function adminDashboard(req) {
       LIMIT 10
     `).all();
 
-    /* =========================================================
-       🔥 NUOVO: vendite per prodotto (per pipeline)
-    ========================================================== */
+    /* ---------------------------------------------------------
+       3) Vendite per prodotto (per pipeline)
+    --------------------------------------------------------- */
     const venditePerProdotto = db.prepare(`
       SELECT prodotto_id AS id, COUNT(*) AS vendite
       FROM vendite
@@ -74,9 +90,9 @@ async function adminDashboard(req) {
     const venditeMap = {};
     venditePerProdotto.forEach(v => venditeMap[v.id] = v.vendite);
 
-    /* =========================================================
-       UTM
-    ========================================================== */
+    /* ---------------------------------------------------------
+       4) UTM
+    --------------------------------------------------------- */
     const utm = db.prepare(`
       SELECT utm_source AS source, utm_medium AS medium, utm_campaign AS campaign,
              referrer, COUNT(*) AS vendite
@@ -86,9 +102,9 @@ async function adminDashboard(req) {
       ORDER BY vendite DESC
     `).all();
 
-    /* =========================================================
-       ORDINI COMPLETI
-    ========================================================== */
+    /* ---------------------------------------------------------
+       5) ORDINI COMPLETI
+    --------------------------------------------------------- */
     const ordini = db.prepare(`
       SELECT 
         o.id, o.utente_id, o.prodotti_json, o.totale_cent, o.stato,
@@ -109,9 +125,9 @@ async function adminDashboard(req) {
       annullati: ordini.filter(o => o.stato === "annullato").length
     };
 
-    /* =========================================================
-       ORIGINE SINTETICA
-    ========================================================== */
+    /* ---------------------------------------------------------
+       6) ORIGINE SINTETICA
+    --------------------------------------------------------- */
     const venditeByUID = db.prepare(`
       SELECT uid, origine, utm_source, utm_medium, utm_campaign, referrer
       FROM vendite
@@ -122,6 +138,7 @@ async function adminDashboard(req) {
 
     function origineSintetica(v) {
       if (!v) return "Direct";
+
       const src = (v.utm_source || "").toLowerCase();
       const med = (v.utm_medium || "").toLowerCase();
       const ref = (v.referrer || "").toLowerCase();
@@ -159,11 +176,6 @@ async function adminDashboard(req) {
       return match.categoria;
     }
 
-    function safeParse(str) {
-      try { return JSON.parse(str); }
-      catch { return []; }
-    }
-
     const ordiniParsed = ordini.map(o => {
       const prodotti = safeParse(o.prodotti_json);
       const uid = prodotti[0]?.uid || null;
@@ -181,9 +193,9 @@ async function adminDashboard(req) {
       };
     });
 
-    /* =========================================================
-       🔥 RISPOSTA COMPLETA
-    ========================================================== */
+    /* ---------------------------------------------------------
+       7) RISPOSTA COMPLETA
+    --------------------------------------------------------- */
     return {
       success: true,
       vendite: {
@@ -195,7 +207,7 @@ async function adminDashboard(req) {
         vendite30,
         topProdotti,
         utm,
-        venditePerProdotto: venditeMap   // 🔥 nuovo campo
+        venditePerProdotto: venditeMap
       },
       ordini: {
         kpi: ordiniKPI,
@@ -210,7 +222,7 @@ async function adminDashboard(req) {
 }
 
 /* =========================================================
-   🔥 NUOVO ENDPOINT: avvio pipeline auto‑ottimizzazione
+   AUTO‑OTTIMIZZAZIONE CATALOGO
 ========================================================= */
 async function autoOptimize(req) {
   console.log("🚀 [AUTO-OPT] Richiesta avvio pipeline");
@@ -224,10 +236,9 @@ async function autoOptimize(req) {
 }
 
 /* =========================================================
-   ALIAS INTELLIGENTE — compatibilità frontend
+   ALIAS COMPATIBILITÀ FRONTEND
 ========================================================= */
 async function getDashboard(req) {
-  console.log("[DEBUG adminDashboard] alias getDashboard() → adminDashboard()");
   return adminDashboard(req);
 }
 
@@ -237,5 +248,5 @@ async function getDashboard(req) {
 module.exports = {
   adminDashboard,
   getDashboard,
-  autoOptimize   // 🔥 nuovo export
+  autoOptimize
 };
