@@ -1,23 +1,26 @@
 // =========================================================
-// LOADER SUPREMO — PUBLIC MODELLO 2057 (JAVA-MODE SAFE)
+// LOADER SUPREMO — PUBLIC MODELLO 2058 (JAVA-MODE SAFE)
 // VERSIONE: TUTTO ON tranne tracking.js e dynamic-loader.js
+// Integra CSS Loader 2058 + Loader Universale 2058
 // =========================================================
 
-if (!window.__SUPREMO_PUBLIC_2057__) {
-  window.__SUPREMO_PUBLIC_2057__ = true;
+if (!window.__SUPREMO_PUBLIC_2058__) {
+  window.__SUPREMO_PUBLIC_2058__ = true;
 
   (function () {
 
-    const V = "2057";
+    const V = "2058";
+
+    console.log("⚡ [SUPREMO PUBLIC 2058] Avvio SUPREMO (Single Loader Architecture)");
 
     // ============================================================
-    // PATCH 2057 — GLOBAL FETCH LOCK
+    // GLOBAL FETCH LOCK
     // ============================================================
     (function() {
       if (window.__GLOBAL_FETCH_LOCK_PATCHED__) return;
       window.__GLOBAL_FETCH_LOCK_PATCHED__ = true;
 
-      console.log("🛡️ [SUPREMO PUBLIC 2057] Global Fetch Lock attivo");
+      console.log("🛡️ [SUPREMO 2058] Global Fetch Lock attivo");
 
       const originalFetch = window.fetch;
       const pending = new Map();
@@ -41,13 +44,13 @@ if (!window.__SUPREMO_PUBLIC_2057__) {
     })();
 
     // ============================================================
-    // PATCH 2057 — GLOBAL SCRIPT LOCK
+    // GLOBAL SCRIPT LOCK
     // ============================================================
     (function() {
       if (window.__GLOBAL_SCRIPT_LOCK_PATCHED__) return;
       window.__GLOBAL_SCRIPT_LOCK_PATCHED__ = true;
 
-      console.log("🛡️ [SUPREMO PUBLIC 2057] Global Script Lock attivo");
+      console.log("🛡️ [SUPREMO 2058] Global Script Lock attivo");
 
       const origCreate = document.createElement;
       const loaded = new Set();
@@ -75,13 +78,13 @@ if (!window.__SUPREMO_PUBLIC_2057__) {
     })();
 
     // ============================================================
-    // PATCH 2057 — GLOBAL EVENT LOCK
+    // GLOBAL EVENT LOCK
     // ============================================================
     (function() {
       if (window.__GLOBAL_EVENT_LOCK_PATCHED__) return;
       window.__GLOBAL_EVENT_LOCK_PATCHED__ = true;
 
-      console.log("🛡️ [SUPREMO PUBLIC 2057] Global Event Lock attivo");
+      console.log("🛡️ [SUPREMO 2058] Global Event Lock attivo");
 
       const emitted = new Set();
       const origDispatch = document.dispatchEvent;
@@ -102,15 +105,13 @@ if (!window.__SUPREMO_PUBLIC_2057__) {
     })();
 
     // ============================================================
-    // CACHE + LOCK
+    // CACHE + RUN STATE
     // ============================================================
     window.__SUPREMO_JS_CACHE__ = window.__SUPREMO_JS_CACHE__ || new Set();
     window.__SUPREMO_PUBLIC_RUN_STATE__ =
       window.__SUPREMO_PUBLIC_RUN_STATE__ || { running: false, done: false };
 
     window.__pageJsLoaded = window.__pageJsLoaded || false;
-
-    console.log("⚡ [SUPREMO PUBLIC 2057] Inizializzazione SUPREMO (NO TRACKING, NO DYNAMIC)…");
 
     // ============================================================
     // Utility caricamento script
@@ -119,25 +120,25 @@ if (!window.__SUPREMO_PUBLIC_2057__) {
       const key = src;
 
       if (window.__SUPREMO_JS_CACHE__.has(key)) {
-        console.log("⏭️ [SUPREMO PUBLIC] LOAD-SKIP:", key);
+        console.log("⏭️ [SUPREMO] LOAD-SKIP:", key);
         return Promise.resolve(true);
       }
 
       return new Promise(resolve => {
-        console.log("➡️ [SUPREMO PUBLIC] LOAD-REQUEST:", key);
+        console.log("➡️ [SUPREMO] LOAD-REQUEST:", key);
 
         const s = document.createElement("script");
         s.src = `${key}?v=${V}`;
         s.async = false;
 
         s.onload = () => {
-          console.log("✅ [SUPREMO PUBLIC] LOAD-OK:", key);
+          console.log("✅ [SUPREMO] LOAD-OK:", key);
           window.__SUPREMO_JS_CACHE__.add(key);
           resolve(true);
         };
 
         s.onerror = () => {
-          console.warn("❌ [SUPREMO PUBLIC] LOAD-FAIL:", key);
+          console.warn("❌ [SUPREMO] LOAD-FAIL:", key);
           resolve(false);
         };
 
@@ -146,7 +147,7 @@ if (!window.__SUPREMO_PUBLIC_2057__) {
     }
 
     // ============================================================
-    // Carrello solo dove serve
+    // Condizioni caricamento
     // ============================================================
     function shouldLoadCarrello() {
       const p = window.location.pathname;
@@ -158,9 +159,6 @@ if (!window.__SUPREMO_PUBLIC_2057__) {
       );
     }
 
-    // ============================================================
-    // SEO / Structured
-    // ============================================================
     function needSEO() {
       const p = window.location.pathname.toLowerCase();
       return (
@@ -168,8 +166,6 @@ if (!window.__SUPREMO_PUBLIC_2057__) {
         p.includes("index") ||
         p.includes("catalogo") ||
         p.includes("prodotto") ||
-        p.includes("top-recensioni") ||
-        p.includes("guide") ||
         p.includes("faq") ||
         p.includes("assistenza")
       );
@@ -179,13 +175,12 @@ if (!window.__SUPREMO_PUBLIC_2057__) {
       const p = window.location.pathname.toLowerCase();
       return (
         p.includes("catalogo") ||
-        p.includes("prodotto") ||
-        p.includes("recensioni")
+        p.includes("prodotto")
       );
     }
 
     // ============================================================
-    // Sequenza PUBLIC (NO tracking.js, NO dynamic-loader.js)
+    // SEQUENZA SUPREMO 2058
     // ============================================================
     async function runSupremoPublic() {
       const state = window.__SUPREMO_PUBLIC_RUN_STATE__;
@@ -193,26 +188,35 @@ if (!window.__SUPREMO_PUBLIC_2057__) {
       if (state.running || state.done) return;
       state.running = true;
 
-      console.log("🟦 [SUPREMO PUBLIC 2057] Sequenza SUPREMO avviata (NO TRACKING, NO DYNAMIC)");
+      console.log("🟦 [SUPREMO 2058] Sequenza SUPREMO avviata");
 
+      // 1) CRITICAL LOADER
       await loadScript("/loader.js");
+
+      // 2) AUTH
       await loadScript("/auth.js");
 
+      // 3) SEO / STRUCTURED
       if (needSEO()) await loadScript("/seo.js");
       if (needStructured()) await loadScript("/structured-data.js");
 
-      // ❌ tracking.js OFF
-      console.log("⛔ tracking.js DISATTIVATO");
-
-      // header.js viene caricato dal critical loader
+      // 4) HEADER (caricato anche dal critical loader)
       await loadScript("/header.js", "body");
 
+      // 5) CARRELLO
       if (shouldLoadCarrello()) {
         await loadScript("/carrello.js", "body");
       }
 
-      // ❌ dynamic-loader.js OFF
-      console.log("⛔ dynamic-loader.js DISATTIVATO");
+      // 6) CSS LOADER
+      console.log("🎨 [SUPREMO 2058] Trigger CSS Loader");
+      document.dispatchEvent(new Event("supremo-public-load-css"));
+
+      // 7) LOADER UNIVERSALE (JS pagina)
+      console.log("📦 [SUPREMO 2058] Trigger Loader Universale");
+      document.dispatchEvent(new Event("supremo-public-load-universale"));
+
+      console.log("🟩 [SUPREMO 2058] Sequenza completata");
 
       state.running = false;
       state.done = true;
@@ -227,5 +231,5 @@ if (!window.__SUPREMO_PUBLIC_2057__) {
 
   })();
 } else {
-  console.warn("SUPREMO PUBLIC 2057 già caricato, skip.");
+  console.warn("SUPREMO PUBLIC 2058 già caricato, skip.");
 }
