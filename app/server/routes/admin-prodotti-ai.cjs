@@ -1,18 +1,14 @@
 // FILE: app/server/routes/admin-prodotti-ai.cjs
-// PATH ASSOLUTO: app/server/routes/admin-prodotti-ai.cjs
-// VERSIONE PATCH: Competitor Intelligence 2027.1
-
-/* =========================================================
-   ADMIN PRODOTTI AI — Versione 2027.1
-   - getprodottidacreare
-   - approvaprodotto (con immagine + file + competitor intelligence)
-   - eliminaprodottodacreare
-========================================================= */
+// VERSIONE: Competitor Intelligence 2027.2 (PATCH STABILE)
+// FUNZIONI:
+// - getprodottidacreare
+// - approvaprodotto (con config + competitor + prezzo consigliato)
+// - eliminaprodottodacreare
 
 const path = require("path");
 const ROOT = process.cwd();
 
-// Loader assoluto corretto → punta a app/
+// Loader assoluto corretto
 const R = (p) => require(path.join(ROOT, "app", p));
 
 /* =========================================================
@@ -46,7 +42,13 @@ async function getprodottidacreare(req) {
 
 /* =========================================================
    2) APPROVA E PUBBLICA PRODOTTO
-   🔥 PATCH: integra campi competitor + prezzo consigliato
+   PATCH 2027.2:
+   - gestione config_json sicura
+   - prezzo consigliato
+   - campi competitor
+   - descrizione breve auto
+   - validazioni
+   - fix crash catalogo
 ========================================================= */
 async function approvaprodotto(req) {
   console.log("[ADMIN AI] approvaprodotto()");
@@ -65,12 +67,13 @@ async function approvaprodotto(req) {
     if (!p) return { success: false, error: "Prodotto da creare non trovato" };
 
     /* ---------------------------------------------------------
-       RECUPERO CONFIG + COMPETITOR (se presenti)
+       CONFIG JSON (safe parse)
     --------------------------------------------------------- */
     let config = {};
     try {
       config = JSON.parse(p.config_json || "{}");
-    } catch {
+    } catch (err) {
+      console.warn("⚠️ config_json corrotto → fallback {}");
       config = {};
     }
 
@@ -78,35 +81,30 @@ async function approvaprodotto(req) {
     const configSuggerita = config.suggerita || null;
 
     /* ---------------------------------------------------------
-       GENERA DESCRIZIONE BREVE AUTOMATICA
+       DESCRIZIONE BREVE (safe)
     --------------------------------------------------------- */
-    const descrizioneBreve = p.descrizione_tecnica
-      ? p.descrizione_tecnica.split(".")[0].slice(0, 180) + "..."
-      : "";
+    let descrizioneBreve = "";
+    if (p.descrizione_tecnica && typeof p.descrizione_tecnica === "string") {
+      descrizioneBreve =
+        p.descrizione_tecnica.split(".")[0].slice(0, 180).trim() + "...";
+    }
 
     /* ---------------------------------------------------------
-       COSTRUZIONE PRODOTTO FINALE (PATCH)
-       🔥 Inseriamo:
-       - prezzo consigliato
-       - configurazione consigliata
-       - campi competitor (se presenti)
+       COSTRUZIONE PRODOTTO FINALE
     --------------------------------------------------------- */
     const dataProd = {
-      titolo: p.titolo,
-      descrizione_lunga: p.descrizione_tecnica,
+      titolo: p.titolo || "Prodotto senza titolo",
+      descrizione_lunga: p.descrizione_tecnica || "",
       descrizione_breve: descrizioneBreve,
 
-      // 🔥 prezzo consigliato
       prezzo_cent: prezzoConsigliato,
 
       immagine: p.immagine_url || null,
       file_consegna_url: p.file_consegna_url || null,
       categoria: p.categoria || null,
 
-      // 🔥 config consigliata
       config_json: p.config_json || null,
 
-      // 🔥 campi competitor (se presenti)
       percentuale_competitor: p.percentuale_competitor || null,
       punteggio_saturazione: p.punteggio_saturazione || null,
       punteggio_opportunita: p.punteggio_opportunita || null,
@@ -114,9 +112,18 @@ async function approvaprodotto(req) {
     };
 
     /* ---------------------------------------------------------
-       SALVATAGGIO NEL CATALOGO
+       SALVATAGGIO NEL CATALOGO (safe)
     --------------------------------------------------------- */
-    const prodottoFinale = catalogo.saveProduct(dataProd);
+    let prodottoFinale = null;
+    try {
+      prodottoFinale = catalogo.saveProduct(dataProd);
+    } catch (err) {
+      console.error("❌ ERRORE catalogo.saveProduct:", err);
+      return {
+        success: false,
+        error: "Errore salvataggio prodotto nel catalogo"
+      };
+    }
 
     /* ---------------------------------------------------------
        MARCA COME PUBBLICATO
@@ -131,10 +138,14 @@ async function approvaprodotto(req) {
     /* ---------------------------------------------------------
        RIGENERA JSON MIRROR
     --------------------------------------------------------- */
-    await jsonGen.exportProducts();
-    await jsonGen.exportCategories();
-    await jsonGen.exportCatalog();
-    await jsonGen.exportProdottiDaCreare();
+    try {
+      await jsonGen.exportProducts();
+      await jsonGen.exportCategories();
+      await jsonGen.exportCatalog();
+      await jsonGen.exportProdottiDaCreare();
+    } catch (err) {
+      console.error("⚠️ ERRORE export JSON mirror:", err);
+    }
 
     return {
       success: true,
@@ -165,7 +176,11 @@ async function eliminaprodottodacreare(req) {
       WHERE id = ?
     `).run(id);
 
-    await jsonGen.exportProdottiDaCreare();
+    try {
+      await jsonGen.exportProdottiDaCreare();
+    } catch (err) {
+      console.error("⚠️ ERRORE exportProdottiDaCreare:", err);
+    }
 
     return { success: true };
 
