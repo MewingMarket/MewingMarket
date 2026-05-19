@@ -1,5 +1,6 @@
 /* =========================================================
    FILE: app/server/routes/api-vendite-download.cjs
+   VERSIONE: 2027.4 — PATCH STABILE
    MODALITÀ: Java‑mode (funzioni, no Express)
    DESCRIZIONE: Download sicuro dei prodotti acquistati
 ========================================================= */
@@ -22,22 +23,35 @@ function safeParse(str) {
 }
 
 /* =========================================================
+   Helper sicurezza path
+========================================================= */
+function sanitizeFilename(name) {
+  return name.replace(/[^a-zA-Z0-9._-]/g, "");
+}
+
+/* =========================================================
    FUNZIONE 1 — downloadAutenticato
 ========================================================= */
 async function downloadAutenticato(req) {
   console.log("[DEBUG download] downloadAutenticato()");
 
   try {
-    const userId = req.user.id;
-    const prodottoId = parseInt(req.params.id, 10);
+    if (!req.user?.id) {
+      return { success: false, error: "Utente non autenticato" };
+    }
 
-    if (!prodottoId) {
-      return { success: false, error: "ID prodotto mancante" };
+    const userId = req.user.id;
+    const prodottoId = Number(req.params?.id);
+
+    if (!prodottoId || isNaN(prodottoId)) {
+      return { success: false, error: "ID prodotto non valido" };
     }
 
     console.log("📥 Richiesta download prodotto:", prodottoId, "da utente:", userId);
 
-    // Verifica acquisto
+    /* ---------------------------------------------------------
+       1) Verifica acquisto
+    --------------------------------------------------------- */
     const ordini = db.prepare(`
       SELECT prodotti_json
       FROM ordini
@@ -49,7 +63,7 @@ async function downloadAutenticato(req) {
 
     for (const o of ordini) {
       const prodotti = safeParse(o.prodotti_json);
-      if (prodotti.some(p => p.prodotto_id === prodottoId)) {
+      if (prodotti.some(p => Number(p.prodotto_id) === prodottoId)) {
         trovato = true;
         break;
       }
@@ -60,7 +74,9 @@ async function downloadAutenticato(req) {
       return { success: false, error: "Non hai acquistato questo prodotto" };
     }
 
-    // Recupera info prodotto
+    /* ---------------------------------------------------------
+       2) Recupera info prodotto
+    --------------------------------------------------------- */
     const prodotto = db.prepare(`
       SELECT titolo, titolo_breve, file_consegna_url
       FROM prodotti
@@ -72,8 +88,12 @@ async function downloadAutenticato(req) {
       return { success: false, error: "File non trovato" };
     }
 
+    /* ---------------------------------------------------------
+       3) Normalizza filename
+    --------------------------------------------------------- */
     let raw = prodotto.file_consegna_url.trim();
     if (raw.startsWith("http")) raw = raw.split("/").pop();
+    raw = sanitizeFilename(raw);
 
     const filePath = path.join(FILES_DIR, raw);
 
@@ -81,11 +101,14 @@ async function downloadAutenticato(req) {
       return { success: false, error: "File non presente sul server" };
     }
 
-    const nomeDownload = (prodotto.titolo || prodotto.titolo_breve || "prodotto") + ".pdf";
+    const nomeDownload =
+      sanitizeFilename(prodotto.titolo || prodotto.titolo_breve || "prodotto") + ".pdf";
 
     console.log("⬇️ Download pronto:", nomeDownload);
 
-    // Java‑mode → ritorno dati, non stream
+    /* ---------------------------------------------------------
+       4) Java‑mode → ritorno dati, non stream
+    --------------------------------------------------------- */
     return {
       success: true,
       filePath,
@@ -99,16 +122,16 @@ async function downloadAutenticato(req) {
 }
 
 /* =========================================================
-   FUNZIONE 2 — downloadDirect
+   FUNZIONE 2 — downloadDirect (token)
 ========================================================= */
 async function downloadDirect(req) {
   console.log("[DEBUG download] downloadDirect()");
 
   try {
-    const token = req.params.token;
+    const token = req.params?.token;
 
-    if (!token) {
-      return { success: false, error: "Token mancante" };
+    if (!token || typeof token !== "string") {
+      return { success: false, error: "Token non valido" };
     }
 
     console.log("🔑 Download diretto con token:", token);
@@ -130,8 +153,11 @@ async function downloadDirect(req) {
       return { success: false, error: "Nessun prodotto associato all'ordine" };
     }
 
-    const prodottoId = prodotti[0].prodotto_id;
+    const prodottoId = Number(prodotti[0].prodotto_id);
 
+    /* ---------------------------------------------------------
+       Recupera info prodotto
+    --------------------------------------------------------- */
     const prodotto = db.prepare(`
       SELECT titolo, titolo_breve, file_consegna_url
       FROM prodotti
@@ -145,6 +171,7 @@ async function downloadDirect(req) {
 
     let raw = prodotto.file_consegna_url.trim();
     if (raw.startsWith("http")) raw = raw.split("/").pop();
+    raw = sanitizeFilename(raw);
 
     const filePath = path.join(FILES_DIR, raw);
 
@@ -152,7 +179,8 @@ async function downloadDirect(req) {
       return { success: false, error: "File non presente sul server" };
     }
 
-    const nomeDownload = (prodotto.titolo || prodotto.titolo_breve || "prodotto") + ".pdf";
+    const nomeDownload =
+      sanitizeFilename(prodotto.titolo || prodotto.titolo_breve || "prodotto") + ".pdf";
 
     console.log("⬇️ Download diretto pronto:", nomeDownload);
 
@@ -171,23 +199,19 @@ async function downloadDirect(req) {
 /* =========================================================
    ALIAS COMPATIBILITÀ FRONTEND
 ========================================================= */
-
 async function download(req) {
-  console.log("[DEBUG download] alias download() → downloadAutenticato()");
   return downloadAutenticato(req);
 }
 
 async function downloadDirectAlias(req) {
-  console.log("[DEBUG download] alias downloadDirectAlias() → downloadDirect()");
   return downloadDirect(req);
 }
 
 /* =========================================================
    NUOVO ALIAS — richiesto dalla diagnostica
-   /api/vendite/downloadFile
+   /api/vendite/downloadFile/:id
 ========================================================= */
 async function downloadFile(req) {
-  console.log("[DEBUG download] alias downloadFile() → downloadAutenticato()");
   return downloadAutenticato(req);
 }
 
