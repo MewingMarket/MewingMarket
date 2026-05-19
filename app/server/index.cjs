@@ -11,14 +11,14 @@ module.exports = {
   prodotti: {
     ...R("routes/api-prodotti-new.cjs"),
     ...R("routes/prodotti-ai.cjs"),
-    ...R("routes/product-page.cjs")               // pagina prodotto pubblica
+    ...R("routes/product-page.cjs") // pagina prodotto pubblica
   },
 
   /* ============================================================
      CATALOGO PERSONALIZZATO (endpoint /api/catalogo/...)
   ============================================================ */
   catalogo: {
-    ...R("routes/catalogo-personalizzato.cjs")    // ora il gruppo è "catalogo"
+    ...R("routes/catalogo-personalizzato.cjs")
   },
 
   /* ============================================================
@@ -164,11 +164,13 @@ module.exports = {
   ============================================================ */
   sitemap: {
     ...R("routes/sitemap.cjs")
+  },
+
+  /* ============================================================
+     AUTH
+  ============================================================ */
+  auth: {
+    ...R("routes/auth.cjs")
   }
-/* ============================================================
-   AUTH
-============================================================ */
-auth: {
-  ...R("routes/auth.cjs")
-},
+
 };
