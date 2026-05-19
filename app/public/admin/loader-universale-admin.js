@@ -1,62 +1,34 @@
 // =========================================================
-// LOADER UNIVERSALE ADMIN 2056 — FALLBACK DOM MODE (SLEEP)
-// Percorso reale: /app/public/admin/loader-universale-admin.js
-// Ruolo: SOLO FALLBACK, ma DISATTIVATO di default.
-// Attivabile con: window.__ENABLE_UNIVERSALE_ADMIN_FALLBACK__ = true
+// LOADER UNIVERSALE ADMIN — PATCH 2058 (A2 FORMATTATO)
+// Carica il JS della pagina admin in base a window.__PAGE_ID__
+// Percorso atteso: /admin/js/pagine/{page}.js
+// Emissione evento: admin-page-js-loaded
 // =========================================================
 
-if (window.__LOADER_UNIVERSALE_ADMIN_2056__) {
-  console.warn("[UNIVERSALE ADMIN 2056] Già caricato → skip");
-} else {
-  window.__LOADER_UNIVERSALE_ADMIN_2056__ = true;
+if (!window.__LOADER_UNIVERSALE_ADMIN_2058__) {
+  window.__LOADER_UNIVERSALE_ADMIN_2058__ = true;
 
-  // Flag globale: fallback disattivato di default
-  window.__ENABLE_UNIVERSALE_ADMIN_FALLBACK__ =
-    window.__ENABLE_UNIVERSALE_ADMIN_FALLBACK__ ?? false;
-
-  console.log(
-    "⚡ [UNIVERSALE ADMIN 2056] Loader universale ADMIN caricato (fallback attivo:",
-    window.__ENABLE_UNIVERSALE_ADMIN_FALLBACK__,
-    ")"
-  );
+  console.log("⚡ [UNIVERSALE ADMIN 2058] Loader universale ADMIN attivo");
 
   (function () {
 
-    const VERSION = "2056";
+    const VERSION = "2058";
 
-    // ============================================================
-    // SE FALLBACK È DISATTIVATO → NON FARE NULLA
-    // ============================================================
-    if (!window.__ENABLE_UNIVERSALE_ADMIN_FALLBACK__) {
-      console.log("⏸️ [UNIVERSALE ADMIN 2056] Modalità SLEEP → nessuna esecuzione");
-      document.addEventListener("supremo-admin-load-universale", () => {
-        console.log("⏸️ [UNIVERSALE ADMIN 2056] Evento ricevuto → fallback DISATTIVATO");
-      });
-      return; // STOP COMPLETO
-    }
-
-    // ============================================================
-    // FALLBACK ATTIVO — LOGICA COMPLETA
-    // ============================================================
-
-    // Cache locale per gli script caricati dall’universale
+    // Cache per evitare doppi caricamenti
     window.__UNIVERSALE_ADMIN_JS_CACHE__ =
       window.__UNIVERSALE_ADMIN_JS_CACHE__ || new Set();
 
-    // Stato esecuzione universale (solo fallback)
+    // Stato di esecuzione
     window.__UNIVERSALE_ADMIN_RUN_STATE__ =
       window.__UNIVERSALE_ADMIN_RUN_STATE__ || {
         running: false,
         done: false
       };
 
-    // Flag globali
-    window.__pageJsLoaded = window.__pageJsLoaded || false;
-
-    console.log("🟦 [UNIVERSALE ADMIN 2056] Fallback ATTIVO");
+    window.__adminPageJsLoaded = window.__adminPageJsLoaded || false;
 
     // ============================================================
-    // NORMALIZZAZIONE
+    // NORMALIZZAZIONE NOME PAGINA
     // ============================================================
     function normalizeName(name) {
       return name
@@ -68,50 +40,68 @@ if (window.__LOADER_UNIVERSALE_ADMIN_2056__) {
         .trim();
     }
 
-    function getPageBase() {
+    function getPageBaseFromPath() {
       const p = window.location.pathname.replace("/admin/", "");
 
       if (p === "" || p === "/") return "admin-index";
 
       const parts = p.split("/").filter(Boolean);
 
+      // Caso /admin/utenti/123
       if (parts.length >= 2 && /^\d+$/.test(parts[parts.length - 1])) {
         return normalizeName(parts[parts.length - 2]);
       }
 
+      // Caso /admin/dashboard/analytics
       if (parts.length >= 2 && !parts[parts.length - 1].includes(".")) {
         return normalizeName(parts.join("-"));
       }
 
+      // Caso /admin/ordini.html
       return normalizeName(parts.pop());
     }
 
+    function getPageId() {
+      if (typeof window.__PAGE_ID__ === "string" && window.__PAGE_ID__.trim()) {
+        return normalizeName(window.__PAGE_ID__);
+      }
+      return getPageBaseFromPath();
+    }
+
+    function getExpectedPageScript() {
+      const base = getPageId();
+      return {
+        base,
+        src: `/admin/js/pagine/${base}.js`
+      };
+    }
+
     // ============================================================
-    // CARICA SCRIPT (SAFE + CACHE LOCALE)
+    // CARICA SCRIPT (SAFE)
     // ============================================================
     function loadScript(src) {
       const key = src;
 
       if (window.__UNIVERSALE_ADMIN_JS_CACHE__.has(key)) {
-        console.log("⏭️ [UNIVERSALE ADMIN] LOAD-SKIP già caricato:", key);
+        console.log("⏭️ [UNIVERSALE ADMIN] LOAD-SKIP:", key);
         return Promise.resolve(true);
       }
 
       return new Promise(resolve => {
-        console.log("➡️ [UNIVERSALE ADMIN] LOAD-REQUEST", key);
+        console.log("➡️ [UNIVERSALE ADMIN] LOAD-REQUEST:", key);
 
         const s = document.createElement("script");
         s.src = `${key}?v=${VERSION}`;
         s.async = false;
 
         s.onload = () => {
-          console.log("✅ [UNIVERSALE ADMIN] LOAD-OK", key);
+          console.log("✅ [UNIVERSALE ADMIN] LOAD-OK:", key);
           window.__UNIVERSALE_ADMIN_JS_CACHE__.add(key);
           resolve(true);
         };
 
         s.onerror = () => {
-          console.warn("❌ [UNIVERSALE ADMIN] LOAD-FAIL", key);
+          console.warn("❌ [UNIVERSALE ADMIN] LOAD-FAIL:", key);
           resolve(false);
         };
 
@@ -120,61 +110,51 @@ if (window.__LOADER_UNIVERSALE_ADMIN_2056__) {
     }
 
     // ============================================================
-    // FALLBACK: CARICA JS DI PAGINA SOLO SE NON È GIÀ NEL DOM
+    // CARICA JS DI PAGINA SE NON È GIÀ PRESENTE
     // ============================================================
-    async function loadPageScriptIfNeeded(base) {
-      const pageScript = `/admin/${base}.js`;
-
+    async function loadPageScriptIfNeeded(expectedSrc) {
       if (
-        document.querySelector(`script[src="${pageScript}?v=${VERSION}"]`) ||
-        document.querySelector(`script[src="${pageScript}"]`)
+        document.querySelector(`script[src="${expectedSrc}?v=${VERSION}"]`) ||
+        document.querySelector(`script[src="${expectedSrc}"]`)
       ) {
-        console.log(`⏭️ [UNIVERSALE ADMIN] Script pagina già nel DOM → skip: ${pageScript}`);
+        console.log(`⏭️ [UNIVERSALE ADMIN] Script pagina già nel DOM → skip: ${expectedSrc}`);
         return true;
       }
 
-      console.log(`📦 [UNIVERSALE ADMIN] Script pagina NON presente → fallback loader: ${pageScript}`);
-      return await loadScript(pageScript);
+      console.log(`📦 [UNIVERSALE ADMIN] Script pagina NON presente → loader: ${expectedSrc}`);
+      return await loadScript(expectedSrc);
     }
 
     // ============================================================
-    // AVVIO (CON LOCK LOCALE)
+    // AVVIO LOADER UNIVERSALE ADMIN
     // ============================================================
     async function runUniversaleAdmin() {
       const state = window.__UNIVERSALE_ADMIN_RUN_STATE__;
 
-      if (state.done) {
-        console.log("⏭️ [UNIVERSALE ADMIN] run() già completato → skip");
-        return;
-      }
-      if (state.running) {
-        console.log("⏭️ [UNIVERSALE ADMIN] run() già in esecuzione → skip");
-        return;
-      }
+      if (state.done || state.running) return;
 
       state.running = true;
 
-      console.log("🟦 [UNIVERSALE ADMIN] Evento supremo-admin-load-universale → avvio fallback");
+      console.log("🟦 [UNIVERSALE ADMIN] Evento supremo-admin-load-universale → avvio");
 
-      const base = getPageBase();
-      console.log("🔍 [UNIVERSALE ADMIN] Pagina normalizzata:", base);
+      const { base, src: expectedPageScript } = getExpectedPageScript();
+      console.log("🔍 Pagina normalizzata:", base);
+      console.log("🔍 Script atteso:", expectedPageScript);
 
-      await loadPageScriptIfNeeded(base);
+      await loadPageScriptIfNeeded(expectedPageScript);
 
       state.running = false;
       state.done = true;
 
-      if (!window.__pageJsLoaded) {
-        console.log("🟩 [UNIVERSALE ADMIN] page-js-loaded (fallback universale)");
-        window.__pageJsLoaded = true;
-        document.dispatchEvent(new Event("page-js-loaded"));
-      } else {
-        console.log("🟩 [UNIVERSALE ADMIN] page-js-loaded era già presente → nessuna emissione");
+      if (!window.__adminPageJsLoaded) {
+        console.log("🟩 [UNIVERSALE ADMIN] admin-page-js-loaded");
+        window.__adminPageJsLoaded = true;
+        document.dispatchEvent(new Event("admin-page-js-loaded"));
       }
     }
 
     // ============================================================
-    // LISTENER FALLBACK
+    // LISTENER DA SUPREMO ADMIN
     // ============================================================
     document.addEventListener("supremo-admin-load-universale", runUniversaleAdmin);
 
