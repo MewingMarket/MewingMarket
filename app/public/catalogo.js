@@ -1,6 +1,6 @@
 /* =========================================================
    CATALOGO — UNIVERSAL JSON PATCH 2027.970
-   PATCH 2053 — Java-mode + Promo + Fix endpoint
+   PATCH 2057 — Java-mode + Promo corretta + Fix endpoint
 ========================================================= */
 
 console.log("📌 [CATALOGO] File caricato nel DOM");
@@ -33,7 +33,7 @@ function initPage() {
     return;
   }
 
-  avviaCatalogo();
+  avviaIlCatalogoOra();
 }
 
 /* =========================================================
@@ -78,37 +78,6 @@ function initCountdown() {
 
   update();
   countdownTimer = setInterval(update, 60000);
-}
-
-/* =========================================================
-   ⭐ CATALOGO PERSONALIZZATO (Java-mode)
-========================================================= */
-async function getCatalogoPersonalizzato() {
-  try {
-    console.log("🎯 [CATALOGO] Richiesta catalogo personalizzato…");
-
-    const data = await apiCatalogo("/api/catalogo/getCatalogoPersonalizzato", {
-      method: "GET"
-    });
-
-    if (!data) return null;
-
-    const prodotti = Array.isArray(data)
-      ? data
-      : (data.prodotti || data.data || []);
-
-    if (!prodotti.length) return null;
-
-    if (prodotti.some((p) => p.promo_attiva)) {
-      console.log("🎉 [CATALOGO] Promo attiva → uso catalogo personalizzato");
-      return prodotti;
-    }
-
-    return null;
-  } catch (err) {
-    console.warn("⚠️ [CATALOGO] Errore catalogo personalizzato:", err);
-    return null;
-  }
 }
 
 /* =========================================================
@@ -220,13 +189,61 @@ async function apiCatalogo(path, options = {}) {
     return null;
   }
 
-  return json.data;
+  // Ritorno l'oggetto intero, non solo data
+  return json;
 }
 
 /* =========================================================
-   CARICAMENTO CATALOGO
+   LOGICA CATALOGO: BASE + PROMO SOLO PER CHI LE HA
 ========================================================= */
+
+async function caricaCatalogoBase() {
+  const res = await apiCatalogo("/api/prodotti-new", { method: "GET" });
+  if (!res) return [];
+
+  const prodotti = Array.isArray(res)
+    ? res
+    : res.prodotti || res.data || [];
+
+  return prodotti || [];
+}
+
+async function caricaCatalogoPersonalizzato() {
+  console.log("🎯 [CATALOGO] Richiesta catalogo personalizzato…");
+
+  const res = await apiCatalogo("/api/catalogo/personalizzato", {
+    method: "GET"
+  });
+
+  if (!res) return null;
+
+  const prodotti = Array.isArray(res)
+    ? res
+    : res.prodotti || res.data || [];
+
+  if (!prodotti.length) return null;
+
+  if (prodotti.some((p) => p.promo_attiva)) {
+    console.log("🎉 [CATALOGO] Promo attiva → uso catalogo personalizzato");
+    return prodotti;
+  }
+
+  return null;
+}
+
+/* =========================================================
+   CARICAMENTO CATALOGO (FLOW CORRETTO)
+========================================================= */
+
+let __CATALOGO_GIA_CARICATO__ = false;
+
 async function avviaIlCatalogoOra() {
+  if (__CATALOGO_GIA_CARICATO__) {
+    console.log("♻️ [CATALOGO] Catalogo già caricato, skip");
+    return;
+  }
+  __CATALOGO_GIA_CARICATO__ = true;
+
   console.log("📥 [CATALOGO] Carico catalogo…");
 
   const grid =
@@ -239,25 +256,51 @@ async function avviaIlCatalogoOra() {
     return;
   }
 
-  let prodotti = null;
+  let prodotti = [];
 
-  // ⭐ Catalogo personalizzato
-  const promoCatalogo = await getCatalogoPersonalizzato();
-  if (promoCatalogo) {
-    prodotti = promoCatalogo;
-  } else {
-    const data = await apiCatalogo("/api/prodotti/getProdotti", {
-      method: "GET"
-    });
+  try {
+    // 1) Controllo utente loggato
+    const me = await apiCatalogo("/api/auth/me", { method: "GET" });
 
-    if (!data) {
-      grid.innerHTML = "<p>Errore nel caricamento del catalogo.</p>";
-      return;
+    const user = me && (me.user || me.data || null);
+    const isLogged = !!user;
+
+    if (!isLogged) {
+      console.log("👤 [CATALOGO] Utente NON loggato → catalogo base");
+      prodotti = await caricaCatalogoBase();
+    } else {
+      console.log("👤 [CATALOGO] Utente loggato:", user.id || user.email || "OK");
+
+      // 2) Controllo promo attiva
+      const promoRes = await apiCatalogo("/api/promo/attiva", {
+        method: "GET"
+      });
+
+      const hasPromo = promoRes && (promoRes.promo || promoRes.data);
+
+      if (!hasPromo) {
+        console.log("🎯 [CATALOGO] Nessuna promo attiva → catalogo base");
+        prodotti = await caricaCatalogoBase();
+      } else {
+        console.log("🎯 [CATALOGO] Promo attiva trovata → provo catalogo personalizzato");
+        const personalizzato = await caricaCatalogoPersonalizzato();
+
+        if (personalizzato && personalizzato.length) {
+          prodotti = personalizzato;
+        } else {
+          console.log("⚠️ [CATALOGO] Catalogo personalizzato vuoto → fallback catalogo base");
+          prodotti = await caricaCatalogoBase();
+        }
+      }
     }
+  } catch (err) {
+    console.error("🔥 [CATALOGO] Errore nel flusso catalogo:", err);
+    prodotti = await caricaCatalogoBase();
+  }
 
-    prodotti = Array.isArray(data)
-      ? data
-      : (data.prodotti || data.data || []);
+  if (!Array.isArray(prodotti) || !prodotti.length) {
+    grid.innerHTML = "<p>Nessun prodotto disponibile.</p>";
+    return;
   }
 
   window.prodottiOriginali = prodotti;
@@ -359,9 +402,9 @@ function setupFiltri() {
    INIZIALIZZAZIONE
 ========================================================= */
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", avviaIlCatalogoOra);
+  document.addEventListener("DOMContentLoaded", avviaIlCatalogoOra, { once: true });
 } else {
   avviaIlCatalogoOra();
 }
 
-document.addEventListener("critical-ready", avviaIlCatalogoOra);
+document.addEventListener("critical-ready", avviaIlCatalogoOra, { once: true });
