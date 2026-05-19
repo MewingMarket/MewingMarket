@@ -1,57 +1,12 @@
 /* =========================================================
-   ADMIN UTENTI — UNIVERSAL JSON PATCH 2027.970
-   PATCH 2050 — AUTORUN + DEBUG ESTESO
+   ADMIN UTENTI — Versione 2058 (Single Loader Architecture)
+   - Nessun autorun
+   - Nessun DOMContentLoaded
+   - Nessun critical-ready
+   - Esegue SOLO quando chiamato da Loader Universale Admin
 ========================================================= */
 
-console.log("📌 [ADMIN-UTENTI] File caricato nel DOM");
-
-// =========================================================
-// AUTORUN 2050 — parte SEMPRE, anche se il DOM è riscritto
-// =========================================================
-(function autorun() {
-  console.log("🚀 [ADMIN-UTENTI] Autorun avviato. DOM state:", document.readyState);
-
-  if (document.readyState === "loading") {
-    console.log("⏳ [ADMIN-UTENTI] DOM non pronto → attendo DOMContentLoaded");
-    document.addEventListener("DOMContentLoaded", autorun, { once: true });
-    return;
-  }
-
-  console.log("🟢 [ADMIN-UTENTI] DOM pronto → avvio initPage()");
-
-  try {
-    if (typeof initPage === "function") {
-      initPage();
-    } else {
-      console.warn("❌ [ADMIN-UTENTI] initPage() NON trovata → JS NON eseguito");
-    }
-  } catch (e) {
-    console.error("🔥 [ADMIN-UTENTI] Errore in initPage():", e);
-  }
-})();
-
-// =========================================================
-// FUNZIONE PRINCIPALE DELLA PAGINA
-// =========================================================
-function initPage() {
-  console.log("🏁 [ADMIN-UTENTI] initPage() eseguita");
-
-  // Se critical-ready non è ancora arrivato, aspettiamo
-  if (!window.__criticalReady) {
-    console.log("⏳ [ADMIN-UTENTI] critical-ready NON ancora emesso → attendo evento");
-    document.addEventListener("critical-ready", initPage, { once: true });
-    return;
-  }
-
-  console.log("🟩 [ADMIN-UTENTI] critical-ready già presente → avvio pagina");
-
-  /* =========================================================
-     EVENTO ORIGINALE
-  ========================================================== */
-  console.log("[ADMIN] Init admin-utenti.js (UNIVERSAL JSON)");
-  syncBrevoAuto();
-  caricaUtenti();
-}
+console.log("📌 [ADMIN-UTENTI 2058] File caricato");
 
 /* =========================================================
    Helper: Formattazione Data
@@ -86,7 +41,6 @@ async function adminApi(path, options = {}) {
 
   const res = await fetch(fullPath, { ...options, headers });
 
-  // Token scaduto
   if (res.status === 401 || res.status === 403) {
     console.warn("🔒 [ADMIN-UTENTI] Token scaduto → redirect login");
     localStorage.removeItem("token");
@@ -94,7 +48,6 @@ async function adminApi(path, options = {}) {
     return null;
   }
 
-  // universal-json
   let json;
   try {
     json = await res.json();
@@ -110,6 +63,51 @@ async function adminApi(path, options = {}) {
 
   return json.data;
 }
+
+/* =========================================================
+   PAGE INIT — chiamata da Loader Universale Admin 2058
+========================================================= */
+window.pageInit = function () {
+  console.log("🏁 [ADMIN-UTENTI 2058] pageInit() avviata");
+
+  syncBrevoAuto();
+  caricaUtenti();
+
+  /* =========================================================
+     LISTENERS (Blocca / Sblocca / Elimina)
+  ========================================================== */
+  document.addEventListener("click", async (e) => {
+    const email = e.target.dataset.email;
+    if (!email) return;
+
+    const btn = e.target;
+    let azione = "";
+
+    if (btn.classList.contains("btn-blocca")) azione = "bloccaUtente";
+    if (btn.classList.contains("btn-sblocca")) azione = "sbloccaUtente";
+    if (btn.classList.contains("btn-elimina")) {
+      if (!confirm(`Eliminare definitivamente ${email}?`)) return;
+      azione = "eliminaUtente";
+    }
+
+    if (!azione) return;
+
+    console.log(`⚡ [ADMIN-UTENTI] Azione: ${azione} → ${email}`);
+
+    const ok = await adminApi(`/api/admin/utenti/${azione}`, {
+      method: "POST",
+      body: JSON.stringify({ email })
+    });
+
+    if (ok) {
+      console.log("🟢 [ADMIN-UTENTI] Operazione OK → ricarico utenti");
+      caricaUtenti();
+    } else {
+      console.warn("❌ [ADMIN-UTENTI] Errore operazione");
+      alert("Errore durante l'operazione.");
+    }
+  });
+};
 
 /* =========================================================
    SYNC BREVO AUTOMATICO
@@ -199,36 +197,30 @@ async function caricaUtenti() {
 }
 
 /* =========================================================
-   LISTENERS (Blocca / Sblocca / Elimina)
+   KPI
 ========================================================= */
-document.addEventListener("click", async (e) => {
-  const email = e.target.dataset.email;
-  if (!email) return;
+function calcolaKPI(lista) {
+  return {
+    totali: lista.length,
+    iscrittiNL: lista.filter(u => u.iscritto).length,
+    bannati: lista.filter(u =>
+      u.bloccato &&
+      (!u.sbloccato || new Date(u.bloccato) > new Date(u.sbloccato))
+    ).length,
+    clientiBrevo: lista.filter(u => u.cliente_brevo === "presente").length,
+    clientiDB: lista.filter(u => u.cliente_db === "sì").length
+  };
+}
 
-  const btn = e.target;
-  let azione = "";
+function stampaKPI(kpi) {
+  const box = document.getElementById("kpi-container");
+  if (!box) return;
 
-  if (btn.classList.contains("btn-blocca")) azione = "bloccaUtente";
-  if (btn.classList.contains("btn-sblocca")) azione = "sbloccaUtente";
-  if (btn.classList.contains("btn-elimina")) {
-    if (!confirm(`Eliminare definitivamente ${email}?`)) return;
-    azione = "eliminaUtente";
-  }
-
-  if (!azione) return;
-
-  console.log(`⚡ [ADMIN-UTENTI] Azione: ${azione} → ${email}`);
-
-  const ok = await adminApi(`/api/admin/utenti/${azione}`, {
-    method: "POST",
-    body: JSON.stringify({ email })
-  });
-
-  if (ok) {
-    console.log("🟢 [ADMIN-UTENTI] Operazione OK → ricarico utenti");
-    caricaUtenti();
-  } else {
-    console.warn("❌ [ADMIN-UTENTI] Errore operazione");
-    alert("Errore durante l'operazione.");
-  }
-});
+  box.innerHTML = `
+    <div class="kpi-card"><h3>Totali</h3><p>${kpi.totali}</p></div>
+    <div class="kpi-card"><h3>Iscritti NL</h3><p>${kpi.iscrittiNL}</p></div>
+    <div class="kpi-card"><h3>Bannati</h3><p>${kpi.bannati}</p></div>
+    <div class="kpi-card"><h3>Clienti Brevo</h3><p>${kpi.clientiBrevo}</p></div>
+    <div class="kpi-card"><h3>Clienti DB</h3><p>${kpi.clientiDB}</p></div>
+  `;
+}
