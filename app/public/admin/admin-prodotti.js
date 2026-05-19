@@ -1,6 +1,5 @@
 // FILE: public/admin/admin-prodotti.js
 // PATH: public/admin/admin-prodotti.js
-
 /* =========================================================
    ADMIN PRODOTTI — Versione 2027.1 (AI + FILE + IMG + CONFIG)
    PATCH 2050 — AUTORUN + DEBUG ESTESO
