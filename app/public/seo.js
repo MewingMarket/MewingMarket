@@ -1,13 +1,10 @@
-// =========================================================
-// SEO DINAMICO COMPLETO – MEWINGMARKET (versione 2055)
-// Deterministico, no async IIFE, no race, no preload
-// =========================================================
+/* =========================================================
+   SEO DINAMICO – PATCH 2027.4
+   Compatibile con Java‑mode + Promo + Catalogo 2057
+========================================================= */
 
 (function () {
 
-  /* =========================================================
-     MICRO-WAIT per garantire che il critical abbia finito
-  ========================================================== */
   setTimeout(() => {
 
     /* =========================================================
@@ -79,20 +76,22 @@
     }
 
     /* =========================================================
-       PAGINA PRODOTTO (solo ID)
+       PAGINA PRODOTTO (ID)
     ========================================================== */
     if (id) {
-      fetch("/products.json", { cache: "no-store" })
-        .then(r => r.ok ? r.json() : null)
-        .then(products => {
-          if (!Array.isArray(products)) return;
+      fetch("/api/prodotti-new", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+      })
+        .then(r => r.json().catch(() => null))
+        .then(json => {
+          if (!json || !json.success || !Array.isArray(json.prodotti)) return;
 
-          const productData = products.find(pr => String(pr.id) === String(id));
-          if (!productData) return;
-
-          const p = productData;
+          const p = json.prodotti.find(pr => String(pr.id) === String(id));
+          if (!p) return;
 
           title = clean(p.titolo);
+
           description = clean(
             p.descrizioneEmail ||
             p.descrizioneBreve ||
@@ -100,11 +99,13 @@
             ""
           );
 
-          canonical = `https://www.mewingmarket.it/prodotto.html?id=${clean(id)}`;
+          canonical = `https://www.mewingmarket.it/prodotto.html?id=${id}`;
 
-          const img = safeURL(p.immagine);
+          const img = safeURL(p.immagine_url || p.immagine);
 
-          // OPEN GRAPH
+          /* =====================================================
+             OPEN GRAPH
+          ====================================================== */
           const ogTitle = document.getElementById("og-title");
           const ogDesc = document.getElementById("og-description");
           const ogUrl = document.getElementById("og-url");
@@ -115,7 +116,9 @@
           if (ogUrl) ogUrl.setAttribute("content", canonical);
           if (ogImg && img) ogImg.setAttribute("content", img);
 
-          // TWITTER
+          /* =====================================================
+             TWITTER
+          ====================================================== */
           const twTitle = document.getElementById("twitter-title");
           const twDesc = document.getElementById("twitter-description");
           const twImg = document.getElementById("twitter-image");
@@ -124,7 +127,7 @@
           if (twDesc) twDesc.setAttribute("content", description);
           if (twImg && img) twImg.setAttribute("content", img);
         })
-        .catch(err => console.error("Errore caricamento products.json:", err));
+        .catch(err => console.error("Errore SEO prodotti:", err));
     }
 
     /* =========================================================
@@ -138,6 +141,6 @@
     if (elDesc) elDesc.setAttribute("content", description);
     if (elCanonical) elCanonical.setAttribute("href", canonical);
 
-  }, 0); // micro-wait deterministico
+  }, 0);
 
 })();
