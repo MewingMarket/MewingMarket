@@ -1,58 +1,12 @@
 /* =========================================================
-   DASHBOARD ADMIN — UNIVERSAL JSON PATCH 2027.970
-   PATCH 2050 — AUTORUN + DEBUG ESTESO
+   DASHBOARD ADMIN PROFILO — Versione 2058 (Single Loader Architecture)
+   - Nessun autorun
+   - Nessun DOMContentLoaded
+   - Nessun critical-ready
+   - Esegue SOLO quando chiamato da Loader Universale Admin
 ========================================================= */
 
-console.log("📌 [DASHBOARD-ADMIN] File caricato nel DOM");
-
-// =========================================================
-// AUTORUN 2050 — parte SEMPRE, anche se il DOM è riscritto
-// =========================================================
-(function autorun() {
-  console.log("🚀 [DASHBOARD-ADMIN] Autorun avviato. DOM state:", document.readyState);
-
-  if (document.readyState === "loading") {
-    console.log("⏳ [DASHBOARD-ADMIN] DOM non pronto → attendo DOMContentLoaded");
-    document.addEventListener("DOMContentLoaded", autorun, { once: true });
-    return;
-  }
-
-  console.log("🟢 [DASHBOARD-ADMIN] DOM pronto → avvio initPage()");
-
-  try {
-    if (typeof initPage === "function") {
-      initPage();
-    } else {
-      console.warn("❌ [DASHBOARD-ADMIN] initPage() NON trovata → JS NON eseguito");
-    }
-  } catch (e) {
-    console.error("🔥 [DASHBOARD-ADMIN] Errore in initPage():", e);
-  }
-})();
-
-// =========================================================
-// FUNZIONE PRINCIPALE DELLA PAGINA
-// =========================================================
-function initPage() {
-  console.log("🏁 [DASHBOARD-ADMIN] initPage() eseguita");
-
-  // Se critical-ready non è ancora arrivato, aspettiamo
-  if (!window.__criticalReady) {
-    console.log("⏳ [DASHBOARD-ADMIN] critical-ready NON ancora emesso → attendo evento");
-    document.addEventListener("critical-ready", initPage, { once: true });
-    return;
-  }
-
-  console.log("🟩 [DASHBOARD-ADMIN] critical-ready già presente → avvio pagina");
-
-  /* =========================================================
-     EVENTO ORIGINALE
-  ========================================================== */
-  console.log("🔥 [DASHBOARD-ADMIN] Avvio dashboard admin");
-  popolaDatiAdmin();
-  setupCambioEmail();
-  setupCambioPassword();
-}
+console.log("📌 [DASHBOARD-ADMIN 2058] File caricato");
 
 /* =========================================================
    SANITIZZAZIONE
@@ -76,7 +30,6 @@ async function adminApi(path, options = {}) {
 
   const res = await fetch(path, { ...options, headers });
 
-  // Token scaduto
   if (res.status === 401 || res.status === 403) {
     console.warn("🔒 [DASHBOARD-ADMIN] Token scaduto → redirect login");
     localStorage.removeItem("token");
@@ -84,7 +37,6 @@ async function adminApi(path, options = {}) {
     return null;
   }
 
-  // universal-json
   let json;
   try {
     json = await res.json();
@@ -100,6 +52,17 @@ async function adminApi(path, options = {}) {
 
   return json.data;
 }
+
+/* =========================================================
+   PAGE INIT — chiamata da Loader Universale Admin 2058
+========================================================= */
+window.pageInit = function () {
+  console.log("🏁 [DASHBOARD-ADMIN 2058] pageInit() avviata");
+
+  popolaDatiAdmin();
+  setupCambioEmail();
+  setupCambioPassword();
+};
 
 /* =========================================================
    1) POPOLA DATI PROFILO ADMIN
