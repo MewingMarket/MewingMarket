@@ -1,19 +1,19 @@
 // =========================================================
-// AUTH.JS — Persistenza SQL-SYNC (PATCH 2056)
-// Java-mode SAFE: token unico, eventi ordinati, no doppie init
+// AUTH.JS — Persistenza SQL-SYNC (PATCH 2027.4)
+// Java‑mode SAFE: token unico, eventi ordinati, no doppie init
 // =========================================================
 
-console.log("🔐 [AUTH 2056] Sistema di autenticazione avviato");
+console.log("🔐 [AUTH 2027.4] Sistema di autenticazione avviato");
 
-if (window.__AUTH_2056_RUNNING__) {
-  console.warn("🔁 [AUTH 2056] Già inizializzato → skip");
+if (window.__AUTH_2027_RUNNING__) {
+  console.warn("🔁 [AUTH] Già inizializzato → skip");
 } else {
-  window.__AUTH_2056_RUNNING__ = true;
+  window.__AUTH_2027_RUNNING__ = true;
 
-  const APP_VERSION = "2056";
+  const APP_VERSION = "2027.4";
 
   // ============================================================
-  // WRAPPER UNIVERSALE
+  // WRAPPER UNIVERSALE API AUTH
   // ============================================================
   async function apiAuth(path, payload = {}) {
     try {
@@ -30,25 +30,25 @@ if (window.__AUTH_2056_RUNNING__) {
       });
 
       const json = await res.json().catch(() => null);
-      if (!json || !json.success) return null;
-      return json.data;
+      return json || { success: false };
 
     } catch (err) {
       console.warn("⚠️ [AUTH] Errore rete:", err);
-      return null;
+      return { success: false };
     }
   }
 
   // ============================================================
-  // LOG EVENTO
+  // LOG EVENTO (compatibile con utenti-evento.cjs)
   // ============================================================
-  async function logUserEvent(evento) {
+  async function logUserEvent(evento, note = null) {
     const email = localStorage.getItem("email") || "";
     if (!email) return;
 
     await apiAuth("/api/utenti/evento", {
       email,
       evento,
+      note,
       timestamp: new Date().toISOString()
     });
   }
@@ -111,7 +111,7 @@ if (window.__AUTH_2056_RUNNING__) {
       window.userData = null;
     }
 
-    console.log("[AUTH 2056] Stato:", {
+    console.log("[AUTH 2027.4] Stato:", {
       loggato: window.isLogged,
       admin: window.isAdmin,
       email: window.userEmail
@@ -121,13 +121,28 @@ if (window.__AUTH_2056_RUNNING__) {
   // ============================================================
   // INIT AUTH (ordinato)
   // ============================================================
-  function initAuth() {
+  async function initAuth() {
     loadSession();
 
     const reason = localStorage.getItem("logoutReason");
     if (reason === "deploy") {
-      logUserEvent("logout_automatico_deploy");
+      await logUserEvent("logout_automatico_deploy");
       localStorage.removeItem("logoutReason");
+    }
+
+    // 🔥 Recupera /me dal backend
+    if (window.isLogged) {
+      const me = await apiAuth("/api/utenti/me");
+
+      if (!me.success) {
+        console.warn("⚠️ Sessione scaduta → logout");
+        localStorage.removeItem("mewing_token");
+        window.isLogged = false;
+      } else {
+        localStorage.setItem("email", me.utente.email);
+        localStorage.setItem("ruolo", me.utente.ruolo);
+        localStorage.setItem("user", JSON.stringify(me.utente));
+      }
     }
 
     // Emesso SOLO dopo loadSession
