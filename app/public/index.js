@@ -1,6 +1,6 @@
 /* =========================================================
    HOME PREMIUM — UNIVERSAL JSON PATCH 2027.970
-   PATCH 2057 — SINGLE FETCH MODE + ANTI-LOOP DEFINITIVO
+   PATCH 2057 — SINGLE FETCH MODE + PROMO SOLO PER CHI LE HA
 ========================================================= */
 
 console.log("📌 [HOME] File caricato nel DOM");
@@ -8,7 +8,7 @@ console.log("📌 [HOME] File caricato nel DOM");
 /* =========================================================
    🔒 PATCH ANTI-LOOP 2051 (LOCK ESECUZIONE)
 ========================================================= */
-(function() {
+(function () {
   if (window.__HOME_PREMIUM_RUNNING__) {
     console.warn("🏁 [HOME] già in esecuzione → skip");
     return;
@@ -30,7 +30,7 @@ async function getCatalogoPersonalizzatoHomeCached() {
   console.log("🎯 [HOME] Prima richiesta catalogo personalizzato…");
 
   __CATALOGO_PROMISE__ = getCatalogoPersonalizzatoHome()
-    .catch(err => {
+    .catch((err) => {
       console.warn("⚠️ [HOME] Errore catalogo personalizzato:", err);
       __CATALOGO_PROMISE__ = null;
       return null;
@@ -45,12 +45,9 @@ async function getCatalogoPersonalizzatoHomeCached() {
 async function apiHome(path, options = {}) {
   console.log("🌐 [HOME] API:", path);
 
-  const token = localStorage.getItem("token");
-
   const headers = {
     "Content-Type": "application/json",
-    ...(options.headers || {}),
-    Authorization: token ? `Bearer ${token}` : ""
+    ...(options.headers || {})
   };
 
   let res;
@@ -58,13 +55,6 @@ async function apiHome(path, options = {}) {
     res = await fetch(path, { ...options, headers });
   } catch (err) {
     console.error("❌ [HOME] Errore rete:", err);
-    return null;
-  }
-
-  if (res.status === 401 || res.status === 403) {
-    console.warn("🔒 [HOME] Token scaduto → redirect login");
-    localStorage.removeItem("token");
-    window.location.href = "/login";
     return null;
   }
 
@@ -81,7 +71,8 @@ async function apiHome(path, options = {}) {
     return null;
   }
 
-  return json.data;
+  // ritorno l’oggetto intero, non solo data
+  return json;
 }
 
 /* =========================================================
@@ -125,26 +116,50 @@ function initPage() {
 
 /* =========================================================
    ⭐ PATCH PROMO — CATALOGO PERSONALIZZATO
+   (solo se utente loggato + promo attiva)
 ========================================================= */
 async function getCatalogoPersonalizzatoHome() {
   try {
-    console.log("🎯 [HOME] Richiesta catalogo personalizzato…");
+    console.log("🎯 [HOME] Verifica promo per homepage…");
 
-    const data = await apiHome("/api/catalogo/getCatalogoPersonalizzato", {
+    // 1) utente loggato?
+    const me = await apiHome("/api/auth/me", { method: "GET" });
+    const user = me && (me.user || me.data || null);
+    const isLogged = !!user;
+
+    if (!isLogged) {
+      console.log("👤 [HOME] Utente NON loggato → niente catalogo personalizzato");
+      return null;
+    }
+
+    console.log("👤 [HOME] Utente loggato:", user.id || user.email || "OK");
+
+    // 2) promo attiva?
+    const promoRes = await apiHome("/api/promo/attiva", { method: "GET" });
+    const hasPromo = promoRes && (promoRes.promo || promoRes.data);
+
+    if (!hasPromo) {
+      console.log("🎯 [HOME] Nessuna promo attiva → niente catalogo personalizzato");
+      return null;
+    }
+
+    console.log("🎯 [HOME] Promo attiva trovata → richiedo catalogo personalizzato");
+
+    // 3) catalogo personalizzato
+    const catRes = await apiHome("/api/catalogo/personalizzato", {
       method: "GET"
     });
 
-    if (!data) return null;
+    if (!catRes) return null;
 
-    const prodotti = Array.isArray(data)
-      ? data
-      : (data.prodotti || data.data || []);
+    const prodotti = Array.isArray(catRes)
+      ? catRes
+      : catRes.prodotti || catRes.data || [];
 
-    if (!prodotti.length) return null;
+    if (!prodotti || !prodotti.length) return null;
 
-    const conPromo = prodotti.filter(p => p.promo_attiva);
+    const conPromo = prodotti.filter((p) => p.promo_attiva);
     return conPromo.length ? conPromo : null;
-
   } catch (err) {
     console.warn("⚠️ [HOME] Errore catalogo personalizzato:", err);
     return null;
@@ -216,7 +231,7 @@ function initCountdownHome() {
 
   function update() {
     const now = new Date();
-    els.forEach(el => {
+    els.forEach((el) => {
       const end = new Date(el.dataset.scadenza);
       const diff = end - now;
 
@@ -238,26 +253,47 @@ function initCountdownHome() {
 
 /* =========================================================
    ⭐ AVVIO HOMEPAGE — SINGLE FETCH MODE
+   - Se promo valida → usa catalogo personalizzato
+   - Altrimenti → /api/prodotti-new (catalogo base)
 ========================================================= */
 async function avviaHomepage() {
   console.log("🔥 home-premium.js READY — Avvio sezioni homepage");
 
-  // ============================
-  // 1) FETCH UNICA
-  // ============================
-  let data = await getCatalogoPersonalizzatoHomeCached();
-  if (!data) {
-    data = await apiHome("/api/prodotti/getProdotti", { method: "GET" });
+  let prodotti = null;
+
+  try {
+    // 1) provo catalogo personalizzato (solo se utente + promo)
+    let data = await getCatalogoPersonalizzatoHomeCached();
+
+    if (!data) {
+      console.log("⚪ [HOME] Nessun catalogo personalizzato → uso catalogo base");
+      const baseRes = await apiHome("/api/prodotti-new", { method: "GET" });
+      if (!baseRes) {
+        console.warn("⚠️ [HOME] Nessun dato disponibile dal catalogo base");
+        return;
+      }
+
+      prodotti = Array.isArray(baseRes)
+        ? baseRes
+        : baseRes.prodotti || baseRes.data || [];
+    } else {
+      prodotti = Array.isArray(data)
+        ? data
+        : data.prodotti || data.data || [];
+    }
+  } catch (err) {
+    console.error("🔥 [HOME] Errore nel flusso homepage:", err);
+    const baseRes = await apiHome("/api/prodotti-new", { method: "GET" });
+    if (!baseRes) return;
+    prodotti = Array.isArray(baseRes)
+      ? baseRes
+      : baseRes.prodotti || baseRes.data || [];
   }
 
-  if (!data) {
-    console.warn("⚠️ [HOME] Nessun dato disponibile");
+  if (!Array.isArray(prodotti) || !prodotti.length) {
+    console.warn("⚠️ [HOME] Nessun prodotto disponibile");
     return;
   }
-
-  const products = Array.isArray(data)
-    ? data
-    : (data.prodotti || data.data || []);
 
   // ============================
   // 2) TOP 3 PRODOTTI
@@ -268,7 +304,7 @@ async function avviaHomepage() {
   if (grid) {
     grid.innerHTML = "";
 
-    products.slice(0, 3).forEach((p) => {
+    prodotti.slice(0, 3).forEach((p) => {
       const wrapper = document.createElement("div");
       wrapper.innerHTML = cardHTMLHome(p);
       grid.appendChild(wrapper.firstElementChild);
@@ -282,9 +318,9 @@ async function avviaHomepage() {
   // ============================
   console.log("🖼️ [HOME] Rendering slider hero…");
 
-  const images = products
-    .map(p => p.immagine_url || p.immagine)
-    .filter(img => img && img.length > 5);
+  const images = prodotti
+    .map((p) => p.immagine_url || p.immagine)
+    .filter((img) => img && img.length > 5);
 
   const slider = document.getElementById("hero-slider");
   if (slider && images.length > 0) {
