@@ -1,7 +1,6 @@
 /* =========================================================
-   PRODOTTO.JS — UNIVERSAL JSON PATCH 2027.970
-   SQL SYNC + YouTube + Acquista Ora
-   PATCH 2057 — PROMO SOLO PER CHI LE HA + FIX API
+   PRODOTTO.JS — UNIVERSAL JSON PATCH 2027.4
+   Compatibile con backend 2027.3
 ========================================================= */
 
 console.log("📌 [PRODOTTO] File caricato nel DOM");
@@ -10,158 +9,94 @@ console.log("📌 [PRODOTTO] File caricato nel DOM");
    WRAPPER UNIVERSALE
 ========================================================= */
 async function apiProdotto(path, options = {}) {
-  console.log("🌐 [PRODOTTO] API:", path);
-
   const headers = {
     "Content-Type": "application/json",
     ...(options.headers || {})
   };
 
-  let res;
   try {
-    res = await fetch(path, { ...options, headers });
+    const res = await fetch(path, { ...options, headers });
+    const json = await res.json().catch(() => null);
+    return json || { success: false };
   } catch (err) {
     console.error("❌ [PRODOTTO] Errore rete:", err);
-    return null;
+    return { success: false };
   }
-
-  let json;
-  try {
-    json = await res.json();
-  } catch (e) {
-    console.error("❌ [PRODOTTO] Risposta NON JSON da", path);
-    return null;
-  }
-
-  if (!json.success) {
-    console.warn("⚠️ [PRODOTTO] Errore API:", json.error || json.raw);
-    return null;
-  }
-
-  // Ritorno l'oggetto intero, non solo data
-  return json;
 }
 
 /* =========================================================
-   AUTORUN 2050 — parte SEMPRE
+   AUTORUN
 ========================================================= */
 (function autorun() {
-  console.log("🚀 [PRODOTTO] Autorun avviato. DOM state:", document.readyState);
-
   if (document.readyState === "loading") {
-    console.log("⏳ [PRODOTTO] DOM non pronto → attendo DOMContentLoaded");
     document.addEventListener("DOMContentLoaded", autorun, { once: true });
     return;
   }
-
-  console.log("🟢 [PRODOTTO] DOM pronto → avvio initPage()");
-
-  try {
-    if (typeof initPage === "function") initPage();
-    else console.warn("❌ [PRODOTTO] initPage() NON trovata");
-  } catch (e) {
-    console.error("🔥 [PRODOTTO] Errore in initPage():", e);
-  }
+  initPage();
 })();
 
 /* =========================================================
-   FUNZIONE PRINCIPALE
+   INIT PAGE
 ========================================================= */
 function initPage() {
-  console.log("🏁 [PRODOTTO] initPage() eseguita");
-
   if (!window.__criticalReady) {
-    console.log("⏳ [PRODOTTO] critical-ready NON ancora emesso → attendo evento");
     document.addEventListener("critical-ready", initPage, { once: true });
     return;
   }
-
-  console.log("🟩 [PRODOTTO] critical-ready già presente → avvio caricamento prodotto");
-
   if (typeof caricaDettaglioProdotto === "function") {
     caricaDettaglioProdotto();
-  } else {
-    console.warn("❌ [PRODOTTO] caricaDettaglioProdotto() NON definita");
   }
 }
 
 /* =========================================================
-   ⭐ PATCH PROMO — PRODOTTO PERSONALIZZATO (Java-mode)
-   - Usa promo SOLO se:
-   - utente loggato
-   - ha promo attiva
-   - poi chiama /api/catalogo/personalizzato
+   ⭐ PATCH PROMO — PRODOTTO PERSONALIZZATO
 ========================================================= */
 async function getProdottoPersonalizzato(id) {
   try {
-    console.log("🎯 [PRODOTTO] Verifica promo per prodotto ID:", id);
+    console.log("🎯 [PRODOTTO] Verifica promo per prodotto:", id);
 
-    // 1) Controllo utente loggato
-    const me = await apiProdotto("/api/auth/me", { method: "GET" });
-    const user = me && (me.user || me.data || null);
-    const isLogged = !!user;
-
-    if (!isLogged) {
-      console.log("👤 [PRODOTTO] Utente NON loggato → niente promo");
+    // 1) /api/utenti/me (FIX endpoint)
+    const me = await apiProdotto("/api/utenti/me", { method: "POST" });
+    if (!me.success || !me.utente) {
+      console.log("👤 Utente NON loggato → niente promo");
       return null;
     }
 
-    console.log("👤 [PRODOTTO] Utente loggato:", user.id || user.email || "OK");
-
-    // 2) Controllo promo attiva
-    const promoRes = await apiProdotto("/api/promo/attiva", {
-      method: "GET"
-    });
-
-    const hasPromo = promoRes && (promoRes.promo || promoRes.data);
-
-    if (!hasPromo) {
-      console.log("🎯 [PRODOTTO] Nessuna promo attiva → niente prodotto personalizzato");
+    // 2) /api/promo/attiva
+    const promoRes = await apiProdotto("/api/promo/attiva", { method: "POST" });
+    if (!promoRes.success || !promoRes.promo) {
+      console.log("🎯 Nessuna promo attiva");
       return null;
     }
 
-    console.log("🎯 [PRODOTTO] Promo attiva trovata → richiedo catalogo personalizzato");
-
-    // 3) Catalogo personalizzato
+    // 3) /api/catalogo/personalizzato
     const catRes = await apiProdotto("/api/catalogo/personalizzato", {
-      method: "GET"
+      method: "POST"
     });
 
-    if (!catRes) {
-      console.log("ℹ️ [PRODOTTO] Nessun catalogo personalizzato disponibile");
+    if (!catRes.success || !Array.isArray(catRes.prodotti)) {
+      console.log("ℹ️ Catalogo personalizzato non disponibile");
       return null;
     }
 
-    const prodotti = Array.isArray(catRes)
-      ? catRes
-      : catRes.prodotti || catRes.data || [];
-
-    if (!prodotti || !prodotti.length) {
-      console.log("ℹ️ [PRODOTTO] Catalogo personalizzato vuoto");
-      return null;
-    }
-
-    const p = prodotti.find((x) => String(x.id) === String(id));
+    const p = catRes.prodotti.find(x => String(x.id) === String(id));
 
     if (p && p.promo_attiva) {
-      console.log("🎉 [PRODOTTO] Promo attiva → uso prodotto personalizzato");
+      console.log("🎉 Promo attiva → uso prodotto personalizzato");
       return p;
     }
 
-    console.log("ℹ️ [PRODOTTO] Nessuna promo attiva per questo ID");
     return null;
   } catch (err) {
-    console.warn("⚠️ [PRODOTTO] Errore prodotto personalizzato:", err);
+    console.warn("⚠️ Errore prodotto personalizzato:", err);
     return null;
   }
 }
 
 /* =========================================================
-   ⭐ PATCH PROMO — RENDER PRODOTTO
+   ⭐ RENDER PRODOTTO
 ========================================================= */
 function renderProdotto(p) {
-  console.log("🎨 [PRODOTTO] renderProdotto()", p);
-
   const elTitolo = document.getElementById("prodotto-titolo");
   const elSub = document.getElementById("prodotto-subtitle");
   const elDesc = document.getElementById("prodotto-descrizione");
@@ -199,101 +134,48 @@ function renderProdotto(p) {
     badge.textContent = p.promo_badge || "Promo";
     heroLeft.appendChild(badge);
   }
-
-  if (p.promo_scadenza) {
-    const countdown = document.createElement("div");
-    countdown.className = "promo-countdown";
-    countdown.dataset.scadenza = p.promo_scadenza;
-    elPrezzo.insertAdjacentElement("afterend", countdown);
-    initCountdownProdotto();
-  }
 }
 
 /* =========================================================
-   ⭐ PATCH PROMO — COUNTDOWN
-========================================================= */
-function initCountdownProdotto() {
-  const el = document.querySelector(".promo-countdown");
-  if (!el) return;
-
-  function update() {
-    const end = new Date(el.dataset.scadenza);
-    const now = new Date();
-    const diff = end - now;
-
-    if (diff <= 0) {
-      el.textContent = "Promo scaduta";
-      return;
-    }
-
-    const h = Math.floor(diff / 3600000);
-    const m = Math.floor((diff % 3600000) / 60000);
-
-    el.textContent = `Termina tra ${h}h ${m}m`;
-  }
-
-  update();
-  setInterval(update, 60000);
-}
-
-/* =========================================================
-   ⭐ PATCH PROMO — OVERRIDE caricaDettaglioProdotto()
-   - Se promo valida → usa prodotto personalizzato
-   - Altrimenti → fallback alla versione SQL originale
+   ⭐ OVERRIDE caricaDettaglioProdotto()
 ========================================================= */
 if (typeof caricaDettaglioProdotto === "function") {
-  const _caricaDettaglioProdottoOriginale = caricaDettaglioProdotto;
+  const _old = caricaDettaglioProdotto;
 
   caricaDettaglioProdotto = async function () {
-    console.log("🧪 [PRODOTTO] Patch PROMO attiva");
-
     const params = new URLSearchParams(window.location.search);
     const id = params.get("id");
 
-    if (!id) {
-      console.warn("⚠️ [PRODOTTO] Nessun ID prodotto in querystring");
-      return _caricaDettaglioProdottoOriginale();
-    }
+    if (!id) return _old();
 
     const promoProdotto = await getProdottoPersonalizzato(id);
+
     if (promoProdotto) {
-      console.log("🟢 [PRODOTTO] Uso versione personalizzata");
       renderProdotto(promoProdotto);
       setupAcquistoDiretto(promoProdotto);
       return;
     }
 
-    console.log("⚪ [PRODOTTO] Nessuna promo → uso SQL normale");
-    await _caricaDettaglioProdottoOriginale();
+    await _old();
   };
-} else {
-  console.warn("⚠️ [PRODOTTO] caricaDettaglioProdotto originale NON definita, patch PROMO non applicata");
 }
 
 /* =========================================================
-   ACQUISTA ORA → Carrello + Checkout
+   ACQUISTA ORA
 ========================================================= */
 function setupAcquistoDiretto(p) {
-  const btnAcquista = document.getElementById("btn-acquista-hero");
+  const btn = document.getElementById("btn-acquista-hero");
+  if (!btn) return;
 
-  if (!btnAcquista) {
-    console.warn("⚠️ [PRODOTTO] btn-acquista-hero NON trovato");
-    return;
-  }
-
-  btnAcquista.onclick = () => {
-    console.log("🛒 [PRODOTTO] Click su Acquista Ora");
-
+  btn.onclick = () => {
     const prodCarrello = {
       id: p.id,
       titolo: p.titolo,
       prezzo_cent: p.promo_attiva
         ? p.prezzo_scontato_cent
-        : p.prezzo_cent || Math.round(Number(p.prezzo) * 100),
+        : p.prezzo_cent,
       immagine: p.immagine_url || p.immagine || "/placeholder.webp"
     };
-
-    console.log("📦 [PRODOTTO] Aggiungo al carrello:", prodCarrello);
 
     if (typeof window.aggiungiAlCarrello === "function") {
       window.aggiungiAlCarrello(prodCarrello);
