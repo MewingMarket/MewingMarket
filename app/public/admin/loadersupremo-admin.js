@@ -1,31 +1,38 @@
 // =========================================================
-// LOADER SUPREMO — ADMIN MODELLO 2057 (JAVA-MODE ORDINATO)
-// Modalità STANDBY: il file è completo ma NON esegue nulla
-// finché non viene attivato manualmente.
+// LOADER SUPREMO — ADMIN MODELLO 2058 (JAVA-MODE ORDINATO)
+// Modalità STANDBY: se __SUPREMO_ADMIN_STANDBY__ === true
+// NON parte in auto, ma puoi chiamare window.runSupremoAdmin2058()
+// Integra Loader Universale Admin 2058 + CSS Loader Admin 2058
 // =========================================================
 
-if (!window.__SUPREMO_ADMIN_LOADER_2057__) {
-  window.__SUPREMO_ADMIN_LOADER_2057__ = true;
+if (!window.__SUPREMO_ADMIN_LOADER_2058__) {
+  window.__SUPREMO_ADMIN_LOADER_2058__ = true;
 
-  // Flag globale: se true → NON esegue auto-run
+  // Flag globale: se true → niente auto-run
   window.__SUPREMO_ADMIN_STANDBY__ =
     window.__SUPREMO_ADMIN_STANDBY__ ?? false;
 
   (function () {
 
-    const V = "2057";
+    const V = "2058";
+
+    console.log(
+      "⚡ [SUPREMO ADMIN 2058] Loader admin caricato (standby:",
+      window.__SUPREMO_ADMIN_STANDBY__,
+      ")"
+    );
 
     // ============================================================
-    // PATCH 2057 — GLOBAL FETCH LOCK (ANTI-DUPLICAZIONE)
+    // GLOBAL FETCH LOCK (condiviso, ma idempotente)
     // ============================================================
     (function() {
       if (window.__GLOBAL_FETCH_LOCK_PATCHED__) return;
       window.__GLOBAL_FETCH_LOCK_PATCHED__ = true;
 
-      console.log("🛡️ [SUPREMO ADMIN 2057] Global Fetch Lock attivo");
+      console.log("🛡️ [SUPREMO ADMIN 2058] Global Fetch Lock attivo");
 
       const originalFetch = window.fetch;
-      const pending = new Map(); // url → Promise
+      const pending = new Map();
 
       window.fetch = function(url, options = {}) {
         const key = typeof url === "string" ? url : url.url;
@@ -46,13 +53,13 @@ if (!window.__SUPREMO_ADMIN_LOADER_2057__) {
     })();
 
     // ============================================================
-    // PATCH 2057 — GLOBAL SCRIPT LOCK (ANTI-DUPLICAZIONE SCRIPT)
+    // GLOBAL SCRIPT LOCK
     // ============================================================
     (function() {
       if (window.__GLOBAL_SCRIPT_LOCK_PATCHED__) return;
       window.__GLOBAL_SCRIPT_LOCK_PATCHED__ = true;
 
-      console.log("🛡️ [SUPREMO ADMIN 2057] Global Script Lock attivo");
+      console.log("🛡️ [SUPREMO ADMIN 2058] Global Script Lock attivo");
 
       const origCreate = document.createElement;
       const loaded = new Set();
@@ -80,13 +87,13 @@ if (!window.__SUPREMO_ADMIN_LOADER_2057__) {
     })();
 
     // ============================================================
-    // PATCH 2057 — GLOBAL EVENT LOCK (ANTI-DUPLICAZIONE EVENTI)
+    // GLOBAL EVENT LOCK
     // ============================================================
     (function() {
       if (window.__GLOBAL_EVENT_LOCK_PATCHED__) return;
       window.__GLOBAL_EVENT_LOCK_PATCHED__ = true;
 
-      console.log("🛡️ [SUPREMO ADMIN 2057] Global Event Lock attivo");
+      console.log("🛡️ [SUPREMO ADMIN 2058] Global Event Lock attivo");
 
       const emitted = new Set();
       const origDispatch = document.dispatchEvent;
@@ -94,7 +101,11 @@ if (!window.__SUPREMO_ADMIN_LOADER_2057__) {
       document.dispatchEvent = function(ev) {
         const name = ev.type;
 
-        if (name === "critical-ready" || name === "page-js-loaded") {
+        if (
+          name === "critical-ready" ||
+          name === "page-js-loaded" ||
+          name === "admin-page-js-loaded"
+        ) {
           if (emitted.has(name)) {
             console.warn("⛔ [EVENT-LOCK] Evento già emesso:", name);
             return true;
@@ -107,22 +118,19 @@ if (!window.__SUPREMO_ADMIN_LOADER_2057__) {
     })();
 
     // ============================================================
-    // CACHE + LOCK LOCALE
+    // CACHE + RUN STATE
     // ============================================================
-    window.__SUPREMO_JS_CACHE__ = window.__SUPREMO_JS_CACHE__ || new Set();
+    window.__SUPREMO_ADMIN_JS_CACHE__ =
+      window.__SUPREMO_ADMIN_JS_CACHE__ || new Set();
+
     window.__SUPREMO_ADMIN_RUN_STATE__ =
       window.__SUPREMO_ADMIN_RUN_STATE__ || {
         running: false,
         done: false
       };
 
-    window.__LOADER_UNIVERSALE_ADMIN_CARICATO__ =
-      window.__LOADER_UNIVERSALE_ADMIN_CARICATO__ || false;
-
     window.__pageJsLoaded = window.__pageJsLoaded || false;
     window.__criticalReady = window.__criticalReady || false;
-
-    console.log("⚡ [SUPREMO ADMIN 2057] Loader admin caricato (standby:", window.__SUPREMO_ADMIN_STANDBY__, ")");
 
     // ============================================================
     // Utility caricamento script
@@ -130,7 +138,7 @@ if (!window.__SUPREMO_ADMIN_LOADER_2057__) {
     function loadScript(src, where = "head") {
       const key = src;
 
-      if (window.__SUPREMO_JS_CACHE__.has(key)) {
+      if (window.__SUPREMO_ADMIN_JS_CACHE__.has(key)) {
         console.log("⏭️ [SUPREMO ADMIN] LOAD-SKIP:", key);
         return Promise.resolve(true);
       }
@@ -144,7 +152,7 @@ if (!window.__SUPREMO_ADMIN_LOADER_2057__) {
 
         s.onload = () => {
           console.log("✅ [SUPREMO ADMIN] LOAD-OK:", key);
-          window.__SUPREMO_JS_CACHE__.add(key);
+          window.__SUPREMO_ADMIN_JS_CACHE__.add(key);
           resolve(true);
         };
 
@@ -158,69 +166,44 @@ if (!window.__SUPREMO_ADMIN_LOADER_2057__) {
     }
 
     // ============================================================
-    // NORMALIZZAZIONE NOME PAGINA ADMIN
+    // SEO / STRUCTURED ADMIN (stessa logica 2057)
     // ============================================================
-    function normalizeName(name) {
-      return name
-        .toLowerCase()
-        .replace(/\.html?$/, "")
-        .replace(/\.js$/, "")
-        .replace(/[^a-z0-9\-]/g, "")
-        .replace(/\-+/g, "-")
-        .trim();
+    function needSEOAdmin() {
+      const p = window.location.pathname;
+      return (
+        p.includes("dashboard") ||
+        p.includes("admin-prodotti") ||
+        p.includes("admin-confronto")
+      );
     }
 
-    function getPageBase() {
-      const p = window.location.pathname.replace("/admin/", "");
-
-      if (p === "" || p === "/") return "admin-index";
-
-      const parts = p.split("/").filter(Boolean);
-
-      if (parts.length >= 2 && /^\d+$/.test(parts[parts.length - 1])) {
-        return normalizeName(parts[parts.length - 2]);
-      }
-
-      if (parts.length >= 2 && !parts[parts.length - 1].includes(".")) {
-        return normalizeName(parts.join("-"));
-      }
-
-      return normalizeName(parts.pop());
-    }
-
-    function getExpectedPageScript() {
-      const base = getPageBase();
-      return {
-        base,
-        src: `/admin/${base}.js`
-      };
+    function needStructuredAdmin() {
+      const p = window.location.pathname;
+      return (
+        p.includes("admin-prodotti") ||
+        p.includes("dashboard-vendite")
+      );
     }
 
     // ============================================================
-    // Rileva se JS pagina admin è già nel DOM
+    // WAIT PAGE-JS-LOADED (page-js-loaded o admin-page-js-loaded)
     // ============================================================
-    function paginaAdminHaJsDiPagina(expectedSrc) {
-      const scripts = document.querySelectorAll("script[src]");
+    function waitPageJsLoadedIfNeeded() {
+      if (window.__pageJsLoaded) return Promise.resolve(true);
 
-      for (const s of scripts) {
-        const src = s.getAttribute("src");
-        if (!src) continue;
+      return new Promise(resolve => {
+        const handler = () => {
+          window.__pageJsLoaded = true;
+          resolve(true);
+        };
 
-        if (src.includes("loadersupremo-admin")) continue;
-        if (src.includes("loader-admin")) continue;
-        if (src.includes("loader-universale-admin")) continue;
-
-        if (src === expectedSrc || src.startsWith(expectedSrc + "?")) {
-          console.log("🔍 [SUPREMO ADMIN] JS pagina già presente:", src);
-          return true;
-        }
-      }
-
-      return false;
+        document.addEventListener("page-js-loaded", handler, { once: true });
+        document.addEventListener("admin-page-js-loaded", handler, { once: true });
+      });
     }
 
     // ============================================================
-    // SEQUENZA SUPREMO ADMIN (JAVA-MODE)
+    // SEQUENZA SUPREMO ADMIN 2058
     // ============================================================
     async function runSupremoAdmin() {
       const state = window.__SUPREMO_ADMIN_RUN_STATE__;
@@ -236,55 +219,43 @@ if (!window.__SUPREMO_ADMIN_LOADER_2057__) {
 
       state.running = true;
 
-      console.log("🟦 [SUPREMO ADMIN 2057] Avvio sequenza SUPREMO ADMIN");
+      console.log("🟦 [SUPREMO ADMIN 2058] Avvio sequenza SUPREMO ADMIN");
 
+      // 1) AUTH (riusa /auth.js come nel 2057)
       await loadScript("/auth.js");
 
       const p = window.location.pathname;
 
-      const needSEO =
-        p.includes("dashboard") ||
-        p.includes("admin-prodotti") ||
-        p.includes("admin-confronto");
+      // 2) SEO / STRUCTURED ADMIN
+      if (needSEOAdmin()) {
+        await loadScript("/admin/seo-admin.js");
+      }
+      if (needStructuredAdmin()) {
+        await loadScript("/admin/structured-data-admin.js");
+      }
 
-      const needStructured =
-        p.includes("admin-prodotti") ||
-        p.includes("dashboard-vendite");
-
-      if (needSEO) await loadScript("/admin/seo-admin.js");
-      if (needStructured) await loadScript("/admin/structured-data-admin.js");
-
+      // 3) HEADER ADMIN
       await loadScript("/admin/header-admin.js", "body");
 
+      // 4) MICRO-WAIT deterministico
       await new Promise(r => setTimeout(r, 0));
 
-      const { base, src: expectedPageScript } = getExpectedPageScript();
+      // 5) CSS LOADER ADMIN
+      console.log("🎨 [SUPREMO ADMIN 2058] Trigger CSS Loader ADMIN");
+      document.dispatchEvent(new Event("supremo-admin-load-css"));
 
-      if (paginaAdminHaJsDiPagina(expectedPageScript)) {
-        if (!window.__pageJsLoaded) {
-          window.__pageJsLoaded = true;
-          document.dispatchEvent(new Event("page-js-loaded"));
-        }
-      } else {
-        if (!window.__LOADER_UNIVERSALE_ADMIN_CARICATO__) {
-          window.__LOADER_UNIVERSALE_ADMIN_CARICATO__ = true;
+      // 6) LOADER UNIVERSALE ADMIN (JS pagina)
+      console.log("📦 [SUPREMO ADMIN 2058] Carico loader-universale-admin + trigger");
+      await loadScript("/admin/loader-universale-admin.js");
+      document.dispatchEvent(new Event("supremo-admin-load-universale"));
 
-          await loadScript("/admin/loader-universale-admin.js");
-          document.dispatchEvent(new Event("supremo-admin-load-universale"));
-        }
-      }
+      // 7) Attendo che il JS di pagina segnali il completamento
+      await waitPageJsLoadedIfNeeded();
 
-      if (!window.__pageJsLoaded) {
-        await new Promise(resolve => {
-          document.addEventListener("page-js-loaded", () => {
-            window.__pageJsLoaded = true;
-            resolve();
-          }, { once: true });
-        });
-      }
-
+      // 8) dynamic-admin-loader (se ancora ti serve)
       await loadScript("/admin/dynamic-admin-loader.js");
 
+      // 9) critical-ready (solo una volta)
       if (!window.__criticalReady) {
         window.__criticalReady = true;
         document.dispatchEvent(new Event("critical-ready"));
@@ -292,13 +263,15 @@ if (!window.__SUPREMO_ADMIN_LOADER_2057__) {
 
       state.running = false;
       state.done = true;
+
+      console.log("🟩 [SUPREMO ADMIN 2058] Sequenza ADMIN completata");
     }
 
     // ============================================================
     // ESPONE RUN MANUALE
     // ============================================================
-    window.runSupremoAdminManual = async function () {
-      console.log("🟦 [SUPREMO ADMIN] runSupremoAdminManual() chiamato");
+    window.runSupremoAdmin2058 = async function () {
+      console.log("🟦 [SUPREMO ADMIN] runSupremoAdmin2058() chiamato");
       await runSupremoAdmin();
     };
 
@@ -321,5 +294,5 @@ if (!window.__SUPREMO_ADMIN_LOADER_2057__) {
 
   })();
 } else {
-  console.warn("SUPREMO ADMIN 2057 già caricato, skip.");
+  console.warn("SUPREMO ADMIN 2058 già caricato, skip.");
 }
