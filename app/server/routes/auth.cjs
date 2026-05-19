@@ -1,12 +1,16 @@
 /**
  * FILE: app/server/routes/auth.cjs
- * DESCRIZIONE: Endpoint autenticazione base per frontend
+ * DESCRIZIONE: Endpoint autenticazione per frontend Java-mode
  */
 
 module.exports = {
+  
+  // ============================================================
+  // GET /api/auth/me
+  // Ritorna l’utente loggato (se presente)
+  // ============================================================
   async me(req) {
     try {
-      // Se non c’è utente → non loggato
       if (!req.user) {
         return {
           success: true,
@@ -14,14 +18,13 @@ module.exports = {
         };
       }
 
-      // Se loggato → ritorna i dati utente
       return {
         success: true,
         user: {
           id: req.user.id,
           email: req.user.email,
           nome: req.user.nome || null,
-          livello: req.user.livello || null
+          ruolo: req.user.ruolo || null
         }
       };
 
@@ -32,5 +35,15 @@ module.exports = {
         error: "Errore autenticazione"
       };
     }
+  },
+
+  // ============================================================
+  // POST /api/auth/logout
+  // ============================================================
+  async logout(req) {
+    return {
+      success: true,
+      message: "Logout eseguito"
+    };
   }
 };
