@@ -1,36 +1,28 @@
 /* =========================================================
-   HOME PREMIUM — UNIVERSAL JSON PATCH 2027.970
-   PATCH 2057 — SINGLE FETCH MODE + PROMO SOLO PER CHI LE HA
+   HOME PREMIUM — UNIVERSAL JSON PATCH 2027.4
+   Compatibile con backend 2027.3 + Java‑mode
 ========================================================= */
 
 console.log("📌 [HOME] File caricato nel DOM");
 
 /* =========================================================
-   🔒 PATCH ANTI-LOOP 2051 (LOCK ESECUZIONE)
+   ANTI-LOOP
 ========================================================= */
 (function () {
-  if (window.__HOME_PREMIUM_RUNNING__) {
-    console.warn("🏁 [HOME] già in esecuzione → skip");
-    return;
-  }
+  if (window.__HOME_PREMIUM_RUNNING__) return;
   window.__HOME_PREMIUM_RUNNING__ = true;
 })();
 
 /* =========================================================
-   SINGLE FETCH MODE — CACHE PROMISE
+   SINGLE FETCH MODE
 ========================================================= */
 let __CATALOGO_PROMISE__ = null;
 
 async function getCatalogoPersonalizzatoHomeCached() {
-  if (__CATALOGO_PROMISE__) {
-    console.log("♻️ [HOME] Riutilizzo catalogo personalizzato già in corso");
-    return __CATALOGO_PROMISE__;
-  }
-
-  console.log("🎯 [HOME] Prima richiesta catalogo personalizzato…");
+  if (__CATALOGO_PROMISE__) return __CATALOGO_PROMISE__;
 
   __CATALOGO_PROMISE__ = getCatalogoPersonalizzatoHome()
-    .catch((err) => {
+    .catch(err => {
       console.warn("⚠️ [HOME] Errore catalogo personalizzato:", err);
       __CATALOGO_PROMISE__ = null;
       return null;
@@ -40,128 +32,69 @@ async function getCatalogoPersonalizzatoHomeCached() {
 }
 
 /* =========================================================
-   WRAPPER UNIVERSALE (universal-json)
+   WRAPPER UNIVERSALE
 ========================================================= */
-async function apiHome(path, options = {}) {
-  console.log("🌐 [HOME] API:", path);
-
-  const headers = {
-    "Content-Type": "application/json",
-    ...(options.headers || {})
-  };
-
-  let res;
+async function apiHome(path, payload = {}) {
   try {
-    res = await fetch(path, { ...options, headers });
+    const res = await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const json = await res.json().catch(() => null);
+    return json || { success: false };
+
   } catch (err) {
     console.error("❌ [HOME] Errore rete:", err);
-    return null;
+    return { success: false };
   }
-
-  let json;
-  try {
-    json = await res.json();
-  } catch (e) {
-    console.error("❌ [HOME] Risposta NON JSON da", path);
-    return null;
-  }
-
-  if (!json.success) {
-    console.warn("⚠️ [HOME] Errore API:", json.error || json.raw);
-    return null;
-  }
-
-  // ritorno l’oggetto intero, non solo data
-  return json;
 }
 
 /* =========================================================
-   AUTORUN 2050 — parte SEMPRE
+   AUTORUN
 ========================================================= */
 (function autorun() {
-  console.log("🚀 [HOME] Autorun avviato. DOM state:", document.readyState);
-
   if (document.readyState === "loading") {
-    console.log("⏳ [HOME] DOM non pronto → attendo DOMContentLoaded");
     document.addEventListener("DOMContentLoaded", autorun, { once: true });
     return;
   }
-
-  console.log("🟢 [HOME] DOM pronto → avvio initPage()");
-
-  try {
-    if (typeof initPage === "function") initPage();
-    else console.warn("❌ [HOME] initPage() NON trovata");
-  } catch (e) {
-    console.error("🔥 [HOME] Errore in initPage():", e);
-  }
+  initPage();
 })();
 
 /* =========================================================
-   FUNZIONE PRINCIPALE
+   INIT PAGE
 ========================================================= */
 function initPage() {
-  console.log("🏁 [HOME] initPage() eseguita");
-
   if (!window.__criticalReady) {
-    console.log("⏳ [HOME] critical-ready NON ancora emesso → attendo evento");
     document.addEventListener("critical-ready", initPage, { once: true });
     return;
   }
-
-  console.log("🟩 [HOME] critical-ready già presente → avvio homepage");
-
   avviaHomepage();
 }
 
 /* =========================================================
    ⭐ PATCH PROMO — CATALOGO PERSONALIZZATO
-   (solo se utente loggato + promo attiva)
 ========================================================= */
 async function getCatalogoPersonalizzatoHome() {
   try {
-    console.log("🎯 [HOME] Verifica promo per homepage…");
-
     // 1) utente loggato?
-    const me = await apiHome("/api/auth/me", { method: "GET" });
-    const user = me && (me.user || me.data || null);
-    const isLogged = !!user;
-
-    if (!isLogged) {
-      console.log("👤 [HOME] Utente NON loggato → niente catalogo personalizzato");
-      return null;
-    }
-
-    console.log("👤 [HOME] Utente loggato:", user.id || user.email || "OK");
+    const me = await apiHome("/api/utenti/me");
+    if (!me.success || !me.utente) return null;
 
     // 2) promo attiva?
-    const promoRes = await apiHome("/api/promo/attiva", { method: "GET" });
-    const hasPromo = promoRes && (promoRes.promo || promoRes.data);
-
-    if (!hasPromo) {
-      console.log("🎯 [HOME] Nessuna promo attiva → niente catalogo personalizzato");
-      return null;
-    }
-
-    console.log("🎯 [HOME] Promo attiva trovata → richiedo catalogo personalizzato");
+    const promoRes = await apiHome("/api/promo/attiva");
+    if (!promoRes.success || !promoRes.promo) return null;
 
     // 3) catalogo personalizzato
-    const catRes = await apiHome("/api/catalogo/personalizzato", {
-      method: "GET"
-    });
+    const catRes = await apiHome("/api/catalogo/personalizzato");
+    if (!catRes.success || !Array.isArray(catRes.prodotti)) return null;
 
-    if (!catRes) return null;
-
-    const prodotti = Array.isArray(catRes)
-      ? catRes
-      : catRes.prodotti || catRes.data || [];
-
-    if (!prodotti || !prodotti.length) return null;
-
-    const conPromo = prodotti.filter((p) => p.promo_attiva);
+    const conPromo = catRes.prodotti.filter(p => p.promo_attiva);
     return conPromo.length ? conPromo : null;
+
   } catch (err) {
-    console.warn("⚠️ [HOME] Errore catalogo personalizzato:", err);
+    console.warn("⚠️ [HOME] Errore promo:", err);
     return null;
   }
 }
@@ -175,9 +108,9 @@ function cardHTMLHome(p) {
   const desc = p.descrizione_breve || "";
   const id = p.id;
 
-  const prezzoBase = (Number(p.prezzo_cent || 0) / 100).toFixed(2);
+  const prezzoBase = (p.prezzo_cent / 100).toFixed(2);
   const prezzoPromo = p.promo_attiva
-    ? (Number(p.prezzo_scontato_cent || 0) / 100).toFixed(2)
+    ? (p.prezzo_scontato_cent / 100).toFixed(2)
     : null;
 
   const badge = p.promo_attiva
@@ -215,7 +148,7 @@ function cardHTMLHome(p) {
         ${prezzoHTML}
         ${countdown}
         <div class="card-buttons">
-          <a href="prodotto.html?id=${id}" class="btn-dettagli" style="width: 100%; text-align: center;">Scopri di più</a>
+          <a href="prodotto.html?id=${id}" class="btn-dettagli">Scopri di più</a>
         </div>
       </div>
     </article>
@@ -231,7 +164,7 @@ function initCountdownHome() {
 
   function update() {
     const now = new Date();
-    els.forEach((el) => {
+    els.forEach(el => {
       const end = new Date(el.dataset.scadenza);
       const diff = end - now;
 
@@ -252,75 +185,49 @@ function initCountdownHome() {
 }
 
 /* =========================================================
-   ⭐ AVVIO HOMEPAGE — SINGLE FETCH MODE
-   - Se promo valida → usa catalogo personalizzato
-   - Altrimenti → /api/prodotti-new (catalogo base)
+   ⭐ AVVIO HOMEPAGE
 ========================================================= */
 async function avviaHomepage() {
-  console.log("🔥 home-premium.js READY — Avvio sezioni homepage");
-
   let prodotti = null;
 
   try {
-    // 1) provo catalogo personalizzato (solo se utente + promo)
+    // 1) provo catalogo personalizzato
     let data = await getCatalogoPersonalizzatoHomeCached();
 
     if (!data) {
-      console.log("⚪ [HOME] Nessun catalogo personalizzato → uso catalogo base");
-      const baseRes = await apiHome("/api/prodotti-new", { method: "GET" });
-      if (!baseRes) {
-        console.warn("⚠️ [HOME] Nessun dato disponibile dal catalogo base");
-        return;
-      }
+      // 2) catalogo base
+      const baseRes = await apiHome("/api/prodotti-new");
+      if (!baseRes.success || !Array.isArray(baseRes.prodotti)) return;
 
-      prodotti = Array.isArray(baseRes)
-        ? baseRes
-        : baseRes.prodotti || baseRes.data || [];
+      prodotti = baseRes.prodotti;
     } else {
-      prodotti = Array.isArray(data)
-        ? data
-        : data.prodotti || data.data || [];
+      prodotti = data;
     }
   } catch (err) {
-    console.error("🔥 [HOME] Errore nel flusso homepage:", err);
-    const baseRes = await apiHome("/api/prodotti-new", { method: "GET" });
-    if (!baseRes) return;
-    prodotti = Array.isArray(baseRes)
-      ? baseRes
-      : baseRes.prodotti || baseRes.data || [];
+    console.error("🔥 [HOME] Errore homepage:", err);
+    const baseRes = await apiHome("/api/prodotti-new");
+    if (!baseRes.success) return;
+    prodotti = baseRes.prodotti;
   }
 
-  if (!Array.isArray(prodotti) || !prodotti.length) {
-    console.warn("⚠️ [HOME] Nessun prodotto disponibile");
-    return;
-  }
+  if (!Array.isArray(prodotti) || !prodotti.length) return;
 
-  // ============================
-  // 2) TOP 3 PRODOTTI
-  // ============================
-  console.log("📦 [HOME] Rendering Top 3 prodotti…");
-
+  // TOP 3
   const grid = document.getElementById("products-grid");
   if (grid) {
     grid.innerHTML = "";
-
-    prodotti.slice(0, 3).forEach((p) => {
+    prodotti.slice(0, 3).forEach(p => {
       const wrapper = document.createElement("div");
       wrapper.innerHTML = cardHTMLHome(p);
       grid.appendChild(wrapper.firstElementChild);
     });
-
     initCountdownHome();
   }
 
-  // ============================
-  // 3) SLIDER HERO
-  // ============================
-  console.log("🖼️ [HOME] Rendering slider hero…");
-
+  // SLIDER HERO
   const images = prodotti
-    .map((p) => p.immagine_url || p.immagine)
-    .filter((img) => img && img.length > 5);
+    .map(p => p.immagine_url || p.immagine)
+    .filter(img => img && img.length > 5);
 
   const slider = document.getElementById("hero-slider");
   if (slider && images.length > 0) {
