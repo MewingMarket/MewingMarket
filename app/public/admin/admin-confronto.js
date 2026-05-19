@@ -1,81 +1,48 @@
 /* =========================================================
-   ADMIN CONFRONTO — Versione 2026.300 (PATCH 2050 AUTORUN)
-   - Confronto validazioni / prodotti_da_creare / pubblicati
-   - universal-json
-   - autorun + debug esteso
+   ADMIN CONFRONTO — Versione 2058 (Single Loader Architecture)
+   - Nessun autorun
+   - Nessun DOMContentLoaded
+   - Nessun critical-ready
+   - Esegue SOLO quando chiamato da Loader Universale Admin
 ========================================================= */
 
-console.log("📌 [ADMIN-CONFRONTO] File caricato nel DOM");
+console.log("📌 [ADMIN-CONFRONTO 2058] File caricato");
 
-// =========================================================
-// AUTORUN 2050 — parte SEMPRE, anche se il DOM è riscritto
-// =========================================================
-(function autorun() {
-  console.log("🚀 [ADMIN-CONFRONTO] Autorun avviato. DOM state:", document.readyState);
+/* =========================================================
+   API ADMIN
+========================================================= */
+async function adminApi(path, options = {}) {
+  const token = localStorage.getItem("token");
 
-  if (document.readyState === "loading") {
-    console.log("⏳ [ADMIN-CONFRONTO] DOM non pronto → attendo DOMContentLoaded");
-    document.addEventListener("DOMContentLoaded", autorun, { once: true });
-    return;
+  const headers = {
+    "Content-Type": "application/json",
+    ...(options.headers || {}),
+    Authorization: token ? `Bearer ${token}` : ""
+  };
+
+  const res = await fetch(path, { ...options, headers });
+
+  if (res.status === 401 || res.status === 403) {
+    localStorage.removeItem("token");
+    location.href = "/admin/login";
+    return null;
   }
 
-  console.log("🟢 [ADMIN-CONFRONTO] DOM pronto → avvio initPage()");
+  let json;
+  try { json = await res.json(); } catch { return null; }
 
-  try {
-    if (typeof initPage === "function") {
-      initPage();
-    } else {
-      console.warn("❌ [ADMIN-CONFRONTO] initPage() NON trovata → JS NON eseguito");
-    }
-  } catch (e) {
-    console.error("🔥 [ADMIN-CONFRONTO] Errore in initPage():", e);
-  }
-})();
+  return json.success ? json.data : null;
+}
 
-// =========================================================
-// FUNZIONE PRINCIPALE DELLA PAGINA
-// =========================================================
-function initPage() {
-  console.log("🏁 [ADMIN-CONFRONTO] initPage() eseguita");
-
-  // Se critical-ready non è ancora arrivato, aspettiamo
-  if (!window.__criticalReady) {
-    console.log("⏳ [ADMIN-CONFRONTO] critical-ready NON ancora emesso → attendo evento");
-    document.addEventListener("critical-ready", initPage, { once: true });
-    return;
-  }
-
-  console.log("🟩 [ADMIN-CONFRONTO] critical-ready già presente → avvio pagina");
+/* =========================================================
+   PAGE INIT — chiamata da Loader Universale Admin 2058
+========================================================= */
+window.pageInit = function () {
+  console.log("🏁 [ADMIN-CONFRONTO 2058] pageInit() avviata");
 
   // =========================================================
-  // CODICE ORIGINALE (INVARIATO)
+  // ELEMENTI DOM
   // =========================================================
-
-  async function adminApi(path, options = {}) {
-    const token = localStorage.getItem("token");
-
-    const headers = {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-      Authorization: token ? `Bearer ${token}` : ""
-    };
-
-    const res = await fetch(path, { ...options, headers });
-
-    if (res.status === 401 || res.status === 403) {
-      localStorage.removeItem("token");
-      location.href = "/admin/login";
-      return null;
-    }
-
-    let json;
-    try { json = await res.json(); } catch { return null; }
-
-    return json.success ? json.data : null;
-  }
-
-  console.log("🔥 admin-confronto.js READY");
-
   const filtroTesto = document.getElementById("filtro-testo");
   const filtroTipo = document.getElementById("filtro-tipo");
   const btnFiltra = document.getElementById("btn-filtra");
@@ -86,7 +53,6 @@ function initPage() {
   const detTitolo = document.getElementById("dettaglio-titolo");
   const detDescrizione = document.getElementById("det-descrizione");
 
-  /* KPI */
   const kpiTipo = document.getElementById("kpi-det-tipo");
   const kpiCategoria = document.getElementById("kpi-det-categoria");
   const kpiPrezzo = document.getElementById("kpi-det-prezzo");
@@ -220,7 +186,6 @@ function initPage() {
       item.descrizione ||
       "—";
 
-    /* KPI */
     kpiTipo.textContent = tipo;
     kpiCategoria.textContent = item.categoria || "—";
     kpiPrezzo.textContent =
@@ -239,4 +204,4 @@ function initPage() {
      AVVIO
   ========================================================== */
   caricaDati();
-}
+};
