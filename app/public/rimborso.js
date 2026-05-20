@@ -1,51 +1,23 @@
 /* =========================================================
-   RIMBORSO — UNIVERSAL JSON PATCH 2027.970
-   PATCH 2050 — AUTORUN + DEBUG ESTESO
+   RIMBORSO — Versione 2058 (Single Loader Architecture)
+   - Nessun autorun
+   - Nessun DOMContentLoaded
+   - Nessun critical-ready
+   - Esegue SOLO quando chiamato da Loader Supremo 2058
 ========================================================= */
 
-console.log("📌 [RIMBORSO] File caricato nel DOM");
+console.log("📌 [RIMBORSO 2058] File caricato");
 
 /* =========================================================
-   AUTORUN 2050 — parte SEMPRE
+   PAGE INIT — chiamata da Loader Supremo 2058
 ========================================================= */
-(function autorun() {
-  console.log("🚀 [RIMBORSO] Autorun avviato. DOM state:", document.readyState);
-
-  if (document.readyState === "loading") {
-    console.log("⏳ [RIMBORSO] DOM non pronto → attendo DOMContentLoaded");
-    document.addEventListener("DOMContentLoaded", autorun, { once: true });
-    return;
-  }
-
-  console.log("🟢 [RIMBORSO] DOM pronto → avvio initPage()");
-
-  try {
-    if (typeof initPage === "function") initPage();
-    else console.warn("❌ [RIMBORSO] initPage() NON trovata");
-  } catch (e) {
-    console.error("🔥 [RIMBORSO] Errore in initPage():", e);
-  }
-})();
-
-/* =========================================================
-   FUNZIONE PRINCIPALE
-========================================================= */
-function initPage() {
-  console.log("🏁 [RIMBORSO] initPage() eseguita");
-
-  if (!window.__criticalReady) {
-    console.log("⏳ [RIMBORSO] critical-ready NON ancora emesso → attendo evento");
-    document.addEventListener("critical-ready", initPage, { once: true });
-    return;
-  }
-
-  console.log("🟩 [RIMBORSO] critical-ready già presente → avvio modulo");
-
+window.pageInit = function () {
+  console.log("🏁 [RIMBORSO 2058] pageInit() avviata");
   avviaRimborso();
-}
+};
 
 /* =========================================================
-   CODICE ORIGINALE INCAPSULATO
+   LOGICA ORIGINALE (identica)
 ========================================================= */
 async function avviaRimborso() {
   console.log("🔥 rimborso.js READY");
