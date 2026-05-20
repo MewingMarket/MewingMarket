@@ -1,10 +1,12 @@
 /* =========================================================
-   GUIDE — Database locale delle guide
-   Versione 2026.995
-   PATCH 2050 — AUTORUN + DEBUG ESTESO
+   GUIDE — Versione 2058 (Single Loader Architecture)
+   - Nessun autorun
+   - Nessun DOMContentLoaded
+   - Nessun critical-ready
+   - Esegue SOLO quando chiamato da Loader Supremo 2058
 ========================================================= */
 
-console.log("📌 [GUIDE] File caricato nel DOM");
+console.log("📌 [GUIDE 2058] File caricato");
 
 /* =========================================================
    DATABASE GUIDE (TUO CODICE ORIGINALE)
@@ -161,48 +163,16 @@ const guides = {
   }
 };
 
-
 /* =========================================================
-   AUTORUN 2050 — parte SEMPRE
+   PAGE INIT — chiamata da Loader Supremo 2058
 ========================================================= */
-(function autorun() {
-  console.log("🚀 [GUIDE] Autorun avviato. DOM state:", document.readyState);
-
-  if (document.readyState === "loading") {
-    console.log("⏳ [GUIDE] DOM non pronto → attendo DOMContentLoaded");
-    document.addEventListener("DOMContentLoaded", autorun, { once: true });
-    return;
-  }
-
-  console.log("🟢 [GUIDE] DOM pronto → avvio initPage()");
-
-  try {
-    if (typeof initPage === "function") initPage();
-    else console.warn("❌ [GUIDE] initPage() NON trovata");
-  } catch (e) {
-    console.error("🔥 [GUIDE] Errore in initPage():", e);
-  }
-})();
-
-/* =========================================================
-   FUNZIONE PRINCIPALE
-========================================================= */
-function initPage() {
-  console.log("🏁 [GUIDE] initPage() eseguita");
-
-  if (!window.__criticalReady) {
-    console.log("⏳ [GUIDE] critical-ready NON ancora emesso → attendo evento");
-    document.addEventListener("critical-ready", initPage, { once: true });
-    return;
-  }
-
-  console.log("🟩 [GUIDE] critical-ready già presente → avvio rendering");
-
+window.pageInit = function () {
+  console.log("🏁 [GUIDE 2058] pageInit() avviata");
   renderGuide();
-}
+};
 
 /* =========================================================
-   RENDERING ORIGINALE INCAPSULATO
+   RENDERING ORIGINALE (identico)
 ========================================================= */
 function renderGuide() {
   console.log("🔥 guide.js READY — rendering guida");
