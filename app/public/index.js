@@ -1,12 +1,15 @@
 /* =========================================================
-   HOME PREMIUM — UNIVERSAL JSON PATCH 2027.4
-   Compatibile con backend 2027.3 + Java‑mode
+   HOME PREMIUM — Versione 2058 (Single Loader Architecture)
+   - Nessun autorun
+   - Nessun DOMContentLoaded
+   - Nessun critical-ready
+   - Esegue SOLO quando chiamato da Loader Supremo 2058
 ========================================================= */
 
-console.log("📌 [HOME] File caricato nel DOM");
+console.log("📌 [HOME 2058] File caricato nel DOM");
 
 /* =========================================================
-   ANTI-LOOP
+   ANTI-LOOP (mantieni)
 ========================================================= */
 (function () {
   if (window.__HOME_PREMIUM_RUNNING__) return;
@@ -14,7 +17,7 @@ console.log("📌 [HOME] File caricato nel DOM");
 })();
 
 /* =========================================================
-   SINGLE FETCH MODE
+   SINGLE FETCH MODE (mantieni)
 ========================================================= */
 let __CATALOGO_PROMISE__ = null;
 
@@ -52,41 +55,24 @@ async function apiHome(path, payload = {}) {
 }
 
 /* =========================================================
-   AUTORUN
+   PAGE INIT — chiamata da Loader Supremo 2058
 ========================================================= */
-(function autorun() {
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", autorun, { once: true });
-    return;
-  }
-  initPage();
-})();
-
-/* =========================================================
-   INIT PAGE
-========================================================= */
-function initPage() {
-  if (!window.__criticalReady) {
-    document.addEventListener("critical-ready", initPage, { once: true });
-    return;
-  }
+window.pageInit = function () {
+  console.log("🏁 [HOME 2058] pageInit() avviata");
   avviaHomepage();
-}
+};
 
 /* =========================================================
    ⭐ PATCH PROMO — CATALOGO PERSONALIZZATO
 ========================================================= */
 async function getCatalogoPersonalizzatoHome() {
   try {
-    // 1) utente loggato?
     const me = await apiHome("/api/utenti/me");
     if (!me.success || !me.utente) return null;
 
-    // 2) promo attiva?
     const promoRes = await apiHome("/api/promo/attiva");
     if (!promoRes.success || !promoRes.promo) return null;
 
-    // 3) catalogo personalizzato
     const catRes = await apiHome("/api/catalogo/personalizzato");
     if (!catRes.success || !Array.isArray(catRes.prodotti)) return null;
 
@@ -191,11 +177,9 @@ async function avviaHomepage() {
   let prodotti = null;
 
   try {
-    // 1) provo catalogo personalizzato
     let data = await getCatalogoPersonalizzatoHomeCached();
 
     if (!data) {
-      // 2) catalogo base
       const baseRes = await apiHome("/api/prodotti-new");
       if (!baseRes.success || !Array.isArray(baseRes.prodotti)) return;
 
