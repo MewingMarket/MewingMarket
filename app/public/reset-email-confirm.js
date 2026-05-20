@@ -1,52 +1,23 @@
 /* =========================================================
-   RESET EMAIL CONFIRM — UNIVERSAL JSON PATCH 2027.970
-   Versione ZERO-INPUT
-   PATCH 2050 — AUTORUN + DEBUG ESTESO
+   RESET EMAIL CONFIRM — Versione 2058 (Single Loader Architecture)
+   - Nessun autorun
+   - Nessun DOMContentLoaded
+   - Nessun critical-ready
+   - Esegue SOLO quando chiamato da Loader Supremo 2058
 ========================================================= */
 
-console.log("📌 [RESET-EMAIL-CONFIRM] File caricato nel DOM");
+console.log("📌 [RESET-EMAIL-CONFIRM 2058] File caricato");
 
 /* =========================================================
-   AUTORUN 2050 — parte SEMPRE
+   PAGE INIT — chiamata da Loader Supremo 2058
 ========================================================= */
-(function autorun() {
-  console.log("🚀 [RESET-EMAIL-CONFIRM] Autorun avviato. DOM state:", document.readyState);
-
-  if (document.readyState === "loading") {
-    console.log("⏳ [RESET-EMAIL-CONFIRM] DOM non pronto → attendo DOMContentLoaded");
-    document.addEventListener("DOMContentLoaded", autorun, { once: true });
-    return;
-  }
-
-  console.log("🟢 [RESET-EMAIL-CONFIRM] DOM pronto → avvio initPage()");
-
-  try {
-    if (typeof initPage === "function") initPage();
-    else console.warn("❌ [RESET-EMAIL-CONFIRM] initPage() NON trovata");
-  } catch (e) {
-    console.error("🔥 [RESET-EMAIL-CONFIRM] Errore in initPage():", e);
-  }
-})();
-
-/* =========================================================
-   FUNZIONE PRINCIPALE
-========================================================= */
-function initPage() {
-  console.log("🏁 [RESET-EMAIL-CONFIRM] initPage() eseguita");
-
-  if (!window.__criticalReady) {
-    console.log("⏳ [RESET-EMAIL-CONFIRM] critical-ready NON ancora emesso → attendo evento");
-    document.addEventListener("critical-ready", initPage, { once: true });
-    return;
-  }
-
-  console.log("🟩 [RESET-EMAIL-CONFIRM] critical-ready già presente → avvio modulo");
-
+window.pageInit = function () {
+  console.log("🏁 [RESET-EMAIL-CONFIRM 2058] pageInit() avviata");
   avviaResetEmailConfirm();
-}
+};
 
 /* =========================================================
-   CODICE ORIGINALE INCAPSULATO
+   LOGICA ORIGINALE (identica)
 ========================================================= */
 function avviaResetEmailConfirm() {
   console.log("🔥 reset-email-confirm.js READY (ZERO-INPUT)");
