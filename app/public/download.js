@@ -1,55 +1,24 @@
 /* =========================================================
-   DOWNLOAD PREMIUM — UNIVERSAL JSON PATCH 2027.970
-   PATCH 2050 — AUTORUN + DEBUG ESTESO
+   DOWNLOAD PREMIUM — Versione 2058 (Single Loader Architecture)
+   - Nessun autorun
+   - Nessun DOMContentLoaded
+   - Nessun critical-ready
+   - Esegue SOLO quando chiamato da Loader Supremo 2058
 ========================================================= */
 
-console.log("📌 [DOWNLOAD] File caricato nel DOM");
+console.log("📌 [DOWNLOAD 2058] File caricato");
 
-// =========================================================
-// AUTORUN 2050 — parte SEMPRE, anche se il DOM è riscritto
-// =========================================================
-(function autorun() {
-  console.log("🚀 [DOWNLOAD] Autorun avviato. DOM state:", document.readyState);
-
-  if (document.readyState === "loading") {
-    console.log("⏳ [DOWNLOAD] DOM non pronto → attendo DOMContentLoaded");
-    document.addEventListener("DOMContentLoaded", autorun, { once: true });
-    return;
-  }
-
-  console.log("🟢 [DOWNLOAD] DOM pronto → avvio initPage()");
-
-  try {
-    if (typeof initPage === "function") {
-      initPage();
-    } else {
-      console.warn("❌ [DOWNLOAD] initPage() NON trovata → JS NON eseguito");
-    }
-  } catch (e) {
-    console.error("🔥 [DOWNLOAD] Errore in initPage():", e);
-  }
-})();
-
-// =========================================================
-// FUNZIONE PRINCIPALE
-// =========================================================
-function initPage() {
-  console.log("🏁 [DOWNLOAD] initPage() eseguita");
-
-  if (!window.__criticalReady) {
-    console.log("⏳ [DOWNLOAD] critical-ready NON ancora emesso → attendo evento");
-    document.addEventListener("critical-ready", initPage, { once: true });
-    return;
-  }
-
-  console.log("🟩 [DOWNLOAD] critical-ready già presente → avvio pagina");
-
+/* =========================================================
+   PAGE INIT — chiamata da Loader Supremo 2058
+========================================================= */
+window.pageInit = function () {
+  console.log("🏁 [DOWNLOAD 2058] pageInit() avviata");
   avviaDownloadPremium();
-}
+};
 
-// =========================================================
-// CODICE ORIGINALE INCAPSULATO
-// =========================================================
+/* =========================================================
+   LOGICA ORIGINALE (identica)
+========================================================= */
 async function avviaDownloadPremium() {
   console.log("🔥 download-premium.js READY");
 
