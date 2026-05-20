@@ -1,55 +1,21 @@
 /* =========================================================
-   DISISCRIZIONE NEWSLETTER — UNIVERSAL JSON PATCH 2027.970
-   PATCH 2050 — AUTORUN + DEBUG ESTESO
+   DISISCRIZIONE NEWSLETTER — Versione 2058
+   Single Loader Architecture
 ========================================================= */
 
-console.log("📌 [UNSUBSCRIBE] File caricato nel DOM");
+console.log("📌 [UNSUBSCRIBE 2058] File caricato");
 
-// =========================================================
-// AUTORUN 2050 — parte SEMPRE, anche se il DOM è riscritto
-// =========================================================
-(function autorun() {
-  console.log("🚀 [UNSUBSCRIBE] Autorun avviato. DOM state:", document.readyState);
-
-  if (document.readyState === "loading") {
-    console.log("⏳ [UNSUBSCRIBE] DOM non pronto → attendo DOMContentLoaded");
-    document.addEventListener("DOMContentLoaded", autorun, { once: true });
-    return;
-  }
-
-  console.log("🟢 [UNSUBSCRIBE] DOM pronto → avvio initPage()");
-
-  try {
-    if (typeof initPage === "function") {
-      initPage();
-    } else {
-      console.warn("❌ [UNSUBSCRIBE] initPage() NON trovata → JS NON eseguito");
-    }
-  } catch (e) {
-    console.error("🔥 [UNSUBSCRIBE] Errore in initPage():", e);
-  }
-})();
-
-// =========================================================
-// FUNZIONE PRINCIPALE
-// =========================================================
-function initPage() {
-  console.log("🏁 [UNSUBSCRIBE] initPage() eseguita");
-
-  if (!window.__criticalReady) {
-    console.log("⏳ [UNSUBSCRIBE] critical-ready NON ancora emesso → attendo evento");
-    document.addEventListener("critical-ready", initPage, { once: true });
-    return;
-  }
-
-  console.log("🟩 [UNSUBSCRIBE] critical-ready già presente → avvio pagina");
-
+/* =========================================================
+   PAGE INIT — chiamata da Loader Supremo 2058
+========================================================= */
+window.pageInit = function () {
+  console.log("🏁 [UNSUBSCRIBE 2058] pageInit() avviata");
   avviaDisiscrizione();
-}
+};
 
-// =========================================================
-// CODICE ORIGINALE INCAPSULATO
-// =========================================================
+/* =========================================================
+   LOGICA ORIGINALE (identica)
+========================================================= */
 function avviaDisiscrizione() {
   console.log("🔥 disiscrizione.js READY");
 
