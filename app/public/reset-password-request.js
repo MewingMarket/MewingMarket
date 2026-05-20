@@ -1,52 +1,23 @@
 /* =========================================================
-   RESET PASSWORD REQUEST — UNIVERSAL JSON PATCH 2027.970
-   Versione CF (ZERO-INPUT)
-   PATCH 2050 — AUTORUN + DEBUG ESTESO
+   RESET PASSWORD REQUEST — Versione 2058 (Single Loader Architecture)
+   - Nessun autorun
+   - Nessun DOMContentLoaded
+   - Nessun critical-ready
+   - Esegue SOLO quando chiamato da Loader Supremo 2058
 ========================================================= */
 
-console.log("📌 [RESET-PASSWORD-REQ] File caricato nel DOM");
+console.log("📌 [RESET-PASSWORD-REQ 2058] File caricato");
 
 /* =========================================================
-   AUTORUN 2050 — parte SEMPRE
+   PAGE INIT — chiamata da Loader Supremo 2058
 ========================================================= */
-(function autorun() {
-  console.log("🚀 [RESET-PASSWORD-REQ] Autorun avviato. DOM state:", document.readyState);
-
-  if (document.readyState === "loading") {
-    console.log("⏳ [RESET-PASSWORD-REQ] DOM non pronto → attendo DOMContentLoaded");
-    document.addEventListener("DOMContentLoaded", autorun, { once: true });
-    return;
-  }
-
-  console.log("🟢 [RESET-PASSWORD-REQ] DOM pronto → avvio initPage()");
-
-  try {
-    if (typeof initPage === "function") initPage();
-    else console.warn("❌ [RESET-PASSWORD-REQ] initPage() NON trovata");
-  } catch (e) {
-    console.error("🔥 [RESET-PASSWORD-REQ] Errore in initPage():", e);
-  }
-})();
-
-/* =========================================================
-   FUNZIONE PRINCIPALE
-========================================================= */
-function initPage() {
-  console.log("🏁 [RESET-PASSWORD-REQ] initPage() eseguita");
-
-  if (!window.__criticalReady) {
-    console.log("⏳ [RESET-PASSWORD-REQ] critical-ready NON ancora emesso → attendo evento");
-    document.addEventListener("critical-ready", initPage, { once: true });
-    return;
-  }
-
-  console.log("🟩 [RESET-PASSWORD-REQ] critical-ready già presente → avvio modulo");
-
+window.pageInit = function () {
+  console.log("🏁 [RESET-PASSWORD-REQ 2058] pageInit() avviata");
   avviaResetPasswordRequest();
-}
+};
 
 /* =========================================================
-   CODICE ORIGINALE INCAPSULATO
+   LOGICA ORIGINALE (identica)
 ========================================================= */
 function avviaResetPasswordRequest() {
   console.log("🔥 reset-password-request.js READY (ZERO-INPUT)");
