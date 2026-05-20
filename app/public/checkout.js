@@ -1,61 +1,28 @@
 /* =========================================================
-   CHECKOUT — UNIVERSAL JSON PATCH 2027.970
-   PATCH 2050 — AUTORUN + DEBUG ESTESO
-   PATCH 2052 — PREZZI PROMO + TOTALE SCONTATO
-   PATCH 2056 — TOKEN UNICO + RECUPERO EVENTI PERSI
+   CHECKOUT — Versione 2058 (Single Loader Architecture)
+   - Nessun autorun
+   - Nessun DOMContentLoaded
+   - Nessun critical-ready
+   - Esegue SOLO quando chiamato da Loader Supremo 2058
 ========================================================= */
 
-console.log("📌 [CHECKOUT] File caricato nel DOM");
+console.log("📌 [CHECKOUT 2058] File caricato");
 
 // Stato eventi
 let authOk = false;
 let cartOk = false;
 
-// =========================================================
-// AUTORUN 2050 — parte SEMPRE
-// =========================================================
-(function autorun() {
-  console.log("🚀 [CHECKOUT] Autorun avviato. DOM state:", document.readyState);
-
-  if (document.readyState === "loading") {
-    console.log("⏳ [CHECKOUT] DOM non pronto → attendo DOMContentLoaded");
-    document.addEventListener("DOMContentLoaded", autorun, { once: true });
-    return;
-  }
-
-  console.log("🟢 [CHECKOUT] DOM pronto → avvio initPage()");
-
-  try {
-    if (typeof initPage === "function") {
-      initPage();
-    } else {
-      console.warn("❌ [CHECKOUT] initPage() NON trovata → JS NON eseguito");
-    }
-  } catch (e) {
-    console.error("🔥 [CHECKOUT] Errore in initPage():", e);
-  }
-})();
-
-// =========================================================
-// FUNZIONE PRINCIPALE
-// =========================================================
-function initPage() {
-  console.log("🏁 [CHECKOUT] initPage() eseguita");
-
-  if (!window.__criticalReady) {
-    console.log("⏳ [CHECKOUT] critical-ready NON ancora emesso → attendo evento");
-    document.addEventListener("critical-ready", initPage, { once: true });
-    return;
-  }
-
-  console.log("🟩 [CHECKOUT] critical-ready già presente → avvio listener auth/cart");
-
+/* =========================================================
+   PAGE INIT — chiamata da Loader Supremo 2058
+========================================================= */
+window.pageInit = function () {
+  console.log("🏁 [CHECKOUT 2058] pageInit() avviata");
   avviaListenersCheckout();
-}
+};
 
-// =========================================================
-// LISTENER ORIGINALI INCAPSULATI (PATCH 2056)
-// =========================================================
+/* =========================================================
+   LISTENER ORIGINALI INCAPSULATI (PATCH 2056)
+========================================================= */
 function avviaListenersCheckout() {
   console.log("🎧 [CHECKOUT] Attivo listener auth-ready e cart-ready");
 
