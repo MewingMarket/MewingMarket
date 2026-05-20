@@ -1,35 +1,24 @@
 /* =========================================================
-   ASSISTENZA — UNIVERSAL JSON PATCH 2027.4
-   Compatibile con backend 2027.3
+   ASSISTENZA — Versione 2058 (Single Loader Architecture)
+   - Nessun autorun
+   - Nessun DOMContentLoaded
+   - Nessun critical-ready
+   - Esegue SOLO quando chiamato da Loader Supremo 2058
 ========================================================= */
 
-console.log("📌 [ASSISTENZA] File caricato nel DOM");
+console.log("📌 [ASSISTENZA 2058] File caricato");
 
-// =========================================================
-// AUTORUN — parte SEMPRE
-// =========================================================
-(function autorun() {
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", autorun, { once: true });
-    return;
-  }
-  initPage();
-})();
-
-// =========================================================
-// INIT PAGE
-// =========================================================
-function initPage() {
-  if (!window.__criticalReady) {
-    document.addEventListener("critical-ready", initPage, { once: true });
-    return;
-  }
+/* =========================================================
+   PAGE INIT — chiamata da Loader Supremo 2058
+========================================================= */
+window.pageInit = function () {
+  console.log("🏁 [ASSISTENZA 2058] pageInit() avviata");
   avviaAssistenza();
-}
+};
 
-// =========================================================
-// LOGICA ASSISTENZA
-// =========================================================
+/* =========================================================
+   LOGICA ASSISTENZA (identica alla tua)
+========================================================= */
 function avviaAssistenza() {
   const form = document.getElementById("assistenzaForm");
   const msgBox = document.getElementById("msgAssistenza");
@@ -59,7 +48,6 @@ function avviaAssistenza() {
       return;
     }
 
-    // Backend 2027.3 restituisce: { success: true, ticket }
     const ticket = res.ticket || "—";
 
     mostraMessaggio(
@@ -70,9 +58,9 @@ function avviaAssistenza() {
     form.reset();
   });
 
-  // ============================================================
-  // WRAPPER UNIVERSALE
-  // ============================================================
+  /* ============================================================
+     WRAPPER UNIVERSALE
+  ============================================================ */
   async function apiAssistenza(path, payload = {}) {
     try {
       const res = await fetch(path, {
@@ -92,9 +80,9 @@ function avviaAssistenza() {
     }
   }
 
-  // ============================================================
-  // UI
-  // ============================================================
+  /* ============================================================
+     UI
+  ============================================================ */
   function mostraMessaggio(testo, tipo) {
     if (!msgBox) return;
     msgBox.textContent = testo;
