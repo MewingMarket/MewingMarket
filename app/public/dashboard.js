@@ -1,56 +1,24 @@
 /* =========================================================
-   DASHBOARD.JS — UNIVERSAL JSON PATCH 2027.970
-   Gestione Sidebar Utente
-   PATCH 2050 — AUTORUN + DEBUG ESTESO
+   SIDEBAR UTENTE — Versione 2058 (Single Loader Architecture)
+   - Nessun autorun
+   - Nessun DOMContentLoaded
+   - Nessun critical-ready
+   - Esegue SOLO quando chiamato da Loader Supremo 2058
 ========================================================= */
 
-console.log("📌 [SIDEBAR] File caricato nel DOM");
+console.log("📌 [SIDEBAR 2058] File caricato");
 
-// =========================================================
-// AUTORUN 2050 — parte SEMPRE
-// =========================================================
-(function autorun() {
-  console.log("🚀 [SIDEBAR] Autorun avviato. DOM state:", document.readyState);
-
-  if (document.readyState === "loading") {
-    console.log("⏳ [SIDEBAR] DOM non pronto → attendo DOMContentLoaded");
-    document.addEventListener("DOMContentLoaded", autorun, { once: true });
-    return;
-  }
-
-  console.log("🟢 [SIDEBAR] DOM pronto → avvio initPage()");
-
-  try {
-    if (typeof initPage === "function") {
-      initPage();
-    } else {
-      console.warn("❌ [SIDEBAR] initPage() NON trovata → JS NON eseguito");
-    }
-  } catch (e) {
-    console.error("🔥 [SIDEBAR] Errore in initPage():", e);
-  }
-})();
-
-// =========================================================
-// FUNZIONE PRINCIPALE
-// =========================================================
-function initPage() {
-  console.log("🏁 [SIDEBAR] initPage() eseguita");
-
-  if (!window.__criticalReady) {
-    console.log("⏳ [SIDEBAR] critical-ready NON ancora emesso → attendo evento");
-    document.addEventListener("critical-ready", initPage, { once: true });
-    return;
-  }
-
-  console.log("🟩 [SIDEBAR] critical-ready già presente → avvio sidebar");
-
+/* =========================================================
+   PAGE INIT — chiamata da Loader Supremo 2058
+========================================================= */
+window.pageInit = function () {
+  console.log("🏁 [SIDEBAR 2058] pageInit() avviata");
   avviaSidebar();
-}
+};
 
-// =========================================================
-// CODICE ORIGINALE INCAPSULATO
-// =========================================================
+/* =========================================================
+   LOGICA ORIGINALE (identica)
+========================================================= */
 async function avviaSidebar() {
   console.log("🔥 sidebar.js READY");
 
