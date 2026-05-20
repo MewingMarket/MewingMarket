@@ -1,51 +1,23 @@
 /* =========================================================
-   LOGIN.JS — UNIVERSAL JSON PATCH 2027.970
-   PATCH 2050 — AUTORUN + DEBUG ESTESO
+   LOGIN.JS — Versione 2058 (Single Loader Architecture)
+   - Nessun autorun
+   - Nessun DOMContentLoaded
+   - Nessun critical-ready
+   - Esegue SOLO quando chiamato da Loader Supremo 2058
 ========================================================= */
 
-console.log("📌 [LOGIN] File caricato nel DOM");
+console.log("📌 [LOGIN 2058] File caricato");
 
 /* =========================================================
-   AUTORUN 2050 — parte SEMPRE
+   PAGE INIT — chiamata da Loader Supremo 2058
 ========================================================= */
-(function autorun() {
-  console.log("🚀 [LOGIN] Autorun avviato. DOM state:", document.readyState);
-
-  if (document.readyState === "loading") {
-    console.log("⏳ [LOGIN] DOM non pronto → attendo DOMContentLoaded");
-    document.addEventListener("DOMContentLoaded", autorun, { once: true });
-    return;
-  }
-
-  console.log("🟢 [LOGIN] DOM pronto → avvio initPage()");
-
-  try {
-    if (typeof initPage === "function") initPage();
-    else console.warn("❌ [LOGIN] initPage() NON trovata");
-  } catch (e) {
-    console.error("🔥 [LOGIN] Errore in initPage():", e);
-  }
-})();
-
-/* =========================================================
-   FUNZIONE PRINCIPALE
-========================================================= */
-function initPage() {
-  console.log("🏁 [LOGIN] initPage() eseguita");
-
-  if (!window.__criticalReady) {
-    console.log("⏳ [LOGIN] critical-ready NON ancora emesso → attendo evento");
-    document.addEventListener("critical-ready", initPage, { once: true });
-    return;
-  }
-
-  console.log("🟩 [LOGIN] critical-ready già presente → avvio login");
-
+window.pageInit = function () {
+  console.log("🏁 [LOGIN 2058] pageInit() avviata");
   avviaLogin();
-}
+};
 
 /* =========================================================
-   CODICE ORIGINALE INCAPSULATO
+   LOGICA ORIGINALE (identica)
 ========================================================= */
 function avviaLogin() {
   console.log("🔥 login.js READY");
@@ -148,7 +120,7 @@ function avviaLogin() {
     }
 
     /* =====================================================
-       SALVATAGGIO CORRETTO
+       SALVATAGGIO CORRETto
     ===================================================== */
     localStorage.setItem("token", data.token);
     localStorage.setItem("email", data.email);
