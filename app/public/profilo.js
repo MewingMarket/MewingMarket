@@ -1,10 +1,12 @@
 /* =========================================================
-   PROFILO.JS — UNIVERSAL JSON PATCH 2027.970
-   Gestione Dati Utente + Moduli
-   PATCH 2050 — AUTORUN + DEBUG ESTESO
+   PROFILO.JS — Versione 2058 (Single Loader Architecture)
+   - Nessun autorun
+   - Nessun DOMContentLoaded
+   - Nessun critical-ready
+   - Esegue SOLO quando chiamato da Loader Supremo 2058
 ========================================================= */
 
-console.log("📌 [PROFILO] File caricato nel DOM");
+console.log("📌 [PROFILO 2058] File caricato");
 
 /* =========================================================
    WRAPPER UNIVERSALE (token + universal-json)
@@ -52,46 +54,15 @@ async function apiProfilo(path, options = {}) {
 }
 
 /* =========================================================
-   AUTORUN 2050 — parte SEMPRE
+   PAGE INIT — chiamata da Loader Supremo 2058
 ========================================================= */
-(function autorun() {
-  console.log("🚀 [PROFILO] Autorun avviato. DOM state:", document.readyState);
-
-  if (document.readyState === "loading") {
-    console.log("⏳ [PROFILO] DOM non pronto → attendo DOMContentLoaded");
-    document.addEventListener("DOMContentLoaded", autorun, { once: true });
-    return;
-  }
-
-  console.log("🟢 [PROFILO] DOM pronto → avvio initPage()");
-
-  try {
-    if (typeof initPage === "function") initPage();
-    else console.warn("❌ [PROFILO] initPage() NON trovata");
-  } catch (e) {
-    console.error("🔥 [PROFILO] Errore in initPage():", e);
-  }
-})();
-
-/* =========================================================
-   FUNZIONE PRINCIPALE
-========================================================= */
-function initPage() {
-  console.log("🏁 [PROFILO] initPage() eseguita");
-
-  if (!window.__criticalReady) {
-    console.log("⏳ [PROFILO] critical-ready NON ancora emesso → attendo evento");
-    document.addEventListener("critical-ready", initPage, { once: true });
-    return;
-  }
-
-  console.log("🟩 [PROFILO] critical-ready già presente → avvio pagina");
-
+window.pageInit = function () {
+  console.log("🏁 [PROFILO 2058] pageInit() avviata");
   avviaProfilo();
-}
+};
 
 /* =========================================================
-   CODICE ORIGINALE INCAPSULATO
+   LOGICA ORIGINALE (identica)
 ========================================================= */
 async function avviaProfilo() {
   console.log("🔥 profilo.js READY");
