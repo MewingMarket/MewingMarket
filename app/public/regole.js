@@ -1,49 +1,20 @@
 /* =========================================================
-   File: app/public/regole.js
-   Regolamento dinamico — Versione definitiva 2026
-   PATCH 2050 — AUTORUN + DEBUG ESTESO
+   REGOLE.JS — Versione 2058 (Single Loader Architecture)
+   - Nessun autorun
+   - Nessun DOMContentLoaded
+   - Nessun critical-ready
+   - Esegue SOLO quando chiamato da Loader Supremo 2058
 ========================================================= */
 
-console.log("📌 [REGOLE] File caricato nel DOM");
+console.log("📌 [REGOLE 2058] File caricato");
 
 /* =========================================================
-   AUTORUN 2050 — parte SEMPRE
+   PAGE INIT — chiamata da Loader Supremo 2058
 ========================================================= */
-(function autorun() {
-  console.log("🚀 [REGOLE] Autorun avviato. DOM state:", document.readyState);
-
-  if (document.readyState === "loading") {
-    console.log("⏳ [REGOLE] DOM non pronto → attendo DOMContentLoaded");
-    document.addEventListener("DOMContentLoaded", autorun, { once: true });
-    return;
-  }
-
-  console.log("🟢 [REGOLE] DOM pronto → avvio initPage()");
-
-  try {
-    if (typeof initPage === "function") initPage();
-    else console.warn("❌ [REGOLE] initPage() NON trovata");
-  } catch (e) {
-    console.error("🔥 [REGOLE] Errore in initPage():", e);
-  }
-})();
-
-/* =========================================================
-   FUNZIONE PRINCIPALE
-========================================================= */
-function initPage() {
-  console.log("🏁 [REGOLE] initPage() eseguita");
-
-  if (!window.__criticalReady) {
-    console.log("⏳ [REGOLE] critical-ready NON ancora emesso → attendo evento");
-    document.addEventListener("critical-ready", initPage, { once: true });
-    return;
-  }
-
-  console.log("🟩 [REGOLE] critical-ready già presente → avvio caricamento regolamento");
-
+window.pageInit = function () {
+  console.log("🏁 [REGOLE 2058] pageInit() avviata");
   caricaRegolamento();
-}
+};
 
 /* =========================================================
    CARICAMENTO REGOLE (TUO CODICE ORIGINALE)
