@@ -1,34 +1,23 @@
 /* =========================================================
-   NEWSLETTER SUBSCRIBE — UNIVERSAL JSON PATCH 2027.4
-   Compatibile con backend 2027.3
+   NEWSLETTER SUBSCRIBE — Versione 2058 (Single Loader Architecture)
+   - Nessun autorun
+   - Nessun DOMContentLoaded
+   - Nessun critical-ready
+   - Esegue SOLO quando chiamato da Loader Supremo 2058
 ========================================================= */
 
-console.log("📌 [SUBSCRIBE] File caricato nel DOM");
-
-/* =========================================================
-   AUTORUN
-========================================================= */
-(function autorun() {
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", autorun, { once: true });
-    return;
-  }
-  initPage();
-})();
+console.log("📌 [SUBSCRIBE 2058] File caricato");
 
 /* =========================================================
-   INIT PAGE
+   PAGE INIT — chiamata da Loader Supremo 2058
 ========================================================= */
-function initPage() {
-  if (!window.__criticalReady) {
-    document.addEventListener("critical-ready", initPage, { once: true });
-    return;
-  }
+window.pageInit = function () {
+  console.log("🏁 [SUBSCRIBE 2058] pageInit() avviata");
   avviaSubscribe();
-}
+};
 
 /* =========================================================
-   LOGICA SUBSCRIBE
+   LOGICA SUBSCRIBE (identica)
 ========================================================= */
 function avviaSubscribe() {
   const clean = (t) =>
