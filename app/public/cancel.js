@@ -1,56 +1,24 @@
 /* =========================================================
-   CANCEL ORDER — UNIVERSAL JSON PATCH 2027.970
-   PATCH 2050 — AUTORUN + DEBUG ESTESO
+   CANCEL ORDER — Versione 2058 (Single Loader Architecture)
+   - Nessun autorun
+   - Nessun DOMContentLoaded
+   - Nessun critical-ready
+   - Esegue SOLO quando chiamato da Loader Supremo 2058
 ========================================================= */
 
-console.log("📌 [CANCEL-ORDER] File caricato nel DOM");
+console.log("📌 [CANCEL-ORDER 2058] File caricato");
 
-// =========================================================
-// AUTORUN 2050 — parte SEMPRE, anche se il DOM è riscritto
-// =========================================================
-(function autorun() {
-  console.log("🚀 [CANCEL-ORDER] Autorun avviato. DOM state:", document.readyState);
-
-  if (document.readyState === "loading") {
-    console.log("⏳ [CANCEL-ORDER] DOM non pronto → attendo DOMContentLoaded");
-    document.addEventListener("DOMContentLoaded", autorun, { once: true });
-    return;
-  }
-
-  console.log("🟢 [CANCEL-ORDER] DOM pronto → avvio initPage()");
-
-  try {
-    if (typeof initPage === "function") {
-      initPage();
-    } else {
-      console.warn("❌ [CANCEL-ORDER] initPage() NON trovata → JS NON eseguito");
-    }
-  } catch (e) {
-    console.error("🔥 [CANCEL-ORDER] Errore in initPage():", e);
-  }
-})();
-
-// =========================================================
-// FUNZIONE PRINCIPALE DELLA PAGINA
-// =========================================================
-function initPage() {
-  console.log("🏁 [CANCEL-ORDER] initPage() eseguita");
-
-  // Se critical-ready non è ancora arrivato, aspettiamo
-  if (!window.__criticalReady) {
-    console.log("⏳ [CANCEL-ORDER] critical-ready NON ancora emesso → attendo evento");
-    document.addEventListener("critical-ready", initPage, { once: true });
-    return;
-  }
-
-  console.log("🟩 [CANCEL-ORDER] critical-ready già presente → avvio pagina");
-
+/* =========================================================
+   PAGE INIT — chiamata da Loader Supremo 2058
+========================================================= */
+window.pageInit = function () {
+  console.log("🏁 [CANCEL-ORDER 2058] pageInit() avviata");
   avviaCancelOrder();
-}
+};
 
-// =========================================================
-// CODICE ORIGINALE INCAPSULATO
-// =========================================================
+/* =========================================================
+   LOGICA ORIGINALE (identica)
+========================================================= */
 async function avviaCancelOrder() {
   console.log("🔥 cancel-order.js READY");
 
