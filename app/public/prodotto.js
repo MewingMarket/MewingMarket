@@ -1,9 +1,12 @@
 /* =========================================================
-   PRODOTTO.JS — UNIVERSAL JSON PATCH 2027.4
-   Compatibile con backend 2027.3
+   PRODOTTO.JS — Versione 2058 (Single Loader Architecture)
+   - Nessun autorun
+   - Nessun DOMContentLoaded
+   - Nessun critical-ready
+   - Esegue SOLO quando chiamato da Loader Supremo 2058
 ========================================================= */
 
-console.log("📌 [PRODOTTO] File caricato nel DOM");
+console.log("📌 [PRODOTTO 2058] File caricato");
 
 /* =========================================================
    WRAPPER UNIVERSALE
@@ -25,28 +28,15 @@ async function apiProdotto(path, options = {}) {
 }
 
 /* =========================================================
-   AUTORUN
+   PAGE INIT — chiamata da Loader Supremo 2058
 ========================================================= */
-(function autorun() {
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", autorun, { once: true });
-    return;
-  }
-  initPage();
-})();
+window.pageInit = function () {
+  console.log("🏁 [PRODOTTO 2058] pageInit() avviata");
 
-/* =========================================================
-   INIT PAGE
-========================================================= */
-function initPage() {
-  if (!window.__criticalReady) {
-    document.addEventListener("critical-ready", initPage, { once: true });
-    return;
-  }
   if (typeof caricaDettaglioProdotto === "function") {
     caricaDettaglioProdotto();
   }
-}
+};
 
 /* =========================================================
    ⭐ PATCH PROMO — PRODOTTO PERSONALIZZATO
@@ -55,21 +45,18 @@ async function getProdottoPersonalizzato(id) {
   try {
     console.log("🎯 [PRODOTTO] Verifica promo per prodotto:", id);
 
-    // 1) /api/utenti/me (FIX endpoint)
     const me = await apiProdotto("/api/utenti/me", { method: "POST" });
     if (!me.success || !me.utente) {
       console.log("👤 Utente NON loggato → niente promo");
       return null;
     }
 
-    // 2) /api/promo/attiva
     const promoRes = await apiProdotto("/api/promo/attiva", { method: "POST" });
     if (!promoRes.success || !promoRes.promo) {
       console.log("🎯 Nessuna promo attiva");
       return null;
     }
 
-    // 3) /api/catalogo/personalizzato
     const catRes = await apiProdotto("/api/catalogo/personalizzato", {
       method: "POST"
     });
@@ -161,7 +148,7 @@ if (typeof caricaDettaglioProdotto === "function") {
 }
 
 /* =========================================================
-   ACQUISTA ORA
+   ⭐ ACQUISTA ORA
 ========================================================= */
 function setupAcquistoDiretto(p) {
   const btn = document.getElementById("btn-acquista-hero");
