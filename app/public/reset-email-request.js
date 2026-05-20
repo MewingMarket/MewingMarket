@@ -1,52 +1,23 @@
 /* =========================================================
-   RESET EMAIL REQUEST — UNIVERSAL JSON PATCH 2027.970
-   Versione CF (ZERO-INPUT)
-   PATCH 2050 — AUTORUN + DEBUG ESTESO
+   RESET EMAIL REQUEST — Versione 2058 (Single Loader Architecture)
+   - Nessun autorun
+   - Nessun DOMContentLoaded
+   - Nessun critical-ready
+   - Esegue SOLO quando chiamato da Loader Supremo 2058
 ========================================================= */
 
-console.log("📌 [RESET-EMAIL-REQ] File caricato nel DOM");
+console.log("📌 [RESET-EMAIL-REQ 2058] File caricato");
 
 /* =========================================================
-   AUTORUN 2050 — parte SEMPRE
+   PAGE INIT — chiamata da Loader Supremo 2058
 ========================================================= */
-(function autorun() {
-  console.log("🚀 [RESET-EMAIL-REQ] Autorun avviato. DOM state:", document.readyState);
-
-  if (document.readyState === "loading") {
-    console.log("⏳ [RESET-EMAIL-REQ] DOM non pronto → attendo DOMContentLoaded");
-    document.addEventListener("DOMContentLoaded", autorun, { once: true });
-    return;
-  }
-
-  console.log("🟢 [RESET-EMAIL-REQ] DOM pronto → avvio initPage()");
-
-  try {
-    if (typeof initPage === "function") initPage();
-    else console.warn("❌ [RESET-EMAIL-REQ] initPage() NON trovata");
-  } catch (e) {
-    console.error("🔥 [RESET-EMAIL-REQ] Errore in initPage():", e);
-  }
-})();
-
-/* =========================================================
-   FUNZIONE PRINCIPALE
-========================================================= */
-function initPage() {
-  console.log("🏁 [RESET-EMAIL-REQ] initPage() eseguita");
-
-  if (!window.__criticalReady) {
-    console.log("⏳ [RESET-EMAIL-REQ] critical-ready NON ancora emesso → attendo evento");
-    document.addEventListener("critical-ready", initPage, { once: true });
-    return;
-  }
-
-  console.log("🟩 [RESET-EMAIL-REQ] critical-ready già presente → avvio modulo");
-
+window.pageInit = function () {
+  console.log("🏁 [RESET-EMAIL-REQ 2058] pageInit() avviata");
   avviaResetEmailRequest();
-}
+};
 
 /* =========================================================
-   CODICE ORIGINALE INCAPSULATO
+   LOGICA ORIGINALE (identica)
 ========================================================= */
 function avviaResetEmailRequest() {
   console.log("🔥 reset-email-request.js READY (ZERO-INPUT)");
