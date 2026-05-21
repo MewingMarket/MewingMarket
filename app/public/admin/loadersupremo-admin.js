@@ -1,6 +1,7 @@
 // =========================================================
-// LOADER SUPREMO — ADMIN MODELLO 2058 (JAVA-MODE ORDINATO)
-// Modalità STANDBY opzionale
+// LOADER SUPREMO — ADMIN MODELLO 2058 (VERSIONE FINALE)
+// Percorso reale: /app/public/admin/loadersupremo-admin.js
+// Pipeline ADMIN 2058 completa, ordinata, JAVA-MODE SAFE
 // =========================================================
 
 if (!window.__SUPREMO_ADMIN_LOADER_2058__) {
@@ -103,7 +104,7 @@ if (!window.__SUPREMO_ADMIN_LOADER_2058__) {
         done: false
       };
 
-    window.__pageJsLoaded = window.__pageJsLoaded || false;
+    window.__adminPageJsLoaded = window.__adminPageJsLoaded || false;
     window.__criticalReady = window.__criticalReady || false;
 
     // ============================================================
@@ -133,44 +134,24 @@ if (!window.__SUPREMO_ADMIN_LOADER_2058__) {
     }
 
     // ============================================================
-    // SEO / STRUCTURED ADMIN
-    // ============================================================
-    function needSEOAdmin() {
-      const p = window.location.pathname;
-      return (
-        p.includes("dashboard") ||
-        p.includes("admin-prodotti") ||
-        p.includes("admin-confronto")
-      );
-    }
-
-    function needStructuredAdmin() {
-      const p = window.location.pathname;
-      return (
-        p.includes("admin-prodotti") ||
-        p.includes("dashboard-vendite")
-      );
-    }
-
-    // ============================================================
     // WAIT PAGE-JS-LOADED
     // ============================================================
     function waitPageJsLoadedIfNeeded() {
-      if (window.__pageJsLoaded) return Promise.resolve(true);
+      if (window.__adminPageJsLoaded) return Promise.resolve(true);
 
       return new Promise(resolve => {
         const handler = () => {
-          window.__pageJsLoaded = true;
+          window.__adminPageJsLoaded = true;
           resolve(true);
         };
 
-        document.addEventListener("page-js-loaded", handler, { once: true });
         document.addEventListener("admin-page-js-loaded", handler, { once: true });
+        document.addEventListener("page-js-loaded", handler, { once: true });
       });
     }
 
     // ============================================================
-    // SEQUENZA SUPREMO ADMIN 2058
+    // SEQUENZA SUPREMO ADMIN 2058 (FINALE)
     // ============================================================
     async function runSupremoAdmin() {
       const state = window.__SUPREMO_ADMIN_RUN_STATE__;
@@ -178,30 +159,35 @@ if (!window.__SUPREMO_ADMIN_LOADER_2058__) {
       if (state.running || state.done) return;
       state.running = true;
 
-      await loadScript("/auth.js");
+      console.log("🟦 [SUPREMO ADMIN 2058] Sequenza SUPREMO avviata");
 
-      if (needSEOAdmin()) await loadScript("/admin/seo-admin.js");
-      if (needStructuredAdmin()) await loadScript("/admin/structured-data-admin.js");
+      // 1) CRITICAL ADMIN
+      await loadScript("/admin/loader-admin.js");
 
-      await loadScript("/admin/header-admin.js", "body");
-
-      await new Promise(r => setTimeout(r, 0));
-
-      // CSS Loader Admin
+      // 2) CSS LOADER ADMIN
       document.dispatchEvent(new Event("supremo-admin-load-css"));
 
-      // Loader Universale Admin
+      // 3) GLOBAL LOADER ADMIN
+      await loadScript("/admin/global-loader-admin.js");
+      document.dispatchEvent(new Event("supremo-admin-load-global-js"));
+
+      // 4) DYNAMIC ADMIN (PRIMA DEL PAGE-JS)
+      await loadScript("/admin/dynamic-admin-loader.js");
+
+      // 5) LOADER UNIVERSALE ADMIN
       await loadScript("/admin/loader-universale-admin.js");
       document.dispatchEvent(new Event("supremo-admin-load-universale"));
 
+      // 6) ATTENDI PAGE-JS-LOADED
       await waitPageJsLoadedIfNeeded();
 
-      await loadScript("/admin/dynamic-admin-loader.js");
-
+      // 7) CRITICAL READY (una sola volta)
       if (!window.__criticalReady) {
         window.__criticalReady = true;
         document.dispatchEvent(new Event("critical-ready"));
       }
+
+      console.log("🟩 [SUPREMO ADMIN 2058] Sequenza completata");
 
       state.running = false;
       state.done = true;
