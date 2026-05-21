@@ -1,5 +1,5 @@
 // =========================================================
-// LOADER SUPREMO — ADMIN MODELLO 2058 (VERSIONE FINALE)
+// LOADER SUPREMO — ADMIN MODELLO 2058 (VERSIONE DEFINITIVA)
 // Percorso reale: /app/public/admin/loadersupremo-admin.js
 // Pipeline ADMIN 2058 completa, ordinata, JAVA-MODE SAFE
 // =========================================================
@@ -151,7 +151,7 @@ if (!window.__SUPREMO_ADMIN_LOADER_2058__) {
     }
 
     // ============================================================
-    // SEQUENZA SUPREMO ADMIN 2058 (FINALE)
+    // SEQUENZA SUPREMO ADMIN 2058 (DEFINITIVA)
     // ============================================================
     async function runSupremoAdmin() {
       const state = window.__SUPREMO_ADMIN_RUN_STATE__;
@@ -164,7 +164,8 @@ if (!window.__SUPREMO_ADMIN_LOADER_2058__) {
       // 1) CRITICAL ADMIN
       await loadScript("/admin/loader-admin.js");
 
-      // 2) CSS LOADER ADMIN
+      // 2) CSS LOADER ADMIN (carica il file e poi lancia l’evento)
+      await loadScript("/admin/css-loader-admin.js");
       document.dispatchEvent(new Event("supremo-admin-load-css"));
 
       // 3) GLOBAL LOADER ADMIN
