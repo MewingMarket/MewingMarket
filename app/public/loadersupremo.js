@@ -1,5 +1,5 @@
 // =========================================================
-// LOADER SUPREMO — PUBLIC MODELLO 2058 (VERSIONE DEFINITIVA)
+// LOADER SUPREMO — PUBLIC MODELLO 2058 (NO DYNAMIC)
 // Percorso reale: /app/public/loadersupremo.js
 // Pipeline PUBLIC 2058 completa e ordinata
 // =========================================================
@@ -11,7 +11,7 @@ if (!window.__SUPREMO_PUBLIC_2058__) {
 
     const V = "2058";
 
-    console.log("⚡ [SUPREMO PUBLIC 2058] Avvio SUPREMO PUBLIC (VERSIONE DEFINITIVA)");
+    console.log("⚡ [SUPREMO PUBLIC 2058] Avvio SUPREMO PUBLIC (NO DYNAMIC)");
 
     // ============================================================
     // GLOBAL LOCKS (fetch, script, event)
@@ -129,7 +129,7 @@ if (!window.__SUPREMO_PUBLIC_2058__) {
     }
 
     // ============================================================
-    // SEQUENZA SUPREMO PUBLIC 2058 (DEFINITIVA)
+    // SEQUENZA SUPREMO PUBLIC 2058 (NO DYNAMIC)
     // ============================================================
     async function runSupremoPublic() {
       const state = window.__SUPREMO_PUBLIC_RUN_STATE__;
@@ -137,12 +137,12 @@ if (!window.__SUPREMO_PUBLIC_2058__) {
       if (state.running || state.done) return;
       state.running = true;
 
-      console.log("🟦 [SUPREMO PUBLIC 2058] Sequenza SUPREMO avviata");
+      console.log("🟦 [SUPREMO PUBLIC 2058] Sequenza SUPREMO avviata (NO DYNAMIC)");
 
       // 1) CRITICAL LOADER
       await loadScript("/loader.js");
 
-      // 2) CSS LOADER (carica il file e poi lancia l’evento)
+      // 2) CSS LOADER
       await loadScript("/cssloader.js");
       document.dispatchEvent(new Event("supremo-public-load-css"));
 
@@ -150,14 +150,13 @@ if (!window.__SUPREMO_PUBLIC_2058__) {
       await loadScript("/global-loader.js");
       document.dispatchEvent(new Event("supremo-public-load-global-js"));
 
-      // 4) DYNAMIC LOADER (PRIMA DEL PAGE-JS)
-      await loadScript("/dynamic-loader.js");
+      // ❌ 4) DYNAMIC LOADER — DISATTIVATO
 
       // 5) LOADER UNIVERSALE
       await loadScript("/loaderuniversale.js");
       document.dispatchEvent(new Event("supremo-public-load-universale"));
 
-      console.log("🟩 [SUPREMO PUBLIC 2058] Sequenza completata");
+      console.log("🟩 [SUPREMO PUBLIC 2058] Sequenza completata (NO DYNAMIC)");
 
       state.running = false;
       state.done = true;
