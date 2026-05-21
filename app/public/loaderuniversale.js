@@ -1,8 +1,6 @@
 // =========================================================
-// LOADER UNIVERSALE PUBLIC — PATCH 2058 (VERSIONE DEFINITIVA)
+// LOADER UNIVERSALE PUBLIC — PATCH 2058 (CON pageInit)
 // Percorso reale: /app/public/loaderuniversale.js
-// Carica il JS della pagina PUBLIC usando i NOMI REALI DEI FILE
-// Esempio: /profilo.html → /profilo.js
 // =========================================================
 
 if (!window.__LOADER_UNIVERSALE_PUBLIC_2058__) {
@@ -108,13 +106,24 @@ if (!window.__LOADER_UNIVERSALE_PUBLIC_2058__) {
 
       await loadScript(src);
 
+      // ⭐ CHIAMATA pageInit()
+      if (typeof window.pageInit === "function") {
+        console.log("🚀 [UNIVERSALE PUBLIC] pageInit() rilevata → esecuzione");
+        try {
+          window.pageInit();
+        } catch (err) {
+          console.error("❌ [UNIVERSALE PUBLIC] Errore in pageInit:", err);
+        }
+      } else {
+        console.warn("⚠️ [UNIVERSALE PUBLIC] pageInit() NON trovata");
+      }
+
+      // ⭐ EMETTI page-js-loaded
+      window.__pageJsLoaded = true;
+      document.dispatchEvent(new Event("page-js-loaded"));
+
       state.running = false;
       state.done = true;
-
-      if (!window.__pageJsLoaded) {
-        window.__pageJsLoaded = true;
-        document.dispatchEvent(new Event("page-js-loaded"));
-      }
     }
 
     document.addEventListener("supremo-public-load-universale", runUniversalePublic);
