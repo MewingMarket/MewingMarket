@@ -1,8 +1,6 @@
 // =========================================================
-// LOADER UNIVERSALE ADMIN — PATCH 2058 (VERSIONE DEFINITIVA)
+// LOADER UNIVERSALE ADMIN — PATCH 2058 (CON pageInit)
 // Percorso reale: /app/public/admin/loader-universale-admin.js
-// Carica il JS della pagina ADMIN usando i NOMI REALI DEI FILE
-// Esempio: /admin/utenti.html → /admin/utenti.js
 // =========================================================
 
 if (!window.__LOADER_UNIVERSALE_ADMIN_2058__) {
@@ -97,18 +95,29 @@ if (!window.__LOADER_UNIVERSALE_ADMIN_2058__) {
       state.running = true;
 
       const { base, src } = getExpectedPageScript();
-      console.log("🔍 Pagina reale:", base);
+      console.log("🔍 Pagina ADMIN reale:", base);
       console.log("🔍 Script atteso:", src);
 
       await loadScript(src);
 
+      // ⭐ CHIAMATA pageInit()
+      if (typeof window.pageInit === "function") {
+        console.log("🚀 [UNIVERSALE ADMIN] pageInit() rilevata → esecuzione");
+        try {
+          window.pageInit();
+        } catch (err) {
+          console.error("❌ [UNIVERSALE ADMIN] Errore in pageInit:", err);
+        }
+      } else {
+        console.warn("⚠️ [UNIVERSALE ADMIN] pageInit() NON trovata");
+      }
+
+      // ⭐ EMETTI admin-page-js-loaded
+      window.__adminPageJsLoaded = true;
+      document.dispatchEvent(new Event("admin-page-js-loaded"));
+
       state.running = false;
       state.done = true;
-
-      if (!window.__adminPageJsLoaded) {
-        window.__adminPageJsLoaded = true;
-        document.dispatchEvent(new Event("admin-page-js-loaded"));
-      }
     }
 
     document.addEventListener("supremo-admin-load-universale", runUniversaleAdmin);
