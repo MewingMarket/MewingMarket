@@ -1,8 +1,6 @@
 // =========================================================
-// GLOBAL LOADER ADMIN — Versione 2058 (JAVA-MODE SAFE)
+// GLOBAL LOADER ADMIN — Versione 2058 (PATCH DEFINITIVA)
 // Percorso reale: /app/public/admin/global-loader-admin.js
-// Carica TUTTI i JS GLOBALI ADMIN in ordine deterministico
-// Emissione evento: supremo-admin-load-global-js
 // =========================================================
 
 if (!window.__GLOBAL_LOADER_ADMIN_2058__) {
@@ -17,9 +15,6 @@ if (!window.__GLOBAL_LOADER_ADMIN_2058__) {
     window.__GLOBAL_ADMIN_JS_CACHE__ =
       window.__GLOBAL_ADMIN_JS_CACHE__ || new Set();
 
-    // ============================================================
-    // Utility caricamento script
-    // ============================================================
     function loadScript(src, where = "head") {
       const key = src;
 
@@ -51,7 +46,7 @@ if (!window.__GLOBAL_LOADER_ADMIN_2058__) {
     }
 
     // ============================================================
-    // SEQUENZA GLOBAL ADMIN
+    // SEQUENZA GLOBAL ADMIN (PATCH)
     // ============================================================
     async function runGlobalAdmin() {
       console.log("🟦 [GLOBAL ADMIN 2058] Sequenza avviata");
@@ -60,19 +55,22 @@ if (!window.__GLOBAL_LOADER_ADMIN_2058__) {
       await loadScript("/auth.js");
       await loadScript("/admin/seo-admin.js");
       await loadScript("/admin/structured-data-admin.js");
-      await loadScript("/admin/header-admin.js", "body");
 
-      // Tracking globale (stesso del public)
+      // header-admin.js NON ESISTE → rimosso
+
+      // Tracking globale
       await loadScript("/tracking.js");
 
       console.log("🟩 [GLOBAL ADMIN 2058] Sequenza completata");
 
-      // Trigger per SUPREMO ADMIN
+      // Trigger per SUPREMO ADMIN (SOLO QUI)
       document.dispatchEvent(new Event("supremo-admin-load-global-js"));
     }
 
-    // Listener da SUPREMO ADMIN
-    document.addEventListener("supremo-admin-load-global-js", runGlobalAdmin);
+    // ❗ Il Global Loader NON deve ascoltare il suo stesso evento
+    // Viene avviato SOLO dal SUPREMO ADMIN
+
+    window.__runGlobalAdmin2058 = runGlobalAdmin;
 
   })();
 }
