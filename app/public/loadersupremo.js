@@ -1,5 +1,5 @@
 // =========================================================
-// LOADER SUPREMO — PUBLIC MODELLO 2058 (VERSIONE FINALE)
+// LOADER SUPREMO — PUBLIC MODELLO 2058 (VERSIONE DEFINITIVA)
 // Percorso reale: /app/public/loadersupremo.js
 // Pipeline PUBLIC 2058 completa e ordinata
 // =========================================================
@@ -11,7 +11,7 @@ if (!window.__SUPREMO_PUBLIC_2058__) {
 
     const V = "2058";
 
-    console.log("⚡ [SUPREMO PUBLIC 2058] Avvio SUPREMO PUBLIC (PATCH FINALE)");
+    console.log("⚡ [SUPREMO PUBLIC 2058] Avvio SUPREMO PUBLIC (VERSIONE DEFINITIVA)");
 
     // ============================================================
     // GLOBAL LOCKS (fetch, script, event)
@@ -129,7 +129,7 @@ if (!window.__SUPREMO_PUBLIC_2058__) {
     }
 
     // ============================================================
-    // SEQUENZA SUPREMO PUBLIC 2058 (FINALE)
+    // SEQUENZA SUPREMO PUBLIC 2058 (DEFINITIVA)
     // ============================================================
     async function runSupremoPublic() {
       const state = window.__SUPREMO_PUBLIC_RUN_STATE__;
@@ -142,7 +142,8 @@ if (!window.__SUPREMO_PUBLIC_2058__) {
       // 1) CRITICAL LOADER
       await loadScript("/loader.js");
 
-      // 2) CSS LOADER
+      // 2) CSS LOADER (carica il file e poi lancia l’evento)
+      await loadScript("/cssloader.js");
       document.dispatchEvent(new Event("supremo-public-load-css"));
 
       // 3) GLOBAL LOADER
