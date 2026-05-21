@@ -1,5 +1,6 @@
 // =========================================================
-// CSS LOADER ADMIN — PATCH 2058 (A2 FORMATTATO)
+// CSS LOADER ADMIN — PATCH 2058 (VERSIONE FINALE)
+// Percorso reale: /app/public/admin/css-loader-admin.js
 // Carica SOLO: /admin/dashboard-admin.css
 // =========================================================
 
@@ -76,9 +77,7 @@ if (!window.__CSS_LOADER_ADMIN_2058__) {
       console.log("🟩 [CSS LOADER ADMIN] Completato");
     }
 
-    // ============================================================
-    // LISTENER DA SUPREMO ADMIN
-    // ============================================================
+    // Listener da SUPREMO ADMIN
     document.addEventListener("supremo-admin-load-css", runCssLoaderAdmin);
 
   })();
