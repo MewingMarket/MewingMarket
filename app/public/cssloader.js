@@ -1,12 +1,13 @@
 // =========================================================
-// CSS LOADER — PATCH 2058 (A2 PAGINA-LOCALE)
-// Carica /style.css + /footer.css + {page}.css (stessa cartella HTML)
+// CSS LOADER — PUBLIC PATCH 2058 (VERSIONE FINALE)
+// Percorso reale: /app/public/cssloader.js
+// Carica: /style.css + /footer.css + {pagina}.css + header-shop.css (solo shop)
 // =========================================================
 
-if (!window.__CSS_LOADER_2058__) {
-  window.__CSS_LOADER_2058__ = true;
+if (!window.__CSS_LOADER_PUBLIC_2058__) {
+  window.__CSS_LOADER_PUBLIC_2058__ = true;
 
-  console.log("🎨 [CSS LOADER 2058] Attivo");
+  console.log("🎨 [CSS LOADER PUBLIC 2058] Attivo");
 
   (function () {
 
@@ -15,6 +16,9 @@ if (!window.__CSS_LOADER_2058__) {
     window.__CSS_LOADER_CACHE__ =
       window.__CSS_LOADER_CACHE__ || new Set();
 
+    // ============================================================
+    // NORMALIZZAZIONE NOME PAGINA
+    // ============================================================
     function normalizeName(name) {
       return name
         .toLowerCase()
@@ -45,36 +49,41 @@ if (!window.__CSS_LOADER_2058__) {
 
     function getPageCssHref() {
       const base = getPageId();
-      // CSS nella stessa cartella dell'HTML
       const path = window.location.pathname;
       const dir = path.endsWith("/") ? path : path.substring(0, path.lastIndexOf("/") + 1);
       return dir + base + ".css";
     }
 
+    // ============================================================
+    // CARICA CSS (SAFE)
+    // ============================================================
     function loadCSS(href) {
       if (window.__CSS_LOADER_CACHE__.has(href)) {
-        console.log("⏭️ [CSS LOADER] LOAD-SKIP:", href);
+        console.log("⏭️ [CSS LOADER PUBLIC] LOAD-SKIP:", href);
         return;
       }
 
-      console.log("➡️ [CSS LOADER] LOAD-REQUEST:", href);
+      console.log("➡️ [CSS LOADER PUBLIC] LOAD-REQUEST:", href);
 
       const link = document.createElement("link");
       link.rel = "stylesheet";
       link.href = `${href}?v=${VERSION}`;
 
       link.onload = () => {
-        console.log("✅ [CSS LOADER] LOAD-OK:", href);
+        console.log("✅ [CSS LOADER PUBLIC] LOAD-OK:", href);
         window.__CSS_LOADER_CACHE__.add(href);
       };
 
       link.onerror = () => {
-        console.warn("❌ [CSS LOADER] LOAD-FAIL:", href);
+        console.warn("❌ [CSS LOADER PUBLIC] LOAD-FAIL:", href);
       };
 
       document.head.appendChild(link);
     }
 
+    // ============================================================
+    // RIMOZIONE CSS HTML (SAFE)
+    // ============================================================
     function removeLegacyCss() {
       document.querySelectorAll('link[rel="stylesheet"]').forEach(el => {
         const href = el.getAttribute("href") || "";
@@ -83,14 +92,30 @@ if (!window.__CSS_LOADER_2058__) {
           href.includes("footer.css") ||
           href.endsWith(".css")
         ) {
-          console.log("🗑️ [CSS LOADER] Rimozione CSS HTML:", href);
+          console.log("🗑️ [CSS LOADER PUBLIC] Rimozione CSS HTML:", href);
           el.remove();
         }
       });
     }
 
+    // ============================================================
+    // PAGINE SHOP (header-shop.css)
+    // ============================================================
+    function isShopPage() {
+      const p = window.location.pathname.toLowerCase();
+      return (
+        p === "/" ||
+        p.includes("index") ||
+        p.includes("catalogo") ||
+        p.includes("prodotto")
+      );
+    }
+
+    // ============================================================
+    // AVVIO CSS LOADER PUBLIC
+    // ============================================================
     function runCssLoader() {
-      console.log("🟦 [CSS LOADER] Avvio…");
+      console.log("🟦 [CSS LOADER PUBLIC] Avvio…");
 
       removeLegacyCss();
 
@@ -102,9 +127,15 @@ if (!window.__CSS_LOADER_2058__) {
       const pageCss = getPageCssHref();
       loadCSS(pageCss);
 
-      console.log("🟩 [CSS LOADER] Completato");
+      // CSS shop
+      if (isShopPage()) {
+        loadCSS("/header-shop.css");
+      }
+
+      console.log("🟩 [CSS LOADER PUBLIC] Completato");
     }
 
+    // Listener da SUPREMO PUBLIC
     document.addEventListener("supremo-public-load-css", runCssLoader);
 
   })();
