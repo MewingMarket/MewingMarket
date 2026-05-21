@@ -1,7 +1,6 @@
 // =========================================================
-// GLOBAL LOADER PUBLIC — Versione 2058 (JAVA-MODE SAFE)
+// GLOBAL LOADER PUBLIC — Versione 2058 (PATCH DEFINITIVA)
 // Percorso reale: /app/public/global-loader.js
-// Carica TUTTI i JS GLOBALI PUBLIC in ordine deterministico
 // =========================================================
 
 if (!window.__GLOBAL_LOADER_PUBLIC_2058__) {
@@ -46,9 +45,6 @@ if (!window.__GLOBAL_LOADER_PUBLIC_2058__) {
       });
     }
 
-    // ============================================================
-    // Condizioni caricamento
-    // ============================================================
     function isShopPage() {
       const p = window.location.pathname.toLowerCase();
       return (
@@ -60,7 +56,7 @@ if (!window.__GLOBAL_LOADER_PUBLIC_2058__) {
     }
 
     // ============================================================
-    // SEQUENZA GLOBAL PUBLIC
+    // SEQUENZA GLOBAL PUBLIC (PATCH)
     // ============================================================
     async function runGlobalPublic() {
       console.log("🟦 [GLOBAL PUBLIC 2058] Sequenza avviata");
@@ -68,7 +64,9 @@ if (!window.__GLOBAL_LOADER_PUBLIC_2058__) {
       await loadScript("/auth.js");
       await loadScript("/seo.js");
       await loadScript("/structured-data.js");
-      await loadScript("/header.js", "body");
+
+      // header.js viene già caricato dal Critical Loader → rimosso
+
       await loadScript("/tracking.js");
 
       if (isShopPage()) {
@@ -77,11 +75,14 @@ if (!window.__GLOBAL_LOADER_PUBLIC_2058__) {
 
       console.log("🟩 [GLOBAL PUBLIC 2058] Sequenza completata");
 
-      // Trigger per SUPREMO
+      // Trigger per SUPREMO PUBLIC (SOLO QUI)
       document.dispatchEvent(new Event("supremo-public-load-global-js"));
     }
 
-    document.addEventListener("supremo-public-load-global-js", runGlobalPublic);
+    // ❗ Il Global Loader NON deve ascoltare il suo stesso evento
+    // Viene avviato SOLO dal SUPREMO PUBLIC
+
+    window.__runGlobalPublic2058 = runGlobalPublic;
 
   })();
 }
