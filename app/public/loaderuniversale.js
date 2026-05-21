@@ -1,22 +1,24 @@
 // =========================================================
-// LOADER UNIVERSALE PUBLIC — PATCH 2058 (JAVA-MODE READY)
-// Carica il JS di pagina in base a window.__PAGE_ID__
+// LOADER UNIVERSALE PUBLIC — PATCH 2058 (VERSIONE FINALE)
+// Percorso reale: /app/public/loaderuniversale.js
+// Carica il JS della pagina PUBLIC in base a window.__PAGE_ID__
 // Emissione evento: page-js-loaded
-// Percorso atteso JS pagina: /js/pagine/{page}.js
 // =========================================================
 
 if (!window.__LOADER_UNIVERSALE_PUBLIC_2058__) {
   window.__LOADER_UNIVERSALE_PUBLIC_2058__ = true;
 
-  console.log("⚡ [UNIVERSALE PUBLIC 2058] Loader universale attivo");
+  console.log("⚡ [UNIVERSALE PUBLIC 2058] Loader universale PUBLIC attivo");
 
   (function () {
 
     const VERSION = "2058";
 
+    // Cache per evitare doppi caricamenti
     window.__UNIVERSALE_PUBLIC_JS_CACHE__ =
       window.__UNIVERSALE_PUBLIC_JS_CACHE__ || new Set();
 
+    // Stato di esecuzione
     window.__UNIVERSALE_PUBLIC_RUN_STATE__ =
       window.__UNIVERSALE_PUBLIC_RUN_STATE__ || {
         running: false,
@@ -39,21 +41,15 @@ if (!window.__LOADER_UNIVERSALE_PUBLIC_2058__) {
     }
 
     function getPageBaseFromPath() {
-      const p = window.location.pathname;
+      const p = window.location.pathname.replace("/", "");
 
-      if (p === "/" || p === "") return "index";
+      if (p === "" || p === "/") return "index";
 
       const parts = p.split("/").filter(Boolean);
+      const last = parts[parts.length - 1];
 
-      if (parts.length >= 2 && /^\d+$/.test(parts[parts.length - 1])) {
-        return normalizeName(parts[parts.length - 2]);
-      }
-
-      if (parts.length >= 2 && !parts[parts.length - 1].includes(".")) {
-        return normalizeName(parts.join("-"));
-      }
-
-      return normalizeName(parts.pop());
+      if (!last.includes(".")) return normalizeName(last);
+      return normalizeName(last);
     }
 
     function getPageId() {
@@ -83,20 +79,20 @@ if (!window.__LOADER_UNIVERSALE_PUBLIC_2058__) {
       }
 
       return new Promise(resolve => {
-        console.log("➡️ [UNIVERSALE PUBLIC] LOAD-REQUEST", key);
+        console.log("➡️ [UNIVERSALE PUBLIC] LOAD-REQUEST:", key);
 
         const s = document.createElement("script");
         s.src = `${key}?v=${VERSION}`;
         s.async = false;
 
         s.onload = () => {
-          console.log("✅ [UNIVERSALE PUBLIC] LOAD-OK", key);
+          console.log("✅ [UNIVERSALE PUBLIC] LOAD-OK:", key);
           window.__UNIVERSALE_PUBLIC_JS_CACHE__.add(key);
           resolve(true);
         };
 
         s.onerror = () => {
-          console.warn("❌ [UNIVERSALE PUBLIC] LOAD-FAIL", key);
+          console.warn("❌ [UNIVERSALE PUBLIC] LOAD-FAIL:", key);
           resolve(false);
         };
 
@@ -121,9 +117,9 @@ if (!window.__LOADER_UNIVERSALE_PUBLIC_2058__) {
     }
 
     // ============================================================
-    // AVVIO LOADER UNIVERSALE
+    // AVVIO LOADER UNIVERSALE PUBLIC
     // ============================================================
-    async function runUniversale() {
+    async function runUniversalePublic() {
       const state = window.__UNIVERSALE_PUBLIC_RUN_STATE__;
 
       if (state.done || state.running) return;
@@ -148,10 +144,8 @@ if (!window.__LOADER_UNIVERSALE_PUBLIC_2058__) {
       }
     }
 
-    // ============================================================
-    // LISTENER DA SUPREMO
-    // ============================================================
-    document.addEventListener("supremo-public-load-universale", runUniversale);
+    // Listener da SUPREMO PUBLIC
+    document.addEventListener("supremo-public-load-universale", runUniversalePublic);
 
   })();
 }
