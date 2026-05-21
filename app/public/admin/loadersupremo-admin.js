@@ -1,5 +1,5 @@
 // =========================================================
-// LOADER SUPREMO — ADMIN MODELLO 2058 (VERSIONE DEFINITIVA)
+// LOADER SUPREMO — ADMIN MODELLO 2058 (NO DYNAMIC)
 // Percorso reale: /app/public/admin/loadersupremo-admin.js
 // Pipeline ADMIN 2058 completa, ordinata, JAVA-MODE SAFE
 // =========================================================
@@ -15,7 +15,7 @@ if (!window.__SUPREMO_ADMIN_LOADER_2058__) {
     const V = "2058";
 
     console.log(
-      "⚡ [SUPREMO ADMIN 2058] Loader admin caricato (standby:",
+      "⚡ [SUPREMO ADMIN 2058] Loader admin caricato (NO DYNAMIC, standby:",
       window.__SUPREMO_ADMIN_STANDBY__,
       ")"
     );
@@ -151,7 +151,7 @@ if (!window.__SUPREMO_ADMIN_LOADER_2058__) {
     }
 
     // ============================================================
-    // SEQUENZA SUPREMO ADMIN 2058 (DEFINITIVA)
+    // SEQUENZA SUPREMO ADMIN 2058 (NO DYNAMIC)
     // ============================================================
     async function runSupremoAdmin() {
       const state = window.__SUPREMO_ADMIN_RUN_STATE__;
@@ -159,12 +159,12 @@ if (!window.__SUPREMO_ADMIN_LOADER_2058__) {
       if (state.running || state.done) return;
       state.running = true;
 
-      console.log("🟦 [SUPREMO ADMIN 2058] Sequenza SUPREMO avviata");
+      console.log("🟦 [SUPREMO ADMIN 2058] Sequenza SUPREMO avviata (NO DYNAMIC)");
 
       // 1) CRITICAL ADMIN
       await loadScript("/admin/loader-admin.js");
 
-      // 2) CSS LOADER ADMIN (carica il file e poi lancia l’evento)
+      // 2) CSS LOADER ADMIN
       await loadScript("/admin/css-loader-admin.js");
       document.dispatchEvent(new Event("supremo-admin-load-css"));
 
@@ -172,8 +172,7 @@ if (!window.__SUPREMO_ADMIN_LOADER_2058__) {
       await loadScript("/admin/global-loader-admin.js");
       document.dispatchEvent(new Event("supremo-admin-load-global-js"));
 
-      // 4) DYNAMIC ADMIN (PRIMA DEL PAGE-JS)
-      await loadScript("/admin/dynamic-admin-loader.js");
+      // ❌ 4) DYNAMIC ADMIN — DISATTIVATO
 
       // 5) LOADER UNIVERSALE ADMIN
       await loadScript("/admin/loader-universale-admin.js");
@@ -182,13 +181,13 @@ if (!window.__SUPREMO_ADMIN_LOADER_2058__) {
       // 6) ATTENDI PAGE-JS-LOADED
       await waitPageJsLoadedIfNeeded();
 
-      // 7) CRITICAL READY (una sola volta)
+      // 7) CRITICAL READY
       if (!window.__criticalReady) {
         window.__criticalReady = true;
         document.dispatchEvent(new Event("critical-ready"));
       }
 
-      console.log("🟩 [SUPREMO ADMIN 2058] Sequenza completata");
+      console.log("🟩 [SUPREMO ADMIN 2058] Sequenza completata (NO DYNAMIC)");
 
       state.running = false;
       state.done = true;
