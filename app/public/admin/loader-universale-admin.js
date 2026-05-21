@@ -1,7 +1,7 @@
 // =========================================================
-// LOADER UNIVERSALE ADMIN — PATCH 2058 (A2 FORMATTATO)
-// Carica il JS della pagina admin in base a window.__PAGE_ID__
-// Percorso atteso: /admin/js/pagine/{page}.js
+// LOADER UNIVERSALE ADMIN — PATCH 2058 (VERSIONE FINALE)
+// Percorso reale: /app/public/admin/loader-universale-admin.js
+// Carica il JS della pagina ADMIN in base a window.__PAGE_ID__
 // Emissione evento: admin-page-js-loaded
 // =========================================================
 
@@ -153,9 +153,7 @@ if (!window.__LOADER_UNIVERSALE_ADMIN_2058__) {
       }
     }
 
-    // ============================================================
-    // LISTENER DA SUPREMO ADMIN
-    // ============================================================
+    // Listener da SUPREMO ADMIN
     document.addEventListener("supremo-admin-load-universale", runUniversaleAdmin);
 
   })();
