@@ -1,6 +1,7 @@
 // =========================================================
-// LOADER SUPREMO — PUBLIC MODELLO 2058 (JAVA-MODE SAFE)
-// Single Loader Architecture 2058
+// LOADER SUPREMO — PUBLIC MODELLO 2058 (VERSIONE FINALE)
+// Percorso reale: /app/public/loadersupremo.js
+// Pipeline PUBLIC 2058 completa e ordinata
 // =========================================================
 
 if (!window.__SUPREMO_PUBLIC_2058__) {
@@ -10,16 +11,14 @@ if (!window.__SUPREMO_PUBLIC_2058__) {
 
     const V = "2058";
 
-    console.log("⚡ [SUPREMO PUBLIC 2058] Avvio SUPREMO PUBLIC");
+    console.log("⚡ [SUPREMO PUBLIC 2058] Avvio SUPREMO PUBLIC (PATCH FINALE)");
 
     // ============================================================
-    // GLOBAL FETCH LOCK
+    // GLOBAL LOCKS (fetch, script, event)
     // ============================================================
     (function() {
       if (window.__GLOBAL_FETCH_LOCK_PATCHED__) return;
       window.__GLOBAL_FETCH_LOCK_PATCHED__ = true;
-
-      console.log("🛡️ [SUPREMO PUBLIC 2058] Global Fetch Lock attivo");
 
       const originalFetch = window.fetch;
       const pending = new Map();
@@ -27,29 +26,19 @@ if (!window.__SUPREMO_PUBLIC_2058__) {
       window.fetch = function(url, options = {}) {
         const key = typeof url === "string" ? url : url.url;
 
-        if (pending.has(key)) {
-          console.log("♻️ [FETCH-LOCK] Riutilizzo fetch:", key);
-          return pending.get(key);
-        }
+        if (pending.has(key)) return pending.get(key);
 
         const p = originalFetch(url, options)
           .finally(() => pending.delete(key));
 
         pending.set(key, p);
-        console.log("🚀 [FETCH-LOCK] Nuova fetch:", key);
-
         return p;
       };
     })();
 
-    // ============================================================
-    // GLOBAL SCRIPT LOCK
-    // ============================================================
     (function() {
       if (window.__GLOBAL_SCRIPT_LOCK_PATCHED__) return;
       window.__GLOBAL_SCRIPT_LOCK_PATCHED__ = true;
-
-      console.log("🛡️ [SUPREMO PUBLIC 2058] Global Script Lock attivo");
 
       const origCreate = document.createElement;
       const loaded = new Set();
@@ -76,14 +65,9 @@ if (!window.__SUPREMO_PUBLIC_2058__) {
       };
     })();
 
-    // ============================================================
-    // GLOBAL EVENT LOCK
-    // ============================================================
     (function() {
       if (window.__GLOBAL_EVENT_LOCK_PATCHED__) return;
       window.__GLOBAL_EVENT_LOCK_PATCHED__ = true;
-
-      console.log("🛡️ [SUPREMO PUBLIC 2058] Global Event Lock attivo");
 
       const emitted = new Set();
       const origDispatch = document.dispatchEvent;
@@ -92,10 +76,7 @@ if (!window.__SUPREMO_PUBLIC_2058__) {
         const name = ev.type;
 
         if (name === "critical-ready" || name === "page-js-loaded") {
-          if (emitted.has(name)) {
-            console.warn("⛔ [EVENT-LOCK] Evento già emesso:", name);
-            return true;
-          }
+          if (emitted.has(name)) return true;
           emitted.add(name);
         }
 
@@ -106,7 +87,9 @@ if (!window.__SUPREMO_PUBLIC_2058__) {
     // ============================================================
     // CACHE + RUN STATE
     // ============================================================
-    window.__SUPREMO_JS_CACHE__ = window.__SUPREMO_JS_CACHE__ || new Set();
+    window.__SUPREMO_PUBLIC_JS_CACHE__ =
+      window.__SUPREMO_PUBLIC_JS_CACHE__ || new Set();
+
     window.__SUPREMO_PUBLIC_RUN_STATE__ =
       window.__SUPREMO_PUBLIC_RUN_STATE__ || { running: false, done: false };
 
@@ -118,7 +101,7 @@ if (!window.__SUPREMO_PUBLIC_2058__) {
     function loadScript(src, where = "head") {
       const key = src;
 
-      if (window.__SUPREMO_JS_CACHE__.has(key)) {
+      if (window.__SUPREMO_PUBLIC_JS_CACHE__.has(key)) {
         console.log("⏭️ [SUPREMO PUBLIC] LOAD-SKIP:", key);
         return Promise.resolve(true);
       }
@@ -132,7 +115,7 @@ if (!window.__SUPREMO_PUBLIC_2058__) {
 
         s.onload = () => {
           console.log("✅ [SUPREMO PUBLIC] LOAD-OK:", key);
-          window.__SUPREMO_JS_CACHE__.add(key);
+          window.__SUPREMO_PUBLIC_JS_CACHE__.add(key);
           resolve(true);
         };
 
@@ -146,40 +129,7 @@ if (!window.__SUPREMO_PUBLIC_2058__) {
     }
 
     // ============================================================
-    // Condizioni caricamento
-    // ============================================================
-    function shouldLoadCarrello() {
-      const p = window.location.pathname;
-      return (
-        p === "/" ||
-        p.includes("index") ||
-        p.includes("catalogo") ||
-        p.includes("prodotto")
-      );
-    }
-
-    function needSEO() {
-      const p = window.location.pathname.toLowerCase();
-      return (
-        p === "/" ||
-        p.includes("index") ||
-        p.includes("catalogo") ||
-        p.includes("prodotto") ||
-        p.includes("faq") ||
-        p.includes("assistenza")
-      );
-    }
-
-    function needStructured() {
-      const p = window.location.pathname.toLowerCase();
-      return (
-        p.includes("catalogo") ||
-        p.includes("prodotto")
-      );
-    }
-
-    // ============================================================
-    // SEQUENZA SUPREMO PUBLIC 2058
+    // SEQUENZA SUPREMO PUBLIC 2058 (FINALE)
     // ============================================================
     async function runSupremoPublic() {
       const state = window.__SUPREMO_PUBLIC_RUN_STATE__;
@@ -189,24 +139,21 @@ if (!window.__SUPREMO_PUBLIC_2058__) {
 
       console.log("🟦 [SUPREMO PUBLIC 2058] Sequenza SUPREMO avviata");
 
+      // 1) CRITICAL LOADER
       await loadScript("/loader.js");
-      await loadScript("/auth.js");
 
-      if (needSEO()) await loadScript("/seo.js");
-      if (needStructured()) await loadScript("/structured-data.js");
-
-      await loadScript("/header.js", "body");
-
-      if (shouldLoadCarrello()) {
-        await loadScript("/carrello.js", "body");
-      }
-
-      // CSS Loader
-      console.log("🎨 [SUPREMO PUBLIC 2058] Trigger CSS Loader");
+      // 2) CSS LOADER
       document.dispatchEvent(new Event("supremo-public-load-css"));
 
-      // Loader Universale
-      console.log("📦 [SUPREMO PUBLIC 2058] Trigger Loader Universale");
+      // 3) GLOBAL LOADER
+      await loadScript("/global-loader.js");
+      document.dispatchEvent(new Event("supremo-public-load-global-js"));
+
+      // 4) DYNAMIC LOADER (PRIMA DEL PAGE-JS)
+      await loadScript("/dynamic-loader.js");
+
+      // 5) LOADER UNIVERSALE
+      await loadScript("/loaderuniversale.js");
       document.dispatchEvent(new Event("supremo-public-load-universale"));
 
       console.log("🟩 [SUPREMO PUBLIC 2058] Sequenza completata");
