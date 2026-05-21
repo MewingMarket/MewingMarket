@@ -1,15 +1,15 @@
 /* =========================================================
-   SEO DINAMICO – PATCH 2027.4
-   Compatibile con Java‑mode + Promo + Catalogo 2057
+   SEO STATIC MODE — PATCH 2058 (A2)
+   - Nessun dynamic title
+   - Nessuna description dinamica
+   - Nessun canonical dinamico
+   - Aggiorna SOLO OpenGraph + Twitter per pagina prodotto
 ========================================================= */
 
 (function () {
 
   setTimeout(() => {
 
-    /* =========================================================
-       SANITIZZAZIONE
-    ========================================================== */
     const clean = (t) =>
       typeof t === "string"
         ? t.replace(/</g, "&lt;").replace(/>/g, "&gt;").trim()
@@ -20,126 +20,64 @@
         ? url
         : "";
 
-    /* =========================================================
-       LETTURA PATH E PARAMETRI
-    ========================================================== */
     const path = window.location.pathname.toLowerCase();
     const params = new URLSearchParams(window.location.search);
     const id = clean(params.get("id") || "");
 
     /* =========================================================
-       META DI DEFAULT
+       SOLO PAGINA PRODOTTO
+       (il resto è statico negli HTML)
     ========================================================== */
-    let title = "MewingMarket – Prodotti digitali";
-    let description =
-      "Prodotti digitali chiari, utili e immediati. Guide, planner e strumenti per lavorare meglio ogni giorno.";
-    let canonical = "https://www.mewingmarket.it/";
+    if (!id) return;
 
-    /* =========================================================
-       PAGINE STATICHE
-    ========================================================== */
-    const pages = {
-      "/catalogo.html": {
-        title: "Catalogo – MewingMarket",
-        description: "Esplora il catalogo completo dei prodotti digitali MewingMarket."
-      },
-      "/chisiamo.html": {
-        title: "Chi siamo – MewingMarket",
-        description: "Scopri la missione e la visione di MewingMarket."
-      },
-      "/faq.html": {
-        title: "FAQ – MewingMarket",
-        description: "Domande frequenti su prodotti, pagamenti e supporto."
-      },
-      "/contatti.html": {
-        title: "Contatti – MewingMarket",
-        description: "Contatta il supporto o il reparto vendite di MewingMarket."
-      },
-      "/privacy.html": {
-        title: "Privacy Policy – MewingMarket",
-        description: "Informativa sulla privacy di MewingMarket."
-      },
-      "/cookie.html": {
-        title: "Cookie Policy – MewingMarket",
-        description: "Informativa sui cookie utilizzati da MewingMarket."
-      },
-      "/termini-e-condizioni.html": {
-        title: "Termini e condizioni – MewingMarket",
-        description: "Termini e condizioni di utilizzo del sito MewingMarket."
-      }
-    };
+    fetch("/api/prodotti-new", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" }
+    })
+      .then(r => r.json().catch(() => null))
+      .then(json => {
+        if (!json || !json.success || !Array.isArray(json.prodotti)) return;
 
-    if (pages[path]) {
-      title = pages[path].title;
-      description = pages[path].description;
-      canonical = "https://www.mewingmarket.it" + path;
-    }
+        const p = json.prodotti.find(pr => String(pr.id) === String(id));
+        if (!p) return;
 
-    /* =========================================================
-       PAGINA PRODOTTO (ID)
-    ========================================================== */
-    if (id) {
-      fetch("/api/prodotti-new", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" }
+        const title = clean(p.titolo);
+        const description = clean(
+          p.descrizioneEmail ||
+          p.descrizioneBreve ||
+          p.descrizioneLunga ||
+          ""
+        );
+
+        const canonical = `https://www.mewingmarket.it/prodotto.html?id=${id}`;
+        const img = safeURL(p.immagine_url || p.immagine);
+
+        /* =====================================================
+           OPEN GRAPH (solo se presenti in head.html)
+        ====================================================== */
+        const ogTitle = document.querySelector('meta[property="og:title"]');
+        const ogDesc = document.querySelector('meta[property="og:description"]');
+        const ogUrl = document.querySelector('meta[property="og:url"]');
+        const ogImg = document.querySelector('meta[property="og:image"]');
+
+        if (ogTitle) ogTitle.setAttribute("content", title);
+        if (ogDesc) ogDesc.setAttribute("content", description);
+        if (ogUrl) ogUrl.setAttribute("content", canonical);
+        if (ogImg && img) ogImg.setAttribute("content", img);
+
+        /* =====================================================
+           TWITTER
+        ====================================================== */
+        const twTitle = document.querySelector('meta[name="twitter:title"]');
+        const twDesc = document.querySelector('meta[name="twitter:description"]');
+        const twImg = document.querySelector('meta[name="twitter:image"]');
+
+        if (twTitle) twTitle.setAttribute("content", title);
+        if (twDesc) twDesc.setAttribute("content", description);
+        if (twImg && img) twImg.setAttribute("content", img);
+
       })
-        .then(r => r.json().catch(() => null))
-        .then(json => {
-          if (!json || !json.success || !Array.isArray(json.prodotti)) return;
-
-          const p = json.prodotti.find(pr => String(pr.id) === String(id));
-          if (!p) return;
-
-          title = clean(p.titolo);
-
-          description = clean(
-            p.descrizioneEmail ||
-            p.descrizioneBreve ||
-            p.descrizioneLunga ||
-            ""
-          );
-
-          canonical = `https://www.mewingmarket.it/prodotto.html?id=${id}`;
-
-          const img = safeURL(p.immagine_url || p.immagine);
-
-          /* =====================================================
-             OPEN GRAPH
-          ====================================================== */
-          const ogTitle = document.getElementById("og-title");
-          const ogDesc = document.getElementById("og-description");
-          const ogUrl = document.getElementById("og-url");
-          const ogImg = document.getElementById("og-image");
-
-          if (ogTitle) ogTitle.setAttribute("content", title);
-          if (ogDesc) ogDesc.setAttribute("content", description);
-          if (ogUrl) ogUrl.setAttribute("content", canonical);
-          if (ogImg && img) ogImg.setAttribute("content", img);
-
-          /* =====================================================
-             TWITTER
-          ====================================================== */
-          const twTitle = document.getElementById("twitter-title");
-          const twDesc = document.getElementById("twitter-description");
-          const twImg = document.getElementById("twitter-image");
-
-          if (twTitle) twTitle.setAttribute("content", title);
-          if (twDesc) twDesc.setAttribute("content", description);
-          if (twImg && img) twImg.setAttribute("content", img);
-        })
-        .catch(err => console.error("Errore SEO prodotti:", err));
-    }
-
-    /* =========================================================
-       META COMUNI
-    ========================================================== */
-    const elTitle = document.getElementById("dynamic-title");
-    const elDesc = document.getElementById("dynamic-description");
-    const elCanonical = document.getElementById("dynamic-canonical");
-
-    if (elTitle) elTitle.textContent = title;
-    if (elDesc) elDesc.setAttribute("content", description);
-    if (elCanonical) elCanonical.setAttribute("href", canonical);
+      .catch(err => console.error("Errore SEO prodotti:", err));
 
   }, 0);
 
