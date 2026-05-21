@@ -2,7 +2,7 @@
 // LOADER UNIVERSALE PUBLIC — PATCH 2058 (VERSIONE DEFINITIVA)
 // Percorso reale: /app/public/loaderuniversale.js
 // Carica il JS della pagina PUBLIC usando i NOMI REALI DEI FILE
-// Emissione evento: page-js-loaded
+// Esempio: /profilo.html → /profilo.js
 // =========================================================
 
 if (!window.__LOADER_UNIVERSALE_PUBLIC_2058__) {
@@ -44,16 +44,13 @@ if (!window.__LOADER_UNIVERSALE_PUBLIC_2058__) {
     function getPageBaseFromPath() {
       const p = window.location.pathname;
 
-      // Homepage → index
       if (p === "/" || p === "") return "index";
 
       const parts = p.split("/").filter(Boolean);
       const last = parts[parts.length - 1];
 
-      // Se non ha estensione → è una cartella → usa il nome reale
       if (!last.includes(".")) return normalizeName(last);
 
-      // Se è un file → togli estensione
       return normalizeName(last.replace(/\.html?$/, ""));
     }
 
@@ -68,7 +65,7 @@ if (!window.__LOADER_UNIVERSALE_PUBLIC_2058__) {
       const base = getPageId();
       return {
         base,
-        src: `/js/pagine/${base}.js`
+        src: `/${base}.js`
       };
     }
 
@@ -77,27 +74,20 @@ if (!window.__LOADER_UNIVERSALE_PUBLIC_2058__) {
     // ============================================================
     function loadScript(src) {
       if (window.__UNIVERSALE_PUBLIC_JS_CACHE__.has(src)) {
-        console.log("⏭️ [UNIVERSALE PUBLIC] LOAD-SKIP:", src);
         return Promise.resolve(true);
       }
 
       return new Promise(resolve => {
-        console.log("➡️ [UNIVERSALE PUBLIC] LOAD-REQUEST:", src);
-
         const s = document.createElement("script");
         s.src = `${src}?v=${VERSION}`;
         s.async = false;
 
         s.onload = () => {
-          console.log("✅ [UNIVERSALE PUBLIC] LOAD-OK:", src);
           window.__UNIVERSALE_PUBLIC_JS_CACHE__.add(src);
           resolve(true);
         };
 
-        s.onerror = () => {
-          console.warn("❌ [UNIVERSALE PUBLIC] LOAD-FAIL:", src);
-          resolve(false);
-        };
+        s.onerror = () => resolve(false);
 
         document.body.appendChild(s);
       });
@@ -112,8 +102,6 @@ if (!window.__LOADER_UNIVERSALE_PUBLIC_2058__) {
 
       state.running = true;
 
-      console.log("🟦 [UNIVERSALE PUBLIC] Evento supremo-public-load-universale → avvio");
-
       const { base, src } = getExpectedPageScript();
       console.log("🔍 Pagina reale:", base);
       console.log("🔍 Script atteso:", src);
@@ -124,7 +112,6 @@ if (!window.__LOADER_UNIVERSALE_PUBLIC_2058__) {
       state.done = true;
 
       if (!window.__pageJsLoaded) {
-        console.log("🟩 [UNIVERSALE PUBLIC] page-js-loaded");
         window.__pageJsLoaded = true;
         document.dispatchEvent(new Event("page-js-loaded"));
       }
