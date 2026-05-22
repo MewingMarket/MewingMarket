@@ -1,6 +1,7 @@
 /* =========================================================
-   AUTH-USER.CJS — Versione 2027.501 (SAFE + UNIVERSALE)
+   AUTH-USER.CJS — Versione 2027.502 (SAFE + UNIVERSALE)
    FIX: null.id • FIX: match API • FIX: Express path issues
+   FIX CRITICO: req.uid mancante → sito sempre in guest mode
 ========================================================= */
 
 const path = require("path");
@@ -26,9 +27,6 @@ function getTokenFromCookie(req) {
 
 module.exports = function authUser(req, res, next) {
   try {
-    // =====================================================
-    // FIX: Express può cambiare req.path → usiamo originalUrl
-    // =====================================================
     const raw = req.originalUrl || req.url || req.path || "";
     const pathLower = raw.toLowerCase();
     const cleanPath = pathLower.split("?")[0];
@@ -103,7 +101,7 @@ module.exports = function authUser(req, res, next) {
     // =====================================================
     if (!isProtected) {
       console.log("AUTH DEBUG → API NON PROTETTA → PASSA");
-      req.user = null; // NON CAUSA PIÙ ERRORI
+      req.user = null;
       return next();
     }
 
@@ -149,6 +147,11 @@ module.exports = function authUser(req, res, next) {
       codice_fiscale: row.codice_fiscale,
       _diagnostica: "auth-user-ok"
     };
+
+    // =====================================================
+    // ⭐ PATCH CRITICA: req.uid mancante → sito sempre guest
+    // =====================================================
+    req.uid = row.id;   // <--- QUESTA È LA PATCH CHE SBLOCCA TUTTO
 
     console.log("AUTH DEBUG → UTENTE OK:", req.user.email, req.user.ruolo);
 
