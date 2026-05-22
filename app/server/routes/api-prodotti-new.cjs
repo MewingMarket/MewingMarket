@@ -74,7 +74,6 @@ async function getProdottoById(req) {
 
 /* =========================================================
    3) salvaProdotto (ADMIN)
-   PATCH 2027.3 — competitor + fallback + sicurezza
 ========================================================= */
 async function salvaProdotto(req) {
   console.log("[DEBUG prodotti] salvaProdotto()");
@@ -91,29 +90,18 @@ async function salvaProdotto(req) {
       return { success: false, error: "Prezzo non valido" };
     }
 
-    /* ---------------------------------------------------------
-       Normalizzazione campi competitor
-    --------------------------------------------------------- */
     const prodottoData = {
       ...data,
-
       percentuale_competitor: safe(data.percentuale_competitor),
       punteggio_saturazione: safe(data.punteggio_saturazione),
       punteggio_opportunita: safe(data.punteggio_opportunita),
       configurazione_consigliata: safe(data.configurazione_consigliata),
-
       categoria: safe(data.categoria, "generico"),
       prezzo_cent: Number(prezzo)
     };
 
-    /* ---------------------------------------------------------
-       SALVATAGGIO SQL
-    --------------------------------------------------------- */
     const prodotto = catalogo.saveProduct(prodottoData);
 
-    /* ---------------------------------------------------------
-       MIRROR JSON
-    --------------------------------------------------------- */
     try {
       await jsonGen.exportProducts();
       await jsonGen.exportCategories();
@@ -123,9 +111,6 @@ async function salvaProdotto(req) {
       console.warn("⚠️ Mirror JSON fallito:", errJson.message);
     }
 
-    /* ---------------------------------------------------------
-       PIPELINE SOCIAL
-    --------------------------------------------------------- */
     try {
       pipeline.pipelineProdotto(prodotto.id);
       console.log("🚀 Pipeline social avviata:", prodotto.id);
@@ -245,7 +230,7 @@ async function deleteProdotto(req) { return eliminaProdotto(req); }
    EXPORT — stile Java
 ========================================================= */
 module.exports = {
-  prodottiNew, // /api/prodotti-new
+  prodottiNew,
 
   getProdotti,
   getProdottoById,
