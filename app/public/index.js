@@ -180,7 +180,7 @@ async function avviaHomepage() {
     let data = await getCatalogoPersonalizzatoHomeCached();
 
     if (!data) {
-      const baseRes = await apiHome("/api/prodotti-new");
+      const baseRes = await apiHome("/api/prodotti/getpublic");
       if (!baseRes.success || !Array.isArray(baseRes.prodotti)) return;
 
       prodotti = baseRes.prodotti;
@@ -189,7 +189,7 @@ async function avviaHomepage() {
     }
   } catch (err) {
     console.error("🔥 [HOME] Errore homepage:", err);
-    const baseRes = await apiHome("/api/prodotti-new");
+    const baseRes = await apiHome("/api/prodotti/getpublic");
     if (!baseRes.success) return;
     prodotti = baseRes.prodotti;
   }
