@@ -507,4 +507,18 @@ async function meUtente(req) { return me(req); }
    EXPORT — stile Java (funzioni + alias)
 ========================================================= */
 
-module.exports
+module.exports = {
+  registrazione,
+  login,
+  cambiaEmail,
+  cambiaPassword,
+  eliminaAccount,
+  resetPasswordRequest,
+  resetPasswordConfirm,
+  resetEmailRequest,
+  resetEmailConfirm,
+  me,
+
+  // alias compatibilità
+  registrazioneUtente,
+  loginUtente,
