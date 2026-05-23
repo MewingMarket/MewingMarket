@@ -1,7 +1,7 @@
 /*
   FILE: chat.js
   PATH: /app/public/videogioco/chat.js
-  DESC: Logica chat + LIM moderna: messaggi, avatar, animazioni, missioni + XP/Level.
+  DESC: Chat completa: testo, voce, allegati, LIM moderna, avatar, XP/Level/Missioni.
 */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -9,6 +9,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const chatBox = document.getElementById("chat-box");
   const chatInput = document.getElementById("chat-input");
   const chatSend = document.getElementById("chat-send");
+  const chatVoice = document.getElementById("chat-voice");
+  const chatAttach = document.getElementById("chat-attach");
+  const chatFile = document.getElementById("chat-file");
+
   const avatarImg = document.getElementById("avatar-img");
   const limScreen = document.getElementById("lim-screen");
 
@@ -70,112 +74,62 @@ document.addEventListener("DOMContentLoaded", () => {
   window.changeAvatar = changeAvatar;
 
   /* ============================================================
-     XP + LEVEL — RENDER (opzionale, se il backend li usa)
+     RENDER XP / LEVEL / MISSIONI
   ============================================================ */
   function renderXP(data) {
-    if (!limScreen) return;
-
     const div = document.createElement("div");
     div.className = "lim-block xp-block";
-
-    const h3 = document.createElement("h3");
-    h3.textContent = "⭐ XP guadagnati!";
-    div.appendChild(h3);
-
-    const p = document.createElement("p");
-    p.innerHTML = `Hai ottenuto <b>${data.xp}</b> XP`;
-    div.appendChild(p);
-
+    div.innerHTML = `<h3>⭐ XP guadagnati!</h3><p>+${data.xp} XP</p>`;
     limScreen.appendChild(div);
     npcTalk();
   }
 
   function renderLevelUp(data) {
-    if (!limScreen) return;
-
     const div = document.createElement("div");
     div.className = "lim-block levelup-block";
-
-    const h3 = document.createElement("h3");
-    h3.textContent = "🎉 LIVELLO SUPERATO!";
-    div.appendChild(h3);
-
-    const p = document.createElement("p");
-    p.innerHTML = `Complimenti! Sei salito al livello <b>${data.level}</b>`;
-    div.appendChild(p);
-
+    div.innerHTML = `<h3>🎉 LIVELLO SUPERATO!</h3><p>Sei ora livello <b>${data.level}</b></p>`;
     limScreen.appendChild(div);
     npcTalk();
   }
 
   function renderMissionComplete(data) {
-    if (!limScreen) return;
-
     const div = document.createElement("div");
     div.className = "lim-block mission-complete-block";
-
-    const h3 = document.createElement("h3");
-    h3.textContent = "🏆 Missione completata!";
-    div.appendChild(h3);
-
-    const p = document.createElement("p");
-    p.innerHTML = `Hai completato: <b>${data.mission}</b>`;
-    div.appendChild(p);
-
+    div.innerHTML = `<h3>🏆 Missione completata!</h3><p>${data.mission}</p>`;
     limScreen.appendChild(div);
     npcTalk();
   }
 
   /* ============================================================
-     RENDER LIM — SUPPORTA MISSIONI + XP + LEVEL + VIDEO
+     RENDER LIM — FORMATO UNICO
   ============================================================ */
   function renderOnLIM(data) {
-    if (!limScreen || !data) return;
     limScreen.innerHTML = "";
 
-    /* XP */
-    if (data.type === "xp") {
-      renderXP(data);
-      return;
-    }
+    // XP / LEVEL update
+    if (typeof data.xp === "number") localStorage.setItem("player_xp", String(data.xp));
+    if (typeof data.level === "number") localStorage.setItem("player_level", String(data.level));
+    if (typeof window.updateHUD === "function") window.updateHUD();
 
-    /* LEVEL UP */
-    if (data.type === "level_up") {
-      renderLevelUp(data);
-      return;
-    }
+    if (data.type === "xp") return renderXP(data);
+    if (data.type === "level_up") return renderLevelUp(data);
+    if (data.missionCompleted) renderMissionComplete(data);
 
-    /* MISSIONE COMPLETATA (flag generico) */
-    if (data.missionCompleted) {
-      renderMissionComplete(data);
-    }
-
-    /* VIDEO (tutorial / guida) */
+    // VIDEO
     if (data.type === "video" && data.url) {
       const div = document.createElement("div");
       div.className = "lim-block";
-
-      const h3 = document.createElement("h3");
-      h3.textContent = "🎥 Video tutorial";
-      div.appendChild(h3);
-
-      const p = document.createElement("p");
-      p.innerHTML = "Apri il video per vedere la spiegazione completa.";
-      div.appendChild(p);
-
-      const a = document.createElement("a");
-      a.href = data.url;
-      a.textContent = "Apri video";
-      a.target = "_blank";
-      a.className = "lim-cta";
-      div.appendChild(a);
-
+      div.innerHTML = `
+        <h3>🎥 Video tutorial</h3>
+        <p>Apri il video per vedere la spiegazione completa.</p>
+        <a href="${data.url}" target="_blank" class="lim-cta">Apri video</a>
+      `;
       limScreen.appendChild(div);
       npcTalk();
       return;
     }
 
-    /* TESTO SEMPLICE */
+    // TESTO
     if (data.type === "text" && data.text) {
       const p = document.createElement("p");
       p.innerHTML = clean(data.text);
@@ -184,44 +138,26 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    /* MISSIONE (blocks) */
+    // MISSIONE (blocks)
     if (data.type === "mission" && Array.isArray(data.blocks)) {
       data.blocks.forEach(block => {
         const div = document.createElement("div");
         div.className = "lim-block";
 
-        if (block.title) {
-          const h3 = document.createElement("h3");
-          h3.textContent = block.title;
-          div.appendChild(h3);
-        }
-
-        if (block.text) {
-          const p = document.createElement("p");
-          p.innerHTML = clean(block.text);
-          div.appendChild(p);
-        }
-
+        if (block.title) div.innerHTML += `<h3>${block.title}</h3>`;
+        if (block.text) div.innerHTML += `<p>${clean(block.text)}</p>`;
         if (block.cta) {
-          const a = document.createElement("a");
-          a.href = block.cta.href;
-          a.textContent = block.cta.label;
-          a.target = "_blank";
-          a.className = "lim-cta";
-          div.appendChild(a);
+          div.innerHTML += `<a href="${block.cta.href}" target="_blank" class="lim-cta">${block.cta.label}</a>`;
         }
 
         limScreen.appendChild(div);
       });
-
       npcTalk();
       return;
     }
 
-    /* FALLBACK */
-    const p = document.createElement("p");
-    p.innerHTML = clean(data.fallback || "Nessuna risposta disponibile.");
-    limScreen.appendChild(p);
+    // FALLBACK
+    limScreen.innerHTML = `<p>${clean(data.fallback || "Nessuna risposta disponibile.")}</p>`;
     npcTalk();
   }
 
@@ -236,7 +172,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return null;
       }
       const json = await res.json();
-      // chat.cjs restituisce un oggetto; eventuale wrapper {data: ...} viene gestito
       return json.data || json;
     } catch {
       addMessage("❌ Errore rete.");
@@ -245,11 +180,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* ============================================================
-     INVIO MESSAGGIO
+     INVIO TESTO
   ============================================================ */
   async function sendTextMessage() {
-    if (!chatInput) return;
-
     const message = clean(chatInput.value);
     if (!message) return;
 
@@ -263,11 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const data = await apiChat("/api/chat/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message,
-        bot,
-        gender
-      })
+      body: JSON.stringify({ message, bot, gender })
     });
 
     if (!data) return;
@@ -287,6 +216,96 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* ============================================================
+     INVIO ALLEGATI (📎)
+  ============================================================ */
+  if (chatAttach && chatFile) {
+    chatAttach.addEventListener("click", () => chatFile.click());
+
+    chatFile.addEventListener("change", async () => {
+      if (!chatFile.files.length) return;
+
+      const file = chatFile.files[0];
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("message", "");
+
+      addMessage("📎 File inviato: " + file.name, "user");
+
+      const res = await fetch("/api/chat/attachment", {
+        method: "POST",
+        body: formData
+      });
+
+      const json = await res.json();
+      if (!json.success) {
+        addMessage("❌ Errore allegato.");
+        return;
+      }
+
+      if (json.avatar) changeAvatar(json.avatar);
+      renderOnLIM(json);
+    });
+  }
+
+  /* ============================================================
+     INVIO VOCALE (🎤)
+  ============================================================ */
+  let mediaRecorder = null;
+  let audioChunks = [];
+
+  async function startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      audioChunks = [];
+
+      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+
+      mediaRecorder.onstop = async () => {
+        const blob = new Blob(audioChunks, { type: "audio/webm" });
+
+        addMessage("🎤 Elaborazione audio…", "bot");
+
+        const res = await fetch("/api/chat/voice", {
+          method: "POST",
+          body: blob
+        });
+
+        const json = await res.json();
+        if (!json.success) {
+          addMessage("❌ Errore voce.");
+          return;
+        }
+
+        addMessage(json.text, "user");
+
+        if (json.avatar) changeAvatar(json.avatar);
+        renderOnLIM(json);
+      };
+
+      mediaRecorder.start();
+      addMessage("🎤 Registrazione avviata…", "bot");
+
+    } catch {
+      addMessage("❌ Microfono non disponibile.", "bot");
+    }
+  }
+
+  function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state === "recording") {
+      mediaRecorder.stop();
+      addMessage("🎤 Registrazione terminata", "bot");
+    }
+  }
+
+  if (chatVoice) {
+    chatVoice.addEventListener("mousedown", startRecording);
+    chatVoice.addEventListener("mouseup", stopRecording);
+    chatVoice.addEventListener("touchstart", startRecording);
+    chatVoice.addEventListener("touchend", stopRecording);
+  }
+
+  /* ============================================================
      MESSAGGIO DI BENVENUTO DEL SAGGIO
   ============================================================ */
   const welcomePending = localStorage.getItem("welcome_sage_pending");
@@ -296,13 +315,10 @@ document.addEventListener("DOMContentLoaded", () => {
     avatarImg.src = `/videogioco/${npc}.png`;
     npcEnter();
 
-    limScreen.innerHTML = "";
-    const p1 = document.createElement("p");
-    p1.innerHTML = "Benvenuto nel gioco! Io sarò la tua guida.";
-    const p2 = document.createElement("p");
-    p2.innerHTML = "Scrivi in basso e io, insieme agli altri bot, ti risponderemo dalla LIM.";
-    limScreen.appendChild(p1);
-    limScreen.appendChild(p2);
+    limScreen.innerHTML = `
+      <p>Benvenuto nel gioco! Io sarò la tua guida.</p>
+      <p>Scrivi in basso e io, insieme agli altri bot, ti risponderemo dalla LIM.</p>
+    `;
 
     npcTalk();
     localStorage.removeItem("welcome_sage_pending");
