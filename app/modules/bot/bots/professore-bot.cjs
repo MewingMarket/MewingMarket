@@ -1,5 +1,5 @@
 /**
- * Professore AI — NPC tecnico / guida / spiegazioni (2027)
+ * Professore AI — NPC tecnico / guida / spiegazioni (2027.4)
  * Path: app/modules/bot/bots/professore-bot.cjs
  */
 
@@ -45,7 +45,7 @@ function match(intentObj) {
 /* ============================================================
    RUN — logica principale Professore AI
 ============================================================ */
-async function run(message, context = {}) {
+async function run(message, context = {}, extras = {}) {
   const intentObj = context.intent || {};
   const intent = intentObj.intent || "generico";
 
@@ -157,10 +157,10 @@ async function run(message, context = {}) {
   }
 
   /* ============================================================
-     6) TUTORIAL PRODOTTO
+     6) TUTORIAL PRODOTTO (AI Video + DB)
   ============================================================= */
   if (intent === "tutorial_prodotto" && tutorial && tutorialsAI) {
-    const slug = intentObj.slug || null;
+    const slug = intentObj.slug || intentObj.productId || null;
 
     if (!slug) {
       return {
