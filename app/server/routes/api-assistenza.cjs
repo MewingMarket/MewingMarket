@@ -1,9 +1,9 @@
-/* =========================================================
-   FILE: app/server/routes/api-assistenza.cjs
-   VERSIONE: 2027.3 — PATCH STABILE
-   MODALITÀ: Java‑mode (funzioni, no Express)
-   DESCRIZIONE: Invio richiesta assistenza + AI + FAQ + Email
-========================================================= */
+/**
+ * FILE: app/server/routes/api-assistenza.cjs
+ * VERSIONE: 2027.4 — PATCH STABILE
+ * MODALITÀ: Java‑mode (funzioni, no Express)
+ * DESCRIZIONE: Invio richiesta assistenza + AI + FAQ + Email
+ */
 
 const path = require("path");
 const R = (p) => require(path.join(process.cwd(), "app/server", p));
@@ -45,7 +45,6 @@ async function assistenzaInvia(req) {
 
     /* ---------------------------------------------------------
        2) RICONOSCIMENTO PRODOTTO
-       db.all() nel tuo progetto è SINCRONO → rimosso await
     --------------------------------------------------------- */
     let faqRecord = null;
 
@@ -179,11 +178,21 @@ async function assistenza(req) {
   return { success: true, message: "Endpoint assistenza attivo" };
 }
 
+/*  
+  ⭐ PATCH CRITICA ⭐  
+  Alias richiesto dal frontend: /api/assistenza/invia  
+  Il router fuzzy non riusciva a risolverlo → 404 → “Errore invio”
+*/
+async function invia(req) {
+  return assistenzaInvia(req);
+}
+
 /* =========================================================
    EXPORT — stile Java
 ========================================================= */
 module.exports = {
   assistenzaInvia,
   inviaAssistenza,
-  assistenza
+  assistenza,
+  invia   // <--- PATCH: alias compatibile con il frontend
 };
