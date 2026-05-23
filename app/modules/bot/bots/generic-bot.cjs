@@ -1,5 +1,5 @@
 /**
- * Avatar Generico — Narratore / Onboarding / Fallback (2027)
+ * Avatar Generico — Narratore / Onboarding / Fallback (2027.4)
  * Path: app/modules/bot/bots/generic-bot.cjs
  */
 
@@ -35,7 +35,7 @@ async function run(message, context = {}, extras = {}) {
   ============================================================= */
   if (!context.userLogged && intent === "saluto") {
     return {
-      avatar: "assistant",
+      avatar: "generic",
       type: "mission",
       blocks: [
         {
@@ -59,7 +59,7 @@ async function run(message, context = {}, extras = {}) {
   ============================================================= */
   if (intent === "saluto" || intent === "onboarding") {
     return {
-      avatar: "assistant",
+      avatar: "generic",
       type: "mission",
       blocks: [
         {
@@ -78,28 +78,28 @@ async function run(message, context = {}, extras = {}) {
      2) MENU PRINCIPALE
   ============================================================= */
   if (intent === "menu") {
-    return conv.conversationMenu();
+    return conv.conversationMenu("generic");
   }
 
   /* ============================================================
      3) FAQ (se Router AI ha trovato una FAQ)
   ============================================================= */
   if (intent === "faq" && extras.faq) {
-    return fb.fallbackFAQ(extras.faq);
+    return fb.fallbackFAQ(extras.faq, "generic");
   }
 
   /* ============================================================
      4) GUIDA (se Router AI ha trovato una guida)
   ============================================================= */
   if (intent === "guida" && extras.guide) {
-    return fb.fallbackGuide(extras.guide);
+    return fb.fallbackGuide(extras.guide, "generic");
   }
 
   /* ============================================================
      5) PRODOTTO NON RICONOSCIUTO
   ============================================================= */
   if (intent === "prodotto_sconosciuto" && extras.product) {
-    return fb.fallbackProduct(extras.product);
+    return fb.fallbackProduct(extras.product, "generic");
   }
 
   /* ============================================================
@@ -107,7 +107,7 @@ async function run(message, context = {}, extras = {}) {
   ============================================================= */
   if (intent === "tutorial_prodotto" && !extras.guide) {
     return {
-      avatar: "assistant",
+      avatar: "generic",
       type: "mission",
       blocks: [
         {
@@ -133,7 +133,7 @@ async function run(message, context = {}, extras = {}) {
      7) FALLBACK GENERICO — con missione di esplorazione
   ============================================================= */
   return {
-    avatar: "assistant",
+    avatar: "generic",
     type: "mission",
     blocks: [
       {
@@ -146,7 +146,7 @@ async function run(message, context = {}, extras = {}) {
       },
       {
         title: "Suggerimenti",
-        text: "• Vendor: prodotti e catalogo\n• Influencer: motivazione\n• Professore: tutorial e guide"
+        text: "• Vendor: prodotti e catalogo\n• Influencer: motivazione e social\n• Professore: tutorial e guide\n• Newsletter: iscrizioni e comunicazioni"
       }
     ]
   };
@@ -157,7 +157,7 @@ async function run(message, context = {}, extras = {}) {
 ============================================================ */
 module.exports = {
   name: "generic",
-  avatar: "assistant",
+  avatar: "generic",
   match,
   run
 };
