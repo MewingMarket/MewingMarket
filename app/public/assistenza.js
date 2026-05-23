@@ -1,5 +1,5 @@
 /* =========================================================
-   ASSISTENZA — Versione 2058 (Single Loader Architecture)
+   ASSISTENZA — Versione 2058.2 (Single Loader Architecture)
    - Nessun autorun
    - Nessun DOMContentLoaded
    - Nessun critical-ready
@@ -17,7 +17,7 @@ window.pageInit = function () {
 };
 
 /* =========================================================
-   LOGICA ASSISTENZA (identica alla tua)
+   LOGICA ASSISTENZA
 ========================================================= */
 function avviaAssistenza() {
   const form = document.getElementById("assistenzaForm");
@@ -38,7 +38,8 @@ function avviaAssistenza() {
 
     mostraMessaggio("Invio in corso…", "info");
 
-    const res = await apiAssistenza("/api/assistenza/inviaAssistenza", {
+    // ⭐ PATCH: endpoint corretto
+    const res = await apiAssistenza("/api/assistenza/invia", {
       email,
       domanda
     });
