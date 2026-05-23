@@ -109,12 +109,10 @@ module.exports = {
   },
 
   /* ============================================================
-     CHAT / VOICE / ATTACHMENT
+     CHAT / VOICE / ATTACHMENT — ROUTER UNIFICATO
   ============================================================ */
   chat: {
-    ...R("routes/chat.cjs"),
-    ...R("routes/chat-voice.cjs"),
-    ...R("routes/chat-attachment.cjs")
+    ...R("routes/chat-unified.cjs")
   },
 
   /* ============================================================
