@@ -235,15 +235,18 @@ body {
   inset: 44px 0 0 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  gap: 40px;
   padding: 40px;
   pointer-events: none;
 }
 
-/* LIM MODERNA */
+/* LIM MODERNA — più piccola, centrata sulla lavagna */
 #lim-area {
-  width: 60%;
-  height: 60%;
+  width: 55%;
+  max-width: 720px;
+  height: 55%;
+  max-height: 420px;
   background: linear-gradient(145deg, #e6e6e6, #ffffff);
   border-radius: 20px;
   border: 4px solid #dcdcdc;
@@ -306,7 +309,8 @@ body {
 
 /* Avatar area */
 #avatar-area {
-  width: 20%;
+  width: 18%;
+  max-width: 220px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -479,4 +483,29 @@ body {
 
 .lim-block.mission-complete-block h3 {
   color: #0d47a1;
+}
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+@media (max-width: 900px) {
+  #classroom-layer {
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 60px 16px 140px;
+  }
+
+  #lim-area {
+    width: 95%;
+    height: 55%;
+  }
+
+  #avatar-area {
+    width: 40%;
+    margin-top: 10px;
+  }
+
+  #chat-panel {
+    padding: 10px 12px 18px;
+  }
 }
