@@ -1,7 +1,7 @@
 /**
  * Router AI — VERSIONE VIDEOGIOCO 2027 (PATCH COMPLETA)
  * Smistamento avatar intelligente + compresenza + handoff
- * Path: app/modules/bot/core/router.bot.cjs
+ * Path: app/modules/bot/core/router.cjs
  */
 
 const path = require("path");
@@ -32,17 +32,20 @@ const BOT_MAP = {
    (compatibile con Intent Engine + Game Engine)
 ============================================================ */
 function pickAvatar(intentObj = {}) {
-  // 1) Se il bot ha dichiarato un avatar specifico → usalo
-  if (intentObj.avatar && BOT_MAP[intentObj.avatar]) {
-    return intentObj.avatar;
+  const avatar = intentObj.avatar;
+  const owner = intentObj.botOwner;
+
+  // 1) Avatar dichiarato
+  if (avatar && BOT_MAP[avatar]) {
+    return avatar;
   }
 
-  // 2) Se l’intent ha un “botOwner” (Intent Engine 2027)
-  if (intentObj.botOwner && BOT_MAP[intentObj.botOwner]) {
-    return intentObj.botOwner;
+  // 2) Bot owner (Intent Engine 2027)
+  if (owner && BOT_MAP[owner]) {
+    return owner;
   }
 
-  // 3) Fallback → generic
+  // 3) Fallback
   return "assistant";
 }
 
@@ -65,7 +68,7 @@ async function runSidekick(mainBotName, message, context) {
     if (botName === mainBotName) continue;
 
     const bot = BOT_MAP[botName];
-    if (typeof bot.sidekick === "function") {
+    if (bot && typeof bot.sidekick === "function") {
       try {
         const res = await bot.sidekick(message, context);
         if (res) return res;
@@ -80,9 +83,13 @@ async function runSidekick(mainBotName, message, context) {
    HANDOFF ENGINE — quando un bot passa la palla a un altro
 ============================================================ */
 function detectHandoff(response) {
-  if (!response || !response.actions) return null;
+  if (!response) return null;
 
-  const action = response.actions.find(a => a.intent && BOT_MAP[a.intent]);
+  const actions = response.actions || response.blocks || response.frames || [];
+
+  if (!Array.isArray(actions)) return null;
+
+  const action = actions.find(a => a.intent && BOT_MAP[a.intent]);
   return action ? action.intent : null;
 }
 
