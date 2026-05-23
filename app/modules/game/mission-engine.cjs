@@ -1,3 +1,8 @@
+/**
+ * Mission Engine — VERSIONE VIDEOGIOCO 2027.4
+ * XP + Livelli + Missioni dinamiche
+ */
+
 const path = require("path");
 const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
 
@@ -7,23 +12,34 @@ const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
 const XP_BY_INTENT = {
   saluto: 1,
   onboarding: 1,
+
   catalogo: 2,
   prodotto: 3,
   prezzo: 2,
-  prezzo_prodotto: 2,
-  acquisto_diretto: 4,
-  missione_completata: 20,
+  recensioni: 2,
+  correlati: 2,
+  descrizione: 2,
+  immagine: 1,
+
+  trattativa: 2,
+  obiezione: 1,
+
   tutorial_prodotto: 5,
   guida: 5,
+
   motivazione: 3,
   video_motivazionale: 5,
   consiglio_rapido: 2,
   consiglio_del_giorno: 2,
+
   newsletter: 2,
   newsletter_subscribe: 10,
   newsletter_unsubscribe: 2,
+
   reminder: 2,
-  novita: 2
+  novita: 2,
+
+  missione_completata: 20
 };
 
 function xpForIntent(intent) {
@@ -38,7 +54,7 @@ function xpNeededForLevel(level) {
 }
 
 /* ============================================================
-   INIT TABELLE (player_progress + missions)
+   INIT TABELLE
 ============================================================ */
 function initTables() {
   db.prepare(`
@@ -55,7 +71,7 @@ function initTables() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       uid TEXT,
       mission_key TEXT,
-      status TEXT, -- active | completed | claimed
+      status TEXT,
       progress INTEGER DEFAULT 0,
       target INTEGER DEFAULT 1,
       reward_xp INTEGER DEFAULT 10,
@@ -69,7 +85,7 @@ function initTables() {
 initTables();
 
 /* ============================================================
-   PLAYER PROGRESS HELPERS
+   PLAYER PROGRESS
 ============================================================ */
 function getPlayerProgress(uid) {
   const row = db.prepare(`
@@ -99,7 +115,7 @@ function updatePlayerProgress(uid, xp, level) {
 }
 
 /* ============================================================
-   MISSION DEFINITIONS (semplici, per intent)
+   MISSION DEFINITIONS — VERSIONE 2027.4
 ============================================================ */
 const MISSION_DEFS = {
   catalogo: {
@@ -114,12 +130,6 @@ const MISSION_DEFS = {
     target: 1,
     reward_xp: 5
   },
-  missione_completata: {
-    mission_key: "vendor_mission",
-    title: "Completa una missione di vendita",
-    target: 1,
-    reward_xp: 20
-  },
   tutorial_prodotto: {
     mission_key: "product_tutorial",
     title: "Guarda un tutorial prodotto",
@@ -132,17 +142,17 @@ const MISSION_DEFS = {
     target: 1,
     reward_xp: 5
   },
-  video_motivazionale: {
-    mission_key: "watch_motivation_video",
-    title: "Guarda un video motivazionale",
-    target: 1,
-    reward_xp: 10
-  },
   newsletter_subscribe: {
     mission_key: "newsletter_signup",
     title: "Iscriviti alla newsletter",
     target: 1,
     reward_xp: 15
+  },
+  missione_completata: {
+    mission_key: "vendor_mission",
+    title: "Completa una missione di vendita",
+    target: 1,
+    reward_xp: 20
   }
 };
 
@@ -185,7 +195,7 @@ function getOrCreateMission(uid, def) {
 }
 
 /* ============================================================
-   PROCESS EVENT (entry point)
+   PROCESS EVENT — VERSIONE 2027.4
 ============================================================ */
 async function processEvent({ uid, intent, botAvatar }) {
   if (!uid) {
@@ -196,6 +206,7 @@ async function processEvent({ uid, intent, botAvatar }) {
     };
   }
 
+  /* XP BASE */
   const xpGain = xpForIntent(intent);
   let progress = getPlayerProgress(uid);
 
@@ -203,22 +214,19 @@ async function processEvent({ uid, intent, botAvatar }) {
   let level = progress.level;
   let levelUp = null;
 
-  // Level up loop
+  /* LEVEL UP */
   while (xp >= xpNeededForLevel(level)) {
     xp -= xpNeededForLevel(level);
     level += 1;
-    levelUp = {
-      oldLevel: level - 1,
-      newLevel: level
-    };
+    levelUp = { oldLevel: level - 1, newLevel: level };
   }
 
   updatePlayerProgress(uid, xp, level);
 
+  /* MISSIONI */
   const completedMissions = [];
-
-  // Missioni legate all'intent
   const def = MISSION_DEFS[intent];
+
   if (def) {
     let mission = getOrCreateMission(uid, def);
 
@@ -229,22 +237,21 @@ async function processEvent({ uid, intent, botAvatar }) {
 
       if (newProgress >= mission.target) {
         newStatus = "completed";
+
         completedMissions.push({
           mission_key: mission.mission_key,
           title: mission.title
         });
 
-        // XP extra per missione
+        /* XP EXTRA */
         xp += mission.reward_xp;
-        // ricontrollo level up da reward
+
         while (xp >= xpNeededForLevel(level)) {
           xp -= xpNeededForLevel(level);
           level += 1;
-          levelUp = {
-            oldLevel: level - 1,
-            newLevel: level
-          };
+          levelUp = { oldLevel: level - 1, newLevel: level };
         }
+
         updatePlayerProgress(uid, xp, level);
       }
 
