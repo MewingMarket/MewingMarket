@@ -10,8 +10,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- CSS DEDICATO AL VIDEOGIOCO (NO LOADER) -->
-  <link rel="stylesheet" href="/videogioco/game.css">
+  <!-- PATCH: collego il CSS del videogioco -->
+  <link rel="stylesheet" href="game.css?v=2058">
 </head>
 
 <body>
@@ -85,12 +85,34 @@
     <h2 id="welcome-title"></h2>
 
     <!-- ⭐ HUD XP / LIVELLO -->
-    <div id="hud-xp-level">
+    <div id="hud-xp-level" style="
+      margin-top:20px;
+      padding:12px 18px;
+      background:rgba(0,0,0,0.55);
+      border-radius:12px;
+      display:inline-block;
+      color:#fff;
+      font-size:16px;
+      text-align:center;
+      min-width:220px;
+    ">
       <div><b>Livello:</b> <span id="hud-level">1</span></div>
       <div><b>XP:</b> <span id="hud-xp">0</span></div>
 
-      <div id="hud-xp-bar-wrapper">
-        <div id="hud-xp-bar"></div>
+      <div style="
+        margin-top:8px;
+        width:100%;
+        height:10px;
+        background:rgba(255,255,255,0.2);
+        border-radius:6px;
+        overflow:hidden;
+      ">
+        <div id="hud-xp-bar" style="
+          height:100%;
+          width:0%;
+          background:#4caf50;
+          transition:0.4s;
+        "></div>
       </div>
     </div>
 
@@ -150,25 +172,29 @@
   <!-- =========================================================
        SCREEN 7 — CONTINUA PARTITA
   ========================================================== -->
-  <div class="screen" id="screen-loading">
+  <div class="screen" id="screen-loading" style="text-align:center; padding-top:80px; color:#fff;">
     <h2>Continua Partita</h2>
 
-    <p class="loading-subtitle">Seleziona una partita salvata</p>
+    <p style="margin-top:10px; opacity:0.8;">Seleziona una partita salvata</p>
 
-    <select id="saved-games">
+    <select id="saved-games"
+            style="padding:12px; font-size:18px; margin-top:20px; border-radius:8px; width:260px;">
       <option value="">Caricamento...</option>
     </select>
 
-    <button class="btn-load-game" onclick="loadSelectedGame()">
+    <br>
+
+    <button onclick="loadSelectedGame()"
+            style="margin-top:25px; padding:12px 20px; font-size:18px; border-radius:10px; cursor:pointer;">
       Carica Partita
     </button>
   </div>
 
   <!-- =========================================================
-       SCRIPT (SOLO JS DEL GIOCO, NIENTE LOADER)
+       SCRIPT
   ========================================================== -->
-  <script src="/videogioco/game.js"></script>
-  <script src="/videogioco/chat.js"></script>
+  <script src="game.js?v=2058"></script>
+  <script src="chat.js?v=2058"></script>
 
 </body>
 </html>
