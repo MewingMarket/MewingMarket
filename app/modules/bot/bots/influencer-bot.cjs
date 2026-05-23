@@ -1,5 +1,5 @@
 /**
- * Influencer AI — NPC motivazionale / PR / video (2027)
+ * Influencer AI — NPC motivazionale / PR / video (2027.4)
  * Path: app/modules/bot/bots/influencer-bot.cjs
  */
 
@@ -18,8 +18,8 @@ function match(intentObj) {
   return [
     "video",
     "motivazione",
-    "guida",
     "tutorial_prodotto",
+    "social",
     "newsletter",
     "generico"
   ].includes(intent);
@@ -28,7 +28,7 @@ function match(intentObj) {
 /* ============================================================
    RUN — logica principale NPC
 ============================================================ */
-async function run(message, context = {}) {
+async function run(message, context = {}, extras = {}) {
   const intentObj = context.intent || {};
   const intent = intentObj.intent || "generico";
   const productId = intentObj.productId || null;
@@ -143,7 +143,34 @@ async function run(message, context = {}) {
   }
 
   /* ============================================================
-     3) GUIDA → fallback al Professore
+     3) SOCIAL — Instagram / TikTok / YouTube
+  ============================================================= */
+  if (intent === "social" || intent === "newsletter") {
+    try {
+      const post = await social.getRandomForLIM?.("instagram");
+      if (post) return post;
+    } catch (err) {
+      log("INFLUENCER_SOCIAL_ERR", err);
+    }
+
+    return {
+      avatar: "influencer",
+      type: "mission",
+      blocks: [
+        {
+          title: "📱 Seguici sui social",
+          text: "Per vedere esempi reali, trasformazioni e consigli quotidiani."
+        },
+        {
+          title: "🎯 Missione",
+          text: "Apri uno dei nostri social."
+        }
+      ]
+    };
+  }
+
+  /* ============================================================
+     4) GUIDA → fallback al Professore
   ============================================================= */
   if (intent === "guida") {
     return {
@@ -157,31 +184,6 @@ async function run(message, context = {}) {
         {
           title: "🎯 Missione",
           text: "Apri il Professore per continuare."
-        }
-      ]
-    };
-  }
-
-  /* ============================================================
-     4) SOCIAL
-  ============================================================= */
-  if (intent === "newsletter") {
-    try {
-      const post = await social.getRandomForLIM?.("instagram");
-      if (post) return post;
-    } catch {}
-
-    return {
-      avatar: "influencer",
-      type: "mission",
-      blocks: [
-        {
-          title: "📱 Seguici sui social",
-          text: "Per vedere esempi reali, trasformazioni e consigli quotidiani."
-        },
-        {
-          title: "🎯 Missione",
-          text: "Apri uno dei nostri social."
         }
       ]
     };
