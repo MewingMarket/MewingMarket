@@ -1,7 +1,8 @@
 /* =========================================================
-   ROUTER UNIVERSALE — FUZZY MODE 2052
-   - Modulo normalizzato (lowercase)
-   - Funzione risolta con fuzzy-match
+   ROUTER UNIVERSALE — FUZZY MODE 2052.1 (PATCH COMPLETA)
+   - FIX: middleware Express → wrapper Promise
+   - FIX: next() non definito
+   - FIX: compatibilità auth-user 2027.502
    - Nessuna modifica ai moduli / frontend
 ========================================================= */
 
@@ -16,6 +17,20 @@ const authAdmin = R("middleware/auth-admin.cjs");
 
 // jslist è un modulo con più funzioni, non un handler singolo
 const jslist = require("./routes/jslist.cjs");
+
+/* =========================================================
+   WRAPPER PER MIDDLEWARE EXPRESS
+========================================================= */
+function runMiddleware(mw, req, res) {
+  return new Promise((resolve) => {
+    try {
+      mw(req, res, (result) => resolve(result));
+    } catch (err) {
+      console.error("❌ Middleware error:", err);
+      resolve(false);
+    }
+  });
+}
 
 /* =========================================================
    CONFIG
@@ -52,25 +67,25 @@ function resolveHandler(mod, rawName) {
     return { name: exactCI, fn: mod[exactCI] };
   }
 
-  // 3) camelCase variante (prima lettera minuscola)
+  // 3) camelCase variante
   const camelVariant = requested.charAt(0).toLowerCase() + requested.slice(1);
   if (typeof mod[camelVariant] === "function") {
     return { name: camelVariant, fn: mod[camelVariant] };
   }
 
-  // 4) prefix match (es: getProdotti vs getProdottiPublic)
+  // 4) prefix match
   const prefix = keys.find(k => k.toLowerCase().startsWith(requestedLower));
   if (prefix && typeof mod[prefix] === "function") {
     return { name: prefix, fn: mod[prefix] };
   }
 
-  // 5) contains match (es: getProductsPublic vs products)
+  // 5) contains match
   const contains = keys.find(k => k.toLowerCase().includes(requestedLower));
   if (contains && typeof mod[contains] === "function") {
     return { name: contains, fn: mod[contains] };
   }
 
-  // 6) fallback specifico per "getpublic"
+  // 6) fallback specifico
   if (requestedLower === "getpublic") {
     const candidates = [
       "getPublic",
@@ -92,19 +107,14 @@ function resolveHandler(mod, rawName) {
    ENDPOINT SPECIALI
 ========================================================= */
 
-// Endpoint diagnostico semplice
 router.get("/ping", (req, res) => res.json({ ok: true, ts: Date.now() }));
 
-// js-list: usiamo esplicitamente la funzione pubblica
-// (se non ti serve più, puoi anche rimuoverlo del tutto)
 if (typeof jslist.getPublicList === "function") {
   router.get("/js-list", (req, res) => jslist.getPublicList(req, res));
 }
 
 /* =========================================================
    ROUTER UNIVERSALE FUZZY
-   Montato tipicamente come: app.use("/api", router)
-   → /api/:modulo/:funzione
 ========================================================= */
 
 router.all("/:modulo/:funzione", async (req, res) => {
@@ -135,19 +145,25 @@ router.all("/:modulo/:funzione", async (req, res) => {
 
     const handler = resolved.fn;
 
-    // AUTH ADMIN
+    /* =====================================================
+       AUTH ADMIN
+    ===================================================== */
     if (m === "admin") {
-      const ok = await authAdmin(req, res);
+      const ok = await runMiddleware(authAdmin, req, res);
       if (ok === false) return;
     }
 
-    // AUTH USER per moduli sensibili
+    /* =====================================================
+       AUTH USER
+    ===================================================== */
     if (SENSITIVE_MODULES.has(m)) {
-      const ok = await authUser(req, res);
+      const ok = await runMiddleware(authUser, req, res);
       if (ok === false) return;
     }
 
-    // ESECUZIONE HANDLER
+    /* =====================================================
+       ESECUZIONE HANDLER
+    ===================================================== */
     let result;
     try {
       const maybePromise = handler(req, res);
