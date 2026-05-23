@@ -1,22 +1,22 @@
 /**
- * modules/bot/index.cjs — VERSIONE VIDEOGIOCO 2027 (PATCH COMPLETA)
- * Orchestratore BOT + Intent Engine + Router + NPC + Game Engine
+ * modules/bot/index.cjs — VERSIONE VIDEOGIOCO 2027.4 (PATCH COMPLETA)
+ * Orchestratore BOT + Intent Engine + Router + NPC + Sidekick + Mission Engine
  */
 
 const path = require("path");
 
 /* ============================================================
-   INTENT ENGINE (locale, deterministico)
+   INTENT ENGINE 2027.4
 ============================================================ */
 const intentEngine = require(path.join(process.cwd(), "app/modules/bot/intent-engine.cjs"));
 
 /* ============================================================
-   ROUTER AI (decide quale avatar risponde)
+   ROUTER AI 2027.4
 ============================================================ */
 const router = require(path.join(process.cwd(), "app/modules/bot/core/router.cjs"));
 
 /* ============================================================
-   AVATAR (NPC del videogioco)
+   NPC (BOT)
 ============================================================ */
 const vendor = require(path.join(process.cwd(), "app/modules/bot/bots/vendor-bot.cjs"));
 const professor = require(path.join(process.cwd(), "app/modules/bot/bots/professore-bot.cjs"));
@@ -25,44 +25,33 @@ const newsletter = require(path.join(process.cwd(), "app/modules/bot/bots/newsle
 const generic = require(path.join(process.cwd(), "app/modules/bot/bots/generic-bot.cjs"));
 
 /* ============================================================
-   UTILS
+   MISSION ENGINE
+============================================================ */
+const missionEngine = require(path.join(process.cwd(), "app/modules/game/mission-engine.cjs"));
+
+/* ============================================================
+   UTILS + MEMORIA
 ============================================================ */
 const utils = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
+const memory = require(path.join(process.cwd(), "app/modules/memory.cjs"));
 
 /* ============================================================
-   WHISPER (trascrizione vocale)
-============================================================ */
-const transcribeAudio = require(path.join(process.cwd(), "app/modules/bot/whisper.cjs"));
-
-/* ============================================================
-   GAME ENGINE (UI JSON → frontend)
-============================================================ */
-let gameEngine = null;
-try {
-  // nel repo reale è gameEngine.cjs, non game-engine.cjs
-  gameEngine = require(path.join(process.cwd(), "app/modules/bot/gameEngine.cjs"));
-} catch {}
-
-/* ============================================================
-   MODULI ESTERNI
+   DATI ESTERNI
 ============================================================ */
 const catalogo = require(path.join(process.cwd(), "app/modules/catalogo.cjs"));
 const faq = require(path.join(process.cwd(), "app/modules/faq.cjs"));
 const guides = require(path.join(process.cwd(), "app/modules/guides.cjs"));
-const memory = require(path.join(process.cwd(), "app/modules/memory.cjs"));
-const ai = require(path.join(process.cwd(), "app/server/modules/ai.cjs")); // tenuto per eventuali usi futuri, ma NON per intent
 
 /* ============================================================
-   1) detectIntent() — usa SOLO intent-engine locale
+   1) detectIntent() — Intent Engine 2027.4
 ============================================================ */
 async function detectIntent(text, uid, options = {}) {
   if (!text || typeof text !== "string") {
     return {
       raw: "",
       intent: "generico",
-      subintent: null,
-      avatar: "assistant",
-      botOwner: "assistant",
+      avatar: "generic",
+      botOwner: "generic",
       productId: null,
       rawProduct: null,
       category: null,
@@ -72,65 +61,39 @@ async function detectIntent(text, uid, options = {}) {
     };
   }
 
-  // unica fonte di verità: generateIntent del nuovo intent-engine
-  const intentObj = await intentEngine.generateIntent(text, {
+  return intentEngine.generateIntent(text, {
     uid,
     gender: options.gender,
     botAvatar: options.botAvatar
   });
-
-  return intentObj;
 }
 
 /* ============================================================
-   2) handleConversation() — orchestratore centrale
-   Compatibile sia con:
-   - chat.cjs → handleConversation(req)
-   - chat-voice.cjs → handleConversation(intentObj, text, uid, userState)
+   2) handleConversation() — orchestratore centrale 2027.4
 ============================================================ */
-async function handleConversation(reqOrIntent, text, uid, userState = {}) {
-  let intentObj;
-  let message = text;
+async function handleConversation(req) {
+  const uid = req.uid;
+  const message = req.body?.message || "";
+  const botAvatar = req.body?.bot || "generic";
+  const gender = req.body?.gender || "male";
 
-  // Caso 1: chiamato da chat.cjs → req
-  if (typeof reqOrIntent === "object" && reqOrIntent.body) {
-    const req = reqOrIntent;
-    message = req.body?.message || "";
-    uid = req.uid;
-    const botAvatar = req.body?.bot || "generic";
-    const gender = req.body?.gender || "male";
+  /* 1) Intent Engine */
+  const intentObj = await detectIntent(message, uid, { botAvatar, gender });
 
-    intentObj = await detectIntent(message, uid, { botAvatar, gender });
-  }
+  /* 2) Memoria */
+  if (uid) memory.push(uid, message);
 
-  // Caso 2: chiamato da chat-voice.cjs → intent già pronto
-  else {
-    intentObj = reqOrIntent || {};
-    message = text || intentObj.raw || "";
-  }
-
-  // Memoria
-  if (uid) {
-    memory.push(uid, message);
-  }
-
-  // Router → avatar
+  /* 3) Router → avatar */
   const avatar = router.pickAvatar(intentObj);
 
-  // NPC selezionato
-  const npc = {
-    vendor,
-    professor,
-    influencer,
-    newsletter,
-    generic
-  }[avatar] || generic;
+  /* 4) NPC selezionato */
+  const npc = { vendor, professor, influencer, newsletter, generic }[avatar] || generic;
 
-  // Risposta NPC
+  /* 5) Risposta NPC */
   const npcReply = await npc.run(message, {
     uid,
     intent: intentObj,
-    userState,
+    gender,
     memory: uid ? memory.get(uid) : [],
     catalogo,
     faq,
@@ -138,57 +101,40 @@ async function handleConversation(reqOrIntent, text, uid, userState = {}) {
     utils
   });
 
-  // Game Engine → frames (se presente)
-  if (gameEngine && typeof gameEngine.runGame === "function") {
-    return gameEngine.runGame(message, {
-      uid,
-      intent: intentObj,
-      userState,
-      memory: uid ? memory.get(uid) : [],
-      catalogo,
-      faq,
-      guides
-    });
-  }
-
-  // Fallback → risposta semplice
-  return {
-    reply: npcReply?.text || npcReply?.reply || "Ok!",
-    avatar
-  };
-}
-
-/* ============================================================
-   3) reply() — builder UI JSON (compatibile con chat-voice)
-============================================================ */
-function reply(response, uid) {
-  if (response?.frames) return response;
-
-  return {
-    frames: [
-      {
-        type: "text",
-        text: response?.reply || "Ok!"
-      }
-    ]
-  };
-}
-
-/* ============================================================
-   4) runGame() — wrapper ufficiale
-============================================================ */
-async function runGame(message, context = {}) {
-  const intent = await detectIntent(message, context.uid, {
-    botAvatar: context.botAvatar,
-    gender: context.gender
+  /* 6) Sidekick */
+  const sidekickReply = await router.runSidekick(avatar, message, {
+    uid,
+    intent: intentObj,
+    catalogo
   });
 
-  const result = await handleConversation(intent, message, context.uid, context);
-  return reply(result, context.uid);
+  /* 7) Mission Engine */
+  const missionResult = await missionEngine.processEvent({
+    uid,
+    intent: intentObj.intent,
+    botAvatar: avatar
+  });
+
+  /* 8) Normalizzazione risposta */
+  const final = {
+    avatar,
+    type: npcReply.type || "text",
+    ...npcReply
+  };
+
+  if (sidekickReply) {
+    final.sidekick = sidekickReply;
+  }
+
+  if (missionResult) {
+    final.mission = missionResult;
+  }
+
+  return final;
 }
 
 /* ============================================================
-   EXPORT — orchestratore completo
+   EXPORT
 ============================================================ */
 module.exports = {
   intentEngine,
@@ -199,17 +145,12 @@ module.exports = {
   newsletter,
   generic,
   utils,
-  transcribeAudio,
-  gameEngine,
+  memory,
 
   detectIntent,
   handleConversation,
-  reply,
-  runGame,
 
   catalogo,
   faq,
-  guides,
-  memory,
-  ai
+  guides
 };
