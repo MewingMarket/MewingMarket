@@ -77,6 +77,7 @@ document.addEventListener("DOMContentLoaded", () => {
      RENDER XP / LEVEL / MISSIONI
   ============================================================ */
   function renderXP(data) {
+    if (!limScreen) return;
     const div = document.createElement("div");
     div.className = "lim-block xp-block";
     div.innerHTML = `<h3>⭐ XP guadagnati!</h3><p>+${data.xp} XP</p>`;
@@ -85,6 +86,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderLevelUp(data) {
+    if (!limScreen) return;
     const div = document.createElement("div");
     div.className = "lim-block levelup-block";
     div.innerHTML = `<h3>🎉 LIVELLO SUPERATO!</h3><p>Sei ora livello <b>${data.level}</b></p>`;
@@ -93,6 +95,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderMissionComplete(data) {
+    if (!limScreen) return;
     const div = document.createElement("div");
     div.className = "lim-block mission-complete-block";
     div.innerHTML = `<h3>🏆 Missione completata!</h3><p>${data.mission}</p>`;
@@ -104,6 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
      RENDER LIM — FORMATO UNICO
   ============================================================ */
   function renderOnLIM(data) {
+    if (!limScreen || !data) return;
     limScreen.innerHTML = "";
 
     // XP / LEVEL update
@@ -144,10 +148,25 @@ document.addEventListener("DOMContentLoaded", () => {
         const div = document.createElement("div");
         div.className = "lim-block";
 
-        if (block.title) div.innerHTML += `<h3>${block.title}</h3>`;
-        if (block.text) div.innerHTML += `<p>${clean(block.text)}</p>`;
+        if (block.title) {
+          const h3 = document.createElement("h3");
+          h3.textContent = block.title;
+          div.appendChild(h3);
+        }
+
+        if (block.text) {
+          const p = document.createElement("p");
+          p.innerHTML = clean(block.text);
+          div.appendChild(p);
+        }
+
         if (block.cta) {
-          div.innerHTML += `<a href="${block.cta.href}" target="_blank" class="lim-cta">${block.cta.label}</a>`;
+          const a = document.createElement("a");
+          a.href = block.cta.href;
+          a.textContent = block.cta.label;
+          a.target = "_blank";
+          a.className = "lim-cta";
+          div.appendChild(a);
         }
 
         limScreen.appendChild(div);
@@ -157,7 +176,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // FALLBACK
-    limScreen.innerHTML = `<p>${clean(data.fallback || "Nessuna risposta disponibile.")}</p>`;
+    const p = document.createElement("p");
+    p.innerHTML = clean(data.fallback || "Nessuna risposta disponibile.");
+    limScreen.appendChild(p);
     npcTalk();
   }
 
@@ -183,6 +204,8 @@ document.addEventListener("DOMContentLoaded", () => {
      INVIO TESTO
   ============================================================ */
   async function sendTextMessage() {
+    if (!chatInput) return;
+
     const message = clean(chatInput.value);
     if (!message) return;
 
@@ -193,7 +216,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const bot = localStorage.getItem("active_bot") || "generic";
     const gender = localStorage.getItem("player_avatar") === "female" ? "female" : "male";
 
-    const data = await apiChat("/api/chat/chat", {
+    // PATCH: endpoint corretto → /api/chat (chat.cjs)
+    const data = await apiChat("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message, bot, gender })
@@ -236,9 +260,16 @@ document.addEventListener("DOMContentLoaded", () => {
         body: formData
       });
 
-      const json = await res.json();
+      let json;
+      try {
+        json = await res.json();
+      } catch {
+        addMessage("❌ Errore allegato.", "bot");
+        return;
+      }
+
       if (!json.success) {
-        addMessage("❌ Errore allegato.");
+        addMessage("❌ Errore allegato.", "bot");
         return;
       }
 
@@ -271,13 +302,23 @@ document.addEventListener("DOMContentLoaded", () => {
           body: blob
         });
 
-        const json = await res.json();
-        if (!json.success) {
-          addMessage("❌ Errore voce.");
+        let json;
+        try {
+          json = await res.json();
+        } catch {
+          addMessage("❌ Errore voce.", "bot");
           return;
         }
 
-        addMessage(json.text, "user");
+        if (!json.success) {
+          addMessage("❌ Errore voce.", "bot");
+          return;
+        }
+
+        if (json.text) {
+          addMessage(json.text, "user");
+          localStorage.setItem("last_message", json.text);
+        }
 
         if (json.avatar) changeAvatar(json.avatar);
         renderOnLIM(json);
