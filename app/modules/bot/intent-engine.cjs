@@ -1,6 +1,6 @@
 /**
  * FILE: intent-engine.cjs
- * VERSIONE: VIDEOGIOCO 2027 — PATCH COMPLETA
+ * VERSIONE: VIDEOGIOCO 2027.4 — PATCH COMPLETA
  * Locale, deterministico, zero GPT.
  */
 
@@ -21,6 +21,7 @@ const {
 ============================================================ */
 const INTENTS = {
   saluto: ["ciao", "hey", "buongiorno", "buonasera", "salve"],
+  onboarding: ["inizia", "come funziona", "come si gioca"],
   menu: ["menu", "aiuto", "help"],
 
   catalogo: ["catalogo", "prodotti", "lista", "novita", "novità"],
@@ -38,6 +39,8 @@ const INTENTS = {
   video: ["video", "youtube", "tutorial"],
   motivazione: ["motivami", "ispirami", "hype"],
 
+  social: ["instagram", "tiktok", "youtube", "social"],
+
   guida: [
     "come si fa",
     "come funziona",
@@ -49,6 +52,9 @@ const INTENTS = {
   ],
 
   newsletter: ["newsletter", "email", "aggiornami"],
+  newsletter_subscribe_confirm: ["iscrivimi", "voglio iscrivermi", "ok iscrizione"],
+  newsletter_unsubscribe_confirm: ["disiscrivimi", "voglio disiscrivermi"],
+
   download: ["download", "scaricare", "scarica"],
   ordini: ["ordini", "acquisti", "storico"],
   privacy: ["privacy"],
@@ -58,10 +64,13 @@ const INTENTS = {
 
   missione_completata: ["missione completata", "ho finito", "completato"],
 
-  tutorial_prodotto: ["tutorial prodotto", "video prodotto", "istruzioni prodotto"],
-
-  newsletter_subscribe_confirm: ["iscrivimi", "voglio iscrivermi", "ok iscrizione"],
-  newsletter_unsubscribe_confirm: ["disiscrivimi", "voglio disiscrivermi"],
+  tutorial_prodotto: [
+    "tutorial prodotto",
+    "video prodotto",
+    "istruzioni prodotto",
+    "come usare",
+    "come si usa"
+  ],
 
   generico: []
 };
@@ -70,8 +79,9 @@ const INTENTS = {
    2) INTENT → AVATAR
 ============================================================ */
 const AVATAR_MAP = {
-  saluto: "assistant",
-  menu: "assistant",
+  saluto: "generic",
+  onboarding: "generic",
+  menu: "generic",
 
   catalogo: "vendor",
   prodotto: "vendor",
@@ -85,6 +95,7 @@ const AVATAR_MAP = {
 
   video: "influencer",
   motivazione: "influencer",
+  social: "influencer",
 
   guida: "professor",
   tutorial_prodotto: "professor",
@@ -102,7 +113,7 @@ const AVATAR_MAP = {
 
   missione_completata: "vendor",
 
-  generico: "assistant"
+  generico: "generic"
 };
 
 /* ============================================================
@@ -166,7 +177,7 @@ async function generateIntent(text, options = {}) {
   const keywords = cleanSearchQuery(text).split(" ").filter(w => w.length > 2);
   const category = product?.categoria || null;
 
-  const botAvatar = AVATAR_MAP[localIntent] || "assistant";
+  const botAvatar = AVATAR_MAP[localIntent] || "generic";
   const gender = options.gender === "female" ? "female" : "male";
 
   const base = {
