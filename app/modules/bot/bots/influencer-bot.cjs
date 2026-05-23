@@ -8,8 +8,6 @@ const { log } = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
 
 // Handlers
 const social = require(path.join(process.cwd(), "app/modules/bot/handlers/social.cjs"));
-const catalogHandler = require(path.join(process.cwd(), "app/modules/bot/handlers/catalogHandler.cjs"));
-const productHandler = require(path.join(process.cwd(), "app/modules/bot/handlers/productHandler.cjs"));
 
 /* ============================================================
    MATCH — basato su INTENT Engine 2027
@@ -18,15 +16,12 @@ function match(intentObj) {
   const intent = intentObj?.intent || "generico";
 
   return [
-    "video_prodotto",
-    "video_motivazionale",
-    "tutorial_prodotto",
+    "video",
     "motivazione",
-    "consiglio_rapido",
-    "consiglio_del_giorno",
-    "influencer",
-    "social",
-    "seguimi"
+    "guida",
+    "tutorial_prodotto",
+    "newsletter",
+    "generico"
   ].includes(intent);
 }
 
@@ -34,18 +29,17 @@ function match(intentObj) {
    RUN — logica principale NPC
 ============================================================ */
 async function run(message, context = {}) {
-  log("INFLUENCER_RUN", {
-    uid: context.uid,
-    logged: context.userLogged,
-    intent: context.intent?.intent,
-    productId: context.intent?.productId,
-    catalogCount: context.catalog?.length || 0
-  });
-
   const intentObj = context.intent || {};
   const intent = intentObj.intent || "generico";
   const productId = intentObj.productId || null;
-  const catalog = context.catalog || [];
+  const catalogo = context.catalogo || [];
+
+  log("INFLUENCER_RUN", {
+    uid: context.uid,
+    intent,
+    productId,
+    catalogCount: catalogo.length
+  });
 
   /* ============================================================
      0) GUEST MODE → MOTIVAZIONE + MISSIONE DI ONBOARDING
@@ -72,9 +66,9 @@ async function run(message, context = {}) {
   }
 
   /* ============================================================
-     1) VIDEO TUTORIAL PRODOTTO (missione: product_tutorial)
+     1) VIDEO / TUTORIAL PRODOTTO
   ============================================================= */
-  if (intent === "video_prodotto" || intent === "tutorial_prodotto") {
+  if (intent === "video" || intent === "tutorial_prodotto") {
     if (!productId) {
       return {
         avatar: "influencer",
@@ -92,7 +86,7 @@ async function run(message, context = {}) {
       };
     }
 
-    const p = catalog.find(x => x.id === productId);
+    const p = catalogo.find(x => x.id === productId);
     if (!p) {
       return {
         avatar: "influencer",
@@ -129,30 +123,7 @@ async function run(message, context = {}) {
   }
 
   /* ============================================================
-     2) VIDEO MOTIVAZIONALE (missione: watch_motivation_video)
-  ============================================================= */
-  if (intent === "video_motivazionale") {
-    return {
-      type: "mission",
-      avatar: "influencer",
-      blocks: [
-        {
-          title: "🔥 Video motivazionale",
-          text: "Respira, concentrati, riparti più forte."
-        },
-        {
-          title: "Guarda il video",
-          cta: {
-            label: "Apri video",
-            href: "https://cdn.mewingmarket.it/video/motivazione-1.mp4"
-          }
-        }
-      ]
-    };
-  }
-
-  /* ============================================================
-     3) MOTIVAZIONE / HYPE (missione: ask_motivation)
+     2) MOTIVAZIONE
   ============================================================= */
   if (intent === "motivazione") {
     return {
@@ -172,53 +143,33 @@ async function run(message, context = {}) {
   }
 
   /* ============================================================
-     4) CONSIGLIO RAPIDO (missione: quick_tip)
+     3) GUIDA → fallback al Professore
   ============================================================= */
-  if (intent === "consiglio_rapido") {
+  if (intent === "guida") {
     return {
       avatar: "influencer",
       type: "mission",
       blocks: [
         {
-          title: "⚡ Consigli rapidi",
-          text: "🔥 Migliora subito<br>📘 Impara una cosa nuova<br>💡 Consiglio del giorno"
+          title: "📘 Guida",
+          text: "Per le guide dettagliate ti consiglio di parlare con il Professore."
         },
         {
           title: "🎯 Missione",
-          text: "Chiedi il consiglio del giorno."
+          text: "Apri il Professore per continuare."
         }
       ]
     };
   }
 
   /* ============================================================
-     5) CONSIGLIO DEL GIORNO (missione: daily_tip)
+     4) SOCIAL
   ============================================================= */
-  if (intent === "consiglio_del_giorno") {
-    return {
-      avatar: "influencer",
-      type: "mission",
-      blocks: [
-        {
-          title: "💡 Consiglio del giorno",
-          text: "Non aspettare il momento perfetto. Il momento perfetto è quando decidi di iniziare."
-        },
-        {
-          title: "🎯 Missione completabile",
-          text: "Hai ottenuto il consiglio del giorno!"
-        }
-      ]
-    };
-  }
-
-  /* ============================================================
-     6) SOCIAL (missione: open_social)
-  ============================================================= */
-  if (intent === "social" || intent === "seguimi" || intent === "influencer") {
+  if (intent === "newsletter") {
     try {
       const post = await social.getRandomForLIM?.("instagram");
       if (post) return post;
-    } catch (e) {}
+    } catch {}
 
     return {
       avatar: "influencer",
@@ -231,20 +182,13 @@ async function run(message, context = {}) {
         {
           title: "🎯 Missione",
           text: "Apri uno dei nostri social."
-        },
-        {
-          title: "Link",
-          text:
-            "<a href='https://instagram.com/...'>Instagram</a><br>" +
-            "<a href='https://tiktok.com/...'>TikTok</a><br>" +
-            "<a href='https://youtube.com/...'>YouTube</a>"
         }
       ]
     };
   }
 
   /* ============================================================
-     7) FALLBACK INFLUENCER
+     5) FALLBACK INFLUENCER
   ============================================================= */
   return {
     avatar: "influencer",
@@ -252,11 +196,11 @@ async function run(message, context = {}) {
     blocks: [
       {
         title: "🔥 Cosa vuoi fare?",
-        text: "• Mostra un video<br>• Consiglio rapido<br>• Motivami<br>• Seguimi sui social"
+        text: "• Mostra un video<br>• Motivami<br>• Seguimi sui social"
       },
       {
         title: "🎯 Missione suggerita",
-        text: "Chiedi un consiglio rapido!"
+        text: "Chiedi un video motivazionale!"
       }
     ]
   };
