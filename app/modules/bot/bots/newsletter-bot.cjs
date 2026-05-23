@@ -19,15 +19,12 @@ function match(intentObj) {
     "newsletter_unsubscribe",
     "newsletter_subscribe_confirm",
     "newsletter_unsubscribe_confirm",
-
     "follow_up",
     "novita",
-
     "reminder",
     "reminder_24h",
     "reminder_domani",
     "reminder_7giorni",
-
     "gestisci_newsletter"
   ].includes(intent);
 }
@@ -36,18 +33,19 @@ function match(intentObj) {
    RUN — logica principale NPC
 ============================================================ */
 async function run(message, context = {}) {
+  const intentObj = context.intent || {};
+  const intent = intentObj.intent || "generico";
+
+  const email = context.email || null;
+  const catalogo = context.catalogo || [];
+
   log("NEWSLETTER_RUN", {
     uid: context.uid,
     logged: context.userLogged,
-    intent: context.intent?.intent,
-    email: context.email || null,
-    catalogCount: context.catalog?.length || 0
+    intent,
+    email,
+    catalogCount: catalogo.length
   });
-
-  const intentObj = context.intent || {};
-  const intent = intentObj.intent || "generico";
-  const email = context.email || null;
-  const catalog = context.catalog || [];
 
   /* ============================================================
      0) GUEST MODE → onboarding + missione
@@ -74,7 +72,7 @@ async function run(message, context = {}) {
   }
 
   /* ============================================================
-     1) ISCRIZIONE — step 1 (missione: newsletter_signup)
+     1) ISCRIZIONE — step 1
   ============================================================= */
   if (intent === "newsletter_subscribe") {
     return {
@@ -105,7 +103,15 @@ async function run(message, context = {}) {
       };
     }
 
-    await newsletter.addEmail(email);
+    try {
+      await newsletter.addEmail(email);
+    } catch (e) {
+      return {
+        avatar: "newsletter",
+        type: "text",
+        text: "Errore durante l’iscrizione. Riprova più tardi."
+      };
+    }
 
     return {
       avatar: "newsletter",
@@ -155,7 +161,15 @@ async function run(message, context = {}) {
       };
     }
 
-    await newsletter.removeEmail(email);
+    try {
+      await newsletter.removeEmail(email);
+    } catch (e) {
+      return {
+        avatar: "newsletter",
+        type: "text",
+        text: "Errore durante la disiscrizione. Riprova più tardi."
+      };
+    }
 
     return {
       avatar: "newsletter",
@@ -174,7 +188,7 @@ async function run(message, context = {}) {
   }
 
   /* ============================================================
-     3) FOLLOW-UP (missione: follow_up)
+     3) FOLLOW-UP
   ============================================================= */
   if (intent === "follow_up") {
     return {
@@ -194,7 +208,7 @@ async function run(message, context = {}) {
   }
 
   /* ============================================================
-     4) REMINDER (missione: reminder)
+     4) REMINDER
   ============================================================= */
   if (intent === "reminder") {
     return {
@@ -253,10 +267,10 @@ async function run(message, context = {}) {
   }
 
   /* ============================================================
-     5) NOVITÀ (missione: view_news)
+     5) NOVITÀ
   ============================================================= */
   if (intent === "novita") {
-    const products = catalog.slice(0, 3);
+    const products = catalogo.slice(0, 3);
 
     if (!products.length) {
       return {
