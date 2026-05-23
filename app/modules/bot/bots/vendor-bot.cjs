@@ -1,5 +1,5 @@
 /**
- * Venditore AI — NPC commerciale (2027)
+ * Venditore AI — NPC commerciale (2027.4)
  * Path: app/modules/bot/bots/vendor-bot.cjs
  */
 
@@ -87,8 +87,6 @@ async function run(message, context = {}) {
         text: "Non trovo questo prodotto."
       };
     }
-
-    const price = (p.prezzo_cent / 100).toFixed(2).replace(".", ",");
 
     return {
       avatar: "vendor",
