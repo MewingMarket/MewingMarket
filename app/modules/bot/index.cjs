@@ -39,7 +39,8 @@ const transcribeAudio = require(path.join(process.cwd(), "app/modules/bot/whispe
 ============================================================ */
 let gameEngine = null;
 try {
-  gameEngine = require(path.join(process.cwd(), "app/modules/bot/game-engine.cjs"));
+  // nel repo reale è gameEngine.cjs, non game-engine.cjs
+  gameEngine = require(path.join(process.cwd(), "app/modules/bot/gameEngine.cjs"));
 } catch {}
 
 /* ============================================================
@@ -49,48 +50,69 @@ const catalogo = require(path.join(process.cwd(), "app/modules/catalogo.cjs"));
 const faq = require(path.join(process.cwd(), "app/modules/faq.cjs"));
 const guides = require(path.join(process.cwd(), "app/modules/guides.cjs"));
 const memory = require(path.join(process.cwd(), "app/modules/memory.cjs"));
-const ai = require(path.join(process.cwd(), "app/server/modules/ai.cjs"));
+const ai = require(path.join(process.cwd(), "app/server/modules/ai.cjs")); // tenuto per eventuali usi futuri, ma NON per intent
 
 /* ============================================================
-   1) detectIntent() — fusione deterministica
+   1) detectIntent() — usa SOLO intent-engine locale
 ============================================================ */
-async function detectIntent(text, uid) {
+async function detectIntent(text, uid, options = {}) {
   if (!text || typeof text !== "string") {
-    return { intent: "generico" };
+    return {
+      raw: "",
+      intent: "generico",
+      subintent: null,
+      avatar: "assistant",
+      botOwner: "assistant",
+      productId: null,
+      rawProduct: null,
+      category: null,
+      keywords: [],
+      confidence: 1,
+      source: "local"
+    };
   }
 
-  const localIntent = intentEngine.detect(text);
-  const aiIntent = await ai.generateIntent(text, { uid });
+  // unica fonte di verità: generateIntent del nuovo intent-engine
+  const intentObj = await intentEngine.generateIntent(text, {
+    uid,
+    gender: options.gender,
+    botAvatar: options.botAvatar
+  });
 
-  return {
-    intent: localIntent?.intent || aiIntent?.intent || "generico",
-    ...localIntent,
-    ...aiIntent
-  };
+  return intentObj;
 }
 
 /* ============================================================
    2) handleConversation() — orchestratore centrale
+   Compatibile sia con:
+   - chat.cjs → handleConversation(req)
+   - chat-voice.cjs → handleConversation(intentObj, text, uid, userState)
 ============================================================ */
 async function handleConversation(reqOrIntent, text, uid, userState = {}) {
   let intentObj;
+  let message = text;
 
   // Caso 1: chiamato da chat.cjs → req
   if (typeof reqOrIntent === "object" && reqOrIntent.body) {
-    const message = reqOrIntent.body.message || "";
-    uid = reqOrIntent.uid;
-    text = message;
+    const req = reqOrIntent;
+    message = req.body?.message || "";
+    uid = req.uid;
+    const botAvatar = req.body?.bot || "generic";
+    const gender = req.body?.gender || "male";
 
-    intentObj = await detectIntent(message, uid);
+    intentObj = await detectIntent(message, uid, { botAvatar, gender });
   }
 
   // Caso 2: chiamato da chat-voice.cjs → intent già pronto
   else {
-    intentObj = reqOrIntent;
+    intentObj = reqOrIntent || {};
+    message = text || intentObj.raw || "";
   }
 
   // Memoria
-  memory.push(uid, text);
+  if (uid) {
+    memory.push(uid, message);
+  }
 
   // Router → avatar
   const avatar = router.pickAvatar(intentObj);
@@ -105,41 +127,41 @@ async function handleConversation(reqOrIntent, text, uid, userState = {}) {
   }[avatar] || generic;
 
   // Risposta NPC
-  const npcReply = await npc.run(text, {
+  const npcReply = await npc.run(message, {
     uid,
     intent: intentObj,
     userState,
-    memory: memory.get(uid),
+    memory: uid ? memory.get(uid) : [],
     catalogo,
     faq,
     guides,
     utils
   });
 
-  // Game Engine → frames
+  // Game Engine → frames (se presente)
   if (gameEngine && typeof gameEngine.runGame === "function") {
-    return gameEngine.runGame(text, {
+    return gameEngine.runGame(message, {
       uid,
       intent: intentObj,
       userState,
-      memory: memory.get(uid),
+      memory: uid ? memory.get(uid) : [],
       catalogo,
       faq,
       guides
     });
   }
 
-  // Fallback → testo semplice
+  // Fallback → risposta semplice
   return {
-    reply: npcReply?.text || "Ok!",
+    reply: npcReply?.text || npcReply?.reply || "Ok!",
     avatar
   };
 }
 
 /* ============================================================
-   3) reply() — builder UI JSON (fallback)
+   3) reply() — builder UI JSON (compatibile con chat-voice)
 ============================================================ */
-function reply(response) {
+function reply(response, uid) {
   if (response?.frames) return response;
 
   return {
@@ -156,9 +178,13 @@ function reply(response) {
    4) runGame() — wrapper ufficiale
 ============================================================ */
 async function runGame(message, context = {}) {
-  const intent = await detectIntent(message, context.uid);
+  const intent = await detectIntent(message, context.uid, {
+    botAvatar: context.botAvatar,
+    gender: context.gender
+  });
+
   const result = await handleConversation(intent, message, context.uid, context);
-  return reply(result);
+  return reply(result, context.uid);
 }
 
 /* ============================================================
