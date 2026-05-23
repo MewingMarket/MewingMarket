@@ -522,3 +522,12 @@ module.exports = {
   // alias compatibilità
   registrazioneUtente,
   loginUtente,
+  cambiaEmailUtente,
+  cambiaPasswordUtente,
+  eliminaAccountUtente,
+  resetPasswordRequestUtente,
+  resetPasswordConfirmUtente,
+  resetEmailRequestUtente,
+  resetEmailConfirmUtente,
+  meUtente
+};
