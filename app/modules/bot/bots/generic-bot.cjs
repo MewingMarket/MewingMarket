@@ -21,14 +21,14 @@ function match() {
    RUN — logica principale NPC
 ============================================================ */
 async function run(message, context = {}, extras = {}) {
-  log("GENERIC_RUN", {
-    uid: context.uid,
-    intent: context.intent?.intent,
-    memory: context.memory?.length || 0
-  });
-
   const intentObj = context.intent || {};
   const intent = intentObj.intent || "generico";
+
+  log("GENERIC_RUN", {
+    uid: context.uid,
+    intent,
+    memory: Array.isArray(context.memory) ? context.memory.length : 0
+  });
 
   /* ============================================================
      0) GUEST MODE — onboarding migliorato + missione iniziale
@@ -56,7 +56,6 @@ async function run(message, context = {}, extras = {}) {
 
   /* ============================================================
      1) SALUTI / ONBOARDING
-     (missione: 'parla con un NPC')
   ============================================================= */
   if (intent === "saluto" || intent === "onboarding") {
     return {
@@ -147,7 +146,7 @@ async function run(message, context = {}, extras = {}) {
       },
       {
         title: "Suggerimenti",
-        text: "• Vendor: prodotti e catalogo<br>• Influencer: motivazione<br>• Professore: tutorial e guide"
+        text: "• Vendor: prodotti e catalogo\n• Influencer: motivazione\n• Professore: tutorial e guide"
       }
     ]
   };
