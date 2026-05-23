@@ -1,18 +1,7 @@
 /**
  * FILE: intent-engine.cjs
- * PATH: /app/modules/bot/intent-engine.cjs
  * VERSIONE: VIDEOGIOCO 2027 — PATCH COMPLETA
- *
  * Locale, deterministico, zero GPT.
- * Restituisce:
- *  - intent
- *  - avatar
- *  - productId
- *  - rawProduct
- *  - keywords
- *  - category
- *  - tutorial (guideKey + avatar + gender)
- *  - botOwner (per Router 2027)
  */
 
 const path = require("path");
@@ -49,7 +38,6 @@ const INTENTS = {
   video: ["video", "youtube", "tutorial"],
   motivazione: ["motivami", "ispirami", "hype"],
 
-  /* PATCH 2027 — guida avanzata */
   guida: [
     "come si fa",
     "come funziona",
@@ -68,13 +56,10 @@ const INTENTS = {
   cookie: ["cookie"],
   supporto: ["supporto", "assistenza"],
 
-  /* PATCH 2027 — missioni */
   missione_completata: ["missione completata", "ho finito", "completato"],
 
-  /* PATCH 2027 — tutorial prodotto */
   tutorial_prodotto: ["tutorial prodotto", "video prodotto", "istruzioni prodotto"],
 
-  /* PATCH 2027 — newsletter avanzata */
   newsletter_subscribe_confirm: ["iscrivimi", "voglio iscrivermi", "ok iscrizione"],
   newsletter_unsubscribe_confirm: ["disiscrivimi", "voglio disiscrivermi"],
 
@@ -121,7 +106,7 @@ const AVATAR_MAP = {
 };
 
 /* ============================================================
-   3) RICONOSCIMENTO INTENT (locale)
+   3) RICONOSCIMENTO INTENT
 ============================================================ */
 function detectIntent(text) {
   const t = cleanSearchQuery(text);
@@ -141,14 +126,12 @@ function detectIntent(text) {
 async function detectProduct(text) {
   const t = cleanSearchQuery(text);
 
-  // ID esplicito
   const idMatch = t.match(/\b(\d{1,4})\b/);
   if (idMatch) {
     const p = await findProductById(Number(idMatch[1]));
     if (p) return p;
   }
 
-  // fuzzy
   const p = await findProductFromText(text);
   if (p) return p;
 
@@ -156,7 +139,7 @@ async function detectProduct(text) {
 }
 
 /* ============================================================
-   5) PATCH 2027 — RICONOSCIMENTO GUIDA → guideKey
+   5) RICONOSCIMENTO GUIDA
 ============================================================ */
 function detectGuideKey(text) {
   const t = cleanSearchQuery(text);
@@ -174,7 +157,7 @@ function detectGuideKey(text) {
 }
 
 /* ============================================================
-   6) INTENT ENGINE COMPLETO (PATCHATO)
+   6) INTENT ENGINE COMPLETO
 ============================================================ */
 async function generateIntent(text, options = {}) {
   const localIntent = detectIntent(text);
@@ -191,7 +174,7 @@ async function generateIntent(text, options = {}) {
     intent: localIntent,
     subintent: null,
     avatar: botAvatar,
-    botOwner: botAvatar, // PATCH 2027 → Router usa questo
+    botOwner: botAvatar,
     productId: product?.id || null,
     rawProduct: product || null,
     category,
@@ -200,9 +183,6 @@ async function generateIntent(text, options = {}) {
     source: "local"
   };
 
-  /* =====================================================
-     PATCH 2027 — se è una guida → attiva tutorial video
-  ====================================================== */
   if (localIntent === "guida" || localIntent === "tutorial_prodotto") {
     const guideKey = detectGuideKey(text);
 
