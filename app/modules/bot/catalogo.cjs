@@ -36,6 +36,17 @@ const fuseOptions = {
 function normalizeProduct(p) {
   if (!p) return null;
 
+  const categoriaRaw = p.categoria;
+
+  const categoria = Array.isArray(categoriaRaw)
+    ? categoriaRaw
+    : typeof categoriaRaw === "string"
+    ? categoriaRaw
+        .split(",")
+        .map(c => c.trim())
+        .filter(Boolean)
+    : [];
+
   return {
     id: Number(p.id),
     titolo: p.titolo || "",
@@ -44,11 +55,7 @@ function normalizeProduct(p) {
     descrizione_lunga: p.descrizione_lunga || "",
     prezzo_cent: Number(p.prezzo_cent) || 0,
     immagine_url: p.immagine_url || "",
-    categoria: Array.isArray(p.categoria)
-      ? p.categoria
-      : typeof p.categoria === "string"
-      ? p.categoria.split(",").map(c => c.trim())
-      : [],
+    categoria,
     youtube_url: p.youtube_url || "",
     youtube_description: p.youtube_description || "",
     catalog_video_block: p.catalog_video_block || ""
@@ -67,7 +74,7 @@ async function findProductById(id) {
    RICERCA FUZZY DA TESTO (SQL + fallback Fuse)
 ============================================================ */
 async function findProductFromText(text) {
-  if (!text) return null;
+  if (!text || typeof text !== "string") return null;
 
   // 1) SQL search
   const sqlMatch = await findByTextSQL(text);
@@ -75,9 +82,14 @@ async function findProductFromText(text) {
 
   // 2) Fallback fuzzy locale
   const catalog = await getCatalog();
-  if (!catalog.length) return null;
+  if (!Array.isArray(catalog) || !catalog.length) return null;
 
-  const normalized = catalog.map(normalizeProduct);
+  const normalized = catalog
+    .map(normalizeProduct)
+    .filter(Boolean);
+
+  if (!normalized.length) return null;
+
   const fuse = new Fuse(normalized, fuseOptions);
   const results = fuse.search(text);
 
