@@ -6,10 +6,6 @@
 const path = require("path");
 const { log } = require(path.join(process.cwd(), "app/modules/bot/utils.cjs"));
 
-// Handlers
-const catalogHandler = require(path.join(process.cwd(), "app/modules/bot/handlers/catalogHandler.cjs"));
-const productHandler = require(path.join(process.cwd(), "app/modules/bot/handlers/productHandler.cjs"));
-
 // Premium Modules
 const Premium = require(path.join(process.cwd(), "app/modules/premium/index.cjs"));
 
@@ -20,17 +16,15 @@ function match(intentObj) {
   const intent = intentObj?.intent || "generico";
 
   return [
+    "catalogo",
     "prodotto",
     "prezzo",
-    "prezzo_prodotto",
     "recensioni",
-    "prodotti_correlati",
-    "dettagli_prodotto",
-    "immagine_prodotto",
-    "acquisto_diretto",
-    "catalogo",
-
-    // Missioni commerciali
+    "correlati",
+    "descrizione",
+    "immagine",
+    "trattativa",
+    "obiezione",
     "missione_completata"
   ].includes(intent);
 }
@@ -39,40 +33,31 @@ function match(intentObj) {
    RUN — logica principale NPC
 ============================================================ */
 async function run(message, context = {}) {
-  log("VENDOR_RUN", {
-    uid: context.uid,
-    intent: context.intent?.intent,
-    productId: context.intent?.productId,
-    catalogCount: context.catalog?.length || 0
-  });
-
   const intentObj = context.intent || {};
   const intent = intentObj.intent || "generico";
   const productId = intentObj.productId || null;
-  const catalog = context.catalog || [];
+  const catalogo = context.catalogo || [];
+
+  log("VENDOR_RUN", {
+    uid: context.uid,
+    intent,
+    productId,
+    catalogCount: catalogo.length
+  });
 
   /* ============================================================
      1) CATALOGO (missione: open_catalog)
   ============================================================= */
   if (intent === "catalogo") {
-    const card = catalogHandler.catalogList(catalog);
+    const cards = catalogo.slice(0, 20).map(p => Premium.Cards.productCard(p));
 
     return {
       avatar: "vendor",
-      type: "mission",
-      blocks: [
-        {
-          title: "📚 Catalogo prodotti",
-          text: "Ecco i prodotti disponibili."
-        },
-        {
-          title: "🎯 Missione",
-          text: "Hai aperto il catalogo!"
-        },
-        {
-          title: "Prodotti",
-          text: card.html || "Lista prodotti non disponibile."
-        }
+      type: "list",
+      title: "📚 Catalogo prodotti",
+      items: cards,
+      actions: [
+        { label: "Torna al menu", intent: "menu" }
       ]
     };
   }
@@ -80,7 +65,7 @@ async function run(message, context = {}) {
   /* ============================================================
      2) PRODOTTO PRINCIPALE (missione: view_product)
   ============================================================= */
-  if (["prodotto", "prezzo", "prezzo_prodotto", "acquisto_diretto"].includes(intent)) {
+  if (["prodotto", "prezzo", "trattativa", "obiezione"].includes(intent)) {
     if (!productId) {
       return {
         avatar: "vendor",
@@ -89,16 +74,12 @@ async function run(message, context = {}) {
           {
             title: "📦 Quale prodotto vuoi vedere?",
             text: "Scegli un prodotto dal catalogo."
-          },
-          {
-            title: "🎯 Missione",
-            text: "Apri un prodotto dal catalogo."
           }
         ]
       };
     }
 
-    const p = catalog.find(x => x.id === productId);
+    const p = catalogo.find(x => x.id === productId);
     if (!p) {
       return {
         avatar: "vendor",
@@ -107,37 +88,104 @@ async function run(message, context = {}) {
       };
     }
 
-    const card = Premium.Cards.productCard(p);
+    const price = (p.prezzo_cent / 100).toFixed(2).replace(".", ",");
 
     return {
       avatar: "vendor",
-      type: "mission",
+      type: "product_card",
+      product: {
+        id: p.id,
+        title: p.titolo_breve,
+        description: p.descrizione_breve,
+        price_cent: p.prezzo_cent,
+        image: p.immagine_url
+      },
+      quick_replies: Premium.Quick.productQuickReplies(p),
       blocks: [
-        {
-          title: `📦 ${p.titolo_breve}`,
-          text: p.descrizione_breve
-        },
-        {
-          title: "Prezzo",
-          text: `${p.prezzo} €`
-        },
         {
           title: "🎯 Missione",
           text: "Hai visualizzato un prodotto!"
-        },
-        {
-          title: "Apri scheda completa",
-          cta: {
-            label: "Dettagli prodotto",
-            href: `/prodotto/${p.id}`
-          }
         }
       ]
     };
   }
 
   /* ============================================================
-     2.5) MISSIONE COMPLETATA → PROMOZIONE
+     3) RECENSIONI (missione: view_reviews)
+  ============================================================= */
+  if (intent === "recensioni") {
+    const p = catalogo.find(x => x.id === productId);
+
+    if (!p) {
+      return {
+        avatar: "vendor",
+        type: "text",
+        text: "Dimmi di quale prodotto vuoi vedere le recensioni."
+      };
+    }
+
+    const card = Premium.Cards.productReviewsCard(p, [
+      { user: "Utente A", rating: 5, comment: "Ottimo prodotto!" },
+      { user: "Utente B", rating: 4, comment: "Molto utile." }
+    ]);
+
+    return {
+      avatar: "vendor",
+      type: "list",
+      title: `⭐ Recensioni: ${p.titolo_breve}`,
+      items: [card],
+      actions: [
+        { label: "Prodotti correlati", intent: "correlati" }
+      ]
+    };
+  }
+
+  /* ============================================================
+     4) CORRELATI (missione: view_related)
+  ============================================================= */
+  if (intent === "correlati") {
+    const p = catalogo.find(x => x.id === productId);
+
+    if (!p) {
+      return {
+        avatar: "vendor",
+        type: "text",
+        text: "Dimmi prima un prodotto, poi ti mostro quelli correlati."
+      };
+    }
+
+    const cards = Premium.Cross.crossSellByCategory(p, catalogo);
+
+    return {
+      avatar: "vendor",
+      type: "list",
+      title: `🔗 Correlati a ${p.titolo_breve}`,
+      items: cards,
+      actions: [
+        { label: "Torna al prodotto", intent: "prodotto" }
+      ]
+    };
+  }
+
+  /* ============================================================
+     5) IMMAGINE (missione: view_product_image)
+  ============================================================= */
+  if (intent === "immagine") {
+    const p = catalogo.find(x => x.id === productId);
+
+    if (!p) {
+      return {
+        avatar: "vendor",
+        type: "text",
+        text: "Non trovo l'immagine di questo prodotto."
+      };
+    }
+
+    return Premium.Cards.productImageCard(p);
+  }
+
+  /* ============================================================
+     6) MISSIONE COMPLETATA → PROMOZIONE
   ============================================================= */
   if (intent === "missione_completata") {
     return {
@@ -158,135 +206,6 @@ async function run(message, context = {}) {
             label: "Genera promozione",
             href: "/api/promo/genera"
           }
-        }
-      ]
-    };
-  }
-
-  /* ============================================================
-     3) DETTAGLI PRODOTTO (missione: view_product_details)
-  ============================================================= */
-  if (intent === "dettagli_prodotto") {
-    const p = catalog.find(x => x.id === productId);
-    if (!p) {
-      return {
-        avatar: "vendor",
-        type: "text",
-        text: "Non trovo i dettagli di questo prodotto."
-      };
-    }
-
-    const card = Premium.Cards.productDetailsCard(p);
-
-    return {
-      avatar: "vendor",
-      type: "mission",
-      blocks: [
-        {
-          title: `📘 Dettagli: ${p.titolo_breve}`,
-          text: card.html || "Dettagli non disponibili."
-        },
-        {
-          title: "🎯 Missione",
-          text: "Hai visualizzato i dettagli di un prodotto!"
-        }
-      ]
-    };
-  }
-
-  /* ============================================================
-     4) IMMAGINE PRODOTTO (missione: view_product_image)
-  ============================================================= */
-  if (intent === "immagine_prodotto") {
-    const p = catalog.find(x => x.id === productId);
-    if (!p) {
-      return {
-        avatar: "vendor",
-        type: "text",
-        text: "Non trovo l'immagine di questo prodotto."
-      };
-    }
-
-    const card = Premium.Cards.productImageCard(p);
-
-    return {
-      avatar: "vendor",
-      type: "mission",
-      blocks: [
-        {
-          title: `🖼️ Immagine: ${p.titolo_breve}`,
-          text: card.html || "Immagine non disponibile."
-        },
-        {
-          title: "🎯 Missione",
-          text: "Hai visualizzato l’immagine di un prodotto!"
-        }
-      ]
-    };
-  }
-
-  /* ============================================================
-     5) RECENSIONI (missione: view_reviews)
-  ============================================================= */
-  if (intent === "recensioni") {
-    const p = catalog.find(x => x.id === productId);
-
-    if (!p) {
-      return {
-        avatar: "vendor",
-        type: "text",
-        text: "Dimmi di quale prodotto vuoi vedere le recensioni."
-      };
-    }
-
-    const card = Premium.Cards.productReviewsCard(p, [
-      { user: "Utente A", rating: 5, comment: "Ottimo prodotto!" },
-      { user: "Utente B", rating: 4, comment: "Molto utile." }
-    ]);
-
-    return {
-      avatar: "vendor",
-      type: "mission",
-      blocks: [
-        {
-          title: `⭐ Recensioni: ${p.titolo_breve}`,
-          text: card.html || "Nessuna recensione disponibile."
-        },
-        {
-          title: "🎯 Missione",
-          text: "Hai visualizzato le recensioni!"
-        }
-      ]
-    };
-  }
-
-  /* ============================================================
-     6) PRODOTTI CORRELATI (missione: view_related)
-  ============================================================= */
-  if (intent === "prodotti_correlati") {
-    const p = catalog.find(x => x.id === productId);
-
-    if (!p) {
-      return {
-        avatar: "vendor",
-        type: "text",
-        text: "Dimmi prima un prodotto, poi ti mostro quelli correlati."
-      };
-    }
-
-    const card = Premium.Cross.crossSellByCategory(p, catalog);
-
-    return {
-      avatar: "vendor",
-      type: "mission",
-      blocks: [
-        {
-          title: `🔗 Correlati a ${p.titolo_breve}`,
-          text: card.html || "Nessun prodotto correlato trovato."
-        },
-        {
-          title: "🎯 Missione",
-          text: "Hai visualizzato prodotti correlati!"
         }
       ]
     };
@@ -325,10 +244,6 @@ async function sidekick(message, context = {}) {
         {
           title: "🛒 Suggerimento",
           text: "Se vuoi, posso mostrarti i prodotti più popolari."
-        },
-        {
-          title: "🎯 Missione combo",
-          text: "Parla con due NPC diversi nella stessa sessione."
         }
       ]
     };
@@ -346,7 +261,7 @@ async function sidekick(message, context = {}) {
         title: "Apri correlati",
         cta: {
           label: "Prodotti correlati",
-          href: `#prodotti_correlati_${product.id}`
+          intent: "correlati"
         }
       }
     ]
