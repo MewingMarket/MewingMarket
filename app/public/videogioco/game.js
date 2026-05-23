@@ -109,7 +109,9 @@ function loadHomeAvatar() {
    SCELTA BOT
 ============================================================ */
 function chooseBot(botName) {
+  // Modalità narratore + possibilità di chattare col generico
   if (botName === "generic") {
+    const current = localStorage.getItem("active_bot") || "";
     const gender = localStorage.getItem("player_avatar");
     const npc = gender === "female" ? "donna saggia" : "uomo saggio";
 
@@ -117,13 +119,22 @@ function chooseBot(botName) {
     if (homeAvatar) homeAvatar.src = `/videogioco/${npc}.png`;
 
     const msg = document.getElementById("home-message");
-    if (msg) {
-      msg.classList.remove("typewriter");
-      void msg.offsetWidth;
-      msg.classList.add("typewriter");
-      msg.innerHTML = "Io sono la tua guida.<br>Da qui puoi scegliere un bot per iniziare.";
+
+    // Prima volta: solo messaggio guida
+    if (current !== "generic") {
+      if (msg) {
+        msg.classList.remove("typewriter");
+        void msg.offsetWidth;
+        msg.classList.add("typewriter");
+        msg.innerHTML = "Io sono la tua guida.<br>Da qui puoi scegliere un bot per iniziare oppure parlare direttamente con me.";
+      }
+      localStorage.setItem("active_bot", "generic");
+      return;
     }
 
+    // Seconda volta: entra in chat col generico
+    localStorage.setItem("active_bot", "generic");
+    goTo("screen-chat");
     return;
   }
 
@@ -154,6 +165,7 @@ function startNewGame() {
 ============================================================ */
 async function saveGameState() {
   const lim = document.getElementById("lim-screen");
+  const chat = document.getElementById("chat-box");
 
   const payload = {
     name: localStorage.getItem("player_name") || "",
@@ -161,6 +173,7 @@ async function saveGameState() {
     bot: localStorage.getItem("active_bot") || "",
     lastMessage: localStorage.getItem("last_message") || "",
     limState: lim ? lim.innerHTML : "",
+    chatState: chat ? chat.innerHTML : "",
 
     xp: parseInt(localStorage.getItem("player_xp") || "0", 10),
     level: parseInt(localStorage.getItem("player_level") || "1", 10),
@@ -189,7 +202,13 @@ async function loadGameList() {
 
     select.innerHTML = `<option value="">Seleziona una partita...</option>`;
 
-    if (!json.success) return;
+    if (!json.success) {
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = "Errore caricamento partite";
+      select.appendChild(opt);
+      return;
+    }
 
     json.data.forEach(p => {
       const opt = document.createElement("option");
@@ -200,9 +219,8 @@ async function loadGameList() {
     });
   } catch {
     const select = document.getElementById("saved-games");
-    if (select) {
-      select.innerHTML = `<option value="">Errore caricamento partite</option>`;
-    }
+    if (!select) return;
+    select.innerHTML = `<option value="">Errore caricamento partite</option>`;
   }
 }
 
@@ -232,13 +250,23 @@ async function loadSelectedGame() {
   localStorage.setItem("active_bot", data.bot || "");
   localStorage.setItem("last_message", data.lastMessage || "");
 
-  localStorage.setItem("player_xp", String(data.xp || "0"));
-  localStorage.setItem("player_level", String(data.level || "1"));
+  localStorage.setItem("player_xp", data.xp || "0");
+  localStorage.setItem("player_level", data.level || "1");
   localStorage.setItem("player_missions", data.missions || "[]");
 
   const lim = document.getElementById("lim-screen");
   if (lim) lim.innerHTML = data.limState || "";
 
+  const chat = document.getElementById("chat-box");
+  if (chat) chat.innerHTML = data.chatState || "";
+
+  // Aggiorna avatar in base al bot salvato
+  if (typeof window.changeAvatar === "function") {
+    const bot = data.bot || "generic";
+    window.changeAvatar(bot);
+  }
+
+  updateHUD();
   goTo("screen-chat");
 }
 
