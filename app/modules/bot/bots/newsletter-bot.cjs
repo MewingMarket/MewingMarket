@@ -1,5 +1,5 @@
 /**
- * Newsletter AI — NPC informativo / onboarding / retention (2027)
+ * Newsletter AI — NPC informativo / onboarding / retention (2027.4)
  * Path: app/modules/bot/bots/newsletter-bot.cjs
  */
 
@@ -32,7 +32,7 @@ function match(intentObj) {
 /* ============================================================
    RUN — logica principale NPC
 ============================================================ */
-async function run(message, context = {}) {
+async function run(message, context = {}, extras = {}) {
   const intentObj = context.intent || {};
   const intent = intentObj.intent || "generico";
 
