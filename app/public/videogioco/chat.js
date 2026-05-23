@@ -70,7 +70,7 @@ document.addEventListener("DOMContentLoaded", () => {
   window.changeAvatar = changeAvatar;
 
   /* ============================================================
-     XP + LEVEL — RENDER
+     XP + LEVEL — RENDER (opzionale, se il backend li usa)
   ============================================================ */
   function renderXP(data) {
     if (!limScreen) return;
@@ -127,22 +127,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* ============================================================
-     RENDER LIM — SUPPORTA MISSIONI + XP + LEVEL
+     RENDER LIM — SUPPORTA MISSIONI + XP + LEVEL + VIDEO
   ============================================================ */
   function renderOnLIM(data) {
     if (!limScreen || !data) return;
     limScreen.innerHTML = "";
-
-    // Aggiorna XP / LEVEL se presenti
-    if (typeof data.xp === "number") {
-      localStorage.setItem("player_xp", String(data.xp));
-    }
-    if (typeof data.level === "number") {
-      localStorage.setItem("player_level", String(data.level));
-    }
-    if (typeof window.updateHUD === "function") {
-      window.updateHUD();
-    }
 
     /* XP */
     if (data.type === "xp") {
@@ -156,9 +145,34 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    /* MISSIONE COMPLETATA */
+    /* MISSIONE COMPLETATA (flag generico) */
     if (data.missionCompleted) {
       renderMissionComplete(data);
+    }
+
+    /* VIDEO (tutorial / guida) */
+    if (data.type === "video" && data.url) {
+      const div = document.createElement("div");
+      div.className = "lim-block";
+
+      const h3 = document.createElement("h3");
+      h3.textContent = "🎥 Video tutorial";
+      div.appendChild(h3);
+
+      const p = document.createElement("p");
+      p.innerHTML = "Apri il video per vedere la spiegazione completa.";
+      div.appendChild(p);
+
+      const a = document.createElement("a");
+      a.href = data.url;
+      a.textContent = "Apri video";
+      a.target = "_blank";
+      a.className = "lim-cta";
+      div.appendChild(a);
+
+      limScreen.appendChild(div);
+      npcTalk();
+      return;
     }
 
     /* TESTO SEMPLICE */
@@ -222,6 +236,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return null;
       }
       const json = await res.json();
+      // chat.cjs restituisce un oggetto; eventuale wrapper {data: ...} viene gestito
       return json.data || json;
     } catch {
       addMessage("❌ Errore rete.");
@@ -240,8 +255,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     addMessage(message, "user");
     chatInput.value = "";
-
-    // Salvo ultimo messaggio per il salvataggio partita
     localStorage.setItem("last_message", message);
 
     const bot = localStorage.getItem("active_bot") || "generic";
