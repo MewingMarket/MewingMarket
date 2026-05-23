@@ -1,5 +1,5 @@
 /**
- * Router AI — VERSIONE VIDEOGIOCO 2027 (PATCH COMPLETA)
+ * Router AI — VERSIONE VIDEOGIOCO 2027.4 (PATCH COMPLETA)
  * Smistamento avatar intelligente + compresenza + handoff
  * Path: app/modules/bot/core/router.cjs
  */
@@ -23,30 +23,30 @@ const BOT_MAP = {
   professor: professorBot,
   influencer: influencerBot,
   newsletter: newsletterBot,
-  assistant: genericBot,
-  generic: genericBot
+  generic: genericBot,
+  assistant: genericBot // compatibilità retro
 };
 
 /* ============================================================
-   pickAvatar() — versione 2027
+   pickAvatar() — versione 2027.4
    (compatibile con Intent Engine + Game Engine)
 ============================================================ */
 function pickAvatar(intentObj = {}) {
   const avatar = intentObj.avatar;
   const owner = intentObj.botOwner;
 
-  // 1) Avatar dichiarato
+  // 1) Avatar dichiarato dall’Intent Engine
   if (avatar && BOT_MAP[avatar]) {
     return avatar;
   }
 
-  // 2) Bot owner (Intent Engine 2027)
+  // 2) Bot owner (Intent Engine 2027.4)
   if (owner && BOT_MAP[owner]) {
     return owner;
   }
 
-  // 3) Fallback
-  return "assistant";
+  // 3) Fallback → generic
+  return "generic";
 }
 
 /* ============================================================
@@ -58,7 +58,7 @@ function route(intentObj = {}) {
 }
 
 /* ============================================================
-   SIDEKICK ENGINE — compresenza automatica
+   SIDEKICK ENGINE — compresenza automatica 2027.4
    (Vendor + Influencer + Professore)
 ============================================================ */
 async function runSidekick(mainBotName, message, context) {
@@ -71,7 +71,11 @@ async function runSidekick(mainBotName, message, context) {
     if (bot && typeof bot.sidekick === "function") {
       try {
         const res = await bot.sidekick(message, context);
-        if (res) return res;
+
+        // sidekick valido → deve avere almeno avatar + type
+        if (res && res.avatar && res.type) {
+          return res;
+        }
       } catch {}
     }
   }
@@ -80,17 +84,38 @@ async function runSidekick(mainBotName, message, context) {
 }
 
 /* ============================================================
-   HANDOFF ENGINE — quando un bot passa la palla a un altro
+   HANDOFF ENGINE — versione 2027.4
+   Supporta:
+   - actions[]
+   - blocks[].cta
+   - list.actions[]
+   - product_card.quick_replies
 ============================================================ */
 function detectHandoff(response) {
   if (!response) return null;
 
-  const actions = response.actions || response.blocks || response.frames || [];
+  // 1) actions dirette
+  if (Array.isArray(response.actions)) {
+    const a = response.actions.find(a => a.intent && BOT_MAP[a.intent]);
+    if (a) return a.intent;
+  }
 
-  if (!Array.isArray(actions)) return null;
+  // 2) blocks con CTA
+  if (Array.isArray(response.blocks)) {
+    for (const b of response.blocks) {
+      if (b?.cta?.intent && BOT_MAP[b.cta.intent]) {
+        return b.cta.intent;
+      }
+    }
+  }
 
-  const action = actions.find(a => a.intent && BOT_MAP[a.intent]);
-  return action ? action.intent : null;
+  // 3) quick replies (product_card)
+  if (Array.isArray(response.quick_replies)) {
+    const q = response.quick_replies.find(q => q.intent && BOT_MAP[q.intent]);
+    if (q) return q.intent;
+  }
+
+  return null;
 }
 
 /* ============================================================
