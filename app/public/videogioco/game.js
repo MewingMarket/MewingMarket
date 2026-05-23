@@ -180,23 +180,30 @@ async function saveGameState() {
    LISTA PARTITE
 ============================================================ */
 async function loadGameList() {
-  const res = await fetch("/api/game/list", { method: "POST" });
-  const json = await res.json();
+  try {
+    const res = await fetch("/api/game/list", { method: "POST" });
+    const json = await res.json();
 
-  const select = document.getElementById("saved-games");
-  if (!select) return;
+    const select = document.getElementById("saved-games");
+    if (!select) return;
 
-  select.innerHTML = `<option value="">Seleziona una partita...</option>`;
+    select.innerHTML = `<option value="">Seleziona una partita...</option>`;
 
-  if (!json.success) return;
+    if (!json.success) return;
 
-  json.data.forEach(p => {
-    const opt = document.createElement("option");
-    const date = new Date(p.updated_at).toLocaleString("it-IT");
-    opt.value = p.id;
-    opt.textContent = `${p.name} — ${date}`;
-    select.appendChild(opt);
-  });
+    json.data.forEach(p => {
+      const opt = document.createElement("option");
+      const date = new Date(p.updated_at).toLocaleString("it-IT");
+      opt.value = p.id;
+      opt.textContent = `${p.name} — ${date}`;
+      select.appendChild(opt);
+    });
+  } catch {
+    const select = document.getElementById("saved-games");
+    if (select) {
+      select.innerHTML = `<option value="">Errore caricamento partite</option>`;
+    }
+  }
 }
 
 /* ============================================================
@@ -225,8 +232,8 @@ async function loadSelectedGame() {
   localStorage.setItem("active_bot", data.bot || "");
   localStorage.setItem("last_message", data.lastMessage || "");
 
-  localStorage.setItem("player_xp", data.xp || "0");
-  localStorage.setItem("player_level", data.level || "1");
+  localStorage.setItem("player_xp", String(data.xp || "0"));
+  localStorage.setItem("player_level", String(data.level || "1"));
   localStorage.setItem("player_missions", data.missions || "[]");
 
   const lim = document.getElementById("lim-screen");
