@@ -76,7 +76,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!limScreen) return;
 
     const div = document.createElement("div");
-    div.className = "lim-block";
+    div.className = "lim-block xp-block";
 
     const h3 = document.createElement("h3");
     h3.textContent = "⭐ XP guadagnati!";
@@ -94,7 +94,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!limScreen) return;
 
     const div = document.createElement("div");
-    div.className = "lim-block";
+    div.className = "lim-block levelup-block";
 
     const h3 = document.createElement("h3");
     h3.textContent = "🎉 LIVELLO SUPERATO!";
@@ -112,7 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!limScreen) return;
 
     const div = document.createElement("div");
-    div.className = "lim-block";
+    div.className = "lim-block mission-complete-block";
 
     const h3 = document.createElement("h3");
     h3.textContent = "🏆 Missione completata!";
@@ -132,6 +132,17 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderOnLIM(data) {
     if (!limScreen || !data) return;
     limScreen.innerHTML = "";
+
+    // Aggiorna XP / LEVEL se presenti
+    if (typeof data.xp === "number") {
+      localStorage.setItem("player_xp", String(data.xp));
+    }
+    if (typeof data.level === "number") {
+      localStorage.setItem("player_level", String(data.level));
+    }
+    if (typeof window.updateHUD === "function") {
+      window.updateHUD();
+    }
 
     /* XP */
     if (data.type === "xp") {
@@ -229,6 +240,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     addMessage(message, "user");
     chatInput.value = "";
+
+    // Salvo ultimo messaggio per il salvataggio partita
+    localStorage.setItem("last_message", message);
 
     const bot = localStorage.getItem("active_bot") || "generic";
     const gender = localStorage.getItem("player_avatar") === "female" ? "female" : "male";
