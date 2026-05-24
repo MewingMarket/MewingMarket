@@ -1,9 +1,10 @@
 /* =========================================================
-   DOWNLOAD PREMIUM — Versione 2058 (Single Loader Architecture)
-   - Nessun autorun
-   - Nessun DOMContentLoaded
-   - Nessun critical-ready
-   - Esegue SOLO quando chiamato da Loader Supremo 2058
+   DOWNLOAD PREMIUM — Versione 2027.503 SAFE MODE
+   - Compatibile con cookie di sessione
+   - Nessun token nel localStorage
+   - fetch() con credentials: "include"
+   - Wrapper JSON corretto
+   - Logica originale preservata
 ========================================================= */
 
 console.log("📌 [DOWNLOAD 2058] File caricato");
@@ -17,12 +18,11 @@ window.pageInit = function () {
 };
 
 /* =========================================================
-   LOGICA ORIGINALE (identica)
+   LOGICA PRINCIPALE
 ========================================================= */
 async function avviaDownloadPremium() {
   console.log("🔥 download-premium.js READY");
 
-  const token = localStorage.getItem("token");
   const body = document.getElementById("downloadBody");
 
   if (!body) {
@@ -31,10 +31,14 @@ async function avviaDownloadPremium() {
   }
 
   /* =========================================================
-     1) Protezione login
+     1) Recupera /me per verificare login
   ========================================================== */
-  if (!token) {
-    console.warn("🔒 [DOWNLOAD] Nessun token → login richiesto");
+  console.log("🌐 [DOWNLOAD] Verifica sessione…");
+
+  const me = await apiDownload("/api/utenti/me", { method: "POST" });
+
+  if (!me || me.guest) {
+    console.warn("🔒 [DOWNLOAD] Utente non loggato");
     body.innerHTML = `<tr><td colspan="3">Devi effettuare il login per accedere ai tuoi file.</td></tr>`;
     return;
   }
@@ -176,31 +180,23 @@ async function avviaDownloadPremium() {
 }
 
 /* =========================================================
-   WRAPPER UNIVERSALE JSON
+   WRAPPER UNIVERSALE JSON (SAFE MODE)
 ========================================================= */
 async function apiDownload(path, options = {}) {
   console.log("🌐 [DOWNLOAD] API JSON:", path);
 
-  const token = localStorage.getItem("token");
-
-  const headers = {
-    "Content-Type": "application/json",
-    ...(options.headers || {}),
-    Authorization: token ? `Bearer ${token}` : ""
-  };
-
   let res;
   try {
-    res = await fetch(path, { ...options, headers });
+    res = await fetch(path, {
+      credentials: "include",
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {})
+      }
+    });
   } catch (err) {
     console.error("❌ [DOWNLOAD] Errore rete:", err);
-    return null;
-  }
-
-  if (res.status === 401 || res.status === 403) {
-    console.warn("🔒 [DOWNLOAD] Token scaduto → redirect login");
-    localStorage.removeItem("token");
-    window.location.href = "/login";
     return null;
   }
 
@@ -217,31 +213,22 @@ async function apiDownload(path, options = {}) {
     return null;
   }
 
-  return json.data;
+  return json; // NON json.data
 }
 
 /* =========================================================
-   WRAPPER UNIVERSALE BLOB
+   WRAPPER UNIVERSALE BLOB (SAFE MODE)
 ========================================================= */
 async function apiDownloadBlob(path) {
   console.log("🌐 [DOWNLOAD] API BLOB:", path);
 
-  const token = localStorage.getItem("token");
-
   let res;
   try {
     res = await fetch(path, {
-      headers: { Authorization: "Bearer " + token }
+      credentials: "include"
     });
   } catch (err) {
     console.error("❌ [DOWNLOAD] Errore rete:", err);
-    return null;
-  }
-
-  if (res.status === 401 || res.status === 403) {
-    console.warn("🔒 [DOWNLOAD] Token scaduto → redirect login");
-    localStorage.removeItem("token");
-    window.location.href = "/login";
     return null;
   }
 
