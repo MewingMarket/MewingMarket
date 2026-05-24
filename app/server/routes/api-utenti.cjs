@@ -1,6 +1,6 @@
 /* =========================================================
    FILE: app/server/routes/api-utenti.cjs
-   VERSIONE: 2027.3 — PATCH STABILE
+   VERSIONE: 2027.503 — SAFE MODE
    MODALITÀ: Java‑mode (funzioni, no Express)
    DESCRIZIONE: Sistema utenti completo — Registrazione, Login,
                 Cambio email, Cambio password, Eliminazione,
@@ -37,12 +37,6 @@ function hash(p) {
 
 function genToken(prefix) {
   return prefix + "_" + crypto.randomBytes(16).toString("hex");
-}
-
-function getSessionToken(req) {
-  const h = req.headers["authorization"];
-  if (!h || !h.startsWith("Bearer ")) return "";
-  return h.replace("Bearer ", "").trim();
 }
 
 function logUserEvent(email, evento, note = null) {
@@ -108,6 +102,7 @@ async function registrazione(req) {
 
     await jsonGen.exportUsers();
 
+    // Il cookie verrà impostato dal router
     return { success: true, token: sessione, email };
 
   } catch (err) {
@@ -162,23 +157,24 @@ async function login(req) {
 }
 
 /* =========================================================
-   3) CAMBIO EMAIL
+   3) CAMBIO EMAIL (cookie → req.uid)
 ========================================================= */
 async function cambiaEmail(req) {
   console.log("[DEBUG utenti] cambiaEmail()");
 
   try {
-    const sessione = getSessionToken(req);
+    if (!req.uid) return { success: false, error: "Non loggato" };
+
     let { nuova_email, password } = req.body || {};
 
     nuova_email = (nuova_email || "").trim().toLowerCase();
     password = normalizePassword(password);
 
-    if (!sessione || !nuova_email || !password) {
+    if (!nuova_email || !password) {
       return { success: false, error: "Dati mancanti" };
     }
 
-    const user = db.prepare("SELECT * FROM utenti WHERE sessione = ?").get(sessione);
+    const user = db.prepare("SELECT * FROM utenti WHERE id = ?").get(req.uid);
     if (!user) return { success: false, error: "Sessione non valida" };
 
     const passwordHash = hash(password);
@@ -212,23 +208,24 @@ async function cambiaEmail(req) {
 }
 
 /* =========================================================
-   4) CAMBIO PASSWORD
+   4) CAMBIO PASSWORD (cookie → req.uid)
 ========================================================= */
 async function cambiaPassword(req) {
   console.log("[DEBUG utenti] cambiaPassword()");
 
   try {
-    const sessione = getSessionToken(req);
+    if (!req.uid) return { success: false, error: "Non loggato" };
+
     let { vecchia_password, nuova_password } = req.body || {};
 
     vecchia_password = normalizePassword(vecchia_password);
     nuova_password = normalizePassword(nuova_password);
 
-    if (!sessione || !vecchia_password || !nuova_password) {
+    if (!vecchia_password || !nuova_password) {
       return { success: false, error: "Dati mancanti" };
     }
 
-    const user = db.prepare("SELECT * FROM utenti WHERE sessione = ?").get(sessione);
+    const user = db.prepare("SELECT * FROM utenti WHERE id = ?").get(req.uid);
     if (!user) return { success: false, error: "Sessione non valida" };
 
     const oldHash = hash(vecchia_password);
@@ -257,22 +254,22 @@ async function cambiaPassword(req) {
 }
 
 /* =========================================================
-   5) ELIMINA ACCOUNT
+   5) ELIMINA ACCOUNT (cookie → req.uid)
 ========================================================= */
 async function eliminaAccount(req) {
   console.log("[DEBUG utenti] eliminaAccount()");
 
   try {
-    const sessione = getSessionToken(req);
-    let { password } = req.body || {};
+    if (!req.uid) return { success: false, error: "Non loggato" };
 
+    let { password } = req.body || {};
     password = normalizePassword(password);
 
-    if (!sessione || !password) {
+    if (!password) {
       return { success: false, error: "Dati mancanti" };
     }
 
-    const user = db.prepare("SELECT * FROM utenti WHERE sessione = ?").get(sessione);
+    const user = db.prepare("SELECT * FROM utenti WHERE id = ?").get(req.uid);
     if (!user) return { success: false, error: "Sessione non valida" };
 
     const passwordHash = hash(password);
@@ -305,7 +302,7 @@ async function eliminaAccount(req) {
 }
 
 /* =========================================================
-   6) RESET PASSWORD REQUEST
+   6) RESET PASSWORD REQUEST (ZERO‑INPUT)
 ========================================================= */
 async function resetPasswordRequest(req) {
   console.log("[DEBUG utenti] resetPasswordRequest()");
@@ -335,7 +332,7 @@ async function resetPasswordRequest(req) {
 }
 
 /* =========================================================
-   7) RESET PASSWORD CONFIRM
+   7) RESET PASSWORD CONFIRM (ZERO‑INPUT)
 ========================================================= */
 async function resetPasswordConfirm(req) {
   console.log("[DEBUG utenti] resetPasswordConfirm()");
@@ -380,7 +377,7 @@ async function resetPasswordConfirm(req) {
 }
 
 /* =========================================================
-   8) RESET EMAIL REQUEST
+   8) RESET EMAIL REQUEST (ZERO‑INPUT)
 ========================================================= */
 async function resetEmailRequest(req) {
   console.log("[DEBUG utenti] resetEmailRequest()");
@@ -410,7 +407,7 @@ async function resetEmailRequest(req) {
 }
 
 /* =========================================================
-   9) RESET EMAIL CONFIRM
+   9) RESET EMAIL CONFIRM (ZERO‑INPUT)
 ========================================================= */
 async function resetEmailConfirm(req) {
   console.log("[DEBUG utenti] resetEmailConfirm()");
@@ -458,29 +455,29 @@ async function resetEmailConfirm(req) {
 }
 
 /* =========================================================
-   10) /me
+   10) /me — versione 2027.503 SAFE MODE
 ========================================================= */
 async function me(req) {
   console.log("[DEBUG utenti] me()");
 
   try {
-    const sessione = getSessionToken(req);
-    if (!sessione) {
-      return { success: false, error: "Non loggato" };
+    // Se non loggato → guest
+    if (!req.uid) {
+      return { success: true, guest: true };
     }
 
     const user = db.prepare(`
       SELECT id, email, ruolo, codice_fiscale, created_at
       FROM utenti
-      WHERE sessione = ?
+      WHERE id = ?
       LIMIT 1
-    `).get(sessione);
+    `).get(req.uid);
 
     if (!user) {
-      return { success: false, error: "Sessione non valida" };
+      return { success: true, guest: true };
     }
 
-    return { success: true, utente: user };
+    return { success: true, guest: false, utente: user };
 
   } catch (err) {
     console.error("/me:", err);
@@ -508,6 +505,7 @@ async function meUtente(req) { return me(req); }
 ========================================================= */
 
 module.exports = {
+  // funzioni principali
   registrazione,
   login,
   cambiaEmail,
