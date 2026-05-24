@@ -1,9 +1,9 @@
 /* =========================================================
-   RESET EMAIL REQUEST — Versione 2058 (Single Loader Architecture)
-   - Nessun autorun
-   - Nessun DOMContentLoaded
-   - Nessun critical-ready
-   - Esegue SOLO quando chiamato da Loader Supremo 2058
+   RESET EMAIL REQUEST — Versione 2027.503 SAFE MODE
+   - ZERO-INPUT
+   - Nessun token
+   - fetch() con credentials: "include"
+   - Wrapper JSON corretto
 ========================================================= */
 
 console.log("📌 [RESET-EMAIL-REQ 2058] File caricato");
@@ -17,7 +17,7 @@ window.pageInit = function () {
 };
 
 /* =========================================================
-   LOGICA ORIGINALE (identica)
+   LOGICA PRINCIPALE
 ========================================================= */
 function avviaResetEmailRequest() {
   console.log("🔥 reset-email-request.js READY (ZERO-INPUT)");
@@ -26,7 +26,7 @@ function avviaResetEmailRequest() {
   const msgResetEmail = document.getElementById("msgResetEmail");
 
   /* =========================================================
-     WRAPPER UNIVERSALE
+     WRAPPER UNIVERSALE (SAFE MODE)
   ========================================================== */
   async function apiResetEmailRequest(payload) {
     console.log("🌐 [RESET-EMAIL-REQ] API /resetEmailRequest");
@@ -35,6 +35,7 @@ function avviaResetEmailRequest() {
     try {
       res = await fetch("/api/utenti/resetEmailRequest", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
@@ -56,7 +57,7 @@ function avviaResetEmailRequest() {
       return null;
     }
 
-    return json.data;
+    return json; // NON json.data
   }
 
   /* =========================================================
@@ -88,11 +89,11 @@ function avviaResetEmailRequest() {
 
     console.log("🚀 [RESET-EMAIL-REQ] Invio richiesta con CF:", codice_fiscale);
 
-    const data = await apiResetEmailRequest({ codice_fiscale });
+    const res = await apiResetEmailRequest({ codice_fiscale });
 
-    console.log("📦 [RESET-EMAIL-REQ] Risposta API:", data);
+    console.log("📦 [RESET-EMAIL-REQ] Risposta API:", res);
 
-    if (!data) {
+    if (!res) {
       msg.textContent = "Errore durante la richiesta di reset email.";
       msg.className = "err";
       btnResetEmail.disabled = false;
