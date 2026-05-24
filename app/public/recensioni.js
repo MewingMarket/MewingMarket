@@ -1,9 +1,10 @@
 /* =========================================================
-   RECENSIONI UTENTE — Versione 2058 (Single Loader Architecture)
-   - Nessun autorun
-   - Nessun DOMContentLoaded
-   - Nessun critical-ready
-   - Esegue SOLO quando chiamato da Loader Supremo 2058
+   RECENSIONI UTENTE — Versione 2027.503 SAFE MODE
+   - Compatibile cookie di sessione
+   - Nessun token nel localStorage
+   - fetch() con credentials: "include"
+   - Wrapper JSON corretto
+   - Logica originale preservata
 ========================================================= */
 
 console.log("📌 [RECENSIONI 2058] File caricato");
@@ -17,7 +18,7 @@ window.pageInit = function () {
 };
 
 /* =========================================================
-   LOGICA RECENSIONI (identica)
+   LOGICA RECENSIONI
 ========================================================= */
 async function avviaRecensioni() {
   console.log("🔥 recensioni.js READY");
@@ -29,10 +30,16 @@ async function avviaRecensioni() {
   const status = document.getElementById("status");
   const stars = document.querySelectorAll("#stars span");
 
-  const token = localStorage.getItem("mewing_token");
   let ratingSelezionato = 0;
 
-  if (!token) {
+  /* =========================================================
+     1) Verifica login tramite /me
+  ========================================================== */
+  console.log("🌐 [RECENSIONI] Verifica sessione…");
+
+  const me = await apiRecensioni("/api/utenti/me", { method: "POST" });
+
+  if (!me || me.guest) {
     if (selectProdotto)
       selectProdotto.innerHTML = `<option value="">Effettua il login per recensire</option>`;
     if (btnInvia) btnInvia.disabled = true;
@@ -42,15 +49,15 @@ async function avviaRecensioni() {
   }
 
   /* =========================================================
-     WRAPPER UNIVERSALE
+     WRAPPER UNIVERSALE (SAFE MODE)
   ========================================================== */
   async function apiRecensioni(path, payload = {}) {
     try {
       const res = await fetch(path, {
         method: "POST",
+        credentials: "include",
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+          "Content-Type": "application/json"
         },
         body: JSON.stringify(payload)
       });
@@ -65,7 +72,7 @@ async function avviaRecensioni() {
   }
 
   /* =========================================================
-     1) CARICA PRODOTTI ACQUISTATI
+     2) CARICA PRODOTTI ACQUISTATI
   ========================================================== */
   async function caricaProdottiAcquistati() {
     const res = await apiRecensioni("/api/recensioni/prodottiAcquistati");
@@ -84,7 +91,7 @@ async function avviaRecensioni() {
   }
 
   /* =========================================================
-     2) GESTIONE STELLE
+     3) GESTIONE STELLE
   ========================================================== */
   stars.forEach((star, index) => {
     star.addEventListener("click", () => {
@@ -94,7 +101,7 @@ async function avviaRecensioni() {
   });
 
   /* =========================================================
-     3) INVIO RECENSIONE
+     4) INVIO RECENSIONE
   ========================================================== */
   btnInvia.addEventListener("click", async () => {
     const prodotto_id = Number(selectProdotto.value);
@@ -129,7 +136,7 @@ async function avviaRecensioni() {
   });
 
   /* =========================================================
-     4) CARICA LISTA RECENSIONI
+     5) CARICA LISTA RECENSIONI
   ========================================================== */
   async function caricaRecensioni() {
     listaRecensioni.innerHTML = "<div class='loader'>Caricamento...</div>";
@@ -162,7 +169,7 @@ async function avviaRecensioni() {
   }
 
   /* =========================================================
-     5) FUNZIONI GLOBALI
+     6) FUNZIONI GLOBALI
   ========================================================== */
   window.eliminaRecensione = async (id) => {
     if (!confirm("Vuoi eliminare questa recensione?")) return;
@@ -184,7 +191,7 @@ async function avviaRecensioni() {
   };
 
   /* =========================================================
-     AVVIO
+     7) AVVIO
   ========================================================== */
   caricaProdottiAcquistati();
   caricaRecensioni();
