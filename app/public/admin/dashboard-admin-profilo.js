@@ -1,9 +1,9 @@
 /* =========================================================
-   DASHBOARD ADMIN PROFILO — Versione 2058 (Single Loader Architecture)
-   - Nessun autorun
-   - Nessun DOMContentLoaded
-   - Nessun critical-ready
-   - Esegue SOLO quando chiamato da Loader Universale Admin
+   DASHBOARD ADMIN PROFILO — Versione 2027.503 SAFE MODE
+   - Cookie admin (no token)
+   - fetch() con credentials: "include"
+   - Wrapper JSON corretto
+   - Compatibile con auth-admin 2027.503
 ========================================================= */
 
 console.log("📌 [DASHBOARD-ADMIN 2058] File caricato");
@@ -17,22 +17,26 @@ const clean = (t) =>
     : t ?? "";
 
 /* =========================================================
-   WRAPPER UNIVERSALE ADMIN (token + universal-json)
+   WRAPPER UNIVERSALE ADMIN (SAFE MODE)
 ========================================================= */
 async function adminApi(path, options = {}) {
-  const token = localStorage.getItem("token");
-
-  const headers = {
-    "Content-Type": "application/json",
-    ...(options.headers || {}),
-    Authorization: token ? `Bearer ${token}` : ""
-  };
-
-  const res = await fetch(path, { ...options, headers });
+  let res;
+  try {
+    res = await fetch(path, {
+      credentials: "include",
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {})
+      }
+    });
+  } catch (err) {
+    console.error("❌ [DASHBOARD-ADMIN] Errore rete:", err);
+    return null;
+  }
 
   if (res.status === 401 || res.status === 403) {
-    console.warn("🔒 [DASHBOARD-ADMIN] Token scaduto → redirect login");
-    localStorage.removeItem("token");
+    console.warn("🔒 [DASHBOARD-ADMIN] Sessione admin scaduta → redirect login");
     window.location.href = "/admin/login";
     return null;
   }
@@ -40,7 +44,7 @@ async function adminApi(path, options = {}) {
   let json;
   try {
     json = await res.json();
-  } catch (e) {
+  } catch {
     console.error("❌ Risposta NON JSON da", path);
     return null;
   }
@@ -50,7 +54,7 @@ async function adminApi(path, options = {}) {
     return null;
   }
 
-  return json.data;
+  return json; // NON json.data
 }
 
 /* =========================================================
@@ -70,13 +74,13 @@ window.pageInit = function () {
 async function popolaDatiAdmin() {
   console.log("📥 [DASHBOARD-ADMIN] Carico dati admin…");
 
-  const data = await adminApi("/api/admin/me", { method: "GET" });
-  if (!data || !data.admin) {
+  const res = await adminApi("/api/admin/me", { method: "GET" });
+  if (!res || !res.admin) {
     console.warn("❌ [DASHBOARD-ADMIN] Nessun admin trovato");
     return;
   }
 
-  const a = data.admin;
+  const a = res.admin;
 
   const emailEl = document.getElementById("adminEmailMain");
   const userEl = document.getElementById("adminUsernameMain");
@@ -108,17 +112,17 @@ function setupCambioEmail() {
     const pass = clean(document.getElementById("passwordAdminEmail").value);
     const msg = document.getElementById("msgAdminEmail");
 
-    const data = await adminApi("/api/admin/cambiaEmail", {
+    const res = await adminApi("/api/admin/cambiaEmail", {
       method: "POST",
       body: JSON.stringify({ nuova, pass })
     });
 
-    if (!data) {
+    if (!res) {
       msg.textContent = "Errore aggiornamento email.";
       return;
     }
 
-    msg.textContent = data.message || "Email aggiornata.";
+    msg.textContent = res.message || "Email aggiornata.";
 
     setTimeout(() => location.reload(), 1000);
   });
@@ -141,16 +145,16 @@ function setupCambioPassword() {
     const newP = clean(document.getElementById("newAdminPassword").value);
     const msg = document.getElementById("msgAdminPassword");
 
-    const data = await adminApi("/api/admin/cambiaPassword", {
+    const res = await adminApi("/api/admin/cambiaPassword", {
       method: "POST",
       body: JSON.stringify({ oldP, newP })
     });
 
-    if (!data) {
+    if (!res) {
       msg.textContent = "Errore cambio password.";
       return;
     }
 
-    msg.textContent = data.message || "Password aggiornata.";
+    msg.textContent = res.message || "Password aggiornata.";
   });
 }
