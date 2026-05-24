@@ -1,9 +1,9 @@
 /* =========================================================
-   RESET EMAIL CONFIRM — Versione 2058 (Single Loader Architecture)
-   - Nessun autorun
-   - Nessun DOMContentLoaded
-   - Nessun critical-ready
-   - Esegue SOLO quando chiamato da Loader Supremo 2058
+   RESET EMAIL CONFIRM — Versione 2027.503 SAFE MODE
+   - ZERO-INPUT
+   - Nessun token nel localStorage
+   - fetch() con credentials: "include"
+   - Wrapper JSON corretto
 ========================================================= */
 
 console.log("📌 [RESET-EMAIL-CONFIRM 2058] File caricato");
@@ -17,7 +17,7 @@ window.pageInit = function () {
 };
 
 /* =========================================================
-   LOGICA ORIGINALE (identica)
+   LOGICA PRINCIPALE
 ========================================================= */
 function avviaResetEmailConfirm() {
   console.log("🔥 reset-email-confirm.js READY (ZERO-INPUT)");
@@ -26,7 +26,7 @@ function avviaResetEmailConfirm() {
   const msg = document.getElementById("msgConfirmEmail");
 
   /* =========================================================
-     WRAPPER UNIVERSALE
+     WRAPPER UNIVERSALE (SAFE MODE)
   ========================================================== */
   async function apiResetEmail(payload) {
     console.log("🌐 [RESET-EMAIL-CONFIRM] API /resetEmailConfirm");
@@ -35,6 +35,7 @@ function avviaResetEmailConfirm() {
     try {
       res = await fetch("/api/utenti/resetEmailConfirm", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
@@ -56,7 +57,7 @@ function avviaResetEmailConfirm() {
       return null;
     }
 
-    return json.data;
+    return json; // NON json.data
   }
 
   /* =========================================================
@@ -96,9 +97,9 @@ function avviaResetEmailConfirm() {
       codice_fiscale
     });
 
-    const data = await apiResetEmail({ nuova_email, codice_fiscale });
+    const res = await apiResetEmail({ nuova_email, codice_fiscale });
 
-    if (!data) {
+    if (!res) {
       msg.textContent = "Errore durante la conferma del cambio email.";
       msg.className = "err";
       btnConfirmEmail.disabled = false;
@@ -106,18 +107,13 @@ function avviaResetEmailConfirm() {
     }
 
     /* =========================================================
-       SUCCESSO — SALVATAGGIO SESSIONE
+       SUCCESSO — ZERO-INPUT SAFE MODE
+       Nessun token/email salvato nel localStorage
+       La sessione è nei cookie
     ========================================================== */
-    console.log("🟢 [RESET-EMAIL-CONFIRM] Conferma riuscita:", data);
+    console.log("🟢 [RESET-EMAIL-CONFIRM] Conferma riuscita:", res);
 
     localStorage.removeItem("cf_reset");
-
-    if (data.token && data.email) {
-      console.log("🔐 [RESET-EMAIL-CONFIRM] Salvataggio token/email");
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("email", data.email);
-    }
-
     localStorage.setItem("sessionState", "1");
 
     console.log("➡️ [RESET-EMAIL-CONFIRM] Redirect a login.html");
