@@ -1,41 +1,49 @@
 /* =========================================================
-   AUTH-USER.CJS — Versione 2027.502 (SAFE + UNIVERSALE)
-   FIX: null.id • FIX: match API • FIX: Express path issues
-   FIX CRITICO: req.uid mancante → sito sempre in guest mode
+   AUTH-USER — Versione 2027.503 SAFE MODE
+   Compatibile con:
+   - cookie di sessione
+   - router fuzzy universale
+   - frontend 2058 (credentials: include)
+   - /me pubblico
+   - req.uid sempre coerente
 ========================================================= */
 
 const path = require("path");
+const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
 
-// PATCH: require assoluto del DB (fallback)
-const dbAbsolute = require(path.join(process.cwd(), "app/server/db/database.cjs"));
-
-function getTokenFromHeader(req) {
-  const h = req.headers["authorization"];
-  if (!h || !h.startsWith("Bearer ")) return "";
-  return h.replace("Bearer ", "").trim();
+/* =========================================================
+   ESTRAZIONE TOKEN DA COOKIE
+========================================================= */
+function getUserSessionFromCookie(req) {
+  try {
+    const c = req.cookies || {};
+    return (
+      c.session_user ||   // nuovo cookie
+      c.sessione ||       // compatibilità
+      c.session ||        // compatibilità
+      c.token ||          // compatibilità
+      ""
+    ).trim();
+  } catch {
+    return "";
+  }
 }
 
-function getTokenFromCookie(req) {
-  if (!req.cookies) return "";
-  return (
-    req.cookies.sessione ||
-    req.cookies.session ||
-    req.cookies.token ||
-    ""
-  ).trim();
-}
-
+/* =========================================================
+   MIDDLEWARE AUTH-USER (SAFE MODE)
+========================================================= */
 module.exports = function authUser(req, res, next) {
   try {
     const raw = req.originalUrl || req.url || req.path || "";
     const pathLower = raw.toLowerCase();
     const cleanPath = pathLower.split("?")[0];
 
-    console.log("AUTH DEBUG → PATH:", cleanPath);
+    console.log("AUTH-USER DEBUG → PATH:", cleanPath);
 
-    // =====================================================
-    // ⭐ API PUBBLICHE — NON RICHIEDONO LOGIN
-    // =====================================================
+    /* =====================================================
+       API PUBBLICHE — NON RICHIEDONO LOGIN
+       /api/utenti/me è SEMPRE PUBBLICA
+    ===================================================== */
     const publicApiPrefixes = [
       "/api/versione",
       "/api/system-status",
@@ -55,24 +63,26 @@ module.exports = function authUser(req, res, next) {
       "/api/paypal-ricrea",
       "/api/utenti/login",
       "/api/utenti/registrazione",
+      "/api/utenti/me",          // <--- SAFE MODE: sempre pubblico
       "/api/assistenza",
       "/api/upload"
     ];
 
-    const isPublicApi = publicApiPrefixes.some(prefix =>
+    const isPublic = publicApiPrefixes.some(prefix =>
       cleanPath === prefix || cleanPath.startsWith(prefix + "/")
     );
 
-    if (isPublicApi) {
-      console.log("AUTH DEBUG → PUBLIC API:", cleanPath);
+    if (isPublic) {
+      console.log("AUTH-USER DEBUG → PUBLIC API");
+      req.uid = null;
+      req.user = null;
       return next();
     }
 
-    // =====================================================
-    // ⭐ API CHE RICHIEDONO LOGIN
-    // =====================================================
+    /* =====================================================
+       API PROTETTE — RICHIEDONO LOGIN
+    ===================================================== */
     const protectedApiPrefixes = [
-      "/api/admin",
       "/api/rimborso",
       "/api/vendite",
       "/api/ordini",
@@ -84,62 +94,61 @@ module.exports = function authUser(req, res, next) {
       cleanPath.startsWith(prefix)
     );
 
-    // =====================================================
-    // TOKEN: HEADER O COOKIE
-    // =====================================================
-    let token = getTokenFromHeader(req);
+    /* =====================================================
+       LETTURA TOKEN DA COOKIE
+    ===================================================== */
+    const sessione = getUserSessionFromCookie(req);
+    console.log("AUTH-USER DEBUG → sessione cookie:", sessione ? "[PRESENTE]" : "[ASSENTE]");
 
-    if (!token) {
-      token = getTokenFromCookie(req);
-      console.log("AUTH DEBUG → token da cookie:", token ? "[PRESENTE]" : "[ASSENTE]");
-    } else {
-      console.log("AUTH DEBUG → token da header:", "[PRESENTE]");
+    /* =====================================================
+       SE NON È PROTETTA → PASSA COMUNQUE
+       (ma tentiamo comunque di identificare l'utente)
+    ===================================================== */
+    if (!isProtected && !sessione) {
+      req.uid = null;
+      req.user = null;
+      console.log("AUTH-USER DEBUG → API NON PROTETTA → PASSA");
+      return next();
     }
 
-    // =====================================================
-    // SE NON È PROTETTA → PASSA SEMPRE
-    // =====================================================
-    if (!isProtected) {
-      console.log("AUTH DEBUG → API NON PROTETTA → PASSA");
+    /* =====================================================
+       API PROTETTA → SERVE SESSIONE
+    ===================================================== */
+    if (isProtected && !sessione) {
+      console.log("AUTH-USER DEBUG → Nessun cookie per API protetta");
+      return res.status(401).json({ success: false, error: "Non autorizzato" });
+    }
+
+    /* =====================================================
+       VERIFICA SESSIONE SU DB
+    ===================================================== */
+    let row;
+    try {
+      row = db.prepare(`
+        SELECT id, email, ruolo, codice_fiscale
+        FROM utenti
+        WHERE sessione = ?
+        LIMIT 1
+      `).get(sessione);
+    } catch (err) {
+      console.error("AUTH-USER SQL ERROR:", err);
+      return res.status(500).json({ success: false, error: "Errore server" });
+    }
+
+    if (!row) {
+      console.log("AUTH-USER DEBUG → Sessione non valida");
+      if (isProtected) {
+        return res.status(401).json({ success: false, error: "Non autorizzato" });
+      }
+      req.uid = null;
       req.user = null;
       return next();
     }
 
-    // =====================================================
-    // SE È PROTETTA → SERVE TOKEN
-    // =====================================================
-    if (!token) {
-      console.log("AUTH DEBUG → Nessun token per API protetta");
-      return res.status(401).json({ error: "Non autorizzato" });
-    }
-
-    // =====================================================
-    // VERIFICA TOKEN SQL
-    // =====================================================
-    const db = req.db || req.app.get("db") || dbAbsolute;
-    if (!db) {
-      console.error("AUTH ERROR → db mancante");
-      return res.status(500).json({ error: "Errore server" });
-    }
-
-    let row;
-    try {
-      row = db.prepare(
-        "SELECT id, email, ruolo, codice_fiscale FROM utenti WHERE sessione = ? LIMIT 1"
-      ).get(token);
-    } catch (err) {
-      console.error("AUTH SQL ERROR:", err);
-      return res.status(500).json({ error: "Errore server" });
-    }
-
-    if (!row) {
-      console.log("AUTH DEBUG → Token non valido per API protetta");
-      return res.status(401).json({ error: "Non autorizzato" });
-    }
-
-    // =====================================================
-    // FIX: req.user SEMPRE VALIDO
-    // =====================================================
+    /* =====================================================
+       UTENTE VALIDO → req.uid + req.user
+    ===================================================== */
+    req.uid = row.id;
     req.user = {
       id: row.id,
       email: row.email,
@@ -148,17 +157,12 @@ module.exports = function authUser(req, res, next) {
       _diagnostica: "auth-user-ok"
     };
 
-    // =====================================================
-    // ⭐ PATCH CRITICA: req.uid mancante → sito sempre guest
-    // =====================================================
-    req.uid = row.id;   // <--- QUESTA È LA PATCH CHE SBLOCCA TUTTO
+    console.log("AUTH-USER DEBUG → UTENTE OK:", row.email);
 
-    console.log("AUTH DEBUG → UTENTE OK:", req.user.email, req.user.ruolo);
-
-    next();
+    return next();
 
   } catch (err) {
     console.error("AUTH-USER ERROR:", err);
-    return res.status(500).json({ error: "Errore server" });
+    return res.status(500).json({ success: false, error: "Errore server" });
   }
 };
