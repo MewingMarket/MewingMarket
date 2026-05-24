@@ -1,9 +1,10 @@
 /* =========================================================
-   ORDINI UTENTE — Versione 2058 (Single Loader Architecture)
-   - Nessun autorun
-   - Nessun DOMContentLoaded
-   - Nessun critical-ready
-   - Esegue SOLO quando chiamato da Loader Supremo 2058
+   ORDINI UTENTE — Versione 2027.503 SAFE MODE
+   - Compatibile cookie di sessione
+   - Nessun token nel localStorage
+   - fetch() con credentials: "include"
+   - Wrapper JSON corretto
+   - Logica originale preservata
 ========================================================= */
 
 console.log("📌 [ORDINI 2058] File caricato");
@@ -17,20 +18,22 @@ window.pageInit = function () {
 };
 
 /* =========================================================
-   LOGICA ORDINI (identica)
+   LOGICA ORDINI
 ========================================================= */
 async function avviaOrdiniUtente() {
   console.log("🔥 ordini.js READY");
 
-  const token = localStorage.getItem("mewing_token");
   const body = document.getElementById("ordersBody");
-
   if (!body) return;
 
   /* =========================================================
-     1) Protezione login
+     1) Verifica login tramite /me
   ========================================================== */
-  if (!token) {
+  console.log("🌐 [ORDINI] Verifica sessione…");
+
+  const me = await apiOrdini("/api/utenti/me", { method: "POST" });
+
+  if (!me || me.guest) {
     body.innerHTML = `<tr><td colspan="5">Effettua il login per vedere i tuoi ordini.</td></tr>`;
     return;
   }
@@ -38,9 +41,13 @@ async function avviaOrdiniUtente() {
   /* =========================================================
      2) Recupera ordini utente
   ========================================================== */
-  const res = await apiOrdini("/api/ordini/getOrdiniUtente", {});
+  console.log("🌐 [ORDINI] Recupero ordini utente…");
 
-  if (!res.success || !Array.isArray(res.ordini) || res.ordini.length === 0) {
+  const res = await apiOrdini("/api/ordini/getOrdiniUtente", {
+    method: "GET"
+  });
+
+  if (!res || !res.success || !Array.isArray(res.ordini) || res.ordini.length === 0) {
     body.innerHTML = `<tr><td colspan="5">Nessun ordine trovato.</td></tr>`;
     return;
   }
@@ -114,9 +121,12 @@ async function avviaOrdiniUtente() {
     if (e.target.classList.contains("btn-annulla")) {
       if (!confirm("Vuoi annullare l'ordine?")) return;
 
-      const res = await apiOrdini("/api/ordini/annullaOrdine", { id });
+      const res = await apiOrdini("/api/ordini/annullaOrdine", {
+        method: "POST",
+        body: JSON.stringify({ id })
+      });
 
-      if (res.success) location.reload();
+      if (res && res.success) location.reload();
       else alert(res.error || "Errore durante l'annullamento.");
     }
 
@@ -124,28 +134,29 @@ async function avviaOrdiniUtente() {
        COMPLETA PAGAMENTO (PayPal)
     ------------------------------ */
     if (e.target.classList.contains("btn-paga")) {
-      const res = await apiOrdini("/api/paypal/ricreaPagamento", { id });
+      const res = await apiOrdini("/api/paypal/ricreaPagamento", {
+        method: "POST",
+        body: JSON.stringify({ id })
+      });
 
-      if (res.success && res.url) window.location.href = res.url;
+      if (res && res.success && res.url) window.location.href = res.url;
       else alert("Impossibile rigenerare il pagamento.");
     }
   });
 }
 
 /* =========================================================
-   WRAPPER UNIVERSALE JSON
+   WRAPPER UNIVERSALE JSON (SAFE MODE)
 ========================================================= */
-async function apiOrdini(path, payload = {}) {
-  const token = localStorage.getItem("mewing_token");
-
+async function apiOrdini(path, options = {}) {
   try {
     const res = await fetch(path, {
-      method: "POST",
+      credentials: "include",
+      ...options,
       headers: {
         "Content-Type": "application/json",
-        "Authorization": token ? `Bearer ${token}` : ""
-      },
-      body: JSON.stringify(payload)
+        ...(options.headers || {})
+      }
     });
 
     const json = await res.json().catch(() => null);
