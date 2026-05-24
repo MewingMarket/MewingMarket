@@ -1,9 +1,10 @@
 /* =========================================================
-   ELIMINAZIONE ACCOUNT — Versione 2058 (Single Loader Architecture)
-   - Nessun autorun
-   - Nessun DOMContentLoaded
-   - Nessun critical-ready
-   - Esegue SOLO quando chiamato da Loader Supremo 2058
+   ELIMINAZIONE ACCOUNT — Versione 2027.503 SAFE MODE
+   - Compatibile cookie di sessione
+   - Nessun token nel localStorage
+   - fetch() con credentials: "include"
+   - Wrapper JSON corretto
+   - Logica originale preservata
 ========================================================= */
 
 console.log("📌 [DELETE-ACCOUNT 2058] File caricato");
@@ -17,7 +18,7 @@ window.pageInit = function () {
 };
 
 /* =========================================================
-   LOGICA ORIGINALE (identica)
+   LOGICA PRINCIPALE
 ========================================================= */
 function avviaEliminazioneAccount() {
   console.log("🔥 eliminazione-account.js READY");
@@ -33,31 +34,23 @@ function avviaEliminazioneAccount() {
   }
 
   /* =========================================================
-     WRAPPER UNIVERSALE
+     WRAPPER UNIVERSALE (SAFE MODE)
   ========================================================== */
   async function apiDelete(path, options = {}) {
     console.log("🌐 [DELETE-ACCOUNT] API:", path);
 
-    const token = localStorage.getItem("token");
-
-    const headers = {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-      Authorization: token ? `Bearer ${token}` : ""
-    };
-
     let res;
     try {
-      res = await fetch(path, { ...options, headers });
+      res = await fetch(path, {
+        credentials: "include",
+        ...options,
+        headers: {
+          "Content-Type": "application/json",
+          ...(options.headers || {})
+        }
+      });
     } catch (err) {
       console.error("❌ [DELETE-ACCOUNT] Errore rete:", err);
-      return null;
-    }
-
-    if (res.status === 401 || res.status === 403) {
-      console.warn("🔒 [DELETE-ACCOUNT] Token scaduto → redirect login");
-      localStorage.removeItem("token");
-      window.location.href = "/login";
       return null;
     }
 
@@ -74,24 +67,18 @@ function avviaEliminazioneAccount() {
       return null;
     }
 
-    return json.data;
+    return json; // NON json.data
   }
 
   /* =========================================================
      LOG EVENTO
   ========================================================== */
   async function logUserEvent(evento) {
-    const email = localStorage.getItem("email") || "";
-    if (!email) {
-      console.warn("⚠️ [DELETE-ACCOUNT] Nessuna email per log evento");
-      return;
-    }
-
     console.log("📝 [DELETE-ACCOUNT] Log evento:", evento);
 
     await apiDelete("/api/utenti/evento", {
       method: "POST",
-      body: JSON.stringify({ email, evento })
+      body: JSON.stringify({ evento })
     });
   }
 
@@ -107,13 +94,7 @@ function avviaEliminazioneAccount() {
     console.log("🗑️ [DELETE-ACCOUNT] Click su elimina account");
     setMsg("Eliminazione account in corso...");
 
-    const token = localStorage.getItem("token");
     const password = document.getElementById("password")?.value.trim();
-
-    if (!token) {
-      setMsg("Devi effettuare il login");
-      return;
-    }
 
     if (!password) {
       setMsg("Inserisci la tua password per confermare");
@@ -127,14 +108,14 @@ function avviaEliminazioneAccount() {
 
     console.log("🔐 [DELETE-ACCOUNT] Invio richiesta eliminaAccount…");
 
-    const data = await apiDelete("/api/utenti/eliminaAccount", {
+    const res = await apiDelete("/api/utenti/eliminaAccount", {
       method: "POST",
       body: JSON.stringify({ password })
     });
 
-    console.log("📦 [DELETE-ACCOUNT] Risposta eliminaAccount:", data);
+    console.log("📦 [DELETE-ACCOUNT] Risposta eliminaAccount:", res);
 
-    if (!data) {
+    if (!res) {
       setMsg("Errore durante l'eliminazione dell'account");
       btnElimina.disabled = false;
       return;
@@ -146,9 +127,9 @@ function avviaEliminazioneAccount() {
 
     console.log("🧹 [DELETE-ACCOUNT] Pulizia localStorage…");
 
-    localStorage.removeItem("token");
-    localStorage.removeItem("email");
-    localStorage.removeItem("ruolo");
+    ["email", "ruolo", "user", "sessionState"].forEach(k =>
+      localStorage.removeItem(k)
+    );
     localStorage.setItem("sessionState", "0");
 
     setTimeout(() => {
