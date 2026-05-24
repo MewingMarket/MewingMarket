@@ -1,39 +1,32 @@
 /* =========================================================
-   PROFILO.JS — Versione 2058 (Single Loader Architecture)
-   - Nessun autorun
-   - Nessun DOMContentLoaded
-   - Nessun critical-ready
-   - Esegue SOLO quando chiamato da Loader Supremo 2058
+   PROFILO.JS — Versione 2027.503 SAFE MODE
+   - Compatibile cookie di sessione
+   - Nessun token nel localStorage
+   - fetch() con credentials: "include"
+   - Wrapper JSON corretto
+   - Logica originale preservata
 ========================================================= */
 
 console.log("📌 [PROFILO 2058] File caricato");
 
 /* =========================================================
-   WRAPPER UNIVERSALE (token + universal-json)
+   WRAPPER UNIVERSALE (SAFE MODE)
 ========================================================= */
 async function apiProfilo(path, options = {}) {
   console.log("🌐 [PROFILO] API:", path);
 
-  const token = localStorage.getItem("token");
-
-  const headers = {
-    "Content-Type": "application/json",
-    ...(options.headers || {}),
-    Authorization: token ? `Bearer ${token}` : ""
-  };
-
   let res;
   try {
-    res = await fetch(path, { ...options, headers });
+    res = await fetch(path, {
+      credentials: "include",
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {})
+      }
+    });
   } catch (err) {
     console.error("❌ [PROFILO] Errore rete:", err);
-    return null;
-  }
-
-  if (res.status === 401 || res.status === 403) {
-    console.warn("🔒 [PROFILO] Token scaduto → redirect login");
-    localStorage.removeItem("token");
-    window.location.href = "login.html";
     return null;
   }
 
@@ -50,7 +43,7 @@ async function apiProfilo(path, options = {}) {
     return null;
   }
 
-  return json.data;
+  return json; // NON json.data
 }
 
 /* =========================================================
@@ -62,43 +55,41 @@ window.pageInit = function () {
 };
 
 /* =========================================================
-   LOGICA ORIGINALE (identica)
+   LOGICA PROFILO
 ========================================================= */
 async function avviaProfilo() {
   console.log("🔥 profilo.js READY");
 
-  const token = localStorage.getItem("token");
-  if (!token) {
-    console.warn("🔒 [PROFILO] Nessun token → redirect login");
+  /* =========================================================
+     1. Verifica login tramite /me
+  ========================================================== */
+  console.log("📥 [PROFILO] Verifica sessione…");
+
+  const me = await apiProfilo("/api/utenti/me", { method: "POST" });
+
+  if (!me || me.guest) {
+    console.warn("🔒 [PROFILO] Utente non loggato → redirect login");
     window.location.href = "login.html";
     return;
   }
 
+  const u = me.utente;
+
   /* =========================================================
-     1. Caricamento dati utente
+     2. Popola sidebar
   ========================================================== */
-  console.log("📥 [PROFILO] Carico dati utente…");
+  const elEmail = document.getElementById("sidebarEmail");
+  const elUser = document.getElementById("sidebarUsername");
+  const elCF = document.getElementById("sidebarCF");
 
-  const data = await apiProfilo("/api/utenti/me", { method: "GET" });
+  if (elEmail) elEmail.textContent = u.email;
+  if (elUser) elUser.textContent = u.username || u.email.split("@")[0];
+  if (elCF) elCF.textContent = u.codice_fiscale || "";
 
-  console.log("📦 [PROFILO] Risposta API:", data);
-
-  if (data && data.utente) {
-    const u = data.utente;
-
-    const elEmail = document.getElementById("sidebarEmail");
-    const elUser = document.getElementById("sidebarUsername");
-    const elCF = document.getElementById("sidebarCF");
-
-    if (elEmail) elEmail.textContent = u.email;
-    if (elUser) elUser.textContent = u.username || u.email.split("@")[0];
-    if (elCF) elCF.textContent = u.codice_fiscale || "";
-
-    console.log("🟢 [PROFILO] Sidebar aggiornata");
-  }
+  console.log("🟢 [PROFILO] Sidebar aggiornata");
 
   /* =========================================================
-     2. Cambio Email
+     3. Cambio Email
   ========================================================== */
   document.getElementById("btnCambiaEmail")?.addEventListener("click", async () => {
     console.log("✉️ [PROFILO] Cambio email…");
@@ -124,7 +115,7 @@ async function avviaProfilo() {
   });
 
   /* =========================================================
-     3. Cambio Password
+     4. Cambio Password
   ========================================================== */
   document.getElementById("btnCambiaPassword")?.addEventListener("click", async () => {
     console.log("🔐 [PROFILO] Cambio password…");
