@@ -2,7 +2,7 @@
    FILE: app/server/routes/admin-utenti.cjs
    MODALITÀ: Java‑mode (NO Express)
    Admin — Gestione Utenti
-   Versione 2027.100 — compatibile router universale
+   Versione 2027.503 — compatibile router universale
 ========================================================= */
 
 const path = require("path");
