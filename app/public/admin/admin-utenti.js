@@ -1,9 +1,9 @@
 /* =========================================================
-   ADMIN UTENTI — Versione 2058 (Single Loader Architecture)
-   - Nessun autorun
-   - Nessun DOMContentLoaded
-   - Nessun critical-ready
-   - Esegue SOLO quando chiamato da Loader Universale Admin
+   ADMIN UTENTI — Versione 2027.503 SAFE MODE
+   - Cookie admin (no token)
+   - fetch() con credentials: "include"
+   - Wrapper JSON corretto
+   - Compatibile con auth-admin 2027.503
 ========================================================= */
 
 console.log("📌 [ADMIN-UTENTI 2058] File caricato");
@@ -26,24 +26,28 @@ function fDate(d) {
 }
 
 /* =========================================================
-   WRAPPER UNIVERSALE ADMIN (token + universal-json)
+   WRAPPER UNIVERSALE ADMIN (SAFE MODE)
 ========================================================= */
 async function adminApi(path, options = {}) {
-  const token = localStorage.getItem("token");
-
-  const headers = {
-    "Content-Type": "application/json",
-    ...(options.headers || {}),
-    Authorization: token ? `Bearer ${token}` : ""
-  };
-
   const fullPath = path.startsWith("/api") ? path : `/api${path}`;
 
-  const res = await fetch(fullPath, { ...options, headers });
+  let res;
+  try {
+    res = await fetch(fullPath, {
+      credentials: "include",
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {})
+      }
+    });
+  } catch (err) {
+    console.error("❌ [ADMIN-UTENTI] Errore rete:", err);
+    return null;
+  }
 
   if (res.status === 401 || res.status === 403) {
-    console.warn("🔒 [ADMIN-UTENTI] Token scaduto → redirect login");
-    localStorage.removeItem("token");
+    console.warn("🔒 [ADMIN-UTENTI] Sessione admin scaduta → redirect login");
     window.location.href = "/admin/login";
     return null;
   }
@@ -51,7 +55,7 @@ async function adminApi(path, options = {}) {
   let json;
   try {
     json = await res.json();
-  } catch (e) {
+  } catch {
     console.error("❌ Risposta NON JSON da", fullPath);
     return null;
   }
@@ -61,7 +65,7 @@ async function adminApi(path, options = {}) {
     return null;
   }
 
-  return json.data;
+  return json; // NON json.data
 }
 
 /* =========================================================
@@ -94,12 +98,12 @@ window.pageInit = function () {
 
     console.log(`⚡ [ADMIN-UTENTI] Azione: ${azione} → ${email}`);
 
-    const ok = await adminApi(`/api/admin/utenti/${azione}`, {
+    const res = await adminApi(`/api/admin/utenti/${azione}`, {
       method: "POST",
       body: JSON.stringify({ email })
     });
 
-    if (ok) {
+    if (res) {
       console.log("🟢 [ADMIN-UTENTI] Operazione OK → ricarico utenti");
       caricaUtenti();
     } else {
@@ -115,8 +119,8 @@ window.pageInit = function () {
 async function syncBrevoAuto() {
   console.log("🔄 [ADMIN-UTENTI] Sync Brevo automatico…");
 
-  const ok = await adminApi("/api/admin/utenti/syncBrevo", { method: "GET" });
-  if (ok) console.log("🟢 [BREVO] Sync OK");
+  const res = await adminApi("/api/admin/utenti/syncBrevo", { method: "GET" });
+  if (res) console.log("🟢 [BREVO] Sync OK");
   else console.warn("🟡 [BREVO] Sync fallito o non necessario");
 }
 
@@ -135,18 +139,18 @@ async function caricaUtenti() {
   tbody.innerHTML =
     "<tr><td colspan='15'>Interrogazione SQL in corso...</td></tr>";
 
-  const data = await adminApi("/api/admin/utenti/getListaUtenti", {
+  const res = await adminApi("/api/admin/utenti/getListaUtenti", {
     method: "GET"
   });
 
-  if (!data) {
+  if (!res) {
     console.warn("❌ [ADMIN-UTENTI] Errore caricamento utenti");
     tbody.innerHTML =
-      "<tr><td colspan='15'>Errore caricamento. Verifica Token o Backend.</td></tr>";
+      "<tr><td colspan='15'>Errore caricamento. Verifica sessione admin.</td></tr>";
     return;
   }
 
-  const lista = data.utenti || [];
+  const lista = res.utenti || [];
 
   console.log("📊 [ADMIN-UTENTI] Utenti caricati:", lista.length);
 
