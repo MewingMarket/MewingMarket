@@ -1,9 +1,9 @@
 /* =========================================================
-   RESET PASSWORD CONFIRM — Versione 2058 (Single Loader Architecture)
-   - Nessun autorun
-   - Nessun DOMContentLoaded
-   - Nessun critical-ready
-   - Esegue SOLO quando chiamato da Loader Supremo 2058
+   RESET PASSWORD CONFIRM — Versione 2027.503 SAFE MODE
+   - ZERO-INPUT
+   - Nessun token/email salvato
+   - fetch() con credentials: "include"
+   - Wrapper JSON corretto
 ========================================================= */
 
 console.log("📌 [RESET-PASS-CONFIRM 2058] File caricato");
@@ -17,7 +17,7 @@ window.pageInit = function () {
 };
 
 /* =========================================================
-   LOGICA ORIGINALE (identica)
+   LOGICA PRINCIPALE
 ========================================================= */
 function avviaResetPasswordConfirm() {
   console.log("🔥 reset-password-confirm.js READY (ZERO-INPUT)");
@@ -26,7 +26,7 @@ function avviaResetPasswordConfirm() {
   const msg = document.getElementById("msgConfirmReset");
 
   /* =========================================================
-     WRAPPER UNIVERSALE
+     WRAPPER UNIVERSALE (SAFE MODE)
   ========================================================== */
   async function apiResetPassword(payload) {
     console.log("🌐 [RESET-PASS-CONFIRM] API /resetPasswordConfirm");
@@ -35,6 +35,7 @@ function avviaResetPasswordConfirm() {
     try {
       res = await fetch("/api/utenti/resetPasswordConfirm", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
@@ -56,7 +57,7 @@ function avviaResetPasswordConfirm() {
       return null;
     }
 
-    return json.data;
+    return json; // NON json.data
   }
 
   /* =========================================================
@@ -107,11 +108,11 @@ function avviaResetPasswordConfirm() {
       codice_fiscale
     });
 
-    const data = await apiResetPassword({ nuova_password, codice_fiscale });
+    const res = await apiResetPassword({ nuova_password, codice_fiscale });
 
-    console.log("📦 [RESET-PASS-CONFIRM] Risposta API:", data);
+    console.log("📦 [RESET-PASS-CONFIRM] Risposta API:", res);
 
-    if (!data) {
+    if (!res) {
       msg.textContent = "Errore durante la conferma del reset password.";
       msg.className = "err";
       btnConfirmReset.disabled = false;
@@ -119,18 +120,13 @@ function avviaResetPasswordConfirm() {
     }
 
     /* =========================================================
-       SUCCESSO — SALVATAGGIO SESSIONE
+       SUCCESSO — ZERO-INPUT SAFE MODE
+       Nessun token/email salvato nel localStorage
+       La sessione è nei cookie
     ========================================================== */
     console.log("🟢 [RESET-PASS-CONFIRM] Reset password riuscito");
 
     localStorage.removeItem("cf_reset");
-
-    if (data.token && data.email) {
-      console.log("🔐 [RESET-PASS-CONFIRM] Salvataggio token/email");
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("email", data.email);
-    }
-
     localStorage.setItem("sessionState", "1");
 
     console.log("➡️ [RESET-PASS-CONFIRM] Redirect a login.html");
