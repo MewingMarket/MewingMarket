@@ -1,6 +1,9 @@
 /* =========================================================
-   REGISTER — MewingMarket (PATCH 2027.900)
-   PATCH 2050 — AUTORUN + DEBUG ESTESO
+   REGISTER — MewingMarket (PATCH 2027.503 SAFE MODE)
+   - Cookie di sessione (no token nel localStorage)
+   - fetch() con credentials: "include"
+   - Wrapper JSON corretto
+   - Logica originale preservata
 ========================================================= */
 
 console.log("📌 [REGISTER] File caricato nel DOM");
@@ -45,7 +48,7 @@ function initPage() {
 }
 
 /* =========================================================
-   CODICE ORIGINALE INCAPSULATO
+   CODICE ORIGINALE INCAPSULATO (PATCHATO)
 ========================================================= */
 function avviaRegistrazione() {
   console.log("🔥 register.js READY");
@@ -76,6 +79,7 @@ function avviaRegistrazione() {
 
       await fetch("/api/utenti/evento", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, evento })
       });
@@ -140,6 +144,7 @@ function avviaRegistrazione() {
 
       const res = await fetch("/api/utenti/registrazione", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, codice_fiscale })
       });
@@ -161,18 +166,10 @@ function avviaRegistrazione() {
       }
 
       /* =====================================================
-         SALVATAGGIO CORRETTO token/email/ruolo
+         SAFE MODE — NON salviamo token/email/ruolo
+         La sessione è nei cookie → /me gestisce tutto
       ===================================================== */
-      if (data.token) {
-        console.log("🔐 [REGISTER] Salvataggio token/email/ruolo");
-
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("email", email);
-        localStorage.setItem("ruolo", "user");
-
-        // Sessione attiva
-        localStorage.setItem("sessionState", "1");
-      }
+      console.log("🔐 [REGISTER] Sessione impostata via cookie (SAFE MODE)");
 
       // ⭐ PATCH EVENTO: registra registrazione
       logUserEvent("registrato");
