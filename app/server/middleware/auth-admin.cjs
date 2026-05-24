@@ -1,11 +1,13 @@
 /**
  * =========================================================
- * AUTH-ADMIN — Versione 2026.203 (PATCH CHIRURGICA)
- * Admin riconosciuto SOLO tramite codice fiscale (CF)
+ * AUTH-ADMIN — Versione 2027.503 SAFE MODE
+ * Admin riconosciuto tramite cookie di sessione
+ * Compatibile con router fuzzy + frontend 2058 patchato
  * Mantiene logica originale, aggiunge:
- * - anti-HTML
- * - anti-502
- * - logging diagnostico
+ * - gestione cookie
+ * - req.admin coerente
+ * - nessun crash
+ * - diagnostica minima
  * =========================================================
  */
 
@@ -14,26 +16,39 @@ const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
 
 const CF_ADMIN = "GRSSMN92H25I138W";
 
-function getToken(req) {
-  const h = req.headers["authorization"];
-  if (!h || !h.startsWith("Bearer ")) return "";
-  return h.replace("Bearer ", "").trim();
+/* =========================================================
+   ESTRAZIONE TOKEN DA COOKIE
+========================================================= */
+function getAdminSessionFromCookie(req) {
+  try {
+    // Il router fuzzy 2027.503 garantisce req.cookies
+    const c = req.cookies || {};
+    return c.session_admin || "";
+  } catch {
+    return "";
+  }
 }
 
+/* =========================================================
+   MIDDLEWARE AUTH-ADMIN (SAFE MODE)
+========================================================= */
 module.exports = function authAdmin(req, res, next) {
   try {
-    const token = getToken(req);
+    const sessione = getAdminSessionFromCookie(req);
 
-    if (!token) {
+    if (!sessione) {
       return res.status(401).json({
         success: false,
-        error: "Token mancante"
+        error: "Non autorizzato (cookie mancante)"
       });
     }
 
-    const user = db
-      .prepare("SELECT id, email, codice_fiscale FROM utenti WHERE sessione = ? LIMIT 1")
-      .get(token);
+    const user = db.prepare(`
+      SELECT id, email, codice_fiscale
+      FROM utenti
+      WHERE sessione = ?
+      LIMIT 1
+    `).get(sessione);
 
     if (!user) {
       return res.status(401).json({
@@ -49,15 +64,16 @@ module.exports = function authAdmin(req, res, next) {
       });
     }
 
-    // PATCH: diagnostica minima
+    // SAFE MODE: req.admin sempre coerente
     req.admin = {
       id: user.id,
       email: user.email,
       codice_fiscale: user.codice_fiscale,
+      ruolo: "admin",
       _diagnostica: "auth-admin-ok"
     };
 
-    next();
+    return next();
 
   } catch (err) {
     console.error("auth-admin ERROR:", err);
