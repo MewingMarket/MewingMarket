@@ -1,5 +1,5 @@
 // =========================================================
-// LOADER SUPREMO — PUBLIC MODELLO 2058 (NO DYNAMIC)
+// LOADER SUPREMO — PUBLIC MODELLO 2058 (CON DYNAMIC SAFE)
 // Percorso reale: /app/public/loadersupremo.js
 // Pipeline PUBLIC 2058 completa e ordinata
 // =========================================================
@@ -11,7 +11,7 @@ if (!window.__SUPREMO_PUBLIC_2058__) {
 
     const V = "2058";
 
-    console.log("⚡ [SUPREMO PUBLIC 2058] Avvio SUPREMO PUBLIC (NO DYNAMIC)");
+    console.log("⚡ [SUPREMO PUBLIC 2058] Avvio SUPREMO PUBLIC (CON DYNAMIC)");
 
     // ============================================================
     // GLOBAL LOCKS (fetch, script, event)
@@ -127,44 +127,64 @@ if (!window.__SUPREMO_PUBLIC_2058__) {
         (where === "body" ? document.body : document.head).appendChild(s);
       });
     }
-// ============================================================
-// SEQUENZA SUPREMO PUBLIC 2058 (CON DYNAMIC SAFE 2056)
-// ============================================================
-async function runSupremoPublic() {
-  const state = window.__SUPREMO_PUBLIC_RUN_STATE__;
 
-  if (state.running || state.done) return;
-  state.running = true;
+    // ============================================================
+    // SEQUENZA SUPREMO PUBLIC 2058 (CON DYNAMIC SAFE 2056)
+    // ============================================================
+    async function runSupremoPublic() {
+      const state = window.__SUPREMO_PUBLIC_RUN_STATE__;
 
-  console.log("🟦 [SUPREMO PUBLIC 2058] Sequenza SUPREMO avviata (CON DYNAMIC)");
+      if (state.running || state.done) return;
+      state.running = true;
 
-  // 1) CRITICAL LOADER
-  await loadScript("/loader.js");
+      console.log("🟦 [SUPREMO PUBLIC 2058] Sequenza SUPREMO avviata (CON DYNAMIC)");
 
-  // 2) CSS LOADER
-  await loadScript("/cssloader.js");
-  document.dispatchEvent(new Event("supremo-public-load-css"));
+      // 1) CRITICAL LOADER
+      await loadScript("/loader.js");
 
-  // 3) GLOBAL LOADER
-  await loadScript("/global-loader.js");
+      // 2) CSS LOADER
+      await loadScript("/cssloader.js");
+      document.dispatchEvent(new Event("supremo-public-load-css"));
 
-  if (typeof window.__runGlobalPublic2058 === "function") {
-    console.log("🟦 [SUPREMO PUBLIC 2058] Avvio runGlobalPublic()");
-    await window.__runGlobalPublic2058();
-  } else {
-    console.warn("⚠️ [SUPREMO PUBLIC 2058] __runGlobalPublic2058 non trovato");
-  }
+      // 3) GLOBAL LOADER
+      await loadScript("/global-loader.js");
 
-  // 4) DYNAMIC LOADER (SAFE 2056)
-  await loadScript("/dynamic-loader.js");
-  console.log("🟦 [SUPREMO PUBLIC 2058] Dynamic Loader 2056 caricato");
+      if (typeof window.__runGlobalPublic2058 === "function") {
+        console.log("🟦 [SUPREMO PUBLIC 2058] Avvio runGlobalPublic()");
+        await window.__runGlobalPublic2058();
+      } else {
+        console.warn("⚠️ [SUPREMO PUBLIC 2058] __runGlobalPublic2058 non trovato");
+      }
 
-  // 5) LOADER UNIVERSALE
-  await loadScript("/loaderuniversale.js");
-  document.dispatchEvent(new Event("supremo-public-load-universale"));
+      // 4) DYNAMIC LOADER (SAFE 2056)
+      await loadScript("/dynamic-loader.js");
+      console.log("🟦 [SUPREMO PUBLIC 2058] Dynamic Loader 2056 caricato");
 
-  console.log("🟩 [SUPREMO PUBLIC 2058] Sequenza completata (CON DYNAMIC)");
+      // 5) LOADER UNIVERSALE
+      await loadScript("/loaderuniversale.js");
+      document.dispatchEvent(new Event("supremo-public-load-universale"));
 
-  state.running = false;
-  state.done = true;
+      // 6) CRITICAL READY — SOLO QUI
+      if (!window.__criticalReady) {
+        window.__criticalReady = true;
+        document.dispatchEvent(new Event("critical-ready"));
+        console.log("🟩 [SUPREMO PUBLIC 2058] critical-ready EMESSO");
+      }
+
+      console.log("🟩 [SUPREMO PUBLIC 2058] Sequenza completata (CON DYNAMIC)");
+
+      state.running = false;
+      state.done = true;
+    }
+
+    // ============================================================
+    // AUTO-START
+    // ============================================================
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", runSupremoPublic, { once: true });
+    } else {
+      runSupremoPublic();
+    }
+
+  })();
 }
