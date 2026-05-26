@@ -1,11 +1,6 @@
 /* =========================================================
-   AUTH-USER — Versione 2027.503 SAFE MODE
-   Compatibile con:
-   - cookie di sessione
-   - router fuzzy universale
-   - frontend 2058 (credentials: include)
-   - /me pubblico
-   - req.uid sempre coerente
+   AUTH-USER — Versione 2027.503 SAFE MODE (PATCH COMPLETA)
+   Fix: sessioni invalide → guest immediato
 ========================================================= */
 
 const path = require("path");
@@ -23,14 +18,14 @@ function getUserSessionFromCookie(req) {
       c.session ||        // compatibilità
       c.token ||          // compatibilità
       ""
-    ).trim();
+    );
   } catch {
     return "";
   }
 }
 
 /* =========================================================
-   MIDDLEWARE AUTH-USER (SAFE MODE)
+   MIDDLEWARE AUTH-USER (SAFE MODE + PATCH)
 ========================================================= */
 module.exports = function authUser(req, res, next) {
   try {
@@ -63,7 +58,7 @@ module.exports = function authUser(req, res, next) {
       "/api/paypal-ricrea",
       "/api/utenti/login",
       "/api/utenti/registrazione",
-      "/api/utenti/me",          // <--- SAFE MODE: sempre pubblico
+      "/api/utenti/me",          // <--- SEMPRE PUBBLICA
       "/api/assistenza",
       "/api/upload"
     ];
@@ -95,29 +90,28 @@ module.exports = function authUser(req, res, next) {
     );
 
     /* =====================================================
-       LETTURA TOKEN DA COOKIE
+       LETTURA TOKEN DA COOKIE + PATCH
+       (sessioni invalide → guest immediato)
     ===================================================== */
-    const sessione = getUserSessionFromCookie(req);
-    console.log("AUTH-USER DEBUG → sessione cookie:", sessione ? "[PRESENTE]" : "[ASSENTE]");
+    let sessione = getUserSessionFromCookie(req);
 
-    /* =====================================================
-       SE NON È PROTETTA → PASSA COMUNQUE
-       (ma tentiamo comunque di identificare l'utente)
-    ===================================================== */
-    if (!isProtected && !sessione) {
+    if (!sessione || typeof sessione !== "string") sessione = "";
+    sessione = sessione.trim();
+
+    // PATCH: se il cookie è vuoto o troppo corto → guest
+    if (sessione.length < 10) {
+      console.log("AUTH-USER DEBUG → Sessione vuota/invalid → guest");
+
+      if (isProtected) {
+        return res.status(401).json({ success: false, error: "Non autorizzato" });
+      }
+
       req.uid = null;
       req.user = null;
-      console.log("AUTH-USER DEBUG → API NON PROTETTA → PASSA");
       return next();
     }
 
-    /* =====================================================
-       API PROTETTA → SERVE SESSIONE
-    ===================================================== */
-    if (isProtected && !sessione) {
-      console.log("AUTH-USER DEBUG → Nessun cookie per API protetta");
-      return res.status(401).json({ success: false, error: "Non autorizzato" });
-    }
+    console.log("AUTH-USER DEBUG → sessione cookie valida:", sessione);
 
     /* =====================================================
        VERIFICA SESSIONE SU DB
@@ -137,9 +131,11 @@ module.exports = function authUser(req, res, next) {
 
     if (!row) {
       console.log("AUTH-USER DEBUG → Sessione non valida");
+
       if (isProtected) {
         return res.status(401).json({ success: false, error: "Non autorizzato" });
       }
+
       req.uid = null;
       req.user = null;
       return next();
