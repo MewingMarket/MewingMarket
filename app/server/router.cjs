@@ -1,12 +1,5 @@
 // =========================================================
-// ROUTER UNIVERSALE — VERSIONE INTELLIGENTE 2053
-// Compatibile con:
-// - handler che usano res.json()
-// - handler che ritornano oggetti
-// - handler async
-// - handler sync
-// - fuzzy matching
-// - index.cjs gigante
+// ROUTER UNIVERSALE — VERSIONE INTELLIGENTE 2053 FIX
 // =========================================================
 
 const express = require("express");
@@ -23,22 +16,35 @@ function resolveHandler(mod, rawName) {
   const keys = Object.keys(mod);
   const reqLower = rawName.toLowerCase();
 
-  // match diretto
   if (typeof mod[rawName] === "function") return mod[rawName];
 
-  // case-insensitive
   const ci = keys.find(k => k.toLowerCase() === reqLower);
   if (ci) return mod[ci];
 
-  // prefix
   const prefix = keys.find(k => k.toLowerCase().startsWith(reqLower));
   if (prefix) return mod[prefix];
 
-  // contains
   const contains = keys.find(k => k.toLowerCase().includes(reqLower));
   if (contains) return mod[contains];
 
   return null;
+}
+
+async function runAuth(m, req, res) {
+  return new Promise(resolve => {
+    try {
+      if (m === "admin") {
+        authAdmin(req, res, () => resolve(true));
+      } else if (["utenti", "ordini", "vendite", "rimborso"].includes(m)) {
+        authUser(req, res, () => resolve(true));
+      } else {
+        resolve(true);
+      }
+    } catch (e) {
+      console.error("AUTH ERROR:", e);
+      resolve(true);
+    }
+  });
 }
 
 router.all("/:modulo/:funzione", async (req, res) => {
@@ -52,30 +58,20 @@ router.all("/:modulo/:funzione", async (req, res) => {
     const handler = resolveHandler(mod, f);
     if (!handler) return res.json({ success: false, error: "Funzione non trovata" });
 
-    // AUTH
-    if (m === "admin") await authAdmin(req, res, () => {});
-    if (["utenti", "ordini", "vendite", "rimborso"].includes(m)) {
-      await authUser(req, res, () => {});
-    }
-
-    // Se l'handler ha già risposto → STOP
+    // AUTH FIX
+    await runAuth(m, req, res);
     if (res.headersSent) return;
 
-    // Esegui handler
+    // ESECUZIONE HANDLER
     const out = handler(req, res);
-
-    // Se l'handler è async → aspetta
     const result = out instanceof Promise ? await out : out;
 
-    // Se ha già risposto → STOP
     if (res.headersSent) return;
 
-    // Se ritorna un oggetto → rispondi tu
     if (result !== undefined) {
       return res.json(result);
     }
 
-    // Altrimenti → risposta di default
     return res.json({ success: true });
 
   } catch (err) {
