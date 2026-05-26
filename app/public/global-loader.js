@@ -1,5 +1,5 @@
 // =========================================================
-// GLOBAL LOADER PUBLIC — Versione 2058 (PATCH DEFINITIVA)
+// GLOBAL LOADER PUBLIC — Versione 2058 (PATCH PARANOICA)
 // Percorso reale: /app/public/global-loader.js
 // =========================================================
 
@@ -15,7 +15,10 @@ if (!window.__GLOBAL_LOADER_PUBLIC_2058__) {
     window.__GLOBAL_PUBLIC_JS_CACHE__ =
       window.__GLOBAL_PUBLIC_JS_CACHE__ || new Set();
 
-    function loadScript(src, where = "head") {
+    // ============================================================
+    // CARICAMENTO SCRIPT CON TIMEOUT DI SICUREZZA
+    // ============================================================
+    function loadScript(src, where = "head", timeoutMs = 8000) {
       const key = src;
 
       if (window.__GLOBAL_PUBLIC_JS_CACHE__.has(key)) {
@@ -30,16 +33,29 @@ if (!window.__GLOBAL_LOADER_PUBLIC_2058__) {
         s.src = `${key}?v=${V}`;
         s.async = false;
 
-        s.onload = () => {
-          console.log("✅ [GLOBAL PUBLIC] LOAD-OK:", key);
-          window.__GLOBAL_PUBLIC_JS_CACHE__.add(key);
-          resolve(true);
-        };
+        let settled = false;
 
-        s.onerror = () => {
-          console.warn("❌ [GLOBAL PUBLIC] LOAD-FAIL:", key);
-          resolve(false);
-        };
+        function done(ok) {
+          if (settled) return;
+          settled = true;
+
+          if (ok) {
+            console.log("✅ [GLOBAL PUBLIC] LOAD-OK:", key);
+            window.__GLOBAL_PUBLIC_JS_CACHE__.add(key);
+          } else {
+            console.warn("❌ [GLOBAL PUBLIC] LOAD-FAIL/TIMEOUT:", key);
+          }
+
+          resolve(ok);
+        }
+
+        s.onload = () => done(true);
+        s.onerror = () => done(false);
+
+        const t = setTimeout(() => {
+          console.warn("⏰ [GLOBAL PUBLIC] TIMEOUT:", key);
+          done(false);
+        }, timeoutMs);
 
         (where === "body" ? document.body : document.head).appendChild(s);
       });
@@ -56,21 +72,21 @@ if (!window.__GLOBAL_LOADER_PUBLIC_2058__) {
     }
 
     // ============================================================
-    // SEQUENZA GLOBAL PUBLIC (PATCH)
+    // SEQUENZA GLOBAL PUBLIC (PATCH PARANOICA)
     // ============================================================
     async function runGlobalPublic() {
       console.log("🟦 [GLOBAL PUBLIC 2058] Sequenza avviata");
 
+      // Fondamentali → bloccanti
       await loadScript("/auth.js");
       await loadScript("/seo.js");
-      await loadScript("/structured-data.js");
 
-      // header.js viene già caricato dal Critical Loader → rimosso
-
-      await loadScript("/tracking.js");
+      // Non fondamentali → NON bloccanti
+      loadScript("/structured-data.js");
+      loadScript("/tracking.js");
 
       if (isShopPage()) {
-        await loadScript("/carrello.js", "body");
+        loadScript("/carrello.js", "body");
       }
 
       console.log("🟩 [GLOBAL PUBLIC 2058] Sequenza completata");
@@ -79,9 +95,7 @@ if (!window.__GLOBAL_LOADER_PUBLIC_2058__) {
       document.dispatchEvent(new Event("supremo-public-load-global-js"));
     }
 
-    // ❗ Il Global Loader NON deve ascoltare il suo stesso evento
-    // Viene avviato SOLO dal SUPREMO PUBLIC
-
+    // Il Global Loader NON deve ascoltare il suo stesso evento
     window.__runGlobalPublic2058 = runGlobalPublic;
 
   })();
