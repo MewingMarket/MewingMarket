@@ -1,6 +1,7 @@
 // =========================================================
 // DYNAMIC LOADER — SAFE MODE 2056 (ULTRA MINIMAL PUBLIC)
-// Patch 2056: anti-loop, critical-ready, micro-delay, fusibile globale
+// PATCH 2058: rimosso critical-ready, resta solo hard-refresh layer
+// Percorso: /app/public/dynamic-loader.js
 // =========================================================
 
 if (window.__DYNAMIC_LOADER_2056__) {
@@ -66,47 +67,18 @@ if (window.__DYNAMIC_LOADER_2056__) {
     }
 
     // ============================================================
-    // 3) RENDER = FONTE UNICA DI VERITÀ (ANTI-LOOP 2056)
+    // 3) NOTE SU forceRenderNoStore
     // ============================================================
-    // forceRenderNoStore();  // DISATTIVATO — causava reload infinito dei JS
+    // forceRenderNoStore DISATTIVATO (ANTI-LOOP)
     console.log("🟦 [DYNAMIC 2056] forceRenderNoStore DISATTIVATO (ANTI-LOOP)");
 
-    // (Se un domani vorrai riattivarlo, qui potrai reinserire la funzione
-    //  forceRenderNoStore in versione safe, ma ora è GIUSTO che sia spenta.)
-
     // ============================================================
-    // 4) EMISSIONE CRITICAL-READY (PATCH 2056)
-    // ============================================================
-    function emitCriticalReady() {
-      try {
-        console.log("🟩 [DYNAMIC] Emissione evento critical-ready…");
-
-        setTimeout(() => {
-          // se già emesso, non rifare
-          if (window.__criticalReady) {
-            console.log("💚 [DYNAMIC] critical-ready era già true → nessuna ri-emissione");
-            return;
-          }
-
-          window.__criticalReady = true;
-          document.dispatchEvent(new Event("critical-ready"));
-          console.log("💚 [DYNAMIC] critical-ready EMESSO");
-        }, 50);
-
-      } catch (e) {
-        console.warn("❌ [DYNAMIC] Errore critical-ready:", e.message);
-      }
-    }
-
-    // ============================================================
-    // ESECUZIONE ORDINATA
+    // ESECUZIONE ORDINATA (SENZA critical-ready)
     // ============================================================
     applyAntiCache();
     removeServiceWorkers();
-    // forceRenderNoStore è volutamente NON chiamato
-    emitCriticalReady();
 
-    console.log("🟩 [DYNAMIC 2056] Completato (ULTRA MINIMAL)");
+    console.log("🟩 [DYNAMIC 2056] Completato (ULTRA MINIMAL, NO critical-ready)");
 
   })();
 }
