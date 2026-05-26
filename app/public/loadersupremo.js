@@ -148,7 +148,6 @@ async function runSupremoPublic() {
   // 3) GLOBAL LOADER
   await loadScript("/global-loader.js");
 
-  // Avvia davvero il Global Loader 2058
   if (typeof window.__runGlobalPublic2058 === "function") {
     console.log("🟦 [SUPREMO PUBLIC 2058] Avvio runGlobalPublic()");
     await window.__runGlobalPublic2058();
@@ -168,10 +167,4 @@ async function runSupremoPublic() {
 
   state.running = false;
   state.done = true;
-}
-
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", runSupremoPublic, { once: true });
-} else {
-  runSupremoPublic();
 }
