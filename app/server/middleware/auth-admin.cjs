@@ -1,13 +1,7 @@
 /**
  * =========================================================
- * AUTH-ADMIN — Versione 2027.503 SAFE MODE
- * Admin riconosciuto tramite cookie di sessione
- * Compatibile con router fuzzy + frontend 2058 patchato
- * Mantiene logica originale, aggiunge:
- * - gestione cookie
- * - req.admin coerente
- * - nessun crash
- * - diagnostica minima
+ * AUTH-ADMIN — Versione 2027.503 SAFE MODE (PATCH COMPLETA)
+ * Fix: sessioni invalide → risposta immediata
  * =========================================================
  */
 
@@ -21,7 +15,6 @@ const CF_ADMIN = "GRSSMN92H25I138W";
 ========================================================= */
 function getAdminSessionFromCookie(req) {
   try {
-    // Il router fuzzy 2027.503 garantisce req.cookies
     const c = req.cookies || {};
     return c.session_admin || "";
   } catch {
@@ -30,25 +23,40 @@ function getAdminSessionFromCookie(req) {
 }
 
 /* =========================================================
-   MIDDLEWARE AUTH-ADMIN (SAFE MODE)
+   MIDDLEWARE AUTH-ADMIN (SAFE MODE + PATCH)
 ========================================================= */
 module.exports = function authAdmin(req, res, next) {
   try {
-    const sessione = getAdminSessionFromCookie(req);
+    let sessione = getAdminSessionFromCookie(req);
 
-    if (!sessione) {
+    // Normalizzazione sicura
+    if (!sessione || typeof sessione !== "string") sessione = "";
+    sessione = sessione.trim();
+
+    // PATCH: sessione vuota/invalid → blocco immediato
+    if (sessione.length < 10) {
       return res.status(401).json({
         success: false,
-        error: "Non autorizzato (cookie mancante)"
+        error: "Non autorizzato (cookie mancante o invalido)"
       });
     }
 
-    const user = db.prepare(`
-      SELECT id, email, codice_fiscale
-      FROM utenti
-      WHERE sessione = ?
-      LIMIT 1
-    `).get(sessione);
+    // Query DB
+    let user;
+    try {
+      user = db.prepare(`
+        SELECT id, email, codice_fiscale
+        FROM utenti
+        WHERE sessione = ?
+        LIMIT 1
+      `).get(sessione);
+    } catch (err) {
+      console.error("AUTH-ADMIN SQL ERROR:", err);
+      return res.status(500).json({
+        success: false,
+        error: "Errore server"
+      });
+    }
 
     if (!user) {
       return res.status(401).json({
