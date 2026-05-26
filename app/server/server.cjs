@@ -144,7 +144,18 @@ async function bootInBackground(){
      * UNIVERSAL JSON
      * =========================================================
      */
-    log(">> BOOT: universal-json");
+    log(">> BOOT: universal-json");/* =========================================================
+ * CREAZIONE CARTELLA PERSISTENTE /var/data/json
+ * (necessaria per universal-json NO-REDEPLOY)
+ * ========================================================= */
+try {
+  const fs = require("fs");
+  const persistDir = "/var/data/json";
+  fs.mkdirSync(persistDir, { recursive: true });
+  console.log("🟩 [BOOT] Cartella persistente OK:", persistDir);
+} catch (e) {
+  console.error("🟥 [BOOT] Errore creazione /var/data/json:", e.message);
+}
     try {
       const uj = require("./middleware/universal-json.cjs");
       app.use(uj);
