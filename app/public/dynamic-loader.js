@@ -68,24 +68,8 @@ if (window.__DYNAMIC_LOADER_2056__) {
     // ============================================================
     // 3) RENDER = FONTE UNICA DI VERITÀ (ANTI-LOOP 2056)
     // ============================================================
-    function forceRenderNoStore() {
-      try {
-        const scripts = document.querySelectorAll("script[src]");
-
-        scripts.forEach(s => {
-          const src = s.getAttribute("src");
-          if (!src) return;
-
-          // NON toccare loader, supremo, universale, critical
-          if (
-            src.includes("loadersupremo") ||
-            src.includes("loaderuniversale") ||
-            src.includes("dynamic-loader") ||
-            src.includes("critical-loader") ||
-            src.includes("loader.js")
-          ) {
-            return;
-          }
+    // forceRenderNoStore();  // DISATTIVATO — causava reload infinito dei JS
+console.log("🟦 [DYNAMIC 2056] forceRenderNoStore DISATTIVATO (ANTI-LOOP)");
 
           const url = new URL(s.src);
 
