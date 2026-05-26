@@ -4,7 +4,7 @@
 ========================================================= */
 
 const path = require("path");
-const db = require(path.join(process.cwd(), "app/server/db/database.cjs"));
+const db = require(path.resolve(__dirname, "../db/database.cjs"));
 
 /* =========================================================
    ESTRAZIONE TOKEN DA COOKIE
@@ -35,10 +35,6 @@ module.exports = function authUser(req, res, next) {
 
     console.log("AUTH-USER DEBUG → PATH:", cleanPath);
 
-    /* =====================================================
-       API PUBBLICHE — NON RICHIEDONO LOGIN
-       /api/utenti/me è SEMPRE PUBBLICA
-    ===================================================== */
     const publicApiPrefixes = [
       "/api/versione",
       "/api/system-status",
@@ -58,7 +54,7 @@ module.exports = function authUser(req, res, next) {
       "/api/paypal-ricrea",
       "/api/utenti/login",
       "/api/utenti/registrazione",
-      "/api/utenti/me",          // <--- SEMPRE PUBBLICA
+      "/api/utenti/me",
       "/api/assistenza",
       "/api/upload"
     ];
@@ -74,9 +70,6 @@ module.exports = function authUser(req, res, next) {
       return next();
     }
 
-    /* =====================================================
-       API PROTETTE — RICHIEDONO LOGIN
-    ===================================================== */
     const protectedApiPrefixes = [
       "/api/rimborso",
       "/api/vendite",
@@ -89,16 +82,11 @@ module.exports = function authUser(req, res, next) {
       cleanPath.startsWith(prefix)
     );
 
-    /* =====================================================
-       LETTURA TOKEN DA COOKIE + PATCH
-       (sessioni invalide → guest immediato)
-    ===================================================== */
     let sessione = getUserSessionFromCookie(req);
 
     if (!sessione || typeof sessione !== "string") sessione = "";
     sessione = sessione.trim();
 
-    // PATCH: se il cookie è vuoto o troppo corto → guest
     if (sessione.length < 10) {
       console.log("AUTH-USER DEBUG → Sessione vuota/invalid → guest");
 
@@ -113,9 +101,6 @@ module.exports = function authUser(req, res, next) {
 
     console.log("AUTH-USER DEBUG → sessione cookie valida:", sessione);
 
-    /* =====================================================
-       VERIFICA SESSIONE SU DB
-    ===================================================== */
     let row;
     try {
       row = db.prepare(`
@@ -141,9 +126,6 @@ module.exports = function authUser(req, res, next) {
       return next();
     }
 
-    /* =====================================================
-       UTENTE VALIDO → req.uid + req.user
-    ===================================================== */
     req.uid = row.id;
     req.user = {
       id: row.id,
