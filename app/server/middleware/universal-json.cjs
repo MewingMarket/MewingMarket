@@ -1,23 +1,32 @@
 /* =========================================================
-   UNIVERSAL JSON — Versione 2027.902 SAFE MODE
-   - Intercetta TUTTE le risposte
-   - Converte in JSON SOLO quando sicuro
-   - NON tocca Buffer (evita loop e OOM)
-   - Salva tutto in generico.json
+   UNIVERSAL JSON — Versione 2027.903 SAFE MODE (NO-REDEPLOY)
+   - Salva SOLO in /var/data/json (persistente, non monitorato)
+   - Non tocca Buffer
+   - Non crea loop
+   - Non causa restart Render
 ========================================================= */
 
 const fs = require("fs");
 const path = require("path");
 
+// 🔥 Directory persistente (NON monitorata da Render)
+const PERSIST_DIR = "/var/data/json";
+const FILE_PATH = path.join(PERSIST_DIR, "generico.json");
+
+// 🔥 Assicura che la cartella esista
+try {
+  fs.mkdirSync(PERSIST_DIR, { recursive: true });
+} catch (e) {
+  console.error("UNIVERSAL JSON → errore creazione dir persistente:", e);
+}
+
 module.exports = function universalJson(req, res, next) {
   const originalJson = res.json.bind(res);
   const originalSend = res.send.bind(res);
 
-  const filePath = path.join(process.cwd(), "app/server/db/generico.json");
-
   function salva(payload) {
     try {
-      fs.writeFileSync(filePath, JSON.stringify(payload, null, 2));
+      fs.writeFileSync(FILE_PATH, JSON.stringify(payload, null, 2));
     } catch (e) {
       console.error("UNIVERSAL JSON → errore salvataggio:", e);
     }
@@ -41,14 +50,11 @@ module.exports = function universalJson(req, res, next) {
   };
 
   /* =========================================================
-     PATCH SEND — versione SAFE MODE
-     - NON tenta più JSON.parse su Buffer
-     - NON crea loop
-     - NON richiama res.json ricorsivamente
+     PATCH SEND — SAFE MODE
   ========================================================== */
   res.send = function (body) {
 
-    // 🔥 Caso critico: Buffer → NON toccare
+    // 🔥 Buffer → NON toccare
     if (Buffer.isBuffer(body)) {
       return originalSend(body);
     }
@@ -62,7 +68,7 @@ module.exports = function universalJson(req, res, next) {
       timestamp: Date.now()
     };
 
-    // 🔥 Se è JSON valido (solo stringhe)
+    // 🔥 Se è JSON valido
     if (typeof body === "string") {
       try {
         const parsed = JSON.parse(body);
@@ -71,7 +77,7 @@ module.exports = function universalJson(req, res, next) {
         salva(payload);
         return originalJson(payload);
       } catch (e) {
-        // Non è JSON → continua sotto
+        // Non è JSON → continua
       }
     }
 
