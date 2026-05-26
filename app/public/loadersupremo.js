@@ -128,50 +128,50 @@ if (!window.__SUPREMO_PUBLIC_2058__) {
       });
     }
 // ============================================================
-    // SEQUENZA SUPREMO PUBLIC 2058 (NO DYNAMIC)
-    // ============================================================
-    async function runSupremoPublic() {
-      const state = window.__SUPREMO_PUBLIC_RUN_STATE__;
+// SEQUENZA SUPREMO PUBLIC 2058 (CON DYNAMIC SAFE 2056)
+// ============================================================
+async function runSupremoPublic() {
+  const state = window.__SUPREMO_PUBLIC_RUN_STATE__;
 
-      if (state.running || state.done) return;
-      state.running = true;
+  if (state.running || state.done) return;
+  state.running = true;
 
-      console.log("🟦 [SUPREMO PUBLIC 2058] Sequenza SUPREMO avviata (NO DYNAMIC)");
+  console.log("🟦 [SUPREMO PUBLIC 2058] Sequenza SUPREMO avviata (CON DYNAMIC)");
 
-      // 1) CRITICAL LOADER
-      await loadScript("/loader.js");
+  // 1) CRITICAL LOADER
+  await loadScript("/loader.js");
 
-      // 2) CSS LOADER
-      await loadScript("/cssloader.js");
-      document.dispatchEvent(new Event("supremo-public-load-css"));
+  // 2) CSS LOADER
+  await loadScript("/cssloader.js");
+  document.dispatchEvent(new Event("supremo-public-load-css"));
 
-      // 3) GLOBAL LOADER
-      await loadScript("/global-loader.js");
+  // 3) GLOBAL LOADER
+  await loadScript("/global-loader.js");
 
-      // Avvia davvero il Global Loader 2058
-      if (typeof window.__runGlobalPublic2058 === "function") {
-        console.log("🟦 [SUPREMO PUBLIC 2058] Avvio runGlobalPublic()");
-        await window.__runGlobalPublic2058();
-      } else {
-        console.warn("⚠️ [SUPREMO PUBLIC 2058] __runGlobalPublic2058 non trovato");
-      }
+  // Avvia davvero il Global Loader 2058
+  if (typeof window.__runGlobalPublic2058 === "function") {
+    console.log("🟦 [SUPREMO PUBLIC 2058] Avvio runGlobalPublic()");
+    await window.__runGlobalPublic2058();
+  } else {
+    console.warn("⚠️ [SUPREMO PUBLIC 2058] __runGlobalPublic2058 non trovato");
+  }
 
-      // ❌ 4) DYNAMIC LOADER — ancora disattivato in questo profilo
-      // (se vuoi riattivarlo in futuro, qui puoi fare: await loadScript("/dynamic-loader.js");)
+  // 4) DYNAMIC LOADER (SAFE 2056)
+  await loadScript("/dynamic-loader.js");
+  console.log("🟦 [SUPREMO PUBLIC 2058] Dynamic Loader 2056 caricato");
 
-      // 5) LOADER UNIVERSALE
-      await loadScript("/loaderuniversale.js");
-      document.dispatchEvent(new Event("supremo-public-load-universale"));
+  // 5) LOADER UNIVERSALE
+  await loadScript("/loaderuniversale.js");
+  document.dispatchEvent(new Event("supremo-public-load-universale"));
 
-      console.log("🟩 [SUPREMO PUBLIC 2058] Sequenza completata (NO DYNAMIC)");
+  console.log("🟩 [SUPREMO PUBLIC 2058] Sequenza completata (CON DYNAMIC)");
 
-      state.running = false;
-      state.done = true;
-    }
+  state.running = false;
+  state.done = true;
+}
 
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", runSupremoPublic, { once: true });
-    } else {
-      runSupremoPublic();
-    }
-  
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", runSupremoPublic, { once: true });
+} else {
+  runSupremoPublic();
+}
