@@ -1,14 +1,10 @@
 /**
  * =========================================================
- * SCANNER ULTRA‑PRO — Find Files to Patch (Versione 2071)
- * Rileva:
- * - require("../db.cjs")
- * - require("./db.cjs")
- * - require("db")
- * - require("database")
- * - uso di db.query (MySQL)
- * - uso di NOW() (MySQL)
- * - moduli che NON usano database ufficiale
+ * SCANNER GIUDICE — Versione 2072
+ * Classifica i file in:
+ * - CONDANNATI (errore certo)
+ * - SOSPETTI (da verificare)
+ * - INNOCENTI (da ignorare)
  * =========================================================
  */
 
@@ -16,11 +12,24 @@ const fs = require("fs");
 const path = require("path");
 
 const ROOT = path.join(process.cwd(), "app");
-const OFFICIAL_DB = path.join(process.cwd(), "app/server/db/database.cjs");
+const OFFICIAL_DB = "app/server/db/database.cjs";
 
-console.log("📌 Scanner ULTRA‑PRO avviato");
-console.log("Database ufficiale:", OFFICIAL_DB);
-console.log("--------------------------------------------------\n");
+console.log("⚖️  Scanner GIUDICE avviato\n");
+
+/* =========================================================
+   UTILS
+========================================================= */
+function isFrontend(file) {
+  return file.includes("/public/");
+}
+
+function isServer(file) {
+  return file.includes("/server/");
+}
+
+function isModule(file) {
+  return file.includes("/modules/");
+}
 
 /* =========================================================
    SCANSIONE RICORSIVA
@@ -48,62 +57,53 @@ function scanDir(dir) {
 function scanFile(filePath) {
   const content = fs.readFileSync(filePath, "utf8");
 
-  let flagged = false;
+  let condannato = false;
+  let sospetto = false;
 
   /* =====================================================
-     1) require sospetti
+     1) ERRORI CERTI → CONDANNATI
   ===================================================== */
-  const badRequirePatterns = [
-    "require(\"../db.cjs\")",
-    "require('../db.cjs')",
-    "require(\"./db.cjs\")",
-    "require('./db.cjs')",
-    "require(\"db.cjs\")",
-    "require('db.cjs')",
-    "require(\"db\")",
-    "require('db')",
-    "require(\"database\")",
-    "require('database')"
-  ];
-
-  for (const p of badRequirePatterns) {
-    if (content.includes(p)) {
-      console.log("❌ FILE DA PATCHARE:", filePath);
-      console.log("   ➤ Motivo: require sospetto →", p);
-      flagged = true;
-    }
+  if (content.includes("require(\"../db.cjs\")") ||
+      content.includes("require('../db.cjs')") ||
+      content.includes("require(\"./db.cjs\")") ||
+      content.includes("require('./db.cjs')")) {
+    condannato = true;
+    console.log("❌ CONDANNATO:", filePath);
+    console.log("   ➤ Motivo: usa db.cjs (database sbagliato)\n");
+    return;
   }
 
-  /* =====================================================
-     2) uso di MySQL (.query)
-  ===================================================== */
   if (content.includes(".query(")) {
-    if (!flagged) console.log("❌ FILE DA PATCHARE:", filePath);
-    console.log("   ➤ Motivo: usa db.query (MySQL)");
-    flagged = true;
+    condannato = true;
+    console.log("❌ CONDANNATO:", filePath);
+    console.log("   ➤ Motivo: usa db.query (MySQL)\n");
+    return;
   }
 
-  /* =====================================================
-     3) uso di NOW() (MySQL)
-  ===================================================== */
   if (content.includes("NOW()")) {
-    if (!flagged) console.log("❌ FILE DA PATCHARE:", filePath);
-    console.log("   ➤ Motivo: usa NOW() (MySQL)");
-    flagged = true;
+    condannato = true;
+    console.log("❌ CONDANNATO:", filePath);
+    console.log("   ➤ Motivo: usa NOW() (MySQL)\n");
+    return;
   }
 
   /* =====================================================
-     4) NON usa database ufficiale
+     2) SOSPETTI → solo se lato server
   ===================================================== */
-  if (!content.includes("app/server/db/database.cjs")) {
-    // Se non è già stato segnalato e contiene SQL
-    if (!flagged && content.match(/SELECT|INSERT|UPDATE|DELETE/i)) {
-      console.log("⚠️  POSSIBILE FILE DA PATCHARE:", filePath);
-      console.log("   ➤ Motivo: usa SQL ma NON importa database ufficiale");
+  if (isServer(filePath) || isModule(filePath)) {
+    if (content.match(/SELECT|INSERT|UPDATE|DELETE/i) &&
+        !content.includes(OFFICIAL_DB)) {
+      sospetto = true;
+      console.log("⚠️  SOSPETTO:", filePath);
+      console.log("   ➤ Motivo: SQL lato server ma NON importa database ufficiale\n");
+      return;
     }
   }
 
-  if (flagged) console.log("");
+  /* =====================================================
+     3) INNOCENTI → ignorati
+  ===================================================== */
+  // Non stampiamo nulla per evitare rumore
 }
 
 /* =========================================================
@@ -112,4 +112,4 @@ function scanFile(filePath) {
 scanDir(ROOT);
 
 console.log("--------------------------------------------------");
-console.log("🟢 Scansione ULTRA‑PRO completata");
+console.log("🟢 Scansione GIUDICE completata");
