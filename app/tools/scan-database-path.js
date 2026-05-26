@@ -1,19 +1,60 @@
 /**
  * =========================================================
- * SCANNER DATABASE.CJS — Versione 2058
- * Controlla se database.cjs viene richiamato correttamente
+ * SCANNER DATABASE VARIANTS — Versione 2070 PRO
+ * Rileva:
+ * - db.cjs
+ * - Db.cjs
+ * - DB.cjs
+ * - database.cjs
+ * - Database.cjs
+ * - dataBase.cjs
+ * - database (senza estensione)
+ * - db (senza estensione)
+ * - file duplicati
+ * - file corrotti
+ * - require sbagliati
  * =========================================================
  */
 
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 
 const ROOT = path.join(process.cwd(), "app/server");
 const TARGET = path.join(ROOT, "db", "database.cjs");
 
-console.log("📌 Scanner avviato");
-console.log("Percorso reale database.cjs:", TARGET);
+console.log("📌 Scanner Variants avviato");
+console.log("Percorso ufficiale database.cjs:", TARGET);
 console.log("--------------------------------------------------\n");
+
+/* =========================================================
+   HASH DATABASE UFFICIALE
+========================================================= */
+function fileHash(file) {
+  try {
+    const data = fs.readFileSync(file);
+    return crypto.createHash("sha256").update(data).digest("hex");
+  } catch {
+    return null;
+  }
+}
+
+const TARGET_HASH = fileHash(TARGET);
+
+/* =========================================================
+   NOMI SOSPETTI
+========================================================= */
+const suspiciousNames = [
+  "db.cjs",
+  "Db.cjs",
+  "DB.cjs",
+  "database.cjs",
+  "Database.cjs",
+  "dataBase.cjs",
+  "DATABASE.cjs",
+  "db",
+  "database"
+];
 
 /* =========================================================
    SCANSIONE RICORSIVA
@@ -47,7 +88,10 @@ function scanFile(filePath) {
   while ((match = regex.exec(content)) !== null) {
     const rawPath = match[1];
 
-    if (!rawPath.includes("database.cjs")) continue;
+    // Controlla se contiene un nome sospetto
+    if (!suspiciousNames.some(n => rawPath.toLowerCase().includes(n.toLowerCase()))) {
+      continue;
+    }
 
     const resolved = path.resolve(path.dirname(filePath), rawPath);
 
@@ -55,12 +99,32 @@ function scanFile(filePath) {
     console.log("   ➤ require:", rawPath);
     console.log("   ➤ risolto:", resolved);
 
-    if (resolved === TARGET) {
-      console.log("   ✅ OK — percorso corretto\n");
-    } else {
-      console.log("   ❌ ERRORE — percorso sbagliato!");
+    /* =====================================================
+       1) Controllo esistenza file
+    ===================================================== */
+    if (!fs.existsSync(resolved)) {
+      console.log("   ❌ ERRORE — Il file NON esiste!");
       console.log("      Percorso corretto:", TARGET, "\n");
+      continue;
     }
+
+    /* =====================================================
+       2) Controllo se è il database ufficiale
+    ===================================================== */
+    const h = fileHash(resolved);
+
+    if (h !== TARGET_HASH) {
+      console.log("   ❌ ERRORE — Questo NON è il database ufficiale!");
+      console.log("      Hash ufficiale:", TARGET_HASH);
+      console.log("      Hash trovato:  ", h);
+      console.log("      Percorso corretto:", TARGET, "\n");
+      continue;
+    }
+
+    /* =====================================================
+       3) Tutto OK
+    ===================================================== */
+    console.log("   ✅ OK — percorso corretto e database autentico\n");
   }
 }
 
@@ -70,4 +134,4 @@ function scanFile(filePath) {
 scanDir(ROOT);
 
 console.log("--------------------------------------------------");
-console.log("🟢 Scansione completata");
+console.log("🟢 Scansione Variants completata");
