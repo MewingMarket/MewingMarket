@@ -69,24 +69,10 @@ if (window.__DYNAMIC_LOADER_2056__) {
     // 3) RENDER = FONTE UNICA DI VERITÀ (ANTI-LOOP 2056)
     // ============================================================
     // forceRenderNoStore();  // DISATTIVATO — causava reload infinito dei JS
-console.log("🟦 [DYNAMIC 2056] forceRenderNoStore DISATTIVATO (ANTI-LOOP)");
+    console.log("🟦 [DYNAMIC 2056] forceRenderNoStore DISATTIVATO (ANTI-LOOP)");
 
-          const url = new URL(s.src);
-
-          // 🔥 PATCH ANTI-LOOP: se già contiene cache= → NON toccare
-          if (url.searchParams.has("cache")) {
-            return;
-          }
-
-          url.searchParams.set("cache", "no-store");
-          s.src = url.toString();
-        });
-
-        console.log("🟦 [DYNAMIC] Render impostato come fonte unica di verità (SAFE + ANTI-LOOP)");
-      } catch (e) {
-        console.warn("❌ [DYNAMIC] Errore no-store:", e.message);
-      }
-    }
+    // (Se un domani vorrai riattivarlo, qui potrai reinserire la funzione
+    //  forceRenderNoStore in versione safe, ma ora è GIUSTO che sia spenta.)
 
     // ============================================================
     // 4) EMISSIONE CRITICAL-READY (PATCH 2056)
@@ -117,7 +103,7 @@ console.log("🟦 [DYNAMIC 2056] forceRenderNoStore DISATTIVATO (ANTI-LOOP)");
     // ============================================================
     applyAntiCache();
     removeServiceWorkers();
-    forceRenderNoStore();
+    // forceRenderNoStore è volutamente NON chiamato
     emitCriticalReady();
 
     console.log("🟩 [DYNAMIC 2056] Completato (ULTRA MINIMAL)");
