@@ -1,8 +1,7 @@
 // =========================================================
 // CRITICAL LOADER — PUBLIC 2057.4 (JAVA-MODE SAFE)
+// PATCH 2058 — RIMOSSO critical-ready
 // Percorso: /app/public/loader.js
-// Carica head.html / header.html / footer.html / header.js
-// Emissione evento: critical-ready (standard 2027.4)
 // =========================================================
 
 if (window.__CRITICAL_LOADER_PUBLIC_2057__) {
@@ -16,9 +15,6 @@ if (window.__CRITICAL_LOADER_PUBLIC_2057__) {
 
     console.log("⚡ [CRITICAL PUBLIC 2057] Avvio critical loader PUBLIC (JAVA-MODE)");
 
-    // ============================================================
-    // Utility: carica HTML in modo deterministico
-    // ============================================================
     function loadHTML(url, placeholderId, label) {
       return new Promise(resolve => {
         fetch(url, { cache: "no-store" })
@@ -56,14 +52,10 @@ if (window.__CRITICAL_LOADER_PUBLIC_2057__) {
       });
     }
 
-    // ============================================================
-    // Utility: carica script JS in modo deterministico
-    // ============================================================
     function loadScript(src, where = "head") {
       return new Promise(resolve => {
         console.log("➡️ [CRITICAL PUBLIC] LOAD-REQUEST", src);
 
-        // Script-lock globale per evitare doppio load
         if (window.__SCRIPT_LOCK__ && window.__SCRIPT_LOCK__[src]) {
           console.warn("[SCRIPT-LOCK] Script già caricato:", src);
           return resolve(true);
@@ -90,31 +82,20 @@ if (window.__CRITICAL_LOADER_PUBLIC_2057__) {
       });
     }
 
-    // ============================================================
-    // SEQUENZA CRITICA — HTML + header.js
-    // ============================================================
     (async () => {
 
-      // 1) HEAD
       await loadHTML(`/head.html?v=${VERSION}`, null, "head.html");
-
-      // 2) HEADER
       await loadHTML(`/header.html?v=${VERSION}`, "header-placeholder", "header.html");
-
-      // 3) FOOTER
       await loadHTML(`/footer.html?v=${VERSION}`, "footer-placeholder", "footer.html");
 
-      // 4) MICRO-DELAY per evitare race con SUPREMO
       await new Promise(r => setTimeout(r, 20));
 
-      // 5) HEADER.JS (sempre DOPO header.html)
       await loadScript("/header.js", "body");
 
       console.log("🟩 [CRITICAL PUBLIC 2057] HTML base caricato (JAVA-MODE)");
 
-      // 6) EMISSIONE EVENTO STANDARD 2027.4
-      window.__criticalReady = true;
-      document.dispatchEvent(new Event("critical-ready"));
+      // ❌ RIMOSSO critical-ready
+      // Il SUPREMO PUBLIC sarà l’unico a emetterlo
 
     })();
 
