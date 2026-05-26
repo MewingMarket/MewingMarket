@@ -1,7 +1,7 @@
 // =========================================================
 // LOADER SUPREMO — PUBLIC MODELLO 2058 (CON DYNAMIC SAFE)
 // Percorso reale: /app/public/loadersupremo.js
-// Pipeline PUBLIC 2058 completa e ordinata
+// Pipeline PUBLIC 2058 completa, ordinata, deterministica
 // =========================================================
 
 if (!window.__SUPREMO_PUBLIC_2058__) {
@@ -129,7 +129,7 @@ if (!window.__SUPREMO_PUBLIC_2058__) {
     }
 
     // ============================================================
-    // SEQUENZA SUPREMO PUBLIC 2058 (CON DYNAMIC SAFE 2056)
+    // SEQUENZA SUPREMO PUBLIC 2058 (NON BLOCCANTE)
     // ============================================================
     async function runSupremoPublic() {
       const state = window.__SUPREMO_PUBLIC_RUN_STATE__;
@@ -137,7 +137,7 @@ if (!window.__SUPREMO_PUBLIC_2058__) {
       if (state.running || state.done) return;
       state.running = true;
 
-      console.log("🟦 [SUPREMO PUBLIC 2058] Sequenza SUPREMO avviata (CON DYNAMIC)");
+      console.log("🟦 [SUPREMO PUBLIC 2058] Sequenza SUPREMO avviata");
 
       // 1) CRITICAL LOADER
       await loadScript("/loader.js");
@@ -149,9 +149,10 @@ if (!window.__SUPREMO_PUBLIC_2058__) {
       // 3) GLOBAL LOADER
       await loadScript("/global-loader.js");
 
+      // 🔥 NON BLOCCANTE (tracking/structured possono fallire o ritardare)
       if (typeof window.__runGlobalPublic2058 === "function") {
-        console.log("🟦 [SUPREMO PUBLIC 2058] Avvio runGlobalPublic()");
-        await window.__runGlobalPublic2058();
+        console.log("🟦 [SUPREMO PUBLIC 2058] Avvio runGlobalPublic() (NON BLOCCANTE)");
+        window.__runGlobalPublic2058(); // NON await
       } else {
         console.warn("⚠️ [SUPREMO PUBLIC 2058] __runGlobalPublic2058 non trovato");
       }
@@ -171,7 +172,7 @@ if (!window.__SUPREMO_PUBLIC_2058__) {
         console.log("🟩 [SUPREMO PUBLIC 2058] critical-ready EMESSO");
       }
 
-      console.log("🟩 [SUPREMO PUBLIC 2058] Sequenza completata (CON DYNAMIC)");
+      console.log("🟩 [SUPREMO PUBLIC 2058] Sequenza completata");
 
       state.running = false;
       state.done = true;
