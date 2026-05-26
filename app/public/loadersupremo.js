@@ -127,8 +127,7 @@ if (!window.__SUPREMO_PUBLIC_2058__) {
         (where === "body" ? document.body : document.head).appendChild(s);
       });
     }
-
-    // ============================================================
+// ============================================================
     // SEQUENZA SUPREMO PUBLIC 2058 (NO DYNAMIC)
     // ============================================================
     async function runSupremoPublic() {
@@ -148,9 +147,17 @@ if (!window.__SUPREMO_PUBLIC_2058__) {
 
       // 3) GLOBAL LOADER
       await loadScript("/global-loader.js");
-      document.dispatchEvent(new Event("supremo-public-load-global-js"));
 
-      // ❌ 4) DYNAMIC LOADER — DISATTIVATO
+      // Avvia davvero il Global Loader 2058
+      if (typeof window.__runGlobalPublic2058 === "function") {
+        console.log("🟦 [SUPREMO PUBLIC 2058] Avvio runGlobalPublic()");
+        await window.__runGlobalPublic2058();
+      } else {
+        console.warn("⚠️ [SUPREMO PUBLIC 2058] __runGlobalPublic2058 non trovato");
+      }
+
+      // ❌ 4) DYNAMIC LOADER — ancora disattivato in questo profilo
+      // (se vuoi riattivarlo in futuro, qui puoi fare: await loadScript("/dynamic-loader.js");)
 
       // 5) LOADER UNIVERSALE
       await loadScript("/loaderuniversale.js");
@@ -167,8 +174,4 @@ if (!window.__SUPREMO_PUBLIC_2058__) {
     } else {
       runSupremoPublic();
     }
-
-  })();
-} else {
-  console.warn("SUPREMO PUBLIC 2058 già caricato, skip.");
-}
+  
