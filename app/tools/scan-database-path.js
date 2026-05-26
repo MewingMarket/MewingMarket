@@ -1,60 +1,26 @@
 /**
  * =========================================================
- * SCANNER DATABASE VARIANTS — Versione 2070 PRO
+ * SCANNER ULTRA‑PRO — Find Files to Patch (Versione 2071)
  * Rileva:
- * - db.cjs
- * - Db.cjs
- * - DB.cjs
- * - database.cjs
- * - Database.cjs
- * - dataBase.cjs
- * - database (senza estensione)
- * - db (senza estensione)
- * - file duplicati
- * - file corrotti
- * - require sbagliati
+ * - require("../db.cjs")
+ * - require("./db.cjs")
+ * - require("db")
+ * - require("database")
+ * - uso di db.query (MySQL)
+ * - uso di NOW() (MySQL)
+ * - moduli che NON usano database ufficiale
  * =========================================================
  */
 
 const fs = require("fs");
 const path = require("path");
-const crypto = require("crypto");
 
-const ROOT = path.join(process.cwd(), "app/server");
-const TARGET = path.join(ROOT, "db", "database.cjs");
+const ROOT = path.join(process.cwd(), "app");
+const OFFICIAL_DB = path.join(process.cwd(), "app/server/db/database.cjs");
 
-console.log("📌 Scanner Variants avviato");
-console.log("Percorso ufficiale database.cjs:", TARGET);
+console.log("📌 Scanner ULTRA‑PRO avviato");
+console.log("Database ufficiale:", OFFICIAL_DB);
 console.log("--------------------------------------------------\n");
-
-/* =========================================================
-   HASH DATABASE UFFICIALE
-========================================================= */
-function fileHash(file) {
-  try {
-    const data = fs.readFileSync(file);
-    return crypto.createHash("sha256").update(data).digest("hex");
-  } catch {
-    return null;
-  }
-}
-
-const TARGET_HASH = fileHash(TARGET);
-
-/* =========================================================
-   NOMI SOSPETTI
-========================================================= */
-const suspiciousNames = [
-  "db.cjs",
-  "Db.cjs",
-  "DB.cjs",
-  "database.cjs",
-  "Database.cjs",
-  "dataBase.cjs",
-  "DATABASE.cjs",
-  "db",
-  "database"
-];
 
 /* =========================================================
    SCANSIONE RICORSIVA
@@ -82,50 +48,62 @@ function scanDir(dir) {
 function scanFile(filePath) {
   const content = fs.readFileSync(filePath, "utf8");
 
-  const regex = /require\s*\(\s*["'`](.*?)["'`]\s*\)/g;
-  let match;
+  let flagged = false;
 
-  while ((match = regex.exec(content)) !== null) {
-    const rawPath = match[1];
+  /* =====================================================
+     1) require sospetti
+  ===================================================== */
+  const badRequirePatterns = [
+    "require(\"../db.cjs\")",
+    "require('../db.cjs')",
+    "require(\"./db.cjs\")",
+    "require('./db.cjs')",
+    "require(\"db.cjs\")",
+    "require('db.cjs')",
+    "require(\"db\")",
+    "require('db')",
+    "require(\"database\")",
+    "require('database')"
+  ];
 
-    // Controlla se contiene un nome sospetto
-    if (!suspiciousNames.some(n => rawPath.toLowerCase().includes(n.toLowerCase()))) {
-      continue;
+  for (const p of badRequirePatterns) {
+    if (content.includes(p)) {
+      console.log("❌ FILE DA PATCHARE:", filePath);
+      console.log("   ➤ Motivo: require sospetto →", p);
+      flagged = true;
     }
-
-    const resolved = path.resolve(path.dirname(filePath), rawPath);
-
-    console.log("📄 File:", filePath);
-    console.log("   ➤ require:", rawPath);
-    console.log("   ➤ risolto:", resolved);
-
-    /* =====================================================
-       1) Controllo esistenza file
-    ===================================================== */
-    if (!fs.existsSync(resolved)) {
-      console.log("   ❌ ERRORE — Il file NON esiste!");
-      console.log("      Percorso corretto:", TARGET, "\n");
-      continue;
-    }
-
-    /* =====================================================
-       2) Controllo se è il database ufficiale
-    ===================================================== */
-    const h = fileHash(resolved);
-
-    if (h !== TARGET_HASH) {
-      console.log("   ❌ ERRORE — Questo NON è il database ufficiale!");
-      console.log("      Hash ufficiale:", TARGET_HASH);
-      console.log("      Hash trovato:  ", h);
-      console.log("      Percorso corretto:", TARGET, "\n");
-      continue;
-    }
-
-    /* =====================================================
-       3) Tutto OK
-    ===================================================== */
-    console.log("   ✅ OK — percorso corretto e database autentico\n");
   }
+
+  /* =====================================================
+     2) uso di MySQL (.query)
+  ===================================================== */
+  if (content.includes(".query(")) {
+    if (!flagged) console.log("❌ FILE DA PATCHARE:", filePath);
+    console.log("   ➤ Motivo: usa db.query (MySQL)");
+    flagged = true;
+  }
+
+  /* =====================================================
+     3) uso di NOW() (MySQL)
+  ===================================================== */
+  if (content.includes("NOW()")) {
+    if (!flagged) console.log("❌ FILE DA PATCHARE:", filePath);
+    console.log("   ➤ Motivo: usa NOW() (MySQL)");
+    flagged = true;
+  }
+
+  /* =====================================================
+     4) NON usa database ufficiale
+  ===================================================== */
+  if (!content.includes("app/server/db/database.cjs")) {
+    // Se non è già stato segnalato e contiene SQL
+    if (!flagged && content.match(/SELECT|INSERT|UPDATE|DELETE/i)) {
+      console.log("⚠️  POSSIBILE FILE DA PATCHARE:", filePath);
+      console.log("   ➤ Motivo: usa SQL ma NON importa database ufficiale");
+    }
+  }
+
+  if (flagged) console.log("");
 }
 
 /* =========================================================
@@ -134,4 +112,4 @@ function scanFile(filePath) {
 scanDir(ROOT);
 
 console.log("--------------------------------------------------");
-console.log("🟢 Scansione Variants completata");
+console.log("🟢 Scansione ULTRA‑PRO completata");
