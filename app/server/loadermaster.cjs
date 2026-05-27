@@ -1,9 +1,5 @@
 // =========================================================
 // LOADERMASTER — entrypoint frontend
-// - statiche
-// - admin
-// - login
-// (tutto leggero, nessun DB, nessun router API)
 // =========================================================
 
 const express = require("express");
@@ -22,5 +18,5 @@ module.exports = async function loadermaster(app) {
     res.sendFile(path.resolve("app/public/login.html"));
   });
 
-  log("✅ FRONTEND pronto");
+  log("🟩 FRONTEND CARICATO (loadermaster completato)");
 };
