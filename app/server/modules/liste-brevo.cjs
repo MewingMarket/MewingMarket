@@ -1,7 +1,19 @@
-// app/server/modules/liste-brevo.cjs
-const axios = require("axios");
+// app/server/modules/liste-brevo.cjs — SAFE MODE 2026.951
 
-const BREVO_API_KEY = process.env.BREVO_API_KEY;
+// =========================================================
+// REQUIRE PROTETTO (evita crash se axios non è installato)
+// =========================================================
+let axios = null;
+try {
+  axios = require("axios");
+} catch (err) {
+  console.error("❌ axios non installato:", err.message);
+}
+
+// =========================================================
+// CONFIG
+// =========================================================
+const BREVO_API_KEY = process.env.BREVO_API_KEY || null;
 const BREVO_API_BASE = "https://api.brevo.com/v3";
 
 // =========================================================
@@ -11,20 +23,19 @@ const LISTA_NEWSLETTER = 8;
 const LISTA_REGISTRATI = 9;
 const LISTA_CREDENZIALI = 10;
 const LISTA_CLIENTI = 12;
+const LISTA_BACKUP = 14; // ⭐ nuova lista
 
-// ⭐ NUOVA LISTA BACKUP (ID 14)
-const LISTA_BACKUP = 14;
-
-// =========================================================
 function clean(email) {
   return String(email || "").trim().toLowerCase();
 }
 
 // =========================================================
-// ⭐ PATCH 2026.950 — addToList con fallback PUT se il contatto esiste
+// ADD TO LIST — SAFE MODE
 // =========================================================
 async function addToList(listId, email) {
-  if (!BREVO_API_KEY || !listId || !email) return;
+  if (!axios) return;                 // PATCH
+  if (!BREVO_API_KEY) return;         // PATCH
+  if (!listId || !email) return;
 
   const e = clean(email);
 
@@ -56,8 +67,12 @@ async function addToList(listId, email) {
 }
 
 // =========================================================
+// REMOVE FROM LIST — SAFE MODE
+// =========================================================
 async function removeFromList(listId, email) {
-  if (!BREVO_API_KEY || !listId || !email) return;
+  if (!axios) return;                 // PATCH
+  if (!BREVO_API_KEY) return;         // PATCH
+  if (!listId || !email) return;
 
   const e = clean(email);
 
@@ -74,7 +89,10 @@ async function removeFromList(listId, email) {
 }
 
 // =========================================================
+// SYNC LISTS — SAFE MODE
+// =========================================================
 async function syncLists() {
+  if (!axios) return { newsletter: [], clienti: [], backup: [] }; // PATCH
   if (!BREVO_API_KEY) return { newsletter: [], clienti: [], backup: [] };
 
   try {
@@ -106,9 +124,10 @@ async function syncLists() {
 }
 
 // =========================================================
-// ⭐ PATCH 2026 — GET STATO REALE UTENTE (NO-OP INTELLIGENTE)
+// GET STATO REALE — SAFE MODE
 // =========================================================
 async function getBrevoStatoRealeUtente(email) {
+  if (!axios) return null;            // PATCH
   if (!BREVO_API_KEY || !email) return null;
 
   const e = clean(email);
@@ -126,7 +145,7 @@ async function getBrevoStatoRealeUtente(email) {
       newsletter: (data.listIds || []).includes(LISTA_NEWSLETTER),
       registrato: (data.listIds || []).includes(LISTA_REGISTRATI),
       credenziali: (data.listIds || []).includes(LISTA_CREDENZIALI),
-      backup: (data.listIds || []).includes(LISTA_BACKUP)   // ⭐ AGGIUNTO
+      backup: (data.listIds || []).includes(LISTA_BACKUP)
     };
 
   } catch (err) {
@@ -138,7 +157,7 @@ async function getBrevoStatoRealeUtente(email) {
 }
 
 // =========================================================
-// ⭐ FUNZIONE CENTRALE — SYNC STATO REALE UTENTE
+// SYNC STATO REALE — SAFE MODE
 // =========================================================
 async function syncBrevoUtenteStatoReale({
   email,
@@ -147,17 +166,16 @@ async function syncBrevoUtenteStatoReale({
   cliente = null,
   newsletter = null,
   credenzialiModificate = null,
-  backup = null,          // ⭐ AGGIUNTO
+  backup = null,
   elimina = false
 }) {
+  if (!axios) return;                 // PATCH
   if (!BREVO_API_KEY) return;
 
   const e = clean(email);
   const old = emailVecchia ? clean(emailVecchia) : null;
 
-  // =========================================================
-  // ⭐ Eliminazione totale da tutte le liste
-  // =========================================================
+  // Eliminazione totale
   if (elimina === true) {
     const liste = [
       LISTA_NEWSLETTER,
@@ -175,9 +193,7 @@ async function syncBrevoUtenteStatoReale({
     return;
   }
 
-  // =========================================================
-  // ⭐ Cambio email → rimuovi vecchia + aggiungi nuova
-  // =========================================================
+  // Cambio email
   if (old && old !== e) {
     const liste = [
       LISTA_NEWSLETTER,
@@ -193,16 +209,10 @@ async function syncBrevoUtenteStatoReale({
     }
   }
 
-  // =========================================================
-  // ⭐ Registrazione
-  // =========================================================
   if (registrato === true) {
     await addToList(LISTA_REGISTRATI, e);
   }
 
-  // =========================================================
-  // ⭐ Cliente
-  // =========================================================
   if (cliente === true) {
     await addToList(LISTA_CLIENTI, e);
     await addToList(LISTA_REGISTRATI, e);
@@ -212,9 +222,6 @@ async function syncBrevoUtenteStatoReale({
     await removeFromList(LISTA_CLIENTI, e);
   }
 
-  // =========================================================
-  // ⭐ Newsletter
-  // =========================================================
   if (newsletter === true) {
     await addToList(LISTA_NEWSLETTER, e);
   }
@@ -223,16 +230,10 @@ async function syncBrevoUtenteStatoReale({
     await removeFromList(LISTA_NEWSLETTER, e);
   }
 
-  // =========================================================
-  // ⭐ Credenziali modificate
-  // =========================================================
   if (credenzialiModificate === true) {
     await addToList(LISTA_CREDENZIALI, e);
   }
 
-  // =========================================================
-  // ⭐ BACKUP (lista 14)
-  // =========================================================
   if (backup === true) {
     await addToList(LISTA_BACKUP, e);
   }
@@ -248,7 +249,7 @@ module.exports = {
   LISTA_REGISTRATI,
   LISTA_CREDENZIALI,
   LISTA_CLIENTI,
-  LISTA_BACKUP, // ⭐ esportata
+  LISTA_BACKUP,
 
   addToList,
   removeFromList,
