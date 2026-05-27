@@ -1,17 +1,23 @@
 // =========================================================
-// LOADER SUPREMO — PUBLIC MODELLO 2060 (CON DYNAMIC SAFE + TIMEOUT)
-// Percorso reale: /app/public/loadersupremo-2060.js
-// Pipeline PUBLIC completa, ordinata, deterministica, PARANOICA
+// LOADER SUPREMO — ADMIN MODELLO 2060 (NO DYNAMIC, PARANOICO)
+// Percorso reale: /app/public/admin/loadersupremo-admin-2060.js
 // =========================================================
 
-if (!window.__SUPREMO_PUBLIC_2060__) {
-  window.__SUPREMO_PUBLIC_2060__ = true;
+if (!window.__SUPREMO_ADMIN_2060__) {
+  window.__SUPREMO_ADMIN_2060__ = true;
+
+  window.__SUPREMO_ADMIN_STANDBY__ =
+    window.__SUPREMO_ADMIN_STANDBY__ ?? false;
 
   (function () {
 
     const V = "2060";
 
-    console.log("⚡ [SUPREMO PUBLIC 2060] Avvio SUPREMO PUBLIC (CON DYNAMIC + TIMEOUT)");
+    console.log(
+      "⚡ [SUPREMO ADMIN 2060] Loader admin avviato (NO DYNAMIC, PARANOICO, standby:",
+      window.__SUPREMO_ADMIN_STANDBY__,
+      ")"
+    );
 
     // ============================================================
     // GLOBAL LOCKS (fetch, script, event)
@@ -75,7 +81,11 @@ if (!window.__SUPREMO_PUBLIC_2060__) {
       document.dispatchEvent = function(ev) {
         const name = ev.type;
 
-        if (name === "critical-ready" || name === "page-js-loaded") {
+        if (
+          name === "critical-ready" ||
+          name === "page-js-loaded" ||
+          name === "admin-page-js-loaded"
+        ) {
           if (emitted.has(name)) return true;
           emitted.add(name);
         }
@@ -87,13 +97,17 @@ if (!window.__SUPREMO_PUBLIC_2060__) {
     // ============================================================
     // CACHE + RUN STATE
     // ============================================================
-    window.__SUPREMO_PUBLIC_JS_CACHE__ =
-      window.__SUPREMO_PUBLIC_JS_CACHE__ || new Set();
+    window.__SUPREMO_ADMIN_JS_CACHE__ =
+      window.__SUPREMO_ADMIN_JS_CACHE__ || new Set();
 
-    window.__SUPREMO_PUBLIC_RUN_STATE__ =
-      window.__SUPREMO_PUBLIC_RUN_STATE__ || { running: false, done: false };
+    window.__SUPREMO_ADMIN_RUN_STATE__ =
+      window.__SUPREMO_ADMIN_RUN_STATE__ || {
+        running: false,
+        done: false
+      };
 
-    window.__pageJsLoaded = window.__pageJsLoaded || false;
+    window.__adminPageJsLoaded = window.__adminPageJsLoaded || false;
+    window.__criticalReady = window.__criticalReady || false;
 
     // ============================================================
     // Utility caricamento script (PARANOICA, con timeout)
@@ -101,13 +115,13 @@ if (!window.__SUPREMO_PUBLIC_2060__) {
     function loadScript(src, where = "head", timeoutMs = 8000) {
       const key = src;
 
-      if (window.__SUPREMO_PUBLIC_JS_CACHE__.has(key)) {
-        console.log("⏭️ [SUPREMO PUBLIC] LOAD-SKIP:", key);
+      if (window.__SUPREMO_ADMIN_JS_CACHE__.has(key)) {
+        console.log("⏭️ [SUPREMO ADMIN] LOAD-SKIP:", key);
         return Promise.resolve(true);
       }
 
       return new Promise(resolve => {
-        console.log("➡️ [SUPREMO PUBLIC] LOAD-REQUEST:", key);
+        console.log("➡️ [SUPREMO ADMIN] LOAD-REQUEST:", key);
 
         const s = document.createElement("script");
         s.src = `${key}?v=${V}`;
@@ -120,10 +134,10 @@ if (!window.__SUPREMO_PUBLIC_2060__) {
           settled = true;
 
           if (ok) {
-            console.log("✅ [SUPREMO PUBLIC] LOAD-OK:", key);
-            window.__SUPREMO_PUBLIC_JS_CACHE__.add(key);
+            console.log("✅ [SUPREMO ADMIN] LOAD-OK:", key);
+            window.__SUPREMO_ADMIN_JS_CACHE__.add(key);
           } else {
-            console.warn("❌ [SUPREMO PUBLIC] LOAD-FAIL/TIMEOUT:", key);
+            console.warn("❌ [SUPREMO ADMIN] LOAD-FAIL/TIMEOUT:", key);
           }
 
           resolve(ok);
@@ -133,7 +147,7 @@ if (!window.__SUPREMO_PUBLIC_2060__) {
         s.onerror = () => done(false);
 
         setTimeout(() => {
-          console.warn("⏰ [SUPREMO PUBLIC] TIMEOUT:", key);
+          console.warn("⏰ [SUPREMO ADMIN] TIMEOUT:", key);
           done(false);
         }, timeoutMs);
 
@@ -142,67 +156,77 @@ if (!window.__SUPREMO_PUBLIC_2060__) {
     }
 
     // ============================================================
-    // SEQUENZA SUPREMO PUBLIC 2060 (NON BLOCCANTE, CON TIMEOUT)
+    // WAIT PAGE-JS-LOADED
     // ============================================================
-    async function runSupremoPublic() {
-      const state = window.__SUPREMO_PUBLIC_RUN_STATE__;
+    function waitPageJsLoadedIfNeeded() {
+      if (window.__adminPageJsLoaded) return Promise.resolve(true);
+
+      return new Promise(resolve => {
+        const handler = () => {
+          window.__adminPageJsLoaded = true;
+          resolve(true);
+        };
+
+        document.addEventListener("admin-page-js-loaded", handler, { once: true });
+        document.addEventListener("page-js-loaded", handler, { once: true });
+      });
+    }
+
+    // ============================================================
+    // SEQUENZA SUPREMO ADMIN 2060 (NO DYNAMIC, PARANOICA)
+    // ============================================================
+    async function runSupremoAdmin() {
+      const state = window.__SUPREMO_ADMIN_RUN_STATE__;
 
       if (state.running || state.done) return;
       state.running = true;
 
-      console.log("🟦 [SUPREMO PUBLIC 2060] Sequenza SUPREMO avviata");
+      console.log("🟦 [SUPREMO ADMIN 2060] Sequenza SUPREMO avviata");
 
-      // 1) CRITICAL LOADER
-      await loadScript("/loader.js");
+      // 1) CRITICAL ADMIN
+      await loadScript("/admin/loader-admin.js");
 
-      // 2) CSS LOADER
-      await loadScript("/cssloader.js");
-      document.dispatchEvent(new Event("supremo-public-load-css"));
+      // 2) CSS LOADER ADMIN
+      await loadScript("/admin/css-loader-admin.js");
+      document.dispatchEvent(new Event("supremo-admin-load-css"));
 
-      // 3) GLOBAL LOADER
-      await loadScript("/global-loader.js");
+      // 3) GLOBAL LOADER ADMIN
+      await loadScript("/admin/global-loader-admin.js");
+      document.dispatchEvent(new Event("supremo-admin-load-global-js"));
 
-      // 🔥 NON BLOCCANTE (tracking/structured/carrello possono fallire o ritardare)
-      if (typeof window.__runGlobalPublic2058 === "function") {
-        console.log("🟦 [SUPREMO PUBLIC 2060] Avvio runGlobalPublic() (NON BLOCCANTE)");
-        try {
-          window.__runGlobalPublic2058();
-        } catch (err) {
-          console.error("❌ [SUPREMO PUBLIC 2060] Errore in runGlobalPublic:", err);
-        }
-      } else {
-        console.warn("⚠️ [SUPREMO PUBLIC 2060] __runGlobalPublic2058 non trovato");
-      }
+      // 4) NO DYNAMIC
 
-      // 4) DYNAMIC LOADER (SAFE 2056)
-      await loadScript("/dynamic-loader.js");
-      console.log("🟦 [SUPREMO PUBLIC 2060] Dynamic Loader 2056 caricato");
+      // 5) LOADER UNIVERSALE ADMIN
+      await loadScript("/admin/loader-universale-admin.js");
+      document.dispatchEvent(new Event("supremo-admin-load-universale"));
 
-      // 5) LOADER UNIVERSALE
-      await loadScript("/loaderuniversale.js");
-      document.dispatchEvent(new Event("supremo-public-load-universale"));
+      // 6) ATTENDI PAGE-JS-LOADED
+      await waitPageJsLoadedIfNeeded();
 
-      // 6) CRITICAL READY — SOLO QUI
+      // 7) CRITICAL READY
       if (!window.__criticalReady) {
         window.__criticalReady = true;
         document.dispatchEvent(new Event("critical-ready"));
-        console.log("🟩 [SUPREMO PUBLIC 2060] critical-ready EMESSO");
+        console.log("🟩 [SUPREMO ADMIN 2060] critical-ready EMESSO");
       }
 
-      console.log("🟩 [SUPREMO PUBLIC 2060] Sequenza completata");
+      console.log("🟩 [SUPREMO ADMIN 2060] Sequenza completata");
 
       state.running = false;
       state.done = true;
     }
 
-    // ============================================================
-    // AUTO-START
-    // ============================================================
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", runSupremoPublic, { once: true });
-    } else {
-      runSupremoPublic();
+    window.runSupremoAdmin2060 = runSupremoAdmin;
+
+    if (!window.__SUPREMO_ADMIN_STANDBY__) {
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", runSupremoAdmin, { once: true });
+      } else {
+        runSupremoAdmin();
+      }
     }
 
   })();
+} else {
+  console.warn("SUPREMO ADMIN 2060 già caricato, skip.");
 }
