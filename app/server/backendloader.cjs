@@ -1,12 +1,5 @@
 // =========================================================
 // BACKENDLOADER — attacca solo il backend, lazy-friendly
-// - DB
-// - cache / uploads / context
-// - universal-json
-// - api-guard
-// - router universale LAZY
-// - nessun cron auto-avviato
-// - nessun cold-start pesante
 // =========================================================
 
 const path = require("path");
@@ -23,12 +16,10 @@ module.exports = async function backendloader(app) {
     logErr("logging.cjs:", e.message);
   }
 
-  // diagnostica-lite è leggera
   try {
     require("./services/diagnostica-lite.cjs");
   } catch(e){}
 
-  // restore (già usato prima, lo teniamo)
   log(">> BOOT: restore");
   try {
     const { restore } = require("./modules/restore.cjs");
@@ -40,10 +31,6 @@ module.exports = async function backendloader(app) {
   log(">> BOOT: parser middleware");
   app.use(cookieParser());
 
-  /* =========================================================
-   * UNIVERSAL JSON + cartella persistente
-   * =========================================================
-   */
   log(">> BOOT: universal-json");
   try {
     const fs = require("fs");
@@ -59,10 +46,6 @@ module.exports = async function backendloader(app) {
     app.use(uj);
   } catch(e){ logErr("universal-json:", e.message); }
 
-  /* =========================================================
-   * API GUARD — scudo per tutte le /api
-   * =========================================================
-   */
   log(">> BOOT: api-guard");
   try {
     const apiGuard = require("./middleware/api-guard.cjs");
@@ -71,10 +54,6 @@ module.exports = async function backendloader(app) {
     logErr("api-guard:", e.message);
   }
 
-  /* =========================================================
-   * DATABASE
-   * =========================================================
-   */
   log(">> BOOT: database");
   let db = null;
   try { db = require("./db/database.cjs"); }
@@ -87,10 +66,6 @@ module.exports = async function backendloader(app) {
 
   app.set("db", db);
 
-  /* =========================================================
-   * CACHE / UPLOADS / CONTEXT
-   * =========================================================
-   */
   log(">> BOOT: cache");
   try { require("./middleware/cache.cjs")(app); } catch(e){}
 
@@ -104,23 +79,16 @@ module.exports = async function backendloader(app) {
   log("🟧 diagnostica DISATTIVATA");
   log("🟧 rewriteScripts DISATTIVATO");
 
-  /* =========================================================
-   * ROUTER UNIVERSALE (versione LAZY 2060)
-   * =========================================================
-   */
   log(">> BOOT: router API (universale LAZY)");
   try {
-    const router = require("./router.cjs"); // router.cjs aggiornato alla versione lazy che ti ho scritto
+    const router = require("./router.cjs");
     app.use("/api", router);
   } catch(e){ logErr("router:", e); }
 
-  /* =========================================================
-   * CRON / BOOTSTRAP / COLD-START — SOLO ON-DEMAND
-   * (non avviamo nulla qui per evitare OOM)
-   * =========================================================
-   */
   log("🟧 cron-auto-opt NON avviato automaticamente");
   log("🟧 cron-youtube NON avviato automaticamente");
   log("🟧 cron-sync NON avviato automaticamente");
   log("🟧 cold-start e bootstrap SOLO on-demand");
+
+  log("🟩 BACKEND CARICATO (backendloader completato)");
 };
