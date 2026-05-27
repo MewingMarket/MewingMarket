@@ -1,12 +1,12 @@
 // =========================================================
-// LOADER UNIVERSALE ADMIN — PATCH 2058 (CON pageInit)
+// LOADER UNIVERSALE ADMIN — PATCH 2058 PARANOICA
 // Percorso reale: /app/public/admin/loader-universale-admin.js
 // =========================================================
 
 if (!window.__LOADER_UNIVERSALE_ADMIN_2058__) {
   window.__LOADER_UNIVERSALE_ADMIN_2058__ = true;
 
-  console.log("⚡ [UNIVERSALE ADMIN 2058] Loader universale ADMIN attivo");
+  console.log("⚡ [UNIVERSALE ADMIN 2058] Loader universale ADMIN attivo (PARANOICO)");
 
   (function () {
 
@@ -23,6 +23,9 @@ if (!window.__LOADER_UNIVERSALE_ADMIN_2058__) {
 
     window.__adminPageJsLoaded = window.__adminPageJsLoaded || false;
 
+    // ============================================================
+    // NORMALIZZAZIONE NOME FILE REALE
+    // ============================================================
     function normalizeName(name) {
       return name
         .toLowerCase()
@@ -67,27 +70,53 @@ if (!window.__LOADER_UNIVERSALE_ADMIN_2058__) {
       };
     }
 
-    function loadScript(src) {
+    // ============================================================
+    // CARICAMENTO SCRIPT CON TIMEOUT PARANOICO
+    // ============================================================
+    function loadScript(src, timeoutMs = 8000) {
       if (window.__UNIVERSALE_ADMIN_JS_CACHE__.has(src)) {
+        console.log("⏭️ [UNIVERSALE ADMIN] LOAD-SKIP:", src);
         return Promise.resolve(true);
       }
 
       return new Promise(resolve => {
+        console.log("➡️ [UNIVERSALE ADMIN] LOAD-REQUEST:", src);
+
         const s = document.createElement("script");
         s.src = `${src}?v=${VERSION}`;
         s.async = false;
 
-        s.onload = () => {
-          window.__UNIVERSALE_ADMIN_JS_CACHE__.add(src);
-          resolve(true);
-        };
+        let settled = false;
 
-        s.onerror = () => resolve(false);
+        function done(ok) {
+          if (settled) return;
+          settled = true;
+
+          if (ok) {
+            console.log("✅ [UNIVERSALE ADMIN] LOAD-OK:", src);
+            window.__UNIVERSALE_ADMIN_JS_CACHE__.add(src);
+          } else {
+            console.warn("❌ [UNIVERSALE ADMIN] LOAD-FAIL/TIMEOUT:", src);
+          }
+
+          resolve(ok);
+        }
+
+        s.onload = () => done(true);
+        s.onerror = () => done(false);
+
+        setTimeout(() => {
+          console.warn("⏰ [UNIVERSALE ADMIN] TIMEOUT:", src);
+          done(false);
+        }, timeoutMs);
 
         document.body.appendChild(s);
       });
     }
 
+    // ============================================================
+    // AVVIO LOADER UNIVERSALE ADMIN
+    // ============================================================
     async function runUniversaleAdmin() {
       const state = window.__UNIVERSALE_ADMIN_RUN_STATE__;
       if (state.running || state.done) return;
@@ -98,26 +127,37 @@ if (!window.__LOADER_UNIVERSALE_ADMIN_2058__) {
       console.log("🔍 Pagina ADMIN reale:", base);
       console.log("🔍 Script atteso:", src);
 
-      await loadScript(src);
+      // ⭐ NON BLOCCANTE: anche se admin-{pagina}.js fallisce, la pagina continua
+      loadScript(src);
 
-      // ⭐ CHIAMATA pageInit()
-      if (typeof window.pageInit === "function") {
-        console.log("🚀 [UNIVERSALE ADMIN] pageInit() rilevata → esecuzione");
-        try {
-          window.pageInit();
-        } catch (err) {
-          console.error("❌ [UNIVERSALE ADMIN] Errore in pageInit:", err);
+      // ⭐ pageInit() può arrivare dopo
+      const checkInit = setInterval(() => {
+        if (typeof window.pageInit === "function") {
+          clearInterval(checkInit);
+          console.log("🚀 [UNIVERSALE ADMIN] pageInit() rilevata → esecuzione");
+          try {
+            window.pageInit();
+          } catch (err) {
+            console.error("❌ [UNIVERSALE ADMIN] Errore in pageInit:", err);
+          }
+
+          window.__adminPageJsLoaded = true;
+          document.dispatchEvent(new Event("admin-page-js-loaded"));
+          state.running = false;
+          state.done = true;
         }
-      } else {
-        console.warn("⚠️ [UNIVERSALE ADMIN] pageInit() NON trovata");
-      }
+      }, 50);
 
-      // ⭐ EMETTI admin-page-js-loaded
-      window.__adminPageJsLoaded = true;
-      document.dispatchEvent(new Event("admin-page-js-loaded"));
-
-      state.running = false;
-      state.done = true;
+      // fallback: dopo 3s emetti comunque admin-page-js-loaded
+      setTimeout(() => {
+        if (!window.__adminPageJsLoaded) {
+          console.warn("⚠️ [UNIVERSALE ADMIN] pageInit() non trovata → fallback");
+          window.__adminPageJsLoaded = true;
+          document.dispatchEvent(new Event("admin-page-js-loaded"));
+          state.running = false;
+          state.done = true;
+        }
+      }, 3000);
     }
 
     document.addEventListener("supremo-admin-load-universale", runUniversaleAdmin);
