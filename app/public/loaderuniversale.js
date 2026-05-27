@@ -1,12 +1,12 @@
 // =========================================================
-// LOADER UNIVERSALE PUBLIC — PATCH 2058 (CON pageInit)
+// LOADER UNIVERSALE PUBLIC — PATCH 2058 PARANOICA
 // Percorso reale: /app/public/loaderuniversale.js
 // =========================================================
 
 if (!window.__LOADER_UNIVERSALE_PUBLIC_2058__) {
   window.__LOADER_UNIVERSALE_PUBLIC_2058__ = true;
 
-  console.log("⚡ [UNIVERSALE PUBLIC 2058] Loader universale PUBLIC attivo");
+  console.log("⚡ [UNIVERSALE PUBLIC 2058] Loader universale PUBLIC attivo (PARANOICO)");
 
   (function () {
 
@@ -36,9 +36,6 @@ if (!window.__LOADER_UNIVERSALE_PUBLIC_2058__) {
         .trim();
     }
 
-    // ============================================================
-    // LETTURA STRUTTURA REALE → index.html → index.js
-    // ============================================================
     function getPageBaseFromPath() {
       const p = window.location.pathname;
 
@@ -68,24 +65,44 @@ if (!window.__LOADER_UNIVERSALE_PUBLIC_2058__) {
     }
 
     // ============================================================
-    // CARICAMENTO SCRIPT
+    // CARICAMENTO SCRIPT CON TIMEOUT PARANOICO
     // ============================================================
-    function loadScript(src) {
+    function loadScript(src, timeoutMs = 8000) {
       if (window.__UNIVERSALE_PUBLIC_JS_CACHE__.has(src)) {
+        console.log("⏭️ [UNIVERSALE PUBLIC] LOAD-SKIP:", src);
         return Promise.resolve(true);
       }
 
       return new Promise(resolve => {
+        console.log("➡️ [UNIVERSALE PUBLIC] LOAD-REQUEST:", src);
+
         const s = document.createElement("script");
         s.src = `${src}?v=${VERSION}`;
         s.async = false;
 
-        s.onload = () => {
-          window.__UNIVERSALE_PUBLIC_JS_CACHE__.add(src);
-          resolve(true);
-        };
+        let settled = false;
 
-        s.onerror = () => resolve(false);
+        function done(ok) {
+          if (settled) return;
+          settled = true;
+
+          if (ok) {
+            console.log("✅ [UNIVERSALE PUBLIC] LOAD-OK:", src);
+            window.__UNIVERSALE_PUBLIC_JS_CACHE__.add(src);
+          } else {
+            console.warn("❌ [UNIVERSALE PUBLIC] LOAD-FAIL/TIMEOUT:", src);
+          }
+
+          resolve(ok);
+        }
+
+        s.onload = () => done(true);
+        s.onerror = () => done(false);
+
+        setTimeout(() => {
+          console.warn("⏰ [UNIVERSALE PUBLIC] TIMEOUT:", src);
+          done(false);
+        }, timeoutMs);
 
         document.body.appendChild(s);
       });
@@ -104,26 +121,37 @@ if (!window.__LOADER_UNIVERSALE_PUBLIC_2058__) {
       console.log("🔍 Pagina reale:", base);
       console.log("🔍 Script atteso:", src);
 
-      await loadScript(src);
+      // ⭐ NON BLOCCANTE: anche se index.js fallisce, la pagina continua
+      loadScript(src);
 
-      // ⭐ CHIAMATA pageInit()
-      if (typeof window.pageInit === "function") {
-        console.log("🚀 [UNIVERSALE PUBLIC] pageInit() rilevata → esecuzione");
-        try {
-          window.pageInit();
-        } catch (err) {
-          console.error("❌ [UNIVERSALE PUBLIC] Errore in pageInit:", err);
+      // ⭐ pageInit() può arrivare dopo
+      const checkInit = setInterval(() => {
+        if (typeof window.pageInit === "function") {
+          clearInterval(checkInit);
+          console.log("🚀 [UNIVERSALE PUBLIC] pageInit() rilevata → esecuzione");
+          try {
+            window.pageInit();
+          } catch (err) {
+            console.error("❌ [UNIVERSALE PUBLIC] Errore in pageInit:", err);
+          }
+
+          window.__pageJsLoaded = true;
+          document.dispatchEvent(new Event("page-js-loaded"));
+          state.running = false;
+          state.done = true;
         }
-      } else {
-        console.warn("⚠️ [UNIVERSALE PUBLIC] pageInit() NON trovata");
-      }
+      }, 50);
 
-      // ⭐ EMETTI page-js-loaded
-      window.__pageJsLoaded = true;
-      document.dispatchEvent(new Event("page-js-loaded"));
-
-      state.running = false;
-      state.done = true;
+      // fallback: dopo 3s emetti comunque page-js-loaded
+      setTimeout(() => {
+        if (!window.__pageJsLoaded) {
+          console.warn("⚠️ [UNIVERSALE PUBLIC] pageInit() non trovata → fallback");
+          window.__pageJsLoaded = true;
+          document.dispatchEvent(new Event("page-js-loaded"));
+          state.running = false;
+          state.done = true;
+        }
+      }, 3000);
     }
 
     document.addEventListener("supremo-public-load-universale", runUniversalePublic);
