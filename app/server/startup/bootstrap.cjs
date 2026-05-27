@@ -1,39 +1,46 @@
-/**
- * =========================================================
- * BOOTSTRAP — versione Render‑Friendly
- * Nessuna sync Airtable qui dentro.
- * Nessun blocco prima del listen.
- * =========================================================
- */
+// =========================================================
+// BOOTSTRAP — Versione LAZY-SAFE 2060
+// Nessun sync automatico. Nessun blocco al boot.
+// Esegue SOLO quando chiamato da backendloader.
+// =========================================================
 
 const path = require("path");
 
-// PATCH: require assoluto
-const { syncYouTube } = require(path.join(process.cwd(), "app/services/youtube.cjs"));
+// Import LAZY del servizio YouTube
+function loadSyncYouTube() {
+  return require(path.join(process.cwd(), "app/services/youtube.cjs")).syncYouTube;
+}
 
-module.exports = async function bootstrap() {
+module.exports = async function bootstrapLazy() {
   console.log("\n====================================");
-  console.log("🚀 BOOTSTRAP MewingMarket");
+  console.log("🚀 BOOTSTRAP MewingMarket — LAZY SAFE 2060");
   console.log("====================================\n");
 
-  global.catalogReady = false;
-
-  /* =========================================================
-     1) SYNC YOUTUBE (non blocca il server)
-  ========================================================== */
-  console.log("🎥 Sync YouTube…");
   try {
-    await syncYouTube();
-    console.log("✅ YouTube completata\n");
-  } catch (err) {
-    console.error("❌ Errore YouTube:", err?.message || err);
-  }
+    // ============================================================
+    // 1) SYNC YOUTUBE (solo se richiesto)
+    // ============================================================
+    console.log("🎥 Sync YouTube ON-DEMAND…");
 
-  /* =========================================================
-     BOOTSTRAP COMPLETATO
-     (Airtable verrà eseguito DOPO il listen)
-  ========================================================== */
-  console.log("====================================");
-  console.log("🎉 BOOTSTRAP COMPLETATO");
-  console.log("====================================\n");
+    try {
+      const syncYouTube = loadSyncYouTube();
+      await syncYouTube();
+      console.log("   ✅ YouTube completata\n");
+    } catch (err) {
+      console.error("   ❌ Errore YouTube:", err?.message || err);
+    }
+
+    // ============================================================
+    // COMPLETATO
+    // ============================================================
+    console.log("====================================");
+    console.log("🎉 BOOTSTRAP COMPLETATO (LAZY SAFE 2060)");
+    console.log("====================================\n");
+
+    return { ok: true };
+
+  } catch (err) {
+    console.error("❌ ERRORE BOOTSTRAP:", err);
+    return { ok: false, error: err.message };
+  }
 };
