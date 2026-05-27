@@ -1,20 +1,21 @@
 // =========================================================
-// LOADER SUPREMO — PUBLIC MODELLO 2063
+// LOADER SUPREMO — PUBLIC MODELLO 2064 ULTRA-SAFE
 // - Critical
 // - CSS loader
 // - Global loader (e lo fa PARTIRE davvero)
 // - Loader universale
 // - NESSUN dynamic qui
+// - Log avanzati + protezione totale
 // =========================================================
 
-if (!window.__SUPREMO_PUBLIC_2063__) {
-  window.__SUPREMO_PUBLIC_2063__ = true;
+if (!window.__SUPREMO_PUBLIC_2064__) {
+  window.__SUPREMO_PUBLIC_2064__ = true;
 
   (function () {
 
-    const V = "2063";
+    const V = "2064";
 
-    console.log("⚡ [SUPREMO PUBLIC 2063] Avvio SUPREMO PUBLIC ULTRA-SAFE");
+    console.log("⚡ [SUPREMO PUBLIC 2064] Avvio SUPREMO PUBLIC ULTRA-SAFE");
 
     window.__SUPREMO_PUBLIC_JS_CACHE__ =
       window.__SUPREMO_PUBLIC_JS_CACHE__ || new Set();
@@ -70,47 +71,62 @@ if (!window.__SUPREMO_PUBLIC_2063__) {
       if (state.running || state.done) return;
       state.running = true;
 
-      console.log("🟦 [SUPREMO PUBLIC 2063] Sequenza SUPREMO avviata");
+      console.log("🟦 [SUPREMO PUBLIC 2064] Sequenza SUPREMO avviata");
 
-      // 1) CRITICAL LOADER
-      await loadScript("/loader.js");
-
-      // 2) CSS LOADER
-      await loadScript("/cssloader.js");
       try {
-        document.dispatchEvent(new Event("supremo-public-load-css"));
-      } catch (e) {}
+        // 1) CRITICAL LOADER
+        console.log("SUPREMO → CRITICAL");
+        await loadScript("/loader.js");
 
-      // 3) GLOBAL LOADER (solo file, poi lo facciamo PARTIRE)
-      await loadScript("/global-loader.js");
-
-      if (typeof window.__runGlobalPublic2058 === "function") {
-        console.log("🟦 [SUPREMO PUBLIC 2063] Avvio __runGlobalPublic2058()");
+        // 2) CSS LOADER
+        console.log("SUPREMO → CSSLOADER");
+        await loadScript("/cssloader.js");
         try {
-          await window.__runGlobalPublic2058();
-        } catch (err) {
-          console.error("❌ [SUPREMO PUBLIC 2063] Errore in __runGlobalPublic2058:", err);
+          document.dispatchEvent(new Event("supremo-public-load-css"));
+        } catch (e) {
+          console.warn("⚠️ [SUPREMO] Errore dispatch CSS:", e);
         }
-      } else {
-        console.warn("⚠️ [SUPREMO PUBLIC 2063] __runGlobalPublic2058 non trovato");
-      }
 
-      // 4) LOADER UNIVERSALE
-      await loadScript("/loaderuniversale.js");
-      try {
-        document.dispatchEvent(new Event("supremo-public-load-universale"));
-      } catch (e) {}
+        // 3) GLOBAL LOADER
+        console.log("SUPREMO → GLOBAL LOADER");
+        await loadScript("/global-loader.js");
 
-      // 5) CRITICAL READY
-      if (!window.__criticalReady) {
-        window.__criticalReady = true;
+        if (typeof window.__runGlobalPublic2058 === "function") {
+          console.log("🟦 [SUPREMO PUBLIC 2064] Avvio __runGlobalPublic2058()");
+          try {
+            await window.__runGlobalPublic2058();
+          } catch (err) {
+            console.error("❌ [SUPREMO PUBLIC 2064] Errore in __runGlobalPublic2058:", err);
+          }
+        } else {
+          console.warn("⚠️ [SUPREMO PUBLIC 2064] __runGlobalPublic2058 non trovato");
+        }
+
+        // 4) LOADER UNIVERSALE
+        console.log("SUPREMO → UNIVERSALE");
+        await loadScript("/loaderuniversale.js");
         try {
-          document.dispatchEvent(new Event("critical-ready"));
-          console.log("🟩 [SUPREMO PUBLIC 2063] critical-ready EMESSO");
-        } catch (e) {}
-      }
+          document.dispatchEvent(new Event("supremo-public-load-universale"));
+        } catch (e) {
+          console.warn("⚠️ [SUPREMO] Errore dispatch universale:", e);
+        }
 
-      console.log("🟩 [SUPREMO PUBLIC 2063] Sequenza completata");
+        // 5) CRITICAL READY
+        if (!window.__criticalReady) {
+          window.__criticalReady = true;
+          try {
+            document.dispatchEvent(new Event("critical-ready"));
+            console.log("🟩 [SUPREMO PUBLIC 2064] critical-ready EMESSO");
+          } catch (e) {
+            console.warn("⚠️ [SUPREMO] Errore dispatch critical-ready:", e);
+          }
+        }
+
+        console.log("🟩 [SUPREMO PUBLIC 2064] Sequenza completata");
+
+      } catch (e) {
+        console.error("❌ [SUPREMO PUBLIC 2064] Errore nella sequenza SUPREMO:", e);
+      }
 
       state.running = false;
       state.done = true;
