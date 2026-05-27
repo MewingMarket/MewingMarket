@@ -1,7 +1,8 @@
 // =========================================================
-// GLOBAL LOADER PUBLIC — Versione 2063
+// GLOBAL LOADER PUBLIC — Versione 2063.1 ULTRA-SAFE
 // - Ordine reale dei JS globali
 // - Dynamic DISATTIVATO (per test OOM / timeout)
+// - runGlobalPublic con try/catch totale
 // =========================================================
 
 if (!window.__GLOBAL_LOADER_PUBLIC_2063__) {
@@ -72,30 +73,36 @@ if (!window.__GLOBAL_LOADER_PUBLIC_2063__) {
     async function runGlobalPublic() {
       console.log("🟦 [GLOBAL PUBLIC 2063] Sequenza avviata");
 
-      // 1) AUTH (primo)
-      await loadScript("/auth.js");
-
-      // 2) HEADER (secondo)
-      await loadScript("/header.js");
-
-      // 3) SEO (terzo e quarto)
-      await loadScript("/seo.js");
-      await loadScript("/structured-data.js");
-
-      
-      // 4) CARRELLO (solo shop)
-      if (isShopPage()) {
-        await loadScript("/carrello.js", "body");
-      }
-
-      // 5) DYNAMIC DISATTIVATO PER TEST
-      console.log("🟧 [GLOBAL PUBLIC 2063] dynamic-loader DISATTIVATO (test)");
-
-      console.log("🟩 [GLOBAL PUBLIC 2063] Sequenza completata");
-
       try {
-        document.dispatchEvent(new Event("supremo-public-load-global-js"));
-      } catch (e) {}
+        // 1) AUTH (primo)
+        await loadScript("/auth.js");
+
+        // 2) HEADER (secondo)
+        await loadScript("/header.js");
+
+        // 3) SEO (terzo e quarto)
+        await loadScript("/seo.js");
+        await loadScript("/structured-data.js");
+
+        // 4) CARRELLO (solo shop)
+        if (isShopPage()) {
+          await loadScript("/carrello.js", "body");
+        }
+
+        // 5) DYNAMIC DISATTIVATO PER TEST
+        console.log("🟧 [GLOBAL PUBLIC 2063] dynamic-loader DISATTIVATO (test)");
+
+        console.log("🟩 [GLOBAL PUBLIC 2063] Sequenza completata");
+
+        try {
+          document.dispatchEvent(new Event("supremo-public-load-global-js"));
+        } catch (e) {
+          console.warn("⚠️ [GLOBAL PUBLIC] Errore dispatch evento supremo:", e);
+        }
+
+      } catch (e) {
+        console.error("❌ [GLOBAL PUBLIC 2063] Errore nella sequenza:", e);
+      }
     }
 
     // esposto col nome che il SUPREMO si aspetta
