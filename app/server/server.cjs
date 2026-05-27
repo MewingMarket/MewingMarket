@@ -1,16 +1,15 @@
-/* =========================================================
- * SERVER — HARDENED MODE (2051.000)
- * Anti‑PHP, Anti‑Bot, Anti‑OOM, Anti‑Scanner + API-GUARD
- * Compatibile con Game Engine 2027 + Bot Engine
- * =========================================================
- */
+// =========================================================
+// SERVER — ORCHESTRATORE DUAL-ENTRYPOINT 2060
+// - Listen SUBITO (Render-friendly)
+// - Boot backend + frontend in background
+// - Boot-lock su /api finché il backend non è pronto
+// =========================================================
 
 process.on("uncaughtException", err => console.error("🔥 UNCAUGHT:", err));
 process.on("unhandledRejection", err => console.error("🔥 UNHANDLED:", err));
 
 const express = require("express");
 const path = require("path");
-const cookieParser = require("cookie-parser");
 const fs = require("fs");
 
 const app = express();
@@ -23,7 +22,6 @@ function logErr(...a){ console.error("[ERR]", ...a); }
  * 🛡️ 1) ANTI‑PHP + ANTI‑SCANNER + ANTI‑WORDPRESS
  * =========================================================
  */
-
 const BLOCK_PATTERNS = [
   /\.php$/i,
   /wp-/i,
@@ -73,8 +71,9 @@ app.use(express.json({ limit: "200kb" }));
 app.use(express.urlencoded({ extended: false, limit: "200kb" }));
 
 /* =========================================================
- * FIX 2055 — Servizio JS deterministico (UNICO BLOCCO)
- * =========================================================
+ * FIX JS deterministico (UNICO BLOCCO JS)
+//  (lasciato qui: è leggero e front-only)
+// =========================================================
  */
 app.use((req, res, next) => {
   if (!req.path.match(/\.js($|\?)/)) return next();
@@ -111,146 +110,8 @@ app.get("/api/ping", (req,res)=>{
 });
 
 /* =========================================================
- * LISTEN SUBITO (Render richiede porta aperta)
- * =========================================================
- */
-const PORT = process.env.PORT || 10000;
-
-app.listen(PORT, () => {
-  log(`🎉 SERVER LISTENING on ${PORT} (HARDENED MODE)`);
-  bootInBackground();
-});
-
-/* =========================================================
- * BOOT COMPLETO IN BACKGROUND
- * =========================================================
- */
-async function bootInBackground(){
-
-  try {
-    log(">> BOOT: logging.cjs");
-    require("./services/logging.cjs");
-
-    const diag = require("./services/diagnostica-lite.cjs");
-
-    log(">> BOOT: restore");
-    const { restore } = require("./modules/restore.cjs");
-    await restore();
-
-    log(">> BOOT: parser middleware");
-    app.use(cookieParser());
-
-    /* =========================================================
-     * UNIVERSAL JSON
-     * =========================================================
-     */
-    log(">> BOOT: universal-json");/* =========================================================
- * CREAZIONE CARTELLA PERSISTENTE /var/data/json
- * (necessaria per universal-json NO-REDEPLOY)
- * ========================================================= */
-try {
-  const fs = require("fs");
-  const persistDir = "/var/data/json";
-  fs.mkdirSync(persistDir, { recursive: true });
-  console.log("🟩 [BOOT] Cartella persistente OK:", persistDir);
-} catch (e) {
-  console.error("🟥 [BOOT] Errore creazione /var/data/json:", e.message);
-}
-    try {
-      const uj = require("./middleware/universal-json.cjs");
-      app.use(uj);
-    } catch(e){ logErr("universal-json:", e.message); }
-
-    /* =========================================================
-     * API GUARD — unico scudo per tutte le /api
-     * =========================================================
-     */
-    log(">> BOOT: api-guard");
-    try {
-      const apiGuard = require("./middleware/api-guard.cjs");
-      app.use("/api", apiGuard);
-    } catch (e) {
-      logErr("api-guard:", e.message);
-    }
-
-    /* =========================================================
-     * DATABASE
-     * =========================================================
-     */
-    log(">> BOOT: database");
-    let db = null;
-    try { db = require("./db/database.cjs"); }
-    catch(e){ logErr("DB load:", e.message); }
-
-    if(!db){
-      logErr("DB non disponibile — SAFE MODE statico");
-      return;
-    }
-
-    app.set("db", db);
-
-    /* =========================================================
-     * CACHE / UPLOADS / CONTEXT
-     * =========================================================
-     */
-    log(">> BOOT: cache");
-    try { require("./middleware/cache.cjs")(app); } catch(e){}
-
-    log(">> BOOT: uploads");
-    try { require("./middleware/uploads.cjs")(app); } catch(e){}
-
-    log(">> BOOT: context");
-    try { require("./middleware/context.cjs")(app); } catch(e){}
-
-    log("🟧 introspect DISATTIVATO");
-    log("🟧 diagnostica DISATTIVATA");
-    log("🟧 rewriteScripts DISATTIVATO");
-
-    /* =========================================================
-     * ROUTER UNIVERSALE 2051 (AGGRESSIVE)
-     * =========================================================
-     */
-    log(">> BOOT: router API (universale)");
-    try {
-      const router = require("./router.cjs");
-      app.use("/api", router);
-    } catch(e){ logErr("router:", e); }
-
-    /* =========================================================
-     * 🔥 CRON AUTO‑OPTIMIZE (PATCH 2027.1)
-     * =========================================================
-     */
-    log(">> BOOT: cron-auto-opt");
-    try {
-      require("./startup/cron-auto-opt.cjs")();
-    } catch(e){
-      logErr("cron-auto-opt:", e.message);
-    }
-
-    /* =========================================================
-     * STATICHE
-     * =========================================================
-     */
-    const PUBLIC_DIR = path.resolve("app/public");
-    app.use(express.static(PUBLIC_DIR));
-    app.use("/admin", express.static(path.resolve("app/public/admin")));
-
-    app.get("/admin/login", (req, res) => {
-      res.sendFile(path.resolve("app/public/login.html"));
-    });
-
-    log(">> BOOT: cold-start DISATTIVATO (SAFE MODE)");
-    log(">> BOOT: bootstrap DISATTIVATO (SAFE MODE)");
-    log("🟧 cron-youtube DISATTIVATO");
-
-  } catch(err){
-    logErr("BOOT ERROR:", err);
-  }
-}
-
-/* =========================================================
- * /data persistente
- * =========================================================
+ * /data persistente (lasciato com'è, è leggero)
+// =========================================================
  */
 const DATA_BACKUP = path.join(process.cwd(), "app/data");
 const DATA_PERSIST = "/var/data/json";
@@ -274,3 +135,49 @@ app.use("/data",(req,res)=>{
 
   res.status(404).json({error:"File non trovato"});
 });
+
+/* =========================================================
+ * BOOT-LOCK su /api
+ * =========================================================
+ */
+let backendReady = false;
+
+app.use("/api", (req, res, next) => {
+  if (!backendReady) {
+    return res.status(503).json({ ok:false, error: "BOOTING" });
+  }
+  next();
+});
+
+/* =========================================================
+ * LISTEN SUBITO (Render richiede porta aperta)
+ * =========================================================
+ */
+const PORT = process.env.PORT || 10000;
+
+app.listen(PORT, () => {
+  log(`🎉 SERVER LISTENING on ${PORT} (ORCHESTRATOR 2060)`);
+  bootInBackground();
+});
+
+/* =========================================================
+ * BOOT COMPLETO IN BACKGROUND
+ * =========================================================
+ */
+async function bootInBackground(){
+  try {
+    // BACKEND (API, DB, middleware, router universale lazy)
+    const backendLoader = require("./backendloader.cjs");
+    await backendLoader(app);
+
+    // FRONTEND (statiche, admin, login, ecc.)
+    const loadermaster = require("./loadermaster.cjs");
+    await loadermaster(app);
+
+    backendReady = true;
+    log("✅ BOOT COMPLETO — backendReady = true");
+
+  } catch(err){
+    logErr("BOOT ERROR:", err);
+  }
+}
