@@ -1,16 +1,17 @@
 // =========================================================
-// GLOBAL LOADER PUBLIC — Versione 2062 (ORDINATO + DYNAMIC ULTIMO)
-// Percorso reale: /app/public/global-loader.js
+// GLOBAL LOADER PUBLIC — Versione 2063
+// - Ordine reale dei JS globali
+// - Dynamic DISATTIVATO (per test OOM / timeout)
 // =========================================================
 
-if (!window.__GLOBAL_LOADER_PUBLIC_2062__) {
-  window.__GLOBAL_LOADER_PUBLIC_2062__ = true;
+if (!window.__GLOBAL_LOADER_PUBLIC_2063__) {
+  window.__GLOBAL_LOADER_PUBLIC_2063__ = true;
 
-  console.log("⚡ [GLOBAL PUBLIC 2062] Avvio Global Loader PUBLIC");
+  console.log("⚡ [GLOBAL PUBLIC 2063] Avvio Global Loader PUBLIC");
 
   (function () {
 
-    const V = "2062";
+    const V = "2063";
 
     window.__GLOBAL_PUBLIC_JS_CACHE__ =
       window.__GLOBAL_PUBLIC_JS_CACHE__ || new Set();
@@ -68,42 +69,36 @@ if (!window.__GLOBAL_LOADER_PUBLIC_2062__) {
       );
     }
 
-    // ============================================================
-    // SEQUENZA GLOBAL PUBLIC 2062 (ordine reale)
-    // ============================================================
     async function runGlobalPublic() {
-      console.log("🟦 [GLOBAL PUBLIC 2062] Sequenza avviata");
+      console.log("🟦 [GLOBAL PUBLIC 2063] Sequenza avviata");
 
-      // 1) AUTH (fondamentale, primo)
+      // 1) AUTH (primo)
       await loadScript("/auth.js");
 
-      // 2) HEADER (secondo, gestisce header.html)
+      // 2) HEADER (secondo)
       await loadScript("/header.js");
 
       // 3) SEO (terzo e quarto)
       await loadScript("/seo.js");
       await loadScript("/structured-data.js");
 
-      // 4) TRACKING (ultimo dei SEO)
-      await loadScript("/tracking.js");
-
-      // 5) CARRELLO (solo shop)
+      
+      // 4) CARRELLO (solo shop)
       if (isShopPage()) {
         await loadScript("/carrello.js", "body");
       }
 
-      // 6) DYNAMIC LOADER (ULTIMO DI TUTTI, ANTI-CDN / ANTI-SW)
-      await loadScript("/dynamic-loader.js");
+      // 5) DYNAMIC DISATTIVATO PER TEST
+      console.log("🟧 [GLOBAL PUBLIC 2063] dynamic-loader DISATTIVATO (test)");
 
-      console.log("🟩 [GLOBAL PUBLIC 2062] Sequenza completata");
+      console.log("🟩 [GLOBAL PUBLIC 2063] Sequenza completata");
 
-      // Trigger per SUPREMO (se serve)
       try {
         document.dispatchEvent(new Event("supremo-public-load-global-js"));
       } catch (e) {}
     }
 
-    // Esposto per il SUPREMO
+    // esposto col nome che il SUPREMO si aspetta
     window.__runGlobalPublic2058 = runGlobalPublic;
 
   })();
