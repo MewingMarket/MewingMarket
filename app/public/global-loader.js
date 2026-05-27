@@ -2,6 +2,7 @@
 // GLOBAL LOADER PUBLIC — Versione 2064 ULTRA-SAFE
 // - Ordine reale dei JS globali
 // - Dynamic ULTRA-SAFE (non blocca mai)
+// - Log avanzati per debugging
 // - runGlobalPublic con try/catch totale
 // =========================================================
 
@@ -74,24 +75,27 @@ if (!window.__GLOBAL_LOADER_PUBLIC_2064__) {
       console.log("🟦 [GLOBAL PUBLIC 2064] Sequenza avviata");
 
       try {
-        // 1) AUTH (primo)
+        console.log("GLOBAL → AUTH");
         await loadScript("/auth.js");
 
-        // 2) HEADER (secondo)
+        console.log("GLOBAL → HEADER");
         await loadScript("/header.js");
 
-        // 3) SEO (terzo e quarto)
+        console.log("GLOBAL → SEO");
         await loadScript("/seo.js");
+
+        console.log("GLOBAL → STRUCTURED");
         await loadScript("/structured-data.js");
 
-        // 4) CARRELLO (solo shop)
         if (isShopPage()) {
+          console.log("GLOBAL → CARRELLO");
           await loadScript("/carrello.js", "body");
         }
 
         // ======================================================
         // 5) DYNAMIC ULTRA-SAFE (NON BLOCCA MAI)
         // ======================================================
+        console.log("GLOBAL → DYNAMIC");
         try {
           await loadScript("/dynamic-loader.js");
           console.log("🟩 [GLOBAL PUBLIC 2064] Dynamic ULTRA-SAFE caricato");
