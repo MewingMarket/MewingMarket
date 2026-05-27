@@ -72,8 +72,7 @@ app.use(express.urlencoded({ extended: false, limit: "200kb" }));
 
 /* =========================================================
  * FIX JS deterministico (UNICO BLOCCO JS)
-//  (lasciato qui: è leggero e front-only)
-// =========================================================
+ * =========================================================
  */
 app.use((req, res, next) => {
   if (!req.path.match(/\.js($|\?)/)) return next();
@@ -110,8 +109,8 @@ app.get("/api/ping", (req,res)=>{
 });
 
 /* =========================================================
- * /data persistente (lasciato com'è, è leggero)
-// =========================================================
+ * /data persistente
+ * =========================================================
  */
 const DATA_BACKUP = path.join(process.cwd(), "app/data");
 const DATA_PERSIST = "/var/data/json";
@@ -150,7 +149,7 @@ app.use("/api", (req, res, next) => {
 });
 
 /* =========================================================
- * LISTEN SUBITO (Render richiede porta aperta)
+ * LISTEN SUBITO
  * =========================================================
  */
 const PORT = process.env.PORT || 10000;
@@ -166,16 +165,14 @@ app.listen(PORT, () => {
  */
 async function bootInBackground(){
   try {
-    // BACKEND (API, DB, middleware, router universale lazy)
     const backendLoader = require("./backendloader.cjs");
     await backendLoader(app);
 
-    // FRONTEND (statiche, admin, login, ecc.)
     const loadermaster = require("./loadermaster.cjs");
     await loadermaster(app);
 
     backendReady = true;
-    log("✅ BOOT COMPLETO — backendReady = true");
+    log("🟩 BACKEND + FRONTEND CARICATI — backendReady = true");
 
   } catch(err){
     logErr("BOOT ERROR:", err);
