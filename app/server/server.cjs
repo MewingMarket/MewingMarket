@@ -81,6 +81,8 @@ app.use((req, res, next) => {
   const rel = clean.replace(/^\//, "");
   const fullPath = path.join(process.cwd(), "app/public", rel);
 
+  console.log("🔍 [JS-DEBUG] richiesta JS:", req.path, "→ rel:", rel);
+
   if (fs.existsSync(fullPath)) {
     res.setHeader("Content-Type", "application/javascript; charset=utf-8");
     res.setHeader("X-Content-Type-Options", "nosniff");
