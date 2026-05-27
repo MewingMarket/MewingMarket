@@ -1,29 +1,27 @@
 // =========================================================
-// LOADER SUPREMO — PUBLIC MODELLO 2062 (GLOBAL-FIRST, NO DYNAMIC QUI)
-// Percorso reale: /app/public/loadersupremo.js
+// LOADER SUPREMO — PUBLIC MODELLO 2063
+// - Critical
+// - CSS loader
+// - Global loader (e lo fa PARTIRE davvero)
+// - Loader universale
+// - NESSUN dynamic qui
 // =========================================================
 
-if (!window.__SUPREMO_PUBLIC_2062__) {
-  window.__SUPREMO_PUBLIC_2062__ = true;
+if (!window.__SUPREMO_PUBLIC_2063__) {
+  window.__SUPREMO_PUBLIC_2063__ = true;
 
   (function () {
 
-    const V = "2062";
+    const V = "2063";
 
-    console.log("⚡ [SUPREMO PUBLIC 2062] Avvio SUPREMO PUBLIC ULTRA-SAFE");
+    console.log("⚡ [SUPREMO PUBLIC 2063] Avvio SUPREMO PUBLIC ULTRA-SAFE");
 
-    // ============================================================
-    // CACHE + RUN STATE
-    // ============================================================
     window.__SUPREMO_PUBLIC_JS_CACHE__ =
       window.__SUPREMO_PUBLIC_JS_CACHE__ || new Set();
 
     window.__SUPREMO_PUBLIC_RUN_STATE__ =
       window.__SUPREMO_PUBLIC_RUN_STATE__ || { running: false, done: false };
 
-    // ============================================================
-    // Utility caricamento script (PARANOICA, con timeout)
-    // ============================================================
     function loadScript(src, where = "head", timeoutMs = 8000) {
       const key = src;
 
@@ -67,15 +65,12 @@ if (!window.__SUPREMO_PUBLIC_2062__) {
       });
     }
 
-    // ============================================================
-    // SEQUENZA SUPREMO PUBLIC 2062
-    // ============================================================
     async function runSupremoPublic() {
       const state = window.__SUPREMO_PUBLIC_RUN_STATE__;
       if (state.running || state.done) return;
       state.running = true;
 
-      console.log("🟦 [SUPREMO PUBLIC 2062] Sequenza SUPREMO avviata");
+      console.log("🟦 [SUPREMO PUBLIC 2063] Sequenza SUPREMO avviata");
 
       // 1) CRITICAL LOADER
       await loadScript("/loader.js");
@@ -86,8 +81,19 @@ if (!window.__SUPREMO_PUBLIC_2062__) {
         document.dispatchEvent(new Event("supremo-public-load-css"));
       } catch (e) {}
 
-      // 3) GLOBAL LOADER (qui dentro carichiamo TUTTI i JS globali, incluso dynamic)
+      // 3) GLOBAL LOADER (solo file, poi lo facciamo PARTIRE)
       await loadScript("/global-loader.js");
+
+      if (typeof window.__runGlobalPublic2058 === "function") {
+        console.log("🟦 [SUPREMO PUBLIC 2063] Avvio __runGlobalPublic2058()");
+        try {
+          await window.__runGlobalPublic2058();
+        } catch (err) {
+          console.error("❌ [SUPREMO PUBLIC 2063] Errore in __runGlobalPublic2058:", err);
+        }
+      } else {
+        console.warn("⚠️ [SUPREMO PUBLIC 2063] __runGlobalPublic2058 non trovato");
+      }
 
       // 4) LOADER UNIVERSALE
       await loadScript("/loaderuniversale.js");
@@ -100,19 +106,16 @@ if (!window.__SUPREMO_PUBLIC_2062__) {
         window.__criticalReady = true;
         try {
           document.dispatchEvent(new Event("critical-ready"));
-          console.log("🟩 [SUPREMO PUBLIC 2062] critical-ready EMESSO");
+          console.log("🟩 [SUPREMO PUBLIC 2063] critical-ready EMESSO");
         } catch (e) {}
       }
 
-      console.log("🟩 [SUPREMO PUBLIC 2062] Sequenza completata");
+      console.log("🟩 [SUPREMO PUBLIC 2063] Sequenza completata");
 
       state.running = false;
       state.done = true;
     }
 
-    // ============================================================
-    // AUTO-START
-    // ============================================================
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", runSupremoPublic, { once: true });
     } else {
