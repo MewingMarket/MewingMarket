@@ -1,84 +1,66 @@
 // =========================================================
-// DYNAMIC LOADER — SAFE MODE 2056 (ULTRA MINIMAL PUBLIC)
-// PATCH 2058: rimosso critical-ready, resta solo hard-refresh layer
-// Percorso: /app/public/dynamic-loader.js
+// DYNAMIC LOADER — Versione 2064 ULTRA-SAFE
+// - Anti-CDN
+// - Anti-cache HTTP
+// - Anti-service worker
+// - MAI bloccante
 // =========================================================
 
-if (window.__DYNAMIC_LOADER_2056__) {
-  console.warn("[DYNAMIC 2056] dynamic-loader.js già caricato → skip");
-} else {
-  window.__DYNAMIC_LOADER_2056__ = true;
+console.log("⚡ [DYNAMIC 2064] Avvio dynamic-loader (ULTRA-SAFE)");
 
-  (function () {
+(function () {
 
-    // 🔥 FUSIBILE: se la logica è già stata eseguita, non rifare nulla
-    if (window.__DYNAMIC_PUBLIC_ALREADY_RAN__) {
-      console.log("⏭️ [DYNAMIC 2056] Logica già eseguita → skip completo");
-      return;
+  const V = "2064";
+
+  // ============================================================
+  // 1) ANTI-SERVICE WORKER (non bloccante)
+  // ============================================================
+  try {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.getRegistrations().then(regs => {
+        for (const reg of regs) {
+          console.warn("🧹 [DYNAMIC 2064] Rimozione SW:", reg);
+          reg.unregister().catch(() => {});
+        }
+      }).catch(() => {});
     }
-    window.__DYNAMIC_PUBLIC_ALREADY_RAN__ = true;
+  } catch (e) {
+    console.warn("⚠️ [DYNAMIC 2064] Errore SW:", e);
+  }
 
-    console.log("⚡ [DYNAMIC 2056] Avvio dynamic-loader (ULTRA MINIMAL)");
-
-    // ============================================================
-    // 1) ANTI-CACHE
-    // ============================================================
-    function applyAntiCache() {
-      try {
-        const tags = [
-          { h: "Cache-Control", c: "no-cache, no-store, must-revalidate" },
-          { h: "Pragma",        c: "no-cache" },
-          { h: "Expires",       c: "0" }
-        ];
-
-        tags.forEach(t => {
-          const m = document.createElement("meta");
-          m.httpEquiv = t.h;
-          m.content = t.c;
-          document.head.appendChild(m);
+  // ============================================================
+  // 2) ANTI-CACHE HTTP (non bloccante)
+  // ============================================================
+  try {
+    if ("caches" in window) {
+      caches.keys().then(keys => {
+        keys.forEach(k => {
+          console.warn("🧹 [DYNAMIC 2064] Rimozione cache:", k);
+          caches.delete(k).catch(() => {});
         });
-
-        console.log("🟧 [DYNAMIC] Anti-cache applicato");
-      } catch (e) {
-        console.warn("❌ [DYNAMIC] Errore anti-cache:", e.message);
-      }
+      }).catch(() => {});
     }
+  } catch (e) {
+    console.warn("⚠️ [DYNAMIC 2064] Errore cache:", e);
+  }
 
-    // ============================================================
-    // 2) ANTI SERVICE WORKER
-    // ============================================================
-    function removeServiceWorkers() {
-      try {
-        console.log("🟧 [DYNAMIC] Rimozione service worker + cache HTTP");
+  // ============================================================
+  // 3) ANTI-CDN (solo se riesce)
+  // ============================================================
+  try {
+    const meta = document.createElement("meta");
+    meta.httpEquiv = "Cache-Control";
+    meta.content = "no-store, no-cache, must-revalidate, max-age=0";
+    document.head.appendChild(meta);
 
-        if ("serviceWorker" in navigator) {
-          navigator.serviceWorker.getRegistrations().then(regs => {
-            regs.forEach(r => r.unregister());
-          });
-        }
+    console.log("🟩 [DYNAMIC 2064] Anti-CDN applicato");
+  } catch (e) {
+    console.warn("⚠️ [DYNAMIC 2064] Anti-CDN non applicato:", e);
+  }
 
-        if (window.caches) {
-          caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
-        }
+  // ============================================================
+  // 4) COMPLETATO (mai bloccante)
+  // ============================================================
+  console.log("🟩 [DYNAMIC 2064] Completato (ULTRA-SAFE)");
 
-      } catch (e) {
-        console.warn("❌ [DYNAMIC] Errore anti-service-worker:", e.message);
-      }
-    }
-
-    // ============================================================
-    // 3) NOTE SU forceRenderNoStore
-    // ============================================================
-    // forceRenderNoStore DISATTIVATO (ANTI-LOOP)
-    console.log("🟦 [DYNAMIC 2056] forceRenderNoStore DISATTIVATO (ANTI-LOOP)");
-
-    // ============================================================
-    // ESECUZIONE ORDINATA (SENZA critical-ready)
-    // ============================================================
-    applyAntiCache();
-    removeServiceWorkers();
-
-    console.log("🟩 [DYNAMIC 2056] Completato (ULTRA MINIMAL, NO critical-ready)");
-
-  })();
-}
+})();
