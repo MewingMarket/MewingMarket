@@ -1,18 +1,18 @@
 // =========================================================
-// GLOBAL LOADER PUBLIC — Versione 2063.1 ULTRA-SAFE
+// GLOBAL LOADER PUBLIC — Versione 2064 ULTRA-SAFE
 // - Ordine reale dei JS globali
-// - Dynamic DISATTIVATO (per test OOM / timeout)
+// - Dynamic ULTRA-SAFE (non blocca mai)
 // - runGlobalPublic con try/catch totale
 // =========================================================
 
-if (!window.__GLOBAL_LOADER_PUBLIC_2063__) {
-  window.__GLOBAL_LOADER_PUBLIC_2063__ = true;
+if (!window.__GLOBAL_LOADER_PUBLIC_2064__) {
+  window.__GLOBAL_LOADER_PUBLIC_2064__ = true;
 
-  console.log("⚡ [GLOBAL PUBLIC 2063] Avvio Global Loader PUBLIC");
+  console.log("⚡ [GLOBAL PUBLIC 2064] Avvio Global Loader PUBLIC");
 
   (function () {
 
-    const V = "2063";
+    const V = "2064";
 
     window.__GLOBAL_PUBLIC_JS_CACHE__ =
       window.__GLOBAL_PUBLIC_JS_CACHE__ || new Set();
@@ -71,7 +71,7 @@ if (!window.__GLOBAL_LOADER_PUBLIC_2063__) {
     }
 
     async function runGlobalPublic() {
-      console.log("🟦 [GLOBAL PUBLIC 2063] Sequenza avviata");
+      console.log("🟦 [GLOBAL PUBLIC 2064] Sequenza avviata");
 
       try {
         // 1) AUTH (primo)
@@ -89,10 +89,17 @@ if (!window.__GLOBAL_LOADER_PUBLIC_2063__) {
           await loadScript("/carrello.js", "body");
         }
 
-        // 5) DYNAMIC DISATTIVATO PER TEST
-        console.log("🟧 [GLOBAL PUBLIC 2063] dynamic-loader DISATTIVATO (test)");
+        // ======================================================
+        // 5) DYNAMIC ULTRA-SAFE (NON BLOCCA MAI)
+        // ======================================================
+        try {
+          await loadScript("/dynamic-loader.js");
+          console.log("🟩 [GLOBAL PUBLIC 2064] Dynamic ULTRA-SAFE caricato");
+        } catch (e) {
+          console.warn("⚠️ [GLOBAL PUBLIC 2064] Dynamic non caricato:", e);
+        }
 
-        console.log("🟩 [GLOBAL PUBLIC 2063] Sequenza completata");
+        console.log("🟩 [GLOBAL PUBLIC 2064] Sequenza completata");
 
         try {
           document.dispatchEvent(new Event("supremo-public-load-global-js"));
@@ -101,7 +108,7 @@ if (!window.__GLOBAL_LOADER_PUBLIC_2063__) {
         }
 
       } catch (e) {
-        console.error("❌ [GLOBAL PUBLIC 2063] Errore nella sequenza:", e);
+        console.error("❌ [GLOBAL PUBLIC 2064] Errore nella sequenza:", e);
       }
     }
 
