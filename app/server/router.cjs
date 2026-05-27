@@ -1,15 +1,17 @@
 // =========================================================
-// ROUTER UNIVERSALE — VERSIONE INTELLIGENTE 2053 FIX
+// ROUTER UNIVERSALE — VERSIONE LAZY 2060
 // =========================================================
 
 const express = require("express");
 const router = express.Router();
 const path = require("path");
-const funzioni = require("./index.cjs");
 
-const R = (p) => require(path.join(process.cwd(), "app/server", p));
-const authUser = R("middleware/auth-user.cjs");
-const authAdmin = R("middleware/auth-admin.cjs");
+// Caricamento LAZY dell’indice
+const lazyIndex = require("./index.lazy.cjs");
+
+// Caricamento LAZY dei middleware
+const loadAuthUser = () => require(path.join(process.cwd(), "app/server/middleware/auth-user.cjs"));
+const loadAuthAdmin = () => require(path.join(process.cwd(), "app/server/middleware/auth-admin.cjs"));
 
 function resolveHandler(mod, rawName) {
   if (!mod) return null;
@@ -31,20 +33,22 @@ function resolveHandler(mod, rawName) {
 }
 
 async function runAuth(m, req, res) {
-  return new Promise(resolve => {
-    try {
-      if (m === "admin") {
-        authAdmin(req, res, () => resolve(true));
-      } else if (["utenti", "ordini", "vendite", "rimborso"].includes(m)) {
-        authUser(req, res, () => resolve(true));
-      } else {
-        resolve(true);
-      }
-    } catch (e) {
-      console.error("AUTH ERROR:", e);
-      resolve(true);
+  try {
+    if (m === "admin") {
+      const authAdmin = loadAuthAdmin();
+      return new Promise(resolve => authAdmin(req, res, () => resolve(true)));
     }
-  });
+
+    if (["utenti", "ordini", "vendite", "rimborso"].includes(m)) {
+      const authUser = loadAuthUser();
+      return new Promise(resolve => authUser(req, res, () => resolve(true)));
+    }
+
+    return true;
+  } catch (e) {
+    console.error("AUTH ERROR:", e);
+    return true;
+  }
 }
 
 router.all("/:modulo/:funzione", async (req, res) => {
@@ -52,13 +56,20 @@ router.all("/:modulo/:funzione", async (req, res) => {
     const m = req.params.modulo.toLowerCase();
     const f = req.params.funzione;
 
-    const mod = funzioni[m];
-    if (!mod) return res.json({ success: false, error: "Modulo non trovato" });
+    const loaders = lazyIndex[m];
+    if (!loaders) return res.json({ success: false, error: "Modulo non trovato" });
+
+    // Caricamento LAZY del modulo
+    let mod = {};
+    for (const load of loaders) {
+      const part = await load();
+      Object.assign(mod, part);
+    }
 
     const handler = resolveHandler(mod, f);
     if (!handler) return res.json({ success: false, error: "Funzione non trovata" });
 
-    // AUTH FIX
+    // AUTH
     await runAuth(m, req, res);
     if (res.headersSent) return;
 
